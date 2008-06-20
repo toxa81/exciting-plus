@@ -48,7 +48,7 @@ SRC_routines_flux = \
  getoccsv.f90 putevecfv.f90 getevecfv.f90 putevecsv.f90 getevecsv.f90 \
  delevec.f90 genvmatk.f90 genvmat.f90 genwfsv.f90 \
  findsymsite.f90 geomplot.f90 hartfock.f90 genkinmat.f90 energykncr.f90 \
- zfint.f90 rfpack.f90 rfint.f90 writefsm.f90 genbmatk.f90
+ zfint.f90 rfpack.f90 rfint.f90 writefsm.f90 genbmatk.f90 writenn.f90
 
 SRC_phonon = \
  phonon.f90 dyntask.f90 phcell.f90 phdisp.f90 readdyn.f90 dynqtor.f90 \

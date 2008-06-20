@@ -9,6 +9,17 @@ use modmain
 implicit none
 ! local variables
 integer itask
+
+!$ integer omp_get_num_threads,omp_get_thread_num
+!$ real*8 omp_get_wtime
+!$ real*8 start_time_thread0,end_time_thread0
+
+!$OMP PARALLEL                                                                                                                                    
+!$ if (omp_get_thread_num().eq.0) then                                                                                                         
+!$   start_time_thread0 = omp_get_wtime()                                                                                                              
+!$ endif                                                                                                                                       
+!$OMP END PARALLEL    
+
 ! read input files
 call readinput
 ! perform the appropriate task
@@ -75,6 +86,18 @@ do itask=1,ntasks
     stop
   end select
 end do
+
+!$OMP PARALLEL                                                                                                                                    
+!$ if (omp_get_thread_num().eq.0) then                                                                                                         
+!$   end_time_thread0 = omp_get_wtime()
+!$   open(50,file='TIMING.OUT',status='replace')
+!$   write(50,'("Number of threads: ", I2)')omp_get_num_threads()
+!$   write(50,'("Execution time: ",F10.2," seconds")') &
+!$     end_time_thread0-start_time_thread0 
+!$   close(50)                                                                                                             
+!$ endif                                                                                                                                       
+!$OMP END PARALLEL    
+
 stop
 end program
 

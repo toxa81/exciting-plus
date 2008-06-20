@@ -23,16 +23,18 @@ use modmain
 implicit none
 ! local variables
 logical exist
-integer ik,is,ia,idm,n
+integer ik,is,ia,idm,n,i
 real(8) dv,timetot
 ! allocatable arrays
 real(8), allocatable :: nu(:)
 real(8), allocatable :: mu(:)
 real(8), allocatable :: beta(:)
 real(8), allocatable :: f(:)
-real(8), allocatable :: evalfv(:,:)
-complex(8), allocatable :: evecfv(:,:,:)
-complex(8), allocatable :: evecsv(:,:)
+
+real(8), allocatable :: evalfv(:,:,:)
+complex(8), allocatable :: evecfv(:,:,:,:)
+complex(8), allocatable :: evecsv(:,:,:)
+
 ! require forces for structural optimisation
 if ((task.eq.2).or.(task.eq.3)) tforce=.true.
 ! initialise global variables
@@ -50,6 +52,8 @@ call writesym
 call writekpts
 ! write lattice vectors and atomic positions to file
 call writegeom(.false.)
+! write nearest neighbours
+call writenn
 ! open INFO.OUT file
 open(60,file='INFO'//trim(filext),action='WRITE',form='FORMATTED')
 ! open TOTENERGY.OUT
@@ -88,6 +92,11 @@ allocate(nu(n))
 allocate(mu(n))
 allocate(beta(n))
 allocate(f(n))
+
+allocate(evalfv(nstfv,nspnfv,nkpt))
+allocate(evecfv(nmatmax,nstfv,nspnfv,nkpt))
+allocate(evecsv(nstsv,nstsv,nkpt))
+
 ! set stop flag
 tstop=.false.
 10 continue
@@ -130,26 +139,23 @@ do iscl=1,maxscl
   call olprad
 ! compute the Hamiltonian radial integrals
   call hmlrad
+  do i = 1, 200
 ! begin parallel loop over k-points
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(evalfv,evecfv,evecsv)
+!$OMP PARALLEL DEFAULT(SHARED)
 !$OMP DO
   do ik=1,nkpt
 ! every thread should allocate its own arrays
-    allocate(evalfv(nstfv,nspnfv))
-    allocate(evecfv(nmatmax,nstfv,nspnfv))
-    allocate(evecsv(nstsv,nstsv))
 ! solve the first- and second-variational secular equations
-    call seceqn(ik,evalfv,evecfv,evecsv)
+    call seceqn(ik,evalfv(:,:,ik),evecfv(:,:,:,ik),evecsv(:,:,ik))
 ! write the eigenvalues/vectors to file
-    call putevalfv(ik,evalfv)
-    call putevalsv(ik,evalsv(1,ik))
-    call putevecfv(ik,evecfv)
-    call putevecsv(ik,evecsv)
-    deallocate(evalfv,evecfv,evecsv)
+!    call putevalfv(ik,evalfv)
+!    call putevalsv(ik,evalsv(1,ik))
+!    call putevecfv(ik,evecfv)
+!    call putevecsv(ik,evecsv)
   end do
 !$OMP END DO
 !$OMP END PARALLEL
+  enddo
 ! find the occupation numbers and Fermi energy
   call occupy
 ! write out the eigenvalues and occupation numbers
@@ -163,23 +169,20 @@ do iscl=1,maxscl
     magmt(:,:,:,:)=0.d0
     magir(:,:)=0.d0
   end if
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(evecfv,evecsv)
+!$OMP PARALLEL DEFAULT(SHARED)
 !$OMP DO
   do ik=1,nkpt
-    allocate(evecfv(nmatmax,nstfv,nspnfv))
-    allocate(evecsv(nstsv,nstsv))
-! write the occupancies to file
-    call putoccsv(ik,occsv(1,ik))
-! get the eigenvectors from file
-    call getevecfv(vkl(1,ik),vgkl(1,1,ik,1),evecfv)
-    call getevecsv(vkl(1,ik),evecsv)
 ! add to the density and magnetisation
-    call rhovalk(ik,evecfv,evecsv)
-    deallocate(evecfv,evecsv)
+    call rhovalk(ik,evecfv(:,:,:,ik),evecsv(:,:,ik))
   end do
 !$OMP END DO
 !$OMP END PARALLEL
+  
+  do ik=1,nkpt
+! write the occupancies to file
+    call putoccsv(ik,occsv(1,ik))
+  end do
+
 ! symmetrise the density
   call symrf(lradstp,rhomt,rhoir)
 ! symmetrise the magnetisation
@@ -389,6 +392,8 @@ if (tforce) close(64)
 ! close the RMSDVEFF.OUT file
 close(65)
 deallocate(nu,mu,beta,f)
+deallocate(evalfv,evecfv,evecsv)
+
 return
 end subroutine
 !EOC

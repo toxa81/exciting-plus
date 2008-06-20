@@ -34,8 +34,8 @@ integer ispn
 complex(8), allocatable :: apwalm(:,:,:,:,:)
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
 ! loop over first-variational spins (nspnfv=2 for spin-spirals only)
-!$OMP PARALLEL DEFAULT(SHARED)
-!$OMP DO
+!---!$OMP PARALLEL DEFAULT(SHARED)
+!---!$OMP DO
 do ispn=1,nspnfv
 ! find the matching coefficients
   call match(ngk(ik,ispn),gkc(1,ik,ispn),tpgkc(1,1,ik,ispn), &
@@ -44,8 +44,8 @@ do ispn=1,nspnfv
   call seceqnfv(nmat(ik,ispn),ngk(ik,ispn),igkig(1,ik,ispn),vgkc(1,1,ik,ispn), &
    apwalm(1,1,1,1,ispn),evalfv(1,ispn),evecfv(1,1,ispn))
 end do
-!$OMP END DO
-!$OMP END PARALLEL
+!---!$OMP END DO
+!---!$OMP END PARALLEL
 if (spinsprl) then
 ! solve the spin-spiral second-variational secular equation
   call seceqnss(ik,apwalm,evalfv,evecfv,evecsv)
