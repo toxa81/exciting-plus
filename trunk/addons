@@ -1,0 +1,3 @@
++ execution timing based on the omp_get_wtime() for main thread
++ nearest neighbours output to NN.OUT
++ eigenvectors are stored in memory and saved only once afrer SCF cycle 
