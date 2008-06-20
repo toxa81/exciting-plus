@@ -23,7 +23,7 @@ use modmain
 implicit none
 ! local variables
 logical exist
-integer ik,is,ia,idm,n,i
+integer ik,is,ia,idm,n
 real(8) dv,timetot
 ! allocatable arrays
 real(8), allocatable :: nu(:)
@@ -139,7 +139,7 @@ do iscl=1,maxscl
   call olprad
 ! compute the Hamiltonian radial integrals
   call hmlrad
-  do i = 1, 200
+
 ! begin parallel loop over k-points
 !$OMP PARALLEL DEFAULT(SHARED)
 !$OMP DO
@@ -155,7 +155,7 @@ do iscl=1,maxscl
   end do
 !$OMP END DO
 !$OMP END PARALLEL
-  enddo
+
 ! find the occupation numbers and Fermi energy
   call occupy
 ! write out the eigenvalues and occupation numbers
@@ -169,6 +169,7 @@ do iscl=1,maxscl
     magmt(:,:,:,:)=0.d0
     magir(:,:)=0.d0
   end if
+  
 !$OMP PARALLEL DEFAULT(SHARED)
 !$OMP DO
   do ik=1,nkpt
