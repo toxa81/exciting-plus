@@ -23,7 +23,7 @@ use modmain
 implicit none
 ! local variables
 logical exist
-integer ik,is,ia,idm,n
+integer ik,is,ia,idm,n,i
 real(8) dv,timetot
 ! allocatable arrays
 real(8), allocatable :: nu(:)
@@ -140,6 +140,7 @@ do iscl=1,maxscl
 ! compute the Hamiltonian radial integrals
   call hmlrad
 
+do i = 1, 40
 ! begin parallel loop over k-points
 !$OMP PARALLEL DEFAULT(SHARED)
 !$OMP DO
@@ -202,6 +203,9 @@ do iscl=1,maxscl
   if (spinpol) call moment
 ! normalise the density
   call rhonorm
+  enddo
+  return
+  
 ! LDA+U
   if (ldapu.ne.0) then
 ! generate the LDA+U density matrix
