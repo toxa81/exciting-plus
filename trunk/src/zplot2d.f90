@@ -79,7 +79,7 @@ do ip2=0,np2d(2)-1
   end do
 end do
 do i=1,nf
-  call zrfarray(lmax,ld,zrfmt(1,1,1,i),zrfir(1,i),ip,vpl,zfp(1,i))
+  call zfarray(lmax,ld,zrfmt(1,1,1,i),zrfir(1,i),ip,vpl,zfp(1,i))
 end do
 write(fnum,'(2I6," : grid size")') np2d(1),np2d(2)
 ip=0

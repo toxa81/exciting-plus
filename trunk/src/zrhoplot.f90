@@ -3,7 +3,7 @@
 ! This file is distributed under the terms of the GNU General Public License.
 ! See the file COPYING for license details.
 
-subroutine zwfplot
+subroutine zrhoplot
 use        modmain
 implicit   none
 
@@ -16,16 +16,25 @@ integer                 :: ik1,ik2,ist1,ist2
 ! allocatable arrays
 complex(8), allocatable :: evecfv(:,:)
 complex(8), allocatable :: evecsv(:,:)
-complex(8), allocatable :: apwalm(:,:,:,:)                                                                                                        
-complex(8), allocatable :: wfmt1(:,:,:,:,:),wfmt2(:,:,:,:,:)                                                                                                        
-complex(8), allocatable :: wfir1(:,:,:),wfir2(:,:,:)                                                                                                            
-complex(8), allocatable :: zrhomt(:,:,:)                                                                                                          
-complex(8), allocatable :: zrhoir(:)                                                                                                              
+complex(8), allocatable :: apwalm(:,:,:,:)
+complex(8), allocatable :: wfmt1(:,:,:,:,:),wfmt2(:,:,:,:,:)
+complex(8), allocatable :: wfir1(:,:,:),wfir2(:,:,:)
+complex(8), allocatable :: zrhomt(:,:,:)
+complex(8), allocatable :: zrhoir(:)
 
-ik1 = 1
-ik2 = 1
-ist1 = 55
-ist2 = 56
+if (nkstlist.lt.2) then
+  write(*,*)
+  write(*,'("Error(zrhoplot): at least two entries are required in array kstlist")')
+  write(*,*)
+  stop
+endif
+ik1  = kstlist(1,1)
+ist1 = kstlist(2,1)
+ik2  = kstlist(1,2)
+ist2 = kstlist(2,2)
+
+write(*,'("Plotting product of wave-function ",I3," at k-point",I3, &
+  & " and wave-function ",I3," at k-pont ",I3)')ist1,ik1,ist2,ik2
 
 ! initialise universal variables
 call init0
@@ -34,12 +43,12 @@ call init1
 allocate(evecfv(nmatmax,nstfv))
 allocate(evecsv(nstsv,nstsv))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-allocate(wfmt1(lmmaxvr,nrcmtmax,natmtot,nspinor,nstsv))                                                                                            
-allocate(wfmt2(lmmaxvr,nrcmtmax,natmtot,nspinor,nstsv))                                                                                            
-allocate(wfir1(ngrtot,nspinor,nstsv))                                                                                                              
-allocate(wfir2(ngrtot,nspinor,nstsv))                                                                                                              
-allocate(zrhomt(lmmaxvr,nrcmtmax,natmtot))                                                                                                        
-allocate(zrhoir(ngrtot))                                                                                                                          
+allocate(wfmt1(lmmaxvr,nrcmtmax,natmtot,nspinor,nstsv))
+allocate(wfmt2(lmmaxvr,nrcmtmax,natmtot,nspinor,nstsv))
+allocate(wfir1(ngrtot,nspinor,nstsv))
+allocate(wfir2(ngrtot,nspinor,nstsv))
+allocate(zrhomt(lmmaxvr,nrcmtmax,natmtot))
+allocate(zrhoir(ngrtot))
 
 write(*,*)'size of wfmt arrays: ', &
   2*lmmaxvr*nrcmtmax*natmtot*nspinor*nstsv*16.d0/1024/1024,' Mb'
@@ -80,8 +89,8 @@ else
   wfir2 = wfir1
 endif
 
-wfmt2(:,:,:,:,ist2) = dcmplx(1.d0,0.d0)
-wfir2(:,:,ist2) = dcmplx(1.d0,0.d0)
+!wfmt2(:,:,:,:,ist2) = dcmplx(1.d0,0.d0)
+!wfir2(:,:,ist2) = dcmplx(1.d0,0.d0)
 
 call vnlrho(.true.,wfmt1(:,:,:,:,ist1),wfmt2(:,:,:,:,ist2),wfir1(:,:,ist1), &
   wfir2(:,:,ist2),zrhomt,zrhoir)

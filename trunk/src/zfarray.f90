@@ -3,14 +3,14 @@
 ! This file is distributed under the terms of the GNU General Public License.
 ! See the file COPYING for license details.
 
-subroutine zrfarray(lmax,ld,zrfmt,zrfir,np,vpl,zfp)
+subroutine zfarray(lmax,ld,zfmt,zfir,np,vpl,zfp)
 use modmain
 implicit none
 ! arguments
 integer, intent(in) :: lmax
 integer, intent(in) :: ld
-complex(8), intent(in) :: zrfmt(ld,nrcmtmax,natmtot)
-complex(8), intent(in) :: zrfir(ngrtot)
+complex(8), intent(in) :: zfmt(ld,nrcmtmax,natmtot)
+complex(8), intent(in) :: zfir(ngrtot)
 integer, intent(in) :: np
 real(8), intent(in) :: vpl(3,np)
 complex(8), intent(out) :: zfp(np)
@@ -33,7 +33,7 @@ allocate(ylm((lmax+1)**2))
 allocate(zfft(ngrtot))
 np2=nprad/2
 ! Fourier transform rfir to G-space
-zfft(:)=zrfir(:)
+zfft(:)=zfir(:)
 call zfftifc(3,ngrid,-1,zfft)
 
 ! begin loop over all points
@@ -61,18 +61,19 @@ do ip=1,np
 	      r = max(r,rcmt(1,is))+1.d-10
               do ir=1,nrcmt(is)-1
                 if (r.gt.rcmt(ir,is).and.r.le.rcmt(ir+1,is)) then
+                  
                   sum=dcmplx(0.d0,0.d0)
-		  
                   do l=0,lmax
                     do m=-l,l
                       lm=idxlm(l,m)
-		      t2 = zrfmt(lm,ir,ias) + &
-		        ((zrfmt(lm,ir+1,ias)-zrfmt(lm,ir,ias))/(rcmt(ir+1,is)-rcmt(ir,is)))* &
+		      t2 = zfmt(lm,ir,ias) + &
+		        ((zfmt(lm,ir+1,ias)-zfmt(lm,ir,ias))/(rcmt(ir+1,is)-rcmt(ir,is)))* &
 		        (r-rcmt(ir,is))
                       sum=sum+t2*ylm(lm)
                     end do
                   end do
                   goto 10
+                
                 end if
               end do
             end if
