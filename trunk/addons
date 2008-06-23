@@ -5,3 +5,4 @@
 + for 2D plot plane definition changed from three corners to origin and two vectors
 + dos in eV and splitted to l and spin channels
 + band character in real spherical harmonics
++ DFT scf loop moved to separate file
