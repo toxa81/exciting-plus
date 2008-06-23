@@ -860,5 +860,7 @@ integer notelns
 ! notes to include in INFO.OUT
 character(80) notes(maxnlns)
 
+real(8), parameter :: ha2ev = 27.21138386d0
+
 end module
 

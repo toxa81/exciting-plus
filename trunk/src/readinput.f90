@@ -486,6 +486,8 @@ case('plot2d')
     write(*,*)
     stop
   end if
+  vclp2d(:,2) = vclp2d(:,2) + vclp2d(:,1) 
+  vclp2d(:,3) = vclp2d(:,3) + vclp2d(:,1) 
 case('plot3d')
   read(50,*,err=20) nup3d(1),nup3d(2),nup3d(3)
   if ((nup3d(1).lt.1).or.(nup3d(2).lt.1).or.(nup3d(3).lt.1)) then

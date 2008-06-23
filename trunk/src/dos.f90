@@ -41,6 +41,7 @@ real(8), allocatable :: f(:,:)
 real(8), allocatable :: w(:)
 real(8), allocatable :: g(:,:)
 real(8), allocatable :: gp(:)
+real(8), allocatable :: pdos(:,:)
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
 ! initialise universal variables
@@ -59,6 +60,8 @@ allocate(f(nstsv,nkpt))
 allocate(w(nwdos))
 allocate(g(nwdos,nspinor))
 allocate(gp(nwdos))
+allocate(pdos(nwdos,lmmax))
+
 ! read density and potentials from file
 call readstate
 ! read Fermi energy from file
@@ -109,7 +112,7 @@ do ispn=1,nspinor
   call brzint(nsmdos,ngridk,nsk,ikmap,nwdos,wdos,nstsv,nstsv,e(1,1,ispn),f, &
    g(1,ispn))
   do iw=1,nwdos
-    write(50,'(2G18.10)') w(iw),t1*g(iw,ispn)
+    write(50,'(2G18.10)') w(iw)*ha2ev,t1*g(iw,ispn)/ha2ev
   end do
   write(50,'("     ")')
 end do
@@ -118,14 +121,7 @@ close(50)
 do is=1,nspecies
   do ia=1,natoms(is)
     ias=idxas(ia,is)
-    write(fname,'("PDOS_S",I2.2,"_A",I4.4,".OUT")') is,ia
-    open(50,file=trim(fname),action='WRITE',form='FORMATTED')
     do ispn=1,nspinor
-      if (ispn.eq.1) then
-        t1=1.d0
-      else
-        t1=-1.d0
-      end if
       do l=0,lmax
         do m=-l,l
           lm=idxlm(l,m)
@@ -135,17 +131,24 @@ do is=1,nspecies
             end do
           end do
           call brzint(nsmdos,ngridk,nsk,ikmap,nwdos,wdos,nstsv,nstsv, &
-           e(1,1,ispn),f,gp)
+           e(1,1,ispn),f,gp) 
           do iw=1,nwdos
-            write(50,'(2G18.10)') w(iw),t1*gp(iw)
+            pdos(iw,lm) = gp(iw)/ha2ev
 ! interstitial DOS
             g(iw,ispn)=g(iw,ispn)-gp(iw)
           end do
-          write(50,'("     ")')
         end do
       end do
+      do l = 0, lmax
+        write(fname,'("PDOS_S",I2.2,"_A",I4.4,"_L",I1,"_SPIN",I1,".OUT")') is,ia,l,ispn
+        open(50,file=trim(fname),action='WRITE',form='FORMATTED')
+        do iw = 1, nwdos
+          write(50,'(7G18.10)')w(iw)*ha2ev, &
+            SUM(pdos(iw,idxlm(l,-l):idxlm(l,l))),(pdos(iw,idxlm(l,m)),m=-l,l)
+        enddo
+        close(50)
+      enddo
     end do
-    close(50)
   end do
 end do
 ! output eigenvalues of (l,m)-projection operator
@@ -174,7 +177,7 @@ do ispn=1,nspinor
     t1=-1.d0
   end if
   do iw=1,nwdos
-    write(50,'(2G18.10)') w(iw),t1*g(iw,ispn)
+    write(50,'(2G18.10)') w(iw)*ha2ev,t1*g(iw,ispn)/ha2ev
   end do
 end do
 close(50)

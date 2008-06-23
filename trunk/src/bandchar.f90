@@ -61,7 +61,7 @@ integer lmmax,l,m,lm2,lm1
 integer irc,i,j,n,isym,lspl
 integer lwork,info
 real(8) t1
-complex(8) zt1
+complex(8) zt1,zt2
 ! automatic arrays
 real(8) fr(nrcmtmax),gr(nrcmtmax),cf(3,nrcmtmax)
 ! allocatable arrays
@@ -75,6 +75,13 @@ complex(8), allocatable :: ulm(:,:,:)
 complex(8), allocatable :: h0(:,:)
 complex(8), allocatable :: h(:,:)
 complex(8), allocatable :: work(:)
+complex(8), allocatable :: y2r(:,:)
+complex(8), allocatable :: r2y(:,:)
+complex(8), allocatable :: wfmt3(:,:,:)
+complex(8), allocatable :: wfmt4(:,:,:)
+complex(8)              :: zsum
+complex(8)              :: sqrt2,isqrt2
+
 ! external functions
 complex(8) zdotc
 external zdotc
@@ -90,11 +97,70 @@ allocate(h0(lmmax,lmmax))
 allocate(h(lmmax,lmmax))
 lwork=2*lmmax
 allocate(work(lwork))
+allocate(y2r(lmmax,lmmax))
+allocate(r2y(lmmax,lmmax))
+allocate(wfmt3(lmmax,nrcmtmax,nspinor))
+allocate(wfmt4(lmmax,nrcmtmax,nspinor))
+
+bcsym = .false.
+
+!--- construct Ylm to Rlm matrix first
+!--- R_{lm} = \sum_{l'm'}y2r_{lm,l'm'}Y_{l'm'}
+y2r = dcmplx(0.d0,0.d0)
+sqrt2  = dcmplx(1.d0/sqrt(2.d0),0.d0)
+isqrt2 = dcmplx(0.d0,1.d0/sqrt(2.d0))
+
+do l = 0, lmax
+  if (l.eq.0) then
+    y2r(idxlm(0,0),idxlm(0,0)) = dcmplx(1.d0,0.d0)
+  else if (l.eq.1) then
+    y2r(idxlm(1,-1),idxlm(1,-1)) = -isqrt2
+    y2r(idxlm(1,-1),idxlm(1, 1)) = -isqrt2
+    y2r(idxlm(1, 0),idxlm(1, 0)) =  dcmplx(1.d0,0.d0)
+    y2r(idxlm(1, 1),idxlm(1,-1)) = -sqrt2
+    y2r(idxlm(1, 1),idxlm(1, 1)) =  sqrt2
+  else if (l.eq.2) then
+    y2r(idxlm(2,-2),idxlm(2,-2)) = -isqrt2
+    y2r(idxlm(2,-2),idxlm(2, 2)) =  isqrt2
+    y2r(idxlm(2,-1),idxlm(2,-1)) = -isqrt2
+    y2r(idxlm(2,-1),idxlm(2, 1)) = -isqrt2
+    y2r(idxlm(2, 0),idxlm(2, 0)) =  dcmplx(1.d0,0.d0)
+    y2r(idxlm(2, 1),idxlm(2,-1)) = -sqrt2
+    y2r(idxlm(2, 1),idxlm(2, 1)) =  sqrt2
+    y2r(idxlm(2, 2),idxlm(2,-2)) =  sqrt2
+    y2r(idxlm(2, 2),idxlm(2, 2)) =  sqrt2
+  else if (l.eq.3) then
+    y2r(idxlm(3,-3),idxlm(3,-3)) = -isqrt2
+    y2r(idxlm(3,-3),idxlm(3, 3)) = -isqrt2
+    y2r(idxlm(3,-2),idxlm(3,-2)) = -isqrt2
+    y2r(idxlm(3,-2),idxlm(3, 2)) =  isqrt2
+    y2r(idxlm(3,-1),idxlm(3,-1)) = -isqrt2
+    y2r(idxlm(3,-1),idxlm(3, 1)) = -isqrt2
+    y2r(idxlm(3, 0),idxlm(3, 0)) =  dcmplx(1.d0,0.d0)
+    y2r(idxlm(3, 1),idxlm(3,-1)) = -sqrt2
+    y2r(idxlm(3, 1),idxlm(3, 1)) =  sqrt2
+    y2r(idxlm(3, 2),idxlm(3,-2)) =  sqrt2
+    y2r(idxlm(3, 2),idxlm(3, 2)) =  sqrt2
+    y2r(idxlm(3, 3),idxlm(3,-3)) = -sqrt2
+    y2r(idxlm(3, 3),idxlm(3, 3)) =  sqrt2
+  else
+    do m = -l, l
+      lm1=idxlm(l,m)
+      y2r(lm1,lm1) = dcmplx(1.d0,0.d0)
+    enddo
+  endif
+enddo
+
+!--- invert the matrix and get Rlm to Ylm transformation
+r2y = y2r
+call invzge(r2y,lmmax)
+
 ! find the matching coefficients
 do ispn=1,nspnfv
   call match(ngk(ik,ispn),gkc(1,ik,ispn),tpgkc(1,1,ik,ispn), &
    sfacgk(1,1,ik,ispn),apwalm(1,1,1,1,ispn))
 end do
+
 if (bcsym) then
 ! construct (l,m) rotation matrix for each lattice symmetry
   zflm(:,:)=0.d0
@@ -121,6 +187,9 @@ else
   end do
   elmsym(1:lmmax,:)=0.d0
 end if
+
+bndchr = 0.d0
+
 ! begin loop over species
 do is=1,nspecies
 ! begin loop over atoms
@@ -146,6 +215,7 @@ do is=1,nspecies
          rwork,info)
       end do
     end if
+    
     done(:,:)=.false.
     do j=1,nstsv
       if (tevecsv) then
@@ -179,33 +249,59 @@ do is=1,nspecies
         call wavefmt(lradstp,lmax,is,ia,ngk(ik,1),apwalm,evecfv(1,j,1),lmmax, &
          wfmt2)
       end if
+      
+      do isym=1,nsymlat
+        
+        do ispn = 1, nspinor
+          do irc = 1, nrcmt(is)
+            call rotzflm(symlatc(1,1,isym),lmax,1,lmmax,wfmt2(:,irc,ispn),wfmt4(:,irc,ispn))
+          enddo
+        enddo
+      
+        wfmt3 = dcmplx(0.d0,0.d0)
+        do ispn = 1, nspinor
+          do irc = 1, nrcmt(is)
+	    do lm1 = 1, lmmax
+	      do lm2 = 1, lmmax
+	        wfmt3(lm1,irc,ispn) = wfmt3(lm1,irc,ispn)+r2y(lm2,lm1)*wfmt4(lm2,irc,ispn)
+	      enddo
+	    enddo 
+	  enddo
+        enddo
+      
 ! determine the band characters
-      do ispn=1,nspinor
-        do l=0,lmax
-          n=2*l+1
-          lm1=idxlm(l,-l)
-          do m=-l,l
-            lm2=idxlm(l,m)
-            do irc=1,nrcmt(is)
+        do ispn=1,nspinor
+          do l=0,lmax
+            n=2*l+1
+            lm1=idxlm(l,-l)
+            do m=-l,l
+              lm2=idxlm(l,m)
+              do irc=1,nrcmt(is)
 ! project wavefunction onto eigenvectors of h
-              zt1=zdotc(n,h(lm1,lm2),1,wfmt2(lm1,irc,ispn),1)
-              t1=dble(zt1)**2+aimag(zt1)**2
-              fr(irc)=t1*rcmt(irc,is)**2
-            end do
+                zt1=zdotc(n,h(lm1,lm2),1,wfmt3(lm1,irc,ispn),1)
+                t1=dble(zt1)**2+aimag(zt1)**2
+                fr(irc)=t1*rcmt(irc,is)**2
+              end do
 ! perform radial integral
-            call fderiv(-1,nrcmt(is),rcmt(1,is),fr,gr,cf)
-            bndchr(lm2,ias,ispn,j)=gr(nrcmt(is))
+              call fderiv(-1,nrcmt(is),rcmt(1,is),fr,gr,cf)
+              bndchr(lm2,ias,ispn,j)=bndchr(lm2,ias,ispn,j) + gr(nrcmt(is))
+            end do
           end do
         end do
-      end do
-    end do
+      
+      end do !nsymlat
+    
+    end do !j
 ! end loop over atoms
   end do
 ! end loop over species
 end do
+
+bndchr = bndchr/nsymlat 
+
 deallocate(done,rwork,apwalm,wfmt2)
 if (tevecsv) deallocate(wfmt1)
-deallocate(zflm,ulm,h0,h,work)
+deallocate(zflm,ulm,h0,h,work,wfmt3,wfmt4,r2y)
 return
 end subroutine
 !EOC

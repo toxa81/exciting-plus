@@ -89,15 +89,14 @@ else
   wfir2 = wfir1
 endif
 
-!wfmt2(:,:,:,:,ist2) = dcmplx(1.d0,0.d0)
-!wfir2(:,:,ist2) = dcmplx(1.d0,0.d0)
-
 call vnlrho(.true.,wfmt1(:,:,:,:,ist1),wfmt2(:,:,:,:,ist2),wfir1(:,:,ist1), &
   wfir2(:,:,ist2),zrhomt,zrhoir)
 
 open(50,file='ZRHO2D.OUT',action='WRITE',form='FORMATTED')
 call zplot2d(50,1,lmaxvr,lmmaxvr,zrhomt,zrhoir)
 close(50)
+
+deallocate(evecfv,evecsv,apwalm,wfmt1,wfmt2,wfir1,wfir2,zrhomt,zrhoir)
 
 return
 end subroutine

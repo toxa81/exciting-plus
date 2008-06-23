@@ -66,6 +66,7 @@ do ip=1,np
                   do l=0,lmax
                     do m=-l,l
                       lm=idxlm(l,m)
+                      !--- use simple linear interpolation: f(x+dx) = f(x)+f'dx
 		      t2 = zfmt(lm,ir,ias) + &
 		        ((zfmt(lm,ir+1,ias)-zfmt(lm,ir,ias))/(rcmt(ir+1,is)-rcmt(ir,is)))* &
 		        (r-rcmt(ir,is))

@@ -1,3 +1,7 @@
 + execution timing based on the omp_get_wtime() for main thread
 + nearest neighbours output to NN.OUT
 + eigenvectors are stored in memory and saved only once afrer SCF cycle 
++ complex charge density 2D plot (task 262)
++ for 2D plot plane definition changed from three corners to origin and two vectors
++ dos in eV and splitted to l and spin channels
++ band character in real spherical harmonics

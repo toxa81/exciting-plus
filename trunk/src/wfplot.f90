@@ -49,6 +49,7 @@ if ((task.eq.61).or.(task.eq.62).or.(task.eq.63)) then
 ! plotting a single wavefunction
   occsv(:,:)=0.d0
   occsv(ist,ik)=1.d0
+  wkpt(:) = 1.d0
 else
 ! plotting an STM image by setting occupancies to be a delta function at the
 ! Fermi energy

@@ -6,7 +6,7 @@
 !BOP
 ! !ROUTINE: plot2d
 ! !INTERFACE:
-subroutine zplot2d(fnum,nf,lmax,ld,zrfmt,zrfir)
+subroutine zplot2d(fnum,nf,lmax,ld,zfmt,zfir)
 ! !USES:
 use modmain
 ! !INPUT/OUTPUT PARAMETERS:
@@ -31,8 +31,8 @@ integer, intent(in) :: fnum
 integer, intent(in) :: nf
 integer, intent(in) :: lmax
 integer, intent(in) :: ld
-complex(8), intent(in) :: zrfmt(ld,nrcmtmax,natmtot,nf)
-complex(8), intent(in) :: zrfir(ngrtot,nf)
+complex(8), intent(in) :: zfmt(ld,nrcmtmax,natmtot,nf)
+complex(8), intent(in) :: zfir(ngrtot,nf)
 ! local variables
 integer i,ip,ip1,ip2
 real(8) vl1(3),vl2(3),vc1(3),vc2(3)
@@ -79,7 +79,7 @@ do ip2=0,np2d(2)-1
   end do
 end do
 do i=1,nf
-  call zfarray(lmax,ld,zrfmt(1,1,1,i),zrfir(1,i),ip,vpl,zfp(1,i))
+  call zfarray(lmax,ld,zfmt(1,1,1,i),zfir(1,i),ip,vpl,zfp(1,i))
 end do
 write(fnum,'(2I6," : grid size")') np2d(1),np2d(2)
 ip=0
