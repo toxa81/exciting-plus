@@ -6,3 +6,4 @@
 + dos in eV and splitted to l and spin channels
 + band character in real spherical harmonics
 + DFT scf loop moved to separate file
++ alternative way to plot bands

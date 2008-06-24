@@ -142,8 +142,8 @@
       
       open(50,file='BNDS4.DAT',form='formatted',status='replace')
       do i = 1, nlines
-        write(50,*)lines(1,i),lines(2,i)*ha2ev
-        write(50,*)lines(3,i),lines(4,i)*ha2ev
+        write(50,*)lines(1,i),emin+1.d-4
+        write(50,*)lines(3,i),emax-1.d-4
         write(50,*)
       enddo
       write(50,*)0.d0,0.d0
