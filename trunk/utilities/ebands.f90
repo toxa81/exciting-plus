@@ -1,10 +1,10 @@
       program  ebands
       implicit none
       
-      integer              :: lmmax,natmtot,nspinor,nstsv,nkpt
+      integer              :: lmmax,natmtot,nspinor,nstsv,nkpt,nlines
       integer              :: lm,ias,ispn,ist,ik
       real*8  ,allocatable :: bndchr(:,:,:,:,:)
-      real*8  ,allocatable :: dpp1d(:),e(:,:),w(:,:)
+      real*8  ,allocatable :: dpp1d(:),e(:,:),w(:,:),lines(:,:)
       integer ,allocatable :: orb(:,:),tmp(:)
       integer              :: i,j
       real*8               :: scale,emin,emax,wmax,wmax1
@@ -26,6 +26,9 @@
                       ias=1,natmtot),ispn=1,nspinor),ist=1,nstsv)
       enddo
       close(50)
+      
+      nlines = 2
+      allocate(lines(4,nlines))
       
       orb = 0
       write(*,*)'Number of atoms: ',natmtot
@@ -115,18 +118,38 @@
       close(53) 
       
       open(50,file='BNDS.GNU',form='formatted',status='replace')
-      write(50,*)'set term postscript color'
+      write(50,*)'set term postscript portrait'
       write(50,*)'set noxzeroaxis'
       write(50,*)'set tics out'
       write(50,*)'set noxtics'
       write(50,*)'set nokey'
-      write(50,'("set yrange [",F12.6,":",F12.6,"]")')emin,emax      
-      write(50,'("set xrange [",F12.6,":",F12.6,"]")')0.d0,dpp1d(nkpt)
+      write(50,'(" set yrange [",F12.6,":",F12.6,"]")')emin,emax      
+      write(50,'(" set xrange [",F12.6,":",F12.6,"]")')0.d0,dpp1d(nkpt)
       write(50,*)"set ylabel 'Energy (eV)'"
       write(50,*)"set output 'bnds.ps'"      
-      write(50,*)"plot 'BNDS.DAT' with line 1, 'BNDS1.DAT' with line 1, &
-                     & 'BNDS2.DAT' with line 1, 'BNDS3.DAT' with line 1"
+      write(50,'("plot ''BNDS.DAT'' with line 1, ''BNDS1.DAT'' with line 1, &
+                 & ''BNDS2.DAT'' with line 1, ''BNDS3.DAT'' with line 1, &
+                 & ''BNDS4.DAT'' with line 2")')
       close(50)
+      
+      open(50,file='BANDLINES.OUT',form='formatted',status='old')
+      do i = 1, nlines
+        read(50,*)lines(1,i),lines(2,i)
+        read(50,*)lines(3,i),lines(4,i)
+        read(50,*)
+      enddo
+      close(50)
+      
+      open(50,file='BNDS4.DAT',form='formatted',status='replace')
+      do i = 1, nlines
+        write(50,*)lines(1,i),lines(2,i)*ha2ev
+        write(50,*)lines(3,i),lines(4,i)*ha2ev
+        write(50,*)
+      enddo
+      write(50,*)0.d0,0.d0
+      write(50,*)dpp1d(nkpt),0.d0
+      close(50)
+     
       
       end
       
