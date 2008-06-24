@@ -32,7 +32,7 @@ real(8) emin,emax,sum
 character(256) fname
 ! allocatable arrays
 real(8), allocatable :: evalfv(:,:)
-real(8), allocatable :: bndchr(:,:,:,:)
+real(8), allocatable :: bndchr(:,:,:,:,:)
 real(8), allocatable :: elmsym(:,:)
 real(8), allocatable :: e(:,:)
 ! low precision for band character array saves memory
@@ -50,6 +50,7 @@ lmmax=(lmax+1)**2
 ! allocate band character array if required
 if (task.eq.21) then
   allocate(bc(0:lmax,natmtot,nstsv,nkpt))
+  allocate(bndchr(lmmax,natmtot,nspinor,nstsv,nkpt))
 end if
 ! read density and potentials from file
 call readstate
@@ -70,7 +71,7 @@ emax=-1.d5
 ! begin parallel loop over k-points
 !$OMP PARALLEL DEFAULT(SHARED) &
 !$OMP PRIVATE(evalfv,evecfv,evecsv) &
-!$OMP PRIVATE(bndchr,elmsym) &
+!$OMP PRIVATE(elmsym) &
 !$OMP PRIVATE(ispn,ist,is,ia,ias,l,m,lm,sum)
 !$OMP DO
 do ik=1,nkpt
@@ -78,7 +79,6 @@ do ik=1,nkpt
   allocate(evecfv(nmatmax,nstfv,nspnfv))
   allocate(evecsv(nstsv,nstsv))
   if (task.eq.21) then
-    allocate(bndchr(lmmax,natmtot,nspinor,nstsv))
     allocate(elmsym(lmmax,natmtot))
   end if
 !$OMP CRITICAL
@@ -96,7 +96,7 @@ do ik=1,nkpt
   end do
 ! compute the band characters if required
   if (task.eq.21) then
-    call bandchar(lmax,ik,evecfv,evecsv,lmmax,bndchr,elmsym)
+    call bandchar(lmax,ik,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),elmsym)
 ! average band character over spin and m for all atoms
     do is=1,nspecies
       do ia=1,natoms(is)
@@ -107,7 +107,7 @@ do ik=1,nkpt
             do m=-l,l
               lm=idxlm(l,m)
               do ispn=1,nspinor
-                sum=sum+bndchr(lm,ias,ispn,ist)
+                sum=sum+bndchr(lm,ias,ispn,ist,ik)
               end do
             end do
             bc(l,ias,ist,ik)=real(sum)
@@ -118,7 +118,7 @@ do ik=1,nkpt
   end if
   deallocate(evalfv,evecfv,evecsv)
   if (task.eq.21) then
-    deallocate(bndchr,elmsym)
+    deallocate(elmsym)
   end if
 ! end loop over k-points
 end do
@@ -175,8 +175,24 @@ end do
 close(50)
 write(*,'(" vertex location lines written to BANDLINES.OUT")')
 write(*,*)
-deallocate(e)
+
 if (task.eq.21) deallocate(bc)
+
+if (task.eq.21) then
+  !--- write band-character information
+  open(50,file='BANDS.OUT',action='WRITE',form='FORMATTED')
+  write(50,*)lmmax,natmtot,nspinor,nstsv,nkpt
+  do ik = 1, nkpt
+    write(50,*)dpp1d(ik)
+    write(50,*)(e(ist,ik),ist=1,nstsv)
+    write(50,*)((((bndchr(lm,ias,ispn,ist,ik),lm=1,lmmax), &
+               ias=1,natmtot),ispn=1,nspinor),ist=1,nstsv)
+  enddo
+  close(50)
+endif
+
+deallocate(e,bndchr)
+
 return
 end subroutine
 !EOC

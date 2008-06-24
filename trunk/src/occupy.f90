@@ -84,6 +84,20 @@ do ik=1,nkpt
   end if
 end do
 fermidos=fermidos*occmax/2.d0
+
+!--- find band gap
+if (.not.spinpol) then
+  !--- number of electrons should be even
+  if (mod(nint(chgval),2).eq.0) then
+    ist = nint(chgval)/2
+    e0 = maxval(evalsv(ist,:))
+    e1 = minval(evalsv(ist+1,:))
+    if (e1.gt.e0) then
+      write(60,'("Energy gap: ",F8.4," (eV)")')(e1-e0)*ha2ev
+    endif
+  endif
+endif
+
 return
 end subroutine
 !EOC

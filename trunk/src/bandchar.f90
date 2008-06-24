@@ -250,7 +250,7 @@ do is=1,nspecies
          wfmt2)
       end if
       
-      do isym=1,nsymlat
+      do isym=1,1!nsymlat
         
         do ispn = 1, nspinor
           do irc = 1, nrcmt(is)
@@ -297,7 +297,7 @@ do is=1,nspecies
 ! end loop over species
 end do
 
-bndchr = bndchr/nsymlat 
+!bndchr = bndchr/nsymlat 
 
 deallocate(done,rwork,apwalm,wfmt2)
 if (tevecsv) deallocate(wfmt1)
