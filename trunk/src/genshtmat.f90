@@ -48,6 +48,12 @@ if (allocated(zfshtapw)) deallocate(zfshtapw)
 allocate(zfshtapw(lmmaxapw,lmmaxapw))
 if (allocated(zfshtvr)) deallocate(zfshtvr)
 allocate(zfshtvr(lmmaxvr,lmmaxvr))
+
+if (allocated(rzbshtapw)) deallocate(rzbshtapw)
+allocate(rzbshtapw(lmmaxapw,lmmaxapw))
+if (allocated(rzfshtapw)) deallocate(rzfshtapw)
+allocate(rzfshtapw(lmmaxapw,lmmaxapw))
+
 ! generate spherical covering set
 call sphcover(lmmaxapw,tp)
 ! generate real and complex spherical harmonics and set the backward SHT arrays
@@ -56,6 +62,9 @@ do itp=1,lmmaxapw
   rbshtapw(itp,1:lmmaxapw)=rlm(1:lmmaxapw)
   call genylm(lmaxapw,tp(1,itp),ylm)
   zbshtapw(itp,1:lmmaxapw)=ylm(1:lmmaxapw)
+  
+  rzbshtapw(itp,1:16) = rlm(1:16)
+  rzbshtapw(itp,17:lmmaxapw) = ylm(17:lmmaxapw)
 end do
 ! find the forward SHT arrays
 ! real, lmaxvr
@@ -112,6 +121,26 @@ if (info.ne.0) then
   write(*,*)
   stop
 end if
+
+! complex, lmaxapw
+rzfshtapw(:,:)=rzbshtapw(:,:)
+call zgetrf(lmmaxapw,lmmaxapw,rzfshtapw,lmmaxapw,ipiv,info)
+if (info.ne.0) then
+  write(*,*)
+  write(*,'("Error(genshtmat): zgetrf returned non-zero info : ",I8)') info
+  write(*,'(" => improper spherical covering for lmaxapw")')
+  write(*,*)
+  stop
+end if
+call zgetri(lmmaxapw,rzfshtapw,lmmaxapw,ipiv,zwork,lwork,info)
+if (info.ne.0) then
+  write(*,*)
+  write(*,'("Error(genshtmat): zgetri returned non-zero info : ",I8)') info
+  write(*,'(" => improper spherical covering for lmaxapw")')
+  write(*,*)
+  stop
+end if
+
 deallocate(tp,rlm,ylm,ipiv,work,zwork)
 return
 end subroutine
