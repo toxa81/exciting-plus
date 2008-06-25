@@ -11,7 +11,7 @@
       real*8, parameter    :: ha2ev = 27.21138386d0            
       
       open(50,file='BANDS.OUT',form='formatted',status='old')
-      read(50,*)lmmax,natmtot,nspinor,nstsv,nkpt
+      read(50,*)lmmax,natmtot,nspinor,nstsv,nkpt,nlines
       allocate(bndchr(lmmax,natmtot,nspinor,nstsv,nkpt))
       allocate(dpp1d(nkpt))
       allocate(e(nstsv,nkpt))
@@ -27,7 +27,6 @@
       enddo
       close(50)
       
-      nlines = 2
       allocate(lines(4,nlines))
       
       orb = 0
@@ -61,10 +60,21 @@
       write(*,*)'Input energy interval (emin emax) [eV]'
       read(*,*)emin,emax
       
-      w = 0.d0
-      
       ispn = 1
       
+      w = 0.d0
+      do ik = 1, nkpt
+      do ist = 1, nstsv
+        do lm = 1, lmmax
+        do ias = 1, natmtot
+          w(ist,ik) = w(ist,ik) + bndchr(lm,ias,ispn,ist,ik)
+        enddo
+        enddo
+      enddo
+      enddo
+      wmax = maxval(w(:,:))
+      
+      w = 0.d0
       do ik = 1, nkpt
       do ist = 1, nstsv
         do lm = 1, lmmax
@@ -75,25 +85,20 @@
       enddo
       enddo
       
-      wmax = maxval(w(:,:))
-      
-      wmax1 = 0.d0
-      do ik = 1, nkpt
-      do ist = 1, nstsv
-        if (e(ist,ik).ge.emin.and.e(ist,ik).le.emax) wmax1 = max(wmax1,w(ist,ik))
-      enddo
-      enddo
+      !wmax = maxval(w(:,:))
+      !wmax1 = 0.d0
+      !do ik = 1, nkpt
+      !do ist = 1, nstsv
+      !    if (e(ist,ik).ge.emin.and.e(ist,ik).le.emax) wmax1 = max(wmax1,w(ist,ik))
+      !enddo
+      !enddo
+      !write(*,*)'Info: ratio of character weights:',wmax1/wmax
       
       scale = 1.d0
       write(*,*)'Input maximum line width [eV]'
       read(*,*)scale
       
-      if (wmax.lt.1.0d-6) then
-        scale = 0.d0
-      else
-        write(*,*)'Info: ratio of character weights:',wmax1/wmax
-        scale = 0.5d0*scale/wmax
-      endif
+      scale = 0.5d0*scale/wmax
       
       open(50,file='BNDS.DAT',form='formatted',status='replace')
       open(51,file='BNDS1.DAT',form='formatted',status='replace')

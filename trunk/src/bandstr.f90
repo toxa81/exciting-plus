@@ -181,7 +181,7 @@ if (task.eq.21) deallocate(bc)
 if (task.eq.21) then
   !--- write band-character information
   open(50,file='BANDS.OUT',action='WRITE',form='FORMATTED')
-  write(50,*)lmmax,natmtot,nspinor,nstsv,nkpt
+  write(50,*)lmmax,natmtot,nspinor,nstsv,nkpt,nvp1d
   do ik = 1, nkpt
     write(50,*)dpp1d(ik)
     write(50,*)(e(ist,ik),ist=1,nstsv)
