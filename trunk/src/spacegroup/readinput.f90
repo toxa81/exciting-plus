@@ -3,6 +3,9 @@ use modmain
 implicit none
 ! local variables
 integer is,ip
+logical angstrom
+real(8), parameter :: au2ang=0.5291772108d0
+
 open(50,file='spacegroup.in',action='READ',status='OLD',form='FORMATTED')
 ! read the Hermann-Mauguin symbol
 read(50,*) hrmg
@@ -19,6 +22,7 @@ if ((ncell(1).lt.1).or.(ncell(2).lt.1).or.(ncell(3).lt.1)) then
   stop
 end if
 read(50,*) primcell
+read(50,*) angstrom
 read(50,*) nspecies
 if (nspecies.le.0) then
   write(*,*)
@@ -56,6 +60,11 @@ do is=1,nspecies
   end do
 end do
 close(50)
+if (angstrom) then
+  a = a/au2ang
+  b = b/au2ang
+  c = c/au2ang
+endif     
 return
 end subroutine
 

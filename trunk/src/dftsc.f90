@@ -10,7 +10,7 @@ real(8)              :: f(n)
 
 ! local variables
 logical exist
-integer ik,is,ia,idm,i
+integer ik,is,ia,idm
 real(8) dv,timetot
 ! allocatable arrays
 real(8), allocatable    :: evalfv(:,:,:)
@@ -53,7 +53,6 @@ do iscl=1,maxscl
 ! compute the Hamiltonian radial integrals
   call hmlrad
 
-!do i = 1, 40
 ! begin parallel loop over k-points
 !$OMP PARALLEL DEFAULT(SHARED)
 !$OMP DO
@@ -69,6 +68,14 @@ do iscl=1,maxscl
   end do
 !$OMP END DO
 !$OMP END PARALLEL
+
+do ik=1,nkpt
+! write the eigenvalues/vectors to file
+  call putevalfv(ik,evalfv(:,:,ik))
+  call putevalsv(ik,evalsv(1,ik))
+  call putevecfv(ik,evecfv(:,:,:,ik))
+  call putevecsv(ik,evecsv(:,:,ik))
+enddo
 
 ! find the occupation numbers and Fermi energy
   call occupy
@@ -116,8 +123,6 @@ do iscl=1,maxscl
   if (spinpol) call moment
 ! normalise the density
   call rhonorm
-!  enddo
-!  return
   
 ! LDA+U
   if (ldapu.ne.0) then
@@ -231,13 +236,13 @@ if (maxscl.gt.1) then
   write(60,'("Wrote STATE.OUT")')
 end if
 
-do ik=1,nkpt
-! write the eigenvalues/vectors to file
-  call putevalfv(ik,evalfv(:,:,ik))
-  call putevalsv(ik,evalsv(1,ik))
-  call putevecfv(ik,evecfv(:,:,:,ik))
-  call putevecsv(ik,evecsv(:,:,ik))
-enddo
+!do ik=1,nkpt
+!! write the eigenvalues/vectors to file
+!  call putevalfv(ik,evalfv(:,:,ik))
+!  call putevalsv(ik,evalsv(1,ik))
+!  call putevecfv(ik,evecfv(:,:,:,ik))
+!  call putevecsv(ik,evecsv(:,:,ik))
+!enddo
 
 deallocate(evalfv,evecfv,evecsv)
 
