@@ -6,7 +6,6 @@
 ! main routine for the EXCITING code
 program main
 use modmain
-use response
 implicit none
 ! local variables
 integer itask
@@ -83,7 +82,7 @@ do itask=1,ntasks
   case(300)
     call rdmft
   case(400)
-    call zrhogqint
+    call response
   case default
     write(*,*)
     write(*,'("Error(main): task not defined : ",I8)') task
