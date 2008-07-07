@@ -41,7 +41,7 @@ do is = 1, nspecies
     t1 = gr(nr)
     call fderiv(-1,nr,rcmt(:,is),fr2,gr,cf)
     t2 = gr(nr)
-    zsum = zsum + (fourpi/omega)*dconjg(sfacgq0(ias))*dcmplx(t1,t2)
+    zsum = zsum + fourpi*dconjg(sfacgq0(ias))*dcmplx(t1,t2)
   enddo !ia
 enddo !is
 
@@ -50,9 +50,9 @@ do ir=1,ngrtot
   zrhoir(ir)=zrhoir(ir)*cfunir(ir)
 enddo
 call zfftifc(3,ngrid,-1,zrhoir)
-zsum = zsum + zrhoir(igfft(ig))
+zsum = zsum + zrhoir(igfft(ig))*omega
 
-write(*,*)'zsum=',abs(zsum)
+write(*,*)'zsum=',zsum
 
 deallocate(fr1,fr2,gr,cf)
 return

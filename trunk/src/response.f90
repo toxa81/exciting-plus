@@ -11,9 +11,9 @@ complex(8), allocatable :: wfir1(:,:,:),wfir2(:,:,:)
 complex(8), allocatable :: zrhomt(:,:,:)
 complex(8), allocatable :: zrhoir(:)
 
-real(8)                 :: vq0l(3) = (/0.d0,0.d0,0.d0/)
+real(8)                 :: vq0l(3) = (/0.25d0,1.d0,0.d0/)
 real(8)                 :: vq0c(3),vkq0l(3),t1
-integer                 :: ik1,ik2,ist1,ist2,ik,jk,ig,ir,is
+integer                 :: ik1,ik2,ist1,ist2,ik,jk,ig,ir,is,i,j,i1
 integer                 :: vgkq0l(3)
 integer   , allocatable :: k1(:)
 real(8)   , allocatable :: vgq0c(:,:)
@@ -27,10 +27,44 @@ integer ,allocatable    :: igkignr(:,:)
 real(8) ,allocatable    :: vgklnr(:,:,:),vgkcnr(:,:),gkcnr(:,:),tpgkcnr(:,:,:)
 complex(8) ,allocatable :: sfacgknr(:,:,:)
 real(8) ,external       :: r3taxi
+real(8) ,allocatable    :: occsvnr(:,:)
 
+! number of G-shells for response
+integer                 :: ngsh_resp
+! number of G-vectors for response (depens on ngsh_resp) 
+integer                 :: ngvec_resp
+! number of n,n' combinations of band-indexes for each k-point
+integer ,allocatable    :: num_nnp(:)
+! maximum num_nnp through all k-points 
+integer                 :: max_num_nnp
+! pair of n,n' band indexes for each k-point
+integer ,allocatable    :: nnp(:,:,:)
+! index to G-vector whcih reduces k+q0 to first BZ 
+integer                 :: igkq0
+! array of Fourier coefficients of complex charge density
+complex(8) ,allocatable :: zrhofc(:,:)
 ! initialise universal variables
 call init0
 call init1
+
+ngsh_resp = 4
+! find number of G-vectors for response by given number of G-shells
+ngvec_resp = 1
+i = 1
+j = 1
+do while (i.le.ngsh_resp)
+  if (abs(gc(j+1)-gc(j)).gt.1d-10) then
+    i = i + 1
+  endif
+  j = j + 1
+enddo 
+ngvec_resp = j - 1
+
+write(*,*)'Total number of G-vectors',ngvec_resp
+do i = 1, ngvec_resp
+  write(*,*)'G-vec:',i,'Lattice (Cartesian) coordinates:',ivg(:,i),' length:',gc(i)
+enddo
+
 
 allocate(k1(nkptnr))
 allocate(vgq0c(3,ngvec))
@@ -47,7 +81,7 @@ allocate(tpgkcnr(2,ngkmax,nkptnr))
 allocate(ngknr(nkptnr))
 allocate(sfacgknr(ngkmax,natmtot,nkptnr))
 allocate(igkignr(ngkmax,nkptnr))
-
+allocate(occsvnr(nstsv,nkptnr))
 
 !--- get q0 in Cartesian coordinates
 call r3mv(bvec,vq0l,vq0c)
@@ -75,6 +109,18 @@ do ik = 1, nkptnr
 10 continue
 enddo
 
+! check if we have enough G-shells to bring k+q0 back to first BZ
+do ig = 1, ngvec_resp
+  if (sum(abs(vgkq0l(:)-ivg(:,ig))).eq.0) then
+    igkq0 = ig
+    goto 20
+  endif
+enddo
+write(*,*)'Not enough G-shells to bring k+q0 to first BZ'
+write(*,*)'Hint: increase number of G-shells'
+stop
+20 continue
+
 do ik = 1, nkptnr
   write(*,*)ik,k1(ik)
 enddo
@@ -95,10 +141,10 @@ do ig = 1, ngvec
   call genylm(lmaxvr,tpgq0(:,ig),ylmgq0(:,ig))
 enddo
 
-!--- generate structure factor for G+q0 vectors
+! generate structure factor for G+q0 vectors
 call gensfacgp(ngvec,vgq0c,ngvec,sfacgq0)
 
-!--- generate Bessel functions
+! generate Bessel functions
 do ig = 1, ngvec
   do is = 1, nspecies
     do ir = 1, nrcmt(is)
@@ -110,6 +156,44 @@ do ig = 1, ngvec
   enddo
 enddo
 
+! get occupancy of states
+do ik=1,nkptnr
+  call getoccsv(vklnr(1,ik),occsvnr(1,ik))
+enddo
+
+! setup n,n' stuff
+! first, find the maximum size of nnp array
+max_num_nnp=0
+allocate(num_nnp(nkptnr))
+do ik=1,nkptnr
+  jk=k1(ik)
+  i1=0
+  do i=1,nstsv
+    do j=1,nstsv
+      if (abs(occsvnr(i,ik)-occsvnr(j,jk)).gt.1d-8) i1=i1+1
+    enddo
+  enddo
+  num_nnp(ik)=i1
+  max_num_nnp=max(max_num_nnp,i1)
+enddo
+write(*,*)"maximum number of n,n'' pairs:",max_num_nnp
+allocate(nnp(nkptnr,max_num_nnp,2))
+! second, setup the nnp array
+do ik=1,nkptnr
+  jk=k1(ik)
+  i1=0
+  do i=1,nstsv
+    do j=1,nstsv
+      if (abs(occsvnr(i,ik)-occsvnr(j,jk)).gt.1d-8) then
+        i1=i1+1
+        nnp(ik,i1,1)=i
+        nnp(ik,i1,2)=j
+      endif
+    enddo
+  enddo
+enddo
+
+allocate(zrhofc(ngvec_resp,max_num_nnp))
 
 
 allocate(evecfv(nmatmax,nstfv))
@@ -142,7 +226,7 @@ call genapwfr
 ! generate the local-orbital radial functions
 call genlofr
 
-do ik = 1, 1 !nkptnr
+do ik = 1, nkptnr
   write(*,*)'k-point',ik
   
   jk = k1(ik)
@@ -159,15 +243,15 @@ do ik = 1, 1 !nkptnr
   call genwfsv(.false.,ngknr(jk),igkignr(:,jk),evalsv(1,1),apwalm,evecfv, &
     evecsv,wfmt2,wfir2)
   
-  do ist1 = 1, 1
-  do ist2 = 1, nstsv
+  do i=1,num_nnp(ik)
+    ist1=nnp(ik,i,1)
+    ist2=nnp(ik,i,2)
     write(*,*)'i1=',ist1,'i2=',ist2
     call vnlrho(.true.,wfmt1(:,:,:,:,ist1),wfmt2(:,:,:,:,ist2),wfir1(:,:,ist1), &
       wfir2(:,:,ist2),zrhomt,zrhoir)
-    do ig = 1, 1                                                                                                                                   
+    do ig = 1, 1
       call zrhoft(zrhomt,zrhoir,jlgq0r(:,:,:,ig),ylmgq0(:,ig),sfacgq0(ig,:))
     enddo
-  enddo 
   enddo
   
 enddo !ik
