@@ -43,27 +43,42 @@ integer ,allocatable    :: nnp(:,:,:)
 integer                 :: igkq0
 ! array of Fourier coefficients of complex charge density
 complex(8) ,allocatable :: zrhofc(:,:)
+
 ! initialise universal variables
 call init0
 call init1
 
-ngsh_resp = 4
+ngsh_resp=4
+
+open(50,file='RESPONSE.OUT',form='formatted',status='replace')
+
+if (task.eq.400) then
+  write(50,'("Calculation of matrix elements " &
+    & "<psi_{n,k}|e^{i(G+q)x}|psi_{n'',k+q}>")')
+endif
+
 ! find number of G-vectors for response by given number of G-shells
-ngvec_resp = 1
-i = 1
-j = 1
+ngvec_resp=1
+i=1
+j=1
 do while (i.le.ngsh_resp)
   if (abs(gc(j+1)-gc(j)).gt.1d-10) then
-    i = i + 1
+    i=i+1
   endif
-  j = j + 1
+  j=j+1
 enddo 
-ngvec_resp = j - 1
+ngvec_resp=j-1
 
-write(*,*)'Total number of G-vectors',ngvec_resp
-do i = 1, ngvec_resp
-  write(*,*)'G-vec:',i,'Lattice (Cartesian) coordinates:',ivg(:,i),' length:',gc(i)
+write(50,*)
+write(50,'("Number of G-shells for response calculation:",I4)')ngsh_resp
+write(50,'("Number of G-vectors for response calculation:",I4)')ngvec_resp
+write(50,*)
+write(50,'("G-vec.   lat.coord.    length")')
+write(50,'("-----------------------------")')
+do ig=1,ngvec_resp
+  write(50,'(1X,I4,2X,3I4,1X,G18.10)')ig,ivg(:,ig),gc(ig)
 enddo
+stop
 
 
 allocate(k1(nkptnr))
