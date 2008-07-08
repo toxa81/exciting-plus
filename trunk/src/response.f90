@@ -12,9 +12,9 @@ complex(8), allocatable :: zrhomt(:,:,:)
 complex(8), allocatable :: zrhoir(:)
 
 real(8)                 :: vq0l(3) = (/0.25d0,1.d0,0.d0/)
-real(8)                 :: vq0c(3),vkq0l(3),t1
+real(8)                 :: vq0c(3),vkq0l(3),t1,vq0rl(3),vq0rc(3)
 integer                 :: ik1,ik2,ist1,ist2,ik,jk,ig,ir,is,i,j,i1
-integer                 :: vgkq0l(3)
+integer                 :: vgkq0l(3),vgq0l(3)
 integer   , allocatable :: k1(:)
 real(8)   , allocatable :: vgq0c(:,:)
 real(8)   , allocatable :: gq0(:)
@@ -35,20 +35,25 @@ integer                 :: ngsh_resp
 integer                 :: ngvec_resp
 ! number of n,n' combinations of band-indexes for each k-point
 integer ,allocatable    :: num_nnp(:)
-! maximum num_nnp through all k-points 
+! maximum num_nnp over all k-points 
 integer                 :: max_num_nnp
 ! pair of n,n' band indexes for each k-point
 integer ,allocatable    :: nnp(:,:,:)
-! index to G-vector whcih reduces k+q0 to first BZ 
-integer                 :: igkq0
+! index to G-vector whcih reduces q0 to first BZ 
+integer                 :: igq0
 ! array of Fourier coefficients of complex charge density
 complex(8) ,allocatable :: zrhofc(:,:)
+
+real(8) ,allocatable    :: docc(:,:)
+integer    ,allocatable :: gshell(:)
 
 ! initialise universal variables
 call init0
 call init1
 
 ngsh_resp=4
+
+allocate(gshell(ngvec))
 
 open(50,file='RESPONSE.OUT',form='formatted',status='replace')
 
@@ -57,12 +62,13 @@ if (task.eq.400) then
     & "<psi_{n,k}|e^{i(G+q)x}|psi_{n'',k+q}>")')
 endif
 
-! find number of G-vectors for response by given number of G-shells
+! find number of G-vectors by given number of G-shells
 ngvec_resp=1
 i=1
 j=1
 do while (i.le.ngsh_resp)
-  if (abs(gc(j+1)-gc(j)).gt.1d-10) then
+  gshell(j)=i
+  if (abs(gc(j+1)-gc(j)).gt.epslat) then
     i=i+1
   endif
   j=j+1
@@ -70,16 +76,14 @@ enddo
 ngvec_resp=j-1
 
 write(50,*)
-write(50,'("Number of G-shells for response calculation:",I4)')ngsh_resp
-write(50,'("Number of G-vectors for response calculation:",I4)')ngvec_resp
+write(50,'("Number of G-shells for response calculation  :",I4)')ngsh_resp
+write(50,'("Number of G-vectors for response calculation :",I4)')ngvec_resp
 write(50,*)
-write(50,'("G-vec.   lat.coord.    length")')
-write(50,'("-----------------------------")')
+write(50,'("  G-vec.       lat.coord.      length(1/a.u.) shell")')
+write(50,'(" ---------------------------------------------------")')
 do ig=1,ngvec_resp
-  write(50,'(1X,I4,2X,3I4,1X,G18.10)')ig,ivg(:,ig),gc(ig)
+  write(50,'(2X,I4,4X,3I5,4X,F12.6,5x,I4)')ig,ivg(:,ig),gc(ig),gshell(ig)
 enddo
-stop
-
 
 allocate(k1(nkptnr))
 allocate(vgq0c(3,ngvec))
@@ -98,61 +102,80 @@ allocate(sfacgknr(ngkmax,natmtot,nkptnr))
 allocate(igkignr(ngkmax,nkptnr))
 allocate(occsvnr(nstsv,nkptnr))
 
-!--- get q0 in Cartesian coordinates
-call r3mv(bvec,vq0l,vq0c)
-write(*,*)'q-vector in lattice coordinates:',vq0l
-write(*,*)'q-vector in Cartesian coordinates:',vq0c
+! find G-vector which brings q0 to first BZ
+vgq0l(:)=floor(vq0l(:))
 
-do ik = 1, nkptnr
-  !--- k+q0 vector
-  vkq0l(:) = vklnr(:,ik) + vq0l(:)
-  vgkq0l(:) = floor(vkq0l(:))
-  write(*,*)'k-point:',ik,' lattice coordinates:',vklnr(:,ik)
-  write(*,*)'k+q0, lattice coordinates:',vkq0l(:)
-  write(*,*)'G0, lattice coordinates:',vgkq0l(:)
-  vkq0l(:) = vkq0l(:) - vgkq0l(:)
-  write(*,*)'k+q0 in BZ, lattice coordinates:',vkq0l(:)
-  !--- search for k' point 
-  do jk = 1, nkptnr
+! reduce q0 vector fo first BZ
+vq0rl(:)=vq0l(:)-vgq0l(:)
+
+! check if we have enough G-shells to bring q0 back to first BZ
+do ig=1,ngvec_resp
+  if (sum(abs(vgq0l(:)-ivg(:,ig))).eq.0) then
+    igq0=ig
+    goto 20
+  endif
+enddo
+write(*,*)
+write(*,'("Error(response): not enough G-vectors to reduce q-vector to first BZ")')
+write(*,'(" Increase number of G-shells")')
+write(*,*)
+stop
+20 continue
+
+! get q0 and reduced q0 in Cartesian coordinates
+call r3mv(bvec,vq0l,vq0c)
+call r3mv(bvec,vq0rl,vq0rc)
+
+write(50,*)
+write(50,'("q-vector in lattice coordinates              : ",3G18.10)')vq0l
+write(50,'("q-vector in Cartesian coordinates (1/a.u.)   : ",3G18.10)')vq0c
+write(50,'("q-vector length (1/a.u.)                     : ",G18.10)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)
+write(50,'("q-vector length (1/A)                        : ",G18.10)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)/0.529177d0
+write(50,'("G-vector to reduce q to first BZ (lat.coord.): ",3I4)')vgq0l
+write(50,'("Index of G-vector                            : ",I4)')igq0
+write(50,'("Reduced q-vector (lat.coord.)                : ",3G18.10)')vq0rl
+
+! find k+q and reduce them to first BZ (this is required to utilize the 
+!   periodical property of Bloch-states: |k>=|k+K>, where K is
+!   any vector of reciprocal lattice)
+do ik=1,nkptnr
+! k+q vector
+  vkq0l(:)=vklnr(:,ik)+vq0l(:)
+! K vector
+  vgkq0l(:)=floor(vkq0l(:))
+!-  write(*,*)'k-point:',ik,' lattice coordinates:',vklnr(:,ik)
+!-  write(*,*)'k+q0, lattice coordinates:',vkq0l(:)
+!-  write(*,*)'G0, lattice coordinates:',vgkq0l(:)
+! reduced k+q vector: k'=k+q-K
+  vkq0l(:)=vkq0l(:)-vgkq0l(:)
+!-  write(*,*)'k+q0 in BZ, lattice coordinates:',vkq0l(:)
+! search for index of reduced k+q vector 
+  do jk=1,nkptnr
     if (r3taxi(vklnr(:,jk),vkq0l).lt.epslat) then
-      k1(ik) = jk
+      k1(ik)=jk
       goto 10
-     endif
+    endif
   enddo
-  write(*,'("Error: k'' point not found")')
+  write(*,*)
+  write(*,'("Error(response): index of reduced k+q point is not found")')
+  write(*,'(" Check q-vector coordinates")')
+  write(*,*)
   stop
 10 continue
 enddo
 
-! check if we have enough G-shells to bring k+q0 back to first BZ
-do ig = 1, ngvec_resp
-  if (sum(abs(vgkq0l(:)-ivg(:,ig))).eq.0) then
-    igkq0 = ig
-    goto 20
-  endif
-enddo
-write(*,*)'Not enough G-shells to bring k+q0 to first BZ'
-write(*,*)'Hint: increase number of G-shells'
-stop
-20 continue
-
-do ik = 1, nkptnr
-  write(*,*)ik,k1(ik)
+! generate G+k vectors for entire BZ (this is required to compute wave-functions at each k-point)
+do ik=1,nkptnr
+  call gengpvec(vklnr(1,ik),vkcnr(1,ik),ngknr(ik),igkignr,vgklnr(1,1,ik),vgkcnr,gkcnr(1,ik),tpgkcnr(1,1,ik))
+  call gensfacgp(ngknr(ik),vgkcnr,ngkmax,sfacgknr(1,1,ik))
 enddo
 
-!--- generate G+k vectors for entire BZ
-do ik = 1, nkptnr
-  call gengpvec(vklnr(:,ik),vkcnr(:,ik),ngknr(ik),igkignr,vgklnr(:,:,ik),vgkcnr,gkcnr(:,ik),tpgkcnr(:,:,ik))
-  call gensfacgp(ngknr(ik),vgkcnr,ngkmax,sfacgknr(:,:,ik))
-enddo
-
-
-!--- generate G+q0 vectors
-do ig = 1, ngvec
-  vgq0c(:,ig) = vgc(:,ig) + vq0c(:)
-  !--- get spherical coordinates and length of G+q0
+! generate G+q0 vectors
+do ig=1,ngvec
+  vgq0c(:,ig)=vgc(:,ig)+vq0rc(:)
+! get spherical coordinates and length of G+q0
   call sphcrd(vgq0c(:,ig),gq0(ig),tpgq0(:,ig))
-  !--- generate spherical harmonics for G+q0
+! generate spherical harmonics for G+q0
   call genylm(lmaxvr,tpgq0(:,ig),ylmgq0(:,ig))
 enddo
 
@@ -160,10 +183,10 @@ enddo
 call gensfacgp(ngvec,vgq0c,ngvec,sfacgq0)
 
 ! generate Bessel functions
-do ig = 1, ngvec
-  do is = 1, nspecies
-    do ir = 1, nrcmt(is)
-      !--- |G+q0|*x
+do ig=1,ngvec
+  do is=1,nspecies
+    do ir=1,nrcmt(is)
+!     |G+q0|*x
       t1 = gq0(ig)*rcmt(ir,is)
       call sbessel(lmaxvr,t1,jl)
       jlgq0r(ir,:,is,ig) = jl(:)
@@ -191,8 +214,8 @@ do ik=1,nkptnr
   num_nnp(ik)=i1
   max_num_nnp=max(max_num_nnp,i1)
 enddo
-write(*,*)"maximum number of n,n'' pairs:",max_num_nnp
 allocate(nnp(nkptnr,max_num_nnp,2))
+allocate(docc(nkptnr,max_num_nnp))
 ! second, setup the nnp array
 do ik=1,nkptnr
   jk=k1(ik)
@@ -203,13 +226,13 @@ do ik=1,nkptnr
         i1=i1+1
         nnp(ik,i1,1)=i
         nnp(ik,i1,2)=j
+        docc(ik,i1)=occsvnr(i,ik)-occsvnr(j,jk)
       endif
     enddo
   enddo
 enddo
 
 allocate(zrhofc(ngvec_resp,max_num_nnp))
-
 
 allocate(evecfv(nmatmax,nstfv))
 allocate(evecsv(nstsv,nstsv))
@@ -221,10 +244,10 @@ allocate(wfir2(ngrtot,nspinor,nstsv))
 allocate(zrhomt(lmmaxvr,nrcmtmax,natmtot))
 allocate(zrhoir(ngrtot))
 
-write(*,*)'size of wfmt arrays: ', &
-  2*lmmaxvr*nrcmtmax*natmtot*nspinor*nstsv*16.d0/1024/1024,' Mb'
-write(*,*)'size of wfir arrays: ', &
-  2*ngrtot*nspinor*nstsv*16.d0/1024/1024,' Mb'
+!- write(*,*)'size of wfmt arrays: ', &
+!-  2*lmmaxvr*nrcmtmax*natmtot*nspinor*nstsv*16.d0/1024/1024,' Mb'
+!- write(*,*)'size of wfir arrays: ', &
+!-   2*ngrtot*nspinor*nstsv*16.d0/1024/1024,' Mb'
 
 ! read the density and potentials from file
 call readstate
@@ -241,8 +264,9 @@ call genapwfr
 ! generate the local-orbital radial functions
 call genlofr
 
-do ik = 1, nkptnr
-  write(*,*)'k-point',ik
+write(50,*)
+do ik=1,nkptnr
+  write(50,'("k-point ",I4," out of ",I4)')ik,nkptnr
   
   jk = k1(ik)
 
@@ -261,12 +285,9 @@ do ik = 1, nkptnr
   do i=1,num_nnp(ik)
     ist1=nnp(ik,i,1)
     ist2=nnp(ik,i,2)
-    write(*,*)'i1=',ist1,'i2=',ist2
     call vnlrho(.true.,wfmt1(:,:,:,:,ist1),wfmt2(:,:,:,:,ist2),wfir1(:,:,ist1), &
       wfir2(:,:,ist2),zrhomt,zrhoir)
-    do ig = 1, 1
-      call zrhoft(zrhomt,zrhoir,jlgq0r(:,:,:,ig),ylmgq0(:,ig),sfacgq0(ig,:))
-    enddo
+    call zrhoft(zrhomt,zrhoir,jlgq0r,ylmgq0,sfacgq0,ngvec_resp,zrhofc(1,i))
   enddo
   
 enddo !ik
