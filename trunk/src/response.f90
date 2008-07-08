@@ -11,9 +11,9 @@ complex(8), allocatable :: wfir1(:,:,:),wfir2(:,:,:)
 complex(8), allocatable :: zrhomt(:,:,:)
 complex(8), allocatable :: zrhoir(:)
 
-real(8)                 :: vq0l(3) = (/0.25d0,1.d0,0.d0/)
+real(8)                 :: vq0l(3) = (/0.5d0,0.5d0,0.5d0/)
 real(8)                 :: vq0c(3),vkq0l(3),t1,vq0rl(3),vq0rc(3)
-integer                 :: ik1,ik2,ist1,ist2,ik,jk,ig,ir,is,i,j,i1
+integer                 :: ik1,ik2,ist1,ist2,ik,jk,ig,ir,is,i,j,i1,i2,i3,ig1,ie
 integer                 :: vgkq0l(3),vgq0l(3)
 integer   , allocatable :: k1(:)
 real(8)   , allocatable :: vgq0c(:,:)
@@ -28,7 +28,10 @@ real(8) ,allocatable    :: vgklnr(:,:,:),vgkcnr(:,:),gkcnr(:,:),tpgkcnr(:,:,:)
 complex(8) ,allocatable :: sfacgknr(:,:,:)
 real(8) ,external       :: r3taxi
 real(8) ,allocatable    :: occsvnr(:,:)
-
+real                    :: cpu0,cpu1
+complex(8) ,allocatable :: chi0(:,:,:)
+real(8) ,allocatable    :: evalsvnr(:,:)
+complex(8) ,allocatable :: w(:)
 ! number of G-shells for response
 integer                 :: ngsh_resp
 ! number of G-vectors for response (depens on ngsh_resp) 
@@ -44,6 +47,9 @@ integer                 :: igq0
 ! array of Fourier coefficients of complex charge density
 complex(8) ,allocatable :: zrhofc(:,:)
 
+integer                 :: nepts
+real(8)                 :: emax
+
 real(8) ,allocatable    :: docc(:,:)
 integer    ,allocatable :: gshell(:)
 
@@ -51,18 +57,15 @@ integer    ,allocatable :: gshell(:)
 call init0
 call init1
 
-ngsh_resp=4
-
-allocate(gshell(ngvec))
+ngsh_resp=1
 
 open(50,file='RESPONSE.OUT',form='formatted',status='replace')
 
 if (task.eq.400) then
-  write(50,'("Calculation of matrix elements " &
-    & "<psi_{n,k}|e^{i(G+q)x}|psi_{n'',k+q}>")')
-endif
+  write(50,'("Calculation of matrix elements <psi_{n,k}|e^{i(G+q)x}|psi_{n'',k+q}>")')
 
 ! find number of G-vectors by given number of G-shells
+allocate(gshell(ngvec))
 ngvec_resp=1
 i=1
 j=1
@@ -264,11 +267,19 @@ call genapwfr
 ! generate the local-orbital radial functions
 call genlofr
 
+open(60,file='ZRHOFC.OUT',form='unformatted',status='replace')
+write(60)nkptnr,ngvec_resp,max_num_nnp,igq0
+
 write(50,*)
 do ik=1,nkptnr
-  write(50,'("k-point ",I4," out of ",I4)')ik,nkptnr
-  
+  write(*,'("k-point ",I4," out of ",I4)')ik,nkptnr
+  call flush(50)
+    
   jk = k1(ik)
+  write(60)ik,jk
+  write(60)num_nnp(ik)
+  write(60)nnp(ik,1:num_nnp(ik),1:2)
+  write(60)docc(ik,1:num_nnp(ik))
 
   call getevecfv(vklnr(1,ik),vgklnr(:,:,ik),evecfv)
   call getevecsv(vklnr(1,ik),evecsv) 
@@ -288,8 +299,76 @@ do ik=1,nkptnr
     call vnlrho(.true.,wfmt1(:,:,:,:,ist1),wfmt2(:,:,:,:,ist2),wfir1(:,:,ist1), &
       wfir2(:,:,ist2),zrhomt,zrhoir)
     call zrhoft(zrhomt,zrhoir,jlgq0r,ylmgq0,sfacgq0,ngvec_resp,zrhofc(1,i))
+    write(60)zrhofc(1:ngvec_resp,i)
+  enddo
+enddo !ik
+close(60)
+
+
+deallocate(gshell,k1,vgq0c,gq0,tpgq0,sfacgq0,ylmgq0,jlgq0r,jl,vgklnr,   &
+  vgkcnr,gkcnr,tpgkcnr,ngknr,sfacgknr,igkignr,occsvnr,num_nnp,nnp,docc, &
+  zrhofc,evecfv,evecsv,apwalm,wfmt1,wfmt2,wfir1,wfir2,zrhomt,zrhoir)
+endif !task.eq.400
+
+if (task.eq.401) then
+  write(50,'("Calculation of KS polarisability chi0")')
+  nepts=400
+  emax=1.d0
+  
+  open(60,file='ZRHOFC.OUT',form='unformatted',status='old')
+  read(60)i1,ngvec_resp,max_num_nnp,igq0
+  if (i1.ne.nkptnr) then
+    write(*,*)'Error: k-mesh was changed'
+    stop
+  endif
+  allocate(chi0(ngvec_resp,ngvec_resp,nepts))
+  allocate(num_nnp(nkptnr))
+  allocate(nnp(nkptnr,max_num_nnp,2))
+  allocate(docc(nkptnr,max_num_nnp))
+  allocate(evalsvnr(nstsv,nkptnr))
+  allocate(w(nepts))
+  allocate(zrhofc(ngvec_resp,max_num_nnp))  
+  
+  do i=1,nepts
+    w(i)=dcmplx(1.d0*emax*i/nepts,0.02d0)
   enddo
   
-enddo !ik
+  do ik=1,nkptnr
+    call getevalsv(vklnr(1,ik),evalsvnr(1,ik))
+  enddo
+  
+  chi0=dcmplx(0.d0,0.d0)
+  do ik=1,nkptnr
+    read(60)i1,jk
+    if (i1.ne.ik) then
+      write(*,*)'Error reading file ZRHOFC.OUT'
+      stop
+    endif
+    read(60)num_nnp(ik)
+    read(60)nnp(ik,1:num_nnp(ik),1:2)
+    read(60)docc(ik,1:num_nnp(ik))
+    
+    do i=1,num_nnp(ik)
+      read(60)zrhofc(1:ngvec_resp,i)
+      do ie=1,nepts
+        do ig=1,ngvec_resp
+          do ig1=1,ngvec_resp
+            chi0(ig,ig1,ie)=chi0(ig,ig1,ie)+docc(ik,i)/(evalsvnr(nnp(ik,i,1),ik)-evalsvnr(nnp(ik,i,2),jk)+w(ie))* &
+              zrhofc(ig,i)*dconjg(zrhofc(ig1,i))
+          enddo
+        enddo
+      enddo
+    enddo
+  enddo
+  chi0=chi0/nkptnr
+  close(60)
+  open(60,file='resp.dat',form='formatted',status='replace')
+  do ie=1,nepts
+    write(60,*)ha2ev*dreal(w(ie)),dreal(chi0(igq0,igq0,ie)),dimag(chi0(igq0,igq0,ie))
+  enddo
+  close(60)
+endif
 
+close(50)
+return
 end
