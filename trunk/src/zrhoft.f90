@@ -47,6 +47,7 @@ do ig=1,ngvec_resp
     enddo !ia
   enddo !is
 enddo !ig
+
 ! interstitial part
 do ir=1,ngrtot
   zrhoir(ir)=zrhoir(ir)*cfunir(ir)*omega
@@ -55,10 +56,6 @@ call zfftifc(3,ngrid,-1,zrhoir)
 do ig=1,ngvec_resp
   zrhofc(ig)=zrhofc(ig)+zrhoir(igfft(ig))
 enddo
-
-!do ig=1,ngvec_resp
-!  if (abs(zrhofc(ig)).lt.1d-3) zrhofc(ig)=dcmplx(0.d0,0.d0)
-!enddo
 
 deallocate(fr1,fr2,gr,cf)
 return
