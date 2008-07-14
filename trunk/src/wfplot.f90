@@ -79,6 +79,8 @@ if (task.eq.162) then
 end if
 ! convert the density from a coarse to a fine radial mesh
 call rfmtctof(rhomt)
+! simple way to check the norm of wave-function
+call charge
 ! write the wavefunction modulus squared plot to file
 select case(task)
 case(61)

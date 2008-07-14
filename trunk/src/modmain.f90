@@ -865,6 +865,8 @@ integer notelns
 character(80) notes(maxnlns)
 
 real(8), parameter :: ha2ev = 27.21138386d0
+real(8)            :: vq0l(3) 
+integer            :: ngsh_resp
 
 end module
 

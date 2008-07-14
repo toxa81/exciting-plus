@@ -153,6 +153,8 @@ taurdmn=1.d0
 taurdmc=0.5d0
 rdmalpha=0.7d0
 reducebf=1.d0
+vq0l=(/1.d0,0.d0,0.d0/)
+ngsh_resp=1
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -826,6 +828,9 @@ case('reducebf')
     write(*,*)
     stop
   end if
+case('response')
+  read(50,*,err=20) vq0l
+  read(50,*,err=20) ngsh_resp
 case('')
   goto 10
 case default
