@@ -155,6 +155,7 @@ rdmalpha=0.7d0
 reducebf=1.d0
 vq0l=(/1.d0,0.d0,0.d0/)
 ngsh_resp=1
+ngvec_chi0=1
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -830,7 +831,7 @@ case('reducebf')
   end if
 case('response')
   read(50,*,err=20) vq0l
-  read(50,*,err=20) ngsh_resp
+  read(50,*,err=20) ngsh_resp,ngvec_chi0
 case('')
   goto 10
 case default

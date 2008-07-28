@@ -54,13 +54,6 @@ lmax=min(3,lmaxapw)
 lmmax=(lmax+1)**2
 allocate(bndchr(lmmax,natmtot,nspinor,nstsv,nkpt))
 allocate(elmsym(lmmax,natmtot))
-! allocate local arrays
-allocate(e(nstsv,nkpt,nspinor))
-allocate(f(nstsv,nkpt))
-allocate(w(nwdos))
-allocate(g(nwdos,nspinor))
-allocate(gp(nwdos))
-allocate(pdos(nwdos,lmmax))
 
 ! read density and potentials from file
 call readstate
@@ -82,8 +75,22 @@ do ik=1,nkpt
 ! compute the spin characters
   call spinchar(ik,evecsv)
 end do
+
 ! generate energy grid
-t1=(wdos(2)-wdos(1))/dble(nwdos)
+wdos(1)=minval(evalsv(:,:)-efermi)-0.1
+wdos(2)=maxval(evalsv(:,:)-efermi)+0.1
+t1=0.002d0
+!t1=(wdos(2)-wdos(1))/dble(nwdos)
+nwdos=1+(wdos(2)-wdos(1))/t1
+
+! allocate local arrays
+allocate(e(nstsv,nkpt,nspinor))
+allocate(f(nstsv,nkpt))
+allocate(w(nwdos))
+allocate(g(nwdos,nspinor))
+allocate(gp(nwdos))
+allocate(pdos(nwdos,lmmax))
+
 do iw=1,nwdos
   w(iw)=t1*dble(iw-1)+wdos(1)
 end do
