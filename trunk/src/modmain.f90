@@ -868,7 +868,9 @@ real(8), parameter :: ha2ev=27.21138386d0
 integer ivq0l(3) 
 integer ngsh_me
 integer ngsh_chi
-integer ngvec_chi0
+real(8) maxomega
+real(8) domega
+real(8) eta
 
 end module
 

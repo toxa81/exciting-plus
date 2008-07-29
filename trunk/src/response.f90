@@ -529,15 +529,15 @@ if (task.eq.401) then
   close(160)
   
   
-  allocate(mtrx1(ngvec_chi0,ngvec_chi0))
+  allocate(mtrx1(ngvec_chi,ngvec_chi))
     
-  allocate(ipiv(ngvec_chi0))
+  allocate(ipiv(ngvec_chi))
   write(150,*)
   do ie=1,nepts
     write(150,*)'energy point ',ie,' out of ',nepts
 ! compute 1-chi0*V
-    do i=1,ngvec_chi0
-      do j=1,ngvec_chi0
+    do i=1,ngvec_chi
+      do j=1,ngvec_chi
         mtrx1(i,j)=-chi0(i,j,ie)*vc(j)
       enddo
       mtrx1(i,i)=dcmplx(1.d0,0.d0)+mtrx1(i,i)

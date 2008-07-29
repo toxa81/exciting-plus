@@ -832,6 +832,7 @@ case('reducebf')
 case('response')
   read(50,*,err=20) ivq0l
   read(50,*,err=20) ngsh_me, ngsh_chi
+  read(50,*,err=20) maxomega, domega, eta
 case('')
   goto 10
 case default
