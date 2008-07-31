@@ -872,5 +872,9 @@ real(8) maxomega
 real(8) domega
 real(8) eta
 
+logical ismpi
+integer iproc
+integer nproc
+
 end module
 

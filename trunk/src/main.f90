@@ -6,9 +6,12 @@
 ! main routine for the EXCITING code
 program main
 use modmain
+#ifdef _MPI_
+use mpi     
+#endif
 implicit none
 ! local variables
-integer itask
+integer itask,ierr
 
 !$ integer omp_get_num_threads,omp_get_thread_num
 !$ real*8 omp_get_wtime
@@ -18,7 +21,18 @@ integer itask
 !$ if (omp_get_thread_num().eq.0) then                                                                                                         
 !$   start_time_thread0 = omp_get_wtime()                                                                                                              
 !$ endif                                                                                                                                       
-!$OMP END PARALLEL    
+!$OMP END PARALLEL
+
+! default for serial execution
+ismpi=.false.
+nproc=1
+iproc=0
+#ifdef _MPI_
+call mpi_init(ierr)
+call mpi_comm_size(MPI_COMM_WORLD,nproc,ierr)
+call mpi_comm_rank(MPI_COMM_WORLD,iproc,ierr)
+ismpi=.true.
+#endif   
 
 ! read input files
 call readinput
@@ -100,7 +114,11 @@ end do
 !$     end_time_thread0-start_time_thread0 
 !$   close(50)                                                                                                             
 !$ endif                                                                                                                                       
-!$OMP END PARALLEL    
+!$OMP END PARALLEL
+
+#ifdef _MPI_
+call mpi_finalize(ierr)
+#endif    
 
 stop
 end program
