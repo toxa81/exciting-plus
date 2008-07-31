@@ -148,13 +148,14 @@ deallocate(zflm)
 return
 end subroutine
 
-subroutine getevecfvp(vpl,vgpl,evecfv)
+subroutine getevecfvp(vpl,vgpl,evecfv,ikibz)
 use modmain
 implicit none
 ! arguments
 real(8), intent(in) :: vpl(3)
 real(8), intent(in) :: vgpl(3,ngkmax)
 complex(8), intent(inout) :: evecfv(nmatmax,nstfv,nspnfv)
+integer, intent(in) :: ikibz
 ! local variables
 integer isym,lspl,ilspl
 integer ilo,l,m,lm,i
@@ -172,6 +173,12 @@ real(8) r3taxi,r3dot
 external r3taxi,r3dot
 ! find the equivalent k-point number and crystal symmetry element
 call findkpt(vpl,isym,ik)
+if (ik.ne.ikibz) then
+  write(*,*)
+  write(*,'("Error(getevecfvp): k-points do not match")')
+  write(*,*)
+  call pstop
+endif
 ! index to spatial rotation in lattice point group
 lspl=lsplsymc(isym)
 ! if symmetry element is the identity return
