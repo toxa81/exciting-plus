@@ -363,165 +363,177 @@ if (task.eq.400) then
   
 ! different implementation for parallel and serial execution
 #ifdef _MPI_
-    allocate(nkptloc(0:nproc-1))
-    allocate(ikptloc(0:nproc-1,2))
-    allocate(ikpiproc(nkptnr))
+  allocate(nkptloc(0:nproc-1))
+  allocate(ikptloc(0:nproc-1,2))
+  allocate(ikpiproc(nkptnr))
 ! minimum number of k-points for each proc.
-    n1=nkptnr/nproc
+  n1=nkptnr/nproc
 ! remaining number of k-points which will be distributed among first n2 procs
-    n2=nkptnr-n1*nproc
+  n2=nkptnr-n1*nproc
 ! each proc gets n1 k-points
-    nkptloc(:)=n1
+  nkptloc(:)=n1
 ! additionally, first n2 procs get extra point
-    do i=0,n2-1
-      nkptloc(i)=nkptloc(i)+1
-    enddo 
+  do i=0,n2-1
+    nkptloc(i)=nkptloc(i)+1
+  enddo 
 ! build index of first and last k-point for each proc
-    ikptloc(0,1)=1
-    ikptloc(0,2)=nkptloc(0)
-    do i=1,nproc-1
-      ikptloc(i,1)=ikptloc(i-1,2)+1
-      ikptloc(i,2)=ikptloc(i,1)+nkptloc(i)-1
-    enddo
-    do i=0,nproc-1
-      ikpiproc(ikptloc(i,1):ikptloc(i,2))=i-1
-    enddo
+  ikptloc(0,1)=1
+  ikptloc(0,2)=nkptloc(0)
+  do i=1,nproc-1
+    ikptloc(i,1)=ikptloc(i-1,2)+1
+    ikptloc(i,2)=ikptloc(i,1)+nkptloc(i)-1
+  enddo
+  do i=0,nproc-1
+    ikpiproc(ikptloc(i,1):ikptloc(i,2))=i-1
+  enddo
     
-    if (iproc.eq.0) then
-      write(150,*)
-      write(150,'("iproc    first k      last k      nkpt")')
-      write(150,'("--------------------------------------")')
-      do i=0,nproc-1
-        write(150,'(I4,4X,I4,4X,I4,4X,I4)')i,ikptloc(i,1),ikptloc(i,2),nkptloc(i)
-      enddo
-    endif
+  if (iproc.eq.0) then
+    write(150,*)
+    write(150,'("iproc    first k      last k      nkpt")')
+    write(150,'("--------------------------------------")')
+    do i=0,nproc-1
+      write(150,'(I4,4X,I4,4X,I4,4X,I4)')i,ikptloc(i,1),ikptloc(i,2),nkptloc(i)
+    enddo
+  endif
     
 ! root proc reads all eigen-vectors to memory
-    if (iproc.eq.0) then
-      allocate(evecfv0(nmatmax,nstfv,nspnfv,nkpt))
-      allocate(evecsv0(nstsv,nstsv,nkpt))
-      do ik=1,nkpt
-        call getevecfv(vkl(1,ik),vgkl(1,1,ik,1),evecfv0(1,1,1,ik))
-        call getevecsv(vkl(1,ik),evecsv0(1,1,ik))
-      enddo 
-    endif
+  if (iproc.eq.0) then
+    allocate(evecfv0(nmatmax,nstfv,nspnfv,nkpt))
+    allocate(evecsv0(nstsv,nstsv,nkpt))
+    do ik=1,nkpt
+      call getevecfv(vkl(1,ik),vgkl(1,1,ik,1),evecfv0(1,1,1,ik))
+      call getevecsv(vkl(1,ik),evecsv0(1,1,ik))
+    enddo 
+  endif
     
 ! find indexes of k-points to send and receive
-    allocate(isend(nkptloc(0),nproc,2))
-    isend=-1
-    do ik=1,nkptloc(0)
-      do i=0,nproc-1
-        jk=ikptloc(i,1)+ik-1
-	if (ik.le.nkptloc(i)) then
-	  isend(ik,i,1)=ikq(jk,2)
-	  isend(ik,i,2)=ikq(jk,4)
-	endif
-      enddo
+  allocate(isend(nkptloc(0),nproc,2))
+  isend=-1
+  do ik=1,nkptloc(0)
+    do i=0,nproc-1
+      jk=ikptloc(i,1)+ik-1
+      if (ik.le.nkptloc(i)) then
+        isend(ik,i,1)=ikq(jk,2)
+	isend(ik,i,2)=ikq(jk,4)
+      endif
     enddo
+  enddo
     
-    allocate(status(MPI_STATUS_SIZE))
-    allocate(evecfv1(nmatmax,nstfv,nspnfv))
-    allocate(evecsv1(nstsv,nstsv))
-    allocate(evecfv2(nmatmax,nstfv,nspnfv))
-    allocate(evecsv2(nstsv,nstsv))
-    allocate(zrhofcp(ngvec_me,max_num_nnp,nkptloc(iproc)))
+  allocate(status(MPI_STATUS_SIZE))
+  allocate(evecfv1(nmatmax,nstfv,nspnfv))
+  allocate(evecsv1(nstsv,nstsv))
+  allocate(evecfv2(nmatmax,nstfv,nspnfv))
+  allocate(evecsv2(nstsv,nstsv))
+  allocate(zrhofcp(ngvec_me,max_num_nnp,nkptloc(iproc)))
         
-    do ik=1,nkptloc(0)
-      if (iproc.eq.0) then
-        write(150,'("k-point ",I4," out of ",I4)')ik,nkptloc(0)
-      endif
-      ! root proc should send eigen-vectors
-      if (iproc.eq.0) then
-        do i=1,nproc-1
-	  if (ik.le.nkptloc(i)) then
-	    tag=(ik*nproc+i)*10
-	    jk=isend(ik,i,1)
-	    call mpi_send(evecfv0(1,1,1,jk),nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,ierr)
-	    tag=tag+1
-	    call mpi_send(evecsv0(1,1,jk),nstsv*nstsv,MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,ierr)
-	    tag=tag+1
-	    jk=isend(ik,i,2)
-	    call mpi_send(evecfv0(1,1,1,jk),nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,ierr)
-	    tag=tag+1
-	    call mpi_send(evecsv0(1,1,jk),nstsv*nstsv,MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,ierr)
-	  endif
-	enddo !i
-	jk=isend(ik,0,1)
-	evecfv1(:,:,:)=evecfv0(:,:,:,jk)
-	evecsv1(:,:)=evecsv0(:,:,jk)
-	jk=isend(ik,0,2)
-	evecfv2(:,:,:)=evecfv0(:,:,:,jk)
-	evecsv2(:,:)=evecsv0(:,:,jk)
-      endif
-      if (iproc.ne.0) then
-        if (ik.le.nkptloc(iproc)) then
-	  tag=(ik*nproc+iproc)*10
-	  call mpi_recv(evecfv1,nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX,0,tag,MPI_COMM_WORLD,status,ierr)
+  do ik=1,nkptloc(0)
+    if (iproc.eq.0) then
+      write(150,'("k-point ",I4," out of ",I4)')ik,nkptloc(0)
+    endif
+! root proc should send eigen-vectors
+    if (iproc.eq.0) then
+      do i=1,nproc-1
+        if (ik.le.nkptloc(i)) then
+	  tag=(ik*nproc+i)*10
+	  jk=isend(ik,i,1)
+	  call mpi_send(evecfv0(1,1,1,jk),nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,ierr)
 	  tag=tag+1
-	  call mpi_recv(evecsv1,nstsv*nstsv,MPI_DOUBLE_COMPLEX,0,tag,MPI_COMM_WORLD,status,ierr)
+	  call mpi_send(evecsv0(1,1,jk),nstsv*nstsv,MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,ierr)
 	  tag=tag+1
-	  call mpi_recv(evecfv2,nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX,0,tag,MPI_COMM_WORLD,status,ierr)
+	  jk=isend(ik,i,2)
+	  call mpi_send(evecfv0(1,1,1,jk),nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,ierr)
 	  tag=tag+1
-	  call mpi_recv(evecsv2,nstsv*nstsv,MPI_DOUBLE_COMPLEX,0,tag,MPI_COMM_WORLD,status,ierr)
+	  call mpi_send(evecsv0(1,1,jk),nstsv*nstsv,MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,ierr)
 	endif
-      endif
-      
+      enddo !i
+      jk=isend(ik,0,1)
+      evecfv1(:,:,:)=evecfv0(:,:,:,jk)
+      evecsv1(:,:)=evecsv0(:,:,jk)
+      jk=isend(ik,0,2)
+      evecfv2(:,:,:)=evecfv0(:,:,:,jk)
+      evecsv2(:,:)=evecsv0(:,:,jk)
+    endif
+    if (iproc.ne.0) then
       if (ik.le.nkptloc(iproc)) then
-        jk=ikptloc(iproc,1)+ik-1
-        jkq=ikq(jk,1)
+        tag=(ik*nproc+iproc)*10
+        call mpi_recv(evecfv1,nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX,0,tag,MPI_COMM_WORLD,status,ierr)
+        tag=tag+1
+        call mpi_recv(evecsv1,nstsv*nstsv,MPI_DOUBLE_COMPLEX,0,tag,MPI_COMM_WORLD,status,ierr)
+        tag=tag+1
+        call mpi_recv(evecfv2,nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX,0,tag,MPI_COMM_WORLD,status,ierr)
+        tag=tag+1
+        call mpi_recv(evecsv2,nstsv*nstsv,MPI_DOUBLE_COMPLEX,0,tag,MPI_COMM_WORLD,status,ierr)
+      endif
+    endif
+      
+    if (ik.le.nkptloc(iproc)) then
+      jk=ikptloc(iproc,1)+ik-1
+      jkq=ikq(jk,1)
 
 ! generate wave-functions at k
-        call getevecfvp(vklnr(1,jk),vgklnr(:,:,jk),evecfv1,ikq(jk,2))
-        call getevecsvp(vklnr(1,jk),evecsv1) 
-        call match(ngknr(jk),gkcnr(:,jk),tpgkcnr(:,:,jk),sfacgknr(1,1,jk),apwalm)
-        call genwfsv(.false.,ngknr(jk),igkignr(:,jk),evalsv(1,1),apwalm,evecfv1, &
-          evecsv1,wfmt1,wfir1)
+      call getevecfvp(vklnr(1,jk),vgklnr(:,:,jk),evecfv1,ikq(jk,2))
+      call getevecsvp(vklnr(1,jk),evecsv1) 
+      call match(ngknr(jk),gkcnr(:,jk),tpgkcnr(:,:,jk),sfacgknr(1,1,jk),apwalm)
+      call genwfsv(.false.,ngknr(jk),igkignr(:,jk),evalsv(1,1),apwalm,evecfv1, &
+        evecsv1,wfmt1,wfir1)
 
 ! generate wave-functions at k'=k+q-K
-        call getevecfvp(vklnr(1,jkq),vgklnr(1,1,jkq),evecfv2,ikq(jk,4))
-        call getevecsvp(vklnr(1,jkq),evecsv2) 
-        call match(ngknr(jkq),gkcnr(1,jkq),tpgkcnr(1,1,jkq),sfacgknr(1,1,jkq),apwalm)
-        call genwfsv(.false.,ngknr(jkq),igkignr(1,jkq),evalsv(1,1),apwalm,evecfv2, &
-          evecsv2,wfmt2,wfir2)
+      call getevecfvp(vklnr(1,jkq),vgklnr(1,1,jkq),evecfv2,ikq(jk,4))
+      call getevecsvp(vklnr(1,jkq),evecsv2) 
+      call match(ngknr(jkq),gkcnr(1,jkq),tpgkcnr(1,1,jkq),sfacgknr(1,1,jkq),apwalm)
+      call genwfsv(.false.,ngknr(jkq),igkignr(1,jkq),evalsv(1,1),apwalm,evecfv2, &
+        evecsv2,wfmt2,wfir2)
       
-        do i=1,num_nnp(jk)
-         ist1=nnp(jk,i,1)
-         ist2=nnp(jk,i,2)
-         call vnlrho(.true.,wfmt1(:,:,:,:,ist1),wfmt2(:,:,:,:,ist2),wfir1(:,:,ist1), &
-           wfir2(:,:,ist2),zrhomt,zrhoir)
-         call zrhoft(zrhomt,zrhoir,jlgq0r,ylmgq0,sfacgq0,ngvec_me,igfft1(1,jk),zrhofc1)
+      do i=1,num_nnp(jk)
+        ist1=nnp(jk,i,1)
+        ist2=nnp(jk,i,2)
+        call vnlrho(.true.,wfmt1(:,:,:,:,ist1),wfmt2(:,:,:,:,ist2),wfir1(:,:,ist1), &
+          wfir2(:,:,ist2),zrhomt,zrhoir)
+        call zrhoft(zrhomt,zrhoir,jlgq0r,ylmgq0,sfacgq0,ngvec_me,igfft1(1,jk),zrhofc1)
          zrhofcp(:,i,ik)=zrhofc1(:,3)
-        enddo
+      enddo
 
-      endif
-    enddo !ik
+    endif ! (ik.le.nkptloc(iproc))
+  enddo !ik
     
-    if (iproc.eq.0) then
-      open(160,file='ZRHOFC.OUT',form='unformatted',status='replace')
-      write(160)nkptnr,ngsh_me,ngvec_me,max_num_nnp,igq0
-      write(160)vq0c(1:3)
+  if (iproc.eq.0) then
+    open(160,file='ZRHOFC.OUT',form='unformatted',status='replace')
+    write(160)nkptnr,ngsh_me,ngvec_me,max_num_nnp,igq0
+    write(160)vq0c(1:3)
+    close(160)
+  endif
+  call mpi_barrier(MPI_COMM_WORLD,ierr)
+  do i=0,nproc-1
+    if (i.eq.iproc) then
+      open(160,file='ZRHOFC.OUT',form='unformatted',status='old',position='append')
+      do ik=1,nkptloc(iproc)
+        jk=ikptloc(iproc,1)+ik-1
+        jkq=ikq(jk,1)
+        write(160)jk,jkq
+        write(160)num_nnp(jk)
+        write(160)nnp(jk,1:num_nnp(jk),1:2)
+        write(160)docc(jk,1:num_nnp(jk))
+        write(160)zrhofcp(1:ngvec_me,1:num_nnp(jk),ik)
+      enddo !ik
       close(160)
-    endif
+    endif !i.eq.iproc
     call mpi_barrier(MPI_COMM_WORLD,ierr)
-    do i=0,nproc-1
-      if (i.eq.iproc) then
-        open(160,file='ZRHOFC.OUT',form='unformatted',status='old',position='append')
-	do ik=1,nkptloc(iproc)
-          jk=ikptloc(iproc,1)+ik-1
-	  jkq=ikq(jk,1)
-	  write(160)jk,jkq
-          write(160)num_nnp(jk)
-          write(160)nnp(jk,1:num_nnp(jk),1:2)
-          write(160)docc(jk,1:num_nnp(jk))
-          write(160)zrhofcp(1:ngvec_me,1:num_nnp(jk),ik)
-	enddo !ik
-	close(160)
-      endif !i.eq.iproc
-      call mpi_barrier(MPI_COMM_WORLD,ierr)
-    enddo
-    
-    call pstop
+  enddo 
   
+  if (iproc.eq.0) then
+    deallocate(evecfv0)
+    deallocate(evecsv0)
+  endif 
+  deallocate(nkptloc)
+  deallocate(ikptloc)
+  deallocate(ikpiproc)
+  deallocate(status)
+  deallocate(isend)
+  deallocate(evecfv1)
+  deallocate(evecsv1)
+  deallocate(evecfv2)
+  deallocate(evecsv2)
+  deallocate(zrhofcp)
 #else 
   open(160,file='ZRHOFC.OUT',form='unformatted',status='replace')
   write(160)nkptnr,ngsh_me,ngvec_me,max_num_nnp,igq0
@@ -578,8 +590,9 @@ if (task.eq.400) then
     write(160)zrhofc(1:ngvec_me,1:num_nnp(ik))
   enddo !ik
   close(160)
+  deallocate(evecfv1)
+  deallocate(evecsv1)
 #endif
-
   deallocate(ikq)
   deallocate(vgq0c)
   deallocate(gq0)
