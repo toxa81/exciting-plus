@@ -81,10 +81,9 @@ complex(8) znorm
 integer, allocatable :: nkptloc(:)
 integer, allocatable :: ikptloc(:,:)
 integer, allocatable :: isend(:,:,:)
-integer n1,n2,tag,ierr
+integer tag,ierr
 integer, allocatable :: status(:)
 character*100 :: fname
-character*4 :: name1,name2,name3
 
 ! external functions
 complex(8), external :: zfint
@@ -167,7 +166,7 @@ do ig=1,ngvec_me
   endif
 enddo
 write(*,*)
-write(*,'("Error(response): not enough G-vectors to reduce q-vector &
+write(*,'("Error(response_me): not enough G-vectors to reduce q-vector &
   &to first BZ")')
 write(*,'(" Increase number of G-shells for matrix elements")')
 write(*,*)
@@ -221,7 +220,7 @@ do ik=1,nkptnr
     endif
   enddo
   write(*,*)
-  write(*,'("Error(response): index of reduced k+q point is not found")')
+  write(*,'("Error(response_me): index of reduced k+q point is not found")')
   write(*,'(" Check q-vector coordinates")')
   write(*,*)
   call pstop

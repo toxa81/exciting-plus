@@ -1,8 +1,5 @@
 subroutine response
 use modmain
-#ifdef _MPI_
-use mpi
-#endif
 implicit none
 
 ! initialise universal variables
