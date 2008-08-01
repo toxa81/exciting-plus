@@ -34,6 +34,7 @@ integer max_num_nnp
 ! pair of n,n' band indexes for each k-point
 integer, allocatable :: nnp(:,:,:)
 
+real(8), allocatable :: docc(:,:)
 real(8), allocatable :: evalsvnr(:,:)
 complex(8), allocatable :: zrhofc(:,:,:)
 complex(8), allocatable :: zrhofc1(:,:)
@@ -41,7 +42,7 @@ complex(8), allocatable :: chi0_loc(:,:,:)
 complex(8), allocatable :: chi0(:,:,:)
 complex(8), allocatable :: mtrx1(:,:)
 
-integer i,nkptnr_,ngsh_me_,i1,i2,ikloc,ig1,ig2
+integer i,ik,ie,nkptnr_,ngsh_me_,i1,i2,ikloc,ig1,ig2
 complex(8) wt
 character*100 fname
 
@@ -75,7 +76,7 @@ write(fname,'("ZRHOFC[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
   ivq0l(1),ivq0l(2),ivq0l(3)
 
 if (iproc.eq.0) then
-  write(150,'("Reading file ",A100)')trim(fname)
+  write(150,'("Reading file ",A40)')trim(fname)
   open(160,file=trim(fname),form='unformatted',status='old')
   read(160)nkptnr_,ngsh_me_,ngvec_me,max_num_nnp,igq0
   if (nkptnr_.ne.nkptnr) then
@@ -120,11 +121,12 @@ call mpi_bcast(vq0rc,3,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(num_nnp,nkptnr,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(nnp,nkptnr*max_num_nnp*2,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(docc,nkptnr*max_num_nnp,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(ikq,nkptnr,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 #endif
 
 ! get eigen-values
 allocate(evalsvnr(nstsv,nkptnr))
-if (iproc.eq.0)  
+if (iproc.eq.0) then  
   do ik=1,nkptnr
     call getevalsv(vklnr(1,ik),evalsvnr(1,ik))
   enddo
@@ -133,11 +135,15 @@ endif
 call mpi_bcast(evalsvnr,nstsv*nkptnr,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
 #endif
 
-! different implementations for parallel and serial execution
 allocate(zrhofc1(ngvec_me,max_num_nnp))
+allocate(mtrx1(ngvec_me,ngvec_me))
+if (iproc.eq.0) allocate(chi0(ngvec_me,ngvec_me,nepts))
+
+! different implementations for parallel and serial execution
 #ifdef _MPI_
+
+allocate(chi0_loc(ngvec_me,ngvec_me,nepts))
 allocate(status(MPI_STATUS_SIZE))
-allocate(zrhofc(ngvec_me,max_num_nnp,nkptloc(iproc)))
 allocate(nkptloc(0:nproc-1))
 allocate(ikptloc(0:nproc-1,2))
 allocate(ikptiproc(nkptnr))
@@ -145,6 +151,8 @@ call splitk(nkptloc,ikptloc)
 do i=0,nproc-1
   ikptiproc(ikptloc(i,1):ikptloc(i,2))=i
 enddo
+
+allocate(zrhofc(ngvec_me,max_num_nnp,nkptloc(iproc)))
 do ik=1,nkptnr
 ! only root proc reads matrix elements from file
   if (iproc.eq.0) then
@@ -163,7 +171,7 @@ do ik=1,nkptnr
       call mpi_send(zrhofc1,ngvec_me*max_num_nnp,MPI_DOUBLE_COMPLEX,ikptiproc(ik),tag,MPI_COMM_WORLD,ierr)
     endif
   else
-    if (ik.ge.ikptloc(iproc,1).and.ik.le.ikptloc(iproc,1)) then
+    if (ik.ge.ikptloc(iproc,1).and.ik.le.ikptloc(iproc,2)) then
       ikloc=ik-ikptloc(iproc,1)+1
       tag=ik
       call mpi_recv(zrhofc1,ngvec_me*max_num_nnp,MPI_DOUBLE_COMPLEX,0,tag,MPI_COMM_WORLD,status,ierr)
@@ -171,10 +179,10 @@ do ik=1,nkptnr
     endif
   endif
 enddo
-if (iproc.eq.0) close(160)
-allocate(chi0_loc(ngvec_me,ngvec_me,nepts))
-if (iproc.eq.0) allocate(chi0(ngvec_me,ngvec_me,nepts))
-allocate(mtrx1(ngvec_me,ngvec_me))
+if (iproc.eq.0) then
+  close(160)
+  write(150,'("Finished reading matrix elements")')
+endif
 
 chi0_loc=dcmplx(0.d0,0.d0)
 do ikloc=1,nkptloc(iproc)
@@ -204,6 +212,10 @@ if (iproc.eq.0) then
   enddo
   close(160)
 endif
+
+#else
+
+#endif
 
 return
 end
