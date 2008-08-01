@@ -1,10 +1,132 @@
 subroutine chi
 use modmain
 implicit none
+! number of G-vectors for matrix elements
+integer ngvec_me
+! number of energy-mesh points
+integer nepts
+! energy mesh
+complex(8), allocatable :: w(:)
+! q-vector in lattice coordinates
+real(8) vq0l(3)
+! q-vector in Cartesian coordinates
+real(8) vq0c(3)
+! reduced q-vector in lattice coordinates
+real(8) vq0rl(3)
+! reduced q-vector in Cartesian coordinates
+real(8) vq0rc(3)
+! index of G-vector which brings q to first BZ
+integer igq0
+! Kohn-Sham polarisability
+complex(8), allocatable :: chi0(:,:,:)
+! true polarisability
+complex(8), allocatable :: chi(:,:)
+! number of G-vectors for chi
+integer ngvec_chi
+! G+q vectors in Cartesian coordinates
+real(8), allocatable :: vgq0c(:,:)
+! length of G+q vectors
+real(8), allocatable :: gq0(:)
+! Coulomb potential 
+real(8), allocatable :: vc(:)
+
+! allocatable arrays
+complex(8), allocatable :: mtrx1(:,:)
+integer, allocatable :: ipiv(:)
+
+integer ie,ig,ngsh_me_,info
 
 if (iproc.eq.0) then
+  write(fname,'("CHI0[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
+    ivq0l(1),ivq0l(2),ivq0l(3)
+  open(160,file=trim(fname),form='unformatted',status='old')
+  read(160)ngsh_me_,ngvec_me,nepts,igq0
+  if (ngsh_me_.ne.ngsh_me) then
+    write(*,*)
+    write(*,'("Error(response_chi): number of G-shells for matrix elements &
+      &was changed")')
+    write(*,*)
+    call pstop
+  endif
+  allocate(w(nepts))
+  allocate(chi0(ngvec_me,ngvec_me,nepts))
+  read(160)w(1:nepts)
+  read(160)vq0l(1:3)
+  read(160)vq0rl(1:3)
+  read(160)vq0c(1:3)
+  read(160)vq0rc(1:3)
+  do ie=1,nepts
+    read(160)chi0(1:ngvec_me,1:ngvec_me,ie)
+  enddo
+  close(160)
+  
+! find number of G-vectors by given number of G-shells
+  call getngvec(ngsh_chi,ngvec_chi)
 
+  if (igq0.gt.ngvec_chi) then
+    write(*,*)
+    write(*,'("Error(response_chi): not enough G-vectors for calculation of &
+      &chi")')
+    write(*,'("  Increase number of G-shells for chi")')
+    write(*,*)
+    call pstop
+  endif
+  
+  allocate(chi(ngvec_chi,nepts))
+  
+  allocate(vgq0c(3,ngvec_chi))
+  allocate(vc(ngvec_chi))
+  allocate(gq0(ngvec_chi))
+  allocate(mtrx1(ngvec_chi,ngvec_chi))
+  
+  write(150,*)
+  write(150,'("Coulomb potential matrix elements:")')
+  write(150,'("ig    |G+q|    V")')
+  write(150,'("----------------")')
+  do ig=1,ngvec_chi
+! generate G+q vectors  
+    vgq0c(:,ig)=vgc(:,ig)+vq0c(:)
+    gq0(ig)=sqrt(vgq0c(1,ig)**2+vgq0c(2,ig)**2+vgq0c(3,ig)**2)
+    vc(ig)=fourpi/gq0(ig)**2 
+    write(150,'(I4,2x,2G18.10)')ig,gq0(ig),vc(ig)
+  enddo
+
+  allocate(ipiv(ngvec_chi))
+  do ie=1,nepts
+! compute 1-chi0*V
+    do i=1,ngvec_chi
+      do j=1,ngvec_chi
+        mtrx1(i,j)=-chi0(i,j,ie)*vc(j)
+      enddo
+      mtrx1(i,i)=dcmplx(1.d0,0.d0)+mtrx1(i,i)
+    enddo
+! solve [1-chi0*V]^{-1}*chi=chi0
+    chi(1:ngvec_chi,ie)=chi0(1:ngvec_chi,igq0,ie)
+    call zgesv(ngvec_chi,1,mtrx1,ngvec_chi,ipiv,chi(1,ie),ngvec_chi,info)
+    if (info.ne.0) then
+      write(*,*)'Error solving linear equations'
+      write(*,*)'info=',info
+      stop
+    endif
+  enddo !ie
+  deallocate(ipiv)
+  
+  
+  chi0=chi0/ha2ev/(au2ang)**3
+  chi=chi/ha2ev/(au2ang)**3
+  
+  write(fname,'("response[",I4.3,",",I4.3,",",I4.3,"].dat")') &
+    ivq0l(1),ivq0l(2),ivq0l(3)
+  open(160,file=trim(fname),form='formatted',status='replace')
+  write(160,'("# k-mesh: ",3I5)')ngridk(1),ngridk(2),ngridk(3)
+  close(160)
+ 
+
+endif
+
+return
 end  
+
 
 
 

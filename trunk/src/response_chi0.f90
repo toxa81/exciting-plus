@@ -5,7 +5,7 @@ use mpi
 #endif
 implicit none
 
-! number of G-vectors for matrix elements calculation
+! number of G-vectors for matrix elements
 integer ngvec_me
 ! q-vector in lattice coordinates
 real(8) vq0l(3)
