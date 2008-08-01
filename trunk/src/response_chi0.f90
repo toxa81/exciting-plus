@@ -17,11 +17,7 @@ real(8) vq0rl(3)
 real(8) vq0rc(3)
 ! index of G-vector which brings q to first BZ
 integer igq0
-! array for k and k+q stuff
-!  1-st index: index of k-point in BZ
-!  2-nd index: 1: index of k'=k+q-K
-!              2: index of equivalent k-point in irreducible part of BZ
-!              3: index of equivalent k'-point in irreducible part of BZ
+! array for k+q indexes
 integer, allocatable :: ikq(:)
 ! number of energy-mesh points
 integer nepts
@@ -202,20 +198,51 @@ enddo !ikloc
 
 call mpi_reduce(chi0_loc,chi0,ngvec_me*ngvec_me*nepts,MPI_DOUBLE_COMPLEX,MPI_SUM,0,MPI_COMM_WORLD,ierr)
 
+#else
+
+chi0=dcmplx(0.d0,0.d0)
+do ik=1,nkptnr
+  read(160)i1,i2
+  if (i1.ne.ik.or.ikq(ik).ne.i2) then
+    write(*,*)
+    write(*,'("Error(response_chi0): failed to read file ZRHOFC[,,].OUT")')
+    write(*,*)
+    call pstop
+  endif
+  read(160)zrhofc1(1:ngvec_me,1:num_nnp(ik))
+
+  do i=1,num_nnp(ik)
+    do ig1=1,ngvec_me
+      do ig2=1,ngvec_me
+        mtrx1(ig1,ig2)=zrhofc1(ig1,i)*dconjg(zrhofc1(ig2,i))
+      enddo
+    enddo
+    do ie=1,nepts
+      wt=docc(ik,i)/(evalsvnr(nnp(ik,i,1),ik)-evalsvnr(nnp(ik,i,2),ikq(ik))+w(ie))
+      call zaxpy(ngvec_me**2,wt,mtrx1,1,chi0(1,1,ie),1)
+    enddo !ie
+  enddo !i
+enddo !ik
+close(160)
+
+#endif
+
 if (iproc.eq.0) then
   chi0=chi0/nkptnr/omega
-  
-  open(160,file='chi0.dat',form='formatted',status='replace')
+  write(fname,'("CHI0[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
+    ivq0l(1),ivq0l(2),ivq0l(3)
+  open(160,file=trim(fname),form='unformatted',status='replace')
+  write(160)ngsh_me,ngvec_me,nepts,igq0
+  write(160)w(1:nepts)
+  write(160)vq0l(1:3)
+  write(160)vq0rl(1:3)
+  write(160)vq0c(1:3)
+  write(160)vq0rc(1:3)
   do ie=1,nepts
-    write(160,'(7G18.10)')dreal(w(ie)), &
-      dreal(chi0(igq0,igq0,ie)),dimag(chi0(igq0,igq0,ie))
+    write(160)chi0(1:ngvec_me,1:ngvec_me,ie)
   enddo
   close(160)
 endif
-
-#else
-
-#endif
 
 return
 end
