@@ -81,7 +81,7 @@ complex(8) znorm
 integer, allocatable :: nkptloc(:)
 integer, allocatable :: ikptloc(:,:)
 integer, allocatable :: isend(:,:,:)
-integer tag,ierr
+integer tag,req,ierr
 integer, allocatable :: status(:)
 character*100 :: fname
 
@@ -363,7 +363,7 @@ allocate(evecsv1(nstsv,nstsv))
 allocate(evecfv2(nmatmax,nstfv,nspnfv))
 allocate(evecsv2(nstsv,nstsv))
 allocate(zrhofc(ngvec_me,max_num_nnp,nkptloc(iproc)))
-        
+
 do ikstep=1,nkptloc(0)
   if (iproc.eq.0) then
     write(150,'("k-step ",I4," out of ",I4)')ikstep,nkptloc(0)
@@ -373,14 +373,14 @@ do ikstep=1,nkptloc(0)
 ! send eigen-vectors at two k-points to proc i 
         tag=(ikstep*nproc+i)*10
 	ik=isend(ikstep,i,1)
-	call mpi_send(evecfv0(1,1,1,ik),nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,ierr)
+	call mpi_isend(evecfv0(1,1,1,ik),nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
 	tag=tag+1
-	call mpi_send(evecsv0(1,1,ik),nstsv*nstsv,MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,ierr)
+	call mpi_isend(evecsv0(1,1,ik),nstsv*nstsv,MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
 	tag=tag+1
 	ik=isend(ikstep,i,2)
-	call mpi_send(evecfv0(1,1,1,ik),nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,ierr)
+	call mpi_isend(evecfv0(1,1,1,ik),nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
 	tag=tag+1
-	call mpi_send(evecsv0(1,1,ik),nstsv*nstsv,MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,ierr)
+	call mpi_isend(evecsv0(1,1,ik),nstsv*nstsv,MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
       endif
     enddo !i
 ! copy local arrays
@@ -477,16 +477,16 @@ do ik=1,nkptnr
   write(160)ik,jk
   
 ! generate wave-functions at k
-  call getevecfv(vklnr(1,ik),vgklnr(:,:,ik),evecfv1)
+  call getevecfv(vklnr(1,ik),vgklnr(1,1,ik),evecfv1)
   call getevecsv(vklnr(1,ik),evecsv1) 
-  call match(ngknr(ik),gkcnr(:,ik),tpgkcnr(:,:,ik),sfacgknr(:,:,ik),apwalm)
-  call genwfsv(.false.,ngknr(ik),igkignr(:,ik),evalsv(1,1),apwalm,evecfv1, &
+  call match(ngknr(ik),gknr(1,ik),tpgknr(1,1,ik),sfacgknr(1,1,ik),apwalm)
+  call genwfsv(.false.,ngknr(ik),igkignr(1,ik),evalsv(1,1),apwalm,evecfv1, &
     evecsv1,wfmt1,wfir1)
 
 ! test normalization    
   do i=1,nstsv
-    call vnlrho(.true.,wfmt1(:,:,:,:,i),wfmt1(:,:,:,:,i),wfir1(:,:,i), &
-      wfir1(:,:,i),zrhomt,zrhoir)
+    call vnlrho(.true.,wfmt1(1,1,1,1,i),wfmt1(1,1,1,1,i),wfir1(1,1,i), &
+      wfir1(1,1,i),zrhomt,zrhoir)
     znorm=zfint(zrhomt,zrhoir)
     if (abs(znorm-1.d0).gt.0.01d0) then
       write(150,'("Warning: bad norm ",G18.10," of wave-function ",&
@@ -495,17 +495,17 @@ do ik=1,nkptnr
   enddo
 
 ! generate wave-functions at k'=k+q-K
-  call getevecfv(vklnr(1,jk),vgklnr(:,:,jk),evecfv1)
+  call getevecfv(vklnr(1,jk),vgklnr(1,1,jk),evecfv1)
   call getevecsv(vklnr(1,jk),evecsv1) 
-  call match(ngknr(jk),gkcnr(:,jk),tpgkcnr(:,:,jk),sfacgknr(:,:,jk),apwalm)
-  call genwfsv(.false.,ngknr(jk),igkignr(:,jk),evalsv(1,1),apwalm,evecfv1, &
+  call match(ngknr(jk),gknr(1,jk),tpgknr(1,1,jk),sfacgknr(1,1,jk),apwalm)
+  call genwfsv(.false.,ngknr(jk),igkignr(1,jk),evalsv(1,1),apwalm,evecfv1, &
     evecsv1,wfmt2,wfir2)
   
   do i=1,num_nnp(ik)
     ist1=nnp(ik,i,1)
     ist2=nnp(ik,i,2)
-    call vnlrho(.true.,wfmt1(:,:,:,:,ist1),wfmt2(:,:,:,:,ist2),wfir1(:,:,ist1), &
-      wfir2(:,:,ist2),zrhomt,zrhoir)
+    call vnlrho(.true.,wfmt1(1,1,1,1,ist1),wfmt2(1,1,1,1,ist2),wfir1(1,1,ist1), &
+      wfir2(1,1,ist2),zrhomt,zrhoir)
     call zrhoft(zrhomt,zrhoir,jlgq0r,ylmgq0,sfacgq0,ngvec_me,igfft1(1,ik),zrhofc1)
     zrhofc(:,i,1)=zrhofc1(:,3)
   enddo

@@ -147,7 +147,7 @@ if (iproc.eq.0) then
   write(160,'("#   3: -Im chi_0(Gq,Gq)  [1/eV/A^3]")')
   write(160,'("#   4: -Re chi(Gq,Gq)    [1/eV/A^3]")')
   write(160,'("#   5: -Im chi(Gq,Gq)    [1/eV/A^3]")')
-  write(160,'("#    column1           coulmn2             column3             coulmn4           coulmn5")') 
+  write(160,'("#")')
   do ie=1,nepts
     write(160,'(5F18.10)')dreal(w(ie))*ha2ev,-dreal(chi0(igq0,igq0,ie)),&
       -dimag(chi0(igq0,igq0,ie)),-dreal(chi(igq0,ie)),-dimag(chi(igq0,ie))
