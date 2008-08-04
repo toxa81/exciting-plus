@@ -1,9 +1,11 @@
-subroutine response_chi0
+subroutine response_chi0(ivq0m)
 use modmain
 #ifdef _MPI_
 use mpi
 #endif
 implicit none
+
+integer, intent(in) :: ivq0m(3)
 
 ! number of G-vectors for matrix elements
 integer ngvec_me
@@ -69,7 +71,7 @@ enddo
 allocate(ikq(nkptnr))
 
 write(fname,'("ZRHOFC[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
-  ivq0l(1),ivq0l(2),ivq0l(3)
+  ivq0m(1),ivq0m(2),ivq0m(3)
 
 if (iproc.eq.0) then
   write(150,'("Reading file ",A40)')trim(fname)
@@ -237,7 +239,7 @@ close(160)
 if (iproc.eq.0) then
   chi0=chi0/nkptnr/omega
   write(fname,'("CHI0[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
-    ivq0l(1),ivq0l(2),ivq0l(3)
+    ivq0m(1),ivq0m(2),ivq0m(3)
   open(160,file=trim(fname),form='unformatted',status='replace')
   write(160)ngsh_me,ngvec_me,nepts,igq0
   write(160)w(1:nepts)

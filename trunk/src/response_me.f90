@@ -1,10 +1,11 @@
-subroutine response_me
+subroutine response_me(ivq0m)
 use modmain
 #ifdef _MPI_
 use mpi
 #endif
 implicit none
-
+integer, intent(in) :: ivq0m(3)
+ 
 ! number of G-vectors for matrix elements calculation
 integer ngvec_me
 ! q-vector in lattice coordinates
@@ -149,7 +150,7 @@ allocate(zrhofc1(ngvec_me,3))
 
 ! q-vector in lattice coordinates
 do i=1,3
-  vq0l(i)=1.d0*ivq0l(i)/ngridk(i)
+  vq0l(i)=1.d0*ivq0m(i)/ngridk(i)
 enddo
 
 ! find G-vector which brings q0 to first BZ
@@ -308,7 +309,7 @@ do ig=1,ngvec_me
 enddo
 
 write(fname,'("ZRHOFC[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
-  ivq0l(1),ivq0l(2),ivq0l(3)
+  ivq0m(1),ivq0m(2),ivq0m(3)
 
 if (iproc.eq.0) then
   open(160,file=trim(fname),form='unformatted',status='replace')

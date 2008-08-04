@@ -1,6 +1,8 @@
-subroutine response_chi
+subroutine response_chi(ivq0m)
 use modmain
 implicit none
+integer, intent(in) :: ivq0m(3)
+
 ! number of G-vectors for matrix elements
 integer ngvec_me
 ! number of energy-mesh points
@@ -40,7 +42,7 @@ character*4 name1,name2,name3
 
 if (iproc.eq.0) then
   write(fname,'("CHI0[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
-    ivq0l(1),ivq0l(2),ivq0l(3)
+    ivq0m(1),ivq0m(2),ivq0m(3)
   open(160,file=trim(fname),form='unformatted',status='old')
   read(160)ngsh_me_,ngvec_me,nepts,igq0
   if (ngsh_me_.ne.ngsh_me) then
@@ -123,7 +125,7 @@ if (iproc.eq.0) then
 !  fname='response['//trim(adjustl(name1))//','//trim(adjustl(name2))//','//trim(adjustl(name3))//'].dat'
 
   write(fname,'("response[",I4.3,",",I4.3,",",I4.3,"].dat")') &
-    ivq0l(1),ivq0l(2),ivq0l(3)
+    ivq0m(1),ivq0m(2),ivq0m(3)
 
   open(160,file=trim(fname),form='formatted',status='replace')
   write(160,'("# k-mesh division                    : ",3I4)')ngridk(1),ngridk(2),ngridk(3)
@@ -132,7 +134,7 @@ if (iproc.eq.0) then
   write(160,'("#   energy step    [eV]              : ", F7.2)')domega
   write(160,'("#   eta            [eV]              : ", F7.2)')eta
   write(160,'("# q-vector information               : ")')
-  write(160,'("#   q-vector (mesh coord.)           : ",3I4)')ivq0l
+  write(160,'("#   q-vector (mesh coord.)           : ",3I4)')ivq0m
   write(160,'("#   q-vector (lat. coord.)           : ",3F18.10)')vq0l
   write(160,'("#   q-vector (Cart. coord.) [a.u.]   : ",3F18.10)')vq0c
   write(160,'("#   q-vector length         [a.u.]   : ",3F18.10)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)

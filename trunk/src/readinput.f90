@@ -153,7 +153,6 @@ taurdmn=1.d0
 taurdmc=0.5d0
 rdmalpha=0.7d0
 reducebf=1.d0
-ivq0l=(/1,0,0/)
 ngsh_me=1
 ngsh_chi=1
 
@@ -830,7 +829,11 @@ case('reducebf')
     stop
   end if
 case('response')
-  read(50,*,err=20) ivq0l
+  read(50,*,err=20) nvq0
+  allocate(ivq0m_list(3,nvq0))
+  do i=1,nvq0
+    read(50,*,err=20) ivq0m_list(:,i)
+  enddo
   read(50,*,err=20) ngsh_me, ngsh_chi
   read(50,*,err=20) maxomega, domega, eta
 case('')
