@@ -367,6 +367,7 @@ allocate(zrhofc(ngvec_me,max_num_nnp,nkptloc(iproc)))
 do ikstep=1,nkptloc(0)
   if (iproc.eq.0) then
     write(150,'("k-step ",I4," out of ",I4)')ikstep,nkptloc(0)
+    call flushifc(150)
 ! root proc should send eigen-vectors
     do i=1,nproc-1
       if (ikstep.le.nkptloc(i)) then
