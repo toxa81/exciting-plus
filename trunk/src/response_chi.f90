@@ -138,6 +138,8 @@ if (iproc.eq.0) then
   write(160,'("#   q-vector length         [a.u.]   : ",3F18.10)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)
   write(160,'("#   q-vector (Cart. coord.) [1/A]    : ",3F18.10)')vq0c/au2ang
   write(160,'("#   q-vector length         [1/A]    : ",3F18.10)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)/au2ang
+  write(160,'("# G-vector information               : ")')
+  write(160,'("#   number of G-shells               : ",I4)')ngsh_chi
   write(160,'("#")')
   write(160,'("# Definition of columns")')
   write(160,'("#   1: energy            [eV]")')
