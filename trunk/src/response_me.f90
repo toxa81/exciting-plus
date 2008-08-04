@@ -370,7 +370,7 @@ do ikstep=1,nkptloc(0)
 ! root proc should send eigen-vectors
     do i=1,nproc-1
       if (ikstep.le.nkptloc(i)) then
-! send eigen-vectors at two k-point to proc i 
+! send eigen-vectors at two k-points to proc i 
         tag=(ikstep*nproc+i)*10
 	ik=isend(ikstep,i,1)
 	call mpi_send(evecfv0(1,1,1,ik),nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,ierr)
@@ -519,13 +519,6 @@ deallocate(zrhofc)
 
 #endif
 
-deallocate(ikq)
-deallocate(vgq0c)
-deallocate(gq0)
-deallocate(tpgq0)
-deallocate(sfacgq0)
-deallocate(ylmgq0)
-deallocate(jlgq0r)
 deallocate(vgklnr)
 deallocate(vgkcnr)
 deallocate(gknr)
@@ -533,18 +526,26 @@ deallocate(tpgknr)
 deallocate(ngknr)
 deallocate(sfacgknr)
 deallocate(igkignr)
-deallocate(occsvnr)
-deallocate(num_nnp)
-deallocate(nnp)
-deallocate(docc)
-deallocate(zrhofc1)
 deallocate(apwalm)
 deallocate(wfmt1)
-deallocate(wfmt2)
 deallocate(wfir1)
+deallocate(wfmt2)
 deallocate(wfir2)
 deallocate(zrhomt)
 deallocate(zrhoir)
+deallocate(ikq)
+deallocate(vgq0c)
+deallocate(gq0)
+deallocate(tpgq0)
+deallocate(sfacgq0)
+deallocate(ylmgq0) 
+deallocate(jlgq0r)
+deallocate(occsvnr)
+deallocate(igfft1)
+deallocate(zrhofc1)
+deallocate(num_nnp)
+deallocate(nnp)
+deallocate(docc)
 
 return
 end

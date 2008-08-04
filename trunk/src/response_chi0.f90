@@ -198,6 +198,13 @@ enddo !ikloc
 
 call mpi_reduce(chi0_loc,chi0,ngvec_me*ngvec_me*nepts,MPI_DOUBLE_COMPLEX,MPI_SUM,0,MPI_COMM_WORLD,ierr)
 
+deallocate(chi0_loc)
+deallocate(status)
+deallocate(nkptloc)
+deallocate(ikptloc)
+deallocate(ikptiproc)
+deallocate(zrhofc)
+
 #else
 
 chi0=dcmplx(0.d0,0.d0)
@@ -243,6 +250,16 @@ if (iproc.eq.0) then
   enddo
   close(160)
 endif
+
+deallocate(w)
+deallocate(ikq)
+deallocate(num_nnp)
+deallocate(nnp)
+deallocate(docc)
+deallocate(evalsvnr)
+deallocate(zrhofc1)
+deallocate(mtrx1)
+if (iproc.eq.0) deallocate(chi0)
 
 return
 end

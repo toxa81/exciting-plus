@@ -31,16 +31,3 @@ if (iproc.eq.0) close(150)
 
 return
 end
-
-
-subroutine response_chi
-use modmain
-#ifdef _MPI_
-use mpi
-#endif
-implicit none
-
-return
-end
-
-
