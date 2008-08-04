@@ -403,6 +403,7 @@ do ikstep=1,nkptloc(0)
       call mpi_recv(evecsv2,nstsv*nstsv,MPI_DOUBLE_COMPLEX,0,tag,MPI_COMM_WORLD,status,ierr)
     endif
   endif
+  call mpi_barrier(MPI_COMM_WORLD,ierr)
       
   if (ikstep.le.nkptloc(iproc)) then
     ik=ikptloc(iproc,1)+ikstep-1
@@ -433,6 +434,8 @@ do ikstep=1,nkptloc(0)
 
   endif ! (ikstep.le.nkptloc(iproc))
 enddo !ikstep
+
+call mpi_barrier(MPI_COMM_WORLD,ierr)
 
 do i=0,nproc-1
   if (i.eq.iproc) then
