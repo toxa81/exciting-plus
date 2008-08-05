@@ -89,7 +89,7 @@ if (iproc.eq.0) then
   write(150,'("----------------")')
   do ig=1,ngvec_chi
 ! generate G+q vectors  
-    vgq0c(:,ig)=vgc(:,ig)+vq0c(:)
+    vgq0c(:,ig)=vgc(:,ig)+vq0rc(:)
     gq0(ig)=sqrt(vgq0c(1,ig)**2+vgq0c(2,ig)**2+vgq0c(3,ig)**2)
     vc(ig)=fourpi/gq0(ig)**2 
     write(150,'(I4,2x,2G18.10)')ig,gq0(ig),vc(ig)
