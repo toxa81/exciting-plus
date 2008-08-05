@@ -47,6 +47,8 @@ complex(8), allocatable :: sfacgq0(:,:)
 ! Bessel functions j_l(|G+q|x)
 real(8), allocatable :: jlgq0r(:,:,:,:)
 
+integer spin_me
+
 ! allocatable arrays
 integer, allocatable :: ngknr(:)
 integer, allocatable :: igkignr(:,:)
@@ -73,7 +75,7 @@ complex(8), allocatable :: evecsv1(:,:)
 complex(8), allocatable :: evecfv2(:,:,:)
 complex(8), allocatable :: evecsv2(:,:)
 
-integer i,j,i1,ik,jk,ig,is,ir,ikstep,ist1,ist2
+integer i,j,i1,ik,jk,ig,is,ir,ikstep,ist1,ist2,ispn
 real(8) vkq0l(3),t1,jl(0:lmaxvr)
 integer ivg1(3),ivg2(3)
 complex(8) znorm
@@ -90,6 +92,7 @@ character*100 :: fname
 complex(8), external :: zfint
 real(8), external :: r3taxi
 
+spin_me=1
 
 ! read the density and potentials from file
 call readstate
@@ -108,6 +111,13 @@ call genlofr
 
 if (iproc.eq.0) then
   write(150,'("Calculation of matrix elements <n,k|e^{-i(G+q)x}|n'',k+q>")')
+  if (spinpol) then
+    write(150,*)
+    write(150,'("Spin-polarized calculation")')
+    if (spin_me.eq.1) write(150,'(" calculation of matrix elements for up spin")')
+    if (spin_me.eq.2) write(150,'(" calculation of matrix elements for dn spin")')
+    if (spin_me.eq.3) write(150,'(" calculation of matrix elements for both spins")')
+  endif
 endif
 
 ! find number of G-vectors by given number of G-shells
@@ -259,28 +269,43 @@ allocate(num_nnp(nkptnr))
 do ik=1,nkptnr
   jk=ikq(ik,1)
   i1=0
-  do i=1,nstsv
-    do j=1,nstsv
-      if (abs(occsvnr(i,ik)-occsvnr(j,jk)).gt.1d-10) i1=i1+1
+  do ispn=1,nspinor
+    do i=1,nstfv
+      ist1=i+(ispn-1)*nstfv
+      do j=1,nstfv
+        ist2=j+(ispn-1)*nstfv
+        if ((ispn.eq.spin_me.or.spin_me.eq.3) .and. &
+	    abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-10) i1=i1+1
+      enddo
     enddo
   enddo
   num_nnp(ik)=i1
   max_num_nnp=max(max_num_nnp,i1)
 enddo
-allocate(nnp(nkptnr,max_num_nnp,2))
+allocate(nnp(nkptnr,max_num_nnp,3))
 allocate(docc(nkptnr,max_num_nnp))
 ! second, setup the nnp array
 do ik=1,nkptnr
   jk=ikq(ik,1)
   i1=0
-  do i=1,nstsv
-    do j=1,nstsv
-      if (abs(occsvnr(i,ik)-occsvnr(j,jk)).gt.1d-10) then
-        i1=i1+1
-        nnp(ik,i1,1)=i
-        nnp(ik,i1,2)=j
-        docc(ik,i1)=occsvnr(i,ik)-occsvnr(j,jk)
-      endif
+  do ispn=1,nspinor
+    do i=1,nstfv
+      ist1=i+(ispn-1)*nstfv
+      do j=1,nstfv
+        ist2=j+(ispn-1)*nstfv
+	if ((ispn.eq.spin_me.or.spin_me.eq.3) .and. &
+	    abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-10) then
+          i1=i1+1
+          nnp(ik,i1,1)=ist1
+          nnp(ik,i1,2)=ist2
+	  if (spin_me.eq.3) then
+	    nnp(ik,i1,3)=ispn
+	  else
+            nnp(ik,i1,3)=1
+	  endif
+          docc(ik,i1)=occsvnr(ist1,ik)-occsvnr(ist2,jk)
+        endif
+      enddo
     enddo
   enddo
 enddo
@@ -314,6 +339,7 @@ write(fname,'("ZRHOFC[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
 if (iproc.eq.0) then
   open(160,file=trim(fname),form='unformatted',status='replace')
   write(160)nkptnr,ngsh_me,ngvec_me,max_num_nnp,igq0
+  write(160)nspinor,spin_me
   write(160)vq0l(1:3)
   write(160)vq0rl(1:3)
   write(160)vq0c(1:3)
@@ -321,7 +347,7 @@ if (iproc.eq.0) then
   do ik=1,nkptnr
     write(160)ikq(ik,1)
     write(160)num_nnp(ik)
-    write(160)nnp(ik,1:num_nnp(ik),1:2)
+    write(160)nnp(ik,1:num_nnp(ik),1:3)
     write(160)docc(ik,1:num_nnp(ik))
   enddo
   close(160)

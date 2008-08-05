@@ -20,7 +20,7 @@ real(8) vq0rc(3)
 ! index of G-vector which brings q to first BZ
 integer igq0
 ! Kohn-Sham polarisability
-complex(8), allocatable :: chi0(:,:,:)
+complex(8), allocatable :: chi0(:,:,:,:)
 ! true polarisability
 complex(8), allocatable :: chi(:,:)
 ! number of G-vectors for chi
@@ -31,6 +31,8 @@ real(8), allocatable :: vgq0c(:,:)
 real(8), allocatable :: gq0(:)
 ! Coulomb potential 
 real(8), allocatable :: vc(:)
+
+integer spin_me,nspin_chi0
 
 ! allocatable arrays
 complex(8), allocatable :: mtrx1(:,:)
@@ -53,14 +55,15 @@ if (iproc.eq.0) then
     call pstop
   endif
   allocate(w(nepts))
-  allocate(chi0(ngvec_me,ngvec_me,nepts))
   read(160)w(1:nepts)
   read(160)vq0l(1:3)
   read(160)vq0rl(1:3)
   read(160)vq0c(1:3)
   read(160)vq0rc(1:3)
+  read(160)spin_me,nspin_chi0
+  allocate(chi0(ngvec_me,ngvec_me,nepts,nspin_chi0))
   do ie=1,nepts
-    read(160)chi0(1:ngvec_me,1:ngvec_me,ie)
+    read(160)chi0(1:ngvec_me,1:ngvec_me,ie,1:nspin_chi0)
   enddo
   close(160)
   
@@ -100,12 +103,12 @@ if (iproc.eq.0) then
 ! compute 1-chi0*V
     do i=1,ngvec_chi
       do j=1,ngvec_chi
-        mtrx1(i,j)=-chi0(i,j,ie)*vc(j)
+        mtrx1(i,j)=-chi0(i,j,ie,1)*vc(j)
       enddo
       mtrx1(i,i)=dcmplx(1.d0,0.d0)+mtrx1(i,i)
     enddo
 ! solve [1-chi0*V]^{-1}*chi=chi0
-    chi(1:ngvec_chi,ie)=chi0(1:ngvec_chi,igq0,ie)
+    chi(1:ngvec_chi,ie)=chi0(1:ngvec_chi,igq0,ie,1)
     call zgesv(ngvec_chi,1,mtrx1,ngvec_chi,ipiv,chi(1,ie),ngvec_chi,info)
     if (info.ne.0) then
       write(*,*)'Error solving linear equations'
@@ -151,8 +154,8 @@ if (iproc.eq.0) then
   write(160,'("#   5: -Im chi(Gq,Gq)    [1/eV/A^3]")')
   write(160,'("#")')
   do ie=1,nepts
-    write(160,'(5F18.10)')dreal(w(ie))*ha2ev,-dreal(chi0(igq0,igq0,ie)),&
-      -dimag(chi0(igq0,igq0,ie)),-dreal(chi(igq0,ie)),-dimag(chi(igq0,ie))
+    write(160,'(5F18.10)')dreal(w(ie))*ha2ev,-dreal(chi0(igq0,igq0,ie,1)),&
+      -dimag(chi0(igq0,igq0,ie,1)),-dreal(chi(igq0,ie)),-dimag(chi(igq0,ie))
   enddo
   close(160)
  

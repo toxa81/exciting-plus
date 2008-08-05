@@ -32,15 +32,18 @@ integer max_num_nnp
 ! pair of n,n' band indexes for each k-point
 integer, allocatable :: nnp(:,:,:)
 
+integer spin_me
+integer nspin_chi0
+
 real(8), allocatable :: docc(:,:)
 real(8), allocatable :: evalsvnr(:,:)
 complex(8), allocatable :: zrhofc(:,:,:)
 complex(8), allocatable :: zrhofc1(:,:)
-complex(8), allocatable :: chi0_loc(:,:,:)
-complex(8), allocatable :: chi0(:,:,:)
+complex(8), allocatable :: chi0_loc(:,:,:,:)
+complex(8), allocatable :: chi0(:,:,:,:)
 complex(8), allocatable :: mtrx1(:,:)
 
-integer i,ik,ie,nkptnr_,ngsh_me_,i1,i2,ikloc,ig1,ig2
+integer i,ik,ie,nkptnr_,ngsh_me_,i1,i2,ikloc,ig1,ig2,nspinor_,ispn
 complex(8) wt
 character*100 fname
 
@@ -50,7 +53,6 @@ integer, allocatable :: ikptloc(:,:)
 integer, allocatable :: ikptiproc(:)
 integer ierr,tag
 integer, allocatable :: status(:)
-
 
 if (iproc.eq.0) then
   write(150,'("Calculation of KS polarisability chi0")')
@@ -77,12 +79,25 @@ if (iproc.eq.0) then
   write(150,'("Reading file ",A40)')trim(fname)
   open(160,file=trim(fname),form='unformatted',status='old')
   read(160)nkptnr_,ngsh_me_,ngvec_me,max_num_nnp,igq0
+  read(160)nspinor_,spin_me
+  if (nspinor_.eq.2) then
+    write(150,'("  matrix elements were calculated for spin-polarized case")')
+    if (spin_me.eq.1) write(150,'("  file contains spin-up matix elements")')
+    if (spin_me.eq.2) write(150,'("  file contains spin-dn matix elements")')
+    if (spin_me.eq.3) write(150,'("  file contains matix elements for both spins")')
+  endif
   if (nkptnr_.ne.nkptnr) then
     write(*,*)
     write(*,'("Error(response_chi0): k-mesh was changed")')
     write(*,*)
     call pstop
   endif
+  if (nspinor_.ne.nspinor) then
+    write(*,*)
+    write(*,'("Error(response_chi0): number of spin components was changed")')
+    write(*,*)
+    call pstop
+  endif    
   if (ngsh_me_.ne.ngsh_me) then
     write(*,*)
     write(*,'("Error(response_chi0): number of G-shells for matrix elements &
@@ -95,9 +110,15 @@ endif
 call mpi_bcast(ngvec_me,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(max_num_nnp,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(igq0,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(spin_me,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 #endif
+if (spin_me.eq.3) then
+  nspin_chi0=2
+else
+  nspin_chi0=1
+endif
 allocate(num_nnp(nkptnr))
-allocate(nnp(nkptnr,max_num_nnp,2))
+allocate(nnp(nkptnr,max_num_nnp,3))
 allocate(docc(nkptnr,max_num_nnp))
 if (iproc.eq.0) then
   read(160)vq0l(1:3)
@@ -107,7 +128,7 @@ if (iproc.eq.0) then
   do ik=1,nkptnr
     read(160)ikq(ik)
     read(160)num_nnp(ik)
-    read(160)nnp(ik,1:num_nnp(ik),1:2)
+    read(160)nnp(ik,1:num_nnp(ik),1:3)
     read(160)docc(ik,1:num_nnp(ik))
   enddo
 endif  
@@ -117,7 +138,7 @@ call mpi_bcast(vq0rl,3,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(vq0c,3,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(vq0rc,3,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(num_nnp,nkptnr,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
-call mpi_bcast(nnp,nkptnr*max_num_nnp*2,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(nnp,nkptnr*max_num_nnp*3,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(docc,nkptnr*max_num_nnp,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(ikq,nkptnr,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 #endif
@@ -135,12 +156,12 @@ call mpi_bcast(evalsvnr,nstsv*nkptnr,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
 
 allocate(zrhofc1(ngvec_me,max_num_nnp))
 allocate(mtrx1(ngvec_me,ngvec_me))
-if (iproc.eq.0) allocate(chi0(ngvec_me,ngvec_me,nepts))
+if (iproc.eq.0) allocate(chi0(ngvec_me,ngvec_me,nepts,nspin_chi0))
 
 ! different implementations for parallel and serial execution
 #ifdef _MPI_
 
-allocate(chi0_loc(ngvec_me,ngvec_me,nepts))
+allocate(chi0_loc(ngvec_me,ngvec_me,nepts,nspin_chi0))
 allocate(status(MPI_STATUS_SIZE))
 allocate(nkptloc(0:nproc-1))
 allocate(ikptloc(0:nproc-1,2))
@@ -193,12 +214,14 @@ do ikloc=1,nkptloc(iproc)
     enddo
     do ie=1,nepts
       wt=docc(ik,i)/(evalsvnr(nnp(ik,i,1),ik)-evalsvnr(nnp(ik,i,2),ikq(ik))+w(ie))
-      call zaxpy(ngvec_me**2,wt,mtrx1,1,chi0_loc(1,1,ie),1)
+      call zaxpy(ngvec_me**2,wt,mtrx1,1,chi0_loc(1,1,ie,nnp(ik,i,3)),1)
     enddo !ie
   enddo !i
 enddo !ikloc
 
-call mpi_reduce(chi0_loc,chi0,ngvec_me*ngvec_me*nepts,MPI_DOUBLE_COMPLEX,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+do ispn=1,nspin_chi0
+  call mpi_reduce(chi0_loc(1,1,1,ispn),chi0(1,1,1,ispn),ngvec_me*ngvec_me*nepts,MPI_DOUBLE_COMPLEX,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+enddo
 
 deallocate(chi0_loc)
 deallocate(status)
@@ -228,7 +251,7 @@ do ik=1,nkptnr
     enddo
     do ie=1,nepts
       wt=docc(ik,i)/(evalsvnr(nnp(ik,i,1),ik)-evalsvnr(nnp(ik,i,2),ikq(ik))+w(ie))
-      call zaxpy(ngvec_me**2,wt,mtrx1,1,chi0(1,1,ie),1)
+      call zaxpy(ngvec_me**2,wt,mtrx1,1,chi0(1,1,ie,nnp(ik,i,3)),1)
     enddo !ie
   enddo !i
 enddo !ik
@@ -247,8 +270,9 @@ if (iproc.eq.0) then
   write(160)vq0rl(1:3)
   write(160)vq0c(1:3)
   write(160)vq0rc(1:3)
+  write(160)spin_me,nspin_chi0
   do ie=1,nepts
-    write(160)chi0(1:ngvec_me,1:ngvec_me,ie)
+    write(160)chi0(1:ngvec_me,1:ngvec_me,ie,1:nspin_chi0)
   enddo
   close(160)
 endif
