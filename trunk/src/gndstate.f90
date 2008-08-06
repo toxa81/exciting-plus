@@ -54,6 +54,8 @@ call writekpts
 call writegeom(.false.)
 ! write nearest neighbours
 call writenn
+! write gshells
+call writegshells
 ! open INFO.OUT file
 open(60,file='INFO'//trim(filext),action='WRITE',form='FORMATTED')
 ! open TOTENERGY.OUT
