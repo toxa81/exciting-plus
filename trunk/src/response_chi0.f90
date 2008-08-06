@@ -199,9 +199,17 @@ if (iproc.eq.0) then
   call flushifc(150)
 endif
 
+if (iproc.eq.0) then
+  write(150,*)
+  write(150,'("Starting k-point summation")')
+endif
 chi0_loc=dcmplx(0.d0,0.d0)
 do ikloc=1,nkptloc(iproc)
   ik=ikptloc(iproc,1)+ikloc-1
+  if (iproc.eq.0) then
+    write(150,'("k-step ",I4," out of ",I4)')ikloc,nkptloc(0)
+    call flushifc(150)
+  endif
   do i=1,num_nnp(ik)
     do ig1=1,ngvec_me
       do ig2=1,ngvec_me
