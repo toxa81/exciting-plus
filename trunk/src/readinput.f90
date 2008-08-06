@@ -834,7 +834,8 @@ case('response')
   do i=1,nvq0
     read(50,*,err=20) ivq0m_list(:,i)
   enddo
-  read(50,*,err=20) ngsh_me, ngsh_chi
+  read(50,*,err=20) ngsh_me, spin_me 
+  read(50,*,err=20) ngsh_chi, spin_chi
   read(50,*,err=20) maxomega, domega, eta
 case('')
   goto 10

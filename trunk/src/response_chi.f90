@@ -1,7 +1,9 @@
-subroutine response_chi(ivq0m)
+subroutine response_chi(ivq0m,ngvec_chi)
 use modmain
 implicit none
 integer, intent(in) :: ivq0m(3)
+! number of G-vectors for chi
+integer, intent(in) :: ngvec_chi
 
 ! number of G-vectors for matrix elements
 integer ngvec_me
@@ -23,8 +25,6 @@ integer igq0
 complex(8), allocatable :: chi0(:,:,:,:)
 ! true polarisability
 complex(8), allocatable :: chi(:,:)
-! number of G-vectors for chi
-integer ngvec_chi
 ! G+q vectors in Cartesian coordinates
 real(8), allocatable :: vgq0c(:,:)
 ! length of G+q vectors
@@ -32,7 +32,7 @@ real(8), allocatable :: gq0(:)
 ! Coulomb potential 
 real(8), allocatable :: vc(:)
 
-integer spin_me,nspin_chi0
+integer nspin_chi0
 
 ! allocatable arrays
 complex(8), allocatable :: mtrx1(:,:)
@@ -43,17 +43,14 @@ character*100 fname
 character*4 name1,name2,name3
 
 if (iproc.eq.0) then
+
+  write(150,'("Calculation of charge polarizability chi")')  
+
   write(fname,'("CHI0[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
     ivq0m(1),ivq0m(2),ivq0m(3)
+  write(150,'("Reading file ",A40)')trim(fname)
   open(160,file=trim(fname),form='unformatted',status='old')
-  read(160)ngsh_me_,ngvec_me,nepts,igq0
-  if (ngsh_me_.ne.ngsh_me) then
-    write(*,*)
-    write(*,'("Error(response_chi): number of G-shells for matrix elements &
-      &was changed")')
-    write(*,*)
-    call pstop
-  endif
+  read(160)ngsh_me,ngvec_me,nepts,igq0
   allocate(w(nepts))
   read(160)w(1:nepts)
   read(160)vq0l(1:3)
@@ -67,8 +64,14 @@ if (iproc.eq.0) then
   enddo
   close(160)
   
+  write(150,'("chi0 was calculated for ",I4," G-vector(s) (",I4,&
+    " G-shell(s))")')ngvec_me,ngsh_me 
+  if (spin_me.eq.1) write(150,'("chi0 was calculated for spin up")')
+  if (spin_me.eq.2) write(150,'("chi0 was calculated for spin dn")')
+  if (spin_me.eq.3) write(150,'("chi0 was calculated for both spins")')
+  
 ! find number of G-vectors by given number of G-shells
-  call getngvec(ngsh_chi,ngvec_chi)
+!  call getngvec(ngsh_chi,ngvec_chi)
 
   if (igq0.gt.ngvec_chi) then
     write(*,*)
@@ -77,6 +80,41 @@ if (iproc.eq.0) then
     write(*,'("  Increase number of G-shells for chi")')
     write(*,*)
     call pstop
+  endif
+  if (ngsh_chi.gt.ngsh_me) then
+    write(*,*)
+    write(*,'("Error(response_chi): ngsh_chi > ngsh_me")')
+    write(*,'("  ngsh_chi = ",I4)'),ngsh_chi
+    write(*,'("  ngsh_me = ",I4)'),ngsh_me
+    write(*,*)
+    call pstop
+  endif
+  if (spin_me.le.2.and.spin_chi.ne.spin_me) then
+    write(*,*)
+    write(*,'("Error(response_chi): spin_chi != spin_me")')
+    write(*,'("  spin_chi = ",I4)')spin_chi
+    write(*,'("  spin_me = ",I4)')spin_me
+    write(*,*)
+    call pstop
+  endif
+  if (spin_me.le.2.and.spin_chi.eq.3) then
+    write(*,*)
+    write(*,'("Error(response_chi): chi0 is calculated only for one spin")')
+    write(*,'("  can''t make sum of chi0(up) and chi0(dn)")')
+    write(*,*)
+    call pstop
+  endif
+  
+  if (spin_me.eq.3) then
+    if (spin_chi.eq.1) write(150,'("using chi0(up)")')
+    if (spin_chi.eq.2) then
+      write(150,'("using chi0(dn)")')
+      chi0(:,:,:,1)=chi0(:,:,:,2)
+    endif
+    if (spin_chi.eq.3) then
+      write(150,'("using chi0(up)+chi0(dn)")')
+      chi0(:,:,:,1)=chi0(:,:,:,1)+chi0(:,:,:,2)
+    endif
   endif
   
   allocate(chi(ngvec_chi,nepts))
@@ -88,14 +126,14 @@ if (iproc.eq.0) then
   
   write(150,*)
   write(150,'("Coulomb potential matrix elements:")')
-  write(150,'("ig    |G+q|    V")')
-  write(150,'("----------------")')
+  write(150,'("   ig        |G+q|        Vc    ")')
+  write(150,'(" ------------------------------ ")')
   do ig=1,ngvec_chi
 ! generate G+q vectors  
     vgq0c(:,ig)=vgc(:,ig)+vq0rc(:)
     gq0(ig)=sqrt(vgq0c(1,ig)**2+vgq0c(2,ig)**2+vgq0c(3,ig)**2)
     vc(ig)=fourpi/gq0(ig)**2 
-    write(150,'(I4,2x,2G18.10)')ig,gq0(ig),vc(ig)
+    write(150,'(1X,I4,2X,2F12.6)')ig,gq0(ig),vc(ig)
   enddo
 
   allocate(ipiv(ngvec_chi))

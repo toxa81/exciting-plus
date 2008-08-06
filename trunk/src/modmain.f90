@@ -869,7 +869,9 @@ real(8), parameter :: au2ang=0.5291772108d0
 integer nvq0
 integer, allocatable :: ivq0m_list(:,:) 
 integer ngsh_me
+integer spin_me
 integer ngsh_chi
+integer spin_chi
 real(8) maxomega
 real(8) domega
 real(8) eta

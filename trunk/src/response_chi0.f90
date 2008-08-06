@@ -31,8 +31,7 @@ integer, allocatable :: num_nnp(:)
 integer max_num_nnp
 ! pair of n,n' band indexes for each k-point
 integer, allocatable :: nnp(:,:,:)
-
-integer spin_me
+! number of spins for chi0
 integer nspin_chi0
 
 real(8), allocatable :: docc(:,:)
@@ -43,7 +42,7 @@ complex(8), allocatable :: chi0_loc(:,:,:,:)
 complex(8), allocatable :: chi0(:,:,:,:)
 complex(8), allocatable :: mtrx1(:,:)
 
-integer i,ik,ie,nkptnr_,ngsh_me_,i1,i2,ikloc,ig1,ig2,nspinor_,ispn
+integer i,ik,ie,nkptnr_,i1,i2,ikloc,ig1,ig2,nspinor_,ispn
 complex(8) wt
 character*100 fname
 
@@ -78,7 +77,7 @@ write(fname,'("ZRHOFC[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
 if (iproc.eq.0) then
   write(150,'("Reading file ",A40)')trim(fname)
   open(160,file=trim(fname),form='unformatted',status='old')
-  read(160)nkptnr_,ngsh_me_,ngvec_me,max_num_nnp,igq0
+  read(160)nkptnr_,ngsh_me,ngvec_me,max_num_nnp,igq0
   read(160)nspinor_,spin_me
   if (nspinor_.eq.2) then
     write(150,'("  matrix elements were calculated for spin-polarized case")')
@@ -98,19 +97,15 @@ if (iproc.eq.0) then
     write(*,*)
     call pstop
   endif    
-  if (ngsh_me_.ne.ngsh_me) then
-    write(*,*)
-    write(*,'("Error(response_chi0): number of G-shells for matrix elements &
-      &was changed")')
-    write(*,*)
-    call pstop
-  endif
+  write(150,'("matrix elements were calculated for ",I4," G-vector(s) (", &
+    I4," G-shell(s))")')ngvec_me,ngsh_me
 endif
 #ifdef _MPI_
 call mpi_bcast(ngvec_me,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(ngsh_me,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(spin_me,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(max_num_nnp,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(igq0,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
-call mpi_bcast(spin_me,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 #endif
 if (spin_me.eq.3) then
   nspin_chi0=2
@@ -197,10 +192,11 @@ do ik=1,nkptnr
       zrhofc(:,:,ikloc)=zrhofc1(:,:)
     endif
   endif
-enddo
+enddo !ik
 if (iproc.eq.0) then
   close(160)
   write(150,'("Finished reading matrix elements")')
+  call flushifc(150)
 endif
 
 chi0_loc=dcmplx(0.d0,0.d0)
@@ -220,8 +216,11 @@ do ikloc=1,nkptloc(iproc)
 enddo !ikloc
 
 do ispn=1,nspin_chi0
-  call mpi_reduce(chi0_loc(1,1,1,ispn),chi0(1,1,1,ispn),ngvec_me*ngvec_me*nepts,MPI_DOUBLE_COMPLEX,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-enddo
+  do ie=1,nepts
+    call mpi_reduce(chi0_loc(1,1,ie,ispn),chi0(1,1,ie,ispn), &
+      ngvec_me*ngvec_me,MPI_DOUBLE_COMPLEX,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+  enddo !ie
+enddo !ispn
 
 deallocate(chi0_loc)
 deallocate(status)

@@ -1,13 +1,15 @@
-subroutine response_me(ivq0m)
+subroutine response_me(ivq0m,ngvec_me)
 use modmain
 #ifdef _MPI_
 use mpi
 #endif
 implicit none
+! arguments
+! q-vector in k-mesh coordinates
 integer, intent(in) :: ivq0m(3)
- 
 ! number of G-vectors for matrix elements calculation
-integer ngvec_me
+integer, intent(in) :: ngvec_me
+ 
 ! q-vector in lattice coordinates
 real(8) vq0l(3)
 ! q-vector in Cartesian coordinates
@@ -46,8 +48,6 @@ complex(8), allocatable :: ylmgq0(:,:)
 complex(8), allocatable :: sfacgq0(:,:)
 ! Bessel functions j_l(|G+q|x)
 real(8), allocatable :: jlgq0r(:,:,:,:)
-
-integer spin_me
 
 ! allocatable arrays
 integer, allocatable :: ngknr(:)
@@ -92,8 +92,6 @@ character*100 :: fname
 complex(8), external :: zfint
 real(8), external :: r3taxi
 
-spin_me=1
-
 ! read the density and potentials from file
 call readstate
 
@@ -114,14 +112,17 @@ if (iproc.eq.0) then
   if (spinpol) then
     write(150,*)
     write(150,'("Spin-polarized calculation")')
-    if (spin_me.eq.1) write(150,'(" calculation of matrix elements for up spin")')
-    if (spin_me.eq.2) write(150,'(" calculation of matrix elements for dn spin")')
+    if (spin_me.eq.1) write(150,'(" calculation of matrix elements for spin up")')
+    if (spin_me.eq.2) write(150,'(" calculation of matrix elements for spin dn")')
     if (spin_me.eq.3) write(150,'(" calculation of matrix elements for both spins")')
   endif
+  write(150,*)
+  write(150,'("Number of G-shells  : ",I4)')ngsh_me
+  write(150,'("Number of G-vectors : ",I4)')ngvec_me
 endif
 
 ! find number of G-vectors by given number of G-shells
-call getngvec(ngsh_me,ngvec_me)
+!call getngvec(ngsh_me,ngvec_me)
 
 ! generate G+k vectors for entire BZ (this is required to compute 
 !   wave-functions at each k-point)
@@ -166,7 +167,7 @@ enddo
 ! find G-vector which brings q0 to first BZ
 vgq0l(:)=floor(vq0l(:))
 
-! reduce q0 vector fo first BZ
+! reduce q0 vector to first BZ
 vq0rl(:)=vq0l(:)-vgq0l(:)
 
 ! check if we have enough G-shells to bring q-vector back to first BZ
@@ -177,9 +178,8 @@ do ig=1,ngvec_me
   endif
 enddo
 write(*,*)
-write(*,'("Error(response_me): not enough G-vectors to reduce q-vector &
+write(*,'("Bug(response_me): not enough G-vectors to reduce q-vector &
   &to first BZ")')
-write(*,'(" Increase number of G-shells for matrix elements")')
 write(*,*)
 call pstop
 20 continue
@@ -211,11 +211,11 @@ endif
 ! find k+q and reduce them to first BZ (this is required to utilize the 
 !   periodical property of Bloch-states: |k>=|k+K>, where K is any vector 
 !   of the reciprocal lattice)
-if (iproc.eq.0) then
-  write(150,*)
-  write(150,'(3X,"ik",10X,"k",19X,"k+q",16X,"K",12X,"k''=k+q-K",8X,"jk")')
-  write(150,'(85("-"))')
-endif
+!if (iproc.eq.0) then
+!  write(150,*)
+!  write(150,'(3X,"ik",10X,"k",19X,"k+q",16X,"K",12X,"k''=k+q-K",8X,"jk")')
+!  write(150,'(85("-"))')
+!endif
 do ik=1,nkptnr
 ! k+q vector
   vkq0l(:)=vklnr(:,ik)+vq0rl(:)
@@ -241,10 +241,10 @@ do ik=1,nkptnr
     ivg2(:)=ivg(:,ig)+ivg1(:)
     igfft1(ig,ik)=igfft(ivgig(ivg2(1),ivg2(2),ivg2(3)))
   enddo
-  if (iproc.eq.0) then
-    write(150,'(I4,2X,3F6.2,2X,3F6.2,2X,3I4,2X,3F6.2,2X,I4)') &
-    ik,vklnr(:,ik),vkq0l+ivg1,ivg1,vkq0l,ikq(ik,1)
-  endif
+!  if (iproc.eq.0) then
+!    write(150,'(I4,2X,3F6.2,2X,3F6.2,2X,3I4,2X,3F6.2,2X,I4)') &
+!    ik,vklnr(:,ik),vkq0l+ivg1,ivg1,vkq0l,ikq(ik,1)
+!  endif
 ! for parallel execution
   if (ismpi) then
     call findkpt(vklnr(1,ik),i,ikq(ik,2))
@@ -391,6 +391,10 @@ allocate(evecfv2(nmatmax,nstfv,nspnfv))
 allocate(evecsv2(nstsv,nstsv))
 allocate(zrhofc(ngvec_me,max_num_nnp,nkptloc(iproc)))
 
+if (iproc.eq.0) then
+  write(150,*)
+  write(150,'("Starting k-point loop")')
+endif
 do ikstep=1,nkptloc(0)
   if (iproc.eq.0) then
     write(150,'("k-step ",I4," out of ",I4)')ikstep,nkptloc(0)
@@ -581,6 +585,75 @@ deallocate(docc)
 return
 end
 
+subroutine writegshells
+use modmain
+implicit none
+
+integer ngsh
+integer ,allocatable :: igishell(:)
+integer ,allocatable :: ishellng(:,:)
+
+integer ig,ish
+
+allocate(igishell(ngvec))
+allocate(ishellng(ngvec,2))
+
+call getgshells(ngsh,igishell,ishellng)
+open(170,file='GSHELLS.OUT',form='formatted',status='replace')
+write(170,*)
+write(170,'("  G-vec.       lat.coord.      length(a.u.)   shell ")')
+write(170,'(" ---------------------------------------------------")')
+do ig=1,ishellng(ngsh,2)
+  write(170,'(2X,I4,4X,3I5,4X,F12.6,5x,I4)')ig,ivg(:,ig),gc(ig),igishell(ig)
+enddo
+write(170,*)
+write(170,'("  G-shell    num. G-vec in shell      total num. G-vec. ")')
+write(170,'(" -------------------------------------------------------")')
+do ish=1,ngsh
+  write(170,'(2X,I4,14X,I4,18X,I4)')ish,ishellng(ish,1),ishellng(ish,2)
+enddo
+close(170)
+
+deallocate(igishell,ishellng)
+
+return
+end
+
+
+subroutine getgshells(ngsh,igishell,ishellng)
+use modmain
+implicit none
+! arguments
+integer, intent(out) :: ngsh
+integer, intent(out) :: igishell(ngvec)
+integer, intent(out) :: ishellng(ngvec,2)
+
+integer ish,ig
+
+ish=1
+ig=0
+do while (ig.lt.ngvec)
+  ig=ig+1
+  igishell(ig)=ish
+  if (abs(gc(ig+1)-gc(ig)).gt.epslat) then
+    ish=ish+1
+  endif
+enddo 
+
+ngsh=ish-1
+
+do ish=1,ngsh
+  ishellng(ish,1)=0
+  do ig=1,ngvec
+    if (igishell(ig).eq.ish) ishellng(ish,1)=ishellng(ish,1)+1
+  enddo
+  ishellng(ish,2)=sum(ishellng(1:ish,1))
+enddo
+ 
+return
+end
+
+
 subroutine getngvec(ngsh,ngv)
 use modmain
 implicit none
@@ -667,10 +740,10 @@ enddo
     
 if (iproc.eq.0) then
   write(150,*)
-  write(150,'("iproc    first k      last k      nkpt")')
-  write(150,'("--------------------------------------")')
+  write(150,'(" iproc  first k   last k   nkpt ")')
+  write(150,'(" ------------------------------ ")')
   do i=0,nproc-1
-    write(150,'(I4,4X,I4,4X,I4,4X,I4)')i,ikptloc(i,1),ikptloc(i,2),nkptloc(i)
+    write(150,'(1X,I4,4X,I4,5X,I4,5X,I4)')i,ikptloc(i,1),ikptloc(i,2),nkptloc(i)
   enddo
 endif
 
