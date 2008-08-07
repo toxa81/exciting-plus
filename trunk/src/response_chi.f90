@@ -65,7 +65,7 @@ if (iproc.eq.0) then
   close(160)
   
   write(150,'("chi0 was calculated for ",I4," G-vector(s) (",I4,&
-    " G-shell(s))")')ngvec_me,ngsh_me 
+    & " G-shell(s))")')ngvec_me,ngsh_me 
   if (spin_me.eq.1) write(150,'("chi0 was calculated for spin up")')
   if (spin_me.eq.2) write(150,'("chi0 was calculated for spin dn")')
   if (spin_me.eq.3) write(150,'("chi0 was calculated for both spins")')

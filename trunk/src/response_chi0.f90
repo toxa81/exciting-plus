@@ -98,7 +98,7 @@ if (iproc.eq.0) then
     call pstop
   endif    
   write(150,'("matrix elements were calculated for ",I4," G-vector(s) (", &
-    I4," G-shell(s))")')ngvec_me,ngsh_me
+    & I4," G-shell(s))")')ngvec_me,ngsh_me
 endif
 #ifdef _MPI_
 call mpi_bcast(ngvec_me,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
