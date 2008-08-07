@@ -447,6 +447,21 @@ do ikstep=1,nkptloc(0)
     call genwfsv(.false.,ngknr(ik),igkignr(1,ik),evalsv(1,1),apwalm,evecfv1, &
       evecsv1,wfmt1,wfir1)
 
+! test normalization    
+    do i=1,nstsv
+      call vnlrho(.true.,wfmt1(1,1,1,1,i),wfmt1(1,1,1,1,i),wfir1(1,1,i), &
+        wfir1(1,1,i),zrhomt,zrhoir)
+      znorm=zfint(zrhomt,zrhoir)
+      if (abs(znorm-1.d0).gt.0.1d0) then
+        write(*,*)
+        write(*,'("Error(response_me): bad norm ",G18.10," of wave-function ",&
+          & I4," at k-point ",I4)')abs(znorm),i,ik
+	write(*,'("  try to switch off the symmetry")')
+	write(*,*)
+	call pstop
+      endif
+    enddo
+
 ! generate wave-functions at k'=k+q-K
     call getevecfvp(vklnr(1,jk),vgklnr(1,1,jk),evecfv2,ikq(ik,3))
     call getevecsvp(vklnr(1,jk),evecsv2) 
