@@ -864,6 +864,10 @@ integer notelns
 ! notes to include in INFO.OUT
 character(80) notes(maxnlns)
 
+real(8), allocatable :: evalfv_loc(:,:,:)
+complex(8), allocatable :: evecfv_loc(:,:,:,:)
+complex(8), allocatable :: evecsv_loc(:,:,:)
+
 real(8), parameter :: ha2ev=27.21138386d0
 real(8), parameter :: au2ang=0.5291772108d0
 integer nvq0
@@ -879,6 +883,10 @@ real(8) eta
 logical ismpi
 integer iproc
 integer nproc
+integer, allocatable :: nkptloc(:)
+integer, allocatable :: ikptloc(:,:)
+complex(8), allocatable :: evecfvloc(:,:,:,:)
+complex(8), allocatable :: evecsvloc(:,:,:)
 
 end module
 

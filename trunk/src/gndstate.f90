@@ -31,60 +31,64 @@ real(8), allocatable :: mu(:)
 real(8), allocatable :: beta(:)
 real(8), allocatable :: f(:)
 
-!real(8), allocatable :: evalfv(:,:,:)
-!complex(8), allocatable :: evecfv(:,:,:,:)
-!complex(8), allocatable :: evecsv(:,:,:)
-
 ! require forces for structural optimisation
 if ((task.eq.2).or.(task.eq.3)) tforce=.true.
 ! initialise global variables
 call init0
 call init1
+
+allocate(nkptloc(0:nproc-1)) 
+allocate(ikptloc(0:nproc-1,2))
+call splitk(nkpt,nproc,nkptloc,ikptloc)
+
 ! initialise OEP variables if required
 if (xctype.lt.0) call init2
+if (iproc.eq.0) then
 ! write the real and reciprocal lattice vectors to file
-call writelat
+  call writelat
 ! write inter-atomic distances to file
-call writeiad
+  call writeiad
 ! write symmetry matrices to file
-call writesym
+  call writesym
 ! output the k-point set to file
-call writekpts
+  call writekpts
 ! write lattice vectors and atomic positions to file
-call writegeom(.false.)
+  call writegeom(.false.)
 ! write nearest neighbours
-call writenn
-! write gshells
-call writegshells
+  call writenn
+! write G-shells
+  call writegshells
 ! open INFO.OUT file
-open(60,file='INFO'//trim(filext),action='WRITE',form='FORMATTED')
+  open(60,file='INFO'//trim(filext),action='WRITE',form='FORMATTED')
 ! open TOTENERGY.OUT
-open(61,file='TOTENERGY'//trim(filext),action='WRITE',form='FORMATTED')
+  open(61,file='TOTENERGY'//trim(filext),action='WRITE',form='FORMATTED')
 ! open FERMIDOS.OUT
-open(62,file='FERMIDOS'//trim(filext),action='WRITE',form='FORMATTED')
+  open(62,file='FERMIDOS'//trim(filext),action='WRITE',form='FORMATTED')
 ! open MOMENT.OUT if required
-if (spinpol) open(63,file='MOMENT'//trim(filext),action='WRITE', &
- form='FORMATTED')
+  if (spinpol) open(63,file='MOMENT'//trim(filext),action='WRITE', &
+    form='FORMATTED')
 ! open FORCEMAX.OUT if required
-if (tforce) open(64,file='FORCEMAX'//trim(filext),action='WRITE', &
- form='FORMATTED')
+  if (tforce) open(64,file='FORCEMAX'//trim(filext),action='WRITE', &
+    form='FORMATTED')
 ! open RMSDVEFF.OUT
-open(65,file='RMSDVEFF'//trim(filext),action='WRITE',form='FORMATTED')
+  open(65,file='RMSDVEFF'//trim(filext),action='WRITE',form='FORMATTED')
 ! write out general information to INFO.OUT
-call writeinfo(60)
+  write(60,'("Running on ",I5," proc")')nproc
+  call writeinfo(60)
+  write(60,*)
+endif !iproc.eq.0
 ! initialise or read the charge density and potentials from file
 iscl=0
-write(60,*)
 if ((task.eq.1).or.(task.eq.3)) then
   call readstate
-  write(60,'("Density and potential read in from STATE.OUT")')
+  if (iproc.eq.0) write(60,'("Density and potential read in from STATE.OUT")')
 else
   call rhoinit
   call poteff
   call genveffig
-  write(60,'("Density and potential initialised from atomic data")')
+  if (iproc.eq.0) write(60,'("Density and potential initialised from atomic data")')
 end if
-call flushifc(60)
+if (iproc.eq.0) call flushifc(60)
 ! size of mixing vector
 n=lmmaxvr*nrmtmax*natmtot+ngrtot
 if (spinpol) n=n*(1+ndmag)
@@ -105,10 +109,17 @@ call packeff(.true.,n,nu)
 call mixer(.true.,beta0,betamax,n,nu,mu,beta,f,dv)
 call packeff(.false.,n,nu)
 ! delete any existing eigenvector files
-call delevec
+if (iproc.eq.0) call delevec
 
 ! main DFT SC loop
 call dftsc(n,nu,mu,beta,f)
+
+#ifdef _MPI_
+if (tforce) then
+  write(*,*)'Forces not implemented in parallel mode'
+  call pstop
+endif
+#endif
 
 !-----------------------!
 !     compute forces    !
@@ -157,39 +168,42 @@ if ((.not.tstop).and.((task.eq.2).or.(task.eq.3))) then
   goto 10
 end if
 30 continue
+if (iproc.eq.0) then
 ! output timing information
-write(60,*)
-write(60,'("Timings (CPU seconds) :")')
-write(60,'(" initialisation",T40,": ",F12.2)') timeinit
-write(60,'(" Hamiltonian and overlap matrix set up",T40,": ",F12.2)') timemat
-write(60,'(" first-variational secular equation",T40,": ",F12.2)') timefv
-if (spinpol) then
-  write(60,'(" second-variational calculation",T40,": ",F12.2)') timesv
-end if
-write(60,'(" charge density calculation",T40,": ",F12.2)') timerho
-write(60,'(" potential calculation",T40,": ",F12.2)') timepot
-if (tforce) then
-  write(60,'(" force calculation",T40,": ",F12.2)') timefor
-end if
-timetot=timeinit+timemat+timefv+timesv+timerho+timepot+timefor
-write(60,'(" total",T40,": ",F12.2)') timetot
-write(60,*)
-write(60,'("+----------------------------------+")')
-write(60,'("| EXCITING version ",I1.1,".",I1.1,".",I3.3," stopped |")') version
-write(60,'("+----------------------------------+")')
+  write(60,*)
+  write(60,'("Timings (CPU seconds) :")')
+  write(60,'(" initialisation",T40,": ",F12.2)') timeinit
+  write(60,'(" Hamiltonian and overlap matrix set up",T40,": ",F12.2)') timemat
+  write(60,'(" first-variational secular equation",T40,": ",F12.2)') timefv
+  if (spinpol) then
+    write(60,'(" second-variational calculation",T40,": ",F12.2)') timesv
+  end if
+  write(60,'(" charge density calculation",T40,": ",F12.2)') timerho
+  write(60,'(" potential calculation",T40,": ",F12.2)') timepot
+  if (tforce) then
+    write(60,'(" force calculation",T40,": ",F12.2)') timefor
+  end if
+  timetot=timeinit+timemat+timefv+timesv+timerho+timepot+timefor
+  write(60,'(" total",T40,": ",F12.2)') timetot
+  write(60,*)
+  write(60,'("+----------------------------------+")')
+  write(60,'("| EXCITING version ",I1.1,".",I1.1,".",I3.3," stopped |")') version
+  write(60,'("+----------------------------------+")')
 ! close the INFO.OUT file
-close(60)
+  close(60)
 ! close the TOTENERGY.OUT file
-close(61)
+  close(61)
 ! close the FERMIDOS.OUT file
-close(62)
+  close(62)
 ! close the MOMENT.OUT file
-if (spinpol) close(63)
+  if (spinpol) close(63)
 ! close the FORCEMAX.OUT file
-if (tforce) close(64)
+  if (tforce) close(64)
 ! close the RMSDVEFF.OUT file
-close(65)
-deallocate(nu,mu,beta,f)
+  close(65)
+endif !iproc.eq.0
+
+deallocate(nu,mu,beta,f,nkptloc,ikptloc)
 
 return
 end subroutine

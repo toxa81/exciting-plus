@@ -261,11 +261,15 @@ endif ! procid.eq.0
   call mpi_bcast(vxcir,ngrtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
   call mpi_bcast(veffmt,lmmaxvr*nrmtmax*natmtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
   call mpi_bcast(veffmt,ngrtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+  call mpi_bcast(veffig,ngvec,MPI_DOUBLE_COMPLEX,0,MPI_COMM_WORLD,ierr)
   if (spinpol) then
     call mpi_bcast(magmt,lmmaxvr*nrmtmax*natmtot*ndmag,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
     call mpi_bcast(magir,ngrtot*ndmag,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
     call mpi_bcast(bxcmt,lmmaxvr*nrmtmax*natmtot*ndmag,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
     call mpi_bcast(bxcir,ngrtot*ndmag,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+  endif
+  if (ldapu.ne.0) then
+    call mpi_bcast(vmatlu,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,MPI_DOUBLE_COMPLEX,0,MPI_COMM_WORLD,ierr)
   endif
 #endif             
 return

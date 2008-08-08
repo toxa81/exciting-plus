@@ -1,5 +1,8 @@
 subroutine dftsc(n,nu,mu,beta,f)
 use        modmain
+#ifdef _MPI_
+use mpi
+#endif
 implicit   none
 
 integer              :: n
@@ -10,40 +13,44 @@ real(8)              :: f(n)
 
 ! local variables
 logical exist
-integer ik,is,ia,idm
+integer ik,is,ia,idm,ikloc,ierr,i
 real(8) dv,timetot
 ! allocatable arrays
-real(8), allocatable    :: evalfv(:,:,:)
-complex(8), allocatable :: evecfv(:,:,:,:)
-complex(8), allocatable :: evecsv(:,:,:)
+real(8), allocatable :: evalfv(:,:,:)
 
-allocate(evalfv(nstfv,nspnfv,nkpt))
-allocate(evecfv(nmatmax,nstfv,nspnfv,nkpt))
-allocate(evecsv(nstsv,nstsv,nkpt))
+allocate(evalfv(nstfv,nspnfv,nkptloc(iproc)))
+allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc(iproc)))
+allocate(evecsvloc(nstsv,nstsv,nkptloc(iproc)))
 
 ! begin the self-consistent loop
-write(60,*)
-write(60,'("+------------------------------+")')
-write(60,'("| Self-consistent loop started |")')
-write(60,'("+------------------------------+")')
-do iscl=1,maxscl
+if (iproc.eq.0) then
   write(60,*)
-  write(60,'("+-------------------------+")')
-  write(60,'("| Iteration number : ",I4," |")') iscl
-  write(60,'("+-------------------------+")')
-  call flushifc(60)
-  if (iscl.ge.maxscl) then
+  write(60,'("+------------------------------+")')
+  write(60,'("| Self-consistent loop started |")')
+  write(60,'("+------------------------------+")')
+endif
+do iscl=1,maxscl
+  if (iproc.eq.0) then
     write(60,*)
-    write(60,'("Reached self-consistent loops maximum")')
+    write(60,'("+-------------------------+")')
+    write(60,'("| Iteration number : ",I4," |")') iscl
+    write(60,'("+-------------------------+")')
+    call flushifc(60)
+  endif
+  if (iscl.ge.maxscl) then
+    if (iproc.eq.0) then
+      write(60,*)
+      write(60,'("Reached self-consistent loops maximum")')
+    endif
     tlast=.true.
   end if
-  call flushifc(60)
+  if (iproc.eq.0) call flushifc(60)
 ! generate the core wavefunctions and densities
   call gencore
 ! find the new linearisation energies
   call linengy
 ! write out the linearisation energies
-  call writelinen
+  if (iproc.eq.0) call writelinen
 ! generate the APW radial functions
   call genapwfr
 ! generate the local-orbital radial functions
@@ -54,35 +61,26 @@ do iscl=1,maxscl
   call hmlrad
 
 ! begin parallel loop over k-points
-!$OMP PARALLEL DEFAULT(SHARED)
-!$OMP DO
-  do ik=1,nkpt
-! every thread should allocate its own arrays
+  evalsv=0.d0
+  spnchr=0.d0
+  do ikloc=1,nkptloc(iproc)
+    ik=ikptloc(iproc,1)+ikloc-1
 ! solve the first- and second-variational secular equations
-    call seceqn(ik,evalfv(:,:,ik),evecfv(:,:,:,ik),evecsv(:,:,ik))
-! write the eigenvalues/vectors to file
-!    call putevalfv(ik,evalfv)
-!    call putevalsv(ik,evalsv(1,ik))
-!    call putevecfv(ik,evecfv)
-!    call putevecsv(ik,evecsv)
-  end do
-!$OMP END DO
-!$OMP END PARALLEL
+    call seceqn(ik,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
+  enddo
+  call dsync(evalsv,nstsv*nkpt,.true.,.false.)
+  call dsync(spnchr,nspinor*nstsv*nkpt,.true.,.false.)
 
-do ik=1,nkpt
-! write the eigenvalues/vectors to file
-  call putevalfv(ik,evalfv(:,:,ik))
-  call putevalsv(ik,evalsv(1,ik))
-  call putevecfv(ik,evecfv(:,:,:,ik))
-  call putevecsv(ik,evecsv(:,:,ik))
-enddo
-
+  if (iproc.eq.0) then 
 ! find the occupation numbers and Fermi energy
-  call occupy
+    call occupy
 ! write out the eigenvalues and occupation numbers
-  call writeeval
+    call writeeval
 ! write the Fermi energy to file
-  call writefermi
+    call writefermi
+  endif
+  call dsync(occsv,nstsv*nkpt,.false.,.true.)
+
 ! set the charge density and magnetisation to zero
   rhomt(:,:,:)=0.d0
   rhoir(:)=0.d0
@@ -90,21 +88,23 @@ enddo
     magmt(:,:,:,:)=0.d0
     magir(:,:)=0.d0
   end if
-  
-!$OMP PARALLEL DEFAULT(SHARED)
-!$OMP DO
-  do ik=1,nkpt
+  do ikloc=1,nkptloc(iproc)
+    ik=ikptloc(iproc,1)+ikloc-1
 ! add to the density and magnetisation
-    call rhovalk(ik,evecfv(:,:,:,ik),evecsv(:,:,ik))
+    call rhovalk(ik,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
   end do
-!$OMP END DO
-!$OMP END PARALLEL
+  call dsync(rhomt,lmmaxvr*nrmtmax*natmtot,.true.,.true.)
+  call dsync(rhoir,ngrtot,.true.,.true.)
+  call dsync(magmt,lmmaxvr*nrmtmax*natmtot*ndmag,.true.,.true.)
+  call dsync(magir,ngrtot*ndmag,.true.,.true.)
   
-  do ik=1,nkpt
+  if (iproc.eq.0) then
+    do ik=1,nkpt
 ! write the occupancies to file
-    call putoccsv(ik,occsv(1,ik))
-  end do
-
+      call putoccsv(ik,occsv(1,ik))
+    end do
+  endif
+  
 ! symmetrise the density
   call symrf(lradstp,rhomt,rhoir)
 ! symmetrise the magnetisation
@@ -131,8 +131,9 @@ enddo
 ! generate the LDA+U potential matrix
     call genvmatlu
 ! write the LDA+U matrices to file
-    call writeldapu
+    if (iproc.eq.0) call writeldapu
   end if
+  
 ! compute the effective potential
   call poteff
 ! pack interstitial and muffin-tin effective potential and field into one array
@@ -152,99 +153,117 @@ enddo
   end if
 ! compute the energy components
   call energy
+  if (iproc.eq.0) then
 ! output energy components
-  call writeengy(60)
-  write(60,*)
-  write(60,'("Density of states at Fermi energy : ",G18.10)') fermidos
-  write(60,'(" (states/Hartree/spin/unit cell)")')
+    call writeengy(60)
+    write(60,*)
+    write(60,'("Density of states at Fermi energy : ",G18.10)') fermidos
+    write(60,'(" (states/Hartree/spin/unit cell)")')
 ! write total energy to TOTENERGY.OUT and flush
-  write(61,'(G18.10)') engytot
-  call flushifc(61)
+    write(61,'(G18.10)') engytot
+    call flushifc(61)
 ! write DOS at Fermi energy to FERMIDOS.OUT and flush
-  write(62,'(G18.10)') fermidos
-  call flushifc(62)
+    write(62,'(G18.10)') fermidos
+    call flushifc(62)
 ! output charges and moments
-  call writechg(60)
+    call writechg(60)
 ! write total moment to MOMENT.OUT and flush
-  if (spinpol) then
-    write(63,'(3G18.10)') momtot(1:ndmag)
-    call flushifc(63)
-  end if
+    if (spinpol) then
+      write(63,'(3G18.10)') momtot(1:ndmag)
+      call flushifc(63)
+    end if
 ! output effective fields for fixed spin moment calculations
-  if (fixspin.ne.0) call writefsm(60)
+    if (fixspin.ne.0) call writefsm(60)
 ! check for WRITE file
-  inquire(file='WRITE',exist=exist)
-  if (exist) then
-    write(60,*)
-    write(60,'("WRITE file exists - writing STATE.OUT")')
-    call writestate
-    open(50,file='WRITE')
-    close(50,status='DELETE')
-  end if
-! write STATE.OUT file if required
-  if (nwrite.ge.1) then
-    if (mod(iscl,nwrite).eq.0) then
+    inquire(file='WRITE',exist=exist)
+    if (exist) then
+      write(60,*)
+      write(60,'("WRITE file exists - writing STATE.OUT")')
       call writestate
-      write(60,*)
-      write(60,'("Wrote STATE.OUT")')
+      open(50,file='WRITE')
+      close(50,status='DELETE')
     end if
-  end if
+! write STATE.OUT file if required
+    if (nwrite.ge.1) then
+      if (mod(iscl,nwrite).eq.0) then
+        call writestate
+        write(60,*)
+        write(60,'("Wrote STATE.OUT")')
+      end if
+    end if
+  endif !iproc.eq.0
 ! exit self-consistent loop if last iteration is complete
+  call lsync(tlast,1,.true.)
   if (tlast) goto 20
+  
+  if (iproc.eq.0) then
 ! check for convergence
-  if (iscl.ge.2) then
-    write(60,*)
-    write(60,'("RMS change in effective potential (target) : ",G18.10,&
-     &" (",G18.10,")")') dv,epspot
-    if (dv.lt.epspot) then
+    if (iscl.ge.2) then
       write(60,*)
-      write(60,'("Potential convergence target achieved")')
-      tlast=.true.
+      write(60,'("RMS change in effective potential (target) : ",G18.10,&
+       &" (",G18.10,")")') dv,epspot
+      if (dv.lt.epspot) then
+        write(60,*)
+        write(60,'("Potential convergence target achieved")')
+        tlast=.true.
+      end if
+      write(65,'(G18.10)') dv
+      call flushifc(65)
     end if
-    write(65,'(G18.10)') dv
-    call flushifc(65)
-  end if
-  if (xctype.lt.0) then
-    write(60,*)
-    write(60,'("Magnitude of OEP residue : ",G18.10)') resoep
-  end if
+    if (xctype.lt.0) then
+      write(60,*)
+      write(60,'("Magnitude of OEP residue : ",G18.10)') resoep
+    end if
 ! check for STOP file
-  inquire(file='STOP',exist=exist)
-  if (exist) then
-    write(60,*)
-    write(60,'("STOP file exists - stopping self-consistent loop")')
-    tstop=.true.
-    tlast=.true.
-    open(50,file='STOP')
-    close(50,status='DELETE')
-  end if
+    inquire(file='STOP',exist=exist)
+    if (exist) then
+      write(60,*)
+      write(60,'("STOP file exists - stopping self-consistent loop")')
+      tstop=.true.
+      tlast=.true.
+      open(50,file='STOP')
+      close(50,status='DELETE')
+    end if
 ! output the current total CPU time
-  timetot=timeinit+timemat+timefv+timesv+timerho+timepot+timefor
-  write(60,*)
-  write(60,'("Time (CPU seconds) : ",F12.2)') timetot
+    timetot=timeinit+timemat+timefv+timesv+timerho+timepot+timefor
+    write(60,*)
+    write(60,'("Time (CPU seconds) : ",F12.2)') timetot
+  endif !iproc.eq.0
 ! end the self-consistent loop
 end do
 20 continue
-write(60,*)
-write(60,'("+------------------------------+")')
-write(60,'("| Self-consistent loop stopped |")')
-write(60,'("+------------------------------+")')
-! write density and potentials to file only if maxscl > 1
-if (maxscl.gt.1) then
-  call writestate
+if (iproc.eq.0) then
   write(60,*)
-  write(60,'("Wrote STATE.OUT")')
-end if
+  write(60,'("+------------------------------+")')
+  write(60,'("| Self-consistent loop stopped |")')
+  write(60,'("+------------------------------+")')
+  ! write density and potentials to file only if maxscl > 1
+  if (maxscl.gt.1) then
+    call writestate
+    write(60,*)
+    write(60,'("Wrote STATE.OUT")')
+  end if
+endif !iproc.eq.0
 
-!do ik=1,nkpt
-!! write the eigenvalues/vectors to file
-!  call putevalfv(ik,evalfv(:,:,ik))
-!  call putevalsv(ik,evalsv(1,ik))
-!  call putevecfv(ik,evecfv(:,:,:,ik))
-!  call putevecsv(ik,evecsv(:,:,ik))
-!enddo
+do i=0,nproc-1
+  if (iproc.eq.i) then
+    do ikloc=1,nkptloc(iproc)
+      ik=ikptloc(iproc,1)+ikloc-1
+! write the eigenvalues/vectors to file
+      call putevalfv(ik,evalfv(1,1,ikloc))
+      call putevalsv(ik,evalsv(1,ik))
+      call putevecfv(ik,evecfvloc(1,1,1,ikloc))
+      call putevecsv(ik,evecsvloc(1,1,ikloc))
+    enddo
+  endif
+#ifdef _MPI_
+  call mpi_barrier(MPI_COMM_WORLD,ierr)
+#endif
+enddo
 
-deallocate(evalfv,evecfv,evecsv)
+deallocate(evalfv,evecfvloc,evecsvloc)
+
+call lsync(tstop,1,.true.)
 
 return  
 end
