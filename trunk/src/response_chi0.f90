@@ -47,8 +47,6 @@ complex(8) wt
 character*100 fname
 
 ! for parallel execution
-integer, allocatable :: nkptloc(:)
-integer, allocatable :: ikptloc(:,:)
 integer, allocatable :: ikptiproc(:)
 integer ierr,tag
 integer, allocatable :: status(:)
@@ -98,7 +96,7 @@ if (iproc.eq.0) then
     call pstop
   endif    
   write(150,'("matrix elements were calculated for ",I4," G-vector(s) (", &
-    & I4," G-shell(s))")')ngvec_me,ngsh_me
+    I4," G-shell(s))")')ngvec_me,ngsh_me
 endif
 #ifdef _MPI_
 call mpi_bcast(ngvec_me,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
@@ -161,7 +159,7 @@ allocate(status(MPI_STATUS_SIZE))
 allocate(nkptloc(0:nproc-1))
 allocate(ikptloc(0:nproc-1,2))
 allocate(ikptiproc(nkptnr))
-call splitk(nkptloc,ikptloc)
+call splitk(nkptnr,nproc,nkptloc,ikptloc)
 do i=0,nproc-1
   ikptiproc(ikptloc(i,1):ikptloc(i,2))=i
 enddo
