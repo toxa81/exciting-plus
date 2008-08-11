@@ -118,7 +118,7 @@ if (iproc.eq.0) then
   endif
   
   if (afmchi0.and.(spin_chi.le.2)) then
-    write(150,'("AFM case: chi0 is multiplied by 2)')
+    write(150,'("AFM case: chi0 is multiplied by 2")')
     chi0=chi0*2.d0
   endif  
   
