@@ -837,6 +837,7 @@ case('response')
   read(50,*,err=20) ngsh_me, spin_me 
   read(50,*,err=20) ngsh_chi, spin_chi
   read(50,*,err=20) maxomega, domega, eta
+  read(50,*,err=20) afmchi0
 case('')
   goto 10
 case default

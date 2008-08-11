@@ -117,6 +117,11 @@ if (iproc.eq.0) then
     endif
   endif
   
+  if (afmchi0.and.(spin_chi.le.2)) then
+    write(150,'("AFM case: chi0 is multiplied by 2)')
+    chi0=chi0*2.d0
+  endif  
+  
   allocate(chi(ngvec_chi,nepts))
   
   allocate(vgq0c(3,ngvec_chi))
@@ -135,7 +140,7 @@ if (iproc.eq.0) then
     vc(ig)=fourpi/gq0(ig)**2 
     write(150,'(1X,I4,2X,2F12.6)')ig,gq0(ig),vc(ig)
   enddo
-
+  
   allocate(ipiv(ngvec_chi))
   do ie=1,nepts
 ! compute 1-chi0*V
@@ -183,6 +188,8 @@ if (iproc.eq.0) then
   write(160,'("#   q-vector length         [1/A]    : ",3F18.10)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)/au2ang
   write(160,'("# G-vector information               : ")')
   write(160,'("#   number of G-shells               : ",I4)')ngsh_chi
+  write(160,'("#   number of G-vectors              : ",I4)')ngvec_chi
+  write(160,'("#   index of Gq vector               : ",I4)')igq0
   write(160,'("#")')
   write(160,'("# Definition of columns")')
   write(160,'("#   1: energy            [eV]")')
@@ -190,10 +197,12 @@ if (iproc.eq.0) then
   write(160,'("#   3: -Im chi_0(Gq,Gq)  [1/eV/A^3]")')
   write(160,'("#   4: -Re chi(Gq,Gq)    [1/eV/A^3]")')
   write(160,'("#   5: -Im chi(Gq,Gq)    [1/eV/A^3]")')
+  write(160,'("#   6: S(q,w)            [1/eV/A^3]")')
   write(160,'("#")')
   do ie=1,nepts
-    write(160,'(5F18.10)')dreal(w(ie))*ha2ev,-dreal(chi0(igq0,igq0,ie,1)),&
-      -dimag(chi0(igq0,igq0,ie,1)),-dreal(chi(igq0,ie)),-dimag(chi(igq0,ie))
+    write(160,'(6F18.10)')dreal(w(ie))*ha2ev,-dreal(chi0(igq0,igq0,ie,1)),&
+      -dimag(chi0(igq0,igq0,ie,1)),-dreal(chi(igq0,ie)),-dimag(chi(igq0,ie)), &
+      -2.d0*dimag(chi(igq0,ie))
   enddo
   close(160)
  

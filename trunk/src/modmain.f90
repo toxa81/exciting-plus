@@ -875,6 +875,7 @@ integer spin_chi
 real(8) maxomega
 real(8) domega
 real(8) eta
+logical afmchi0 
 
 logical ismpi
 integer iproc
