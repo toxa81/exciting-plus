@@ -216,7 +216,7 @@ endif
 !endif
 do ik=1,nkptnr
 ! k+q vector
-  vkq0l(:)=vklnr(:,ik)+vq0rl(:)
+  vkq0l(:)=vklnr(:,ik)+vq0rl(:)+1d-10
 ! K vector
   ivg1(:)=floor(vkq0l(:))
 ! reduced k+q vector: k'=k+q-K
@@ -230,7 +230,10 @@ do ik=1,nkptnr
   enddo
   write(*,*)
   write(*,'("Error(response_me): index of reduced k+q point is not found")')
-  write(*,'(" Check q-vector coordinates")')
+  write(*,'(" index of k-point: ",I4)')ik
+  write(*,'(" K-point: ",3I4)')ivg1
+  write(*,'(" reduced k+q vector: ",3G18.10)')vkq0l
+  write(*,'(" check original q-vector coordinates")')
   write(*,*)
   call pstop
 10 continue

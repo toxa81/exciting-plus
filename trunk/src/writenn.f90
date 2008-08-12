@@ -9,7 +9,7 @@ integer ,allocatable :: clust(:,:)
 
 !--- radius of cluster of nearest neighbours (in a.u.)
 real*8               :: rclust = 10.d0
-real*8               :: a(3),v1(3),d1
+real*8               :: a(3),v1(3),d1,v2(3)
 
 integer              :: llim(3)
 
@@ -72,8 +72,10 @@ do is = 1, nspecies
       js = clust(i,1)
       jat = clust(i,2)
       v1 = atposl(:,jat,js) + clust(i,3:5)
-      write(50,'("idx=",I4," jat=",I2,"(js=",A,") i1,i2,i3=",3I3," dist=",G18.10," pos=",3G18.10)') &
-        i,clust(i,2),trim(spsymb(clust(i,1))),clust(i,3:5),clust(i,6)/100000.d0,v1
+      v2 = atposc(:,jat,js) + clust(i,3)*avec(:,1)+clust(i,4)*avec(:,2)+clust(i,5)*avec(:,3) - atposc(:,iat,is)
+
+      write(50,'(I4," jat=",I2,"(",A2,") T=",3I3," dist=",F12.6," pos(lat)=",3F12.6," pos(Cart)=",3F12.6)') &
+        i,clust(i,2),trim(spsymb(clust(i,1))),clust(i,3:5),clust(i,6)/100000.d0,v1,v2
     enddo
   enddo
 enddo    
