@@ -65,7 +65,7 @@ do iscl=1,maxscl
   spnchr=0.d0
   do ikloc=1,nkptloc(iproc)
 #ifdef _MPI_
-    if (iproc.eq.0) write(60,'("k-step ",4," out of ",I4)')ikloc,nkptloc(iproc)
+    if (iproc.eq.0) write(60,'("k-step ",I4," out of ",I4)')ikloc,nkptloc(iproc)
 #endif
     ik=ikptloc(iproc,1)+ikloc-1
 ! solve the first- and second-variational secular equations
