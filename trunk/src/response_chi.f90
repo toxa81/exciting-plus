@@ -35,6 +35,7 @@ real(8), allocatable :: vc(:)
 integer nspin_chi0
 
 ! allocatable arrays
+real(8), allocatable :: func(:,:)
 complex(8), allocatable :: mtrx1(:,:)
 integer, allocatable :: ipiv(:)
 
@@ -197,13 +198,24 @@ if (iproc.eq.0) then
   write(160,'("#   3: -Im chi_0(Gq,Gq)  [1/eV/A^3]")')
   write(160,'("#   4: -Re chi(Gq,Gq)    [1/eV/A^3]")')
   write(160,'("#   5: -Im chi(Gq,Gq)    [1/eV/A^3]")')
-  write(160,'("#   6: S(q,w)            [1/eV/A^3]")')
+  write(160,'("#   6:  S(q,w)           [1/eV/A^3]")')
+  write(160,'("#   7:  Re epsilon_eff   [eV*A^3]")')
+  write(160,'("#   8:  Im epsilon_eff   [eV*A^3]")')
+  
   write(160,'("#")')
+  allocate(func(8,nepts))
   do ie=1,nepts
-    write(160,'(6F18.10)')dreal(w(ie))*ha2ev,-dreal(chi0(igq0,igq0,ie,1)),&
-      -dimag(chi0(igq0,igq0,ie,1)),-dreal(chi(igq0,ie)),-dimag(chi(igq0,ie)), &
-      -2.d0*dimag(chi(igq0,ie))
+    func(1,ie)=dreal(w(ie))*ha2ev
+    func(2,ie)=-dreal(chi0(igq0,igq0,ie,1))
+    func(3,ie)=-dimag(chi0(igq0,igq0,ie,1))
+    func(4,ie)=-dreal(chi(igq0,ie))
+    func(5,ie)=-dimag(chi(igq0,ie))
+    func(6,ie)=-2.d0*dimag(chi(igq0,ie))
+    func(7,ie)=dreal(0.5d0/chi(igq0,ie))
+    func(8,ie)=dimag(0.5d0/chi(igq0,ie))
+    write(160,'(8F18.10)')func(1:8,ie)
   enddo
+  deallocate(func)
   close(160)
  
   deallocate(w)
