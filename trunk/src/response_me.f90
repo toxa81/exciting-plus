@@ -231,7 +231,7 @@ do ik=1,nkptnr
   write(*,*)
   write(*,'("Error(response_me): index of reduced k+q point is not found")')
   write(*,'(" index of k-point: ",I4)')ik
-  write(*,'(" K-point: ",3I4)')ivg1
+  write(*,'(" K-vector: ",3I4)')ivg1
   write(*,'(" reduced k+q vector: ",3G18.10)')vkq0l
   write(*,'(" check original q-vector coordinates")')
   write(*,*)
