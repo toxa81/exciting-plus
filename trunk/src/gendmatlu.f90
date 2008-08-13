@@ -32,8 +32,8 @@ do ikloc=1,nkptloc(iproc)
   ik=ikptloc(iproc,1)+ikloc-1
 ! find the matching coefficients
   do ispn=1,nspnfv
-    call match(ngk(ik,ispn),gkc(1,ik,ispn),tpgkc(1,1,ik,ispn), &
-     sfacgk(1,1,ik,ispn),apwalm(1,1,1,1,ispn))
+    call match(ngk(ikloc,ispn),gkc(1,ikloc,ispn),tpgkc(1,1,ikloc,ispn), &
+     sfacgk(1,1,ikloc,ispn),apwalm(1,1,1,1,ispn))
   end do
 ! begin loop over atoms and species
   do is=1,nspecies
@@ -62,7 +62,7 @@ do ikloc=1,nkptloc(iproc)
                 zt1=evecsvloc(i,j,ikloc)
                 if (abs(dble(zt1))+abs(aimag(zt1)).gt.epsocc) then
                   if (.not.done(ist,jspn)) then
-                    call wavefmt(lradstp,lmaxvr,is,ia,ngk(ik,jspn), &
+                    call wavefmt(lradstp,lmaxvr,is,ia,ngk(ikloc,jspn), &
                      apwalm(1,1,1,1,jspn),evecfvloc(1,ist,jspn,ikloc),lmmaxvr, &
                      wfmt1(1,1,ist,jspn))
                     done(ist,jspn)=.true.
@@ -74,7 +74,7 @@ do ikloc=1,nkptloc(iproc)
             end do
           else
 ! spin-unpolarised wavefunction
-            call wavefmt(lradstp,lmaxvr,is,ia,ngk(ik,1),apwalm,evecfvloc(1,j,1,ikloc), &
+            call wavefmt(lradstp,lmaxvr,is,ia,ngk(ikloc,1),apwalm,evecfvloc(1,j,1,ikloc), &
              lmmaxvr,wfmt2)
           end if
         end if

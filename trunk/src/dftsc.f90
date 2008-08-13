@@ -70,9 +70,8 @@ do iscl=1,maxscl
       call flushifc(60)
     endif
 #endif
-    ik=ikptloc(iproc,1)+ikloc-1
 ! solve the first- and second-variational secular equations
-    call seceqn(ik,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
+    call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
   enddo
   call dsync(evalsv,nstsv*nkpt,.true.,.false.)
   call dsync(spnchr,nspinor*nstsv*nkpt,.true.,.false.)
@@ -95,9 +94,8 @@ do iscl=1,maxscl
     magir(:,:)=0.d0
   end if
   do ikloc=1,nkptloc(iproc)
-    ik=ikptloc(iproc,1)+ikloc-1
 ! add to the density and magnetisation
-    call rhovalk(ik,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
+    call rhovalk(ikloc,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
   end do
   call dsync(rhomt,lmmaxvr*nrmtmax*natmtot,.true.,.true.)
   call dsync(rhoir,ngrtot,.true.,.true.)

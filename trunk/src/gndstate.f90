@@ -37,10 +37,6 @@ if ((task.eq.2).or.(task.eq.3)) tforce=.true.
 call init0
 call init1
 
-allocate(nkptloc(0:nproc-1)) 
-allocate(ikptloc(0:nproc-1,2))
-call splitk(nkpt,nproc,nkptloc,ikptloc)
-
 ! initialise OEP variables if required
 if (xctype.lt.0) call init2
 if (iproc.eq.0) then

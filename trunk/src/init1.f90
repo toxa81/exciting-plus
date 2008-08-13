@@ -9,6 +9,9 @@
 subroutine init1
 ! !USES:
 use modmain
+#ifdef _MPI_
+use mpi
+#endif
 ! !DESCRIPTION:
 !   Generates the $k$-point set and then allocates and initialises global
 !   variables which depend on the $k$-point set.
@@ -19,11 +22,12 @@ use modmain
 !BOC
 implicit none
 ! local variables
-integer ik,is,ia,ias,io,ilo
+integer ik,is,ia,ias,io,ilo,ikloc
 integer i1,i2,i3,ispn,iv(3)
 integer l1,l2,l3,m1,m2,m3,lm1,lm2,lm3
 real(8) vl(3),vc(3)
 real(8) cpu0,cpu1
+integer nmatmax0,nstfv0,ierr
 ! external functions
 complex(8) gauntyry
 external gauntyry
@@ -110,6 +114,10 @@ else
   call genppts(.false.,ngridk,vkloff,nkptnr,ikmapnr,ivknr,vklnr,vkcnr,wkptnr)
 end if
 
+allocate(nkptloc(0:nproc-1))
+allocate(ikptloc(0:nproc-1,2))
+call splitk(nkpt,nproc,nkptloc,ikptloc)
+
 !---------------------!
 !     G+k vectors     !
 !---------------------!
@@ -125,21 +133,22 @@ end if
 call getngkmax
 ! allocate the G+k-vector arrays
 if (allocated(ngk)) deallocate(ngk)
-allocate(ngk(nkpt,nspnfv))
+allocate(ngk(nkptloc(iproc),nspnfv))
 if (allocated(igkig)) deallocate(igkig)
-allocate(igkig(ngkmax,nkpt,nspnfv))
+allocate(igkig(ngkmax,nkptloc(iproc),nspnfv))
 if (allocated(vgkl)) deallocate(vgkl)
-allocate(vgkl(3,ngkmax,nkpt,nspnfv))
+allocate(vgkl(3,ngkmax,nkptloc(iproc),nspnfv))
 if (allocated(vgkc)) deallocate(vgkc)
-allocate(vgkc(3,ngkmax,nkpt,nspnfv))
+allocate(vgkc(3,ngkmax,nkptloc(iproc),nspnfv))
 if (allocated(gkc)) deallocate(gkc)
-allocate(gkc(ngkmax,nkpt,nspnfv))
+allocate(gkc(ngkmax,nkptloc(iproc),nspnfv))
 if (allocated(tpgkc)) deallocate(tpgkc)
-allocate(tpgkc(2,ngkmax,nkpt,nspnfv))
+allocate(tpgkc(2,ngkmax,nkptloc(iproc),nspnfv))
 if (allocated(sfacgk)) deallocate(sfacgk)
-allocate(sfacgk(ngkmax,natmtot,nkpt,nspnfv))
+allocate(sfacgk(ngkmax,natmtot,nkptloc(iproc),nspnfv))
 do ispn=1,nspnfv
-  do ik=1,nkpt
+  do ikloc=1,nkptloc(iproc)
+    ik=ikptloc(iproc,1)+ikloc-1
     if (spinsprl) then
 ! spin-spiral case
       if (ispn.eq.1) then
@@ -154,10 +163,10 @@ do ispn=1,nspnfv
       vc(:)=vkc(:,ik)
     end if
 ! generate the G+k-vectors
-    call gengpvec(vl,vc,ngk(ik,ispn),igkig(1,ik,ispn),vgkl(1,1,ik,ispn), &
-     vgkc(1,1,ik,ispn),gkc(1,ik,ispn),tpgkc(1,1,ik,ispn))
+    call gengpvec(vl,vc,ngk(ikloc,ispn),igkig(1,ikloc,ispn),vgkl(1,1,ikloc,ispn), &
+     vgkc(1,1,ikloc,ispn),gkc(1,ikloc,ispn),tpgkc(1,1,ikloc,ispn))
 ! generate structure factors for G+k-vectors
-    call gensfacgp(ngk(ik,ispn),vgkc(1,1,ik,ispn),ngkmax,sfacgk(1,1,ik,ispn))
+    call gensfacgp(ngk(ikloc,ispn),vgkc(1,1,ikloc,ispn),ngkmax,sfacgk(1,1,ikloc,ispn))
   end do
 end do
 
@@ -217,20 +226,28 @@ allocate(lofr(nrmtmax,2,nlomax,natmtot))
 nstfv=int(chgval/2.d0)+nempty+1
 ! overlap and Hamiltonian matrix sizes
 if (allocated(nmat)) deallocate(nmat)
-allocate(nmat(nkpt,nspnfv))
+allocate(nmat(nkptloc(iproc),nspnfv))
 if (allocated(npmat)) deallocate(npmat)
-allocate(npmat(nkpt,nspnfv))
+allocate(npmat(nkptloc(iproc),nspnfv))
 nmatmax=0
 do ispn=1,nspnfv
-  do ik=1,nkpt
-    nmat(ik,ispn)=ngk(ik,ispn)+nlotot
-    nmatmax=max(nmatmax,nmat(ik,ispn))
+  do ikloc=1,nkptloc(iproc)
+    nmat(ikloc,ispn)=ngk(ikloc,ispn)+nlotot
+    nmatmax=max(nmatmax,nmat(ikloc,ispn))
 ! packed matrix sizes
-    npmat(ik,ispn)=(nmat(ik,ispn)*(nmat(ik,ispn)+1))/2
+    npmat(ikloc,ispn)=(nmat(ikloc,ispn)*(nmat(ikloc,ispn)+1))/2
 ! the number of first-variational states should not exceed the matrix size
-    nstfv=min(nstfv,nmat(ik,ispn))
+    nstfv=min(nstfv,nmat(ikloc,ispn))
   end do
 end do
+#ifdef _MPI_
+call mpi_reduce(nmatmax,nmatmax0,1,MPI_INTEGER,MPI_MAX,0,MPI_COMM_WORLD,ierr)
+call mpi_reduce(nstfv,nstfv0,1,MPI_INTEGER,MPI_MIN,0,MPI_COMM_WORLD,ierr)
+nmatmax=nmatmax0
+nstfv=nstfv0
+call mpi_bcast(nmatmax,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(nstfv,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+#endif
 ! number of second-variational states
 nstsv=nstfv*nspinor
 ! allocate second-variational arrays

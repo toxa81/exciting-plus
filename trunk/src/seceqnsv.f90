@@ -14,7 +14,7 @@ real(8), intent(in) :: evalfv(nstfv)
 complex(8), intent(in) :: evecfv(nmatmax,nstfv)
 complex(8), intent(out) :: evecsv(nstsv,nstsv)
 ! local variables
-integer ispn,jspn,ia,is,ias
+integer ispn,jspn,ia,is,ias,ikglob
 integer ist,jst,i,j,k,l,lm,nm
 integer ir,irc,igk,ifg
 integer nsc,lwork,info
@@ -46,10 +46,11 @@ complex(8), allocatable :: work(:)
 ! external functions
 complex(8) zdotc,zfmtinp
 external zdotc,zfmtinp
+ikglob=ikptloc(iproc,1)+ik-1
 ! spin-unpolarised case
 if ((.not.spinpol).and.(ldapu.eq.0)) then
   do i=1,nstsv
-    evalsv(i,ik)=evalfv(i)
+    evalsv(i,ikglob)=evalfv(i)
   end do
   evecsv(:,:)=0.d0
   do i=1,nstsv
@@ -280,10 +281,10 @@ end do
 ! diagonalise second-variational Hamiltonian
 if (ndmag.eq.1) then
 ! collinear: block diagonalise H
-  call zheev('V','U',nstfv,evecsv,nstsv,evalsv(1,ik),work,lwork,rwork,info)
+  call zheev('V','U',nstfv,evecsv,nstsv,evalsv(1,ikglob),work,lwork,rwork,info)
   if (info.ne.0) goto 20
   i=nstfv+1
-  call zheev('V','U',nstfv,evecsv(i,i),nstsv,evalsv(i,ik),work,lwork,rwork,info)
+  call zheev('V','U',nstfv,evecsv(i,i),nstsv,evalsv(i,ikglob),work,lwork,rwork,info)
   if (info.ne.0) goto 20
   do i=1,nstfv
     do j=1,nstfv
@@ -293,7 +294,7 @@ if (ndmag.eq.1) then
   end do
 else
 ! non-collinear or spin-unpolarised: full diagonalisation
-  call zheev('V','U',nstsv,evecsv,nstsv,evalsv(1,ik),work,lwork,rwork,info)
+  call zheev('V','U',nstsv,evecsv,nstsv,evalsv(1,ikglob),work,lwork,rwork,info)
   if (info.ne.0) goto 20
 end if
 deallocate(bmt,bir,vr,drv,cf,sor,rwork)
@@ -307,7 +308,7 @@ return
 write(*,*)
 write(*,'("Error(seceqnsv): diagonalisation of the second-variational &
  &Hamiltonian failed")')
-write(*,'(" for k-point ",I8)') ik
+write(*,'(" for k-point ",I8)') ikglob
 write(*,'(" ZHEEV returned INFO = ",I8)') info
 write(*,*)
 stop

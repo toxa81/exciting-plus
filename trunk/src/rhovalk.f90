@@ -36,7 +36,7 @@ integer, intent(in) :: ik
 complex(8), intent(in) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
 ! local variables
-integer nsd,ispn,jspn,is,ia,ias,ist
+integer nsd,ispn,jspn,is,ia,ias,ist,ikglob
 integer ir,irc,itp,igk,ifg,lm,i,j,n
 real(8) wo,t1,t2,t3
 real(8) cpu0,cpu1
@@ -50,6 +50,7 @@ complex(8), allocatable :: wfmt1(:,:)
 complex(8), allocatable :: wfmt2(:,:,:,:)
 complex(8), allocatable :: wfmt3(:,:,:)
 complex(8), allocatable :: zfft(:,:)
+ikglob=ikptloc(iproc,1)+ik-1
 call cpu_time(cpu0)
 if (spinpol) then
   if (ndmag.eq.3) then
@@ -83,7 +84,7 @@ do is=1,nspecies
     done(:,:)=.false.
     rfmt(:,:,:)=0.d0
     do j=1,nstsv
-      wo=wkpt(ik)*occsv(j,ik)
+      wo=wkpt(ikglob)*occsv(j,ikglob)
       if (abs(wo).gt.epsocc) then
         if (tevecsv) then
 ! generate spinor wavefunction from second-variational eigenvectors
@@ -182,7 +183,7 @@ end do
 !     interstitial density     !
 !------------------------------!
 do j=1,nstsv
-  wo=wkpt(ik)*occsv(j,ik)
+  wo=wkpt(ikglob)*occsv(j,ikglob)
   if (abs(wo).gt.epsocc) then
     t1=wo/omega
     zfft(:,:)=0.d0
