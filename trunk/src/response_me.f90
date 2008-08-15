@@ -401,10 +401,10 @@ enddo
 !        (they can be stored on any proc)
 !     2) eigen-vectors at irreducible part of BZ corrsponding to k'=k+q point
 !        (they can be stored on any proc)
-!     3) G+k arrays for non reduced BZ
+!     3) G+k' arrays for non reduced BZ
+!        (they can be stored on any proc)
+!     4) G+k arrays for non reduced BZ
 !        (they are always stored on the same proc and not transfered)
-!     4) G+k' arrays for non reduced BZ
-!        (thet can be stored on any proc)
 allocate(isend(nkptlocnr(0),0:nproc-1,8))
 isend=-1
 do ikstep=1,nkptlocnr(0)
@@ -420,8 +420,8 @@ do ikstep=1,nkptlocnr(0)
       isend(ikstep,i,5)=ikptiproc(ikq(ik,3))
       isend(ikstep,i,6)=ikq(ik,3)-ikptloc(isend(ikstep,i,5),1)+1
 ! for non reduced k' point find the proc and local index
-      isend(ikstep,i,7)=ikptiprocnr(ik)
-      isend(ikstep,i,8)=ik-ikptlocnr(isend(ikstep,i,7),1)+1
+      isend(ikstep,i,7)=ikptiprocnr(ikq(ik,1))
+      isend(ikstep,i,8)=ikq(ik,1)-ikptlocnr(isend(ikstep,i,7),1)+1
     endif
   enddo
 enddo
