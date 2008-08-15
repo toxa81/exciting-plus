@@ -178,6 +178,7 @@ write(fnum,*)
 write(fnum,'("Smallest muffin-tin radius times maximum |G+k| : ",G18.10)') &
  rgkmax
 write(fnum,'("Maximum |G+k| for APW functions       : ",G18.10)') gkmax
+write(fnum,'("Maximum number of G+k vectors         : ",I5)') ngkmax
 write(fnum,'("Maximum |G| for potential and density : ",G18.10)') gmaxvr
 write(fnum,'("Polynomial order for pseudocharge density : ",I4)') npsden
 write(fnum,*)
