@@ -594,17 +594,20 @@ do i=0,nproc-1
   endif !i.eq.iproc
   call mpi_barrier(MPI_COMM_WORLD,ierr)
 enddo 
-  
-deallocate(nkptlocnr)
-deallocate(ikptlocnr)
-deallocate(status)
+
 deallocate(isend)
+deallocate(status)
 deallocate(evecfv1)
 deallocate(evecsv1)
 deallocate(evecfv2)
 deallocate(evecsv2)
 deallocate(zrhofc)
-
+deallocate(vgklnr2)
+deallocate(gknr2)
+deallocate(tpgknr2)
+deallocate(sfacgknr2)
+deallocate(igkignr2)
+  
 #else
 
 allocate(evecfv1(nmatmax,nstfv,nspnfv))
@@ -659,12 +662,17 @@ do ik=1,nkptnr
   write(160)zrhofc(1:ngvec_me,1:num_nnp(ik),1)
 enddo !ik
 close(160)
+
 deallocate(evecfv1)
 deallocate(evecsv1)
 deallocate(zrhofc)
 
 #endif
 
+deallocate(nkptlocnr)
+deallocate(ikptlocnr)
+deallocate(ikptiproc)
+deallocate(ikptiprocnr)
 deallocate(vgklnr)
 deallocate(vgkcnr)
 deallocate(gknr)
@@ -850,14 +858,5 @@ do i=1,nproc-1
   ikptloc(i,2)=ikptloc(i,1)+nkptloc(i)-1
 enddo
     
-!if (iproc.eq.0) then
-!  write(150,*)
-!  write(150,'(" iproc  first k   last k   nkpt ")')
-!  write(150,'(" ------------------------------ ")')
-!  do i=0,nproc-1
-!    write(150,'(1X,I4,4X,I4,5X,I4,5X,I4)')i,ikptloc(i,1),ikptloc(i,2),nkptloc(i)
-!  enddo
-!endif
-
 return
 end
