@@ -538,10 +538,6 @@ do ikstep=1,nkptlocnr(0)
   endif
 
   call mpi_barrier(MPI_COMM_WORLD,ierr)
-  if (iproc.eq.0) then
-    write(150,'("send and recieve done")')
-    call flushifc(150)
-  endif
       
   if (ikstep.le.nkptlocnr(iproc)) then
     ik=ikptlocnr(iproc,1)+ikstep-1
