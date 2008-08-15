@@ -307,6 +307,10 @@ do ik=1,nkptnr
   num_nnp(ik)=i1
   max_num_nnp=max(max_num_nnp,i1)
 enddo
+if (iproc.eq.0) then
+  write(150,*)
+  write(150,'("Maximum number of interband transitions: ",I5)')max_num_nnp
+endif
 allocate(nnp(nkptnr,max_num_nnp,3))
 allocate(docc(nkptnr,max_num_nnp))
 ! second, setup the nnp array
@@ -534,6 +538,10 @@ do ikstep=1,nkptlocnr(0)
   endif
 
   call mpi_barrier(MPI_COMM_WORLD,ierr)
+  if (iproc.eq.0) then
+    write(150,'("send and recieve done")')
+    call flushifc(150)
+  endif
       
   if (ikstep.le.nkptlocnr(iproc)) then
     ik=ikptlocnr(iproc,1)+ikstep-1
@@ -553,11 +561,9 @@ do ikstep=1,nkptlocnr(0)
       znorm=zfint(zrhomt,zrhoir)
       if (abs(znorm-1.d0).gt.0.1d0) then
         write(*,*)
-        write(*,'("Error(response_me): bad norm ",G18.10," of wave-function ",&
+        write(*,'("Warning(response_me): bad norm ",G18.10," of wave-function ",&
           & I4," at k-point ",I4)')abs(znorm),i,ik
-	write(*,'("  try to switch off the symmetry")')
 	write(*,*)
-	call pstop
       endif
     enddo
 
@@ -637,7 +643,7 @@ do ik=1,nkptnr
     call vnlrho(.true.,wfmt1(1,1,1,1,i),wfmt1(1,1,1,1,i),wfir1(1,1,i), &
       wfir1(1,1,i),zrhomt,zrhoir)
     znorm=zfint(zrhomt,zrhoir)
-    if (abs(znorm-1.d0).gt.0.01d0) then
+    if (abs(znorm-1.d0).gt.0.1d0) then
       write(150,'("Warning: bad norm ",G18.10," of wave-function ",&
         & I4," at k-point ",I4)')abs(znorm),i,ik
     endif
@@ -820,7 +826,6 @@ implicit none
 integer ierr
 
 #ifdef _MPI_
-call mpi_barrier(MPI_COMM_WORLD,ierr)
 call mpi_abort(MPI_COMM_WORLD,-1,ierr)
 call mpi_finalize(ierr)
 #else

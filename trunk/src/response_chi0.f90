@@ -47,7 +47,9 @@ complex(8) wt
 character*100 fname
 
 ! for parallel execution
-integer, allocatable :: ikptiproc(:)
+integer, allocatable :: nkptlocnr(:)
+integer, allocatable :: ikptlocnr(:,:)
+integer, allocatable :: ikptiprocnr(:)
 integer ierr,tag
 integer, allocatable :: status(:)
 
@@ -156,15 +158,15 @@ if (iproc.eq.0) allocate(chi0(ngvec_me,ngvec_me,nepts,nspin_chi0))
 
 allocate(chi0_loc(ngvec_me,ngvec_me,nepts,nspin_chi0))
 allocate(status(MPI_STATUS_SIZE))
-allocate(nkptloc(0:nproc-1))
-allocate(ikptloc(0:nproc-1,2))
-allocate(ikptiproc(nkptnr))
-call splitk(nkptnr,nproc,nkptloc,ikptloc)
+allocate(nkptlocnr(0:nproc-1))
+allocate(ikptlocnr(0:nproc-1,2))
+allocate(ikptiprocnr(nkptnr))
+call splitk(nkptnr,nproc,nkptlocnr,ikptlocnr)
 do i=0,nproc-1
-  ikptiproc(ikptloc(i,1):ikptloc(i,2))=i
+  ikptiprocnr(ikptlocnr(i,1):ikptlocnr(i,2))=i
 enddo
 
-allocate(zrhofc(ngvec_me,max_num_nnp,nkptloc(iproc)))
+allocate(zrhofc(ngvec_me,max_num_nnp,nkptlocnr(iproc)))
 do ik=1,nkptnr
 ! only root proc reads matrix elements from file
   if (iproc.eq.0) then
@@ -176,15 +178,15 @@ do ik=1,nkptnr
       call pstop
     endif
     read(160)zrhofc1(1:ngvec_me,1:num_nnp(ik))
-    if (ik.le.nkptloc(0)) then
+    if (ik.le.nkptlocnr(0)) then
       zrhofc(:,:,ik)=zrhofc1(:,:)
     else
       tag=ik
-      call mpi_send(zrhofc1,ngvec_me*max_num_nnp,MPI_DOUBLE_COMPLEX,ikptiproc(ik),tag,MPI_COMM_WORLD,ierr)
+      call mpi_send(zrhofc1,ngvec_me*max_num_nnp,MPI_DOUBLE_COMPLEX,ikptiprocnr(ik),tag,MPI_COMM_WORLD,ierr)
     endif
   else
-    if (ik.ge.ikptloc(iproc,1).and.ik.le.ikptloc(iproc,2)) then
-      ikloc=ik-ikptloc(iproc,1)+1
+    if (ik.ge.ikptlocnr(iproc,1).and.ik.le.ikptlocnr(iproc,2)) then
+      ikloc=ik-ikptlocnr(iproc,1)+1
       tag=ik
       call mpi_recv(zrhofc1,ngvec_me*max_num_nnp,MPI_DOUBLE_COMPLEX,0,tag,MPI_COMM_WORLD,status,ierr)
       zrhofc(:,:,ikloc)=zrhofc1(:,:)
@@ -202,10 +204,10 @@ if (iproc.eq.0) then
   write(150,'("Starting k-point summation")')
 endif
 chi0_loc=dcmplx(0.d0,0.d0)
-do ikloc=1,nkptloc(iproc)
-  ik=ikptloc(iproc,1)+ikloc-1
+do ikloc=1,nkptlocnr(iproc)
+  ik=ikptlocnr(iproc,1)+ikloc-1
   if (iproc.eq.0) then
-    write(150,'("k-step ",I4," out of ",I4)')ikloc,nkptloc(0)
+    write(150,'("k-step ",I4," out of ",I4)')ikloc,nkptlocnr(0)
     call flushifc(150)
   endif
   do i=1,num_nnp(ik)
@@ -230,9 +232,9 @@ enddo !ispn
 
 deallocate(chi0_loc)
 deallocate(status)
-deallocate(nkptloc)
-deallocate(ikptloc)
-deallocate(ikptiproc)
+deallocate(nkptlocnr)
+deallocate(ikptlocnr)
+deallocate(ikptiprocnr)
 deallocate(zrhofc)
 
 #else
