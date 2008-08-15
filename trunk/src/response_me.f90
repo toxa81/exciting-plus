@@ -703,6 +703,12 @@ deallocate(num_nnp)
 deallocate(nnp)
 deallocate(docc)
 
+if (iproc.eq.0) then
+  write(150,*)
+  write(150,'("Done.")')
+  call flushifc(150)
+endif
+
 return
 end
 
