@@ -437,33 +437,6 @@ do ikstep=1,nkptlocnr(0)
     endif
   enddo
 enddo
-
-!if (iproc.eq.0) then
-!  write(150,*)
-!  do ikstep=1,nkptlocnr(0)
-!    write(150,'("ikstep= ",I4)')ikstep
-!    do i=0,nproc-1
-!      if (ikstep.le.nkptlocnr(i)) then
-!        ik=ikptlocnr(i,1)+ikstep-1
-!        write(150,'("  iproc= ",I4," ikglob=",I4)')i,ik
-!	write(150,'("    iproc1=",I4," ikloc1=",I4)')isend(ikstep,i,3),isend(ikstep,i,4)
-!	write(150,'("    iproc2=",I4," ikloc2=",I4)')isend(ikstep,i,5),isend(ikstep,i,6)
-!	write(150,'("    iproc3=",I4," ikloc3=",I4)')isend(ikstep,i,7),isend(ikstep,i,8)
-!	if (isend(ikstep,i,4).gt.nkptloc(isend(ikstep,i,3)).or. &
-!	    isend(ikstep,i,6).gt.nkptloc(isend(ikstep,i,5)).or. &
-!	    isend(ikstep,i,8).gt.nkptlocnr(isend(ikstep,i,7))) then
-!	  write(150,'("Error is here!")')
-!	  call pstop
-!	endif
-!      endif
-!    enddo
-!    write(150,*)
-!  enddo
-!endif
-	
-	
-              
-  
     
 allocate(status(MPI_STATUS_SIZE))
 allocate(evecfv1(nmatmax,nstfv,nspnfv))
