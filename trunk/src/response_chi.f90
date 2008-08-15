@@ -40,6 +40,7 @@ complex(8), allocatable :: mtrx1(:,:)
 integer, allocatable :: ipiv(:)
 
 integer ie,ig,ngsh_me_,info,i,j
+complex(8) chi_scalar
 character*100 fname
 character*4 name1,name2,name3
 
@@ -200,10 +201,12 @@ if (iproc.eq.0) then
   write(160,'("#   6:  S(q,w)           [1/eV/A^3]")')
   write(160,'("#   7:  Re epsilon_eff   [eV*A^3]")')
   write(160,'("#   8:  Im epsilon_eff   [eV*A^3]")')
-  
+  write(160,'("#   9: -Re chi_scalar    [1/eV/A^3]")')
+  write(160,'("#  10: -Im chi_scalar    [1/eV/A^3]")')
   write(160,'("#")')
-  allocate(func(8,nepts))
+  allocate(func(10,nepts))
   do ie=1,nepts
+    chi_scalar=chi0(igq0,igq0,ie,1)/(1.d0-vc(igq0)*chi0(igq0,igq0,ie,1))
     func(1,ie)=dreal(w(ie))*ha2ev
     func(2,ie)=-dreal(chi0(igq0,igq0,ie,1))
     func(3,ie)=-dimag(chi0(igq0,igq0,ie,1))
@@ -212,7 +215,9 @@ if (iproc.eq.0) then
     func(6,ie)=-2.d0*dimag(chi(igq0,ie))
     func(7,ie)=dreal(0.5d0/chi(igq0,ie))
     func(8,ie)=dimag(0.5d0/chi(igq0,ie))
-    write(160,'(8F18.10)')func(1:8,ie)
+    func(9,ie)=-dreal(chi_scalar)
+    func(10,ie)=-dimag(chi_scalar)
+    write(160,'(10F18.10)')func(1:10,ie)
   enddo
   deallocate(func)
   close(160)
