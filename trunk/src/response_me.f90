@@ -492,7 +492,6 @@ do ikstep=1,nkptlocnr(0)
       call mpi_recv(evecsv1,nstsv*nstsv,MPI_DOUBLE_COMPLEX,isend(ikstep,iproc,3),tag,MPI_COMM_WORLD,status,ierr)
     else
       ik=isend(ikstep,iproc,4)
-      write(150,*)'ikstep=',ikstep,'ik=',ik
       evecfv1(:,:,:)=evecfvloc(:,:,:,ik)
       evecsv1(:,:)=evecsvloc(:,:,ik)
     endif
