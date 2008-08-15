@@ -138,7 +138,15 @@ do i=0,nproc-1
 enddo
 if (iproc.eq.0.and.nproc.gt.1) then
   write(150,*)
+  write(150,'("Reduced k-points division:")')
   write(150,'(" iproc  first k   last k   nkpt ")')
+  write(150,'(" ------------------------------ ")')
+  do i=0,nproc-1
+    write(150,'(1X,I4,4X,I4,5X,I4,5X,I4)')i,ikptloc(i,1),ikptloc(i,2),nkptloc(i)
+  enddo
+  write(150,*)
+  write(150,'("Non-reduced k-points division:")')
+   write(150,'(" iproc  first k   last k   nkpt ")')
   write(150,'(" ------------------------------ ")')
   do i=0,nproc-1
     write(150,'(1X,I4,4X,I4,5X,I4,5X,I4)')i,ikptlocnr(i,1),ikptlocnr(i,2),nkptlocnr(i)
@@ -429,6 +437,33 @@ do ikstep=1,nkptlocnr(0)
     endif
   enddo
 enddo
+
+!if (iproc.eq.0) then
+!  write(150,*)
+!  do ikstep=1,nkptlocnr(0)
+!    write(150,'("ikstep= ",I4)')ikstep
+!    do i=0,nproc-1
+!      if (ikstep.le.nkptlocnr(i)) then
+!        ik=ikptlocnr(i,1)+ikstep-1
+!        write(150,'("  iproc= ",I4," ikglob=",I4)')i,ik
+!	write(150,'("    iproc1=",I4," ikloc1=",I4)')isend(ikstep,i,3),isend(ikstep,i,4)
+!	write(150,'("    iproc2=",I4," ikloc2=",I4)')isend(ikstep,i,5),isend(ikstep,i,6)
+!	write(150,'("    iproc3=",I4," ikloc3=",I4)')isend(ikstep,i,7),isend(ikstep,i,8)
+!	if (isend(ikstep,i,4).gt.nkptloc(isend(ikstep,i,3)).or. &
+!	    isend(ikstep,i,6).gt.nkptloc(isend(ikstep,i,5)).or. &
+!	    isend(ikstep,i,8).gt.nkptlocnr(isend(ikstep,i,7))) then
+!	  write(150,'("Error is here!")')
+!	  call pstop
+!	endif
+!      endif
+!    enddo
+!    write(150,*)
+!  enddo
+!endif
+	
+	
+              
+  
     
 allocate(status(MPI_STATUS_SIZE))
 allocate(evecfv1(nmatmax,nstfv,nspnfv))
@@ -455,7 +490,7 @@ do ikstep=1,nkptlocnr(0)
   do i=0,nproc-1
     if (isend(ikstep,i,3).eq.iproc.and.iproc.ne.i) then
       tag=(ikstep*nproc+i)*10
-      ik=isend(ikstep,iproc,4)
+      ik=isend(ikstep,i,4)
       call mpi_isend(evecfvloc(1,1,1,ik),nmatmax*nstfv*nspnfv, &
         MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
       tag=tag+1
@@ -464,7 +499,7 @@ do ikstep=1,nkptlocnr(0)
     endif
     if (isend(ikstep,i,5).eq.iproc.and.iproc.ne.i) then
       tag=(ikstep*nproc+i)*10+2
-      ik=isend(ikstep,iproc,6)
+      ik=isend(ikstep,i,6)
       call mpi_isend(evecfvloc(1,1,1,ik),nmatmax*nstfv*nspnfv, &
         MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
       tag=tag+1
@@ -473,7 +508,7 @@ do ikstep=1,nkptlocnr(0)
     endif
     if (isend(ikstep,i,7).eq.iproc.and.iproc.ne.i) then
       tag=(ikstep*nproc+i)*10+4
-      ik=isend(ikstep,iproc,8)
+      ik=isend(ikstep,i,8)
       call mpi_isend(ngknr(ik),1,MPI_INTEGER,i,tag,MPI_COMM_WORLD,req,ierr)
       tag=tag+1
       call mpi_isend(vgklnr(1,1,ik),3*ngkmax,MPI_DOUBLE_PRECISION,i,tag,MPI_COMM_WORLD,req,ierr)

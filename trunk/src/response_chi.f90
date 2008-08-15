@@ -66,14 +66,13 @@ if (iproc.eq.0) then
   close(160)
   
   write(150,'("chi0 was calculated for ",I4," G-vector(s) (",I4,&
-    & " G-shell(s))")')ngvec_me,ngsh_me 
-  if (spin_me.eq.1) write(150,'("chi0 was calculated for spin up")')
-  if (spin_me.eq.2) write(150,'("chi0 was calculated for spin dn")')
-  if (spin_me.eq.3) write(150,'("chi0 was calculated for both spins")')
+    & " G-shell(s))")')ngvec_me,ngsh_me
+  if (spinpol) then 
+    if (spin_me.eq.1) write(150,'("chi0 was calculated for spin up")')
+    if (spin_me.eq.2) write(150,'("chi0 was calculated for spin dn")')
+    if (spin_me.eq.3) write(150,'("chi0 was calculated for both spins")')
+  endif
   
-! find number of G-vectors by given number of G-shells
-!  call getngvec(ngsh_chi,ngvec_chi)
-
   if (igq0.gt.ngvec_chi) then
     write(*,*)
     write(*,'("Error(response_chi): not enough G-vectors for calculation of &
@@ -106,7 +105,7 @@ if (iproc.eq.0) then
     call pstop
   endif
   
-  if (spin_me.eq.3) then
+  if (spinpol.and.spin_me.eq.3) then
     if (spin_chi.eq.1) write(150,'("using chi0(up)")')
     if (spin_chi.eq.2) then
       write(150,'("using chi0(dn)")')
@@ -118,7 +117,7 @@ if (iproc.eq.0) then
     endif
   endif
   
-  if (afmchi0.and.(spin_chi.le.2)) then
+  if (spinpol.and.afmchi0.and.(spin_chi.le.2)) then
     write(150,'("AFM case: chi0 is multiplied by 2")')
     chi0=chi0*2.d0
   endif  
