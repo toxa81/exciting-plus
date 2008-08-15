@@ -133,7 +133,7 @@ do is=1,nspecies
     end if
 ! compute the first-variational wavefunctions
     do ist=1,nstfv
-      call wavefmt(lradstp,lmaxvr,is,ia,ngk(ik,1),apwalm,evecfv(1,ist), &
+      call wavefmt(lradstp,lmaxvr,is,ia,ngk(ikglob,1),apwalm,evecfv(1,ist), &
        lmmaxvr,wfmt1(1,1,ist))
     end do
 ! begin loop over states
@@ -228,7 +228,7 @@ if (spinpol) then
   end if
   do jst=1,nstfv
     zfft1(:)=0.d0
-    do igk=1,ngk(ik,1)
+    do igk=1,ngk(ikglob,1)
       ifg=igfft(igkig(igk,ik,1))
       zfft1(ifg)=evecfv(igk,jst)
     end do
@@ -237,7 +237,7 @@ if (spinpol) then
 ! multiply with magnetic field and transform to G-space
     zfft2(:)=zfft1(:)*bir(:,3)
     call zfftifc(3,ngrid,-1,zfft2)
-    do igk=1,ngk(ik,1)
+    do igk=1,ngk(ikglob,1)
       ifg=igfft(igkig(igk,ik,1))
       zv(igk,1)=zfft2(ifg)
       zv(igk,2)=-zfft2(ifg)
@@ -245,7 +245,7 @@ if (spinpol) then
     if (nsc.eq.3) then
       zfft2(:)=zfft1(:)*cmplx(bir(:,1),-bir(:,2),8)
       call zfftifc(3,ngrid,-1,zfft2)
-      do igk=1,ngk(ik,1)
+      do igk=1,ngk(ikglob,1)
         ifg=igfft(igkig(igk,ik,1))
         zv(igk,3)=zfft2(ifg)
       end do
@@ -264,7 +264,7 @@ if (spinpol) then
           j=jst+nstfv
         end if
         if (i.le.j) then
-          evecsv(i,j)=evecsv(i,j)+zdotc(ngk(ik,1),evecfv(1,ist),1,zv(1,k),1)
+          evecsv(i,j)=evecsv(i,j)+zdotc(ngk(ikglob,1),evecfv(1,ist),1,zv(1,k),1)
         end if
       end do
     end do

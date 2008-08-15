@@ -516,8 +516,6 @@ real(8) deband
 integer, allocatable :: nmat(:,:)
 ! maximum nmat over all k-points
 integer nmatmax
-! size of packed matrices
-integer, allocatable :: npmat(:,:)
 ! index to the position of the local-orbitals in the H and O matrices
 integer, allocatable :: idxlo(:,:,:)
 ! APW-local-orbital overlap integrals

@@ -133,7 +133,7 @@ end if
 call getngkmax
 ! allocate the G+k-vector arrays
 if (allocated(ngk)) deallocate(ngk)
-allocate(ngk(nkptloc(iproc),nspnfv))
+allocate(ngk(nkpt,nspnfv))
 if (allocated(igkig)) deallocate(igkig)
 allocate(igkig(ngkmax,nkptloc(iproc),nspnfv))
 if (allocated(vgkl)) deallocate(vgkl)
@@ -146,6 +146,7 @@ if (allocated(tpgkc)) deallocate(tpgkc)
 allocate(tpgkc(2,ngkmax,nkptloc(iproc),nspnfv))
 if (allocated(sfacgk)) deallocate(sfacgk)
 allocate(sfacgk(ngkmax,natmtot,nkptloc(iproc),nspnfv))
+ngk=0
 do ispn=1,nspnfv
   do ikloc=1,nkptloc(iproc)
     ik=ikptloc(iproc,1)+ikloc-1
@@ -163,12 +164,13 @@ do ispn=1,nspnfv
       vc(:)=vkc(:,ik)
     end if
 ! generate the G+k-vectors
-    call gengpvec(vl,vc,ngk(ikloc,ispn),igkig(1,ikloc,ispn),vgkl(1,1,ikloc,ispn), &
+    call gengpvec(vl,vc,ngk(ik,ispn),igkig(1,ikloc,ispn),vgkl(1,1,ikloc,ispn), &
      vgkc(1,1,ikloc,ispn),gkc(1,ikloc,ispn),tpgkc(1,1,ikloc,ispn))
 ! generate structure factors for G+k-vectors
-    call gensfacgp(ngk(ikloc,ispn),vgkc(1,1,ikloc,ispn),ngkmax,sfacgk(1,1,ikloc,ispn))
+    call gensfacgp(ngk(ik,ispn),vgkc(1,1,ikloc,ispn),ngkmax,sfacgk(1,1,ikloc,ispn))
   end do
 end do
+call isync(ngk,nkpt*nspnfv,.true.,.true.)
 
 !---------------------------------!
 !     APWs and local-orbitals     !
@@ -226,20 +228,19 @@ allocate(lofr(nrmtmax,2,nlomax,natmtot))
 nstfv=int(chgval/2.d0)+nempty+1
 ! overlap and Hamiltonian matrix sizes
 if (allocated(nmat)) deallocate(nmat)
-allocate(nmat(nkptloc(iproc),nspnfv))
-if (allocated(npmat)) deallocate(npmat)
-allocate(npmat(nkptloc(iproc),nspnfv))
+allocate(nmat(nkpt,nspnfv))
 nmatmax=0
+nmat=0
 do ispn=1,nspnfv
   do ikloc=1,nkptloc(iproc)
-    nmat(ikloc,ispn)=ngk(ikloc,ispn)+nlotot
-    nmatmax=max(nmatmax,nmat(ikloc,ispn))
-! packed matrix sizes
-    npmat(ikloc,ispn)=(nmat(ikloc,ispn)*(nmat(ikloc,ispn)+1))/2
+    ik=ikptloc(iproc,1)+ikloc-1
+    nmat(ik,ispn)=ngk(ik,ispn)+nlotot
+    nmatmax=max(nmatmax,nmat(ik,ispn))
 ! the number of first-variational states should not exceed the matrix size
-    nstfv=min(nstfv,nmat(ikloc,ispn))
+    nstfv=min(nstfv,nmat(ik,ispn))
   end do
 end do
+call isync(nmat,nkpt*nspnfv,.true.,.true.)
 #ifdef _MPI_
 call mpi_reduce(nmatmax,nmatmax0,1,MPI_INTEGER,MPI_MAX,0,MPI_COMM_WORLD,ierr)
 call mpi_reduce(nstfv,nstfv0,1,MPI_INTEGER,MPI_MIN,0,MPI_COMM_WORLD,ierr)

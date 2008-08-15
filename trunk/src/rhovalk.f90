@@ -71,7 +71,7 @@ allocate(wfmt3(lmmaxvr,nrcmtmax,nspinor))
 allocate(zfft(ngrtot,nspinor))
 ! find the matching coefficients
 do ispn=1,nspnfv
-  call match(ngk(ik,ispn),gkc(1,ik,ispn),tpgkc(1,1,ik,ispn), &
+  call match(ngk(ikglob,ispn),gkc(1,ik,ispn),tpgkc(1,1,ik,ispn), &
    sfacgk(1,1,ik,ispn),apwalm(1,1,1,1,ispn))
 end do
 !----------------------------!
@@ -101,7 +101,7 @@ do is=1,nspecies
               zt1=evecsv(i,j)
               if (abs(dble(zt1))+abs(aimag(zt1)).gt.epsocc) then
                 if (.not.done(ist,jspn)) then
-                  call wavefmt(lradstp,lmaxvr,is,ia,ngk(ik,jspn), &
+                  call wavefmt(lradstp,lmaxvr,is,ia,ngk(ikglob,jspn), &
                    apwalm(1,1,1,1,jspn),evecfv(1,ist,jspn),lmmaxvr,wfmt1)
 ! convert from spherical harmonics to spherical coordinates
                   call zgemm('N','N',lmmaxvr,nrcmt(is),lmmaxvr,zone,zbshtapw, &
@@ -115,7 +115,7 @@ do is=1,nspecies
           end do
         else
 ! spin-unpolarised wavefunction
-          call wavefmt(lradstp,lmaxvr,is,ia,ngk(ik,1),apwalm,evecfv(1,j,1), &
+          call wavefmt(lradstp,lmaxvr,is,ia,ngk(ikglob,1),apwalm,evecfv(1,j,1), &
            lmmaxvr,wfmt1)
 ! convert from spherical harmonics to spherical coordinates
           call zgemm('N','N',lmmaxvr,nrcmt(is),lmmaxvr,zone,zbshtapw,lmmaxapw, &
@@ -200,7 +200,7 @@ do j=1,nstsv
           i=i+1
           zt1=evecsv(i,j)
           if (abs(dble(zt1))+abs(aimag(zt1)).gt.epsocc) then
-            do igk=1,ngk(ik,jspn)
+            do igk=1,ngk(ikglob,jspn)
               ifg=igfft(igkig(igk,ik,jspn))
               zfft(ifg,ispn)=zfft(ifg,ispn)+zt1*evecfv(igk,ist,jspn)
             end do
@@ -209,7 +209,7 @@ do j=1,nstsv
       end do
     else
 ! spin-unpolarised wavefunction
-      do igk=1,ngk(ik,1)
+      do igk=1,ngk(ikglob,1)
         ifg=igfft(igkig(igk,ik,1))
         zfft(ifg,1)=evecfv(igk,j,1)
       end do

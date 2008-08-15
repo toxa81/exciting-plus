@@ -59,7 +59,7 @@ do iscl=1,maxscl
   call olprad
 ! compute the Hamiltonian radial integrals
   call hmlrad
-
+  
 ! begin parallel loop over k-points
   evalsv=0.d0
   spnchr=0.d0
@@ -75,7 +75,7 @@ do iscl=1,maxscl
   enddo
   call dsync(evalsv,nstsv*nkpt,.true.,.false.)
   call dsync(spnchr,nspinor*nstsv*nkpt,.true.,.false.)
-
+  
   if (iproc.eq.0) then 
 ! find the occupation numbers and Fermi energy
     call occupy
@@ -85,7 +85,7 @@ do iscl=1,maxscl
     call writefermi
   endif
   call dsync(occsv,nstsv*nkpt,.false.,.true.)
-
+  
 ! set the charge density and magnetisation to zero
   rhomt(:,:,:)=0.d0
   rhoir(:)=0.d0
@@ -99,8 +99,10 @@ do iscl=1,maxscl
   end do
   call dsync(rhomt,lmmaxvr*nrmtmax*natmtot,.true.,.true.)
   call dsync(rhoir,ngrtot,.true.,.true.)
-  call dsync(magmt,lmmaxvr*nrmtmax*natmtot*ndmag,.true.,.true.)
-  call dsync(magir,ngrtot*ndmag,.true.,.true.)
+  if (spinpol) then
+    call dsync(magmt,lmmaxvr*nrmtmax*natmtot*ndmag,.true.,.true.)
+    call dsync(magir,ngrtot*ndmag,.true.,.true.)
+  endif
   
   if (iproc.eq.0) then
     do ik=1,nkpt
