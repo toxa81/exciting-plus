@@ -52,12 +52,10 @@ do j=1,n
       (abs(dble(y(j))).gt.eps).or.(abs(aimag(y(j))).gt.eps)) then
     zt1=conjg(alpha*y(j))                                                                                                                       
     zt2=alpha*conjg(x(j))                                                                                                                       
-    do i=1,j-1
+    do i=1,j
       k=i+(j-1)*ld
       a(k)=a(k)+conjg(zt1*x(i)+zt2*y(i))
     enddo
-    k=k+1
-    a(k)=dble(a(k))+2.d0*dble(zt1*x(j))
   endif
 enddo
 
