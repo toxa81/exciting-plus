@@ -887,6 +887,9 @@ logical packed
 real(8) timemat1
 real(8) timefv1
 real(8) timesv1
+real(8) timepot1
+real(8) timepotcoul1
+real(8) timepotxc1
 
 end module
 

@@ -43,14 +43,22 @@ complex(8), intent(in) :: v(n)
 complex(8), intent(inout) :: a(*)
 ! local variables
 integer i,j,k
+complex(8) zt1,zt2
 ! numbers less than eps are considered to be zero
 real(8), parameter :: eps=1.d-12
 
 do j=1,n
-  do i=1,j
-    k=i+(j-1)*ld
-    a(k)=a(k)+alpha*dconjg(x(i))*y(j)+dconjg(alpha)*dconjg(y(i))*x(j)
-  enddo
+  if ((abs(dble(x(j))).gt.eps).or.(abs(aimag(x(j))).gt.eps).or. &
+      (abs(dble(y(j))).gt.eps).or.(abs(aimag(y(j))).gt.eps)) then
+    zt1=conjg(alpha*y(j))                                                                                                                       
+    zt2=alpha*conjg(x(j))                                                                                                                       
+    do i=1,j-1
+      k=i+(j-1)*ld
+      a(k)=a(k)+conjg(zt1*x(i)+zt2*y(i))
+    enddo
+    k=k+1
+    a(k)=dble(a(k))+2.d0*dble(zt1*x(j))
+  endif
 enddo
 
 return

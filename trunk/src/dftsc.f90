@@ -65,6 +65,9 @@ do iscl=1,maxscl
   timemat1=0.d0
   timefv1=0.d0
   timesv1=0.d0
+  timepot1=0.d0
+  timepotcoul1=0.d0
+  timepotxc1=0.d0
 ! begin parallel loop over k-points
   do ikloc=1,nkptloc(iproc)
 #ifdef _MPI_

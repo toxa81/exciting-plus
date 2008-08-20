@@ -79,7 +79,7 @@ complex(8), allocatable :: evecsv1(:,:)
 complex(8), allocatable :: evecfv2(:,:,:)
 complex(8), allocatable :: evecsv2(:,:)
 
-integer i,j,i1,ik,jk,ig,is,ir,ikstep,ist1,ist2,ispn,ikloc
+integer i,j,i1,ik,jk,ig,is,ir,ikstep,ist1,ist2,ispn,ikloc,ist1prev,ist2prev
 integer ngknr2
 real(8) vkq0l(3),t1,jl(0:lmaxvr)
 integer ivg1(3),ivg2(3)
@@ -575,21 +575,34 @@ do ikstep=1,nkptlocnr(0)
 !    enddo
 
 ! generate wave-functions at k'=k+q-K
-!    call getevecfvp(vklnr(1,jk),vgklnr2,evecfv2,ikq(ik,3))
-!    call getevecsvp(vklnr(1,jk),evecsv2) 
-!    call match(ngknr2,gknr2,tpgknr2,sfacgknr2,apwalm)
-!    call genwfsv(.false.,ngknr2,igkignr2,evalsv(1,1),apwalm,evecfv2, &
-!      evecsv2,wfmt2,wfir2)
+    call getevecfvp(vklnr(1,jk),vgklnr2,evecfv2,ikq(ik,3))
+    call getevecsvp(vklnr(1,jk),evecsv2) 
+    call match(ngknr2,gknr2,tpgknr2,sfacgknr2,apwalm2)
 
+  
+    ist1prev=0
     do i=1,num_nnp(ik)
       ist1=nnp(ik,i,1)
       ist2=nnp(ik,i,2)
-! generate wave-functions at k,n
-      call genwfsvj(.false.,ngknr(ikstep),igkignr(1,ikstep),evalsv(1,1),apwalm1,evecfv1, &
-        evecsv1,wfmt1,wfir1,ist1)
+! if needed, generate wave-functions at k,n
+      if (ist1prev.ne.ist1) then
+        call genwfsvj(.false.,ngknr(ikstep),igkignr(1,ikstep),evalsv(1,1),apwalm1,evecfv1, &
+          evecsv1,wfmt1,wfir1,ist1)
+	ist1prev=ist1
+      endif
+!      if (ist2prev.ne.ist2) then
+!        call genwfsvj(.false.,ngknr2,igkignr2,evalsv(1,1),apwalm2,evecfv2, &
+!          evecsv2,wfmt2,wfir2,ist2)
+!	ist2prev=ist2
+!      endif
+
       
-!      call vnlrho(.true.,wfmt1(1,1,1,1,ist1),wfmt2(1,1,1,1,ist2),wfir1(1,1,ist1), &
-!        wfir2(1,1,ist2),zrhomt,zrhoir)
+!      call vnlrho(.true.,wfmt1(1,1,1,1),wfmt2(1,1,1,1),wfir1(1,1), &
+!        wfir2(1,1),zrhomt,zrhoir)
+	if (iproc.eq.0) then
+	  write(150,*)'i=',i
+          call flushifc(150)
+        endif
 !      call zrhoft(zrhomt,zrhoir,jlgq0r,ylmgq0,sfacgq0,ngvec_me,igfft1(1,ik),zrhofc1)
 !      zrhofc(:,i,ikstep)=zrhofc1(:,3)
     enddo
