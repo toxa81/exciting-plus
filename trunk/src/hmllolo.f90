@@ -49,7 +49,7 @@ do ilo1=1,nlorb(is)
               k=i+((j-1)*j)/2
               h(k)=h(k)+zsum
 	    else
-	      k=i+j*nmatp
+	      k=i+(j-1)*nmatp
               h(k)=h(k)+zsum
 	    endif  
           end if

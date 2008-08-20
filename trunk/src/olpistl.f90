@@ -68,7 +68,7 @@ else
     nmatp=ngp+nlotot
     do j=1,ngp
       do i=1,j
-        k=i+j*nmatp
+        k=i+(j-1)*nmatp
         iv(:)=ivg(:,igpig(i))-ivg(:,igpig(j))
         ig=ivgig(iv(1),iv(2),iv(3))
         if ((ig.gt.0).and.(ig.le.ngvec)) then

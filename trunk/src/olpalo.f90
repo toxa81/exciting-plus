@@ -48,7 +48,7 @@ do ilo=1,nlorb(is)
         end do
       else
         do i=1,ngp
-	  k=i+j*nmatp
+	  k=i+(j-1)*nmatp
           zsum=0.d0
           do io=1,apword(l,is)
             zsum=zsum+conjg(apwalm(i,io,lm,ias))*oalo(io,ilo,ias)

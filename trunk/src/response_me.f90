@@ -650,15 +650,15 @@ do ik=1,nkptnr
     evecsv1,wfmt1,wfir1)
 
 ! test normalization    
-  do i=1,nstsv
-    call vnlrho(.true.,wfmt1(1,1,1,1,i),wfmt1(1,1,1,1,i),wfir1(1,1,i), &
-      wfir1(1,1,i),zrhomt,zrhoir)
-    znorm=zfint(zrhomt,zrhoir)
-    if (abs(znorm-1.d0).gt.0.1d0) then
-      write(150,'("Warning: bad norm ",G18.10," of wave-function ",&
-        & I4," at k-point ",I4)')abs(znorm),i,ik
-    endif
-  enddo
+!  do i=1,nstsv
+!    call vnlrho(.true.,wfmt1(1,1,1,1,i),wfmt1(1,1,1,1,i),wfir1(1,1,i), &
+!      wfir1(1,1,i),zrhomt,zrhoir)
+!    znorm=zfint(zrhomt,zrhoir)
+!    if (abs(znorm-1.d0).gt.0.1d0) then
+!      write(150,'("Warning: bad norm ",G18.10," of wave-function ",&
+!        & I4," at k-point ",I4)')abs(znorm),i,ik
+!    endif
+!  enddo
 
 ! generate wave-functions at k'=k+q-K
   call getevecfv(vklnr(1,jk),vgklnr(1,1,jk),evecfv1)
@@ -670,8 +670,8 @@ do ik=1,nkptnr
   do i=1,num_nnp(ik)
     ist1=nnp(ik,i,1)
     ist2=nnp(ik,i,2)
-    call vnlrho(.true.,wfmt1(1,1,1,1,ist1),wfmt2(1,1,1,1,ist2),wfir1(1,1,ist1), &
-      wfir2(1,1,ist2),zrhomt,zrhoir)
+    call vnlrho(.true.,wfmt1(1,1,1,1),wfmt2(1,1,1,1),wfir1(1,1), &
+      wfir2(1,1),zrhomt,zrhoir)
     call zrhoft(zrhomt,zrhoir,jlgq0r,ylmgq0,sfacgq0,ngvec_me,igfft1(1,ik),zrhofc1)
     zrhofc(:,i,1)=zrhofc1(:,3)
   enddo
