@@ -50,8 +50,8 @@ real(8), parameter :: eps=1.d-12
 do j=1,n
   if ((abs(dble(x(j))).gt.eps).or.(abs(aimag(x(j))).gt.eps).or. &
       (abs(dble(y(j))).gt.eps).or.(abs(aimag(y(j))).gt.eps)) then
-    zt1=conjg(alpha*y(j))                                                                                                                       
-    zt2=alpha*conjg(x(j))                                                                                                                       
+    zt1=conjg(alpha*y(j))
+    zt2=alpha*conjg(x(j))
     do i=1,j
       k=i+(j-1)*ld
       a(k)=a(k)+conjg(zt1*x(i)+zt2*y(i))
