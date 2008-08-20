@@ -60,9 +60,12 @@ do iscl=1,maxscl
 ! compute the Hamiltonian radial integrals
   call hmlrad
   
-! begin parallel loop over k-points
   evalsv=0.d0
   spnchr=0.d0
+  timemat1=0.d0
+  timefv1=0.d0
+  timesv1=0.d0
+! begin parallel loop over k-points
   do ikloc=1,nkptloc(iproc)
 #ifdef _MPI_
     if (iproc.eq.0) then
@@ -75,6 +78,12 @@ do iscl=1,maxscl
   enddo
   call dsync(evalsv,nstsv*nkpt,.true.,.false.)
   call dsync(spnchr,nspinor*nstsv*nkpt,.true.,.false.)
+  if (iproc.eq.0) then
+    write(60,*)
+    write(60,'("  matrix setup time                         :",F12.2)')timemat1
+    write(60,'("  first-variational matrix diagonalization  :",F12.2)')timefv1
+    write(60,'("  second-variational matrix diagonalization :",F12.2)')timesv1
+  endif
   
   if (iproc.eq.0) then 
 ! find the occupation numbers and Fermi energy

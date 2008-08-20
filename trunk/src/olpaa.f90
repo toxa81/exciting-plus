@@ -15,16 +15,21 @@ complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 complex(8), intent(in) :: v(nmatmax)
 complex(8), intent(inout) :: o(*)
 ! local variables
-integer ias,l,m,lm,io
+integer ias,l,m,lm,io,nmatp
 ! external functions
 complex(8) zdotu
 external zdotu
+nmatp=ngp+nlotot
 ias=idxas(ia,is)
 do l=0,lmaxmat
   do m=-l,l
     lm=idxlm(l,m)
     do io=1,apword(l,is)
-      call zmatinp(tapp,ngp,zhalf,apwalm(1,io,lm,ias),apwalm(1,io,lm,ias),v,o)
+      if (packed) then
+        call zmatinp(tapp,ngp,zhalf,apwalm(1,io,lm,ias),apwalm(1,io,lm,ias),v,o)
+      else
+        call zmatin(tapp,ngp,nmatp,zhalf,apwalm(1,io,lm,ias),apwalm(1,io,lm,ias),v,o)
+      endif     
     end do
   end do
 end do

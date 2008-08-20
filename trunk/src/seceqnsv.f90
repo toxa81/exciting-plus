@@ -302,6 +302,7 @@ deallocate(wfmt1,wfmt2,zfft1,zfft2,zv,work)
 call cpu_time(cpu1)
 !$OMP CRITICAL
 timesv=timesv+cpu1-cpu0
+timesv1=timesv1+cpu1-cpu0
 !$OMP END CRITICAL
 return
 20 continue

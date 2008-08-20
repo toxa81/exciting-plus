@@ -38,7 +38,7 @@ complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 complex(8), intent(in) :: v(nmatmax)
 complex(8), intent(inout) :: h(*)
 ! local variables
-integer ias,io1,io2
+integer ias,io1,io2,nmatp
 integer l1,l2,l3,m1,m2,m3,lm1,lm2,lm3
 real(8) t1
 complex(8) zt1,zsum
@@ -48,6 +48,7 @@ complex(8) zv(ngp)
 real(8) polynom
 complex(8) zdotc
 external polynom,zdotc
+nmatp=ngp+nlotot
 ias=idxas(ia,is)
 do l1=0,lmaxmat
   do m1=-l1,l1
@@ -81,7 +82,11 @@ do l1=0,lmaxmat
           end if
         end do
       end do
-      call zmatinp(tapp,ngp,zone,apwalm(1,io1,lm1,ias),zv,v,h)
+      if (packed) then
+        call zmatinp(tapp,ngp,zone,apwalm(1,io1,lm1,ias),zv,v,h)
+      else
+        call zmatin(tapp,ngp,nmatp,zone,apwalm(1,io1,lm1,ias),zv,v,h)
+      endif    
     end do
   end do
 end do
@@ -93,8 +98,13 @@ do l1=0,lmaxmat
     do io1=1,apword(l1,is)
       do io2=1,apword(l1,is)
         zt1=t1*apwfr(nrmt(is),1,io1,l1,ias)*apwdfr(io2,l1,ias)
-        call zmatinp(tapp,ngp,zt1,apwalm(1,io1,lm1,ias),apwalm(1,io2,lm1,ias), &
-         v,h)
+	if (packed) then
+          call zmatinp(tapp,ngp,zt1,apwalm(1,io1,lm1,ias),apwalm(1,io2,lm1,ias), &
+           v,h)
+	else
+          call zmatin(tapp,ngp,nmatp,zt1,apwalm(1,io1,lm1,ias),apwalm(1,io2,lm1,ias), &
+           v,h)
+	endif  
       end do
     end do
   end do

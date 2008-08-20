@@ -41,7 +41,7 @@ real(8), intent(in) :: vgpc(3,ngkmax)
 complex(8), intent(in) :: v(nmatmax)
 complex(8), intent(inout) :: h(*)
 ! local variables
-integer i,j,k,ig,iv(3)
+integer i,j,k,ig,iv(3),nmatp
 real(8) t1
 complex(8) zt1
 if (tapp) then
@@ -60,18 +60,33 @@ if (tapp) then
   end do
 else
 ! calculate the matrix elements
-  do j=1,ngp
-    k=((j-1)*j)/2
-    do i=1,j
-      k=k+1
-      iv(:)=ivg(:,igpig(i))-ivg(:,igpig(j))
-      ig=ivgig(iv(1),iv(2),iv(3))
-      if ((ig.gt.0).and.(ig.le.ngvec)) then
-        t1=0.5d0*dot_product(vgpc(:,i),vgpc(:,j))
-        h(k)=h(k)+veffig(ig)+t1*cfunig(ig)
-      end if
+  if (packed) then
+    do j=1,ngp
+      k=((j-1)*j)/2
+      do i=1,j
+        k=k+1
+        iv(:)=ivg(:,igpig(i))-ivg(:,igpig(j))
+        ig=ivgig(iv(1),iv(2),iv(3))
+        if ((ig.gt.0).and.(ig.le.ngvec)) then
+          t1=0.5d0*dot_product(vgpc(:,i),vgpc(:,j))
+          h(k)=h(k)+veffig(ig)+t1*cfunig(ig)
+        end if
+      end do
     end do
-  end do
+  else
+    nmatp=ngp+nlotot
+    do j=1,ngp
+      do i=1,j
+        k=i+j*nmatp
+        iv(:)=ivg(:,igpig(i))-ivg(:,igpig(j))
+        ig=ivgig(iv(1),iv(2),iv(3))
+        if ((ig.gt.0).and.(ig.le.ngvec)) then
+          t1=0.5d0*dot_product(vgpc(:,i),vgpc(:,j))
+          h(k)=h(k)+veffig(ig)+t1*cfunig(ig)
+        end if
+      enddo
+    enddo
+  endif  !packed   
 end if
 return
 end subroutine

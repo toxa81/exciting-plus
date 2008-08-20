@@ -425,6 +425,8 @@ allocate(dpp1d(npp1d))
 ! zero self-consistent loop number
 iscl=0
 
+packed=.false.
+
 call cpu_time(cpu1)
 timeinit=timeinit+cpu1-cpu0
 

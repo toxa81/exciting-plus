@@ -14,9 +14,10 @@ integer, intent(in) :: ngp
 complex(8), intent(in) :: v(nmatmax)
 complex(8), intent(inout) :: h(*)
 ! local variables
-integer ias,ilo1,ilo2,i,j,k
+integer ias,ilo1,ilo2,i,j,k,nmatp
 integer l1,l2,l3,m1,m2,m3,lm1,lm2,lm3
 complex(8) zsum
+nmatp=ngp+nlotot
 ias=idxas(ia,is)
 do ilo1=1,nlorb(is)
   l1=lorbl(ilo1,is)
@@ -43,9 +44,14 @@ do ilo1=1,nlorb(is)
             h(i)=h(i)+zsum*v(j)
             if (i.ne.j) h(j)=h(j)+conjg(zsum)*v(i)
           else
+	    if (packed) then
 ! calculate the matrix elements
-            k=i+((j-1)*j)/2
-            h(k)=h(k)+zsum
+              k=i+((j-1)*j)/2
+              h(k)=h(k)+zsum
+	    else
+	      k=i+j*nmatp
+              h(k)=h(k)+zsum
+	    endif  
           end if
         end if
       end do

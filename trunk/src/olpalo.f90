@@ -15,8 +15,9 @@ complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 complex(8), intent(in) :: v(nmatmax)
 complex(8), intent(inout) :: o(*)
 ! local variables
-integer ias,ilo,io,l,m,lm,i,j,k
+integer ias,ilo,io,l,m,lm,i,j,k,nmatp
 complex(8) zsum
+nmatp=ngp+nlotot
 ias=idxas(ia,is)
 do ilo=1,nlorb(is)
   l=lorbl(ilo,is)
@@ -35,15 +36,26 @@ do ilo=1,nlorb(is)
       end do
     else
 ! calculate the matrix elements
-      k=((j-1)*j)/2
-      do i=1,ngp
-        k=k+1
-        zsum=0.d0
-        do io=1,apword(l,is)
-          zsum=zsum+conjg(apwalm(i,io,lm,ias))*oalo(io,ilo,ias)
+      if (packed) then 
+        k=((j-1)*j)/2
+        do i=1,ngp
+          k=k+1
+          zsum=0.d0
+          do io=1,apword(l,is)
+            zsum=zsum+conjg(apwalm(i,io,lm,ias))*oalo(io,ilo,ias)
+          end do
+          o(k)=o(k)+zsum
         end do
-        o(k)=o(k)+zsum
-      end do
+      else
+        do i=1,ngp
+	  k=i+j*nmatp
+          zsum=0.d0
+          do io=1,apword(l,is)
+            zsum=zsum+conjg(apwalm(i,io,lm,ias))*oalo(io,ilo,ias)
+          end do
+          o(k)=o(k)+zsum
+	enddo
+      endif !packed
     end if
   end do
 end do

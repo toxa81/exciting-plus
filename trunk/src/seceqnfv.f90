@@ -37,12 +37,13 @@ complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 real(8), intent(out) :: evalfv(nstfv)
 complex(8), intent(out) :: evecfv(nmatmax,nstfv)
 ! local variables
-integer is,ia,i,m,np,info
+integer is,ia,i,m,np,info,nb,lwork
 real(8) vl,vu,abstol
 real(8) cpu0,cpu1
 ! external functions
 real(8) dlamch
 external dlamch
+integer ,external :: ilaenv
 ! allocatable arrays
 integer, allocatable :: iwork(:)
 integer, allocatable :: ifail(:)
@@ -52,7 +53,11 @@ complex(8), allocatable :: v(:)
 complex(8), allocatable :: h(:)
 complex(8), allocatable :: o(:)
 complex(8), allocatable :: work(:)
-np=(nmatp*(nmatp+1))/2
+if (packed) then
+  np=(nmatp*(nmatp+1))/2
+else
+  np=nmatp*nmatp
+endif  
 allocate(iwork(5*nmatp))
 allocate(ifail(nmatp))
 allocate(w(nmatp))
@@ -60,7 +65,13 @@ allocate(rwork(7*nmatp))
 allocate(v(1))
 allocate(h(np))
 allocate(o(np))
-allocate(work(2*nmatp))
+if (packed) then 
+  allocate(work(2*nmatp))
+else
+  nb=ilaenv(1,'ZHETRD','U',nmatp,-1,-1,-1)
+  lwork=(nb+1)*nmatp
+  allocate(work(lwork))
+endif 
 !----------------------------------------!
 !     Hamiltonian and overlap set up     !
 !----------------------------------------!
@@ -85,6 +96,7 @@ call olpistl(.false.,ngp,igpig,v,o)
 call cpu_time(cpu1)
 !$OMP CRITICAL
 timemat=timemat+cpu1-cpu0
+timemat1=timemat1+cpu1-cpu0
 !$OMP END CRITICAL
 !------------------------------------!
 !     solve the secular equation     !
@@ -94,8 +106,13 @@ vl=0.d0
 vu=0.d0
 abstol=2.d0*dlamch('S')
 ! LAPACK 3.0 call
-call zhpgvx(1,'V','I','U',nmatp,h,o,vl,vu,1,nstfv,abstol,m,w,evecfv,nmatmax, &
- work,rwork,iwork,ifail,info)
+if (packed) then
+  call zhpgvx(1,'V','I','U',nmatp,h,o,vl,vu,1,nstfv,abstol,m,w,evecfv,nmatmax, &
+   work,rwork,iwork,ifail,info)
+else
+  call zhegvx(1,'V','I','U',nmatp,h,nmatp,o,nmatp,vl,vu,1,nstfv,abstol,m,w,evecfv,&
+   nmatmax,work,lwork,rwork,iwork,ifail,info)
+endif
 evalfv(1:nstfv)=w(1:nstfv)
 if (info.ne.0) then
   write(*,*)
@@ -113,6 +130,7 @@ end if
 call cpu_time(cpu1)
 !$OMP CRITICAL
 timefv=timefv+cpu1-cpu0
+timefv1=timefv1+cpu1-cpu0
 !$OMP END CRITICAL
 deallocate(iwork,ifail,w,rwork,v,h,o,work)
 return

@@ -35,7 +35,7 @@ integer, intent(in) :: igpig(ngkmax)
 complex(8), intent(in) :: v(nmatmax)
 complex(8), intent(inout) :: o(*)
 ! local variables
-integer i,j,k,iv(3),ig
+integer i,j,k,iv(3),ig,nmatp
 complex(8) zt1
 if (tapp) then
 ! apply the overlap operator to v
@@ -51,18 +51,32 @@ if (tapp) then
     end do
   end do
 else
+  if (packed) then
 ! calculate the matrix elements
-  do j=1,ngp
-    k=((j-1)*j)/2
-    do i=1,j
-      k=k+1
-      iv(:)=ivg(:,igpig(i))-ivg(:,igpig(j))
-      ig=ivgig(iv(1),iv(2),iv(3))
-      if ((ig.gt.0).and.(ig.le.ngvec)) then
-        o(k)=o(k)+cfunig(ig)
-      end if
+    do j=1,ngp
+      k=((j-1)*j)/2
+      do i=1,j
+        k=k+1
+        iv(:)=ivg(:,igpig(i))-ivg(:,igpig(j))
+        ig=ivgig(iv(1),iv(2),iv(3))
+        if ((ig.gt.0).and.(ig.le.ngvec)) then
+          o(k)=o(k)+cfunig(ig)
+        end if
+      end do
     end do
-  end do
+  else
+    nmatp=ngp+nlotot
+    do j=1,ngp
+      do i=1,j
+        k=i+j*nmatp
+        iv(:)=ivg(:,igpig(i))-ivg(:,igpig(j))
+        ig=ivgig(iv(1),iv(2),iv(3))
+        if ((ig.gt.0).and.(ig.le.ngvec)) then
+          o(k)=o(k)+cfunig(ig)
+        end if
+      end do
+    end do
+  endif !packed
 end if
 return
 end subroutine

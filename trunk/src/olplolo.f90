@@ -14,7 +14,8 @@ integer, intent(in) :: ngp
 complex(8), intent(in) :: v(nmatmax)
 complex(8), intent(inout) :: o(*)
 ! local variables
-integer ias,ilo1,ilo2,l,m,lm,i,j,k
+integer ias,ilo1,ilo2,l,m,lm,i,j,k,nmatp
+nmatp=ngp+nlotot
 ias=idxas(ia,is)
 do ilo1=1,nlorb(is)
   l=lorbl(ilo1,is)
@@ -30,9 +31,14 @@ do ilo1=1,nlorb(is)
             o(i)=o(i)+ololo(ilo1,ilo2,ias)*v(j)
             if (i.ne.j) o(j)=o(j)+ololo(ilo1,ilo2,ias)*v(i)
           else
+	    if (packed) then
 ! calculate the matrix elements
-            k=i+((j-1)*j)/2
-            o(k)=o(k)+ololo(ilo1,ilo2,ias)
+              k=i+((j-1)*j)/2
+              o(k)=o(k)+ololo(ilo1,ilo2,ias)
+	    else
+	      k=i+j*nmatp
+              o(k)=o(k)+ololo(ilo1,ilo2,ias)
+	    endif  
           end if
         end if
       end do
