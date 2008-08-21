@@ -113,7 +113,7 @@ else
   nspin_chi0=1
 endif
 allocate(num_nnp(nkptnr))
-allocate(nnp(nkptnr,max_num_nnp,3))
+allocate(nnp(max_num_nnp,3,nkptnr))
 allocate(docc(nkptnr,max_num_nnp))
 if (iproc.eq.0) then
   read(160)vq0l(1:3)
@@ -123,7 +123,7 @@ if (iproc.eq.0) then
   do ik=1,nkptnr
     read(160)ikq(ik)
     read(160)num_nnp(ik)
-    read(160)nnp(ik,1:num_nnp(ik),1:3)
+    read(160)nnp(1:num_nnp(ik),1:3,ik)
     read(160)docc(ik,1:num_nnp(ik))
   enddo
 endif  
@@ -217,8 +217,8 @@ do ikloc=1,nkptlocnr(iproc)
       enddo
     enddo
     do ie=1,nepts
-      wt=docc(ik,i)/(evalsvnr(nnp(ik,i,1),ik)-evalsvnr(nnp(ik,i,2),ikq(ik))+w(ie))
-      call zaxpy(ngvec_me**2,wt,mtrx1,1,chi0_loc(1,1,ie,nnp(ik,i,3)),1)
+      wt=docc(ik,i)/(evalsvnr(nnp(i,1,ik),ik)-evalsvnr(nnp(i,2,ik),ikq(ik))+w(ie))
+      call zaxpy(ngvec_me**2,wt,mtrx1,1,chi0_loc(1,1,ie,nnp(i,3,ik)),1)
     enddo !ie
   enddo !i
 enddo !ikloc
@@ -257,8 +257,8 @@ do ik=1,nkptnr
       enddo
     enddo
     do ie=1,nepts
-      wt=docc(ik,i)/(evalsvnr(nnp(ik,i,1),ik)-evalsvnr(nnp(ik,i,2),ikq(ik))+w(ie))
-      call zaxpy(ngvec_me**2,wt,mtrx1,1,chi0(1,1,ie,nnp(ik,i,3)),1)
+      wt=docc(ik,i)/(evalsvnr(nnp(i,1,ik),ik)-evalsvnr(nnp(i,2,ik),ikq(ik))+w(ie))
+      call zaxpy(ngvec_me**2,wt,mtrx1,1,chi0(1,1,ie,nnp(i,3,ik)),1)
     enddo !ie
   enddo !i
 enddo !ik

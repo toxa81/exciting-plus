@@ -114,7 +114,9 @@ else
   call genppts(.false.,ngridk,vkloff,nkptnr,ikmapnr,ivknr,vklnr,vkcnr,wkptnr)
 end if
 
+if (allocated(nkptloc)) deallocate(nkptloc)
 allocate(nkptloc(0:nproc-1))
+if (allocated(ikptloc)) deallocate(ikptloc)
 allocate(ikptloc(0:nproc-1,2))
 call splitk(nkpt,nproc,nkptloc,ikptloc)
 

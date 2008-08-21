@@ -1,4 +1,4 @@
-subroutine response_me(ivq0m,ngvec_me)
+subroutine response_me_v1(ivq0m,ngvec_me)
 use modmain
 #ifdef _MPI_
 use mpi
@@ -66,10 +66,10 @@ complex(8), allocatable :: sfacgknr(:,:,:)
 complex(8), allocatable :: sfacgknr2(:,:)
 complex(8), allocatable :: apwalm1(:,:,:,:)
 complex(8), allocatable :: apwalm2(:,:,:,:)
-complex(8), allocatable :: wfmt1(:,:,:,:)
-complex(8), allocatable :: wfmt2(:,:,:,:)
-complex(8), allocatable :: wfir1(:,:)
-complex(8), allocatable :: wfir2(:,:)
+complex(8), allocatable :: wfmt1(:,:,:,:,:)
+complex(8), allocatable :: wfmt2(:,:,:,:,:)
+complex(8), allocatable :: wfir1(:,:,:)
+complex(8), allocatable :: wfir2(:,:,:)
 complex(8), allocatable :: zrhomt(:,:,:)
 complex(8), allocatable :: zrhoir(:)
 complex(8), allocatable :: zrhofc(:,:,:)
@@ -173,10 +173,10 @@ enddo
 ! allocate memory for wafe-functions and complex charge density
 allocate(apwalm1(ngkmax,apwordmax,lmmaxapw,natmtot))
 allocate(apwalm2(ngkmax,apwordmax,lmmaxapw,natmtot))
-allocate(wfmt1(lmmaxvr,nrcmtmax,natmtot,nspinor))
-allocate(wfir1(ngrtot,nspinor))
-allocate(wfmt2(lmmaxvr,nrcmtmax,natmtot,nspinor))
-allocate(wfir2(ngrtot,nspinor))
+allocate(wfmt1(lmmaxvr,nrcmtmax,natmtot,nspinor,nstsv))
+allocate(wfir1(ngrtot,nspinor,nstsv))
+allocate(wfmt2(lmmaxvr,nrcmtmax,natmtot,nspinor,nstsv))
+allocate(wfir2(ngrtot,nspinor,nstsv))
 allocate(zrhomt(lmmaxvr,nrcmtmax,natmtot))
 allocate(zrhoir(ngrtot))
   
@@ -683,8 +683,8 @@ do ik=1,nkptnr
   do i=1,num_nnp(ik)
     ist1=nnp(ik,i,1)
     ist2=nnp(ik,i,2)
-    call vnlrho(.true.,wfmt1(1,1,1,1),wfmt2(1,1,1,1),wfir1(1,1), &
-      wfir2(1,1),zrhomt,zrhoir)
+    call vnlrho(.true.,wfmt1(1,1,1,1,ist1),wfmt2(1,1,1,1,ist2),wfir1(1,1,ist1), &
+      wfir2(1,1,ist2),zrhomt,zrhoir)
     call zrhoft(zrhomt,zrhoir,jlgq0r,ylmgq0,sfacgq0,ngvec_me,igfft1(1,ik),zrhofc1)
     zrhofc(:,i,1)=zrhofc1(:,3)
   enddo
