@@ -27,9 +27,8 @@ integer igq0
 !  2-nd index: 1: index of k'=k+q-K
 !              2: index of equivalent k-point in irreducible part of BZ
 !              3: index of equivalent k'-point in irreducible part of BZ
+!              3: index of K-vector which brings k+q to first BZ
 integer, allocatable :: ikq(:,:)
-! indexes for fft-transform of u_{nk}^{*}u_{n'k'}exp{-iKx}, where k'=k+q-K
-integer, allocatable :: igfft1(:,:)
 ! number of n,n' combinations of band indexes for each k-point
 integer, allocatable :: num_nnp(:)
 ! maximum num_nnp over all k-points 
@@ -64,42 +63,22 @@ real(8), allocatable :: occsvnr(:,:)
 real(8), allocatable :: docc(:,:)
 complex(8), allocatable :: sfacgknr(:,:,:)
 complex(8), allocatable :: sfacgknr2(:,:)
-complex(8), allocatable :: apwalm1(:,:,:,:)
-complex(8), allocatable :: apwalm2(:,:,:,:)
-complex(8), allocatable :: wfmt1(:,:,:,:)
-complex(8), allocatable :: wfmt2(:,:,:,:)
-complex(8), allocatable :: wfmt3(:,:,:,:)
-complex(8), allocatable :: wfmt4(:,:,:,:)
-complex(8), allocatable :: wfir1(:,:)
-complex(8), allocatable :: wfir2(:,:)
+complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: zrhomt(:,:,:)
-complex(8), allocatable :: zrhomt1(:,:,:)
-complex(8), allocatable :: zrhoir(:)
 complex(8), allocatable :: zrhofc(:,:,:)
-complex(8), allocatable :: zrhofc1(:,:)
-complex(8), allocatable :: zrhofc2(:,:)
-complex(8), allocatable :: evecfv1(:,:,:)
-complex(8), allocatable :: evecsv1(:,:)
+complex(8), allocatable :: zrhofc0(:)
 complex(8), allocatable :: evecfv2(:,:,:)
 complex(8), allocatable :: evecsv2(:,:)
 
-complex(8), allocatable :: apwcoeff1(:,:,:,:,:)
+complex(8), allocatable :: apwcoeffloc(:,:,:,:,:,:)
+complex(8), allocatable :: locoeffloc(:,:,:,:,:,:)
 complex(8), allocatable :: apwcoeff2(:,:,:,:,:)
-complex(8), allocatable :: locoeff1(:,:,:,:,:)
 complex(8), allocatable :: locoeff2(:,:,:,:,:)
 
-integer i,j,i1,ik,jk,ig,is,ir,ikstep,ist1,ist2,ispn,ikloc,ist1prev, &
-  ist2prev,ist,ia,ias,l,m,lm,io,ilo,irc,lm1,lm2,lm3,l1,l2,l3,m1,m2,m3
+integer i,j,i1,ik,jk,ig,is,ir,ikstep,ist1,ist2,ispn,ikloc
 integer ngknr2
 real(8) vkq0l(3),t1,jl(0:lmaxvr)
-integer ivg1(3),ivg2(3)
-complex(8) znorm
-complex(8) tmp1(lmmaxvr)
-real(8), allocatable :: gnt(:,:,:)
-real(8) cpu0,cpu1
-
-real(8), external :: gaunt
-real(8), external :: clebgor
+integer ivg1(3)
 
 ! for parallel execution
 integer, allocatable :: nkptlocnr(:)
@@ -112,8 +91,8 @@ integer, allocatable :: status(:)
 character*100 :: fname
 
 ! external functions
-complex(8), external :: zfint
 real(8), external :: r3taxi
+complex(8), external :: zfint
 
 ! read the density and potentials from file
 call readstate
@@ -153,22 +132,22 @@ do i=0,nproc-1
   ikptiproc(ikptloc(i,1):ikptloc(i,2))=i
   ikptiprocnr(ikptlocnr(i,1):ikptlocnr(i,2))=i
 enddo
-if (iproc.eq.0.and.nproc.gt.1) then
-  write(150,*)
-  write(150,'("Reduced k-points division:")')
-  write(150,'(" iproc  first k   last k   nkpt ")')
-  write(150,'(" ------------------------------ ")')
-  do i=0,nproc-1
-    write(150,'(1X,I4,4X,I4,5X,I4,5X,I4)')i,ikptloc(i,1),ikptloc(i,2),nkptloc(i)
-  enddo
-  write(150,*)
-  write(150,'("Non-reduced k-points division:")')
-   write(150,'(" iproc  first k   last k   nkpt ")')
-  write(150,'(" ------------------------------ ")')
-  do i=0,nproc-1
-    write(150,'(1X,I4,4X,I4,5X,I4,5X,I4)')i,ikptlocnr(i,1),ikptlocnr(i,2),nkptlocnr(i)
-  enddo
-endif
+!if (iproc.eq.0.and.nproc.gt.1) then
+!  write(150,*)
+!  write(150,'("Reduced k-points division:")')
+!  write(150,'(" iproc  first k   last k   nkpt ")')
+!  write(150,'(" ------------------------------ ")')
+!  do i=0,nproc-1
+!    write(150,'(1X,I4,4X,I4,5X,I4,5X,I4)')i,ikptloc(i,1),ikptloc(i,2),nkptloc(i)
+!  enddo
+!  write(150,*)
+!  write(150,'("Non-reduced k-points division:")')
+!   write(150,'(" iproc  first k   last k   nkpt ")')
+!  write(150,'(" ------------------------------ ")')
+!  do i=0,nproc-1
+!    write(150,'(1X,I4,4X,I4,5X,I4,5X,I4)')i,ikptlocnr(i,1),ikptlocnr(i,2),nkptlocnr(i)
+!  enddo
+!endif
 
 ! generate G+k vectors for entire BZ (this is required to compute 
 !   wave-functions at each k-point)
@@ -186,20 +165,6 @@ do ikloc=1,nkptlocnr(iproc)
   call gensfacgp(ngknr(ikloc),vgkcnr,ngkmax,sfacgknr(1,1,ikloc))
 enddo
 
-! allocate memory for wafe-functions and complex charge density
-allocate(apwalm1(ngkmax,apwordmax,lmmaxapw,natmtot))
-allocate(apwalm2(ngkmax,apwordmax,lmmaxapw,natmtot))
-allocate(wfmt1(lmmaxvr,nrcmtmax,natmtot,nspinor))
-allocate(wfir1(ngrtot,nspinor))
-allocate(wfmt2(lmmaxvr,nrcmtmax,natmtot,nspinor))
-allocate(wfir2(ngrtot,nspinor))
-allocate(zrhomt(lmmaxvr,nrcmtmax,natmtot))
-allocate(zrhomt1(lmmaxvr,nrcmtmax,natmtot))
-allocate(zrhoir(ngrtot))
-
-allocate(wfmt3(lmmaxvr,nrcmtmax,natmtot,nspinor))
-allocate(wfmt4(lmmaxvr,nrcmtmax,natmtot,nspinor))
-  
 allocate(ikq(nkptnr,4))
 allocate(vgq0c(3,ngvec))
 allocate(gq0(ngvec))
@@ -208,8 +173,6 @@ allocate(sfacgq0(ngvec,natmtot))
 allocate(ylmgq0(lmmaxvr,ngvec)) 
 allocate(jlgq0r(nrcmtmax,0:lmaxvr,nspecies,ngvec))
 allocate(occsvnr(nstsv,nkptnr))
-allocate(igfft1(ngvec_me,nkptnr))
-allocate(zrhofc1(ngvec_me,3))
 
 ! q-vector in lattice coordinates
 do i=1,3
@@ -291,11 +254,6 @@ do ik=1,nkptnr
   write(*,*)
   call pstop
 10 continue
-! search for new fft indexes
-  do ig=1,ngvec_me
-    ivg2(:)=ivg(:,ig)+ivg1(:)
-    igfft1(ig,ik)=igfft(ivgig(ivg2(1),ivg2(2),ivg2(3)))
-  enddo
   ikq(ik,4)=ivgig(ivg1(1),ivg1(2),ivg1(3))
 !  if (iproc.eq.0) then
 !    write(150,'(I4,2X,3F6.2,2X,3F6.2,2X,3I4,2X,3F6.2,2X,I4)') &
@@ -412,66 +370,58 @@ if (iproc.eq.0) then
   enddo
   close(160)
 endif
+
+allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
+allocate(zrhomt(lmmaxvr,nrcmtmax,natmtot))
+allocate(zrhofc0(ngvec_me))
   
 ! different implementation for parallel and serial execution
 #ifdef _MPI_
 
-allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc(iproc)))
-allocate(evecsvloc(nstsv,nstsv,nkptloc(iproc)))
+allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptlocnr(iproc)))
+allocate(evecsvloc(nstsv,nstsv,nkptlocnr(iproc)))
+allocate(apwcoeffloc(nstsv,nspinor,apwordmax,lmmaxvr,natmtot,nkptlocnr(iproc)))
+allocate(locoeffloc(nstsv,nspinor,nlomax,lmmaxvr,natmtot,nkptlocnr(iproc)))
+allocate(status(MPI_STATUS_SIZE))
+allocate(apwcoeff2(nstsv,nspinor,apwordmax,lmmaxvr,natmtot))
+allocate(locoeff2(nstsv,nspinor,nlomax,lmmaxvr,natmtot))
+allocate(evecfv2(nmatmax,nstfv,nspnfv))
+allocate(evecsv2(nstsv,nstsv))
+allocate(igkignr2(ngkmax))
+allocate(zrhofc(ngvec_me,max_num_nnp,nkptlocnr(iproc)))
+
 ! read all eigen-vectors to the memory
 do i=0,nproc-1
   if (iproc.eq.i) then
-    do ikloc=1,nkptloc(iproc)
-      ik=ikptloc(iproc,1)+ikloc-1
-      call getevecfv(vkl(1,ik),vgkl(1,1,ikloc,1),evecfvloc(1,1,1,ikloc))
-      call getevecsv(vkl(1,ik),evecsvloc(1,1,ikloc))
+    do ikloc=1,nkptlocnr(iproc)
+      ik=ikptlocnr(iproc,1)+ikloc-1
+      call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfvloc(1,1,1,ikloc))
+      call getevecsv(vklnr(1,ik),evecsvloc(1,1,ikloc))
     enddo 
   endif
   call mpi_barrier(MPI_COMM_WORLD,ierr)
 enddo
 
+! calculate the radial coefficients
+do ikloc=1,nkptlocnr(iproc)
+  call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),sfacgknr(1,1,ikloc),apwalm)
+  call tcoeff(ngknr(ikloc),apwalm,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),&
+    apwcoeffloc(1,1,1,1,1,ikloc),locoeffloc(1,1,1,1,1,ikloc))
+enddo
+
 ! find indexes of k-points to send and receive
-!   for each k-point in full BZ the following data are required:
-!     1) eigen-vectors at irreducible part of BZ corrsponding to k point
-!        (they can be stored on any proc)
-!     2) eigen-vectors at irreducible part of BZ corrsponding to k'=k+q point
-!        (they can be stored on any proc)
-!     3) G+k' arrays for non reduced BZ
-!        (they can be stored on any proc)
-!     4) G+k arrays for non reduced BZ
-!        (they are always stored on the same proc and not transfered)
-allocate(isend(nkptlocnr(0),0:nproc-1,8))
+allocate(isend(nkptlocnr(0),0:nproc-1,2))
 isend=-1
 do ikstep=1,nkptlocnr(0)
   do i=0,nproc-1
     ik=ikptlocnr(i,1)+ikstep-1
     if (ikstep.le.nkptlocnr(i)) then
-! for the ikstep the i-th proc requires eigen-vectors in this two irreducible k-points
-      isend(ikstep,i,1)=ikq(ik,2)
-      isend(ikstep,i,2)=ikq(ik,3)
-! for each irreducible k-point find the proc and local index
-      isend(ikstep,i,3)=ikptiproc(ikq(ik,2))
-      isend(ikstep,i,4)=ikq(ik,2)-ikptloc(isend(ikstep,i,3),1)+1
-      isend(ikstep,i,5)=ikptiproc(ikq(ik,3))
-      isend(ikstep,i,6)=ikq(ik,3)-ikptloc(isend(ikstep,i,5),1)+1
 ! for non reduced k' point find the proc and local index
-      isend(ikstep,i,7)=ikptiprocnr(ikq(ik,1))
-      isend(ikstep,i,8)=ikq(ik,1)-ikptlocnr(isend(ikstep,i,7),1)+1
+      isend(ikstep,i,1)=ikptiprocnr(ikq(ik,1))
+      isend(ikstep,i,2)=ikq(ik,1)-ikptlocnr(isend(ikstep,i,1),1)+1
     endif
   enddo
 enddo
-    
-allocate(status(MPI_STATUS_SIZE))
-allocate(evecfv1(nmatmax,nstfv,nspnfv))
-allocate(evecsv1(nstsv,nstsv))
-allocate(evecfv2(nmatmax,nstfv,nspnfv))
-allocate(evecsv2(nstsv,nstsv))
-allocate(zrhofc(ngvec_me,max_num_nnp,nkptlocnr(iproc)))
-allocate(vgklnr2(3,ngkmax))
-allocate(gknr2(ngkmax))
-allocate(tpgknr2(2,ngkmax))
-allocate(sfacgknr2(ngkmax,natmtot))
-allocate(igkignr2(ngkmax))
 
 if (iproc.eq.0) then
   write(150,*)
@@ -484,86 +434,58 @@ do ikstep=1,nkptlocnr(0)
   endif
 ! find the i-th proc to which the current iproc should send data
   do i=0,nproc-1
-    if (isend(ikstep,i,3).eq.iproc.and.iproc.ne.i) then
+    if (isend(ikstep,i,1).eq.iproc.and.iproc.ne.i) then
       tag=(ikstep*nproc+i)*10
-      ik=isend(ikstep,i,4)
-      call mpi_isend(evecfvloc(1,1,1,ik),nmatmax*nstfv*nspnfv, &
+      ik=isend(ikstep,i,2)
+      call mpi_isend(evecfvloc(1,1,1,ik),                    &
+        nmatmax*nstfv*nspnfv,                                &
         MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
       tag=tag+1
-      call mpi_isend(evecsvloc(1,1,ik),nstsv*nstsv,            &
+      call mpi_isend(evecsvloc(1,1,ik),                      &
+        nstsv*nstsv,                                         &
         MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
+      tag=tag+1
+      call mpi_isend(apwcoeffloc(1,1,1,1,1,ik),              &
+        nstsv*nspinor*apwordmax*lmmaxvr*natmtot,             &
+	MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
+      tag=tag+1
+      call mpi_isend(locoeffloc(1,1,1,1,1,ik),               &
+        nstsv*nspinor*nlomax*lmmaxvr*natmtot,                & 
+	MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
+      tag=tag+1
+      call mpi_isend(ngknr(ik),1,MPI_INTEGER,i,tag,          &
+        MPI_COMM_WORLD,req,ierr)
+      tag=tag+1
+      call mpi_isend(igkignr(1,ik),ngkmax,MPI_INTEGER,i,tag, &
+        MPI_COMM_WORLD,req,ierr)  
     endif
-    if (isend(ikstep,i,5).eq.iproc.and.iproc.ne.i) then
-      tag=(ikstep*nproc+i)*10+2
-      ik=isend(ikstep,i,6)
-      call mpi_isend(evecfvloc(1,1,1,ik),nmatmax*nstfv*nspnfv, &
-        MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
-      tag=tag+1
-      call mpi_isend(evecsvloc(1,1,ik),nstsv*nstsv,            &
-        MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
-    endif
-    if (isend(ikstep,i,7).eq.iproc.and.iproc.ne.i) then
-      tag=(ikstep*nproc+i)*10+4
-      ik=isend(ikstep,i,8)
-      call mpi_isend(ngknr(ik),1,MPI_INTEGER,i,tag,MPI_COMM_WORLD,req,ierr)
-      tag=tag+1
-      call mpi_isend(vgklnr(1,1,ik),3*ngkmax,MPI_DOUBLE_PRECISION,i,tag,MPI_COMM_WORLD,req,ierr)
-      tag=tag+1
-      call mpi_isend(gknr(1,ik),ngkmax,MPI_DOUBLE_PRECISION,i,tag,MPI_COMM_WORLD,req,ierr)
-      tag=tag+1
-      call mpi_isend(tpgknr(1,1,ik),2*ngkmax,MPI_DOUBLE_PRECISION,i,tag,MPI_COMM_WORLD,req,ierr)
-      tag=tag+1
-      call mpi_isend(sfacgknr(1,1,ik),ngkmax*natmtot,MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
-      tag=tag+1
-      call mpi_isend(igkignr(1,ik),ngkmax,MPI_INTEGER,i,tag,MPI_COMM_WORLD,req,ierr)
-    endif
-  enddo 
-! receive arrays
-  if (isend(ikstep,iproc,3).ne.-1) then
-    if (isend(ikstep,iproc,3).ne.iproc) then
+  enddo
+! receive data
+  if (isend(ikstep,iproc,1).ne.-1) then
+    if (isend(ikstep,iproc,1).ne.iproc) then
       tag=(ikstep*nproc+iproc)*10
-      call mpi_recv(evecfv1,nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX,isend(ikstep,iproc,3),tag,MPI_COMM_WORLD,status,ierr)
+      call mpi_recv(evecfv2,nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX, &
+        isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
       tag=tag+1
-      call mpi_recv(evecsv1,nstsv*nstsv,MPI_DOUBLE_COMPLEX,isend(ikstep,iproc,3),tag,MPI_COMM_WORLD,status,ierr)
-    else
-      ik=isend(ikstep,iproc,4)
-      evecfv1(:,:,:)=evecfvloc(:,:,:,ik)
-      evecsv1(:,:)=evecsvloc(:,:,ik)
-    endif
-  endif
-  if (isend(ikstep,iproc,5).ne.-1) then
-    if (isend(ikstep,iproc,5).ne.iproc) then
-      tag=(ikstep*nproc+iproc)*10+2
-      call mpi_recv(evecfv2,nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX,isend(ikstep,iproc,5),tag,MPI_COMM_WORLD,status,ierr)
+      call mpi_recv(evecsv2,nstsv*nstsv,MPI_DOUBLE_COMPLEX,          &
+        isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
       tag=tag+1
-      call mpi_recv(evecsv2,nstsv*nstsv,MPI_DOUBLE_COMPLEX,isend(ikstep,iproc,5),tag,MPI_COMM_WORLD,status,ierr)
+      call mpi_recv(apwcoeff2,nstsv*nspinor*apwordmax*lmmaxvr*natmtot, &
+        MPI_DOUBLE_COMPLEX,isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
+      tag=tag+1
+      call mpi_recv(locoeff2,nstsv*nspinor*nlomax*lmmaxvr*natmtot, &
+        MPI_DOUBLE_COMPLEX,isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
+      tag=tag+1
+      call mpi_recv(ngknr2,1,MPI_INTEGER,isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
+      tag=tag+1
+      call mpi_recv(igkignr2,ngkmax,MPI_INTEGER,isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
     else
-      ik=isend(ikstep,iproc,6)
+      ik=isend(ikstep,iproc,2)
       evecfv2(:,:,:)=evecfvloc(:,:,:,ik)
       evecsv2(:,:)=evecsvloc(:,:,ik)
-    endif
-  endif
-  if (isend(ikstep,iproc,7).ne.-1) then
-    if (isend(ikstep,iproc,7).ne.iproc) then
-      tag=(ikstep*nproc+iproc)*10+4
-      call mpi_recv(ngknr2,1,MPI_INTEGER,isend(ikstep,iproc,7),tag,MPI_COMM_WORLD,status,ierr)
-      tag=tag+1
-      call mpi_recv(vgklnr2,3*ngkmax,MPI_DOUBLE_PRECISION,isend(ikstep,iproc,7),tag,MPI_COMM_WORLD,status,ierr)
-      tag=tag+1
-      call mpi_recv(gknr2,ngkmax,MPI_DOUBLE_PRECISION,isend(ikstep,iproc,7),tag,MPI_COMM_WORLD,status,ierr)
-      tag=tag+1
-      call mpi_recv(tpgknr2,2*ngkmax,MPI_DOUBLE_PRECISION,isend(ikstep,iproc,7),tag,MPI_COMM_WORLD,status,ierr)
-      tag=tag+1
-      call mpi_recv(sfacgknr2,ngkmax*natmtot,MPI_DOUBLE_COMPLEX,isend(ikstep,iproc,7),tag,MPI_COMM_WORLD,status,ierr)
-      tag=tag+1
-      call mpi_recv(igkignr2,ngkmax,MPI_INTEGER,isend(ikstep,iproc,7),tag,MPI_COMM_WORLD,status,ierr)
-    else
-      ik=isend(ikstep,iproc,8)
+      apwcoeff2(:,:,:,:,:)=apwcoeffloc(:,:,:,:,:,ik)
+      locoeff2(:,:,:,:,:)=locoeffloc(:,:,:,:,:,ik)
       ngknr2=ngknr(ik)
-      vgklnr2(:,:)=vgklnr(:,:,ik)
-      gknr2(:)=gknr(:,ik)
-      tpgknr2(:,:)=tpgknr(:,:,ik)
-      sfacgknr2(:,:)=sfacgknr(:,:,ik)
       igkignr2(:)=igkignr(:,ik)
     endif
   endif
@@ -573,62 +495,28 @@ do ikstep=1,nkptlocnr(0)
     write(150,'("  OK send and recieve")')
     call flushifc(150)
   endif
-      
+  
+  cycle
+        
   if (ikstep.le.nkptlocnr(iproc)) then
     ik=ikptlocnr(iproc,1)+ikstep-1
     jk=ikq(ik,1)
+    
+! calculate interstitial contribution for all combinations of n,n'
+    call zrhoftistl(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ikstep),ngknr2, &
+      igkignr(1,ikstep),igkignr2,ikq(ik,4),evecfvloc(1,1,1,ikstep),evecsvloc(1,1,ikstep), &
+      evecfv2,evecsv2,zrhofc(1,1,ikstep))
 
-    call getevecfvp(vklnr(1,ik),vgklnr(1,1,ikstep),evecfv1,ikq(ik,2))
-    call getevecsvp(vklnr(1,ik),evecsv1) 
-    call match(ngknr(ikstep),gknr(1,ikstep),tpgknr(1,1,ikstep),sfacgknr(1,1,ikstep),apwalm1)
-
-! test normalization    
-!    do i=1,nstsv
-!      call vnlrho(.true.,wfmt1(1,1,1,1,i),wfmt1(1,1,1,1,i),wfir1(1,1,i), &
-!        wfir1(1,1,i),zrhomt,zrhoir)
-!      znorm=zfint(zrhomt,zrhoir)
-!      if (abs(znorm-1.d0).gt.0.1d0) then
-!        write(*,*)
-!        write(*,'("Warning(response_me): bad norm ",G18.10," of wave-function ",&
-!          & I4," at k-point ",I4)')abs(znorm),i,ik
-!	write(*,*)
-!      endif
-!    enddo
-
-! generate wave-functions at k'=k+q-K
-    call getevecfvp(vklnr(1,jk),vgklnr2,evecfv2,ikq(ik,3))
-    call getevecsvp(vklnr(1,jk),evecsv2) 
-    call match(ngknr2,gknr2,tpgknr2,sfacgknr2,apwalm2)
-
-  
-    ist1prev=0
     do i=1,num_nnp(ik)
       ist1=nnp(i,1,ik)
       ist2=nnp(i,2,ik)
-! if needed, generate wave-functions at k,n
-      if (ist1prev.ne.ist1) then
-        call genwfsvj(.false.,ngknr(ikstep),igkignr(1,ikstep),evalsv(1,1),apwalm1,evecfv1, &
-          evecsv1,wfmt1,wfir1,ist1)
-	ist1prev=ist1
-      endif
-!      if (ist2prev.ne.ist2) then
-!        call genwfsvj(.false.,ngknr2,igkignr2,evalsv(1,1),apwalm2,evecfv2, &
-!          evecsv2,wfmt2,wfir2,ist2)
-!	ist2prev=ist2
-!      endif
-
-      
-!      call vnlrho(.true.,wfmt1(1,1,1,1),wfmt2(1,1,1,1),wfir1(1,1), &
-!        wfir2(1,1),zrhomt,zrhoir)
-	if (iproc.eq.0) then
-	  write(150,*)'i=',i
-          call flushifc(150)
-        endif
-!      call zrhoft(zrhomt,zrhoir,jlgq0r,ylmgq0,sfacgq0,ngvec_me,igfft1(1,ik),zrhofc1)
-!      zrhofc(:,i,ikstep)=zrhofc1(:,3)
+      call zrhomt0(ist1,ist2,apwcoeffloc(1,1,1,1,1,ikstep),locoeffloc(1,1,1,1,1,ikstep),&
+        apwcoeff2,locoeff2,zrhomt)
+      call zrhoftmt(zrhomt,jlgq0r,ylmgq0,sfacgq0,ngvec_me,zrhofc0)
+      zrhofc(:,i,ikstep)=zrhofc(:,i,ikstep)+zrhofc0(:)
     enddo
-
   endif ! (ikstep.le.nkptlocnr(iproc))
+
 enddo !ikstep
 
 call mpi_barrier(MPI_COMM_WORLD,ierr)
@@ -646,18 +534,18 @@ do i=0,nproc-1
   call mpi_barrier(MPI_COMM_WORLD,ierr)
 enddo 
 
-deallocate(isend)
+deallocate(evecfvloc)
+deallocate(evecsvloc)
+deallocate(apwcoeffloc)
+deallocate(locoeffloc)
 deallocate(status)
-deallocate(evecfv1)
-deallocate(evecsv1)
+deallocate(apwcoeff2)
+deallocate(locoeff2)
 deallocate(evecfv2)
 deallocate(evecsv2)
-deallocate(zrhofc)
-deallocate(vgklnr2)
-deallocate(gknr2)
-deallocate(tpgknr2)
-deallocate(sfacgknr2)
 deallocate(igkignr2)
+deallocate(zrhofc)
+deallocate(isend)
   
 #else
 
@@ -684,16 +572,17 @@ do ik=1,nkptnr
   
   write(160)ik,jk
   
-! generate wave-functions at k
+! generate data at k
   call getevecfv(vklnr(1,ik),vgklnr(1,1,ik),evecfv1)
   call getevecsv(vklnr(1,ik),evecsv1) 
-  call match(ngknr(ik),gknr(1,ik),tpgknr(1,1,ik),sfacgknr(1,1,ik),apwalm1)
-  call tcoeff(ngknr(ik),apwalm1,evecfv1,evecsv1,apwcoeff1,locoeff1)
+  call match(ngknr(ik),gknr(1,ik),tpgknr(1,1,ik),sfacgknr(1,1,ik),apwalm)
+  call tcoeff(ngknr(ik),apwalm,evecfv1,evecsv1,apwcoeff1,locoeff1)
 
+! generate data at k'=k+q-K
   call getevecfv(vklnr(1,jk),vgklnr(1,1,jk),evecfv2)
   call getevecsv(vklnr(1,jk),evecsv2) 
-  call match(ngknr(jk),gknr(1,jk),tpgknr(1,1,jk),sfacgknr(1,1,jk),apwalm2)
-  call tcoeff(ngknr(jk),apwalm2,evecfv2,evecsv2,apwcoeff2,locoeff2)
+  call match(ngknr(jk),gknr(1,jk),tpgknr(1,1,jk),sfacgknr(1,1,jk),apwalm)
+  call tcoeff(ngknr(jk),apwalm,evecfv2,evecsv2,apwcoeff2,locoeff2)
 
 ! calculate interstitial contribution for all combinations of n,n'
   call zrhoftistl(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ik),ngknr(jk), &
@@ -702,9 +591,8 @@ do ik=1,nkptnr
   do i=1,num_nnp(ik)
     ist1=nnp(i,1,ik)
     ist2=nnp(i,2,ik)
-    
-    call zrhomt0(ist1,ist2,apwcoeff1,locoeff1,apwcoeff2,locoeff2,zrhomt1)
-    call zrhoftmt(zrhomt1,jlgq0r,ylmgq0,sfacgq0,ngvec_me,zrhofc1(1,1))
+    call zrhomt0(ist1,ist2,apwcoeff1,locoeff1,apwcoeff2,locoeff2,zrhomt)
+    call zrhoftmt(zrhomt,jlgq0r,ylmgq0,sfacgq0,ngvec_me,zrhofc1(1,1))
     zrhofc(:,i,1)=zrhofc(:,i,1)+zrhofc1(:,1)
   enddo
   
@@ -714,7 +602,13 @@ close(160)
 
 deallocate(evecfv1)
 deallocate(evecsv1)
+deallocate(evecfv2)
+deallocate(evecsv2)
 deallocate(zrhofc)
+deallocate(apwcoeff1)
+deallocate(apwcoeff2)
+deallocate(locoeff1)
+deallocate(locoeff2)
 
 #endif
 
@@ -729,14 +623,8 @@ deallocate(tpgknr)
 deallocate(ngknr)
 deallocate(sfacgknr)
 deallocate(igkignr)
-deallocate(apwalm1)
-deallocate(apwalm2)
-deallocate(wfmt1)
-deallocate(wfir1)
-deallocate(wfmt2)
-deallocate(wfir2)
+deallocate(apwalm)
 deallocate(zrhomt)
-deallocate(zrhoir)
 deallocate(ikq)
 deallocate(vgq0c)
 deallocate(gq0)
@@ -745,8 +633,7 @@ deallocate(sfacgq0)
 deallocate(ylmgq0) 
 deallocate(jlgq0r)
 deallocate(occsvnr)
-deallocate(igfft1)
-deallocate(zrhofc1)
+deallocate(zrhofc0)
 deallocate(num_nnp)
 deallocate(nnp)
 deallocate(docc)
