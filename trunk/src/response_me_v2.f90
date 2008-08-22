@@ -832,19 +832,19 @@ complex(8), intent(out) :: zrhomt(lmmaxvr,nrcmtmax,natmtot)
 integer ispn,is,ia,ias,l,m,lm,io,ilo,ir,irc
 integer l1,m1,lm1,l2,m2,lm2,l3,m3,lm3
 ! automatic arrays
-complex(8) wfmt1(lmmaxvr,nrcmtmax,nspinor)
-complex(8) wfmt2(lmmaxvr,nrcmtmax,nspinor)
-complex(8) wfmt1t(lmmaxvr,nrcmtmax,nspinor)
-complex(8) wfmt2t(lmmaxvr,nrcmtmax,nspinor)
+complex(8) wfmt1(lmmaxvr,nrcmtmax)
+complex(8) wfmt2(lmmaxvr,nrcmtmax)
+complex(8) wfmt1t(lmmaxvr,nrcmtmax)
+complex(8) wfmt2t(lmmaxvr,nrcmtmax)
 complex(8) zrhot(lmmaxvr,nrcmtmax)
 
-wfmt1=dcmplx(0.d0,0.d0)
-wfmt2=dcmplx(0.d0,0.d0)
-zrhot=dcmplx(0.d0,0.d0)
 do is=1,nspecies
   do ia=1,natoms(is)
     ias=idxas(ia,is)
+    zrhot=dcmplx(0.d0,0.d0)
     do ispn=1,nspinor
+      wfmt1=dcmplx(0.d0,0.d0)
+      wfmt2=dcmplx(0.d0,0.d0)
 ! add apw contribution
       do l=0,lmaxvr       
         do m=-l,l
@@ -854,7 +854,7 @@ do is=1,nspecies
               irc=0
               do ir=1,nrmt(is),lradstp
                 irc=irc+1
-                wfmt1(lm,irc,ispn)=wfmt1(lm,irc,ispn)+apwcoeff1(ist1,ispn,io,lm,ias) * &
+                wfmt1(lm,irc)=wfmt1(lm,irc)+apwcoeff1(ist1,ispn,io,lm,ias) * &
                   apwfr(ir,1,io,l,ias)
               enddo !ir
             endif
@@ -862,7 +862,7 @@ do is=1,nspecies
               irc=0
               do ir=1,nrmt(is),lradstp
                 irc=irc+1
-                wfmt2(lm,irc,ispn)=wfmt2(lm,irc,ispn)+apwcoeff2(ist2,ispn,io,lm,ias) * &
+                wfmt2(lm,irc)=wfmt2(lm,irc)+apwcoeff2(ist2,ispn,io,lm,ias) * &
                   apwfr(ir,1,io,l,ias)
               enddo !ir
             endif
@@ -879,7 +879,7 @@ do is=1,nspecies
               irc=0
               do ir=1,nrmt(is),lradstp
                 irc=irc+1
-                wfmt1(lm,irc,ispn)=wfmt1(lm,irc,ispn)+locoeff1(ist1,ispn,ilo,lm,ias) * &
+                wfmt1(lm,irc)=wfmt1(lm,irc)+locoeff1(ist1,ispn,ilo,lm,ias) * &
                   lofr(ir,1,ilo,ias)
               enddo
             endif
@@ -887,7 +887,7 @@ do is=1,nspecies
               irc=0
               do ir=1,nrmt(is),lradstp
                 irc=irc+1
-                wfmt2(lm,irc,ispn)=wfmt2(lm,irc,ispn)+locoeff2(ist2,ispn,ilo,lm,ias) * &
+                wfmt2(lm,irc)=wfmt2(lm,irc)+locoeff2(ist2,ispn,ilo,lm,ias) * &
                   lofr(ir,1,ilo,ias)
               enddo
             endif
@@ -895,11 +895,11 @@ do is=1,nspecies
         endif  
       enddo
       call zgemm('N','N',lmmaxvr,nrcmt(is),lmmaxvr,zone,zbshtapw,lmmaxapw, &
-           wfmt1(1,1,ispn),lmmaxvr,zzero,wfmt1t(1,1,ispn),lmmaxvr)
+           wfmt1,lmmaxvr,zzero,wfmt1t,lmmaxvr)
       call zgemm('N','N',lmmaxvr,nrcmt(is),lmmaxvr,zone,zbshtapw,lmmaxapw, &
-           wfmt2(1,1,ispn),lmmaxvr,zzero,wfmt2t(1,1,ispn),lmmaxvr)
+           wfmt2,lmmaxvr,zzero,wfmt2t,lmmaxvr)
       do irc=1,nrcmt(is)
-        zrhot(:,irc)=zrhot(:,irc) + dconjg(wfmt1t(:,irc,ispn))*wfmt2t(:,irc,ispn)
+        zrhot(:,irc)=zrhot(:,irc) + dconjg(wfmt1t(:,irc))*wfmt2t(:,irc)
       enddo
     enddo !ispn
     call zgemm('N','N',lmmaxvr,nrcmt(is),lmmaxvr,zone,zfshtvr,lmmaxvr,zrhot, &
@@ -932,13 +932,15 @@ complex(8), intent(out) :: zrhofc(ngvec_me,max_num_nnp)
 
 
 complex(8), allocatable :: mit(:,:)
+complex(8), allocatable :: mit1(:,:)
 
-integer is,ia,ias,ig,igi,igj,ist1,ist2,i
+integer is,ia,ias,ig,igi,igj,ist1,ist2,i,i1,i2,ispn
 integer iv3g(3)
 real(8) v1(3),v2(3),tp3g(2),len3g
 complex(8) sfac3g(natmtot)
 
 allocate(mit(ngknri,ngknrj))
+allocate(mit1(nstfv,nstfv))
 zrhofc=dcmplx(0.d0,0.d0)
 do ig=1,ngvec_me
   mit=dcmplx(0.d0,0.d0)
@@ -964,16 +966,35 @@ do ig=1,ngvec_me
       enddo !is
     enddo
   enddo
-  do i=1,num_nnp
-    ist1=nnp(i,1)
-    ist2=nnp(i,2)
-    do igi=1,ngknri
-      do igj=1,ngknrj 
-        zrhofc(ig,i)=zrhofc(ig,i)+dconjg(evecfvi(igi,ist1))*evecfvj(igj,ist2)*mit(igi,igj)
+  mit1=dcmplx(0.d0,0.d0)
+  do ist1=1,nstfv
+    do ist2=1,nstfv
+      do igi=1,ngknri
+        do igj=1,ngknrj 
+          mit1(ist1,ist2)=mit1(ist1,ist2)+dconjg(evecfvi(igi,ist1))*evecfvj(igj,ist2)*mit(igi,igj)
+        enddo
       enddo
     enddo
   enddo
+      
+  do i=1,num_nnp
+    ist1=nnp(i,1)
+    ist2=nnp(i,2)
+    do i1=1,nstfv
+      do i2=1,nstfv
+        do ispn=1,nspinor
+          zrhofc(ig,i)=zrhofc(ig,i)+dconjg(evecsvi(i1+(ispn-1)*nstfv,ist1))*evecsvj(i2+(ispn-1)*nstfv,ist2)*mit1(i1,i2)
+        enddo
+      enddo
+    enddo
+!    zrhofc(ig,i)=mit1(ist1,ist2)
+!    do igi=1,ngknri
+!      do igj=1,ngknrj 
+!        zrhofc(ig,i)=zrhofc(ig,i)+dconjg(evecfvi(igi,ist1))*evecfvj(igj,ist2)*mit(igi,igj)
+!      enddo
+!    enddo
+  enddo
 enddo
-deallocate(mit)
+deallocate(mit,mit1)
 return
 end
