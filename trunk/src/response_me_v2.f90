@@ -79,6 +79,7 @@ integer i,j,i1,ik,jk,ig,is,ir,ikstep,ist1,ist2,ispn,ikloc
 integer ngknr2
 real(8) vkq0l(3),t1,jl(0:lmaxvr)
 integer ivg1(3)
+real(8) cpu0,cpu1
 
 ! for parallel execution
 integer, allocatable :: nkptlocnr(:)
@@ -391,6 +392,11 @@ allocate(igkignr2(ngkmax))
 allocate(zrhofc(ngvec_me,max_num_nnp,nkptlocnr(iproc)))
 
 ! read all eigen-vectors to the memory
+if (iproc.eq.0) then
+  write(150,*)
+  write(150,'("Reading eigen-vectors")')
+  call flushifc(150)
+endif
 do i=0,nproc-1
   if (iproc.eq.i) then
     do ikloc=1,nkptlocnr(iproc)
@@ -401,13 +407,26 @@ do i=0,nproc-1
   endif
   call mpi_barrier(MPI_COMM_WORLD,ierr)
 enddo
+if (iproc.eq.0) then
+  write(150,'("Done.")')
+  call flushifc(150)
+endif
 
-! calculate the radial coefficients
+! calculate muffin-tin coefficients
+if (iproc.eq.0) then
+  write(150,*)
+  write(150,'("Calculating muffin-tin coefficients")')
+  call flushifc(150)
+endif
 do ikloc=1,nkptlocnr(iproc)
   call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),sfacgknr(1,1,ikloc),apwalm)
   call tcoeff(ngknr(ikloc),apwalm,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),&
     apwcoeffloc(1,1,1,1,1,ikloc),locoeffloc(1,1,1,1,1,ikloc))
 enddo
+if (iproc.eq.0) then
+  write(150,'("Done.")')
+  call flushifc(150)
+endif
 
 ! find indexes of k-points to send and receive
 allocate(isend(nkptlocnr(0),0:nproc-1,2))
@@ -431,6 +450,7 @@ do ikstep=1,nkptlocnr(0)
   if (iproc.eq.0) then
     write(150,'("k-step ",I4," out of ",I4)')ikstep,nkptlocnr(0)
     call flushifc(150)
+    call cpu_time(cpu0)
   endif
 ! find the i-th proc to which the current iproc should send data
   do i=0,nproc-1
@@ -514,6 +534,12 @@ do ikstep=1,nkptlocnr(0)
       zrhofc(:,i,ikstep)=zrhofc(:,i,ikstep)+zrhofc0(:)
     enddo
   endif ! (ikstep.le.nkptlocnr(iproc))
+  
+  if (iproc.eq.0) then
+    call cpu_time(cpu1)
+    write(150,'("  step time (seconds) : ",F12.2)')cpu1-cpu0
+    call flushifc(150)
+  endif
 
 enddo !ikstep
 
