@@ -524,6 +524,11 @@ do ikstep=1,nkptlocnr(0)
     call zrhoftistl(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ikstep),ngknr2, &
       igkignr(1,ikstep),igkignr2,ikq(ik,4),evecfvloc(1,1,1,ikstep),evecsvloc(1,1,ikstep), &
       evecfv2,evecsv2,zrhofc(1,1,ikstep))
+    
+    if (iproc.eq.0) then
+      write(150,'("  Intertitial contribution is done")')
+      call flushifc(150)
+    endif
 
     do i=1,num_nnp(ik)
       ist1=nnp(i,1,ik)
@@ -849,6 +854,7 @@ integer is,ia,ias,ig,igi,igj,ist1,ist2,i,i1,i2,ispn
 integer iv3g(3)
 real(8) v1(3),v2(3),tp3g(2),len3g
 complex(8) sfac3g(natmtot)
+complex(8) zt1
 
 allocate(mit(ngknri,ngknrj))
 allocate(mit1(nstfv,nstfv))
@@ -880,10 +886,13 @@ do ig=1,ngvec_me
   mit1=dcmplx(0.d0,0.d0)
   do ist1=1,nstfv
     do ist2=1,nstfv
-      do igi=1,ngknri
-        do igj=1,ngknrj 
-          mit1(ist1,ist2)=mit1(ist1,ist2)+dconjg(evecfvi(igi,ist1))*evecfvj(igj,ist2)*mit(igi,igj)
-        enddo
+      do igj=1,ngknrj
+        zt1=dcmplx(0.d0,0.d0) 
+        do igi=1,ngknri
+          !mit1(ist1,ist2)=mit1(ist1,ist2)+dconjg(evecfvi(igi,ist1))*evecfvj(igj,ist2)*mit(igi,igj)
+          zt1=zt1+dconjg(evecfvi(igi,ist1))*mit(igi,igj)
+	enddo
+	mit1(ist1,ist2)=mit1(ist1,ist2)+zt1*evecfvj(igj,ist2)
       enddo
     enddo
   enddo
@@ -891,11 +900,14 @@ do ig=1,ngvec_me
   do i=1,num_nnp
     ist1=nnp(i,1)
     ist2=nnp(i,2)
-    do i1=1,nstfv
+    do ispn=1,nspinor
       do i2=1,nstfv
-        do ispn=1,nspinor
-          zrhofc(ig,i)=zrhofc(ig,i)+dconjg(evecsvi(i1+(ispn-1)*nstfv,ist1))*evecsvj(i2+(ispn-1)*nstfv,ist2)*mit1(i1,i2)
-        enddo
+        zt1=dcmplx(0.d0,0.d0)
+        do i1=1,nstfv
+          !zrhofc(ig,i)=zrhofc(ig,i)+dconjg(evecsvi(i1+(ispn-1)*nstfv,ist1))*evecsvj(i2+(ispn-1)*nstfv,ist2)*mit1(i1,i2)
+          zt1=zt1+dconjg(evecsvi(i1+(ispn-1)*nstfv,ist1))*mit1(i1,i2)
+	enddo
+	zrhofc(ig,i)=zrhofc(ig,i)+zt1*evecsvj(i2+(ispn-1)*nstfv,ist2)
       enddo
     enddo
 !    zrhofc(ig,i)=mit1(ist1,ist2)
