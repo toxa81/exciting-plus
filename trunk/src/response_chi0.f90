@@ -218,10 +218,16 @@ do ikloc=1,nkptlocnr(iproc)
     enddo
     do ie=1,nepts
       wt=docc(ik,i)/(evalsvnr(nnp(i,1,ik),ik)-evalsvnr(nnp(i,2,ik),ikq(ik))+w(ie))
-      call zaxpy(ngvec_me**2,wt,mtrx1,1,chi0_loc(1,1,ie,nnp(i,3,ik)),1)
+      call zaxpy(ngvec_me*ngvec_me,wt,mtrx1,1,chi0_loc(1,1,ie,nnp(i,3,ik)),1)
     enddo !ie
   enddo !i
 enddo !ikloc
+
+if (iproc.eq.0) then
+  write(150,*)
+  write(150,'("Done.")')
+  call flushifc(150)
+endif
 
 do ispn=1,nspin_chi0
   do ie=1,nepts
