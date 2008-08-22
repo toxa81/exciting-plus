@@ -496,8 +496,6 @@ do ikstep=1,nkptlocnr(0)
     call flushifc(150)
   endif
   
-  cycle
-        
   if (ikstep.le.nkptlocnr(iproc)) then
     ik=ikptlocnr(iproc,1)+ikstep-1
     jk=ikq(ik,1)

@@ -64,8 +64,7 @@ real(8), allocatable :: occsvnr(:,:)
 real(8), allocatable :: docc(:,:)
 complex(8), allocatable :: sfacgknr(:,:,:)
 complex(8), allocatable :: sfacgknr2(:,:)
-complex(8), allocatable :: apwalm1(:,:,:,:)
-complex(8), allocatable :: apwalm2(:,:,:,:)
+complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wfmt1(:,:,:,:,:)
 complex(8), allocatable :: wfmt2(:,:,:,:,:)
 complex(8), allocatable :: wfir1(:,:,:)
@@ -171,8 +170,7 @@ do ikloc=1,nkptlocnr(iproc)
 enddo
 
 ! allocate memory for wafe-functions and complex charge density
-allocate(apwalm1(ngkmax,apwordmax,lmmaxapw,natmtot))
-allocate(apwalm2(ngkmax,apwordmax,lmmaxapw,natmtot))
+allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 allocate(wfmt1(lmmaxvr,nrcmtmax,natmtot,nspinor,nstsv))
 allocate(wfir1(ngrtot,nspinor,nstsv))
 allocate(wfmt2(lmmaxvr,nrcmtmax,natmtot,nspinor,nstsv))
@@ -321,7 +319,7 @@ if (iproc.eq.0) then
   write(150,*)
   write(150,'("Maximum number of interband transitions: ",I5)')max_num_nnp
 endif
-allocate(nnp(nkptnr,max_num_nnp,3))
+allocate(nnp(max_num_nnp,3,nkptnr))
 allocate(docc(nkptnr,max_num_nnp))
 ! second, setup the nnp array
 do ik=1,nkptnr
@@ -335,12 +333,12 @@ do ik=1,nkptnr
 	if ((ispn.eq.spin_me.or.spin_me.eq.3) .and. &
 	    abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-10) then
           i1=i1+1
-          nnp(ik,i1,1)=ist1
-          nnp(ik,i1,2)=ist2
+          nnp(i1,1,ik)=ist1
+          nnp(i1,2,ik)=ist2
 	  if (spin_me.eq.3) then
-	    nnp(ik,i1,3)=ispn
+	    nnp(i1,3,ik)=ispn
 	  else
-            nnp(ik,i1,3)=1
+            nnp(i1,3,ik)=1
 	  endif
           docc(ik,i1)=occsvnr(ist1,ik)-occsvnr(ist2,jk)
         endif
@@ -386,7 +384,7 @@ if (iproc.eq.0) then
   do ik=1,nkptnr
     write(160)ikq(ik,1)
     write(160)num_nnp(ik)
-    write(160)nnp(ik,1:num_nnp(ik),1:3)
+    write(160)nnp(1:num_nnp(ik),1:3,ik)
     write(160)docc(ik,1:num_nnp(ik))
   enddo
   close(160)
@@ -559,52 +557,37 @@ do ikstep=1,nkptlocnr(0)
 
     call getevecfvp(vklnr(1,ik),vgklnr(1,1,ikstep),evecfv1,ikq(ik,2))
     call getevecsvp(vklnr(1,ik),evecsv1) 
-    call match(ngknr(ikstep),gknr(1,ikstep),tpgknr(1,1,ikstep),sfacgknr(1,1,ikstep),apwalm1)
+    call match(ngknr(ikstep),gknr(1,ikstep),tpgknr(1,1,ikstep),sfacgknr(1,1,ikstep),apwalm)
+    call genwfsv(.false.,ngknr(ikstep),igkignr(1,ikstep),evalsv(1,1),apwalm,evecfv1, &
+      evecsv1,wfmt1,wfir1)
 
 ! test normalization    
-!    do i=1,nstsv
-!      call vnlrho(.true.,wfmt1(1,1,1,1,i),wfmt1(1,1,1,1,i),wfir1(1,1,i), &
-!        wfir1(1,1,i),zrhomt,zrhoir)
-!      znorm=zfint(zrhomt,zrhoir)
-!      if (abs(znorm-1.d0).gt.0.1d0) then
-!        write(*,*)
-!        write(*,'("Warning(response_me): bad norm ",G18.10," of wave-function ",&
-!          & I4," at k-point ",I4)')abs(znorm),i,ik
-!	write(*,*)
-!      endif
-!    enddo
+    do i=1,nstsv
+      call vnlrho(.true.,wfmt1(1,1,1,1,i),wfmt1(1,1,1,1,i),wfir1(1,1,i), &
+        wfir1(1,1,i),zrhomt,zrhoir)
+      znorm=zfint(zrhomt,zrhoir)
+      if (abs(znorm-1.d0).gt.0.1d0) then
+        write(*,*)
+        write(*,'("Warning(response_me): bad norm ",G18.10," of wave-function ",&
+          & I4," at k-point ",I4)')abs(znorm),i,ik
+	write(*,*)
+      endif
+    enddo
 
 ! generate wave-functions at k'=k+q-K
     call getevecfvp(vklnr(1,jk),vgklnr2,evecfv2,ikq(ik,3))
     call getevecsvp(vklnr(1,jk),evecsv2) 
-    call match(ngknr2,gknr2,tpgknr2,sfacgknr2,apwalm2)
+    call match(ngknr2,gknr2,tpgknr2,sfacgknr2,apwalm)
+    call genwfsvj(.false.,ngknr2,igkignr2,evalsv(1,1),apwalm,evecfv2, &
+      evecsv2,wfmt2,wfir2)
 
-  
-    ist1prev=0
     do i=1,num_nnp(ik)
-      ist1=nnp(ik,i,1)
-      ist2=nnp(ik,i,2)
-! if needed, generate wave-functions at k,n
-      if (ist1prev.ne.ist1) then
-        call genwfsvj(.false.,ngknr(ikstep),igkignr(1,ikstep),evalsv(1,1),apwalm1,evecfv1, &
-          evecsv1,wfmt1,wfir1,ist1)
-	ist1prev=ist1
-      endif
-!      if (ist2prev.ne.ist2) then
-!        call genwfsvj(.false.,ngknr2,igkignr2,evalsv(1,1),apwalm2,evecfv2, &
-!          evecsv2,wfmt2,wfir2,ist2)
-!	ist2prev=ist2
-!      endif
-
-      
-!      call vnlrho(.true.,wfmt1(1,1,1,1),wfmt2(1,1,1,1),wfir1(1,1), &
-!        wfir2(1,1),zrhomt,zrhoir)
-	if (iproc.eq.0) then
-	  write(150,*)'i=',i
-          call flushifc(150)
-        endif
-!      call zrhoft(zrhomt,zrhoir,jlgq0r,ylmgq0,sfacgq0,ngvec_me,igfft1(1,ik),zrhofc1)
-!      zrhofc(:,i,ikstep)=zrhofc1(:,3)
+      ist1=nnp(i,1,ik)
+      ist2=nnp(i,2,ik)
+      call vnlrho(.true.,wfmt1(1,1,1,1,ist1),wfmt2(1,1,1,1,ist2),wfir1(1,1,ist1), &
+        wfir2(1,1,ist2),zrhomt,zrhoir)
+      call zrhoft(zrhomt,zrhoir,jlgq0r,ylmgq0,sfacgq0,ngvec_me,igfft1(1,ik),zrhofc1)
+      zrhofc(:,i,ikstep)=zrhofc1(:,3)
     enddo
 
   endif ! (ikstep.le.nkptlocnr(iproc))
@@ -658,31 +641,33 @@ do ik=1,nkptnr
 ! generate wave-functions at k
   call getevecfv(vklnr(1,ik),vgklnr(1,1,ik),evecfv1)
   call getevecsv(vklnr(1,ik),evecsv1) 
-  call match(ngknr(ik),gknr(1,ik),tpgknr(1,1,ik),sfacgknr(1,1,ik),apwalm1)
-  call genwfsv(.false.,ngknr(ik),igkignr(1,ik),evalsv(1,1),apwalm1,evecfv1, &
+  call match(ngknr(ik),gknr(1,ik),tpgknr(1,1,ik),sfacgknr(1,1,ik),apwalm)
+  call genwfsv(.false.,ngknr(ik),igkignr(1,ik),evalsv(1,1),apwalm,evecfv1, &
     evecsv1,wfmt1,wfir1)
 
 ! test normalization    
-!  do i=1,nstsv
-!    call vnlrho(.true.,wfmt1(1,1,1,1,i),wfmt1(1,1,1,1,i),wfir1(1,1,i), &
-!      wfir1(1,1,i),zrhomt,zrhoir)
-!    znorm=zfint(zrhomt,zrhoir)
-!    if (abs(znorm-1.d0).gt.0.1d0) then
-!      write(150,'("Warning: bad norm ",G18.10," of wave-function ",&
-!        & I4," at k-point ",I4)')abs(znorm),i,ik
-!    endif
-!  enddo
+  do i=1,nstsv
+    call vnlrho(.true.,wfmt1(1,1,1,1,i),wfmt1(1,1,1,1,i),wfir1(1,1,i), &
+      wfir1(1,1,i),zrhomt,zrhoir)
+    znorm=zfint(zrhomt,zrhoir)
+    if (abs(znorm-1.d0).gt.0.1d0) then
+    write(*,*)
+    write(*,'("Warning: bad norm ",G18.10," of wave-function ",&
+      & I4," at k-point ",I4)')abs(znorm),i,ik
+    write(*,*)
+    endif
+  enddo
 
 ! generate wave-functions at k'=k+q-K
   call getevecfv(vklnr(1,jk),vgklnr(1,1,jk),evecfv1)
   call getevecsv(vklnr(1,jk),evecsv1) 
-  call match(ngknr(jk),gknr(1,jk),tpgknr(1,1,jk),sfacgknr(1,1,jk),apwalm1)
-  call genwfsv(.false.,ngknr(jk),igkignr(1,jk),evalsv(1,1),apwalm1,evecfv1, &
+  call match(ngknr(jk),gknr(1,jk),tpgknr(1,1,jk),sfacgknr(1,1,jk),apwalm)
+  call genwfsv(.false.,ngknr(jk),igkignr(1,jk),evalsv(1,1),apwalm,evecfv1, &
     evecsv1,wfmt2,wfir2)
   
   do i=1,num_nnp(ik)
-    ist1=nnp(ik,i,1)
-    ist2=nnp(ik,i,2)
+    ist1=nnp(i,1,ik)
+    ist2=nnp(i,2,ik)
     call vnlrho(.true.,wfmt1(1,1,1,1,ist1),wfmt2(1,1,1,1,ist2),wfir1(1,1,ist1), &
       wfir2(1,1,ist2),zrhomt,zrhoir)
     call zrhoft(zrhomt,zrhoir,jlgq0r,ylmgq0,sfacgq0,ngvec_me,igfft1(1,ik),zrhofc1)
@@ -710,8 +695,7 @@ deallocate(tpgknr)
 deallocate(ngknr)
 deallocate(sfacgknr)
 deallocate(igkignr)
-deallocate(apwalm1)
-deallocate(apwalm2)
+deallocate(apwalm)
 deallocate(wfmt1)
 deallocate(wfir1)
 deallocate(wfmt2)
