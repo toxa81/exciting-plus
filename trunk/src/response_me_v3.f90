@@ -78,16 +78,20 @@ complex(8), allocatable :: apwcoeff1(:,:,:,:,:)
 complex(8), allocatable :: locoeff1(:,:,:,:,:)
 complex(8), allocatable :: apwcoeff2(:,:,:,:,:)
 complex(8), allocatable :: locoeff2(:,:,:,:,:)
+complex(8), allocatable :: acoeff1(:,:,:,:,:)
+complex(8), allocatable :: acoeff2(:,:,:,:,:)
 
 integer i,j,i1,ik,jk,ig,is,ir,ikstep,ist1,ist2,ispn,ikloc,ilo,l
 integer ngknr2
-real(8) vkq0l(3),t1,jl(0:lmaxvr)
+real(8) vkq0l(3),t1,jl(0:lmaxapw)
 integer ivg1(3)
 real(8) cpu0,cpu1
 integer nlomaxl
 integer mtord
 integer, allocatable :: ltmp(:)
 real(8), allocatable :: uuj(:,:,:,:,:,:,:)
+real(8), allocatable :: gnt(:,:,:)
+integer l1,m1,lm1,l2,m2,lm2,l3,m3,lm3
 
 ! for parallel execution
 integer, allocatable :: nkptlocnr(:)
@@ -101,6 +105,7 @@ character*100 :: fname
 
 ! external functions
 real(8), external :: r3taxi
+real(8), external :: gaunt
 complex(8), external :: zfint
 
 ! read the density and potentials from file
@@ -179,8 +184,8 @@ allocate(vgq0c(3,ngvec))
 allocate(gq0(ngvec))
 allocate(tpgq0(2,ngvec))
 allocate(sfacgq0(ngvec,natmtot))
-allocate(ylmgq0(lmmaxvr,ngvec)) 
-allocate(jlgq0r(nrmtmax,0:lmaxvr,nspecies,ngvec_me))
+allocate(ylmgq0(lmmaxapw,ngvec)) 
+allocate(jlgq0r(nrmtmax,0:lmaxapw,nspecies,ngvec_me))
 allocate(occsvnr(nstsv,nkptnr))
 
 ! q-vector in lattice coordinates
@@ -343,7 +348,7 @@ do ig=1,ngvec_me
 ! get spherical coordinates and length of G+q'
   call sphcrd(vgq0c(:,ig),gq0(ig),tpgq0(:,ig))
 ! generate spherical harmonics for G+q'
-  call genylm(lmaxvr,tpgq0(:,ig),ylmgq0(:,ig))
+  call genylm(lmaxapw,tpgq0(:,ig),ylmgq0(:,ig))
 enddo
 
 ! generate structure factor for G+q' vectors
@@ -354,7 +359,7 @@ do ig=1,ngvec_me
   do is=1,nspecies
     do ir=1,nrmt(is)
       t1=gq0(ig)*spr(ir,is)
-      call sbessel(lmaxvr,t1,jl)
+      call sbessel(lmaxapw,t1,jl)
       jlgq0r(ir,:,is,ig)=jl(:)
     enddo
   enddo
@@ -402,15 +407,29 @@ if (iproc.eq.0) then
   write(150,'("  maximum number of l.o. over all l-channels : ",I4)')nlomaxl
   write(150,'("  maximum order of radial functions          : ",I4)')mtord
 endif
-allocate(uuj(0:lmaxvr,0:lmaxvr,0:lmaxvr,mtord,mtord,natmtot,ngvec_me))
+allocate(uuj(0:lmaxvr,0:lmaxvr,0:lmaxapw,mtord,mtord,natmtot,ngvec_me))
 call calc_uuj(uuj,jlgq0r,mtord,ngvec_me)
 if (iproc.eq.0) then
   write(150,'("Done.")')
   call flushifc(150)
 endif
-call pstop
-  
-
+allocate(gnt(lmmaxvr,lmmaxvr,lmmaxapw))
+do l1=0,lmaxvr
+  do m1=-l1,l1 
+    lm1=idxlm(l1,m1)
+    do l2=0,lmaxvr
+      do m2=-l2,l2
+        lm2=idxlm(l2,m2)
+        do l3=0,lmaxapw
+          do m3=-l3,l3
+            lm3=idxlm(l3,m3)
+            gnt(lm1,lm2,lm3)=gaunt(l1,l2,l3,m1,m2,m3)
+          enddo
+        enddo
+      enddo
+    enddo
+  enddo
+enddo
 
 
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
@@ -629,7 +648,8 @@ allocate(apwcoeff1(nstsv,nspinor,apwordmax,lmmaxvr,natmtot))
 allocate(apwcoeff2(nstsv,nspinor,apwordmax,lmmaxvr,natmtot))
 allocate(locoeff1(nstsv,nspinor,nlomax,lmmaxvr,natmtot))
 allocate(locoeff2(nstsv,nspinor,nlomax,lmmaxvr,natmtot))
-
+allocate(acoeff1(nstsv,nspinor,mtord,lmmaxvr,natmtot))
+allocate(acoeff2(nstsv,nspinor,mtord,lmmaxvr,natmtot))
 
 open(160,file=trim(fname),form='unformatted',status='old',position='append')
 
@@ -646,25 +666,29 @@ do ik=1,nkptnr
   call getevecfv(vklnr(1,ik),vgklnr(1,1,ik),evecfv1)
   call getevecsv(vklnr(1,ik),evecsv1) 
   call match(ngknr(ik),gknr(1,ik),tpgknr(1,1,ik),sfacgknr(1,1,ik),apwalm)
-  call tcoeff(ngknr(ik),apwalm,evecfv1,evecsv1,apwcoeff1,locoeff1)
+  call tcoeff1(ngknr(ik),mtord,apwalm,evecfv1,evecsv1,acoeff1)
 
 ! generate data at k'=k+q-K
   call getevecfv(vklnr(1,jk),vgklnr(1,1,jk),evecfv2)
   call getevecsv(vklnr(1,jk),evecsv2) 
   call match(ngknr(jk),gknr(1,jk),tpgknr(1,1,jk),sfacgknr(1,1,jk),apwalm)
-  call tcoeff(ngknr(jk),apwalm,evecfv2,evecsv2,apwcoeff2,locoeff2)
-
+  call tcoeff1(ngknr(jk),mtord,apwalm,evecfv2,evecsv2,acoeff2)
+  
+  zrhofc=dcmplx(0.d0,0.d0)
 ! calculate interstitial contribution for all combinations of n,n'
   call zrhoftistl(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ik),ngknr(jk), &
     igkignr(1,ik),igkignr(1,jk),ikq(ik,4),evecfv1,evecsv1,evecfv2,evecsv2,zrhofc)
+! calculate MT contribution fot all combinations of n,n'
+  call zrhoftmt1(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),mtord,ylmgq0, &
+    sfacgq0,acoeff1,acoeff2,uuj,gnt,zrhofc)
   
-  do i=1,num_nnp(ik)
-    ist1=nnp(i,1,ik)
-    ist2=nnp(i,2,ik)
-    call zrhomt0(ist1,ist2,apwcoeff1,locoeff1,apwcoeff2,locoeff2,zrhomt)
-    call zrhoftmt(zrhomt,jlgq0r,ylmgq0,sfacgq0,ngvec_me,zrhofc0)
-    zrhofc(:,i,1)=zrhofc(:,i,1)+zrhofc0(:)
-  enddo
+!  do i=1,num_nnp(ik)
+!    ist1=nnp(i,1,ik)
+!    ist2=nnp(i,2,ik)
+!    call zrhomt0(ist1,ist2,apwcoeff1,locoeff1,apwcoeff2,locoeff2,zrhomt)
+!    call zrhoftmt(zrhomt,jlgq0r,ylmgq0,sfacgq0,ngvec_me,zrhofc0)
+!    zrhofc(:,i,1)=zrhofc(:,i,1)+zrhofc0(:)
+!  enddo
   
   write(160)zrhofc(1:ngvec_me,1:num_nnp(ik),1)
 enddo !ik
@@ -718,37 +742,37 @@ return
 end
 
 
-subroutine tcoeff1(ngp,apwalm,evecfv,evecsv,apwcoeff,locoeff)
+subroutine tcoeff1(ngp,mtord,apwalm,evecfv,evecsv,acoeff)
 use modmain
 implicit none
 ! arguments
 integer, intent(in) :: ngp
+integer, intent(in) :: mtord
 complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 complex(8), intent(in) :: evecfv(nmatmax,nstfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
-complex(8), intent(out) :: apwcoeff(nstsv,nspinor,apwordmax,lmmaxvr,natmtot)
-complex(8), intent(out) :: locoeff(nstsv,nspinor,nlomax,lmmaxvr,natmtot)
+complex(8), intent(out) :: acoeff(nstsv,nspinor,mtord,lmmaxvr,natmtot)
 ! local variables
-integer i,j,l,m,ispn,istfv,is,ia,ias,lm,ig,i1,io,ilo
+integer j,l,m,ispn,istfv,is,ia,ias,lm,ig,i1,io,ilo
+integer ordl(0:lmaxvr)
 
-apwcoeff=dcmplx(0.d0,0.d0)
-locoeff=dcmplx(0.d0,0.d0)
+acoeff=dcmplx(0.d0,0.d0)
 do j=1,nstsv
-  i=0
   do ispn=1,nspinor
     do istfv=1,nstfv
-      i=i+1
       do is=1,nspecies
         do ia=1,natoms(is)
           ias=idxas(ia,is)
+          ordl=0
 ! apw coefficients
           do l=0,lmaxvr
-            do m=-l,l
-              lm=idxlm(l,m)
-              do ig=1,ngp
-                do io=1,apword(l,is)
-                  apwcoeff(j,ispn,io,lm,ias)=apwcoeff(j,ispn,io,lm,ias) + &
-                    evecsv(i,j)*evecfv(ig,istfv)*apwalm(ig,io,lm,ias)
+            do io=1,apword(l,is)
+              ordl(l)=ordl(l)+1
+              do m=-l,l
+                lm=idxlm(l,m)
+                do ig=1,ngp
+                  acoeff(j,ispn,ordl(l),lm,ias)=acoeff(j,ispn,ordl(l),lm,ias) + &
+                    evecsv(istfv+(ispn-1)*nstfv,j)*evecfv(ig,istfv)*apwalm(ig,io,lm,ias)
                 enddo !io
               enddo !ig
             enddo !m
@@ -757,11 +781,12 @@ do j=1,nstsv
           do ilo=1,nlorb(is)
             l=lorbl(ilo,is)
             if (l.le.lmaxvr) then
+              ordl(l)=ordl(l)+1
               do m=-l,l
                 lm=idxlm(l,m)
                 i1=ngp+idxlo(lm,ilo,ias)
-                locoeff(j,ispn,ilo,lm,ias)=locoeff(j,ispn,ilo,lm,ias) + &
-                  evecsv(i,j)*evecfv(i1,istfv)
+                acoeff(j,ispn,ordl(l),lm,ias)=acoeff(j,ispn,ordl(l),lm,ias) + &
+                  evecsv(istfv+(ispn-1)*nstfv,j)*evecfv(i1,istfv)
               enddo !m
             endif
           enddo !ilo
@@ -780,8 +805,8 @@ implicit none
 ! arguments
 integer, intent(in) :: mtord
 integer, intent(in) :: ngvec_me
-real(8), intent(in) :: jlgq0r(nrmtmax,0:lmaxvr,nspecies,ngvec_me)
-real(8), intent(out) :: uuj(0:lmaxvr,0:lmaxvr,0:lmaxvr,mtord,mtord,natmtot,ngvec_me)
+real(8), intent(in) :: jlgq0r(nrmtmax,0:lmaxapw,nspecies,ngvec_me)
+real(8), intent(out) :: uuj(0:lmaxvr,0:lmaxvr,0:lmaxapw,mtord,mtord,natmtot,ngvec_me)
 ! local variables
 integer ia,is,ias,l,io,ilo,ig,l1,l2,l3,io1,io2,ir
 real(8), allocatable :: ufr(:,:,:)
@@ -816,11 +841,11 @@ do is=1,nspecies
     do ig=1,ngvec_me
       do l1=0,lmaxvr
         do l2=0,lmaxvr
-          do l3=0,lmaxvr
+          do l3=0,lmaxapw
             do io1=1,mtord
               do io2=1,mtord
                 do ir=1,nrmt(is)
-                  fr(ir)=ufr(ir,l1,io1)*ufr(ir,l2,io2)*jlgq0r(ir,l3,ias,ig)
+                  fr(ir)=ufr(ir,l1,io1)*ufr(ir,l2,io2)*jlgq0r(ir,l3,ias,ig)*(spr(ir,is)**2)
                 enddo
                 call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
                 uuj(l1,l2,l3,io1,io2,ias,ig)=gr(nrmt(is))
@@ -835,7 +860,78 @@ enddo !is
 
 deallocate(ufr)
 return
-end    
+end   
+
+subroutine zrhoftmt1(ngvec_me,max_num_nnp,num_nnp,nnp,mtord,ylmgq0,sfacgq0, &
+  acoeff1,acoeff2,uuj,gnt,zrhofc) 
+use modmain
+implicit none
+! arguments
+integer, intent(in) :: ngvec_me
+integer, intent(in) :: max_num_nnp
+integer, intent(in) :: num_nnp
+integer, intent(in) :: nnp(max_num_nnp,3)
+integer, intent(in) :: mtord
+complex(8), intent(in) :: ylmgq0(lmmaxapw,ngvec)
+complex(8), intent(in) :: sfacgq0(ngvec,natmtot)
+complex(8), intent(in) :: acoeff1(nstsv,nspinor,mtord,lmmaxvr,natmtot)
+complex(8), intent(in) :: acoeff2(nstsv,nspinor,mtord,lmmaxvr,natmtot)
+real(8), intent(in) :: uuj(0:lmaxvr,0:lmaxvr,0:lmaxapw,mtord,mtord,natmtot,ngvec_me)
+real(8), intent(in) :: gnt(lmmaxvr,lmmaxvr,lmmaxapw)
+complex(8), intent(out) :: zrhofc(ngvec_me,max_num_nnp)
+! local variables
+integer ig,i,ist1,ist2,isp,ias,io1,io2,l1,m1,lm1,l2,m2,lm2,l3,m3,lm3,ispn 
+
+do ig=1,ngvec_me
+
+  do i=1,num_nnp
+    ist1=nnp(i,1)
+    ist2=nnp(i,2)
+    do ispn=1,nspinor
+    
+      do ias=1,natmtot
+    
+      do io1=1,mtord
+      do io2=1,mtord
+          
+        do l1=0,lmaxvr
+        do m1=-l1,l1
+          lm1=idxlm(l1,m1)
+            do l2=0,lmaxvr
+            do m2=-l2,l2
+              lm2=idxlm(l2,m2)
+                do l3=0,lmaxapw
+                do m3=-l3,l3
+                  lm3=idxlm(l3,m3)
+                  if (abs(gnt(lm1,lm2,lm3)).gt.1d-10) then
+                  zrhofc(ig,i)=zrhofc(ig,i)+dconjg(acoeff1(ist1,ispn,io1,lm1,ias))*&
+                    acoeff2(ist2,ispn,io2,lm2,ias)*zil(l3)*dconjg(ylmgq0(lm3,ig))*&
+                    fourpi*sfacgq0(ig,ias)*uuj(l1,l2,l3,io1,io2,ias,ig)*gnt(lm1,lm2,lm3)
+                  endif
+                enddo
+                enddo
+             enddo
+             enddo
+          enddo
+          enddo
+        enddo
+        enddo
+        enddo
+      enddo
+    enddo  
+enddo              
+        
+  
+  
+
+
+
+
+
+return
+end
+
+
     
     
     

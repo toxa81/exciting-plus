@@ -862,7 +862,6 @@ complex(8) zt1
 
 allocate(mit(ngknri,ngknrj))
 allocate(mit1(nstfv,nstfv))
-zrhofc=dcmplx(0.d0,0.d0)
 do ig=1,ngvec_me
   mit=dcmplx(0.d0,0.d0)
   do igi=1,ngknri
