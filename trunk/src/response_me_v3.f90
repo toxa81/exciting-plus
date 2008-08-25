@@ -1,4 +1,4 @@
-subroutine response_me_v2(ivq0m,ngvec_me)
+subroutine response_me_v3(ivq0m,ngvec_me)
 use modmain
 #ifdef _MPI_
 use mpi
@@ -79,11 +79,15 @@ complex(8), allocatable :: locoeff1(:,:,:,:,:)
 complex(8), allocatable :: apwcoeff2(:,:,:,:,:)
 complex(8), allocatable :: locoeff2(:,:,:,:,:)
 
-integer i,j,i1,ik,jk,ig,is,ir,ikstep,ist1,ist2,ispn,ikloc
+integer i,j,i1,ik,jk,ig,is,ir,ikstep,ist1,ist2,ispn,ikloc,ilo,l
 integer ngknr2
 real(8) vkq0l(3),t1,jl(0:lmaxvr)
 integer ivg1(3)
 real(8) cpu0,cpu1
+integer nlomaxl
+integer mtord
+integer, allocatable :: ltmp(:)
+real(8), allocatable :: uuj(:,:,:,:,:,:,:)
 
 ! for parallel execution
 integer, allocatable :: nkptlocnr(:)
@@ -176,7 +180,7 @@ allocate(gq0(ngvec))
 allocate(tpgq0(2,ngvec))
 allocate(sfacgq0(ngvec,natmtot))
 allocate(ylmgq0(lmmaxvr,ngvec)) 
-allocate(jlgq0r(nrcmtmax,0:lmaxvr,nspecies,ngvec))
+allocate(jlgq0r(nrmtmax,0:lmaxvr,nspecies,ngvec_me))
 allocate(occsvnr(nstsv,nkptnr))
 
 ! q-vector in lattice coordinates
@@ -348,8 +352,8 @@ call gensfacgp(ngvec_me,vgq0c,ngvec,sfacgq0)
 ! generate Bessel functions j_l(|G+q'|x)
 do ig=1,ngvec_me
   do is=1,nspecies
-    do ir=1,nrcmt(is)
-      t1=gq0(ig)*rcmt(ir,is)
+    do ir=1,nrmt(is)
+      t1=gq0(ig)*spr(ir,is)
       call sbessel(lmaxvr,t1,jl)
       jlgq0r(ir,:,is,ig)=jl(:)
     enddo
@@ -375,6 +379,39 @@ if (iproc.eq.0) then
   enddo
   close(160)
 endif
+
+! find maximum number of local orbitals over all l-channels
+allocate(ltmp(0:lolmax))
+nlomaxl=0
+do is=1,nspecies
+  ltmp=0
+  do ilo=1,nlorb(is)
+    ltmp(lorbl(ilo,is))=ltmp(lorbl(ilo,is))+1
+  enddo
+  do l=0,lolmax
+    if (l.le.lmaxvr) then
+      nlomaxl=max(nlomaxl,ltmp(l))
+    endif
+  enddo
+enddo
+deallocate(ltmp)
+mtord=apwordmax+nlomaxl
+if (iproc.eq.0) then
+  write(150,*)
+  write(150,'("Calculating radial integrals")')
+  write(150,'("  maximum number of l.o. over all l-channels : ",I4)')nlomaxl
+  write(150,'("  maximum order of radial functions          : ",I4)')mtord
+endif
+allocate(uuj(0:lmaxvr,0:lmaxvr,0:lmaxvr,mtord,mtord,natmtot,ngvec_me))
+call calc_uuj(uuj,jlgq0r,mtord,ngvec_me)
+if (iproc.eq.0) then
+  write(150,'("Done.")')
+  call flushifc(150)
+endif
+call pstop
+  
+
+
 
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 allocate(zrhomt(lmmaxvr,nrcmtmax,natmtot))
@@ -681,7 +718,7 @@ return
 end
 
 
-subroutine tcoeff(ngp,apwalm,evecfv,evecsv,apwcoeff,locoeff)
+subroutine tcoeff1(ngp,apwalm,evecfv,evecsv,apwcoeff,locoeff)
 use modmain
 implicit none
 ! arguments
@@ -737,191 +774,71 @@ enddo !j
 return
 end
 
-subroutine zrhomt0(ist1,ist2,apwcoeff1,locoeff1,apwcoeff2,locoeff2,zrhomt)
+subroutine calc_uuj(uuj,jlgq0r,mtord,ngvec_me)
 use modmain
 implicit none
 ! arguments
-integer, intent(in) :: ist1
-integer, intent(in) :: ist2
-complex(8), intent(in) :: apwcoeff1(nstsv,nspinor,apwordmax,lmmaxvr,natmtot)
-complex(8), intent(in) :: locoeff1(nstsv,nspinor,nlomax,lmmaxvr,natmtot)
-complex(8), intent(in) :: apwcoeff2(nstsv,nspinor,apwordmax,lmmaxvr,natmtot)
-complex(8), intent(in) :: locoeff2(nstsv,nspinor,nlomax,lmmaxvr,natmtot)
-complex(8), intent(out) :: zrhomt(lmmaxvr,nrcmtmax,natmtot)
+integer, intent(in) :: mtord
+integer, intent(in) :: ngvec_me
+real(8), intent(in) :: jlgq0r(nrmtmax,0:lmaxvr,nspecies,ngvec_me)
+real(8), intent(out) :: uuj(0:lmaxvr,0:lmaxvr,0:lmaxvr,mtord,mtord,natmtot,ngvec_me)
 ! local variables
-integer ispn,is,ia,ias,l,m,lm,io,ilo,ir,irc
-integer l1,m1,lm1,l2,m2,lm2,l3,m3,lm3
-! automatic arrays
-complex(8) wfmt1(lmmaxvr,nrcmtmax)
-complex(8) wfmt2(lmmaxvr,nrcmtmax)
-complex(8) wfmt1t(lmmaxvr,nrcmtmax)
-complex(8) wfmt2t(lmmaxvr,nrcmtmax)
-complex(8) zrhot(lmmaxvr,nrcmtmax)
+integer ia,is,ias,l,io,ilo,ig,l1,l2,l3,io1,io2,ir
+real(8), allocatable :: ufr(:,:,:)
+integer ordl(0:lmaxvr)
+real(8) fr(nrmtmax),gr(nrmtmax),cf(3,nrmtmax)
+
+allocate(ufr(nrmtmax,0:lmaxvr,mtord))
+
+uuj=0.d0
 
 do is=1,nspecies
   do ia=1,natoms(is)
     ias=idxas(ia,is)
-    zrhot=dcmplx(0.d0,0.d0)
-    do ispn=1,nspinor
-      wfmt1=dcmplx(0.d0,0.d0)
-      wfmt2=dcmplx(0.d0,0.d0)
-! add apw contribution
-      do l=0,lmaxvr       
-        do m=-l,l
-          lm=idxlm(l,m)
-          do io=1,apword(l,is)
-            if (abs(apwcoeff1(ist1,ispn,io,lm,ias)).gt.1d-12) then
-              irc=0
-              do ir=1,nrmt(is),lradstp
-                irc=irc+1
-                wfmt1(lm,irc)=wfmt1(lm,irc)+apwcoeff1(ist1,ispn,io,lm,ias) * &
-                  apwfr(ir,1,io,l,ias)
-              enddo !ir
-            endif
-            if (abs(apwcoeff2(ist2,ispn,io,lm,ias)).gt.1d-12) then
-              irc=0
-              do ir=1,nrmt(is),lradstp
-                irc=irc+1
-                wfmt2(lm,irc)=wfmt2(lm,irc)+apwcoeff2(ist2,ispn,io,lm,ias) * &
-                  apwfr(ir,1,io,l,ias)
-              enddo !ir
-            endif
-          enddo !io
-        enddo !m
-      enddo !l
-! add local orbital contribution     
-      do ilo=1,nlorb(is)
-        l=lorbl(ilo,is)
-        if (l.le.lmaxvr) then
-          do m=-l,l
-            lm=idxlm(l,m)
-            if (abs(locoeff1(ist1,ispn,ilo,lm,ias)).gt.1d-12) then
-              irc=0
-              do ir=1,nrmt(is),lradstp
-                irc=irc+1
-                wfmt1(lm,irc)=wfmt1(lm,irc)+locoeff1(ist1,ispn,ilo,lm,ias) * &
-                  lofr(ir,1,ilo,ias)
-              enddo
-            endif
-            if (abs(locoeff2(ist2,ispn,ilo,lm,ias)).gt.1d-12) then
-              irc=0
-              do ir=1,nrmt(is),lradstp
-                irc=irc+1
-                wfmt2(lm,irc)=wfmt2(lm,irc)+locoeff2(ist2,ispn,ilo,lm,ias) * &
-                  lofr(ir,1,ilo,ias)
-              enddo
-            endif
-          enddo
-        endif  
+! store all radial functions in one array
+    ufr=0.d0
+    ordl=0
+! apw functions
+    do l=0,lmaxvr
+      do io=1,apword(l,is)
+        ordl(l)=ordl(l)+1
+        ufr(1:nrmt(is),l,ordl(l))=apwfr(1:nrmt(is),1,io,l,ias)
       enddo
-      call zgemm('N','N',lmmaxvr,nrcmt(is),lmmaxvr,zone,zbshtapw,lmmaxapw, &
-           wfmt1,lmmaxvr,zzero,wfmt1t,lmmaxvr)
-      call zgemm('N','N',lmmaxvr,nrcmt(is),lmmaxvr,zone,zbshtapw,lmmaxapw, &
-           wfmt2,lmmaxvr,zzero,wfmt2t,lmmaxvr)
-      do irc=1,nrcmt(is)
-        zrhot(:,irc)=zrhot(:,irc) + dconjg(wfmt1t(:,irc))*wfmt2t(:,irc)
-      enddo
-    enddo !ispn
-    call zgemm('N','N',lmmaxvr,nrcmt(is),lmmaxvr,zone,zfshtvr,lmmaxvr,zrhot, &
-      lmmaxvr,zzero,zrhomt(1,1,ias),lmmaxvr)
+    enddo
+! lo functions
+    do ilo=1,nlorb(is)
+      l=lorbl(ilo,is)
+      if (l.le.lmaxvr) then
+        ordl(l)=ordl(l)+1
+        ufr(1:nrmt(is),l,ordl(l))=lofr(1:nrmt(is),1,ilo,ias)
+      endif
+    enddo
+    do ig=1,ngvec_me
+      do l1=0,lmaxvr
+        do l2=0,lmaxvr
+          do l3=0,lmaxvr
+            do io1=1,mtord
+              do io2=1,mtord
+                do ir=1,nrmt(is)
+                  fr(ir)=ufr(ir,l1,io1)*ufr(ir,l2,io2)*jlgq0r(ir,l3,ias,ig)
+                enddo
+                call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
+                uuj(l1,l2,l3,io1,io2,ias,ig)=gr(nrmt(is))
+              enddo !io2
+            enddo !io1
+          enddo !l3
+        enddo !l2
+      enddo !l1   
+    enddo !ig
   enddo !ia
 enddo !is
 
+deallocate(ufr)
 return
-end
-
-subroutine zrhoftistl(ngvec_me,max_num_nnp,num_nnp,nnp,ngknri,ngknrj,igkignri,igkignrj, &
-  ig1,evecfvi,evecsvi,evecfvj,evecsvj,zrhofc)
-use modmain
-implicit none
-! arguments
-integer, intent(in) :: ngvec_me
-integer, intent(in) :: max_num_nnp
-integer, intent(in) :: num_nnp
-integer, intent(in) :: nnp(max_num_nnp,3)
-integer, intent(in) :: ngknri
-integer, intent(in) :: ngknrj
-integer, intent(in) :: ig1
-integer, intent(in) :: igkignri(ngkmax)
-integer, intent(in) :: igkignrj(ngkmax)
-complex(8), intent(in) :: evecfvi(nmatmax,nstfv)
-complex(8), intent(in) :: evecsvi(nstsv,nstsv)
-complex(8), intent(in) :: evecfvj(nmatmax,nstfv)
-complex(8), intent(in) :: evecsvj(nstsv,nstsv)
-complex(8), intent(out) :: zrhofc(ngvec_me,max_num_nnp)
-
-
-complex(8), allocatable :: mit(:,:)
-complex(8), allocatable :: mit1(:,:)
-
-integer is,ia,ias,ig,igi,igj,ist1,ist2,i,i1,i2,ispn
-integer iv3g(3)
-real(8) v1(3),v2(3),tp3g(2),len3g
-complex(8) sfac3g(natmtot)
-complex(8) zt1
-
-allocate(mit(ngknri,ngknrj))
-allocate(mit1(nstfv,nstfv))
-zrhofc=dcmplx(0.d0,0.d0)
-do ig=1,ngvec_me
-  mit=dcmplx(0.d0,0.d0)
-  do igi=1,ngknri
-    do igj=1,ngknrj
-      ! G1-G2+G+K
-      iv3g(:)=ivg(:,igkignri(igi))-ivg(:,igkignrj(igj))+ivg(:,ig)+ivg(:,ig1)
-      if (sum(abs(iv3g)).eq.0) mit(igi,igj)=dcmplx(1.d0,0.d0)
-      v2(:)=1.d0*iv3g(:)
-      call r3mv(bvec,v2,v1)
-      call sphcrd(v1,len3g,tp3g)
-      call gensfacgp(1,v1,1,sfac3g)
-      do is=1,nspecies
-        do ia=1,natoms(is)
-	  ias=idxas(ia,is)
-	  if (len3g.lt.1d-8) then
-	    mit(igi,igj)=mit(igi,igj)-(fourpi/omega)*dconjg(sfac3g(ias))*(rmt(is)**3)/3.d0
-	  else
-	    mit(igi,igj)=mit(igi,igj)-(fourpi/omega)*dconjg(sfac3g(ias)) * &
-	        (-(rmt(is)/len3g**2)*cos(len3g*rmt(is))+(1/len3g**3)*sin(len3g*rmt(is)))
-	  endif
-	enddo !ia
-      enddo !is
-    enddo
-  enddo
-  mit1=dcmplx(0.d0,0.d0)
-  do ist1=1,nstfv
-    do ist2=1,nstfv
-      do igj=1,ngknrj
-        zt1=dcmplx(0.d0,0.d0) 
-        do igi=1,ngknri
-          !mit1(ist1,ist2)=mit1(ist1,ist2)+dconjg(evecfvi(igi,ist1))*evecfvj(igj,ist2)*mit(igi,igj)
-          zt1=zt1+dconjg(evecfvi(igi,ist1))*mit(igi,igj)
-	enddo
-	mit1(ist1,ist2)=mit1(ist1,ist2)+zt1*evecfvj(igj,ist2)
-      enddo
-    enddo
-  enddo
+end    
+    
+    
+    
+    
       
-  do i=1,num_nnp
-    ist1=nnp(i,1)
-    ist2=nnp(i,2)
-    do ispn=1,nspinor
-      do i2=1,nstfv
-        zt1=dcmplx(0.d0,0.d0)
-        do i1=1,nstfv
-          !zrhofc(ig,i)=zrhofc(ig,i)+dconjg(evecsvi(i1+(ispn-1)*nstfv,ist1))*evecsvj(i2+(ispn-1)*nstfv,ist2)*mit1(i1,i2)
-          zt1=zt1+dconjg(evecsvi(i1+(ispn-1)*nstfv,ist1))*mit1(i1,i2)
-	enddo
-	zrhofc(ig,i)=zrhofc(ig,i)+zt1*evecsvj(i2+(ispn-1)*nstfv,ist2)
-      enddo
-    enddo
-!    zrhofc(ig,i)=mit1(ist1,ist2)
-!    do igi=1,ngknri
-!      do igj=1,ngknrj 
-!        zrhofc(ig,i)=zrhofc(ig,i)+dconjg(evecfvi(igi,ist1))*evecfvj(igj,ist2)*mit(igi,igj)
-!      enddo
-!    enddo
-  enddo
-enddo
-deallocate(mit,mit1)
-return
-end
+ 
