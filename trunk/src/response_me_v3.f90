@@ -480,7 +480,7 @@ do ias=1,natmtot
           if (abs(gnt(lm1,lm2,lm3)*uuj(l1,l2,l3,io1,io2,ias,ig)).gt.1d-10) then
             ngu(ias,ig)=ngu(ias,ig)+1
             gu(ngu(ias,ig),ias,ig)=gnt(lm1,lm2,lm3)*uuj(l1,l2,l3,io1,io2,ias,ig)* &
-              ylmgq0(lm3,ig)*dconjg(zil(l3))*fourpi*dconjg(sfacgq0(ig,ias))
+              ylmgq0(lm3,ig)*dconjg(zi**l3)*fourpi*dconjg(sfacgq0(ig,ias))
             igu(1,ngu(ias,ig),ias,ig)=lm1
             igu(2,ngu(ias,ig),ias,ig)=lm2
             igu(3,ngu(ias,ig),ias,ig)=io1
