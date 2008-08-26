@@ -45,8 +45,6 @@ real(8), allocatable :: tpgq0(:,:)
 complex(8), allocatable :: ylmgq0(:,:)
 ! structure factor for G+q vectors
 complex(8), allocatable :: sfacgq0(:,:)
-! Bessel functions j_l(|G+q|x)
-real(8), allocatable :: jlgq0r(:,:,:,:)
 
 ! allocatable arrays
 integer, allocatable :: ngknr(:)
@@ -92,6 +90,9 @@ integer, allocatable :: ngu(:,:)
 integer ngumax
 integer l1,m1,lm1,l2,m2,lm2,l3,m3,lm3
 
+integer lmaxexp
+integer lmmaxexp
+
 ! for parallel execution
 integer, allocatable :: nkptlocnr(:)
 integer, allocatable :: ikptlocnr(:,:)
@@ -121,6 +122,9 @@ call genapwfr
 
 ! generate the local-orbital radial functions
 call genlofr
+
+lmaxexp=10
+lmmaxexp=(lmaxexp+1)**2
 
 if (iproc.eq.0) then
   write(150,'("Calculation of matrix elements <n,k|e^{-i(G+q)x}|n'',k+q>")')
@@ -184,7 +188,6 @@ allocate(gq0(ngvec))
 allocate(tpgq0(2,ngvec))
 allocate(sfacgq0(ngvec,natmtot))
 allocate(ylmgq0(lmmaxvr,ngvec)) 
-allocate(jlgq0r(nrcmtmax,0:lmaxvr,nspecies,ngvec_me))
 allocate(occsvnr(nstsv,nkptnr))
 
 ! q-vector in lattice coordinates
@@ -352,17 +355,6 @@ enddo
 
 ! generate structure factor for G+q' vectors
 call gensfacgp(ngvec_me,vgq0c,ngvec,sfacgq0)
-  
-! generate Bessel functions j_l(|G+q'|x)
-do ig=1,ngvec_me
-  do is=1,nspecies
-    do ir=1,nrcmt(is)
-      t1=gq0(ig)*rcmt(ir,is)
-      call sbessel(lmaxvr,t1,jl)
-      jlgq0r(ir,:,is,ig)=jl(:)
-    enddo
-  enddo
-enddo
 
 write(fname,'("ZRHOFC[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
   ivq0m(1),ivq0m(2),ivq0m(3)
@@ -406,21 +398,21 @@ if (iproc.eq.0) then
   write(150,'("  maximum number of l.o. over all l-channels : ",I4)')nlomaxl
   write(150,'("  maximum order of radial functions          : ",I4)')mtord
 endif
-allocate(uuj(0:lmaxvr,0:lmaxvr,0:lmaxvr,mtord,mtord,natmtot,ngvec_me))
-call calc_uuj(uuj,gq0,mtord,ngvec_me)
+allocate(uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,mtord,mtord,natmtot,ngvec_me))
+call calc_uuj(uuj,lmaxexp,gq0,mtord,ngvec_me)
 if (iproc.eq.0) then
   write(150,'("Done.")')
   call flushifc(150)
 endif
 
-allocate(gnt(lmmaxvr,lmmaxvr,lmmaxvr))
+allocate(gnt(lmmaxvr,lmmaxvr,lmmaxexp))
 do l1=0,lmaxvr
   do m1=-l1,l1 
     lm1=idxlm(l1,m1)
     do l2=0,lmaxvr
       do m2=-l2,l2
         lm2=idxlm(l2,m2)
-        do l3=0,lmaxvr
+        do l3=0,lmaxexp
           do m3=-l3,l3
             lm3=idxlm(l3,m3)
             gnt(lm1,lm2,lm3)=gaunt(l2,l1,l3,m2,m1,m3)
@@ -444,7 +436,7 @@ do ias=1,natmtot
       do l2=0,lmaxvr
       do m2=-l2,l2
         lm2=idxlm(l2,m2)
-        do l3=0,lmaxvr
+        do l3=0,lmaxexp
         do m3=-l3,l3
           lm3=idxlm(l3,m3)
           if (abs(gnt(lm1,lm2,lm3)*uuj(l1,l2,l3,io1,io2,ias,ig)).gt.1d-10) then
@@ -482,7 +474,7 @@ do ias=1,natmtot
       do l2=0,lmaxvr
       do m2=-l2,l2
         lm2=idxlm(l2,m2)
-        do l3=0,lmaxvr
+        do l3=0,lmaxexp
         do m3=-l3,l3
           lm3=idxlm(l3,m3)
           if (abs(gnt(lm1,lm2,lm3)*uuj(l1,l2,l3,io1,io2,ias,ig)).gt.1d-10) then
@@ -648,9 +640,11 @@ do ikstep=1,nkptlocnr(0)
     
     call cpu_time(cpu0)
 ! calculate interstitial contribution for all combinations of n,n'
-    call zrhoftistl(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ikstep),ngknr2, &
-      igkignr(1,ikstep),igkignr2,ikq(ik,4),evecfvloc(1,1,1,ikstep),evecsvloc(1,1,ikstep), &
-      evecfv2,evecsv2,zrhofc(1,1,ikstep))
+!    call zrhoftistl(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ikstep),ngknr2, &
+!      igkignr(1,ikstep),igkignr2,ikq(ik,4),evecfvloc(1,1,1,ikstep),evecsvloc(1,1,ikstep), &
+!      evecfv2,evecsv2,zrhofc(1,1,ikstep))
+    call cpu_time(cpu1)
+    timeistl=cpu1-cpu0
     call cpu_time(cpu1)
     timeistl=cpu1-cpu0
     
@@ -783,7 +777,6 @@ deallocate(gq0)
 deallocate(tpgq0)
 deallocate(sfacgq0)
 deallocate(ylmgq0) 
-deallocate(jlgq0r)
 deallocate(occsvnr)
 deallocate(zrhofc0)
 deallocate(num_nnp)
@@ -928,31 +921,32 @@ enddo !j
 return
 end
 
-subroutine calc_uuj(uuj,gq0,mtord,ngvec_me)
+subroutine calc_uuj(uuj,lmaxexp,gq0,mtord,ngvec_me)
 use modmain
 implicit none
 ! arguments
+integer, intent(in) :: lmaxexp
 integer, intent(in) :: mtord
 integer, intent(in) :: ngvec_me
 real(8), intent(in) :: gq0(ngvec)
-real(8), intent(out) :: uuj(0:lmaxvr,0:lmaxvr,0:lmaxvr,mtord,mtord,natmtot,ngvec_me)
+real(8), intent(out) :: uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,mtord,mtord,natmtot,ngvec_me)
 ! local variables
 integer ia,is,ias,l,io,ilo,ig,l1,l2,l3,io1,io2,ir
 real(8), allocatable :: ufr(:,:,:)
 real(8), allocatable :: jlgq0r(:,:,:,:)
 integer ordl(0:lmaxvr)
 real(8) fr(nrmtmax),gr(nrmtmax),cf(3,nrmtmax)
-real(8) t1,jl(0:lmaxvr)
+real(8) t1,jl(0:lmaxexp)
 
 allocate(ufr(nrmtmax,0:lmaxvr,mtord))
-allocate(jlgq0r(nrmtmax,0:lmaxvr,nspecies,ngvec_me))
+allocate(jlgq0r(nrmtmax,0:lmaxexp,nspecies,ngvec_me))
 
 ! generate Bessel functions j_l(|G+q'|x)
 do ig=1,ngvec_me
   do is=1,nspecies
     do ir=1,nrmt(is)
       t1=gq0(ig)*spr(ir,is)
-      call sbessel(lmaxvr,t1,jl)
+      call sbessel(lmaxexp,t1,jl)
       jlgq0r(ir,:,is,ig)=jl(:)
     enddo
   enddo
@@ -984,7 +978,7 @@ do is=1,nspecies
     do ig=1,ngvec_me
       do l1=0,lmaxvr
         do l2=0,lmaxvr
-          do l3=0,lmaxvr
+          do l3=0,lmaxexp
             do io1=1,mtord
               do io2=1,mtord
                 do ir=1,nrmt(is)

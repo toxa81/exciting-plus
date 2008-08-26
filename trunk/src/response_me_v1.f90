@@ -578,7 +578,7 @@ do ikstep=1,nkptlocnr(0)
     call getevecfvp(vklnr(1,jk),vgklnr2,evecfv2,ikq(ik,3))
     call getevecsvp(vklnr(1,jk),evecsv2) 
     call match(ngknr2,gknr2,tpgknr2,sfacgknr2,apwalm)
-    call genwfsvj(.false.,ngknr2,igkignr2,evalsv(1,1),apwalm,evecfv2, &
+    call genwfsv(.false.,ngknr2,igkignr2,evalsv(1,1),apwalm,evecfv2, &
       evecsv2,wfmt2,wfir2)
 
     do i=1,num_nnp(ik)
@@ -587,7 +587,7 @@ do ikstep=1,nkptlocnr(0)
       call vnlrho(.true.,wfmt1(1,1,1,1,ist1),wfmt2(1,1,1,1,ist2),wfir1(1,1,ist1), &
         wfir2(1,1,ist2),zrhomt,zrhoir)
       call zrhoft(zrhomt,zrhoir,jlgq0r,ylmgq0,sfacgq0,ngvec_me,igfft1(1,ik),zrhofc1)
-      zrhofc(:,i,ikstep)=zrhofc1(:,3)
+      zrhofc(:,i,ikstep)=zrhofc1(:,2)
     enddo
 
   endif ! (ikstep.le.nkptlocnr(iproc))
