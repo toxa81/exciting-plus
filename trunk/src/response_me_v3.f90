@@ -187,7 +187,7 @@ allocate(vgq0c(3,ngvec))
 allocate(gq0(ngvec))
 allocate(tpgq0(2,ngvec))
 allocate(sfacgq0(ngvec,natmtot))
-allocate(ylmgq0(lmmaxvr,ngvec)) 
+allocate(ylmgq0(lmmaxexp,ngvec)) 
 allocate(occsvnr(nstsv,nkptnr))
 
 ! q-vector in lattice coordinates
@@ -350,7 +350,7 @@ do ig=1,ngvec_me
 ! get spherical coordinates and length of G+q'
   call sphcrd(vgq0c(:,ig),gq0(ig),tpgq0(:,ig))
 ! generate spherical harmonics for G+q'
-  call genylm(lmaxvr,tpgq0(:,ig),ylmgq0(:,ig))
+  call genylm(lmaxexp,tpgq0(:,ig),ylmgq0(:,ig))
 enddo
 
 ! generate structure factor for G+q' vectors
