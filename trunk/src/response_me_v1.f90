@@ -587,7 +587,7 @@ do ikstep=1,nkptlocnr(0)
       call vnlrho(.true.,wfmt1(1,1,1,1,ist1),wfmt2(1,1,1,1,ist2),wfir1(1,1,ist1), &
         wfir2(1,1,ist2),zrhomt,zrhoir)
       call zrhoft(zrhomt,zrhoir,jlgq0r,ylmgq0,sfacgq0,ngvec_me,igfft1(1,ik),zrhofc1)
-      zrhofc(:,i,ikstep)=zrhofc1(:,2)
+      zrhofc(:,i,ikstep)=zrhofc1(:,1)
     enddo
 
   endif ! (ikstep.le.nkptlocnr(iproc))

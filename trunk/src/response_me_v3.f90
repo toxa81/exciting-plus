@@ -123,7 +123,7 @@ call genapwfr
 ! generate the local-orbital radial functions
 call genlofr
 
-lmaxexp=10
+lmaxexp=lmaxvr
 lmmaxexp=(lmaxexp+1)**2
 
 if (iproc.eq.0) then
@@ -850,7 +850,7 @@ do j=1,nstsv
   do ispn=1,nspinor
     do ias=1,natmtot
       do io=1,mtord
-        do lm=1,lmaxvr
+        do lm=1,lmmaxvr
           do istfv=1,nstfv
 	    acoeff(lm,io,ias,ispn,j)=acoeff(lm,io,ias,ispn,j) + &
 	      evecsv(istfv+(ispn-1)*nstfv,j)*acoeff_t(istfv,io,lm,ias)
