@@ -82,7 +82,7 @@ real(8) cpu0,cpu1,timeistl,timemt
 integer nlomaxl
 integer mtord
 integer, allocatable :: ltmp(:)
-real(8), allocatable :: uuj(:,:,:,:,:,:,:)
+real(8), allocatable :: uuj(:,:,:,:,:,:)
 real(8), allocatable :: gnt(:,:,:)
 complex(8), allocatable :: gu(:,:,:)
 integer, allocatable :: igu(:,:,:,:)
@@ -293,9 +293,8 @@ call mpi_bcast(occsvnr,nstsv*nkptnr,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
 #endif
 
 ! setup n,n' stuff
-max_num_nnp=2000
-30 continue
 allocate(num_nnp(nkptlocnr(iproc)))
+max_num_nnp=nstfv**2
 allocate(nnp(max_num_nnp,3,nkptlocnr(iproc)))
 allocate(docc(max_num_nnp,nkptlocnr(iproc)))
 do ikloc=1,nkptlocnr(iproc)
@@ -311,10 +310,10 @@ do ikloc=1,nkptlocnr(iproc)
 	    abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-10) then
 	  i1=i1+1
 	  if (i1.gt.max_num_nnp) then
-	    deallocate(nnp)
-	    deallocate(docc)
-	    max_num_nnp=max_num_nnp+2000
-	    goto 30
+	    write(*,*)
+	    write(*,'("Error(response_me): maximum number of nn'' combinations reached.")')
+	    write(*,*)
+	    call pstop
 	  endif
           nnp(i1,1,ikloc)=ist1
           nnp(i1,2,ikloc)=ist2
@@ -328,42 +327,13 @@ do ikloc=1,nkptlocnr(iproc)
       enddo
     enddo
   enddo
-  num_nnp(ik)=i1
+  num_nnp(ikloc)=i1
 enddo
 
 if (iproc.eq.0) then
   write(150,*)
-  write(150,'("Approximate number of interband transitions : ",I5)')max_num_nnp
+  write(150,'("Number of interband transitions in Gamma point : ",I5)')num_nnp(1)
 endif
-call pstop
-
-allocate(nnp(max_num_nnp,3,nkptnr))
-allocate(docc(nkptnr,max_num_nnp))
-! second, setup the nnp array
-do ik=1,nkptnr
-  jk=ikq(ik,1)
-  i1=0
-  do ispn=1,nspinor
-    do i=1,nstfv
-      ist1=i+(ispn-1)*nstfv
-      do j=1,nstfv
-        ist2=j+(ispn-1)*nstfv
-	if ((ispn.eq.spin_me.or.spin_me.eq.3) .and. &
-	    abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-10) then
-          i1=i1+1
-          nnp(i1,1,ik)=ist1
-          nnp(i1,2,ik)=ist2
-	  if (spin_me.eq.3) then
-	    nnp(i1,3,ik)=ispn
-	  else
-            nnp(i1,3,ik)=1
-	  endif
-          docc(ik,i1)=occsvnr(ist1,ik)-occsvnr(ist2,jk)
-        endif
-      enddo
-    enddo
-  enddo
-enddo
 
 ! generate G+q' vectors, where q' is reduced q-vector
 do ig=1,ngvec_me
@@ -375,14 +345,14 @@ do ig=1,ngvec_me
 enddo
 
 ! generate structure factor for G+q' vectors
-call gensfacgp(ngvec_me,vgq0c,ngvec,sfacgq0)
+call gensfacgp(ngvec_me,vgq0c,ngvec_me,sfacgq0)
 
 write(fname,'("ZRHOFC[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
   ivq0m(1),ivq0m(2),ivq0m(3)
 
 if (iproc.eq.0) then
   open(160,file=trim(fname),form='unformatted',status='replace')
-  write(160)nkptnr,ngsh_me,ngvec_me,max_num_nnp,igq0
+  write(160)nkptnr,ngsh_me,ngvec_me,igq0
   write(160)nspinor,spin_me
   write(160)vq0l(1:3)
   write(160)vq0rl(1:3)
@@ -390,9 +360,9 @@ if (iproc.eq.0) then
   write(160)vq0rc(1:3)
   do ik=1,nkptnr
     write(160)ikq(ik,1)
-    write(160)num_nnp(ik)
-    write(160)nnp(1:num_nnp(ik),1:3,ik)
-    write(160)docc(ik,1:num_nnp(ik))
+!    write(160)num_nnp(ik)
+!    write(160)nnp(1:num_nnp(ik),1:3,ik)
+!    write(160)docc(ik,1:num_nnp(ik))
   enddo
   close(160)
 endif
@@ -412,21 +382,20 @@ do is=1,nspecies
   enddo
 enddo
 deallocate(ltmp)
+! maximum number of radial functions for each l-channel
 mtord=apwordmax+nlomaxl
 if (iproc.eq.0) then
   write(150,*)
-  write(150,'("Calculating radial integrals")')
-  write(150,'("  maximum number of l.o. over all l-channels : ",I4)')nlomaxl
-  write(150,'("  maximum order of radial functions          : ",I4)')mtord
-endif
-allocate(uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,mtord,mtord,natmtot,ngvec_me))
-call calc_uuj(uuj,lmaxexp,gq0,mtord,ngvec_me)
-if (iproc.eq.0) then
-  write(150,'("Done.")')
-  call flushifc(150)
+  write(150,'("Maximum number of l.o. over all l-channels : ",I4)')nlomaxl
+  write(150,'("Maximum order of radial functions          : ",I4)')mtord
 endif
 
-allocate(gnt(lmmaxvr,lmmaxvr,lmmaxexp))
+allocate(uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,mtord,mtord,natmtot))
+
+!call calc_uuj(uuj,lmaxexp,gq0,mtord,ngvec_me)
+
+! find maximum number of Gaunt-like coefficients
+ngumax=0
 do l1=0,lmaxvr
   do m1=-l1,l1 
     lm1=idxlm(l1,m1)
@@ -436,91 +405,23 @@ do l1=0,lmaxvr
         do l3=0,lmaxexp
           do m3=-l3,l3
             lm3=idxlm(l3,m3)
-            gnt(lm1,lm2,lm3)=gaunt(l2,l1,l3,m2,m1,m3)
+	    if (abs(gaunt(l2,l1,l3,m2,m1,m3)).gt.1d-10) ngumax=ngumax+1
           enddo
         enddo
       enddo
     enddo
   enddo
 enddo
-
-allocate(ngu(natmtot,ngvec_me))
-ngu=0
-ngumax=0
-do ig=1,ngvec_me
-do ias=1,natmtot
-  do io1=1,mtord
-  do io2=1,mtord
-    do l1=0,lmaxvr
-    do m1=-l1,l1 
-      lm1=idxlm(l1,m1)
-      do l2=0,lmaxvr
-      do m2=-l2,l2
-        lm2=idxlm(l2,m2)
-        do l3=0,lmaxexp
-        do m3=-l3,l3
-          lm3=idxlm(l3,m3)
-          if (abs(gnt(lm1,lm2,lm3)*uuj(l1,l2,l3,io1,io2,ias,ig)).gt.1d-10) then
-            ngu(ias,ig)=ngu(ias,ig)+1
-          endif
-        enddo
-        enddo
-      enddo
-      enddo
-    enddo
-    enddo
-  enddo
-  enddo
-  ngumax=max(ngumax,ngu(ias,ig))
-enddo
-enddo    
+ngumax=ngumax*mtord*mtord
 if (iproc.eq.0) then
   write(150,*)
   write(150,'("Maximum number of Gaunt-like coefficients : ",I8)')ngumax
   call flushifc(150)
 endif
 
-allocate(gu(ngumax,natmtot,ngvec_me))
-allocate(igu(4,ngumax,natmtot,ngvec_me))
-gu=dcmplx(0.d0,0.d0)
-igu=0
-ngu=0
-do ig=1,ngvec_me
-do ias=1,natmtot
-  do io1=1,mtord
-  do io2=1,mtord
-    do l1=0,lmaxvr
-    do m1=-l1,l1 
-      lm1=idxlm(l1,m1)
-      do l2=0,lmaxvr
-      do m2=-l2,l2
-        lm2=idxlm(l2,m2)
-        do l3=0,lmaxexp
-        do m3=-l3,l3
-          lm3=idxlm(l3,m3)
-          if (abs(gnt(lm1,lm2,lm3)*uuj(l1,l2,l3,io1,io2,ias,ig)).gt.1d-10) then
-            ngu(ias,ig)=ngu(ias,ig)+1
-            gu(ngu(ias,ig),ias,ig)=gnt(lm1,lm2,lm3)*uuj(l1,l2,l3,io1,io2,ias,ig)* &
-              ylmgq0(lm3,ig)*dconjg(zi**l3)*fourpi*dconjg(sfacgq0(ig,ias))
-            igu(1,ngu(ias,ig),ias,ig)=lm1
-            igu(2,ngu(ias,ig),ias,ig)=lm2
-            igu(3,ngu(ias,ig),ias,ig)=io1
-            igu(4,ngu(ias,ig),ias,ig)=io2
-          endif
-        enddo
-        enddo
-      enddo
-      enddo
-    enddo
-    enddo
-  enddo
-  enddo
-enddo
-enddo    
-
-
-
-
+allocate(ngu(natmtot))
+allocate(gu(ngumax,natmtot))
+allocate(igu(4,ngumax,natmtot))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 allocate(zrhomt(lmmaxvr,nrcmtmax,natmtot))
 allocate(zrhofc0(ngvec_me))
@@ -589,99 +490,143 @@ do ikstep=1,nkptlocnr(0)
   enddo
 enddo
 
-if (iproc.eq.0) then
-  write(150,*)
-  write(150,'("Starting k-point loop")')
-endif
 zrhofc=dcmplx(0.d0,0.d0)
-do ikstep=1,nkptlocnr(0)
+do ig=1,ngvec_me
   if (iproc.eq.0) then
-    write(150,'("k-step ",I4," out of ",I4)')ikstep,nkptlocnr(0)
-    call flushifc(150)
+    write(150,*)
+    write(150,'("G-vector ",I4," out of ",I4)')ig,ngvec_me
   endif
-! find the i-th proc to which the current iproc should send data
-  do i=0,nproc-1
-    if (isend(ikstep,i,1).eq.iproc.and.iproc.ne.i) then
-      tag=(ikstep*nproc+i)*10
-      ik=isend(ikstep,i,2)
-      call mpi_isend(evecfvloc(1,1,1,ik),                    &
-        nmatmax*nstfv*nspnfv,                                &
-        MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
-      tag=tag+1
-      call mpi_isend(evecsvloc(1,1,ik),                      &
-        nstsv*nstsv,                                         &
-        MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
-      tag=tag+1
-      call mpi_isend(acoeffloc(1,1,1,1,1,ik),                &
-        lmmaxvr*mtord*natmtot*nspinor*nstsv,                 &
-	MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
-      tag=tag+1
-      call mpi_isend(ngknr(ik),1,MPI_INTEGER,i,tag,          &
-        MPI_COMM_WORLD,req,ierr)
-      tag=tag+1
-      call mpi_isend(igkignr(1,ik),ngkmax,MPI_INTEGER,i,tag, &
-        MPI_COMM_WORLD,req,ierr)  
-    endif
+! calculate radial integrals <u|j|u'>
+  call calc_uuj(uuj,lmaxexp,gq0(ig),mtord)
+! compute Gaunt-like coefficients
+  gu=dcmplx(0.d0,0.d0)
+  igu=0
+  ngu=0
+  do ias=1,natmtot
+    do io1=1,mtord
+    do io2=1,mtord
+      do l1=0,lmaxvr
+      do m1=-l1,l1 
+        lm1=idxlm(l1,m1)
+        do l2=0,lmaxvr
+        do m2=-l2,l2
+          lm2=idxlm(l2,m2)
+          do l3=0,lmaxexp
+          do m3=-l3,l3
+            lm3=idxlm(l3,m3)
+	    t1=gaunt(l2,l1,l3,m2,m1,m3)*uuj(l1,l2,l3,io1,io2,ias)
+            if (abs(t1).gt.1d-10) then
+              ngu(ias)=ngu(ias)+1
+              gu(ngu(ias),ias)=t1*ylmgq0(lm3,ig)*dconjg(zi**l3)*fourpi*dconjg(sfacgq0(ig,ias))
+              igu(1,ngu(ias),ias)=lm1
+              igu(2,ngu(ias),ias)=lm2
+              igu(3,ngu(ias),ias)=io1
+              igu(4,ngu(ias),ias)=io2
+            endif
+          enddo
+          enddo
+        enddo
+        enddo
+      enddo
+      enddo
+    enddo
+    enddo
   enddo
-! receive data
-  if (isend(ikstep,iproc,1).ne.-1) then
-    if (isend(ikstep,iproc,1).ne.iproc) then
-      tag=(ikstep*nproc+iproc)*10
-      call mpi_recv(evecfv2,nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX, &
-        isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
-      tag=tag+1
-      call mpi_recv(evecsv2,nstsv*nstsv,MPI_DOUBLE_COMPLEX,          &
-        isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
-      tag=tag+1
-      call mpi_recv(acoeff2,lmmaxvr*mtord*natmtot*nspinor*nstsv,     &
-        MPI_DOUBLE_COMPLEX,isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
-      tag=tag+1
-      call mpi_recv(ngknr2,1,MPI_INTEGER,isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
-      tag=tag+1
-      call mpi_recv(igkignr2,ngkmax,MPI_INTEGER,isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
-    else
-      ik=isend(ikstep,iproc,2)
-      evecfv2(:,:,:)=evecfvloc(:,:,:,ik)
-      evecsv2(:,:)=evecsvloc(:,:,ik)
-      acoeff2(:,:,:,:,:)=acoeffloc(:,:,:,:,:,ik)
-      ngknr2=ngknr(ik)
-      igkignr2(:)=igkignr(:,ik)
-    endif
-  endif
 
-  call mpi_barrier(MPI_COMM_WORLD,ierr)
   if (iproc.eq.0) then
-    write(150,'("  OK send and recieve")')
-    call flushifc(150)
+    write(150,*)
+    write(150,'("  Starting k-point loop")')
   endif
   
-  if (ikstep.le.nkptlocnr(iproc)) then
-    ik=ikptlocnr(iproc,1)+ikstep-1
-    jk=ikq(ik,1)
-    
-    call cpu_time(cpu0)
-! calculate interstitial contribution for all combinations of n,n'
-    call zrhoftistl(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ikstep),ngknr2, &
-      igkignr(1,ikstep),igkignr2,ikq(ik,4),evecfvloc(1,1,1,ikstep),evecsvloc(1,1,ikstep), &
-      evecfv2,evecsv2,zrhofc(1,1,ikstep))
-    call cpu_time(cpu1)
-    timeistl=cpu1-cpu0
-    
-    call cpu_time(cpu0)
-    call zrhoftmt2(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),mtord,ylmgq0, &
-      sfacgq0,acoeffloc(1,1,1,1,1,ikstep),acoeff2,uuj,ngumax,ngu,gu,igu,zrhofc(1,1,ikstep))
-    call cpu_time(cpu1)
-    timemt=cpu1-cpu0
-  
+  do ikstep=1,nkptlocnr(0)
     if (iproc.eq.0) then
-      write(150,'("  interstitial time (seconds) : ",F12.2)')timeistl
-      write(150,'("    muffin-tin time (seconds) : ",F12.2)')timemt
+      write(150,'("    k-step ",I4," out of ",I4)')ikstep,nkptlocnr(0)
       call flushifc(150)
     endif
-    
-  endif ! (ikstep.le.nkptlocnr(iproc))
+! find the i-th proc to which the current iproc should send data
+    do i=0,nproc-1
+      if (isend(ikstep,i,1).eq.iproc.and.iproc.ne.i) then
+        tag=(ikstep*nproc+i)*10
+        ik=isend(ikstep,i,2)
+        call mpi_isend(evecfvloc(1,1,1,ik),                    &
+          nmatmax*nstfv*nspnfv,                                &
+          MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
+        tag=tag+1
+        call mpi_isend(evecsvloc(1,1,ik),                      &
+          nstsv*nstsv,                                         &
+          MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
+        tag=tag+1
+        call mpi_isend(acoeffloc(1,1,1,1,1,ik),                &
+          lmmaxvr*mtord*natmtot*nspinor*nstsv,                 &
+	  MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
+        tag=tag+1
+        call mpi_isend(ngknr(ik),1,MPI_INTEGER,i,tag,          &
+          MPI_COMM_WORLD,req,ierr)
+        tag=tag+1
+        call mpi_isend(igkignr(1,ik),ngkmax,MPI_INTEGER,i,tag, &
+          MPI_COMM_WORLD,req,ierr)  
+      endif
+    enddo
+! receive data
+    if (isend(ikstep,iproc,1).ne.-1) then
+      if (isend(ikstep,iproc,1).ne.iproc) then
+        tag=(ikstep*nproc+iproc)*10
+        call mpi_recv(evecfv2,nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX, &
+          isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
+        tag=tag+1
+        call mpi_recv(evecsv2,nstsv*nstsv,MPI_DOUBLE_COMPLEX,          &
+          isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
+        tag=tag+1
+        call mpi_recv(acoeff2,lmmaxvr*mtord*natmtot*nspinor*nstsv,     &
+          MPI_DOUBLE_COMPLEX,isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
+        tag=tag+1
+        call mpi_recv(ngknr2,1,MPI_INTEGER,isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
+        tag=tag+1
+        call mpi_recv(igkignr2,ngkmax,MPI_INTEGER,isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
+      else
+        ik=isend(ikstep,iproc,2)
+        evecfv2(:,:,:)=evecfvloc(:,:,:,ik)
+        evecsv2(:,:)=evecsvloc(:,:,ik)
+        acoeff2(:,:,:,:,:)=acoeffloc(:,:,:,:,:,ik)
+        ngknr2=ngknr(ik)
+        igkignr2(:)=igkignr(:,ik)
+      endif
+    endif
+
+    call mpi_barrier(MPI_COMM_WORLD,ierr)
+    if (iproc.eq.0) then
+      write(150,'("  OK send and recieve")')
+      call flushifc(150)
+    endif
   
-enddo !ikstep
+    if (ikstep.le.nkptlocnr(iproc)) then
+      ik=ikptlocnr(iproc,1)+ikstep-1
+      jk=ikq(ik,1)
+    
+      call cpu_time(cpu0)
+! calculate interstitial contribution for all combinations of n,n'
+      call zrhoftistl(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ikstep),ngknr2, &
+        igkignr(1,ikstep),igkignr2,ikq(ik,4),evecfvloc(1,1,1,ikstep),evecsvloc(1,1,ikstep), &
+        evecfv2,evecsv2,zrhofc(1,1,ikstep))
+      call cpu_time(cpu1)
+      timeistl=cpu1-cpu0
+    
+      call cpu_time(cpu0)
+      call zrhoftmt2(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),mtord,ylmgq0, &
+        sfacgq0,acoeffloc(1,1,1,1,1,ikstep),acoeff2,uuj,ngumax,ngu,gu,igu,zrhofc(1,1,ikstep))
+      call cpu_time(cpu1)
+      timemt=cpu1-cpu0
+  
+      if (iproc.eq.0) then
+        write(150,'("  interstitial time (seconds) : ",F12.2)')timeistl
+        write(150,'("    muffin-tin time (seconds) : ",F12.2)')timemt
+        call flushifc(150)
+      endif
+    
+    endif ! (ikstep.le.nkptlocnr(iproc))
+  
+  enddo !ikstep
+enddo !ig
 
 call mpi_barrier(MPI_COMM_WORLD,ierr)
 
@@ -939,34 +884,31 @@ enddo !j
 return
 end
 
-subroutine calc_uuj(uuj,lmaxexp,gq0,mtord,ngvec_me)
+subroutine calc_uuj(uuj,lmaxexp,gq0,mtord)
 use modmain
 implicit none
 ! arguments
 integer, intent(in) :: lmaxexp
 integer, intent(in) :: mtord
-integer, intent(in) :: ngvec_me
-real(8), intent(in) :: gq0(ngvec)
-real(8), intent(out) :: uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,mtord,mtord,natmtot,ngvec_me)
+real(8), intent(in) :: gq0
+real(8), intent(out) :: uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,mtord,mtord,natmtot)
 ! local variables
-integer ia,is,ias,l,io,ilo,ig,l1,l2,l3,io1,io2,ir
+integer ia,is,ias,l,io,ilo,l1,l2,l3,io1,io2,ir
 real(8), allocatable :: ufr(:,:,:)
-real(8), allocatable :: jlgq0r(:,:,:,:)
+real(8), allocatable :: jlgq0r(:,:,:)
 integer ordl(0:lmaxvr)
 real(8) fr(nrmtmax),gr(nrmtmax),cf(3,nrmtmax)
 real(8) t1,jl(0:lmaxexp)
 
 allocate(ufr(nrmtmax,0:lmaxvr,mtord))
-allocate(jlgq0r(nrmtmax,0:lmaxexp,nspecies,ngvec_me))
+allocate(jlgq0r(nrmtmax,0:lmaxexp,nspecies))
 
 ! generate Bessel functions j_l(|G+q'|x)
-do ig=1,ngvec_me
-  do is=1,nspecies
-    do ir=1,nrmt(is)
-      t1=gq0(ig)*spr(ir,is)
-      call sbessel(lmaxexp,t1,jl)
-      jlgq0r(ir,:,is,ig)=jl(:)
-    enddo
+do is=1,nspecies
+  do ir=1,nrmt(is)
+    t1=gq0*spr(ir,is)
+    call sbessel(lmaxexp,t1,jl)
+    jlgq0r(ir,:,is)=jl(:)
   enddo
 enddo
 
@@ -993,23 +935,21 @@ do is=1,nspecies
         ufr(1:nrmt(is),l,ordl(l))=lofr(1:nrmt(is),1,ilo,ias)
       endif
     enddo
-    do ig=1,ngvec_me
-      do l1=0,lmaxvr
-        do l2=0,lmaxvr
-          do l3=0,lmaxexp
-            do io1=1,mtord
-              do io2=1,mtord
-                do ir=1,nrmt(is)
-                  fr(ir)=ufr(ir,l1,io1)*ufr(ir,l2,io2)*jlgq0r(ir,l3,is,ig)*(spr(ir,is)**2)
-                enddo
-                call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
-                uuj(l1,l2,l3,io1,io2,ias,ig)=gr(nrmt(is))
-              enddo !io2
-            enddo !io1
-          enddo !l3
-        enddo !l2
-      enddo !l1   
-    enddo !ig
+    do l1=0,lmaxvr
+      do l2=0,lmaxvr
+        do l3=0,lmaxexp
+          do io1=1,mtord
+            do io2=1,mtord
+              do ir=1,nrmt(is)
+                fr(ir)=ufr(ir,l1,io1)*ufr(ir,l2,io2)*jlgq0r(ir,l3,is)*(spr(ir,is)**2)
+              enddo
+              call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
+              uuj(l1,l2,l3,io1,io2,ias)=gr(nrmt(is))
+            enddo !io2
+          enddo !io1
+        enddo !l3
+      enddo !l2
+    enddo !l1   
   enddo !ia
 enddo !is
 
