@@ -183,11 +183,11 @@ do ikloc=1,nkptlocnr(iproc)
 enddo
 
 allocate(ikq(nkptnr,4))
-allocate(vgq0c(3,ngvec))
-allocate(gq0(ngvec))
-allocate(tpgq0(2,ngvec))
-allocate(sfacgq0(ngvec,natmtot))
-allocate(ylmgq0(lmmaxexp,ngvec)) 
+allocate(vgq0c(3,ngvec_me))
+allocate(gq0(ngvec_me))
+allocate(tpgq0(2,ngvec_me))
+allocate(sfacgq0(ngvec_me,natmtot))
+allocate(ylmgq0(lmmaxexp,ngvec_me)) 
 allocate(occsvnr(nstsv,nkptnr))
 
 ! q-vector in lattice coordinates
@@ -293,10 +293,13 @@ call mpi_bcast(occsvnr,nstsv*nkptnr,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
 #endif
 
 ! setup n,n' stuff
-! first, find the maximum size of nnp array
-max_num_nnp=0
-allocate(num_nnp(nkptnr))
-do ik=1,nkptnr
+max_num_nnp=2000
+30 continue
+allocate(num_nnp(nkptlocnr(iproc)))
+allocate(nnp(max_num_nnp,3,nkptlocnr(iproc)))
+allocate(docc(max_num_nnp,nkptlocnr(iproc)))
+do ikloc=1,nkptlocnr(iproc)
+  ik=ikptlocnr(iproc,1)+ikloc-1
   jk=ikq(ik,1)
   i1=0
   do ispn=1,nspinor
@@ -305,17 +308,35 @@ do ik=1,nkptnr
       do j=1,nstfv
         ist2=j+(ispn-1)*nstfv
         if ((ispn.eq.spin_me.or.spin_me.eq.3) .and. &
-	    abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-10) i1=i1+1
+	    abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-10) then
+	  i1=i1+1
+	  if (i1.gt.max_num_nnp) then
+	    deallocate(nnp)
+	    deallocate(docc)
+	    max_num_nnp=max_num_nnp+2000
+	    goto 30
+	  endif
+          nnp(i1,1,ikloc)=ist1
+          nnp(i1,2,ikloc)=ist2
+	  if (spin_me.eq.3) then
+	    nnp(i1,3,ikloc)=ispn
+	  else
+            nnp(i1,3,ikloc)=1
+	  endif
+          docc(i1,ikloc)=occsvnr(ist1,ik)-occsvnr(ist2,jk)
+	endif
       enddo
     enddo
   enddo
   num_nnp(ik)=i1
-  max_num_nnp=max(max_num_nnp,i1)
 enddo
+
 if (iproc.eq.0) then
   write(150,*)
-  write(150,'("Maximum number of interband transitions: ",I5)')max_num_nnp
+  write(150,'("Approximate number of interband transitions : ",I5)')max_num_nnp
 endif
+call pstop
+
 allocate(nnp(max_num_nnp,3,nkptnr))
 allocate(docc(nkptnr,max_num_nnp))
 ! second, setup the nnp array
@@ -640,18 +661,15 @@ do ikstep=1,nkptlocnr(0)
     
     call cpu_time(cpu0)
 ! calculate interstitial contribution for all combinations of n,n'
-!    call zrhoftistl(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ikstep),ngknr2, &
-!      igkignr(1,ikstep),igkignr2,ikq(ik,4),evecfvloc(1,1,1,ikstep),evecsvloc(1,1,ikstep), &
-!      evecfv2,evecsv2,zrhofc(1,1,ikstep))
-    call cpu_time(cpu1)
-    timeistl=cpu1-cpu0
+    call zrhoftistl(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ikstep),ngknr2, &
+      igkignr(1,ikstep),igkignr2,ikq(ik,4),evecfvloc(1,1,1,ikstep),evecsvloc(1,1,ikstep), &
+      evecfv2,evecsv2,zrhofc(1,1,ikstep))
     call cpu_time(cpu1)
     timeistl=cpu1-cpu0
     
     call cpu_time(cpu0)
     call zrhoftmt2(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),mtord,ylmgq0, &
       sfacgq0,acoeffloc(1,1,1,1,1,ikstep),acoeff2,uuj,ngumax,ngu,gu,igu,zrhofc(1,1,ikstep))
-    
     call cpu_time(cpu1)
     timemt=cpu1-cpu0
   
