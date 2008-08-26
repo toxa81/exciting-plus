@@ -424,7 +424,7 @@ allocate(gu(ngumax,natmtot))
 allocate(igu(4,ngumax,natmtot))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 allocate(zrhomt(lmmaxvr,nrcmtmax,natmtot))
-allocate(zrhofc0(ngvec_me))
+allocate(zrhofc0(max_num_nnp))
   
 ! different implementation for parallel and serial execution
 #ifdef _MPI_
@@ -602,21 +602,24 @@ do ig=1,ngvec_me
     if (ikstep.le.nkptlocnr(iproc)) then
       ik=ikptlocnr(iproc,1)+ikstep-1
       jk=ikq(ik,1)
-    
+      
+      zrhofc0=dcmplx(0.d0,0.d0)    
       call cpu_time(cpu0)
 ! calculate interstitial contribution for all combinations of n,n'
-      call zrhoftistl(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ikstep),ngknr2, &
+      call zrhoftistl(ig,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ikstep),ngknr2, &
         igkignr(1,ikstep),igkignr2,ikq(ik,4),evecfvloc(1,1,1,ikstep),evecsvloc(1,1,ikstep), &
-        evecfv2,evecsv2,zrhofc(1,1,ikstep))
+        evecfv2,evecsv2,zrhofc0)
       call cpu_time(cpu1)
       timeistl=cpu1-cpu0
     
       call cpu_time(cpu0)
-      call zrhoftmt2(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),mtord,ylmgq0, &
-        sfacgq0,acoeffloc(1,1,1,1,1,ikstep),acoeff2,uuj,ngumax,ngu,gu,igu,zrhofc(1,1,ikstep))
+      call zrhoftmt2(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),mtord, &
+        acoeffloc(1,1,1,1,1,ikstep),acoeff2,ngumax,ngu,gu,igu,zrhofc0)
       call cpu_time(cpu1)
       timemt=cpu1-cpu0
-  
+      
+      zrhofc(ig,:,ikstep)=zrhofc0(:)
+
       if (iproc.eq.0) then
         write(150,'("  interstitial time (seconds) : ",F12.2)')timeistl
         write(150,'("    muffin-tin time (seconds) : ",F12.2)')timemt
@@ -827,62 +830,6 @@ deallocate(acoeff_t)
 return
 end
 
-subroutine tcoeff_old(ngp,mtord,apwalm,evecfv,evecsv,acoeff)
-use modmain
-implicit none
-! arguments
-integer, intent(in) :: ngp
-integer, intent(in) :: mtord
-complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
-complex(8), intent(in) :: evecfv(nmatmax,nstfv)
-complex(8), intent(in) :: evecsv(nstsv,nstsv)
-complex(8), intent(out) :: acoeff(lmmaxvr,mtord,natmtot,nspinor,nstsv)
-! local variables
-integer j,l,m,ispn,istfv,is,ia,ias,lm,ig,i1,io,ilo
-integer ordl(0:lmaxvr)
-
-acoeff=dcmplx(0.d0,0.d0)
-do j=1,nstsv
-  do ispn=1,nspinor
-    do istfv=1,nstfv
-      do is=1,nspecies
-        do ia=1,natoms(is)
-          ias=idxas(ia,is)
-          ordl=0
-! apw coefficients
-          do l=0,lmaxvr
-            do io=1,apword(l,is)
-              ordl(l)=ordl(l)+1
-              do m=-l,l
-                lm=idxlm(l,m)
-                do ig=1,ngp
-                  acoeff(lm,ordl(l),ias,ispn,j)=acoeff(lm,ordl(l),ias,ispn,j) + &
-                    evecsv(istfv+(ispn-1)*nstfv,j)*evecfv(ig,istfv)*apwalm(ig,io,lm,ias)
-                enddo !io
-              enddo !ig
-            enddo !m
-          enddo !l
-! local orbital coefficients     
-          do ilo=1,nlorb(is)
-            l=lorbl(ilo,is)
-            if (l.le.lmaxvr) then
-              ordl(l)=ordl(l)+1
-              do m=-l,l
-                lm=idxlm(l,m)
-                i1=ngp+idxlo(lm,ilo,ias)
-                acoeff(lm,ordl(l),ias,ispn,j)=acoeff(lm,ordl(l),ias,ispn,j) + &
-                  evecsv(istfv+(ispn-1)*nstfv,j)*evecfv(i1,istfv)
-              enddo !m
-            endif
-          enddo !ilo
-        enddo !ia
-      enddo !is
-    enddo !ist
-  enddo !ispn
-enddo !j
-
-return
-end
 
 subroutine calc_uuj(uuj,lmaxexp,gq0,mtord)
 use modmain
@@ -957,125 +904,132 @@ deallocate(ufr,jlgq0r)
 return
 end   
 
-subroutine zrhoftmt1(ngvec_me,max_num_nnp,num_nnp,nnp,mtord,ylmgq0,sfacgq0, &
-  acoeff1,acoeff2,uuj,gnt,lgnt,zrhofc) 
-use modmain
-implicit none
-! arguments
-integer, intent(in) :: ngvec_me
-integer, intent(in) :: max_num_nnp
-integer, intent(in) :: num_nnp
-integer, intent(in) :: nnp(max_num_nnp,3)
-integer, intent(in) :: mtord
-real(8), intent(in) :: uuj(0:lmaxvr,0:lmaxvr,0:lmaxvr,mtord,mtord,natmtot,ngvec_me)
-real(8), intent(in) :: gnt(lmmaxvr,lmmaxvr,lmmaxvr)
-logical, intent(in) :: lgnt(lmmaxvr,lmmaxvr,lmmaxvr)
-complex(8), intent(in) :: ylmgq0(lmmaxvr,ngvec)
-complex(8), intent(in) :: sfacgq0(ngvec,natmtot)
-complex(8), intent(in) :: acoeff1(lmmaxvr,mtord,natmtot,nspinor,nstsv)
-complex(8), intent(in) :: acoeff2(lmmaxvr,mtord,natmtot,nspinor,nstsv)
-complex(8), intent(inout) :: zrhofc(ngvec_me,max_num_nnp)
-! local variables
-integer ig,i,ist1,ist2,isp,ias,io1,io2,l1,m1,lm1,l2,m2,lm2,l3,m3,lm3,ispn 
-complex(8) zt1,zt2,zt3,zt4
-
-do ig=1,ngvec_me
-
-  do i=1,num_nnp
-    ist1=nnp(i,1)
-    ist2=nnp(i,2)
-    do ispn=1,nspinor
     
-      do ias=1,natmtot
-      
-      zt4=dcmplx(0.d0,0.d0)
-      
-      do l1=0,lmaxvr
-      do l2=0,lmaxvr
-      do l3=0,lmaxvr
-      do io1=1,mtord
-      do io2=1,mtord
-        if (abs(uuj(l1,l2,l3,io1,io2,ias,ig)).gt.1d-10) then
-          zt3=dcmplx(0.d0,0.d0)
-          do lm3=l3**2+1,(l3+1)**2
-            zt2=dcmplx(0.d0,0.d0) 
-            do lm2=l2**2+1,(l2+1)**2
-              zt1=dcmplx(0.d0,0.d0)
-              do lm1=l1**2+1,(l1+1)**2  
-                if (lgnt(lm1,lm2,lm3)) then
-                  zt1=zt1+dconjg(acoeff1(lm1,io1,ias,ispn,ist1))*gnt(lm1,lm2,lm3)
-                endif
-              enddo !lm1
-              zt2=zt2+zt1*acoeff2(lm2,io2,ias,ispn,ist2)
-            enddo
-            zt3=zt3+zt2*ylmgq0(lm3,ig)
-          enddo !lm3
-        endif 
-        zt4=zt4+zt3*uuj(l1,l2,l3,io1,io2,ias,ig)*dconjg(zil(l3))     
-      enddo
-      enddo
-      enddo
-      enddo
-      enddo
-      zrhofc(ig,i)=zrhofc(ig,i)+fourpi*dconjg(sfacgq0(ig,ias))*zt4
-      enddo !ias 
-    enddo !ispn
-  enddo !i
-enddo !ig    
-
-return
-end     
-        
-subroutine zrhoftmt2(ngvec_me,max_num_nnp,num_nnp,nnp,mtord,ylmgq0,sfacgq0, &
-  acoeff1,acoeff2,uuj,ngumax,ngu,gu,igu,zrhofc)
+subroutine zrhoftmt_v3(ngvec_me,max_num_nnp,num_nnp,nnp,mtord, &
+  acoeff1,acoeff2,ngumax,ngu,gu,igu,zrhofc)
 use modmain
 implicit none
 ! arguments
-integer, intent(in) :: ngvec_me
+integer, intent9in) :: ngvec_me
 integer, intent(in) :: max_num_nnp
 integer, intent(in) :: num_nnp
 integer, intent(in) :: nnp(max_num_nnp,3)
 integer, intent(in) :: mtord
-real(8), intent(in) :: uuj(0:lmaxvr,0:lmaxvr,0:lmaxvr,mtord,mtord,natmtot,ngvec_me)
 integer, intent(in) :: ngumax
-integer, intent(in) :: ngu(natmtot,ngvec_me)
-integer, intent(in) :: igu(4,ngumax,natmtot,ngvec_me)
-complex(8), intent(in) :: gu(ngumax,natmtot,ngvec_me)
-complex(8), intent(in) :: ylmgq0(lmmaxvr,ngvec)
-complex(8), intent(in) :: sfacgq0(ngvec,natmtot)
+integer, intent(in) :: ngu(natmtot)
+integer, intent(in) :: igu(4,ngumax,natmtot)
+complex(8), intent(in) :: gu(ngumax,natmtot)
 complex(8), intent(in) :: acoeff1(lmmaxvr,mtord,natmtot,nspinor,nstsv)
 complex(8), intent(in) :: acoeff2(lmmaxvr,mtord,natmtot,nspinor,nstsv)
-complex(8), intent(inout) :: zrhofc(ngvec_me,max_num_nnp)
+complex(8), intent(inout) :: zrhofc(max_num_nnp)
 ! local variables
-integer ig,i,j,ist1,ist2,isp,ias,io1,io2,l1,m1,lm1,l2,m2,lm2,l3,m3,lm3,ispn 
+integer i,j,ist1,ist2,isp,ias,io1,io2,l1,m1,lm1,l2,m2,lm2,l3,m3,lm3,ispn 
 complex(8) zt1,zt2,zt3,zt4
 complex(8) a1(lmmaxvr,mtord),a2(lmmaxvr,mtord)
 
-
-do ig=1,ngvec_me
-  do i=1,num_nnp
-    ist1=nnp(i,1)
-    ist2=nnp(i,2)
-    do ispn=1,nspinor
-    
-      do ias=1,natmtot
-        a1=dconjg(acoeff1(:,:,ias,ispn,ist1))
-        a2=acoeff2(:,:,ias,ispn,ist2)
-      
-        do j=1,ngu(ias,ig)
-          lm1=igu(1,j,ias,ig)
-          lm2=igu(2,j,ias,ig)
-          io1=igu(3,j,ias,ig)
-          io2=igu(4,j,ias,ig)
-          zrhofc(ig,i)=zrhofc(ig,i)+a1(lm1,io1)*a2(lm2,io2)*gu(j,ias,ig)
-        enddo
-        
-      enddo !ias 
-    enddo !ispn
-  enddo !i
-enddo !ig    
+do i=1,num_nnp
+  ist1=nnp(i,1)
+  ist2=nnp(i,2)
+  do ispn=1,nspinor
+    do ias=1,natmtot
+      a1=dconjg(acoeff1(:,:,ias,ispn,ist1))
+      a2=acoeff2(:,:,ias,ispn,ist2)
+      do j=1,ngu(ias)
+        lm1=igu(1,j,ias)
+        lm2=igu(2,j,ias)
+        io1=igu(3,j,ias)
+        io2=igu(4,j,ias)
+        zrhofc(i)=zrhofc(i)+a1(lm1,io1)*a2(lm2,io2)*gu(j,ias)
+      enddo
+    enddo !ias 
+  enddo !ispn
+enddo !i
 
 return
 end     
-        
+
+subroutine zrhoftistl_v3(ig,max_num_nnp,num_nnp,nnp,ngknri,ngknrj,igkignri,igkignrj, &
+  igkq,evecfvi,evecsvi,evecfvj,evecsvj,zrhofc)
+use modmain
+implicit none
+! arguments
+integer, intent(in) :: ig
+integer, intent(in) :: max_num_nnp
+integer, intent(in) :: num_nnp
+integer, intent(in) :: nnp(max_num_nnp,3)
+integer, intent(in) :: ngknri
+integer, intent(in) :: ngknrj
+integer, intent(in) :: igkq
+integer, intent(in) :: igkignri(ngkmax)
+integer, intent(in) :: igkignrj(ngkmax)
+complex(8), intent(in) :: evecfvi(nmatmax,nstfv)
+complex(8), intent(in) :: evecsvi(nstsv,nstsv)
+complex(8), intent(in) :: evecfvj(nmatmax,nstfv)
+complex(8), intent(in) :: evecsvj(nstsv,nstsv)
+complex(8), intent(inout) :: zrhofc(max_num_nnp)
+
+complex(8), allocatable :: mit(:,:)
+complex(8), allocatable :: mit1(:,:)
+
+integer is,ia,ias,igi,igj,ist1,ist2,i,i1,i2,ispn
+integer iv4g(3)
+real(8) v1(3),v2(3),tp4g(2),len4g
+complex(8) sfac4g(natmtot)
+complex(8) zt1
+
+allocate(mit(ngknri,ngknrj))
+allocate(mit1(nstfv,nstfv))
+mit=dcmplx(0.d0,0.d0)
+do igi=1,ngknri
+  do igj=1,ngknrj
+    ! G1-G2+G+K
+    iv4g(:)=ivg(:,igkignri(igi))-ivg(:,igkignrj(igj))+ivg(:,ig)+ivg(:,igkq)
+    if (sum(abs(iv4g)).eq.0) mit(igi,igj)=dcmplx(1.d0,0.d0)
+    v2(:)=1.d0*iv4g(:)
+    call r3mv(bvec,v2,v1)
+    call sphcrd(v1,len4g,tp4g)
+    call gensfacgp(1,v1,1,sfac4g)
+    do is=1,nspecies
+      do ia=1,natoms(is)
+        ias=idxas(ia,is)
+	if (len4g.lt.1d-8) then
+	  mit(igi,igj)=mit(igi,igj)-(fourpi/omega)*dconjg(sfac4g(ias))*(rmt(is)**3)/3.d0
+	else
+	  mit(igi,igj)=mit(igi,igj)-(fourpi/omega)*dconjg(sfac4g(ias)) * &
+	    (-(rmt(is)/len4g**2)*cos(len4g*rmt(is))+(1/len4g**3)*sin(len4g*rmt(is)))
+	endif
+      enddo !ia
+    enddo !is
+  enddo
+enddo
+mit1=dcmplx(0.d0,0.d0)
+do ist1=1,nstfv
+  do ist2=1,nstfv
+    do igj=1,ngknrj
+      zt1=dcmplx(0.d0,0.d0) 
+      do igi=1,ngknri
+        zt1=zt1+dconjg(evecfvi(igi,ist1))*mit(igi,igj)
+      enddo
+      mit1(ist1,ist2)=mit1(ist1,ist2)+zt1*evecfvj(igj,ist2)
+    enddo
+  enddo
+enddo
+      
+do i=1,num_nnp
+  ist1=nnp(i,1)
+  ist2=nnp(i,2)
+  do ispn=1,nspinor
+    do i2=1,nstfv
+      zt1=dcmplx(0.d0,0.d0)
+      do i1=1,nstfv
+        zt1=zt1+dconjg(evecsvi(i1+(ispn-1)*nstfv,ist1))*mit1(i1,i2)
+      enddo
+      zrhofc(i)=zrhofc(i)+zt1*evecsvj(i2+(ispn-1)*nstfv,ist2)
+      enddo
+    enddo
+  enddo
+enddo
+deallocate(mit,mit1)
+return
+end        
   
