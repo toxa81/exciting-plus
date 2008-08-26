@@ -83,10 +83,9 @@ integer nlomaxl
 integer mtord
 integer, allocatable :: ltmp(:)
 real(8), allocatable :: uuj(:,:,:,:,:,:)
-real(8), allocatable :: gnt(:,:,:)
-complex(8), allocatable :: gu(:,:,:)
-integer, allocatable :: igu(:,:,:,:)
-integer, allocatable :: ngu(:,:)
+complex(8), allocatable :: gu(:,:)
+integer, allocatable :: igu(:,:,:)
+integer, allocatable :: ngu(:)
 integer ngumax
 integer l1,m1,lm1,l2,m2,lm2,l3,m3,lm3
 
@@ -392,8 +391,6 @@ endif
 
 allocate(uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,mtord,mtord,natmtot))
 
-!call calc_uuj(uuj,lmaxexp,gq0,mtord,ngvec_me)
-
 ! find maximum number of Gaunt-like coefficients
 ngumax=0
 do l1=0,lmaxvr
@@ -606,14 +603,14 @@ do ig=1,ngvec_me
       zrhofc0=dcmplx(0.d0,0.d0)    
       call cpu_time(cpu0)
 ! calculate interstitial contribution for all combinations of n,n'
-      call zrhoftistl(ig,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ikstep),ngknr2, &
+      call zrhoftistl_v3(ig,max_num_nnp,num_nnp(ikstep),nnp(1,1,ikstep),ngknr(ikstep),ngknr2, &
         igkignr(1,ikstep),igkignr2,ikq(ik,4),evecfvloc(1,1,1,ikstep),evecsvloc(1,1,ikstep), &
         evecfv2,evecsv2,zrhofc0)
       call cpu_time(cpu1)
       timeistl=cpu1-cpu0
     
       call cpu_time(cpu0)
-      call zrhoftmt2(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),mtord, &
+      call zrhoftmt_v3(ngvec_me,max_num_nnp,num_nnp(ikstep),nnp(1,1,ikstep),mtord, &
         acoeffloc(1,1,1,1,1,ikstep),acoeff2,ngumax,ngu,gu,igu,zrhofc0)
       call cpu_time(cpu1)
       timemt=cpu1-cpu0
@@ -630,6 +627,7 @@ do ig=1,ngvec_me
   
   enddo !ikstep
 enddo !ig
+call pstop
 
 call mpi_barrier(MPI_COMM_WORLD,ierr)
 
@@ -910,7 +908,7 @@ subroutine zrhoftmt_v3(ngvec_me,max_num_nnp,num_nnp,nnp,mtord, &
 use modmain
 implicit none
 ! arguments
-integer, intent9in) :: ngvec_me
+integer, intent(in) :: ngvec_me
 integer, intent(in) :: max_num_nnp
 integer, intent(in) :: num_nnp
 integer, intent(in) :: nnp(max_num_nnp,3)
@@ -1025,10 +1023,10 @@ do i=1,num_nnp
         zt1=zt1+dconjg(evecsvi(i1+(ispn-1)*nstfv,ist1))*mit1(i1,i2)
       enddo
       zrhofc(i)=zrhofc(i)+zt1*evecsvj(i2+(ispn-1)*nstfv,ist2)
-      enddo
     enddo
   enddo
 enddo
+
 deallocate(mit,mit1)
 return
 end        
