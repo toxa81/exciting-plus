@@ -83,7 +83,7 @@ integer i,j,i1,ik,jk,ig,is,ir,ikstep,ist1,ist2,ispn,ikloc
 integer ngknr2
 real(8) vkq0l(3),t1,jl(0:lmaxvr)
 integer ivg1(3)
-real(8) cpu0,cpu1
+real(8) cpu0,cpu1,timeistl,timemt
 
 ! for parallel execution
 integer, allocatable :: nkptlocnr(:)
@@ -616,11 +616,17 @@ do ik=1,nkptnr
   call getevecsv(vklnr(1,jk),evecsv2) 
   call match(ngknr(jk),gknr(1,jk),tpgknr(1,1,jk),sfacgknr(1,1,jk),apwalm)
   call tcoeff(ngknr(jk),apwalm,evecfv2,evecsv2,apwcoeff2,locoeff2)
-
+  
+  zrhofc=dcmplx(0.d0,0.d0)
+  
+  call cpu_time(cpu0)
 ! calculate interstitial contribution for all combinations of n,n'
   call zrhoftistl(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ik),ngknr(jk), &
     igkignr(1,ik),igkignr(1,jk),ikq(ik,4),evecfv1,evecsv1,evecfv2,evecsv2,zrhofc)
+  call cpu_time(cpu1)
+  timeistl=cpu1-cpu0
   
+  call cpu_time(cpu0) 
   do i=1,num_nnp(ik)
     ist1=nnp(i,1,ik)
     ist2=nnp(i,2,ik)
@@ -628,7 +634,11 @@ do ik=1,nkptnr
     call zrhoftmt(zrhomt,jlgq0r,ylmgq0,sfacgq0,ngvec_me,zrhofc0)
     zrhofc(:,i,1)=zrhofc(:,i,1)+zrhofc0(:)
   enddo
-  
+  call cpu_time(cpu1)
+  timemt=cpu1-cpu0
+  write(150,'("  interstitial time (seconds) : ",F12.2)')timeistl
+  write(150,'("    muffin-tin time (seconds) : ",F12.2)')timemt
+
   write(160)zrhofc(1:ngvec_me,1:num_nnp(ik),1)
 enddo !ik
 close(160)
@@ -848,7 +858,7 @@ complex(8), intent(in) :: evecfvi(nmatmax,nstfv)
 complex(8), intent(in) :: evecsvi(nstsv,nstsv)
 complex(8), intent(in) :: evecfvj(nmatmax,nstfv)
 complex(8), intent(in) :: evecsvj(nstsv,nstsv)
-complex(8), intent(out) :: zrhofc(ngvec_me,max_num_nnp)
+complex(8), intent(inout) :: zrhofc(ngvec_me,max_num_nnp)
 
 
 complex(8), allocatable :: mit(:,:)
