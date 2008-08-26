@@ -72,12 +72,7 @@ complex(8), allocatable :: evecsv1(:,:)
 complex(8), allocatable :: evecfv2(:,:,:)
 complex(8), allocatable :: evecsv2(:,:)
 
-complex(8), allocatable :: apwcoeffloc(:,:,:,:,:,:)
-complex(8), allocatable :: locoeffloc(:,:,:,:,:,:)
-complex(8), allocatable :: apwcoeff1(:,:,:,:,:)
-complex(8), allocatable :: locoeff1(:,:,:,:,:)
-complex(8), allocatable :: apwcoeff2(:,:,:,:,:)
-complex(8), allocatable :: locoeff2(:,:,:,:,:)
+complex(8), allocatable :: acoeffloc(:,:,:,:,:,:)
 complex(8), allocatable :: acoeff1(:,:,:,:,:)
 complex(8), allocatable :: acoeff2(:,:,:,:,:)
 
@@ -522,11 +517,9 @@ allocate(zrhofc0(ngvec_me))
 
 allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptlocnr(iproc)))
 allocate(evecsvloc(nstsv,nstsv,nkptlocnr(iproc)))
-allocate(apwcoeffloc(nstsv,nspinor,apwordmax,lmmaxvr,natmtot,nkptlocnr(iproc)))
-allocate(locoeffloc(nstsv,nspinor,nlomax,lmmaxvr,natmtot,nkptlocnr(iproc)))
+allocate(acoeffloc(lmmaxvr,mtord,natmtot,nspinor,nstsv,nkptlocnr(iproc)))
+allocate(acoeff2(lmmaxvr,mtord,natmtot,nspinor,nstsv))
 allocate(status(MPI_STATUS_SIZE))
-allocate(apwcoeff2(nstsv,nspinor,apwordmax,lmmaxvr,natmtot))
-allocate(locoeff2(nstsv,nspinor,nlomax,lmmaxvr,natmtot))
 allocate(evecfv2(nmatmax,nstfv,nspnfv))
 allocate(evecsv2(nstsv,nstsv))
 allocate(igkignr2(ngkmax))
@@ -561,8 +554,8 @@ if (iproc.eq.0) then
 endif
 do ikloc=1,nkptlocnr(iproc)
   call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),sfacgknr(1,1,ikloc),apwalm)
-  call tcoeff(ngknr(ikloc),apwalm,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),&
-    apwcoeffloc(1,1,1,1,1,ikloc),locoeffloc(1,1,1,1,1,ikloc))
+  call tcoeff1(ngknr(ikloc),mtord,apwalm,evecfvloc(1,1,1,ikloc), &
+    evecsvloc(1,1,ikloc),acoeffloc(1,1,1,1,1,ikloc))
 enddo
 if (iproc.eq.0) then
   write(150,'("Done.")')
@@ -587,11 +580,11 @@ if (iproc.eq.0) then
   write(150,*)
   write(150,'("Starting k-point loop")')
 endif
+zrhofc=dcmplx(0.d0,0.d0)
 do ikstep=1,nkptlocnr(0)
   if (iproc.eq.0) then
     write(150,'("k-step ",I4," out of ",I4)')ikstep,nkptlocnr(0)
     call flushifc(150)
-    call cpu_time(cpu0)
   endif
 ! find the i-th proc to which the current iproc should send data
   do i=0,nproc-1
@@ -606,12 +599,8 @@ do ikstep=1,nkptlocnr(0)
         nstsv*nstsv,                                         &
         MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
       tag=tag+1
-      call mpi_isend(apwcoeffloc(1,1,1,1,1,ik),              &
-        nstsv*nspinor*apwordmax*lmmaxvr*natmtot,             &
-	MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
-      tag=tag+1
-      call mpi_isend(locoeffloc(1,1,1,1,1,ik),               &
-        nstsv*nspinor*nlomax*lmmaxvr*natmtot,                & 
+      call mpi_isend(acoeffloc(1,1,1,1,1,ik),                &
+        lmmaxvr*mtord*natmtot*nspinor*nstsv,                 &
 	MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
       tag=tag+1
       call mpi_isend(ngknr(ik),1,MPI_INTEGER,i,tag,          &
@@ -631,10 +620,7 @@ do ikstep=1,nkptlocnr(0)
       call mpi_recv(evecsv2,nstsv*nstsv,MPI_DOUBLE_COMPLEX,          &
         isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
       tag=tag+1
-      call mpi_recv(apwcoeff2,nstsv*nspinor*apwordmax*lmmaxvr*natmtot, &
-        MPI_DOUBLE_COMPLEX,isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
-      tag=tag+1
-      call mpi_recv(locoeff2,nstsv*nspinor*nlomax*lmmaxvr*natmtot, &
+      call mpi_recv(acoeff2,lmmaxvr*mtord*natmtot*nspinor*nstsv,     &
         MPI_DOUBLE_COMPLEX,isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
       tag=tag+1
       call mpi_recv(ngknr2,1,MPI_INTEGER,isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
@@ -644,8 +630,7 @@ do ikstep=1,nkptlocnr(0)
       ik=isend(ikstep,iproc,2)
       evecfv2(:,:,:)=evecfvloc(:,:,:,ik)
       evecsv2(:,:)=evecsvloc(:,:,ik)
-      apwcoeff2(:,:,:,:,:)=apwcoeffloc(:,:,:,:,:,ik)
-      locoeff2(:,:,:,:,:)=locoeffloc(:,:,:,:,:,ik)
+      acoeff2(:,:,:,:,:)=acoeffloc(:,:,:,:,:,ik)
       ngknr2=ngknr(ik)
       igkignr2(:)=igkignr(:,ik)
     endif
@@ -661,32 +646,29 @@ do ikstep=1,nkptlocnr(0)
     ik=ikptlocnr(iproc,1)+ikstep-1
     jk=ikq(ik,1)
     
+    call cpu_time(cpu0)
 ! calculate interstitial contribution for all combinations of n,n'
     call zrhoftistl(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ikstep),ngknr2, &
       igkignr(1,ikstep),igkignr2,ikq(ik,4),evecfvloc(1,1,1,ikstep),evecsvloc(1,1,ikstep), &
       evecfv2,evecsv2,zrhofc(1,1,ikstep))
+    call cpu_time(cpu1)
+    timeistl=cpu1-cpu0
     
+    call cpu_time(cpu0)
+    call zrhoftmt2(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),mtord,ylmgq0, &
+      sfacgq0,acoeffloc(1,1,1,1,1,ikstep),acoeff2,uuj,ngumax,ngu,gu,igu,zrhofc(1,1,ikstep))
+    
+    call cpu_time(cpu1)
+    timemt=cpu1-cpu0
+  
     if (iproc.eq.0) then
-      write(150,'("  Intertitial contribution is done")')
+      write(150,'("  interstitial time (seconds) : ",F12.2)')timeistl
+      write(150,'("    muffin-tin time (seconds) : ",F12.2)')timemt
       call flushifc(150)
     endif
-
-    do i=1,num_nnp(ik)
-      ist1=nnp(i,1,ik)
-      ist2=nnp(i,2,ik)
-      call zrhomt0(ist1,ist2,apwcoeffloc(1,1,1,1,1,ikstep),locoeffloc(1,1,1,1,1,ikstep),&
-        apwcoeff2,locoeff2,zrhomt)
-      call zrhoftmt(zrhomt,jlgq0r,ylmgq0,sfacgq0,ngvec_me,zrhofc0)
-      zrhofc(:,i,ikstep)=zrhofc(:,i,ikstep)+zrhofc0(:)
-    enddo
+    
   endif ! (ikstep.le.nkptlocnr(iproc))
   
-  if (iproc.eq.0) then
-    call cpu_time(cpu1)
-    write(150,'("  step time (seconds) : ",F12.2)')cpu1-cpu0
-    call flushifc(150)
-  endif
-
 enddo !ikstep
 
 call mpi_barrier(MPI_COMM_WORLD,ierr)
@@ -706,11 +688,9 @@ enddo
 
 deallocate(evecfvloc)
 deallocate(evecsvloc)
-deallocate(apwcoeffloc)
-deallocate(locoeffloc)
+deallocate(acoeffloc)
 deallocate(status)
-deallocate(apwcoeff2)
-deallocate(locoeff2)
+deallocate(acoeff2)
 deallocate(evecfv2)
 deallocate(evecsv2)
 deallocate(igkignr2)
@@ -724,7 +704,6 @@ allocate(evecsv1(nstsv,nstsv))
 allocate(evecfv2(nmatmax,nstfv,nspnfv))
 allocate(evecsv2(nstsv,nstsv))
 allocate(zrhofc(ngvec_me,max_num_nnp,1))
-
 allocate(acoeff1(lmmaxvr,mtord,natmtot,nspinor,nstsv))
 allocate(acoeff2(lmmaxvr,mtord,natmtot,nspinor,nstsv))
 
@@ -822,6 +801,77 @@ end
 
 
 subroutine tcoeff1(ngp,mtord,apwalm,evecfv,evecsv,acoeff)
+use modmain
+implicit none
+! arguments
+integer, intent(in) :: ngp
+integer, intent(in) :: mtord
+complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
+complex(8), intent(in) :: evecfv(nmatmax,nstfv)
+complex(8), intent(in) :: evecsv(nstsv,nstsv)
+complex(8), intent(out) :: acoeff(lmmaxvr,mtord,natmtot,nspinor,nstsv)
+! local variables
+integer j,l,m,ispn,istfv,is,ia,ias,lm,ig,i1,io,ilo
+integer ordl(0:lmaxvr)
+complex(8), allocatable :: acoeff_t(:,:,:,:)
+
+allocate(acoeff_t(nstfv,mtord,lmmaxvr,natmtot))
+acoeff_t=dcmplx(0.d0,0.d0)
+! calculate first-variational coefficients
+do istfv=1,nstfv
+  do is=1,nspecies
+    do ia=1,natoms(is)
+      ias=idxas(ia,is)
+      ordl=0
+! apw coefficients
+      do l=0,lmaxvr
+        do io=1,apword(l,is)
+          ordl(l)=ordl(l)+1
+          do m=-l,l
+            lm=idxlm(l,m)
+            do ig=1,ngp
+              acoeff_t(istfv,ordl(l),lm,ias)=acoeff_t(istfv,ordl(l),lm,ias) + &
+                evecfv(ig,istfv)*apwalm(ig,io,lm,ias)
+            enddo !ig
+          enddo !m
+        enddo !io
+      enddo !l
+! local orbital coefficients     
+      do ilo=1,nlorb(is)
+        l=lorbl(ilo,is)
+        if (l.le.lmaxvr) then
+          ordl(l)=ordl(l)+1
+          do m=-l,l
+            lm=idxlm(l,m)
+            i1=ngp+idxlo(lm,ilo,ias)
+            acoeff_t(istfv,ordl(l),lm,ias)=evecfv(i1,istfv)
+          enddo !m
+        endif
+      enddo !ilo
+    enddo !ia 
+  enddo !is
+enddo !istfv
+! calculate second-variational coefficients
+acoeff=dcmplx(0.d0,0.d0)
+do j=1,nstsv
+  do ispn=1,nspinor
+    do ias=1,natmtot
+      do io=1,mtord
+        do lm=1,lmaxvr
+          do istfv=1,nstfv
+	    acoeff(lm,io,ias,ispn,j)=acoeff(lm,io,ias,ispn,j) + &
+	      evecsv(istfv+(ispn-1)*nstfv,j)*acoeff_t(istfv,io,lm,ias)
+	  enddo !istfv
+	enddo !lm
+      enddo !io
+    enddo !ias
+  enddo !ispn
+enddo !j
+deallocate(acoeff_t)
+return
+end
+
+subroutine tcoeff_old(ngp,mtord,apwalm,evecfv,evecsv,acoeff)
 use modmain
 implicit none
 ! arguments
