@@ -46,6 +46,7 @@ character*4 name1,name2,name3
 
 if (iproc.eq.0) then
 
+  write(150,*)
   write(150,'("Calculation of charge polarizability chi")')  
 
   write(fname,'("CHI0[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
@@ -64,7 +65,8 @@ if (iproc.eq.0) then
   do ie=1,nepts
     read(160)chi0(1:ngvec_me,1:ngvec_me,ie,1:nspin_chi0)
   enddo
-  close(160)
+  if (task.eq.402) close(160)
+  if (task.eq.403) close(160,status='delete')
   
   write(150,'("chi0 was calculated for ",I4," G-vector(s) (",I4,&
     & " G-shell(s))")')ngvec_me,ngsh_me
@@ -229,6 +231,9 @@ if (iproc.eq.0) then
   deallocate(vc)
   deallocate(gq0)
   deallocate(mtrx1)
+  
+  write(150,*)
+  write(150,'("Done.)')
 
 endif
 

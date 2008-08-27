@@ -15,8 +15,6 @@ integer vgq0l(3)
 call init0
 call init1
 
-!call writegshells
-
 if (.not.spinpol) then
   spin_me=1
   spin_chi=1
@@ -25,6 +23,7 @@ endif
 if (task.eq.400) fname='RESPONSE_ME.OUT'
 if (task.eq.401) fname='RESPONSE_CHI0.OUT'
 if (task.eq.402) fname='RESPONSE_CHI.OUT'
+if (task.eq.403) fname='RESPONSE.OUT'
 
 if (iproc.eq.0) then
   open(150,file=trim(fname),form='formatted',status='replace')
@@ -35,11 +34,10 @@ if (iproc.eq.0) then
   endif
 endif
 
-if (task.eq.400) then
+if (task.eq.400.or.task.eq.403) then
   allocate(igishell(ngvec))
   allocate(ishellng(ngvec,2))
   call getgshells(ngsh,igishell,ishellng)
-
 ! find minimum number of G-shells
   ngshmin=1
   do i=1,nvq0
@@ -65,35 +63,46 @@ if (task.eq.400) then
     write(*,*)
     call pstop
   endif
-  
-! calculate matrix elements
-  do i=1,nvq0
-    call response_me(ivq0m_list(1,i),ngvec_me)
-  enddo
-  
   deallocate(igishell)
   deallocate(ishellng)
 endif
 
+if (task.eq.402.or.task.eq.403) then
+  allocate(igishell(ngvec))
+  allocate(ishellng(ngvec,2))
+  call getgshells(ngsh,igishell,ishellng)
+  ngvec_chi=ishellng(ngsh_chi,2)
+  deallocate(igishell)
+  deallocate(ishellng)
+endif
+
+if (task.eq.400) then
+! calculate matrix elements
+  do i=1,nvq0
+    call response_me(ivq0m_list(1,i),ngvec_me)
+  enddo
+endif
+
 if (task.eq.401) then
+! calculate chi0
   do i=1,nvq0
     call response_chi0(ivq0m_list(1,i))
   enddo
 endif
 
 if (task.eq.402) then
-  allocate(igishell(ngvec))
-  allocate(ishellng(ngvec,2))
-  call getgshells(ngsh,igishell,ishellng)
-  
-  ngvec_chi=ishellng(ngsh_chi,2)
 ! calculate chi
   do i=1,nvq0
     call response_chi(ivq0m_list(1,i),ngvec_chi)
   enddo
-  
-  deallocate(igishell)
-  deallocate(ishellng)
+endif
+
+if (task.eq.403) then
+  do i=1,nvq0
+    call response_me(ivq0m_list(1,i),ngvec_me)
+    call response_chi0(ivq0m_list(1,i))
+    call response_chi(ivq0m_list(1,i),ngvec_chi)
+  enddo
 endif
 
 if (iproc.eq.0) close(150)

@@ -58,6 +58,7 @@ integer ierr,tag
 integer, allocatable :: status(:)
 
 if (iproc.eq.0) then
+  write(150,*)
   write(150,'("Calculation of KS polarisability chi0")')
   write(150,*)
   write(150,'("Energy mesh parameters:")')
@@ -215,7 +216,8 @@ do ik=1,nkptnr
   endif
 enddo !ik
 if (iproc.eq.0) then
-  close(160)
+  if (task.eq.401) close(160)
+  if (task.eq.403) close(160,status='delete')
   write(150,'("Finished reading matrix elements")')
   call flushifc(150)
 endif

@@ -124,6 +124,7 @@ lmaxexp=lmaxvr
 lmmaxexp=(lmaxexp+1)**2
 
 if (iproc.eq.0) then
+  write(150,*)
   write(150,'("Calculation of matrix elements <n,k|e^{-i(G+q)x}|n'',k+q>")')
   if (spinpol) then
     write(150,*)
