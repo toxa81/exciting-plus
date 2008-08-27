@@ -50,8 +50,8 @@ SRC_routines_flux = \
  findsymsite.f90 geomplot.f90 hartfock.f90 genkinmat.f90 energykncr.f90 \
  zfint.f90 rfpack.f90 rfint.f90 writefsm.f90 genbmatk.f90 writenn.f90 \
  zrhoplot.f90 zplot2d.f90 zfarray.f90 invzge.f90 dftsc.f90 zsh2rsh.f90 \
- response.f90 response_me_v1.f90 response_me_v2.f90 response_me_v3.f90 response_chi0.f90 \
- response_chi.f90 zrhoft.f90 dsync.f90 zmatin.f90 
+ response.f90 response_me_v1.f90 response_me_v2.f90 response_chi0.f90 \
+ response_chi.f90 zrhoft.f90 dsync.f90 zmatin.f90 response_me_v4.f90
 
 SRC_phonon = \
  phonon.f90 dyntask.f90 phcell.f90 phdisp.f90 readdyn.f90 dynqtor.f90 \

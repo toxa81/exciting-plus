@@ -68,7 +68,7 @@ if (task.eq.400) then
   
 ! calculate matrix elements
   do i=1,nvq0
-    call response_me_v3(ivq0m_list(1,i),ngvec_me)
+    call response_me_v4(ivq0m_list(1,i),ngvec_me)
   enddo
   
   deallocate(igishell)

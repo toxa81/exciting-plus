@@ -42,6 +42,10 @@ complex(8), allocatable :: chi0_loc(:,:,:,:)
 complex(8), allocatable :: chi0(:,:,:,:)
 complex(8), allocatable :: mtrx1(:,:)
 
+integer num_nnp1
+integer, allocatable :: nnp1(:,:)
+real(8), allocatable :: docc1(:)
+
 integer i,ik,ie,nkptnr_,i1,i2,ikloc,ig1,ig2,nspinor_,ispn
 complex(8) wt
 character*100 fname
@@ -112,9 +116,9 @@ if (spin_me.eq.3) then
 else
   nspin_chi0=1
 endif
-allocate(num_nnp(nkptnr))
-allocate(nnp(max_num_nnp,3,nkptnr))
-allocate(docc(nkptnr,max_num_nnp))
+!allocate(num_nnp(nkptnr))
+!allocate(nnp(max_num_nnp,3,nkptnr))
+!allocate(docc(nkptnr,max_num_nnp))
 if (iproc.eq.0) then
   read(160)vq0l(1:3)
   read(160)vq0rl(1:3)
@@ -122,9 +126,6 @@ if (iproc.eq.0) then
   read(160)vq0rc(1:3)
   do ik=1,nkptnr
     read(160)ikq(ik)
-    read(160)num_nnp(ik)
-    read(160)nnp(1:num_nnp(ik),1:3,ik)
-    read(160)docc(ik,1:num_nnp(ik))
   enddo
 endif  
 #ifdef _MPI_
@@ -132,9 +133,6 @@ call mpi_bcast(vq0l,3,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(vq0rl,3,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(vq0c,3,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(vq0rc,3,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
-call mpi_bcast(num_nnp,nkptnr,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
-call mpi_bcast(nnp,nkptnr*max_num_nnp*3,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
-call mpi_bcast(docc,nkptnr*max_num_nnp,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(ikq,nkptnr,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 #endif
 
@@ -166,7 +164,13 @@ do i=0,nproc-1
   ikptiprocnr(ikptlocnr(i,1):ikptlocnr(i,2))=i
 enddo
 
+allocate(num_nnp(nkptlocnr(iproc)))
+allocate(nnp(max_num_nnp,3,nkptlocnr(iproc)))
+allocate(docc(max_num_nnp,nkptlocnr(iproc)))
 allocate(zrhofc(ngvec_me,max_num_nnp,nkptlocnr(iproc)))
+allocate(nnp1(max_num_nnp,3))
+allocate(docc1(max_num_nnp))
+
 do ik=1,nkptnr
 ! only root proc reads matrix elements from file
   if (iproc.eq.0) then
@@ -177,19 +181,36 @@ do ik=1,nkptnr
       write(*,*)
       call pstop
     endif
-    read(160)zrhofc1(1:ngvec_me,1:num_nnp(ik))
+    read(160)num_nnp1
+    read(160)nnp1(1:num_nnp1,1:3)
+    read(160)docc1(1:num_nnp1)
+    read(160)zrhofc1(1:ngvec_me,1:num_nnp1)
     if (ik.le.nkptlocnr(0)) then
+      num_nnp(ik)=num_nnp1
+      nnp(:,:,ik)=nnp1(:,:)
+      docc(:,ik)=docc1(:)
       zrhofc(:,:,ik)=zrhofc1(:,:)
     else
-      tag=ik
+      tag=ik*10
+      call mpi_send(num_nnp1,1,MPI_INTEGER,ikptiprocnr(ik),tag,MPI_COMM_WORLD,ierr)
+      tag=tag+1
+      call mpi_send(nnp1,max_num_nnp*3,MPI_INTEGER,ikptiprocnr(ik),tag,MPI_COMM_WORLD,ierr)
+      tag=tag+1
+      call mpi_send(docc1,max_num_nnp,MPI_DOUBLE_PRECISION,ikptiprocnr(ik),tag,MPI_COMM_WORLD,ierr)
+      tag=tag+1
       call mpi_send(zrhofc1,ngvec_me*max_num_nnp,MPI_DOUBLE_COMPLEX,ikptiprocnr(ik),tag,MPI_COMM_WORLD,ierr)
     endif
   else
     if (ik.ge.ikptlocnr(iproc,1).and.ik.le.ikptlocnr(iproc,2)) then
       ikloc=ik-ikptlocnr(iproc,1)+1
-      tag=ik
-      call mpi_recv(zrhofc1,ngvec_me*max_num_nnp,MPI_DOUBLE_COMPLEX,0,tag,MPI_COMM_WORLD,status,ierr)
-      zrhofc(:,:,ikloc)=zrhofc1(:,:)
+      tag=ik*10
+      call mpi_recv(num_nnp(ikloc),1,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ierr)
+      tag=tag+1
+      call mpi_recv(nnp(1,1,ikloc),max_num_nnp*3,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ierr)
+      tag=tag+1
+      call mpi_recv(docc(1,ikloc),max_num_nnp,MPI_DOUBLE_PRECISION,0,tag,MPI_COMM_WORLD,status,ierr)
+      tag=tag+1
+      call mpi_recv(zrhofc(1,1,ikloc),ngvec_me*max_num_nnp,MPI_DOUBLE_COMPLEX,0,tag,MPI_COMM_WORLD,status,ierr)
     endif
   endif
 enddo !ik
@@ -210,15 +231,15 @@ do ikloc=1,nkptlocnr(iproc)
     write(150,'("k-step ",I4," out of ",I4)')ikloc,nkptlocnr(0)
     call flushifc(150)
   endif
-  do i=1,num_nnp(ik)
+  do i=1,num_nnp(ikloc)
     do ig1=1,ngvec_me
       do ig2=1,ngvec_me
         mtrx1(ig1,ig2)=zrhofc(ig1,i,ikloc)*dconjg(zrhofc(ig2,i,ikloc))
       enddo
     enddo
     do ie=1,nepts
-      wt=docc(ik,i)/(evalsvnr(nnp(i,1,ik),ik)-evalsvnr(nnp(i,2,ik),ikq(ik))+w(ie))
-      call zaxpy(ngvec_me*ngvec_me,wt,mtrx1,1,chi0_loc(1,1,ie,nnp(i,3,ik)),1)
+      wt=docc(i,ikloc)/(evalsvnr(nnp(i,1,ikloc),ik)-evalsvnr(nnp(i,2,ikloc),ikq(ik))+w(ie))
+      call zaxpy(ngvec_me*ngvec_me,wt,mtrx1,1,chi0_loc(1,1,ie,nnp(i,3,ikloc)),1)
     enddo !ie
   enddo !i
 enddo !ikloc
