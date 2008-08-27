@@ -233,7 +233,7 @@ if (iproc.eq.0) then
   deallocate(mtrx1)
   
   write(150,*)
-  write(150,'("Done.)')
+  write(150,'("Done.")')
 
 endif
 

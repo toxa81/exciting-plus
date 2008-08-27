@@ -292,7 +292,7 @@ call mpi_bcast(occsvnr,nstsv*nkptnr,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
 #endif
 
 ! setup n,n' stuff
-call getnnp(.true.,spin_me,ikq,occsvnr,max_num_nnp,num_nnp,nnp,docc,&
+call getnnp(.true.,ikq,occsvnr,max_num_nnp,num_nnp,nnp,docc,&
   nkptlocnr(iproc),ikptlocnr(iproc,1))
 #ifdef _MPI_
 call mpi_allreduce(max_num_nnp,i,1,MPI_INTEGER,MPI_MAX,MPI_COMM_WORLD,ierr)
@@ -301,7 +301,7 @@ max_num_nnp=i
 allocate(num_nnp(nkptlocnr(iproc)))
 allocate(nnp(max_num_nnp,3,nkptlocnr(iproc)))
 allocate(docc(max_num_nnp,nkptlocnr(iproc)))
-call getnnp(.false.,spin_me,ikq,occsvnr,max_num_nnp,num_nnp,nnp,docc,&
+call getnnp(.false.,ikq,occsvnr,max_num_nnp,num_nnp,nnp,docc,&
   nkptlocnr(iproc),ikptlocnr(iproc,1))
 if (iproc.eq.0) then
   write(150,*)
@@ -962,15 +962,14 @@ return
 end
 
 
-subroutine getnnp(req,spin_me,ikq,occsvnr,max_num_nnp,num_nnp,nnp,docc,nkptloc,ikptloc1)
+subroutine getnnp(req,ikq,occsvnr,max_num_nnp,num_nnp,nnp,docc,nkptloc1,ikptloc1)
 use modmain
 implicit none
 ! arguments
 logical, intent(in) :: req
-integer, intent(in) :: spin_me
 integer, intent(in) :: ikq(nkptnr,2)
 real(8), intent(in) :: occsvnr(nstsv,nkptnr)
-integer, intent(in) :: nkptloc
+integer, intent(in) :: nkptloc1
 integer, intent(in) :: ikptloc1
 integer, intent(inout) :: max_num_nnp
 integer, intent(out) :: num_nnp(nkptnr)
@@ -980,7 +979,7 @@ real(8), intent(out) :: docc(max_num_nnp,nkptnr)
 integer i,ik,jk,istfv1,istfv2,ispn,ist1,ist2,ikloc
 
 if (req) max_num_nnp=0
-do ikloc=1,nkptloc
+do ikloc=1,nkptloc1
   ik=ikptloc1+ikloc-1
   jk=ikq(ik,1)
   i=0
