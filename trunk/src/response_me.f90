@@ -74,7 +74,7 @@ complex(8), allocatable :: acoeffloc(:,:,:,:,:,:)
 complex(8), allocatable :: acoeff1(:,:,:,:,:)
 complex(8), allocatable :: acoeff2(:,:,:,:,:)
 
-integer i,j,i1,ik,jk,ig,is,ir,ikstep,ist1,ist2,ispn,ikloc,ilo,l,ias,io1,io2,istfv
+integer i,j,i1,ik,jk,ig,is,ir,ikstep,ist1,ist2,ispn,ikloc,ilo,l,ia,ias,io1,io2,istfv
 integer ngknr2
 real(8) vkq0l(3),t1,jl(0:lmaxvr)
 integer ivg1(3),ivg2(3)
@@ -428,6 +428,15 @@ do ikloc=1,nkptlocnr(iproc)
   call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),sfacgknr(1,1,ikloc),apwalm)
   call getacoeff(ngknr(ikloc),mtord,apwalm,evecfvloc(1,1,1,ikloc), &
     evecsvloc(1,1,ikloc),acoeffloc(1,1,1,1,1,ikloc))
+! hack to switch off l-channel
+!  do is=1,nspecies
+!    if (trim(spname(is)).eq.'Cu') then
+!      do ia=1,natoms(is)
+!        ias=idxas(ia,is)
+!	acoeffloc(5:9,:,ias,:,29:55,ikloc)=dcmplx(0.d0,0.d0)
+!      enddo
+!    endif
+!  enddo
 enddo
 if (iproc.eq.0) then
   write(150,'("Done.")')

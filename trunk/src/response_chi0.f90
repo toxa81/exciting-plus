@@ -147,6 +147,8 @@ endif
 #ifdef _MPI_
 call mpi_bcast(evalsvnr,nstsv*nkptnr,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
 #endif
+! hack to switch off band
+!evalsvnr(56,:)=100000.d0
 
 allocate(zrhofc1(ngvec_me,max_num_nnp))
 allocate(mtrx1(ngvec_me,ngvec_me))
