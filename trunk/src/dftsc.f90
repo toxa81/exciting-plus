@@ -81,12 +81,6 @@ do iscl=1,maxscl
   enddo
   call dsync(evalsv,nstsv*nkpt,.true.,.false.)
   call dsync(spnchr,nspinor*nstsv*nkpt,.true.,.false.)
-  if (iproc.eq.0) then
-    write(60,*)
-    write(60,'("  matrix setup time                         :",F12.2)')timemat1
-    write(60,'("  first-variational matrix diagonalization  :",F12.2)')timefv1
-    write(60,'("  second-variational matrix diagonalization :",F12.2)')timesv1
-  endif
   
   if (iproc.eq.0) then 
 ! find the occupation numbers and Fermi energy
@@ -246,6 +240,12 @@ do iscl=1,maxscl
     timetot=timeinit+timemat+timefv+timesv+timerho+timepot+timefor
     write(60,*)
     write(60,'("Time (CPU seconds) : ",F12.2)') timetot
+    write(60,*)
+    write(60,'("  matrix setup time                         :",F12.2)')timemat1
+    write(60,'("  first-variational matrix diagonalization  :",F12.2)')timefv1
+    write(60,'("  second-variational matrix diagonalization :",F12.2)')timesv1
+    write(60,'("  Coulomb potential calculation             :",F12.2)')timepotcoul1
+    write(60,'("  XC potential calculation                  :",F12.2)')timepotxc1
   endif !iproc.eq.0
 ! end the self-consistent loop
 end do

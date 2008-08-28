@@ -20,12 +20,16 @@ use modmain
 implicit none
 ! local variables
 integer is,ia,ias,ir,lm,lmmax
-real(8) cpu0,cpu1
+real(8) cpu0,cpu1,cpu2
 call cpu_time(cpu0)
 ! compute the Coulomb potential
 call potcoul
+call cpu_time(cpu1)
 ! compute the exchange-correlation potential
 call potxc
+call cpu_time(cpu2)
+timepotcoul1=cpu1-cpu0
+timepotxc1=cpu2-cpu1
 ! add Coulomb and exchange-correlation potentials together
 ! muffin-tin part
 do is=1,nspecies
