@@ -429,14 +429,14 @@ do ikloc=1,nkptlocnr(iproc)
   call getacoeff(ngknr(ikloc),mtord,apwalm,evecfvloc(1,1,1,ikloc), &
     evecsvloc(1,1,ikloc),acoeffloc(1,1,1,1,1,ikloc))
 ! hack to switch off l-channel
-!  do is=1,nspecies
-!    if (trim(spname(is)).eq.'Cu') then
-!      do ia=1,natoms(is)
-!        ias=idxas(ia,is)
-!	acoeffloc(5:9,:,ias,:,29:55,ikloc)=dcmplx(0.d0,0.d0)
-!      enddo
-!    endif
-!  enddo
+  do is=1,nspecies
+    if (trim(adjustl(spsymb(is))).eq.'Al') then
+      do ia=1,natoms(is)
+        ias=idxas(ia,is)
+	acoeffloc(5:9,:,ias,:,1:20,ikloc)=dcmplx(0.d0,0.d0)
+      enddo
+    endif
+  enddo
 enddo
 if (iproc.eq.0) then
   write(150,'("Done.")')
