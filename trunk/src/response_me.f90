@@ -338,25 +338,25 @@ if (iproc.eq.0) then
 endif
 
 ! find maximum number of local orbitals over all l-channels
-allocate(ltmp(0:lolmax))
-nlomaxl=0
-do is=1,nspecies
-  ltmp=0
-  do ilo=1,nlorb(is)
-    ltmp(lorbl(ilo,is))=ltmp(lorbl(ilo,is))+1
-  enddo
-  do l=0,lolmax
-    if (l.le.lmaxvr) then
-      nlomaxl=max(nlomaxl,ltmp(l))
-    endif
-  enddo
-enddo
-deallocate(ltmp)
-mtord=apwordmax+nlomaxl
+call getmtord(lmaxvr,mtord)
+!allocate(ltmp(0:lolmax))
+!nlomaxl=0
+!do is=1,nspecies
+!  ltmp=0
+!  do ilo=1,nlorb(is)
+!    ltmp(lorbl(ilo,is))=ltmp(lorbl(ilo,is))+1
+!  enddo
+!  do l=0,lolmax
+!    if (l.le.lmaxvr) then
+!      nlomaxl=max(nlomaxl,ltmp(l))
+!    endif
+!  enddo
+!enddo
+!deallocate(ltmp)
+!mtord=apwordmax+nlomaxl
 if (iproc.eq.0) then
   write(150,*)
   write(150,'("Calculating radial integrals")')
-  write(150,'("  maximum number of l.o. over all l-channels : ",I4)')nlomaxl
   write(150,'("  maximum order of radial functions          : ",I4)')mtord
 endif
 allocate(uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,mtord,mtord,natmtot,ngvec_me))
@@ -429,14 +429,14 @@ do ikloc=1,nkptlocnr(iproc)
   call getacoeff(ngknr(ikloc),mtord,apwalm,evecfvloc(1,1,1,ikloc), &
     evecsvloc(1,1,ikloc),acoeffloc(1,1,1,1,1,ikloc))
 ! hack to switch off l-channel
-  do is=1,nspecies
-    if (trim(adjustl(spsymb(is))).eq.'Al') then
-      do ia=1,natoms(is)
-        ias=idxas(ia,is)
-	acoeffloc(5:9,:,ias,:,1:20,ikloc)=dcmplx(0.d0,0.d0)
-      enddo
-    endif
-  enddo
+!  do is=1,nspecies
+!    if (trim(adjustl(spsymb(is))).eq.'O') then
+!      do ia=1,natoms(is)
+!        ias=idxas(ia,is)
+!	  acoeffloc(2:4,:,ias,:,29:55,ikloc)=dcmplx(0.d0,0.d0)
+!      enddo
+!    endif
+!  enddo
 enddo
 if (iproc.eq.0) then
   write(150,'("Done.")')
@@ -1237,5 +1237,32 @@ do i=1,nproc-1
   ikptloc(i,2)=ikptloc(i,1)+nkptloc(i)-1
 enddo
     
+return
+end
+
+subroutine getmtord(lmax,mtord)
+use modmain
+implicit none
+integer, intent(in) :: lmax
+integer, intent(out) :: mtord
+
+integer ltmp(0:lolmax)
+integer is,ilo,l,nlomaxl
+ 
+! find maximum number of local orbitals over all l-channels
+nlomaxl=0
+do is=1,nspecies
+  ltmp=0
+  do ilo=1,nlorb(is)
+    ltmp(lorbl(ilo,is))=ltmp(lorbl(ilo,is))+1
+  enddo
+  do l=0,lolmax
+    if (l.le.lmax) then
+      nlomaxl=max(nlomaxl,ltmp(l))
+    endif
+  enddo
+enddo
+mtord=apwordmax+nlomaxl
+
 return
 end
