@@ -29,8 +29,8 @@ use modmain
 !BOC
 implicit none
 ! local variables
-integer lmax,lmmax,l,m,lm,nsk(3)
-integer ik,ispn,is,ia,ias,ist,iw,i
+integer lmax,lmmax,l,m,lm,nsk(3),lm1,j,isym
+integer ik,ispn,is,ia,ir,ias,ist,iw,i,mtord,io1,io2
 real(8) t1
 character(256) fname
 ! allocatable arrays
@@ -44,6 +44,14 @@ real(8), allocatable :: gp(:)
 real(8), allocatable :: pdos(:,:)
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
+real(8), allocatable :: ufr(:,:,:,:)
+real(8), allocatable :: fr(:),gr(:),cf(:,:)
+real(8), allocatable :: uu(:,:,:,:)
+complex(8), allocatable :: acoeff(:,:,:,:,:)
+complex(8), allocatable :: acoeff_sym(:,:)
+complex(8), allocatable :: apwalm(:,:,:,:)
+complex(8) zt1(16),zt2(16)
+
 ! initialise universal variables
 call init0
 call init1
@@ -55,6 +63,10 @@ lmmax=(lmax+1)**2
 allocate(bndchr(lmmax,natmtot,nspinor,nstsv,nkpt))
 allocate(elmsym(lmmax,natmtot))
 
+allocate(fr(nrmtmax))
+allocate(gr(nrmtmax))
+allocate(cf(3,nrmtmax))
+
 ! read density and potentials from file
 call readstate
 ! read Fermi energy from file
@@ -65,13 +77,75 @@ call linengy
 call genapwfr
 ! generate the local-orbital radial functions
 call genlofr
+
+call getmtord(lmax,mtord)
+allocate(ufr(nrmtmax,0:lmax,mtord,natmtot))
+call getufr(lmax,mtord,ufr)
+allocate(uu(0:lmax,mtord,mtord,natmtot))
+do is=1,nspecies
+  do ia=1,natoms(is)
+    ias=idxas(ia,is)
+    do l=0,lmax
+      do io1=1,mtord
+        do io2=1,mtord
+          do ir=1,nrmt(is)
+            fr(ir)=ufr(ir,l,io1,ias)*ufr(ir,l,io2,ias)*(spr(ir,is)**2)                                                        
+          enddo
+          call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
+          uu(l,io1,io2,ias)=gr(nrmt(is))
+        enddo
+      enddo
+    enddo 
+  enddo
+enddo
+
+allocate(acoeff(lmmaxvr,mtord,natmtot,nspinor,nstsv))
+allocate(acoeff_sym(lmmaxvr,mtord))
+allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
+bndchr=0.d0
 do ik=1,nkpt
 ! get the eigenvalues/vectors from file
   call getevalsv(vkl(1,ik),evalsv(1,ik))
   call getevecfv(vkl(1,ik),vgkl(1,1,ik,1),evecfv)
   call getevecsv(vkl(1,ik),evecsv)
+  call match(ngk(ik,1),gkc(1,ik,1),tpgkc(1,1,ik,1),sfacgk(1,1,ik,1),apwalm)
+  call getacoeff(ngk(ik,1),mtord,apwalm,evecfv,evecsv,acoeff)
+  
+  do j=1,nstsv
+    do ispn=1,nspinor
+      do ias=1,natmtot
+        acoeff_sym=dcmplx(0.d0,0.d0)
+        do io1=1,mtord
+          do isym=1,nsymlat
+            zt2(1:16)=acoeff(1:16,io1,ias,ispn,j)
+            call rotzflm(symlatc(1,1,isym),3,1,16,zt2,zt2)
+            zt1=dcmplx(0.d0,0.d0)
+            do lm=1,16
+              do lm1=1,16
+                zt1(lm)=zt1(lm)+rlm2ylm(lm1,lm)*zt2(lm1)
+              enddo
+            enddo
+            acoeff_sym(1:16,io1)=acoeff_sym(1:16,io1)+zt1(1:16)
+          enddo
+        enddo
+        acoeff_sym=acoeff_sym/nsymlat
+        do l=0,lmax
+          do m=-l,l
+            lm=idxlm(l,m)
+            do io1=1,mtord
+              do io2=1,mtord
+                bndchr(lm,ias,ispn,j,ik)=bndchr(lm,ias,ispn,j,ik) + &
+                  uu(l,io1,io2,ias)*dreal(dconjg(acoeff_sym(lm,io1))*acoeff_sym(lm,io2))
+              enddo
+            enddo
+          enddo
+        enddo
+      enddo
+    enddo
+  enddo          
+          
 ! compute the band character (appromximate for spin-spirals)
-  call bandchar(lmax,ik,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),elmsym)
+!  call bandchar(lmax,ik,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),elmsym)
 ! compute the spin characters
   call spinchar(ik,evecsv)
 end do
@@ -79,7 +153,7 @@ end do
 ! generate energy grid
 wdos(1)=minval(evalsv(:,:)-efermi)-0.1
 wdos(2)=maxval(evalsv(:,:)-efermi)+0.1
-t1=0.002d0
+t1=0.001d0
 !t1=(wdos(2)-wdos(1))/dble(nwdos)
 nwdos=1+(wdos(2)-wdos(1))/t1
 
@@ -150,7 +224,7 @@ do is=1,nspecies
         write(fname,'("PDOS_S",I2.2,"_A",I4.4,"_L",I1,"_SPIN",I1,".OUT")') is,ia,l,ispn
         open(50,file=trim(fname),action='WRITE',form='FORMATTED')
         do iw = 1, nwdos
-          write(50,'(7G18.10)')w(iw)*ha2ev, &
+          write(50,'(8G18.10)')w(iw)*ha2ev, &
             SUM(pdos(iw,idxlm(l,-l):idxlm(l,l))),(pdos(iw,idxlm(l,m)),m=-l,l)
         enddo
         close(50)

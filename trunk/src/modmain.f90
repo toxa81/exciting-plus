@@ -891,5 +891,7 @@ real(8) timepot1
 real(8) timepotcoul1
 real(8) timepotxc1
 
+complex(8), allocatable :: ylm2rlm(:,:)
+complex(8), allocatable :: rlm2ylm(:,:)
 end module
 

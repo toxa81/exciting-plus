@@ -357,7 +357,7 @@ call getmtord(lmaxvr,mtord)
 if (iproc.eq.0) then
   write(150,*)
   write(150,'("Calculating radial integrals")')
-  write(150,'("  maximum order of radial functions          : ",I4)')mtord
+  write(150,'("  maximum order of radial functions : ",I4)')mtord
 endif
 allocate(uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,mtord,mtord,natmtot,ngvec_me))
 call calc_uuj(uuj,lmaxexp,gq0,mtord,ngvec_me)
@@ -622,18 +622,18 @@ do ik=1,nkptnr
   call getevecfv(vklnr(1,ik),vgklnr(1,1,ik),evecfv1)
   call getevecsv(vklnr(1,ik),evecsv1) 
   call match(ngknr(ik),gknr(1,ik),tpgknr(1,1,ik),sfacgknr(1,1,ik),apwalm)
-  call tcoeff1(ngknr(ik),mtord,apwalm,evecfv1,evecsv1,acoeff1)
+  call getacoeff(ngknr(ik),mtord,apwalm,evecfv1,evecsv1,acoeff1)
 
 ! generate data at k'=k+q-K
   call getevecfv(vklnr(1,jk),vgklnr(1,1,jk),evecfv2)
   call getevecsv(vklnr(1,jk),evecsv2) 
   call match(ngknr(jk),gknr(1,jk),tpgknr(1,1,jk),sfacgknr(1,1,jk),apwalm)
-  call tcoeff1(ngknr(jk),mtord,apwalm,evecfv2,evecsv2,acoeff2)
+  call getacoeff(ngknr(jk),mtord,apwalm,evecfv2,evecsv2,acoeff2)
    
   zrhofc=dcmplx(0.d0,0.d0)
   call cpu_time(cpu0)
 ! calculate interstitial contribution for all combinations of n,n'
-  call zrhoftistl2(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ik),ngknr(jk), &
+  call zrhoftistl(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ik),ngknr(jk), &
     igkignr(1,ik),igkignr(1,jk),ikq(ik,4),evecfv1,evecsv1,evecfv2,evecsv2,zrhofc,igfft1(1,ik))
   call cpu_time(cpu1)
   timeistl=cpu1-cpu0
@@ -642,7 +642,7 @@ do ik=1,nkptnr
 ! calculate MT contribution fot all combinations of n,n'
 !  call zrhoftmt1(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),mtord,ylmgq0, &
 !    sfacgq0,acoeff1,acoeff2,uuj,gnt,lgnt,zrhofc)
-  call zrhoftmt2(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),mtord,ylmgq0, &
+  call zrhoftmt(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),mtord,ylmgq0, &
     sfacgq0,acoeff1,acoeff2,uuj,ngumax,ngu,gu,igu,zrhofc)
   call cpu_time(cpu1)
   timemt=cpu1-cpu0
@@ -1266,3 +1266,45 @@ mtord=apwordmax+nlomaxl
 
 return
 end
+
+
+subroutine getufr(lmax,mtord,ufr)
+use modmain
+implicit none
+! arguments
+integer, intent(in) :: lmax
+integer, intent(in) :: mtord
+real(8), intent(out) :: ufr(nrmtmax,0:lmax,mtord,natmtot)
+
+integer is,ia,ias,l,io,ilo
+integer ordl(0:lmax)
+
+ufr=0.d0
+do is=1,nspecies
+  do ia=1,natoms(is)
+    ias=idxas(ia,is)
+    ordl=0
+! apw functions
+    do l=0,lmax
+      do io=1,apword(l,is)
+        ordl(l)=ordl(l)+1
+        ufr(1:nrmt(is),l,ordl(l),ias)=apwfr(1:nrmt(is),1,io,l,ias)
+      enddo
+    enddo
+! lo functions
+    do ilo=1,nlorb(is)
+      l=lorbl(ilo,is)
+      if (l.le.lmax) then
+        ordl(l)=ordl(l)+1
+        ufr(1:nrmt(is),l,ordl(l),ias)=lofr(1:nrmt(is),1,ilo,ias)
+      endif
+    enddo
+  enddo
+enddo
+
+return
+end
+
+
+
+
