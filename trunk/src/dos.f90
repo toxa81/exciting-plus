@@ -48,9 +48,9 @@ real(8), allocatable :: ufr(:,:,:,:)
 real(8), allocatable :: fr(:),gr(:),cf(:,:)
 real(8), allocatable :: uu(:,:,:,:)
 complex(8), allocatable :: acoeff(:,:,:,:,:)
-complex(8), allocatable :: acoeff_sym(:,:)
+complex(8), allocatable :: zt1(:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
-complex(8) zt1(16),zt2(16)
+complex(8) zt2(16)
 
 ! initialise universal variables
 call init0
@@ -100,7 +100,7 @@ do is=1,nspecies
 enddo
 
 allocate(acoeff(lmmaxvr,mtord,natmtot,nspinor,nstsv))
-allocate(acoeff_sym(lmmaxvr,mtord))
+allocate(zt1(lmmaxvr,mtord))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 bndchr=0.d0
 do ik=1,nkpt
@@ -114,41 +114,38 @@ do ik=1,nkpt
   do j=1,nstsv
     do ispn=1,nspinor
       do ias=1,natmtot
-        acoeff_sym=dcmplx(0.d0,0.d0)
-        do io1=1,mtord
-          do isym=1,nsymlat
-            zt2(1:16)=acoeff(1:16,io1,ias,ispn,j)
-            call rotzflm(symlatc(1,1,isym),3,1,16,zt2,zt2)
-            zt1=dcmplx(0.d0,0.d0)
+        do isym=1,nsymcrys
+          zt1=dcmplx(0.d0,0.d0)
+          do io1=1,mtord
+            call rotzflm(symlatc(1,1,lsplsymc(isym)),3,1,16,acoeff(1:16,io1,ias,ispn,j),zt2)
             do lm=1,16
               do lm1=1,16
-                zt1(lm)=zt1(lm)+rlm2ylm(lm1,lm)*zt2(lm1)
+                zt1(lm,io1)=zt1(lm,io1)+rlm2ylm(lm1,lm)*zt2(lm1)
               enddo
             enddo
-            acoeff_sym(1:16,io1)=acoeff_sym(1:16,io1)+zt1(1:16)
-          enddo
-        enddo
-        acoeff_sym=acoeff_sym/nsymlat
-        do l=0,lmax
-          do m=-l,l
-            lm=idxlm(l,m)
-            do io1=1,mtord
-              do io2=1,mtord
-                bndchr(lm,ias,ispn,j,ik)=bndchr(lm,ias,ispn,j,ik) + &
-                  uu(l,io1,io2,ias)*dreal(dconjg(acoeff_sym(lm,io1))*acoeff_sym(lm,io2))
+          enddo !io1
+          do l=0,lmax
+            do m=-l,l
+              lm=idxlm(l,m)
+              do io1=1,mtord
+                do io2=1,mtord
+                  bndchr(lm,ias,ispn,j,ik)=bndchr(lm,ias,ispn,j,ik) + &
+                    uu(l,io1,io2,ias)*dreal(dconjg(zt1(lm,io1))*zt1(lm,io2))
+                enddo
               enddo
             enddo
           enddo
-        enddo
+        enddo !isym
       enddo
     enddo
-  enddo          
+  enddo
           
 ! compute the band character (appromximate for spin-spirals)
 !  call bandchar(lmax,ik,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),elmsym)
 ! compute the spin characters
   call spinchar(ik,evecsv)
 end do
+bndchr=bndchr/nsymcrys
 
 ! generate energy grid
 wdos(1)=minval(evalsv(:,:)-efermi)-0.1
