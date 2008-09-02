@@ -30,6 +30,7 @@ real(8), allocatable :: nu(:)
 real(8), allocatable :: mu(:)
 real(8), allocatable :: beta(:)
 real(8), allocatable :: f(:)
+character*100 arg1
 
 ! require forces for structural optimisation
 if ((task.eq.2).or.(task.eq.3)) tforce=.true.
@@ -72,6 +73,8 @@ if (iproc.eq.0) then
   write(60,'("Running on ",I5," proc")')nproc
   call writeinfo(60)
   write(60,*)
+  call getarg(1,arg1)
+  if (trim(arg1).eq.'info') call pstop
 endif !iproc.eq.0
 ! initialise or read the charge density and potentials from file
 iscl=0

@@ -36,7 +36,7 @@ write(50,'(85("-"))')
 do is=1,nspecies
   do ia=1,natoms(is)
     ias=idxas(ia,is)
-    write(50,'(4X,A," (",I2,1X,I2,1X,I3,")",T22,3F10.5,2X,3F10.5)') &
+    write(50,'(3X,A,T6," (",I2,1X,I2,1X,I3,")",T22,3F10.5,2X,3F10.5)') &
       trim(spsymb(is)),is,ia,ias,atposl(:,ia,is),atposc(:,ia,is)
   enddo
 enddo
@@ -92,8 +92,8 @@ do is=1,nspecies
       v1=atposl(:,ja,js)+clust(i,3:5)
       v2=atposc(:,ja,js)+clust(i,3)*avec(:,1)+clust(i,4)*avec(:,2)+clust(i,5)*avec(:,3)
       v3=v2(:)-atposc(:,ia,is)
-      write(50,'(4X,A," (",I2,1X,I2,1X,I3") ",F10.5,2X,3I3,2X,3F10.5,2X,3F10.5)') &
-        trim(spsymb(clust(i,1))),js,ja,jas,clust(i,6)/100000.d0,clust(i,3:5),v2,v3
+      write(50,'(3X,A,T6," (",I2,1X,I2,1X,I3") ",F10.5,2X,3I3,2X,3F10.5,2X,3F10.5)') &
+        trim(spsymb(clust(i,1))),js,ja,jas,clust(i,6)/100000.d0,clust(i,3:5),v3,v2
     enddo
   enddo
 enddo    
