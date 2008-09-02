@@ -9,6 +9,7 @@
 subroutine bandstr
 ! !USES:
 use modmain
+use modwann
 ! !DESCRIPTION:
 !   Produces a band structure along the path in reciprocal-space which connects
 !   the vertices in the array {\tt vvlp1d}. The band structure is obtained from
@@ -39,9 +40,13 @@ real(8), allocatable :: e(:,:)
 real(4), allocatable :: bc(:,:,:,:)
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
+real(8), allocatable :: uu(:,:,:,:)
+real(8), allocatable :: ufr(:,:,:,:)
+integer mtord
 ! initialise universal variables
 call init0
 call init1
+call wann_init
 ! allocate array for storing the eigenvalues
 allocate(e(nstsv,nkpt))
 ! maximum angular momentum for band character
@@ -66,6 +71,14 @@ call genlofr
 call olprad
 ! compute the Hamiltonian radial integrals
 call hmlrad
+
+call getmtord(lmaxvr,mtord)
+allocate(ufr(nrmtmax,0:lmaxvr,mtord,natmtot))
+call getufr(lmaxvr,mtord,ufr)
+allocate(uu(0:lmaxvr,mtord,mtord,natmtot))
+call calc_uu(lmaxvr,mtord,ufr,uu)
+
+
 emin=1.d5
 emax=-1.d5
 ! begin parallel loop over k-points
@@ -86,6 +99,7 @@ do ik=1,nkpt
 !$OMP END CRITICAL
 ! solve the first- and second-variational secular equations
   call seceqn(ik,evalfv,evecfv,evecsv)
+  call wann_a_ort(ik,mtord,uu,evecfv,evecsv)
   do ist=1,nstsv
 ! subtract the Fermi energy
     e(ist,ik)=evalsv(ist,ik)-efermi
@@ -191,8 +205,42 @@ if (task.eq.21) then
   close(50)
 endif
 
-deallocate(e,bndchr)
+deallocate(e)
+if (task.eq.21) then
+  deallocate(bc,bndchr)
+endif
 
 return
 end subroutine
+
+subroutine calc_uu(lmax,mtord,ufr,uu)
+use modmain
+implicit none
+integer, intent(in) :: lmax
+integer, intent(in) :: mtord
+real(8), intent(in) :: ufr(nrmtmax,0:lmax,mtord,natmtot)
+real(8), intent(out) :: uu(0:lmax,mtord,mtord,natmtot)
+
+real(8) fr(nrmtmax),gr(nrmtmax),cf(3,nrmtmax)
+integer is,ia,ias,l,io1,io2,ir
+
+do is=1,nspecies
+  do ia=1,natoms(is)
+    ias=idxas(ia,is)
+    do l=0,lmax
+      do io1=1,mtord
+        do io2=1,mtord
+          do ir=1,nrmt(is)
+            fr(ir)=ufr(ir,l,io1,ias)*ufr(ir,l,io2,ias)*(spr(ir,is)**2)                                                        
+          enddo
+          call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
+          uu(l,io1,io2,ias)=gr(nrmt(is))
+        enddo
+      enddo
+    enddo 
+  enddo
+enddo
+
+return
+end
 !EOC
