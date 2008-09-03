@@ -179,6 +179,18 @@ else
   write(*,'(" band structure plot written to BAND_Sss_Aaaaa.OUT")')
   write(*,'("  for all species and atoms")')
 end if
+if (wannier) then
+  open(50,file='WFBAND.OUT',action='WRITE',form='FORMATTED')
+  do ist=1,wf_dim
+    do ik=1,nkpt
+      write(50,'(2G18.10)') dpp1d(ik),wf_e(ist,1,ik)-efermi
+    end do
+    write(50,'("     ")')
+  end do
+  close(50)
+endif
+
+
 ! output the vertex location lines
 open(50,file='BANDLINES.OUT',action='WRITE',form='FORMATTED')
 do iv=1,nvp1d
