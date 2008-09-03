@@ -254,6 +254,7 @@ if (iproc.eq.0) then
   call flushifc(150)
 endif
 
+call mpi_barrier(MPI_COMM_WORLD,ierr)
 do ispn=1,nspin_chi0
   do ie=1,nepts
     call mpi_reduce(chi0_loc(1,1,ie,ispn),chi0(1,1,ie,ispn), &
