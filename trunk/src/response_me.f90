@@ -426,7 +426,7 @@ if (iproc.eq.0) then
 endif
 do ikloc=1,nkptlocnr(iproc)
   call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),sfacgknr(1,1,ikloc),apwalm)
-  call getacoeff(ngknr(ikloc),mtord,apwalm,evecfvloc(1,1,1,ikloc), &
+  call getacoeff(lmaxvr,lmmaxvr,ngknr(ikloc),mtord,apwalm,evecfvloc(1,1,1,ikloc), &
     evecsvloc(1,1,ikloc),acoeffloc(1,1,1,1,1,ikloc))
 ! hack to switch off l-channel
 !  do is=1,nspecies
@@ -622,13 +622,13 @@ do ik=1,nkptnr
   call getevecfv(vklnr(1,ik),vgklnr(1,1,ik),evecfv1)
   call getevecsv(vklnr(1,ik),evecsv1) 
   call match(ngknr(ik),gknr(1,ik),tpgknr(1,1,ik),sfacgknr(1,1,ik),apwalm)
-  call getacoeff(ngknr(ik),mtord,apwalm,evecfv1,evecsv1,acoeff1)
+  call getacoeff(lmaxvr,lmmaxvr,ngknr(ik),mtord,apwalm,evecfv1,evecsv1,acoeff1)
 
 ! generate data at k'=k+q-K
   call getevecfv(vklnr(1,jk),vgklnr(1,1,jk),evecfv2)
   call getevecsv(vklnr(1,jk),evecsv2) 
   call match(ngknr(jk),gknr(1,jk),tpgknr(1,1,jk),sfacgknr(1,1,jk),apwalm)
-  call getacoeff(ngknr(jk),mtord,apwalm,evecfv2,evecsv2,acoeff2)
+  call getacoeff(lmaxvr,lmmaxvr,ngknr(jk),mtord,apwalm,evecfv2,evecsv2,acoeff2)
    
   zrhofc=dcmplx(0.d0,0.d0)
   call cpu_time(cpu0)
@@ -698,22 +698,24 @@ return
 end
 
 
-subroutine getacoeff(ngp,mtord,apwalm,evecfv,evecsv,acoeff)
+subroutine getacoeff(lmax,lmmax,ngp,mtord,apwalm,evecfv,evecsv,acoeff)
 use modmain
 implicit none
 ! arguments
+integer, intent(in) :: lmax
+integer, intent(in) :: lmmax
 integer, intent(in) :: ngp
 integer, intent(in) :: mtord
 complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 complex(8), intent(in) :: evecfv(nmatmax,nstfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
-complex(8), intent(out) :: acoeff(lmmaxvr,mtord,natmtot,nspinor,nstsv)
+complex(8), intent(out) :: acoeff(lmmax,mtord,natmtot,nspinor,nstsv)
 ! local variables
 integer j,l,m,ispn,istfv,is,ia,ias,lm,ig,i1,io,ilo
 integer ordl(0:lmaxvr)
 complex(8), allocatable :: acoeff_t(:,:,:,:)
 
-allocate(acoeff_t(nstfv,mtord,lmmaxvr,natmtot))
+allocate(acoeff_t(nstfv,mtord,lmmax,natmtot))
 acoeff_t=dcmplx(0.d0,0.d0)
 ! calculate first-variational coefficients
 do istfv=1,nstfv
@@ -722,7 +724,7 @@ do istfv=1,nstfv
       ias=idxas(ia,is)
       ordl=0
 ! apw coefficients
-      do l=0,lmaxvr
+      do l=0,lmax
         do io=1,apword(l,is)
           ordl(l)=ordl(l)+1
           do m=-l,l
@@ -737,7 +739,7 @@ do istfv=1,nstfv
 ! local orbital coefficients     
       do ilo=1,nlorb(is)
         l=lorbl(ilo,is)
-        if (l.le.lmaxvr) then
+        if (l.le.lmax) then
           ordl(l)=ordl(l)+1
           do m=-l,l
             lm=idxlm(l,m)
@@ -755,7 +757,7 @@ do j=1,nstsv
   do ispn=1,nspinor
     do ias=1,natmtot
       do io=1,mtord
-        do lm=1,lmmaxvr
+        do lm=1,lmmax
           do istfv=1,nstfv
 	    acoeff(lm,io,ias,ispn,j)=acoeff(lm,io,ias,ispn,j) + &
 	      evecsv(istfv+(ispn-1)*nstfv,j)*acoeff_t(istfv,io,lm,ias)

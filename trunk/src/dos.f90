@@ -45,12 +45,9 @@ real(8), allocatable :: pdos(:,:)
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
 real(8), allocatable :: ufr(:,:,:,:)
-real(8), allocatable :: fr(:),gr(:),cf(:,:)
 real(8), allocatable :: uu(:,:,:,:)
 complex(8), allocatable :: acoeff(:,:,:,:,:)
-complex(8), allocatable :: zt1(:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
-complex(8) zt2(16)
 
 ! initialise universal variables
 call init0
@@ -63,10 +60,6 @@ lmmax=(lmax+1)**2
 allocate(bndchr(lmmax,natmtot,nspinor,nstsv,nkpt))
 allocate(elmsym(lmmax,natmtot))
 
-allocate(fr(nrmtmax))
-allocate(gr(nrmtmax))
-allocate(cf(3,nrmtmax))
-
 ! read density and potentials from file
 call readstate
 ! read Fermi energy from file
@@ -78,74 +71,33 @@ call genapwfr
 ! generate the local-orbital radial functions
 call genlofr
 
-call getmtord(lmax,mtord)
-allocate(ufr(nrmtmax,0:lmax,mtord,natmtot))
-call getufr(lmax,mtord,ufr)
-allocate(uu(0:lmax,mtord,mtord,natmtot))
-do is=1,nspecies
-  do ia=1,natoms(is)
-    ias=idxas(ia,is)
-    do l=0,lmax
-      do io1=1,mtord
-        do io2=1,mtord
-          do ir=1,nrmt(is)
-            fr(ir)=ufr(ir,l,io1,ias)*ufr(ir,l,io2,ias)*(spr(ir,is)**2)                                                        
-          enddo
-          call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
-          uu(l,io1,io2,ias)=gr(nrmt(is))
-        enddo
-      enddo
-    enddo 
-  enddo
-enddo
+if (task.eq.11) then
+  call getmtord(lmax,mtord)
+  allocate(ufr(nrmtmax,0:lmax,mtord,natmtot))
+  call getufr(lmax,mtord,ufr)
+  allocate(uu(0:lmax,mtord,mtord,natmtot))
+  call calc_uu(lmax,mtord,ufr,uu)
+endif
 
-allocate(acoeff(lmmaxvr,mtord,natmtot,nspinor,nstsv))
-allocate(zt1(lmmaxvr,mtord))
-allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-bndchr=0.d0
+if (task.eq.11) then
+  allocate(acoeff(lmmax,mtord,natmtot,nspinor,nstsv))
+  allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
+endif
+
 do ik=1,nkpt
 ! get the eigenvalues/vectors from file
-  call getevalsv(vkl(1,ik),evalsv(1,ik))
-  call getevecfv(vkl(1,ik),vgkl(1,1,ik,1),evecfv)
   call getevecsv(vkl(1,ik),evecsv)
-  call match(ngk(ik,1),gkc(1,ik,1),tpgkc(1,1,ik,1),sfacgk(1,1,ik,1),apwalm)
-  call getacoeff(ngk(ik,1),mtord,apwalm,evecfv,evecsv,acoeff)
-  
-  do j=1,nstsv
-    do ispn=1,nspinor
-      do ias=1,natmtot
-        do isym=1,nsymcrys
-          zt1=dcmplx(0.d0,0.d0)
-          do io1=1,mtord
-            call rotzflm(symlatc(1,1,lsplsymc(isym)),3,1,16,acoeff(1:16,io1,ias,ispn,j),zt2)
-            do lm=1,16
-              do lm1=1,16
-                zt1(lm,io1)=zt1(lm,io1)+rlm2ylm(lm1,lm)*zt2(lm1)
-              enddo
-            enddo
-          enddo !io1
-          do l=0,lmax
-            do m=-l,l
-              lm=idxlm(l,m)
-              do io1=1,mtord
-                do io2=1,mtord
-                  bndchr(lm,ias,ispn,j,ik)=bndchr(lm,ias,ispn,j,ik) + &
-                    uu(l,io1,io2,ias)*dreal(dconjg(zt1(lm,io1))*zt1(lm,io2))
-                enddo
-              enddo
-            enddo
-          enddo
-        enddo !isym
-      enddo
-    enddo
-  enddo
-          
+  call getevalsv(vkl(1,ik),evalsv(1,ik))
+  if (task.eq.11) then
+    call getevecfv(vkl(1,ik),vgkl(1,1,ik,1),evecfv)
+    call match(ngk(ik,1),gkc(1,ik,1),tpgkc(1,1,ik,1),sfacgk(1,1,ik,1),apwalm)
+    call getacoeff(lmax,lmmax,ngk(ik,1),mtord,apwalm,evecfv,evecsv,acoeff)
 ! compute the band character (appromximate for spin-spirals)
-!  call bandchar(lmax,ik,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),elmsym)
+    call bandchar(.true.,lmax,mtord,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),elmsym,uu,acoeff)
+  endif
 ! compute the spin characters
   call spinchar(ik,evecsv)
 end do
-bndchr=bndchr/nsymcrys
 
 ! generate energy grid
 wdos(1)=minval(evalsv(:,:)-efermi)-0.1
@@ -195,6 +147,7 @@ do ispn=1,nspinor
   write(50,'("     ")')
 end do
 close(50)
+if (task.eq.11) then
 ! output partial DOS
 do is=1,nspecies
   do ia=1,natoms(is)
@@ -229,23 +182,7 @@ do is=1,nspecies
     end do
   end do
 end do
-! output eigenvalues of (l,m)-projection operator
-open(50,file='ELMSYM.OUT',action='WRITE',form='FORMATTED')
-do is=1,nspecies
-  do ia=1,natoms(is)
-    ias=idxas(ia,is)
-    write(50,*)
-    write(50,'("Species : ",I4," (",A,"), atom : ",I4)') is,trim(spsymb(is)),ia
-    do l=0,lmax
-      do m=-l,l
-        lm=idxlm(l,m)
-        write(50,'(" l = ",I2,", m = ",I2,", lm= ",I3," : ",G18.10)') l,m,lm, &
-         elmsym(lm,ias)
-      end do
-    end do
-  end do
-end do
-close(50)
+endif
 ! output interstitial DOS
 open(50,file='IDOS.OUT',action='WRITE',form='FORMATTED')
 do ispn=1,nspinor

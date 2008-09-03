@@ -49,7 +49,7 @@ do itask=1,ntasks
     call gndstate
   case(5)
     call hartfock
-  case(10)
+  case(10,11)
     call dos
   case(15,16)
     call writelsj

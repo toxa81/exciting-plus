@@ -23,7 +23,7 @@ allocate(acoeff_r(lmmaxvr,mtord,natmtot,nspinor,nstsv))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 
 call match(ngk(ik,1),gkc(1,ik,1),tpgkc(1,1,ik,1),sfacgk(1,1,ik,1),apwalm)
-call getacoeff(ngk(ik,1),mtord,apwalm,evecfv,evecsv,acoeff)
+call getacoeff(lmaxvr,lmmaxvr,ngk(ik,1),mtord,apwalm,evecfv,evecsv,acoeff)
 
 do j=1,nstsv
   do ispn=1,nspinor
