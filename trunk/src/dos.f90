@@ -35,7 +35,6 @@ real(8) t1
 character(256) fname
 ! allocatable arrays
 real(8), allocatable :: bndchr(:,:,:,:,:)
-real(8), allocatable :: elmsym(:,:)
 real(8), allocatable :: e(:,:,:)
 real(8), allocatable :: f(:,:)
 real(8), allocatable :: w(:)
@@ -58,7 +57,6 @@ allocate(evecsv(nstsv,nstsv))
 lmax=min(3,lmaxapw)
 lmmax=(lmax+1)**2
 allocate(bndchr(lmmax,natmtot,nspinor,nstsv,nkpt))
-allocate(elmsym(lmmax,natmtot))
 
 ! read density and potentials from file
 call readstate
@@ -93,7 +91,7 @@ do ik=1,nkpt
     call match(ngk(ik,1),gkc(1,ik,1),tpgkc(1,1,ik,1),sfacgk(1,1,ik,1),apwalm)
     call getacoeff(lmax,lmmax,ngk(ik,1),mtord,apwalm,evecfv,evecsv,acoeff)
 ! compute the band character (appromximate for spin-spirals)
-    call bandchar(.true.,lmax,mtord,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),elmsym,uu,acoeff)
+    call bandchar(.true.,lmax,mtord,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),uu,acoeff)
   endif
 ! compute the spin characters
   call spinchar(ik,evecsv)
@@ -207,7 +205,7 @@ write(*,'(" interstitial density of states written to IDOS.OUT")')
 write(*,*)
 write(*,'(" (DOS units are states/Hartree/spin/unit cell)")')
 write(*,*)
-deallocate(bndchr,elmsym,e,f,w,g,gp)
+deallocate(bndchr,e,f,w,g,gp)
 deallocate(evecfv,evecsv)
 return
 end subroutine

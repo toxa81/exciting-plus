@@ -6,7 +6,7 @@
 !BOP
 ! !ROUTINE: bandchar
 ! !INTERFACE:
-subroutine bandchar(dosym,lmax,mtord,evecfv,evecsv,ld,bndchr,elmsym,uu,acoeff)
+subroutine bandchar(dosym,lmax,mtord,evecfv,evecsv,ld,bndchr,uu,acoeff)
 ! !USES:
 use modmain
 ! !INPUT/OUTPUT PARAMETERS:
@@ -55,7 +55,6 @@ complex(8), intent(in) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
 integer, intent(in) :: ld
 real(8), intent(out) :: bndchr(ld,natmtot,nspinor,nstsv)
-real(8), intent(out) :: elmsym(ld,natmtot)
 real(8), intent(in) :: uu(0:lmax,mtord,mtord,natmtot)
 complex(8), intent(in) :: acoeff(ld,mtord,natmtot,nspinor,nstsv)
 ! local variables
@@ -99,7 +98,7 @@ do j=1,nstsv
             enddo
           enddo
         enddo
-      enddo !isym
+      enddo !isym    
     enddo
   enddo
 enddo
