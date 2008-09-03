@@ -32,6 +32,8 @@ real(8), allocatable :: gq0(:)
 ! Coulomb potential 
 real(8), allocatable :: vc(:)
 
+complex(8), allocatable :: epsilon_GqGq(:)
+
 integer nspin_chi0
 
 ! allocatable arrays
@@ -40,7 +42,7 @@ complex(8), allocatable :: mtrx1(:,:)
 integer, allocatable :: ipiv(:)
 
 integer ie,ig,ngsh_me_,info,i,j
-complex(8) chi_scalar,epsilon_GqGq
+complex(8) chi_scalar
 character*100 fname
 character*4 name1,name2,name3
 
@@ -131,6 +133,7 @@ if (iproc.eq.0) then
   allocate(vc(ngvec_chi))
   allocate(gq0(ngvec_chi))
   allocate(mtrx1(ngvec_chi,ngvec_chi))
+  allocate(epsilon_GqGq(nepts))
   
   write(150,*)
   write(150,'("Coulomb potential matrix elements:")')
@@ -153,6 +156,7 @@ if (iproc.eq.0) then
       enddo
       mtrx1(i,i)=dcmplx(1.d0,0.d0)+mtrx1(i,i)
     enddo
+    epsilon_GqGq(ie)=mtrx1(igq0,igq0)
 ! solve [1-chi0*V]^{-1}*chi=chi0
     chi(1:ngvec_chi,ie)=chi0(1:ngvec_chi,igq0,ie,1)
     call zgesv(ngvec_chi,1,mtrx1,ngvec_chi,ipiv,chi(1,ie),ngvec_chi,info)
@@ -164,9 +168,9 @@ if (iproc.eq.0) then
   enddo !ie
   deallocate(ipiv)
   
-  
   chi0=chi0/ha2ev/(au2ang)**3
   chi=chi/ha2ev/(au2ang)**3
+!  epsilon_GqGq=epsilon_GqGq/(au2ang)**3
   
 !  write(name1,'(I4.3)')ivq0l(1)
 !  write(name2,'(I4.3)')ivq0l(2)
@@ -211,7 +215,7 @@ if (iproc.eq.0) then
   allocate(func(12,nepts))
   do ie=1,nepts
     chi_scalar=chi0(igq0,igq0,ie,1)/(1.d0-vc(igq0)*chi0(igq0,igq0,ie,1))
-    epsilon_GqGq=1.d0-vc(igq0)*chi0(igq0,igq0,ie,1)
+    !epsilon_GqGq=1.d0-vc(igq0)*chi0(igq0,igq0,ie,1)
     func(1,ie)=dreal(w(ie))*ha2ev
     func(2,ie)=-dreal(chi0(igq0,igq0,ie,1))
     func(3,ie)=-dimag(chi0(igq0,igq0,ie,1))
@@ -222,8 +226,8 @@ if (iproc.eq.0) then
     func(8,ie)=-dimag(chi_scalar)
     func(9,ie)=dreal(0.5d0/chi(igq0,ie))
     func(10,ie)=dimag(0.5d0/chi(igq0,ie))
-    func(11,ie)=dreal(epsilon_GqGq)
-    func(12,ie)=dimag(epsilon_GqGq)
+    func(11,ie)=dreal(epsilon_GqGq(ie))
+    func(12,ie)=dimag(epsilon_GqGq(ie))
     write(160,'(16F16.8)')func(1:12,ie)
   enddo
   deallocate(func)
@@ -236,6 +240,7 @@ if (iproc.eq.0) then
   deallocate(vc)
   deallocate(gq0)
   deallocate(mtrx1)
+  deallocate(epsilon_GqGq)
   
   write(150,*)
   write(150,'("Done.")')
