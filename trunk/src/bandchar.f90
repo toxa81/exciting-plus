@@ -58,7 +58,7 @@ integer, intent(in) :: ld
 real(4), intent(out) :: bndchr(ld,natmtot,nspinor,nstsv)
 real(8), intent(in) :: uu(0:lmax,mtord,mtord,natmtot)
 ! local variables
-integer ispn,jspn,is,ia,ias,ist,io1,io2,lm
+integer ispn,jspn,is,ia,ias,ist,io1,io2,lm,ikglob
 integer l,m,lm2,lm1
 integer irc,i,j,n,isym,lspl,nsym1
 integer lwork,info
@@ -69,11 +69,13 @@ complex(8), allocatable :: apwalm(:,:,:,:)
 real(8) fr(nrcmtmax),gr(nrcmtmax),cf(3,nrcmtmax)
 complex(8) zt1(ld,mtord),zt2(ld)
 
+ikglob=ikptloc(iproc,1)+ik-1
+
 allocate(acoeff(ld,mtord,natmtot,nspinor,nstsv))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 
-call match(ngk(ik,1),gkc(1,ik,1),tpgkc(1,1,ik,1),sfacgk(1,1,ik,1),apwalm)
-call getacoeff(lmax,ld,ngk(ik,1),mtord,apwalm,evecfv,evecsv,acoeff)
+call match(ngk(ikglob,1),gkc(1,ik,1),tpgkc(1,1,ik,1),sfacgk(1,1,ik,1),apwalm)
+call getacoeff(lmax,ld,ngk(ikglob,1),mtord,apwalm,evecfv,evecsv,acoeff)
 
 if (dosym) then
   nsym1=nsymcrys

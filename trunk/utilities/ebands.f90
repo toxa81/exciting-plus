@@ -67,8 +67,10 @@
       do ist = 1, nstsv
         do lm = 1, lmmax
         do ias = 1, natmtot
-          w(ist,ik) = w(ist,ik) + bndchr(lm,ias,ispn,ist,ik)
-        enddo
+	  do ispn=1,nspinor
+            w(ist,ik) = w(ist,ik) + bndchr(lm,ias,ispn,ist,ik)
+          enddo
+	enddo
         enddo
       enddo
       enddo
@@ -79,7 +81,9 @@
       do ist = 1, nstsv
         do lm = 1, lmmax
         do ias = 1, natmtot
-          w(ist,ik) = w(ist,ik) + orb(lm,ias)*bndchr(lm,ias,ispn,ist,ik)
+	  do ispn=1,nspinor
+            w(ist,ik) = w(ist,ik) + orb(lm,ias)*bndchr(lm,ias,ispn,ist,ik)
+	  enddo
         enddo
         enddo
       enddo

@@ -10,6 +10,9 @@ subroutine bandstr
 ! !USES:
 use modmain
 use modwann
+#ifdef _MPI_
+use mpi
+#endif
 ! !DESCRIPTION:
 !   Produces a band structure along the path in reciprocal-space which connects
 !   the vertices in the array {\tt vvlp1d}. The band structure is obtained from
@@ -27,9 +30,9 @@ use modwann
 !BOC
 implicit none
 ! local variables
-integer lmax,lmmax,l,m,lm
-integer ik,ispn,is,ia,ias,iv,ist
-real(8) emin,emax,sum
+integer lmax,lmmax,l,m,lm,ierr
+integer ik,ikloc,ispn,is,ia,ias,iv,ist
+real(8) emin,emax,sum,emin0,emax0
 character(256) fname
 ! allocatable arrays
 real(8), allocatable :: evalfv(:,:)
@@ -37,7 +40,6 @@ real(4), allocatable :: bndchr(:,:,:,:,:)
 real(8), allocatable :: elmsym(:,:)
 real(8), allocatable :: e(:,:)
 ! low precision for band character array saves memory
-real(4), allocatable :: bc(:,:,:,:)
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
 real(8), allocatable :: uu(:,:,:,:)
@@ -56,7 +58,6 @@ lmax=min(3,lmaxapw)
 lmmax=(lmax+1)**2
 ! allocate band character array if required
 if (task.eq.21) then
-  allocate(bc(0:lmax,natmtot,nstsv,nkpt))
   allocate(bndchr(lmmax,natmtot,nspinor,nstsv,nkpt))
 end if
 ! read density and potentials from file
@@ -82,26 +83,20 @@ if (task.eq.21.or.wannier) then
   call calc_uu(lmax,mtord,ufr,uu)
 endif
 
+allocate(evalfv(nstfv,nspnfv))
+allocate(evecfv(nmatmax,nstfv,nspnfv))
+allocate(evecsv(nstsv,nstsv))
+
 emin=1.d5
 emax=-1.d5
+e=0.d0
+bndchr=0.d0
 ! begin parallel loop over k-points
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(evalfv,evecfv,evecsv) &
-!$OMP PRIVATE(elmsym) &
-!$OMP PRIVATE(ispn,ist,is,ia,ias,l,m,lm,sum)
-!$OMP DO
-do ik=1,nkpt
-  allocate(evalfv(nstfv,nspnfv))
-  allocate(evecfv(nmatmax,nstfv,nspnfv))
-  allocate(evecsv(nstsv,nstsv))
-  if (task.eq.21) then
-    allocate(elmsym(lmmax,natmtot))
-  end if
-!$OMP CRITICAL
+do ikloc=1,nkptloc(iproc)
+  ik=ikptloc(iproc,1)+ikloc-1
   write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ik,nkpt
-!$OMP END CRITICAL
 ! solve the first- and second-variational secular equations
-  call seceqn(ik,evalfv,evecfv,evecsv)
+  call seceqn(ikloc,evalfv,evecfv,evecsv)
   if (wannier) then
     call wann_a_ort(ik,mtord,uu,evecfv,evecsv)
   endif
@@ -115,34 +110,21 @@ do ik=1,nkpt
   end do
 ! compute the band characters if required
   if (task.eq.21) then
-    call bandchar(.false.,lmax,ik,mtord,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),uu)
-! average band character over spin and m for all atoms
-    do is=1,nspecies
-      do ia=1,natoms(is)
-        ias=idxas(ia,is)
-        do ist=1,nstsv
-          do l=0,lmax
-            sum=0.d0
-            do m=-l,l
-              lm=idxlm(l,m)
-              do ispn=1,nspinor
-                sum=sum+bndchr(lm,ias,ispn,ist,ik)
-              end do
-            end do
-            bc(l,ias,ist,ik)=real(sum)
-          end do
-        end do
-      end do
-    end do
-  end if
-  deallocate(evalfv,evecfv,evecsv)
-  if (task.eq.21) then
-    deallocate(elmsym)
+    call bandchar(.false.,lmax,ikloc,mtord,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),uu)
   end if
 ! end loop over k-points
 end do
-!$OMP END DO
-!$OMP END PARALLEL
+deallocate(evalfv,evecfv,evecsv)
+#ifdef _MPI_
+call mpi_allreduce(emin,emin0,1,MPI_DOUBLE_PRECISION,MPI_MIN,MPI_COMM_WORLD,ierr)
+call mpi_allreduce(emax,emax0,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
+emin=emin0
+emax=emax0
+#endif
+call dsync(e,nstsv*nkpt,.true.,.true.)
+call rsync(bndchr,lmmax*natmtot*nspinor*nstsv*nkpt,.true.,.true.)
+
+if (iproc.eq.0) then
 emax=emax+(emax-emin)*0.5d0
 emin=emin-(emax-emin)*0.5d0
 ! output the band structure
@@ -158,31 +140,6 @@ if (task.eq.20) then
   write(*,*)
   write(*,'("Info(bandstr):")')
   write(*,'(" band structure plot written to BAND.OUT")')
-else
-  do is=1,nspecies
-    do ia=1,natoms(is)
-      ias=idxas(ia,is)
-      write(fname,'("BAND_S",I2.2,"_A",I4.4,".OUT")') is,ia
-      open(50,file=trim(fname),action='WRITE',form='FORMATTED')
-      do ist=1,nstsv
-        do ik=1,nkpt
-! sum band character over l
-          sum=0.d0
-          do l=0,lmax
-            sum=sum+bc(l,ias,ist,ik)
-          end do
-          write(50,'(2G18.10,8F12.6)') dpp1d(ik),e(ist,ik),sum, &
-           (bc(l,ias,ist,ik),l=0,lmax)
-        end do
-        write(50,'("     ")')
-      end do
-      close(50)
-    end do
-  end do
-  write(*,*)
-  write(*,'("Info(bandstr):")')
-  write(*,'(" band structure plot written to BAND_Sss_Aaaaa.OUT")')
-  write(*,'("  for all species and atoms")')
 end if
 if (wannier) then
   open(50,file='WFBAND.OUT',action='WRITE',form='FORMATTED')
@@ -208,7 +165,7 @@ write(*,'(" vertex location lines written to BANDLINES.OUT")')
 write(*,*)
 
 if (task.eq.21) then
-  !--- write band-character information
+! write band-character information
   open(50,file='BANDS.OUT',action='WRITE',form='FORMATTED')
   write(50,*)lmmax,natmtot,nspinor,nstsv,nkpt,nvp1d
   do ik = 1, nkpt
@@ -219,12 +176,13 @@ if (task.eq.21) then
   enddo
   close(50)
 endif
+endif
 
 deallocate(e)
 if (task.eq.21) then
-  deallocate(bc,bndchr)
+  deallocate(bndchr)
 endif
-if (wannier) then
+if (task.eq.21.or.wannier) then
   deallocate(ufr,uu)
 endif
 
