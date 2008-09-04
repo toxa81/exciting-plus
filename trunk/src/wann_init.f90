@@ -37,13 +37,15 @@ wf_lhbnd(1:wf_dim,2)=12
 
 if (allocated(a_ort)) deallocate(a_ort)
 allocate(a_ort(wf_dim,nstsv,nspinor,nkpt))
+a_ort=dcmplx(0.d0,0.d0)
 
 if (allocated(wf_h)) deallocate(wf_h)
 allocate(wf_h(wf_dim,wf_dim,nspinor,nkpt))
+wf_h=dcmplx(0.d0,0.d0)
 
 if (allocated(wf_e)) deallocate(wf_e)
 allocate(wf_e(wf_dim,nspinor,nkpt))
-
+wf_e=dcmplx(0.d0,0.d0)
 
 return
 end
