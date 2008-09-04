@@ -1,17 +1,17 @@
       program  ebands
       implicit none
       
-      integer              :: lmmax,natmtot,nspinor,nstsv,nkpt,nlines
-      integer              :: lm,ias,ispn,ist,ik
+      integer              :: lmmax,natmtot,nspinor,nstfv,nstsv,nkpt,nlines
+      integer              :: lm,ias,ispn,ist,istfv,ik
       real*8  ,allocatable :: bndchr(:,:,:,:,:)
       real*8  ,allocatable :: dpp1d(:),e(:,:),w(:,:),lines(:,:)
       integer ,allocatable :: orb(:,:),tmp(:)
-      integer              :: i,j
+      integer              :: i,j,spin
       real*8               :: scale,emin,emax,wmax,wmax1
       real*8, parameter    :: ha2ev = 27.21138386d0            
       
       open(50,file='BANDS.OUT',form='formatted',status='old')
-      read(50,*)lmmax,natmtot,nspinor,nstsv,nkpt,nlines
+      read(50,*)lmmax,natmtot,nspinor,nstfv,nstsv,nkpt,nlines
       allocate(bndchr(lmmax,natmtot,nspinor,nstsv,nkpt))
       allocate(dpp1d(nkpt))
       allocate(e(nstsv,nkpt))
@@ -101,6 +101,12 @@
       scale = 1.d0
       write(*,*)'Input maximum line width [eV]'
       read(*,*)scale
+
+      spin=1
+      if (nspinor.eq.2) then
+        write(*,*)'Input spin direction (1 or 2)'
+        read(*,*)spin
+      endif
       
       scale = 0.5d0*scale/wmax
       
@@ -108,7 +114,8 @@
       open(51,file='BNDS1.DAT',form='formatted',status='replace')
       open(52,file='BNDS2.DAT',form='formatted',status='replace')
       open(53,file='BNDS3.DAT',form='formatted',status='replace')
-      do ist = 1, nstsv
+      do istfv = 1, nstfv
+        ist=istfv+(spin-1)*nstfv
         do ik = 1, nkpt
           write(50,*)dpp1d(ik),e(ist,ik)
           write(51,*)dpp1d(ik),e(ist,ik)+scale*w(ist,ik)
