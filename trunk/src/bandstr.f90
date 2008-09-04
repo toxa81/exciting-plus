@@ -46,7 +46,9 @@ integer mtord
 ! initialise universal variables
 call init0
 call init1
-call wann_init
+if (wannier) then
+  call wann_init
+endif
 ! allocate array for storing the eigenvalues
 allocate(e(nstsv,nkpt))
 ! maximum angular momentum for band character
@@ -99,7 +101,9 @@ do ik=1,nkpt
 !$OMP END CRITICAL
 ! solve the first- and second-variational secular equations
   call seceqn(ik,evalfv,evecfv,evecsv)
-  call wann_a_ort(ik,mtord,uu,evecfv,evecsv)
+  if (wannier) then
+    call wann_a_ort(ik,mtord,uu,evecfv,evecsv)
+  endif
   do ist=1,nstsv
 ! subtract the Fermi energy
     e(ist,ik)=evalsv(ist,ik)-efermi
