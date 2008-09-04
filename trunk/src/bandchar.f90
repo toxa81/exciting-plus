@@ -6,7 +6,7 @@
 !BOP
 ! !ROUTINE: bandchar
 ! !INTERFACE:
-subroutine bandchar(dosym,lmax,mtord,evecfv,evecsv,ld,bndchr,uu,acoeff)
+subroutine bandchar(dosym,lmax,ik,mtord,evecfv,evecsv,ld,bndchr,uu)
 ! !USES:
 use modmain
 ! !INPUT/OUTPUT PARAMETERS:
@@ -50,22 +50,30 @@ implicit none
 ! arguments
 logical, intent(in) :: dosym
 integer, intent(in) :: lmax
+integer, intent(in) :: ik
 integer, intent(in) :: mtord
 complex(8), intent(in) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
 integer, intent(in) :: ld
 real(8), intent(out) :: bndchr(ld,natmtot,nspinor,nstsv)
 real(8), intent(in) :: uu(0:lmax,mtord,mtord,natmtot)
-complex(8), intent(in) :: acoeff(ld,mtord,natmtot,nspinor,nstsv)
 ! local variables
 integer ispn,jspn,is,ia,ias,ist,io1,io2,lm
 integer l,m,lm2,lm1
 integer irc,i,j,n,isym,lspl,nsym1
 integer lwork,info
 real(8) t1
+complex(8), allocatable :: acoeff(:,:,:,:,:)
+complex(8), allocatable :: apwalm(:,:,:,:)
 ! automatic arrays
 real(8) fr(nrcmtmax),gr(nrcmtmax),cf(3,nrcmtmax)
 complex(8) zt1(ld,mtord),zt2(ld)
+
+allocate(acoeff(ld,mtord,natmtot,nspinor,nstsv))
+allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
+
+call match(ngk(ik,1),gkc(1,ik,1),tpgkc(1,1,ik,1),sfacgk(1,1,ik,1),apwalm)
+call getacoeff(lmax,ld,ngk(ik,1),mtord,apwalm,evecfv,evecsv,acoeff)
 
 if (dosym) then
   nsym1=nsymcrys
@@ -104,6 +112,7 @@ do j=1,nstsv
 enddo
 bndchr=bndchr/nsym1
 
+deallocate(acoeff,apwalm)
 return
 end subroutine
 !EOC

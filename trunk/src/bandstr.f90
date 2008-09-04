@@ -74,12 +74,13 @@ call olprad
 ! compute the Hamiltonian radial integrals
 call hmlrad
 
-call getmtord(lmaxvr,mtord)
-allocate(ufr(nrmtmax,0:lmaxvr,mtord,natmtot))
-call getufr(lmaxvr,mtord,ufr)
-allocate(uu(0:lmaxvr,mtord,mtord,natmtot))
-call calc_uu(lmaxvr,mtord,ufr,uu)
-
+if (task.eq.21.or.wannier) then
+  call getmtord(lmax,mtord)
+  allocate(ufr(nrmtmax,0:lmax,mtord,natmtot))
+  call getufr(lmax,mtord,ufr)
+  allocate(uu(0:lmax,mtord,mtord,natmtot))
+  call calc_uu(lmax,mtord,ufr,uu)
+endif
 
 emin=1.d5
 emax=-1.d5
@@ -114,7 +115,7 @@ do ik=1,nkpt
   end do
 ! compute the band characters if required
   if (task.eq.21) then
-    call bandchar(lmax,ik,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),elmsym)
+    call bandchar(.false.,lmax,ik,mtord,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),uu)
 ! average band character over spin and m for all atoms
     do is=1,nspecies
       do ia=1,natoms(is)
@@ -206,8 +207,6 @@ close(50)
 write(*,'(" vertex location lines written to BANDLINES.OUT")')
 write(*,*)
 
-if (task.eq.21) deallocate(bc)
-
 if (task.eq.21) then
   !--- write band-character information
   open(50,file='BANDS.OUT',action='WRITE',form='FORMATTED')
@@ -224,6 +223,9 @@ endif
 deallocate(e)
 if (task.eq.21) then
   deallocate(bc,bndchr)
+endif
+if (wannier) then
+  deallocate(ufr,uu)
 endif
 
 return

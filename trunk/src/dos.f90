@@ -45,8 +45,6 @@ complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
 real(8), allocatable :: ufr(:,:,:,:)
 real(8), allocatable :: uu(:,:,:,:)
-complex(8), allocatable :: acoeff(:,:,:,:,:)
-complex(8), allocatable :: apwalm(:,:,:,:)
 
 ! initialise universal variables
 call init0
@@ -77,21 +75,14 @@ if (task.eq.11) then
   call calc_uu(lmax,mtord,ufr,uu)
 endif
 
-if (task.eq.11) then
-  allocate(acoeff(lmmax,mtord,natmtot,nspinor,nstsv))
-  allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-endif
-
 do ik=1,nkpt
 ! get the eigenvalues/vectors from file
   call getevecsv(vkl(1,ik),evecsv)
   call getevalsv(vkl(1,ik),evalsv(1,ik))
   if (task.eq.11) then
     call getevecfv(vkl(1,ik),vgkl(1,1,ik,1),evecfv)
-    call match(ngk(ik,1),gkc(1,ik,1),tpgkc(1,1,ik,1),sfacgk(1,1,ik,1),apwalm)
-    call getacoeff(lmax,lmmax,ngk(ik,1),mtord,apwalm,evecfv,evecsv,acoeff)
 ! compute the band character (appromximate for spin-spirals)
-    call bandchar(.true.,lmax,mtord,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),uu,acoeff)
+    call bandchar(.true.,lmax,ik,mtord,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),uu)
   endif
 ! compute the spin characters
   call spinchar(ik,evecsv)
