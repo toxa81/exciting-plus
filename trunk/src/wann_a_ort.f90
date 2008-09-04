@@ -115,7 +115,7 @@ do ispn=1,nspinor
         wf_h(m1,m2,ispn,ik)=wf_h(m1,m2,ispn,ik)+dconjg(a_ort(m1,j,ispn,ik))*a_ort(m2,j,ispn,ik)*evalsv(j,ik)
       enddo
     enddo
-    write(*,'(255F12.6)')(abs(wf_h(m1,m2,ispn,ik)),m2=1,wf_dim)
+!    write(*,'(255F12.6)')(abs(wf_h(m1,m2,ispn,ik)),m2=1,wf_dim)
   enddo
   call diag_mtrx(wf_dim,wf_h(1,1,ispn,ik),wf_e(1,ispn,ik))
   

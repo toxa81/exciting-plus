@@ -1,8 +1,6 @@
 module modwann
 implicit none
 
-logical wannier
-
 integer wf_dim
 integer, allocatable :: wf_n(:,:)
   

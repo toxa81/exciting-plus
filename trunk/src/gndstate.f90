@@ -37,6 +37,9 @@ if ((task.eq.2).or.(task.eq.3)) tforce=.true.
 ! initialise global variables
 call init0
 call init1
+if (wannier) then
+  call wann_init
+endif
 
 ! initialise OEP variables if required
 if (xctype.lt.0) call init2

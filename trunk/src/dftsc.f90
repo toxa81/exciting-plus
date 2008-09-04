@@ -13,14 +13,22 @@ real(8)              :: f(n)
 
 ! local variables
 logical exist
-integer ik,is,ia,idm,ikloc,ierr,i
+integer ik,is,ia,idm,ikloc,ierr,i,mtord
 real(8) dv,timetot
 ! allocatable arrays
 real(8), allocatable :: evalfv(:,:,:)
+real(8), allocatable :: uu(:,:,:,:)
+real(8), allocatable :: ufr(:,:,:,:)
 
 allocate(evalfv(nstfv,nspnfv,nkptloc(iproc)))
 allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc(iproc)))
 allocate(evecsvloc(nstsv,nstsv,nkptloc(iproc)))
+
+if (wannier) then
+  call getmtord(lmaxvr,mtord)
+  allocate(ufr(nrmtmax,0:lmaxvr,mtord,natmtot))
+  allocate(uu(0:lmaxvr,mtord,mtord,natmtot))
+endif
 
 ! begin the self-consistent loop
 if (iproc.eq.0) then
@@ -59,7 +67,10 @@ do iscl=1,maxscl
   call olprad
 ! compute the Hamiltonian radial integrals
   call hmlrad
-  
+  if (wannier) then
+    call getufr(lmaxvr,mtord,ufr)
+    call calc_uu(lmaxvr,mtord,ufr,uu)
+  endif
   evalsv=0.d0
   spnchr=0.d0
   timemat1=0.d0
@@ -78,6 +89,9 @@ do iscl=1,maxscl
 #endif
 ! solve the first- and second-variational secular equations
     call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
+    if (wannier) then
+      call wann_a_ort(ikloc,mtord,uu,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
+    endif
   enddo
   call dsync(evalsv,nstsv*nkpt,.true.,.false.)
   call dsync(spnchr,nspinor*nstsv*nkpt,.true.,.false.)

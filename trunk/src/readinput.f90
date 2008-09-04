@@ -155,6 +155,7 @@ rdmalpha=0.7d0
 reducebf=1.d0
 ngsh_me=1
 ngsh_chi=1
+wannier=.false.
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -838,6 +839,8 @@ case('response')
   read(50,*,err=20) ngsh_chi, spin_chi
   read(50,*,err=20) maxomega, domega, eta
   read(50,*,err=20) afmchi0
+case('wannier')
+  read(50,*,err=20) wannier
 case('')
   goto 10
 case default

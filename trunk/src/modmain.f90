@@ -893,5 +893,8 @@ real(8) timepotxc1
 
 complex(8), allocatable :: ylm2rlm(:,:)
 complex(8), allocatable :: rlm2ylm(:,:)
+
+logical wannier
+
 end module
 
