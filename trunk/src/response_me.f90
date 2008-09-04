@@ -437,7 +437,12 @@ do ikloc=1,nkptlocnr(iproc)
 !      enddo
 !    endif
 !  enddo
+  ias=7
+  acoeffloc(2:4,:,ias,:,29:55,ikloc)=dcmplx(0.d0,0.d0)
+  ias=8
+  acoeffloc(2:4,:,ias,:,29:55,ikloc)=dcmplx(0.d0,0.d0)
 enddo
+
 if (iproc.eq.0) then
   write(150,'("Done.")')
   call flushifc(150)

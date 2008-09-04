@@ -64,6 +64,8 @@ end if
 call readstate
 ! read Fermi energy from file
 call readfermi
+! generate the core wavefunctions and densities
+call gencore
 ! find the new linearisation energies
 call linengy
 ! generate the APW radial functions
@@ -122,7 +124,11 @@ emin=emin0
 emax=emax0
 #endif
 call dsync(e,nstsv*nkpt,.true.,.true.)
-call rsync(bndchr,lmmax*natmtot*nspinor*nstsv*nkpt,.true.,.true.)
+if (task.eq.21) then
+  do ik=1,nkpt
+    call rsync(bndchr(1,1,1,1,ik),lmmax*natmtot*nspinor*nstsv,.true.,.true.)
+  enddo
+endif
 
 if (iproc.eq.0) then
 emax=emax+(emax-emin)*0.5d0
