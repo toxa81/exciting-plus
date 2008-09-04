@@ -33,7 +33,7 @@ real(8) emin,emax,sum
 character(256) fname
 ! allocatable arrays
 real(8), allocatable :: evalfv(:,:)
-real(8), allocatable :: bndchr(:,:,:,:,:)
+real(4), allocatable :: bndchr(:,:,:,:,:)
 real(8), allocatable :: elmsym(:,:)
 real(8), allocatable :: e(:,:)
 ! low precision for band character array saves memory

@@ -34,7 +34,7 @@ integer ik,ispn,is,ia,ir,ias,ist,iw,i,mtord,io1,io2
 real(8) t1
 character(256) fname
 ! allocatable arrays
-real(8), allocatable :: bndchr(:,:,:,:,:)
+real(4), allocatable :: bndchr(:,:,:,:,:)
 real(8), allocatable :: e(:,:,:)
 real(8), allocatable :: f(:,:)
 real(8), allocatable :: w(:)

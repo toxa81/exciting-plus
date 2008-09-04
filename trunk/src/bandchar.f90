@@ -55,7 +55,7 @@ integer, intent(in) :: mtord
 complex(8), intent(in) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
 integer, intent(in) :: ld
-real(8), intent(out) :: bndchr(ld,natmtot,nspinor,nstsv)
+real(4), intent(out) :: bndchr(ld,natmtot,nspinor,nstsv)
 real(8), intent(in) :: uu(0:lmax,mtord,mtord,natmtot)
 ! local variables
 integer ispn,jspn,is,ia,ias,ist,io1,io2,lm
