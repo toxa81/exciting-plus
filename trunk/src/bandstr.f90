@@ -92,6 +92,7 @@ allocate(evecsv(nstsv,nstsv))
 emin=1.d5
 emax=-1.d5
 e=0.d0
+evalsv=0.0
 bndchr=0.d0
 ! begin parallel loop over k-points
 do ikloc=1,nkptloc(iproc)
@@ -123,10 +124,10 @@ call mpi_allreduce(emax,emax0,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr
 emin=emin0
 emax=emax0
 #endif
-call dsync(e,nstsv*nkpt,.true.,.true.)
+call dsync(e,nstsv*nkpt,.true.,.false.)
 if (task.eq.21) then
   do ik=1,nkpt
-    call rsync(bndchr(1,1,1,1,ik),lmmax*natmtot*nspinor*nstsv,.true.,.true.)
+    call rsync(bndchr(1,1,1,1,ik),lmmax*natmtot*nspinor*nstsv,.true.,.false.)
   enddo
 endif
 
