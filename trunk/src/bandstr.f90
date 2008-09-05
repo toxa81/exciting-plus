@@ -30,7 +30,7 @@ use mpi
 !BOC
 implicit none
 ! local variables
-integer lmax,lmmax,l,m,lm,ierr
+integer lmax,lmmax,l,m,lm,ierr,i,j
 integer ik,ikloc,ispn,is,ia,ias,iv,ist
 real(8) emin,emax,sum,emin0,emax0
 character(256) fname
@@ -101,7 +101,7 @@ do ikloc=1,nkptloc(iproc)
 ! solve the first- and second-variational secular equations
   call seceqn(ikloc,evalfv,evecfv,evecsv)
   if (wannier) then
-    call wann_a_ort(ik,mtord,uu,evecfv,evecsv)
+    call wann_a_ort(ikloc,lmax,lmmax,mtord,uu,evecfv,evecsv)
   endif
   do ist=1,nstsv
 ! subtract the Fermi energy
@@ -130,6 +130,9 @@ if (task.eq.21) then
     call rsync(bndchr(1,1,1,1,ik),lmmax*natmtot*nspinor*nstsv,.true.,.false.)
   enddo
 endif
+if (wannier) then
+  call dsync(wf_e,wf_dim*nspinor*nkpt,.true.,.false.)
+endif
 
 if (iproc.eq.0) then
 emax=emax+(emax-emin)*0.5d0
@@ -148,6 +151,7 @@ if (task.eq.20) then
   write(*,'("Info(bandstr):")')
   write(*,'(" band structure plot written to BAND.OUT")')
 end if
+
 if (wannier) then
   open(50,file='WFBAND.OUT',action='WRITE',form='FORMATTED')
   do ist=1,wf_dim
@@ -158,7 +162,6 @@ if (wannier) then
   end do
   close(50)
 endif
-
 
 ! output the vertex location lines
 open(50,file='BANDLINES.OUT',action='WRITE',form='FORMATTED')
