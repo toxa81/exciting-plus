@@ -50,9 +50,9 @@ if (wann_use_lhen) then
     do n=1,wf_dim
       wf_lhbnd(1,ispn,n)=1
       do i=1,nstfv
-        if (evalsv(i+(ispn-1)*nstfv,ikglob).lt.wf_lhen(1,ispn,n)) &
+        if ((evalsv(i+(ispn-1)*nstfv,ikglob)-efermi).lt.wf_lhen(1,ispn,n)) &
           wf_lhbnd(1,ispn,n)=i+1
-        if (evalsv(i+(ispn-1)*nstfv,ikglob).le.wf_lhen(2,ispn,n)) &
+        if ((evalsv(i+(ispn-1)*nstfv,ikglob)-efermi).le.wf_lhen(2,ispn,n)) &
           wf_lhbnd(2,ispn,n)=i+1
       enddo
     enddo    
