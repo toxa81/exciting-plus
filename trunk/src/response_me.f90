@@ -608,8 +608,8 @@ allocate(evecsv1(nstsv,nstsv))
 allocate(evecfv2(nmatmax,nstfv,nspnfv))
 allocate(evecsv2(nstsv,nstsv))
 allocate(zrhofc(ngvec_me,max_num_nnp,1))
-allocate(acoeff1(lmmaxvr,mtord,natmtot,nspinor,nstsv))
-allocate(acoeff2(lmmaxvr,mtord,natmtot,nspinor,nstsv))
+allocate(acoeff1(lmmaxvr,mtord,natmtot,nstsv))
+allocate(acoeff2(lmmaxvr,mtord,natmtot,nstsv))
 
 open(160,file=trim(fname),form='unformatted',status='old',position='append')
 

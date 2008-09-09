@@ -20,7 +20,7 @@ use modwann
 !BOC
 implicit none
 ! local variables
-integer is,js,ia,ja,ias
+integer is,js,ia,ja,ias,ispn
 integer i,l,iv,iostat
 integer ist,io,nlx,ilx,lx,ilo
 real(8) sc,sc1,sc2,sc3
@@ -843,23 +843,24 @@ case('response')
 case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_natoms,wann_nspins
-  read(50,*,err=20) wann_lhen
+  read(50,*,err=20) wann_use_lhen
   allocate(wann_iatom(wann_natoms)) 
   allocate(wann_iorb(0:16,wann_natoms))
+  allocate(wann_lhen(2,16,wann_nspins,wann_natoms))
+  allocate(wann_lhbnd(2,16,wann_nspins,wann_natoms))
   do i=1,wann_natoms
     read(50,*,err=20) wann_iatom(i),wann_iorb(0,i)
     read(50,*,err=20)(wann_iorb(l,i),l=1,wann_iorb(0,i))
-    if (wann_lhen) then
-      read(50,*,err=20)(wann_lhen(1,l,i),l=1,wann_iorb(0,i))
-      read(50,*,err=20)(wann_lhen(2,l,i),l=1,wann_iorb(0,i))
-    else
-      read(50,*,err=20)(wann_lhbnd(1,l,i),l=1,wann_iorb(0,i))
-      read(50,*,err=20)(wann_lhbnd(2,l,i),l=1,wann_iorb(0,i))
-    endif
-      
-    
-    
-  
+    do ispn=1,wann_nspins
+      if (wann_use_lhen) then
+        read(50,*,err=20)(wann_lhen(1,l,ispn,i),l=1,wann_iorb(0,i))
+        read(50,*,err=20)(wann_lhen(2,l,ispn,i),l=1,wann_iorb(0,i))
+      else
+        read(50,*,err=20)(wann_lhbnd(1,l,ispn,i),l=1,wann_iorb(0,i))
+        read(50,*,err=20)(wann_lhbnd(2,l,ispn,i),l=1,wann_iorb(0,i))
+      endif
+    enddo
+  enddo
 case('')
   goto 10
 case default
