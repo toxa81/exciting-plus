@@ -15,6 +15,13 @@ integer vgq0l(3)
 call init0
 call init1
 
+if (ndmag.eq.3) then
+  write(*,*)
+  write(*,'("Error(response): can''t do response + non-collinear magnetism")')
+  write(*,*)
+  call pstop
+endif
+
 if (.not.spinpol) then
   spin_me=1
   spin_chi=1
