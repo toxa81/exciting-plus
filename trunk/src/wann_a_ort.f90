@@ -53,12 +53,11 @@ if (wann_use_lhen) then
         if ((evalsv(i+(ispn-1)*nstfv,ikglob)-efermi).lt.wf_lhen(1,ispn,n)) &
           wf_lhbnd(1,ispn,n)=i+1
         if ((evalsv(i+(ispn-1)*nstfv,ikglob)-efermi).le.wf_lhen(2,ispn,n)) &
-          wf_lhbnd(2,ispn,n)=i+1
+          wf_lhbnd(2,ispn,n)=i
       enddo
     enddo    
   enddo
 endif
-
 
 allocate(a_tmp(wf_dim,nstfv,wann_nspins))
 a_tmp=dcmplx(0.d0,0.d0)

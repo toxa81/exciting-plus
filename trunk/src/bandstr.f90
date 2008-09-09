@@ -131,7 +131,7 @@ if (task.eq.21) then
   enddo
 endif
 if (wannier) then
-  call dsync(wf_e,wf_dim*nspinor*nkpt,.true.,.false.)
+  call dsync(wf_e,wf_dim*wann_nspins*nkpt,.true.,.false.)
 endif
 
 if (iproc.eq.0) then
