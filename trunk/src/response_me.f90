@@ -74,14 +74,13 @@ complex(8), allocatable :: acoeffloc(:,:,:,:,:)
 complex(8), allocatable :: acoeff1(:,:,:,:)
 complex(8), allocatable :: acoeff2(:,:,:,:)
 
-integer i,j,i1,ik,jk,ig,is,ir,ikstep,ist1,ist2,ispn,ikloc,ilo,l,ia,ias,io1,io2,istfv
+integer i,j,i1,ik,jk,ig,is,ikstep,ist1,ist2,ispn,ikloc,l,ia,ias,istfv
 integer ngknr2
 real(8) vkq0l(3),t1,jl(0:lmaxvr)
 integer ivg1(3),ivg2(3)
 real(8) cpu0,cpu1,timeistl,timemt
 integer nlomaxl
 integer mtord
-integer, allocatable :: ltmp(:)
 real(8), allocatable :: uuj(:,:,:,:,:,:,:)
 complex(4), allocatable :: gu(:,:,:)
 integer, allocatable :: igu(:,:,:,:)
@@ -423,6 +422,10 @@ do ikloc=1,nkptlocnr(iproc)
 !      enddo
 !    endif
 !  enddo
+!  ias=7
+!  acoeffloc(2:4,:,ias,:,29:55,ikloc)=dcmplx(0.d0,0.d0)
+!  ias=8
+!  acoeffloc(2:4,:,ias,:,29:55,ikloc)=dcmplx(0.d0,0.d0)
 ! check p-d transition
 !  ias=11
 !  acoeffloc(2:4,:,ias,:,29:55,ikloc)=dcmplx(0.d0,0.d0)

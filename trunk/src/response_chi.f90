@@ -35,11 +35,12 @@ real(8), allocatable :: vc(:)
 complex(8), allocatable :: epsilon_GqGq(:)
 complex(8), allocatable :: chi_scalar(:)
 complex(8), allocatable :: epsilon_eff(:)
+complex(8), allocatable :: mtrx(:,:)
 integer nspin_chi0
 
 ! allocatable arrays
 real(8), allocatable :: func(:,:)
-complex(8), allocatable :: mtrx1(:,:)
+complex(8), allocatable :: epsilon(:,:)
 integer, allocatable :: ipiv(:)
 
 integer ie,ig,ngsh_me_,info,i,j
@@ -132,10 +133,11 @@ if (iproc.eq.0) then
   allocate(vgq0c(3,ngvec_chi))
   allocate(vc(ngvec_chi))
   allocate(gq0(ngvec_chi))
-  allocate(mtrx1(ngvec_chi,ngvec_chi))
+  allocate(epsilon(ngvec_chi,ngvec_chi))
   allocate(epsilon_GqGq(nepts))
   allocate(epsilon_eff(nepts))
   allocate(chi_scalar(nepts))
+  allocate(mtrx(ngvec_chi,ngvec_chi))
   
   write(150,*)
   write(150,'("Coulomb potential matrix elements:")')
@@ -151,24 +153,27 @@ if (iproc.eq.0) then
   
   allocate(ipiv(ngvec_chi))
   do ie=1,nepts
-! compute 1-chi0*V
+! compute epsilon=1-chi0*V
     do i=1,ngvec_chi
       do j=1,ngvec_chi
-        mtrx1(i,j)=-chi0(i,j,ie,1)*vc(j)
+        epsilon(i,j)=-chi0(i,j,ie,1)*vc(j)
       enddo
-      mtrx1(i,i)=dcmplx(1.d0,0.d0)+mtrx1(i,i)
+      epsilon(i,i)=dcmplx(1.d0,0.d0)+epsilon(i,i)
     enddo
-    epsilon_GqGq(ie)=mtrx1(igq0,igq0)
+    epsilon_GqGq(ie)=epsilon(igq0,igq0)
     chi_scalar(ie)=chi0(igq0,igq0,ie,1)/epsilon_GqGq(ie)
+! compute epsilon effective
+    mtrx(:,:)=epsilon(:,:)
+    call invzge(mtrx,ngvec_chi)
+    epsilon_eff(ie)=1.d0/mtrx(igq0,igq0)
 ! solve [1-chi0*V]^{-1}*chi=chi0
     chi(1:ngvec_chi,ie)=chi0(1:ngvec_chi,igq0,ie,1)
-    call zgesv(ngvec_chi,1,mtrx1,ngvec_chi,ipiv,chi(1,ie),ngvec_chi,info)
+    call zgesv(ngvec_chi,1,epsilon,ngvec_chi,ipiv,chi(1,ie),ngvec_chi,info)
     if (info.ne.0) then
       write(*,*)'Error solving linear equations'
       write(*,*)'info=',info
       stop
     endif
-    epsilon_eff(ie)=chi0(igq0,igq0,ie,1)/chi(igq0,ie)
   enddo !ie
   deallocate(ipiv)
   
@@ -211,15 +216,13 @@ if (iproc.eq.0) then
   write(160,'("#   6:  S(q,w)           [1/eV/A^3]")')
   write(160,'("#   7: -Re chi_scalar    [1/eV/A^3]")')
   write(160,'("#   8: -Im chi_scalar    [1/eV/A^3]")')
-  write(160,'("#   9:  Re epsilon_eff   [eV*A^3]  ")')
-  write(160,'("#  10:  Im epsilon_eff   [eV*A^3]  ")')
+  write(160,'("#   9:  Re epsilon_eff             ")')
+  write(160,'("#  10:  Im epsilon_eff             ")')
   write(160,'("#  11:  Re epsilon_GqGq            ")')
   write(160,'("#  12:  Im epsilon_GqGq            ")')
   write(160,'("#")')
   allocate(func(12,nepts))
   do ie=1,nepts
-    !chi_scalar=chi0(igq0,igq0,ie,1)/(1.d0-vc(igq0)*chi0(igq0,igq0,ie,1))
-    !epsilon_GqGq=1.d0-vc(igq0)*chi0(igq0,igq0,ie,1)
     func(1,ie)=dreal(w(ie))*ha2ev
     func(2,ie)=-dreal(chi0(igq0,igq0,ie,1))
     func(3,ie)=-dimag(chi0(igq0,igq0,ie,1))
@@ -228,8 +231,6 @@ if (iproc.eq.0) then
     func(6,ie)=-2.d0*dimag(chi(igq0,ie))
     func(7,ie)=-dreal(chi_scalar(ie))
     func(8,ie)=-dimag(chi_scalar(ie))
-!    func(9,ie)=dreal(0.5d0/chi(igq0,ie))
-!    func(10,ie)=dimag(0.5d0/chi(igq0,ie))
     func(9,ie)=dreal(epsilon_eff(ie))
     func(10,ie)=dimag(epsilon_eff(ie))
     func(11,ie)=dreal(epsilon_GqGq(ie))
@@ -245,10 +246,11 @@ if (iproc.eq.0) then
   deallocate(vgq0c)
   deallocate(vc)
   deallocate(gq0)
-  deallocate(mtrx1)
+  deallocate(epsilon)
   deallocate(epsilon_GqGq)
   deallocate(epsilon_eff)
   deallocate(chi_scalar)
+  deallocate(mtrx)
   
   write(150,*)
   write(150,'("Done.")')
