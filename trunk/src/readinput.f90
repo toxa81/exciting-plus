@@ -9,6 +9,7 @@
 subroutine readinput
 ! !USES:
 use modmain
+use modwann
 ! !DESCRIPTION:
 !   Reads in the input parameters from the file {\tt exciting.in} as well as
 !   from the species files. Also sets default values for the input parameters.
@@ -841,6 +842,24 @@ case('response')
   read(50,*,err=20) afmchi0
 case('wannier')
   read(50,*,err=20) wannier
+  read(50,*,err=20) wann_natoms,wann_nspins
+  read(50,*,err=20) wann_lhen
+  allocate(wann_iatom(wann_natoms)) 
+  allocate(wann_iorb(0:16,wann_natoms))
+  do i=1,wann_natoms
+    read(50,*,err=20) wann_iatom(i),wann_iorb(0,i)
+    read(50,*,err=20)(wann_iorb(l,i),l=1,wann_iorb(0,i))
+    if (wann_lhen) then
+      read(50,*,err=20)(wann_lhen(1,l,i),l=1,wann_iorb(0,i))
+      read(50,*,err=20)(wann_lhen(2,l,i),l=1,wann_iorb(0,i))
+    else
+      read(50,*,err=20)(wann_lhbnd(1,l,i),l=1,wann_iorb(0,i))
+      read(50,*,err=20)(wann_lhbnd(2,l,i),l=1,wann_iorb(0,i))
+    endif
+      
+    
+    
+  
 case('')
   goto 10
 case default

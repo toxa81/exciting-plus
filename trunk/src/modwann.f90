@@ -1,6 +1,8 @@
 module modwann
 implicit none
 
+logical wann_lhen
+
 integer wf_dim
 integer, allocatable :: wf_n(:,:)
   

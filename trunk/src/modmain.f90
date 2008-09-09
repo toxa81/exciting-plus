@@ -896,5 +896,7 @@ complex(8), allocatable :: rlm2ylm(:,:)
 
 logical wannier
 
+integer, allocatble :: lm2l(:)
+
 end module
 

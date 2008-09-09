@@ -193,25 +193,33 @@ do ik=1,nkptnr
       zrhofc(:,:,ik)=zrhofc1(:,:)
     else
       tag=ik*10
-      call mpi_send(num_nnp1,1,MPI_INTEGER,ikptiprocnr(ik),tag,MPI_COMM_WORLD,ierr)
+      call mpi_send(num_nnp1,1,MPI_INTEGER,                          &
+        ikptiprocnr(ik),tag,MPI_COMM_WORLD,ierr)
       tag=tag+1
-      call mpi_send(nnp1,max_num_nnp*3,MPI_INTEGER,ikptiprocnr(ik),tag,MPI_COMM_WORLD,ierr)
+      call mpi_send(nnp1,max_num_nnp*3,MPI_INTEGER,                  &
+        ikptiprocnr(ik),tag,MPI_COMM_WORLD,ierr)
       tag=tag+1
-      call mpi_send(docc1,max_num_nnp,MPI_DOUBLE_PRECISION,ikptiprocnr(ik),tag,MPI_COMM_WORLD,ierr)
+      call mpi_send(docc1,max_num_nnp,MPI_DOUBLE_PRECISION,          &
+        ikptiprocnr(ik),tag,MPI_COMM_WORLD,ierr)
       tag=tag+1
-      call mpi_send(zrhofc1,ngvec_me*max_num_nnp,MPI_DOUBLE_COMPLEX,ikptiprocnr(ik),tag,MPI_COMM_WORLD,ierr)
+      call mpi_send(zrhofc1,ngvec_me*max_num_nnp,MPI_DOUBLE_COMPLEX, &
+        ikptiprocnr(ik),tag,MPI_COMM_WORLD,ierr)
     endif
   else
     if (ik.ge.ikptlocnr(iproc,1).and.ik.le.ikptlocnr(iproc,2)) then
       ikloc=ik-ikptlocnr(iproc,1)+1
       tag=ik*10
-      call mpi_recv(num_nnp(ikloc),1,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ierr)
+      call mpi_recv(num_nnp(ikloc),1,                        &
+        MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ierr)
       tag=tag+1
-      call mpi_recv(nnp(1,1,ikloc),max_num_nnp*3,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ierr)
+      call mpi_recv(nnp(1,1,ikloc),max_num_nnp*3,            &
+        MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ierr)
       tag=tag+1
-      call mpi_recv(docc(1,ikloc),max_num_nnp,MPI_DOUBLE_PRECISION,0,tag,MPI_COMM_WORLD,status,ierr)
+      call mpi_recv(docc(1,ikloc),max_num_nnp,               &
+        MPI_DOUBLE_PRECISION,0,tag,MPI_COMM_WORLD,status,ierr)
       tag=tag+1
-      call mpi_recv(zrhofc(1,1,ikloc),ngvec_me*max_num_nnp,MPI_DOUBLE_COMPLEX,0,tag,MPI_COMM_WORLD,status,ierr)
+      call mpi_recv(zrhofc(1,1,ikloc),ngvec_me*max_num_nnp,  &
+        MPI_DOUBLE_COMPLEX,0,tag,MPI_COMM_WORLD,status,ierr)
     endif
   endif
 enddo !ik

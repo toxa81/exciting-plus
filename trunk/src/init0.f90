@@ -62,11 +62,14 @@ end if
 ! index to (l,m) pairs
 if (allocated(idxlm)) deallocate(idxlm)
 allocate(idxlm(0:50,-50:50))
+if (allocated(lm2l)) deallocate(lm2l)
+allocate(lm2l(51*51))
 lm=0
 do l=0,50
   do m=-l,l
     lm=lm+1
     idxlm(l,m)=lm
+    lm2l(lm)=l
   end do
 end do
 ! array of i**l values
