@@ -185,19 +185,18 @@ if (task.eq.400.or.task.eq.403) then
       call getacoeff(lmaxvr,lmmaxvr,ngknr(ikloc),mtord,apwalm,evecfv, &
         evecsv,acoeffloc(1,1,1,1,ikloc))
 ! transform eigen-vectors
-      evecloc=dcmplx(0.d0,0.d0)
-      do ispn=1,nspinor                                                                                                                                
-        do j=1,nstfv                                                                                                                                   
+      do ispn=1,nspinor
+        do j=1,nstfv
           do ig=1,ngknr(ikloc)
             zt1=dcmplx(0.d0,0.d0)
             do istfv=1,nstfv
 	      zt1=zt1+evecsv(istfv+(ispn-1)*nstfv,j+(ispn-1)*nstfv) * &
-	        evecfv(ig,istfv,1)                                                                                                                      
+	        evecfv(ig,istfv,1)
             enddo
 	    evecloc(ig,j+(ispn-1)*nstfv,ikloc)=zt1
-          enddo !ig                                                                                                                                      
-        enddo !j                                                                                                                                        
-      enddo !ispn                                                                                                                                          
+          enddo !ig
+        enddo !j
+      enddo !ispn
     endif
   enddo
   if (iproc.eq.0) then
