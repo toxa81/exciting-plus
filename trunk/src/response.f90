@@ -25,7 +25,8 @@ complex(8), allocatable :: acoeffloc(:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 real(8), allocatable :: occsvnr(:,:)
 
-integer i,j,ngsh,ngshmin,ngvec1,ngvec_me,ngvec_chi,mtord,ik,ikloc,ig,ispn,istfv
+integer i,j,ngsh,ngshmin,ngvec1,ngvec_me,ngvec_chi,mtord,ik,ikloc,ig, &
+  ispn,istfv,ierr
 complex(8) zt1
 character*100 fname
 
@@ -159,6 +160,9 @@ if (task.eq.400.or.task.eq.403) then
   allocate(evecsv(nstsv,nstsv))
   allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
   if (iproc.eq.0) then
+    write(150,*)
+    write(150,'("Size of acoeff array (Mb) : ",I6)')lmmaxvr*mtord*natmtot*nstsv*nkptlocnr(0)/1024/1024
+    write(150,'("Size of evec array (Mb)   : ",I6)')nmatmax*nstsv*nkptlocnr(0)/1024/1024
     write(150,*)
     write(150,'("Reading eigen-vectors")')
     call flushifc(150)
