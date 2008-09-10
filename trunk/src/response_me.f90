@@ -1,4 +1,5 @@
-subroutine response_me(ivq0m,ngvec_me)
+subroutine response_me(ivq0m,ngvec_me,ikptlocnr,nkptlocnr,mtord, &
+      acoeffloc,evecloc,ngknr,igkignr,occsvnr)
 use modmain
 #ifdef _MPI_
 use mpi
@@ -9,6 +10,14 @@ implicit none
 integer, intent(in) :: ivq0m(3)
 ! number of G-vectors for matrix elements calculation
 integer, intent(in) :: ngvec_me
+integer, intent(in) :: ikptlocnr(0:nproc-1,2)
+integer, intent(in) :: nkptlocnr(0:nproc-1)
+integer, intent(in) :: mtord
+complex(8), intent(in) :: acoeffloc(lmmaxvr,mtord,natmtot,nstsv,*)
+complex(8), intent(in) :: evecloc(nmatmax,nstsv,*)
+integer, intent(in) :: ngknr(*)
+integer, intent(in) :: igkignr(ngkmax,*)
+real(8), intent(in) :: occsvnr(nstsv,nkptnr)
  
 ! q-vector in lattice coordinates
 real(8) vq0l(3)
@@ -27,8 +36,6 @@ integer igq0
 !  2-nd index: 1: index of k'=k+q-K
 !              2: index of K-vector which brings k+q to first BZ
 integer, allocatable :: ikq(:,:)
-! indexes for fft-transform of u_{nk}^{*}u_{n'k'}exp{-iKx}, where k'=k+q-K
-integer, allocatable :: igfft1(:,:)
 ! number of n,n' combinations of band indexes for each k-point
 integer, allocatable :: num_nnp(:)
 ! maximum num_nnp over all k-points 
@@ -47,31 +54,10 @@ complex(8), allocatable :: ylmgq0(:,:)
 complex(8), allocatable :: sfacgq0(:,:)
 
 ! allocatable arrays
-integer, allocatable :: ngknr(:)
-integer, allocatable :: igkignr(:,:)
 integer, allocatable :: igkignr2(:)
-real(8), allocatable :: vgklnr(:,:,:)
-real(8), allocatable :: vgklnr2(:,:)
-real(8), allocatable :: vgkcnr(:,:)
-real(8), allocatable :: gknr(:,:)
-real(8), allocatable :: gknr2(:)
-real(8), allocatable :: tpgknr(:,:,:)
-real(8), allocatable :: tpgknr2(:,:)
-real(8), allocatable :: occsvnr(:,:)
 real(8), allocatable :: docc(:,:)
-complex(8), allocatable :: sfacgknr(:,:,:)
-complex(8), allocatable :: sfacgknr2(:,:)
-complex(8), allocatable :: apwalm(:,:,:,:)
-complex(8), allocatable :: zrhomt(:,:,:)
 complex(8), allocatable :: zrhofc(:,:,:)
-complex(8), allocatable :: evecfv1(:,:,:)
-complex(8), allocatable :: evecsv1(:,:)
-complex(8), allocatable :: evecfv2(:,:,:)
-complex(8), allocatable :: evecsv2(:,:)
-complex(8), allocatable :: evecloc(:,:,:)
 complex(8), allocatable :: evec2(:,:)
-complex(8), allocatable :: acoeffloc(:,:,:,:,:)
-complex(8), allocatable :: acoeff1(:,:,:,:)
 complex(8), allocatable :: acoeff2(:,:,:,:)
 
 integer i,j,i1,ik,jk,ig,is,ikstep,ist1,ist2,ispn,ikloc,l,ia,ias,istfv
@@ -79,21 +65,16 @@ integer ngknr2
 real(8) vkq0l(3),t1,jl(0:lmaxvr)
 integer ivg1(3),ivg2(3)
 real(8) cpu0,cpu1,timeistl,timemt
-integer nlomaxl
-integer mtord
 real(8), allocatable :: uuj(:,:,:,:,:,:,:)
 complex(4), allocatable :: gu(:,:,:)
 integer, allocatable :: igu(:,:,:,:)
 integer, allocatable :: ngu(:,:)
 integer ngumax
-complex(8) zt1
 
 integer lmaxexp
 integer lmmaxexp
 
 ! for parallel execution
-integer, allocatable :: nkptlocnr(:)
-integer, allocatable :: ikptlocnr(:,:)
 integer, allocatable :: ikptiproc(:)
 integer, allocatable :: ikptiprocnr(:)
 integer, allocatable :: isend(:,:,:)
@@ -104,21 +85,6 @@ character*100 :: fname
 ! external functions
 real(8), external :: r3taxi
 complex(8), external :: zfint
-
-! read the density and potentials from file
-call readstate
-
-! read Fermi energy from file
-call readfermi
-
-! find the new linearisation energies
-call linengy
-
-! generate the APW radial functions
-call genapwfr
-
-! generate the local-orbital radial functions
-call genlofr
 
 lmaxexp=lmaxvr
 lmmaxexp=(lmaxexp+1)**2
@@ -138,46 +104,11 @@ if (iproc.eq.0) then
   write(150,'("Number of G-vectors : ",I4)')ngvec_me
 endif
 
-allocate(nkptlocnr(0:nproc-1))
-allocate(ikptlocnr(0:nproc-1,2))
-call splitk(nkptnr,nproc,nkptlocnr,ikptlocnr)
 allocate(ikptiproc(nkpt))
 allocate(ikptiprocnr(nkptnr))
 do i=0,nproc-1
   ikptiproc(ikptloc(i,1):ikptloc(i,2))=i
   ikptiprocnr(ikptlocnr(i,1):ikptlocnr(i,2))=i
-enddo
-!if (iproc.eq.0.and.nproc.gt.1) then
-!  write(150,*)
-!  write(150,'("Reduced k-points division:")')
-!  write(150,'(" iproc  first k   last k   nkpt ")')
-!  write(150,'(" ------------------------------ ")')
-!  do i=0,nproc-1
-!    write(150,'(1X,I4,4X,I4,5X,I4,5X,I4)')i,ikptloc(i,1),ikptloc(i,2),nkptloc(i)
-!  enddo
-!  write(150,*)
-!  write(150,'("Non-reduced k-points division:")')
-!   write(150,'(" iproc  first k   last k   nkpt ")')
-!  write(150,'(" ------------------------------ ")')
-!  do i=0,nproc-1
-!    write(150,'(1X,I4,4X,I4,5X,I4,5X,I4)')i,ikptlocnr(i,1),ikptlocnr(i,2),nkptlocnr(i)
-!  enddo
-!endif
-
-! generate G+k vectors for entire BZ (this is required to compute 
-!   wave-functions at each k-point)
-allocate(vgklnr(3,ngkmax,nkptlocnr(iproc)))
-allocate(vgkcnr(3,ngkmax))
-allocate(gknr(ngkmax,nkptlocnr(iproc)))
-allocate(tpgknr(2,ngkmax,nkptlocnr(iproc)))
-allocate(ngknr(nkptlocnr(iproc)))
-allocate(sfacgknr(ngkmax,natmtot,nkptlocnr(iproc)))
-allocate(igkignr(ngkmax,nkptlocnr(iproc)))
-do ikloc=1,nkptlocnr(iproc)
-  ik=ikptlocnr(iproc,1)+ikloc-1
-  call gengpvec(vklnr(1,ik),vkcnr(1,ik),ngknr(ikloc),igkignr(1,ikloc), &
-    vgklnr(1,1,ikloc),vgkcnr,gknr(1,ikloc),tpgknr(1,1,ikloc))
-  call gensfacgp(ngknr(ikloc),vgkcnr,ngkmax,sfacgknr(1,1,ikloc))
 enddo
 
 allocate(ikq(nkptnr,2))
@@ -186,8 +117,7 @@ allocate(gq0(ngvec_me))
 allocate(tpgq0(2,ngvec_me))
 allocate(sfacgq0(ngvec_me,natmtot))
 allocate(ylmgq0(lmmaxexp,ngvec_me)) 
-allocate(occsvnr(nstsv,nkptnr))
-allocate(igfft1(ngvec_me,nkptnr))
+
 
 ! q-vector in lattice coordinates
 do i=1,3
@@ -269,27 +199,12 @@ do ik=1,nkptnr
   write(*,*)
   call pstop
 10 continue
-! search for new fft indexes
-  do ig=1,ngvec_me
-    ivg2(:)=ivg(:,ig)+ivg1(:)
-    igfft1(ig,ik)=igfft(ivgig(ivg2(1),ivg2(2),ivg2(3)))
-  enddo
   ikq(ik,2)=ivgig(ivg1(1),ivg1(2),ivg1(3))
 !  if (iproc.eq.0) then
 !    write(150,'(I4,2X,3F6.2,2X,3F6.2,2X,3I4,2X,3F6.2,2X,I4)') &
 !    ik,vklnr(:,ik),vkq0l+ivg1,ivg1,vkq0l,ikq(ik,1)
 !  endif
 enddo
-
-! get occupancy of states
-if (iproc.eq.0) then 
-  do ik=1,nkptnr
-    call getoccsv(vklnr(1,ik),occsvnr(1,ik))
-  enddo
-endif
-#ifdef _MPI_
-call mpi_bcast(occsvnr,nstsv*nkptnr,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
-#endif
 
 ! setup n,n' stuff
 call getnnp(.true.,ikq,occsvnr,max_num_nnp,num_nnp,nnp,docc,&
@@ -337,9 +252,6 @@ if (iproc.eq.0) then
   close(160)
 endif
 
-! find maximum number of orbitals over all l-channels
-!  typical value: 1 APW radial function + 2 local orbitals = 3
-call getmtord(lmaxvr,mtord)
 if (iproc.eq.0) then
   write(150,*)
   write(150,'("Calculating radial integrals")')
@@ -364,55 +276,16 @@ if (iproc.eq.0) then
 endif
 deallocate(uuj)
 
-allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-allocate(zrhomt(lmmaxvr,nrcmtmax,natmtot))
-  
 ! different implementation for parallel and serial execution
 #ifdef _MPI_
 
-allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptlocnr(iproc)))
-allocate(evecsvloc(nstsv,nstsv,nkptlocnr(iproc)))
-allocate(acoeffloc(lmmaxvr,mtord,natmtot,nstsv,nkptlocnr(iproc)))
 allocate(acoeff2(lmmaxvr,mtord,natmtot,nstsv))
 allocate(status(MPI_STATUS_SIZE))
-allocate(evecfv2(nmatmax,nstfv,nspnfv))
-allocate(evecsv2(nstsv,nstsv))
 allocate(igkignr2(ngkmax))
 allocate(zrhofc(ngvec_me,max_num_nnp,nkptlocnr(iproc)))
-allocate(evecloc(nmatmax,nstsv,nkptlocnr(iproc)))
 allocate(evec2(nmatmax,nstsv))
 
-! read all eigen-vectors to the memory
-if (iproc.eq.0) then
-  write(150,*)
-  write(150,'("Reading eigen-vectors")')
-  call flushifc(150)
-endif
-do i=0,nproc-1
-  if (iproc.eq.i) then
-    do ikloc=1,nkptlocnr(iproc)
-      ik=ikptlocnr(iproc,1)+ikloc-1
-      call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfvloc(1,1,1,ikloc))
-      call getevecsv(vklnr(1,ik),evecsvloc(1,1,ikloc))
-    enddo 
-  endif
-  call mpi_barrier(MPI_COMM_WORLD,ierr)
-enddo
-if (iproc.eq.0) then
-  write(150,'("Done.")')
-  call flushifc(150)
-endif
-
-! calculate muffin-tin coefficients
-if (iproc.eq.0) then
-  write(150,*)
-  write(150,'("Calculating muffin-tin coefficients")')
-  call flushifc(150)
-endif
-do ikloc=1,nkptlocnr(iproc)
-  call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),sfacgknr(1,1,ikloc),apwalm)
-  call getacoeff(lmaxvr,lmmaxvr,ngknr(ikloc),mtord,apwalm,evecfvloc(1,1,1,ikloc), &
-    evecsvloc(1,1,ikloc),acoeffloc(1,1,1,1,ikloc))
+! do ikloc=1,nkptlocnr(iproc)
 ! hack to switch off l-channel
 !  do is=1,nspecies
 !    if (trim(adjustl(spsymb(is))).eq.'O') then
@@ -440,39 +313,7 @@ do ikloc=1,nkptlocnr(iproc)
 !  acoeffloc(2:4,:,ias,:,56,ikloc)=dcmplx(0.d0,0.d0)
 !  ias=6
 !  acoeffloc(5:9,:,ias,:,29:55,ikloc)=dcmplx(0.d0,0.d0)
-enddo
-
-if (iproc.eq.0) then
-  write(150,'("Done.")')
-  call flushifc(150)
-endif
-
-! transform eigen-vectors
-if (iproc.eq.0) then
-  write(150,*)
-  write(150,'("Transforming eigen-vectors")')
-  call flushifc(150)
-endif
-evecloc=dcmplx(0.d0,0.d0)
-do ikloc=1,nkptlocnr(iproc)
-  do ispn=1,nspinor                                                                                                                                
-    do j=1,nstfv                                                                                                                                   
-      do ig=1,ngknr(ikloc)
-        zt1=dcmplx(0.d0,0.d0)
-        do istfv=1,nstfv
-	  zt1=zt1+evecsvloc(istfv+(ispn-1)*nstfv,j+(ispn-1)*nstfv,ikloc)*evecfvloc(ig,istfv,1,ikloc)                                                                                                                      
-        enddo
-	evecloc(ig,j+(ispn-1)*nstfv,ikloc)=zt1
-      enddo                                                                                                                                      
-    enddo                                                                                                                                        
-  enddo                                                                                                                                          
-enddo
-if (iproc.eq.0) then
-  write(150,'("Done.")')
-  call flushifc(150)
-endif
-deallocate(evecfvloc)
-deallocate(evecsvloc)
+! enddo
 
 ! find indexes of k-points to send and receive
 allocate(isend(nkptlocnr(0),0:nproc-1,2))
@@ -591,25 +432,15 @@ do i=0,nproc-1
   call mpi_barrier(MPI_COMM_WORLD,ierr)
 enddo 
 
-deallocate(acoeffloc)
 deallocate(acoeff2)
 deallocate(status)
-deallocate(evecfv2)
-deallocate(evecsv2)
 deallocate(igkignr2)
 deallocate(zrhofc)
-deallocate(evecloc)
 deallocate(evec2)
   
 #else
 
-allocate(evecfv1(nmatmax,nstfv,nspnfv))
-allocate(evecsv1(nstsv,nstsv))
-allocate(evecfv2(nmatmax,nstfv,nspnfv))
-allocate(evecsv2(nstsv,nstsv))
 allocate(zrhofc(ngvec_me,max_num_nnp,1))
-allocate(acoeff1(lmmaxvr,mtord,natmtot,nstsv))
-allocate(acoeff2(lmmaxvr,mtord,natmtot,nstsv))
 
 open(160,file=trim(fname),form='unformatted',status='old',position='append')
 
@@ -621,73 +452,47 @@ do ik=1,nkptnr
   jk=ikq(ik,1)
   
   write(160)ik,jk
+  write(160)num_nnp(ik)
+  write(160)nnp(1:num_nnp(ik),1:3,ik)
+  write(160)docc(1:num_nnp(ik),ik)
   
-! generate data at k
-  call getevecfv(vklnr(1,ik),vgklnr(1,1,ik),evecfv1)
-  call getevecsv(vklnr(1,ik),evecsv1) 
-  call match(ngknr(ik),gknr(1,ik),tpgknr(1,1,ik),sfacgknr(1,1,ik),apwalm)
-  call getacoeff(lmaxvr,lmmaxvr,ngknr(ik),mtord,apwalm,evecfv1,evecsv1,acoeff1)
-
-! generate data at k'=k+q-K
-  call getevecfv(vklnr(1,jk),vgklnr(1,1,jk),evecfv2)
-  call getevecsv(vklnr(1,jk),evecsv2) 
-  call match(ngknr(jk),gknr(1,jk),tpgknr(1,1,jk),sfacgknr(1,1,jk),apwalm)
-  call getacoeff(lmaxvr,lmmaxvr,ngknr(jk),mtord,apwalm,evecfv2,evecsv2,acoeff2)
-   
   zrhofc=dcmplx(0.d0,0.d0)
-  call cpu_time(cpu0)
 ! calculate interstitial contribution for all combinations of n,n'
+  call cpu_time(cpu0)
   call zrhoftistl(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ik),ngknr(jk), &
-    igkignr(1,ik),igkignr(1,jk),ikq(ik,4),evecfv1,evecsv1,evecfv2,evecsv2,zrhofc,igfft1(1,ik))
+    igkignr(1,ik),igkignr(1,jk),ikq(ik,2),evecloc(1,1,ik),evecloc(1,1,jk),zrhofc)
   call cpu_time(cpu1)
   timeistl=cpu1-cpu0
 
-  call cpu_time(cpu0)  
-! calculate MT contribution fot all combinations of n,n'
-!  call zrhoftmt1(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),mtord,ylmgq0, &
-!    sfacgq0,acoeff1,acoeff2,uuj,gnt,lgnt,zrhofc)
-  call zrhoftmt(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),mtord,ylmgq0, &
-    sfacgq0,acoeff1,acoeff2,uuj,ngumax,ngu,gu,igu,zrhofc)
+! calculate muffin-tin contribution for all combinations of n,n'    
+  call cpu_time(cpu0)
+  call zrhoftmt(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),mtord, &
+    acoeffloc(1,1,1,1,ik),acoeffloc(1,1,1,1,jk),ngumax,ngu,gu,igu,zrhofc)
   call cpu_time(cpu1)
   timemt=cpu1-cpu0
   
-  write(150,'("  interstitial time (seconds) : ",F12.2)')timeistl
-  write(150,'("    muffin-tin time (seconds) : ",F12.2)')timemt
+  if (iproc.eq.0) then
+    write(150,'("  interstitial time (seconds) : ",F12.2)')timeistl
+    write(150,'("    muffin-tin time (seconds) : ",F12.2)')timemt
+    call flushifc(150)
+  endif
   
   write(160)zrhofc(1:ngvec_me,1:num_nnp(ik),1)
 enddo !ik
 close(160)
 
-deallocate(evecfv1)
-deallocate(evecsv1)
-deallocate(evecfv2)
-deallocate(evecsv2)
 deallocate(zrhofc)
-deallocate(acoeff1)
-deallocate(acoeff2)
 
 #endif
 
-deallocate(nkptlocnr)
-deallocate(ikptlocnr)
 deallocate(ikptiproc)
 deallocate(ikptiprocnr)
-deallocate(vgklnr)
-deallocate(vgkcnr)
-deallocate(gknr)
-deallocate(tpgknr)
-deallocate(ngknr)
-deallocate(sfacgknr)
-deallocate(igkignr)
-deallocate(apwalm)
-deallocate(zrhomt)
 deallocate(ikq)
 deallocate(vgq0c)
 deallocate(gq0)
 deallocate(tpgq0)
 deallocate(sfacgq0)
 deallocate(ylmgq0) 
-deallocate(occsvnr)
 deallocate(num_nnp)
 deallocate(nnp)
 deallocate(docc)

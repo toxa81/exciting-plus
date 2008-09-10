@@ -1,4 +1,4 @@
-subroutine response_chi0(ivq0m)
+subroutine response_chi0(ivq0m,ikptlocnr,nkptlocnr)
 use modmain
 #ifdef _MPI_
 use mpi
@@ -6,7 +6,8 @@ use mpi
 implicit none
 
 integer, intent(in) :: ivq0m(3)
-
+integer, intent(in) :: ikptlocnr(0:nproc-1,2)
+integer, intent(in) :: nkptlocnr(0:nproc-1)
 ! number of G-vectors for matrix elements
 integer ngvec_me
 ! q-vector in lattice coordinates
@@ -51,8 +52,6 @@ complex(8) wt
 character*100 fname
 
 ! for parallel execution
-integer, allocatable :: nkptlocnr(:)
-integer, allocatable :: ikptlocnr(:,:)
 integer, allocatable :: ikptiprocnr(:)
 integer ierr,tag
 integer, allocatable :: status(:)
@@ -157,10 +156,7 @@ if (iproc.eq.0) allocate(chi0(ngvec_me,ngvec_me,nepts,nspin_chi0))
 
 allocate(chi0_loc(ngvec_me,ngvec_me,nepts,nspin_chi0))
 allocate(status(MPI_STATUS_SIZE))
-allocate(nkptlocnr(0:nproc-1))
-allocate(ikptlocnr(0:nproc-1,2))
 allocate(ikptiprocnr(nkptnr))
-call splitk(nkptnr,nproc,nkptlocnr,ikptlocnr)
 do i=0,nproc-1
   ikptiprocnr(ikptlocnr(i,1):ikptlocnr(i,2))=i
 enddo
@@ -275,12 +271,18 @@ enddo !ispn
 
 deallocate(chi0_loc)
 deallocate(status)
-deallocate(nkptlocnr)
-deallocate(ikptlocnr)
 deallocate(ikptiprocnr)
 deallocate(zrhofc)
+deallocate(num_nnp)
+deallocate(nnp)
+deallocate(docc)
+deallocate(nnp1)
+deallocate(docc1)
 
 #else
+
+allocate(nnp1(max_num_nnp,3))
+allocate(docc1(max_num_nnp))
 
 chi0=dcmplx(0.d0,0.d0)
 do ik=1,nkptnr
@@ -291,9 +293,12 @@ do ik=1,nkptnr
     write(*,*)
     call pstop
   endif
-  read(160)zrhofc1(1:ngvec_me,1:num_nnp(ik))
+  read(160)num_nnp1
+  read(160)nnp1(1:num_nnp1,1:3)
+  read(160)docc1(1:num_nnp1)
+  read(160)zrhofc1(1:ngvec_me,1:num_nnp1)
 
-  do i=1,num_nnp(ik)
+  do i=1,num_nnp1
     do ig1=1,ngvec_me
       do ig2=1,ngvec_me
         mtrx1(ig1,ig2)=zrhofc1(ig1,i)*dconjg(zrhofc1(ig2,i))
@@ -302,15 +307,20 @@ do ik=1,nkptnr
     if (nspin_chi0.eq.1) then
       ispn=1
     else
-      ispn=nnp(i,3,ikloc)
+      ispn=nnp1(i,3)
     endif
     do ie=1,nepts
-      wt=docc(ik,i)/(evalsvnr(nnp(i,1,ik),ik)-evalsvnr(nnp(i,2,ik),ikq(ik))+w(ie))
+      wt=docc1(i)/(evalsvnr(nnp1(i,1),ik)-evalsvnr(nnp1(i,2),ikq(ik))+w(ie))
       call zaxpy(ngvec_me*ngvec_me,wt,mtrx1,1,chi0(1,1,ie,ispn),1)
     enddo !ie
   enddo !i
 enddo !ik
-close(160)
+
+if (task.eq.401) close(160)
+if (task.eq.403) close(160,status='delete')
+
+deallocate(nnp1)
+deallocate(docc1)
 
 #endif
 
@@ -334,9 +344,6 @@ endif
 
 deallocate(w)
 deallocate(ikq)
-deallocate(num_nnp)
-deallocate(nnp)
-deallocate(docc)
 deallocate(evalsvnr)
 deallocate(zrhofc1)
 deallocate(mtrx1)
