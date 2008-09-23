@@ -91,20 +91,23 @@ zval=nint(chgval)
 if (.not.spinpol) then
 ! number of electrons should be even
   if (mod(zval,2).eq.0) then
+    e0=-1.0d10
+    e1=1.d10
     ist=zval/2
-    e0=1.0d10
-    e1=-1.d10
     do ik=1,nkpt
-      if (evalsv(ist+1,ik).lt.e0) then
-        e0=evalsv(ist+1,ik)
+      if (evalsv(ist,ik).gt.e0) then
+        e0=evalsv(ist,ik)
         ik0=ik
       endif
-      if (evalsv(ist,ik).gt.e1) then
-        e1=evalsv(ist,ik)
+      if (evalsv(ist+1,ik).lt.e1) then
+        e1=evalsv(ist+1,ik)
         ik1=ik
       endif
     enddo
-  endif
+  else
+    e0=1.0d10
+    e1=-1.d10
+  endif    
 else
   do ist=1,nstsv
     etmp(ist,1)=minval(evalsv(ist,:))

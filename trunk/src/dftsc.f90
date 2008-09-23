@@ -1,5 +1,6 @@
 subroutine dftsc(n,nu,mu,beta,f)
-use        modmain
+use modmain
+use modwann
 #ifdef _MPI_
 use mpi
 #endif
@@ -13,7 +14,7 @@ real(8)              :: f(n)
 
 ! local variables
 logical exist
-integer ik,is,ia,idm,ikloc,ierr,i,mtord
+integer ik,is,ia,idm,ikloc,ierr,i,mtord,j
 real(8) dv,timetot
 ! allocatable arrays
 real(8), allocatable :: evalfv(:,:,:)
@@ -90,7 +91,7 @@ do iscl=1,maxscl
 ! solve the first- and second-variational secular equations
     call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
     if (wannier) then
-      call wann_a_ort(ikloc,mtord,uu,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
+      call wann_a_ort(ikloc,lmaxvr,lmmaxvr,mtord,uu,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
     endif
   enddo
   call dsync(evalsv,nstsv*nkpt,.true.,.false.)
@@ -292,6 +293,24 @@ do i=0,nproc-1
   call mpi_barrier(MPI_COMM_WORLD,ierr)
 #endif
 enddo
+
+if (wannier.and.iproc.eq.0) then
+  do i=1,wf_dim
+    wf_h(i,i,:,:)=wf_h(i,i,:,:)-efermi
+  enddo
+  wf_h=wf_h*ha2ev
+  open(200,file='hamilt',form='formatted',status='replace')
+  write(200,*)nkpt,wf_dim
+  do ik=1,nkpt
+    write(200,*)1.d0 !wtkp(ikp)
+    do i=1,wf_dim
+      do j=1,wf_dim
+        write(200,*)dreal(wf_h(i,j,1,ik)),dimag(wf_h(i,j,1,ik))
+      enddo
+    enddo
+  enddo	
+  close(200)
+endif
 
 deallocate(evalfv,evecfvloc,evecsvloc)
 

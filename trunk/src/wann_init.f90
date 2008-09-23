@@ -47,7 +47,7 @@ enddo
 open(100,file='WANNIER.OUT',form='formatted',status='replace')
 write(100,*)'wf_dim=',wf_dim
 do i=1,wf_dim
-  write(100,*)'wf=',i,' atom=',wf_n(i,1),' lm=',wf_n(i,2),' l=',wf_n(i,3)
+  write(100,*)'wf=',i,' atom=',wf_n(i,1),' lm=',wf_n(i,2),' l=',wf_n(i,3),'lh_bnd=',wf_lhbnd(:,1,i)
 enddo
 close(100)
 

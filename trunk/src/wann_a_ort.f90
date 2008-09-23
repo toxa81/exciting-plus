@@ -18,6 +18,7 @@ complex(8), allocatable :: a_tmp(:,:,:)
 complex(8), allocatable :: s(:,:)
 integer ispn,i,j,n,m1,m2,io1,io2,ias,lm1,lm2,ierr,l,ikglob
 complex(8) zt1(16)
+complex(8) zt2(wf_dim,wf_dim)
 
 ikglob=ikptloc(iproc,1)+ik-1
 
@@ -70,7 +71,7 @@ do n=1,wf_dim
         lm1=idxlm(l,m1)
         lm2=wf_n(n,2)
         do io1=1,mtord
-          io2=1
+          io2=2
 !          a_tmp(n,j,ispn)=a_tmp(n,j,ispn)+dconjg(acoeff(lm1,io1,ias,ispn,j)) * &
 !            acoeff_r(lm2,io2,ias,ispn,j)*uu(l,io1,io2,ias)*ylm2rlm(lm2,lm1)
           a_tmp(n,j,ispn)=a_tmp(n,j,ispn)+dconjg(acoeff(lm1,io1,ias,j+(ispn-1)*nstfv)) * &
@@ -81,7 +82,7 @@ do n=1,wf_dim
   enddo !ispn
 !  write(*,*)'n=',n
 !  do j=1,nstsv
-!    write(*,*)'j=',j,'a=',abs(a_tmp(n,j))
+!    write(*,*)'j=',j,'a=',abs(a_tmp(n,j,1))
 !  enddo
 enddo !n
 
@@ -150,7 +151,8 @@ do ispn=1,wann_nspins
     enddo
 !    write(*,'(255F12.6)')(abs(wf_h(m1,m2,ispn,ik)),m2=1,wf_dim)
   enddo
-  call diag_mtrx(wf_dim,wf_h(1,1,ispn,ikglob),wf_e(1,ispn,ikglob))
+  zt2=wf_h(:,:,ispn,ikglob)
+  call diag_mtrx(wf_dim,zt2,wf_e(1,ispn,ikglob))
 enddo
 
 deallocate(acoeff,apwalm,a_tmp,s)
