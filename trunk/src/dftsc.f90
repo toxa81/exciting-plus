@@ -71,6 +71,7 @@ do iscl=1,maxscl
   if (wannier) then
     call getufr(lmaxvr,mtord,ufr)
     call calc_uu(lmaxvr,mtord,ufr,uu)
+    a_ort=dcmplx(0.d0,0.d0)
   endif
   evalsv=0.d0
   spnchr=0.d0
@@ -97,6 +98,9 @@ do iscl=1,maxscl
   enddo
   call dsync(evalsv,nstsv*nkpt,.true.,.false.)
   call dsync(spnchr,nspinor*nstsv*nkpt,.true.,.false.)
+  if (wannier) then
+    call zsync(a_ort,wf_dim*nstfv*wann_nspins*nkpt,.true.,.false.)
+  endif
   
   if (iproc.eq.0) then 
 ! find the occupation numbers and Fermi energy
@@ -107,6 +111,10 @@ do iscl=1,maxscl
     call writefermi
   endif
   call dsync(occsv,nstsv*nkpt,.false.,.true.)
+  
+  if (iproc.eq.0.and.wannier) then
+    call wann_ene_occ
+  endif
   
 ! set the charge density and magnetisation to zero
   rhomt(:,:,:)=0.d0
