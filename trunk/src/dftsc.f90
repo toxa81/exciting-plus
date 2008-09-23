@@ -74,7 +74,8 @@ do iscl=1,maxscl
   endif
   evalsv=0.d0
   spnchr=0.d0
-  timemat1=0.d0
+  timematmt1=0.d0
+  timematit1=0.d0
   timefv1=0.d0
   timesv1=0.d0
   timepot1=0.d0
@@ -256,7 +257,8 @@ do iscl=1,maxscl
     write(60,*)
     write(60,'("Time (CPU seconds) : ",F12.2)') timetot
     write(60,*)
-    write(60,'("  matrix setup time                         :",F12.2)')timemat1
+    write(60,'("  matrix setup time (muffin-tin)            :",F12.2)')timematmt1
+    write(60,'("  matrix setup time (interstitial)          :",F12.2)')timematit1
     write(60,'("  first-variational matrix diagonalization  :",F12.2)')timefv1
     write(60,'("  second-variational matrix diagonalization :",F12.2)')timesv1
     write(60,'("  Coulomb potential calculation             :",F12.2)')timepotcoul1

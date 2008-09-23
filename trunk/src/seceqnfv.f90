@@ -39,7 +39,7 @@ complex(8), intent(out) :: evecfv(nmatmax,nstfv)
 ! local variables
 integer is,ia,i,m,np,info,nb,lwork
 real(8) vl,vu,abstol
-real(8) cpu0,cpu1
+real(8) cpu0,cpu1,cpu2
 ! external functions
 real(8) dlamch
 external dlamch
@@ -90,14 +90,14 @@ do is=1,nspecies
     call olplolo(.false.,is,ia,ngp,v,o)
   end do
 end do
+call cpu_time(cpu2)
 ! interstitial contributions
 call hmlistl(.false.,ngp,igpig,vgpc,v,h)
 call olpistl(.false.,ngp,igpig,v,o)
 call cpu_time(cpu1)
-!$OMP CRITICAL
 timemat=timemat+cpu1-cpu0
-timemat1=timemat1+cpu1-cpu0
-!$OMP END CRITICAL
+timematmt1=timematmt1+cpu2-cpu0
+timematit1=timematit1+cpu1-cpu2
 !------------------------------------!
 !     solve the secular equation     !
 !------------------------------------!
@@ -128,10 +128,8 @@ if (info.ne.0) then
   stop
 end if
 call cpu_time(cpu1)
-!$OMP CRITICAL
 timefv=timefv+cpu1-cpu0
 timefv1=timefv1+cpu1-cpu0
-!$OMP END CRITICAL
 deallocate(iwork,ifail,w,rwork,v,h,o,work)
 return
 end subroutine

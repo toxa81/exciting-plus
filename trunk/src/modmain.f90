@@ -884,7 +884,8 @@ complex(8), allocatable :: evecfvloc(:,:,:,:)
 complex(8), allocatable :: evecsvloc(:,:,:)
 
 logical packed
-real(8) timemat1
+real(8) timematmt1
+real(8) timematit1
 real(8) timefv1
 real(8) timesv1
 real(8) timepot1
