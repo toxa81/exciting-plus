@@ -128,8 +128,9 @@ gkmax=rgkmax/rmtmin
 if (2.d0*gkmax.gt.gmaxvr+epslat) then
   write(*,*)
   write(*,'("Error(init1): 2*gkmax > gmaxvr  ",2G18.10)') 2.d0*gkmax,gmaxvr
+  write(*,'("  rmtmin: ",G18.10)')rmtmin
   write(*,*)
-  stop
+  call pstop
 end if
 ! find the maximum number of G+k-vectors
 call getngkmax
