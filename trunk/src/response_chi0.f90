@@ -144,8 +144,29 @@ endif
 #ifdef _MPI_
 call mpi_bcast(evalsvnr,nstsv*nkptnr,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
 #endif
+
 ! hack to switch off band
 !evalsvnr(56,:)=100000.d0
+!do ik=1,nkptnr
+!  if (abs(vkcnr(2,ik)).le.1d-10) then
+!    do i=1,54
+!      if ((evalsvnr(i,ik)-evalsvnr(55,1)).lt.-0.005d0) then
+!        evalsvnr(i,ik)=-1000000.d0
+!      endif
+!    enddo
+!    evalsvnr(1:54,ik)=-1000000.d0
+!    evalsvnr(57:,ik)=1000000.d0
+!
+!    evalsvnr(1:54,ik)=-1000000.d0
+!    evalsvnr(57:,ik)=1000000.d0
+!    
+!  else
+!    evalsvnr(1:55,ik)=-1000000.d0
+!    evalsvnr(56:,ik)=1000000.d0
+!
+!
+!  endif
+!enddo
 !evalsvnr(1:28,:)=-100000.d0
 !evalsvnr(57:,:)=100000.d0
 
