@@ -3,7 +3,7 @@ use modmain
 implicit none
 integer, intent(in) :: ivq0m(3)
 ! number of G-vectors for chi
-integer, intent(in) :: ngvec_chi
+integer, intent(inout) :: ngvec_chi
 
 ! number of G-vectors for matrix elements
 integer ngvec_me
@@ -78,7 +78,14 @@ if (iproc.eq.0) then
     if (spin_me.eq.2) write(150,'("chi0 was calculated for spin dn")')
     if (spin_me.eq.3) write(150,'("chi0 was calculated for both spins")')
   endif
-  
+  if (ngvec_chi.lt.ngvec_me) then
+    write(*,*)
+    write(*,'("Warning(response_chi): number of G-shells was changed from ",&
+      &I4," to ",I4)')ngsh_chi,ngsh_me
+    write(*,*)
+    ngsh_chi=ngsh_me
+    ngvec_chi=ngvec_me
+  endif
   if (igq0.gt.ngvec_chi) then
     write(*,*)
     write(*,'("Error(response_chi): not enough G-vectors for calculation of &

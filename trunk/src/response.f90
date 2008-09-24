@@ -80,7 +80,8 @@ if (task.eq.400.or.task.eq.403) then
   enddo !i
   if (ngshmin.gt.ngsh_me) then
     write(*,*)
-    write(*,'("Warning(response): minimum number of G-shells changed to: ",I4)')ngshmin
+    write(*,'("Warning(response): number of G-shells was changed from ",&
+      &I4," to ",I4)')ngsh_me,ngshmin
     write(*,*)
     ngsh_me=ngshmin
   endif
