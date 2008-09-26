@@ -220,7 +220,7 @@ do iscl=1,maxscl
       close(50,status='DELETE')
     end if
 ! write STATE.OUT file if required
-    if (nwrite.ge.1) then
+    if (nwrite.ge.1.and.maxscl.gt.1) then
       if (mod(iscl,nwrite).eq.0) then
         call writestate
         write(60,*)
