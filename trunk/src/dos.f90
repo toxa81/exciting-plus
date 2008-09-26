@@ -163,7 +163,7 @@ do is=1,nspecies
         write(fname,'("PDOS_S",I2.2,"_A",I4.4,"_L",I1,"_SPIN",I1,".OUT")') is,ia,l,ispn
         open(50,file=trim(fname),action='WRITE',form='FORMATTED')
         do iw = 1, nwdos
-          write(50,'(8G18.10)')w(iw)*ha2ev, &
+          write(50,'(9G18.10)')w(iw)*ha2ev, &
             SUM(pdos(iw,idxlm(l,-l):idxlm(l,l))),(pdos(iw,idxlm(l,m)),m=-l,l)
         enddo
         close(50)
