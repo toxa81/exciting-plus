@@ -320,6 +320,7 @@ if (wannier.and.iproc.eq.0) then
     enddo
   enddo	
   close(200)
+  call put_a_ort
 endif
 
 deallocate(evalfv,evecfvloc,evecsvloc)

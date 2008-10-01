@@ -9,11 +9,28 @@ complex(8), allocatable :: wf(:)
 
 integer ntr(3),i,ivec,nrxyz(3),nrtot
 integer i1,i2,i3,ir
+integer mtord
+real(8), allocatable :: ufr(:,:,:,:)
 
 call init0
 call init1
 
 call wann_init
+
+! read density and potentials from file
+call readstate
+! read Fermi energy from file
+call readfermi
+! generate the core wavefunctions and densities
+call gencore
+! find the new linearisation energies
+call linengy
+! generate the APW radial functions
+call genapwfr
+! generate the local-orbital radial functions
+call genlofr
+
+call get_a_ort
 
 ! Cartesian coordinates of boundary and origin
 bound(:,1)=(/1.d0,0.d0,0.d0/)
@@ -23,6 +40,12 @@ orig(:)=(/0.d0,0.d0,0.d0/)
 nrxyz(:)=(/20,20,20/)
 nrtot=nrxyz(1)*nrxyz(2)*nrxyz(3)
 allocate(wf(nrtot))
+
+
+call getmtord(lmaxapw,mtord)
+allocate(ufr(nrmtmax,0:lmaxapw,mtord,natmtot))
+call getufr(lmaxapw,mtord,ufr)
+
 
 ir=0
 do i1=0,nrxyz(1)-1
@@ -73,3 +96,36 @@ r1(:)=r(:)-t(:)
 
 return
 end
+
+subroutine put_a_ort
+use modmain
+use modwann
+implicit none
+integer ik,n,j,ispn
+
+open(70,file='A_ORT.OUT',form='unformatted',status='replace')
+do ik=1,nkpt
+  write(70)(((a_ort(n,j,ispn,ik),n=1,wf_dim),j=1,nstfv),ispn=1,wann_nspins)
+enddo
+close(70)
+
+return
+end
+
+subroutine get_a_ort
+use modmain
+use modwann
+implicit none
+integer ik,n,j,ispn
+
+open(70,file='A_ORT.OUT',form='unformatted',status='old')
+do ik=1,nkpt
+  read(70)(((a_ort(n,j,ispn,ik),n=1,wf_dim),j=1,nstfv),ispn=1,wann_nspins)
+enddo
+close(70)
+
+return
+end
+
+
+
