@@ -52,6 +52,8 @@ real(8), allocatable :: tpgq0(:,:)
 complex(8), allocatable :: ylmgq0(:,:)
 ! structure factor for G+q vectors
 complex(8), allocatable :: sfacgq0(:,:)
+! hack to switch off matrix elements
+logical, parameter :: meoff=.false.
 
 ! allocatable arrays
 integer, allocatable :: igkignr2(:)
@@ -389,27 +391,30 @@ do ikstep=1,nkptlocnr(0)
   if (ikstep.le.nkptlocnr(iproc)) then
     ik=ikptlocnr(iproc,1)+ikstep-1
     jk=ikq(ik,1)
-
+    
+    if (.not.meoff) then
 ! calculate interstitial contribution for all combinations of n,n'
-    call cpu_time(cpu0)
-    call zrhoftistl(ngvec_me,max_num_nnp,num_nnp(ikstep),nnp(1,1,ikstep),ngknr(ikstep),ngknr2, &
-      igkignr(1,ikstep),igkignr2,ikq(ik,2),evecloc(1,1,ikstep),evec2,zrhofc(1,1,ikstep))
-    call cpu_time(cpu1)
-    timeistl=cpu1-cpu0
+      call cpu_time(cpu0)
+      call zrhoftistl(ngvec_me,max_num_nnp,num_nnp(ikstep),nnp(1,1,ikstep),ngknr(ikstep),ngknr2, &
+        igkignr(1,ikstep),igkignr2,ikq(ik,2),evecloc(1,1,ikstep),evec2,zrhofc(1,1,ikstep))
+      call cpu_time(cpu1)
+      timeistl=cpu1-cpu0
 
 ! calculate muffin-tin contribution for all combinations of n,n'    
-    call cpu_time(cpu0)
-    call zrhoftmt(ngvec_me,max_num_nnp,num_nnp(ikstep),nnp(1,1,ikstep),mtord, &
-      acoeffloc(1,1,1,1,ikstep),acoeff2,ngumax,ngu,gu,igu,zrhofc(1,1,ikstep))
-    call cpu_time(cpu1)
-    timemt=cpu1-cpu0
+      call cpu_time(cpu0)
+      call zrhoftmt(ngvec_me,max_num_nnp,num_nnp(ikstep),nnp(1,1,ikstep),mtord, &
+        acoeffloc(1,1,1,1,ikstep),acoeff2,ngumax,ngu,gu,igu,zrhofc(1,1,ikstep))
+      call cpu_time(cpu1)
+      timemt=cpu1-cpu0
   
-    if (iproc.eq.0) then
-      write(150,'("  interstitial time (seconds) : ",F12.2)')timeistl
-      write(150,'("    muffin-tin time (seconds) : ",F12.2)')timemt
-      call flushifc(150)
+      if (iproc.eq.0) then
+        write(150,'("  interstitial time (seconds) : ",F12.2)')timeistl
+        write(150,'("    muffin-tin time (seconds) : ",F12.2)')timemt
+        call flushifc(150)
+      endif
+    else
+      zrhofc(:,:,ikstep)=dcmplx(1.d0,0.d0)
     endif
-    
   endif ! (ikstep.le.nkptlocnr(iproc))
   
 enddo !ikstep
@@ -793,17 +798,24 @@ integer, intent(out) :: num_nnp(nkptnr)
 integer, intent(out) :: nnp(max_num_nnp,3,nkptnr)
 real(8), intent(out) :: docc(max_num_nnp,nkptnr)
 
+integer band1,band2
 integer i,ik,jk,istfv1,istfv2,ispn,ist1,ist2,ikloc
 
+band1=1
+band2=nstfv
+if (req.and.iproc.eq.0) then
+  write(150,*)
+  write(150,'("Band interval: ",2I4)')band1,band2
+endif
 if (req) max_num_nnp=0
 do ikloc=1,nkptloc1
   ik=ikptloc1+ikloc-1
   jk=ikq(ik,1)
   i=0
   do ispn=1,nspinor
-    do istfv1=1,nstfv
+    do istfv1=band1,band2
       ist1=istfv1+(ispn-1)*nstfv
-      do istfv2=1,nstfv
+      do istfv2=band1,band2
         ist2=istfv2+(ispn-1)*nstfv
         if ((ispn.eq.spin_me.or.spin_me.eq.3) .and. &
 	    abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-10) then

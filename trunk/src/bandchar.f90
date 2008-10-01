@@ -63,7 +63,7 @@ integer l,m,lm2,lm1
 integer irc,i,j,n,isym,lspl,nsym1
 integer lwork,info
 real(8) t1
-complex(8), allocatable :: acoeff(:,:,:,:,:)
+complex(8), allocatable :: acoeff(:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 ! automatic arrays
 real(8) fr(nrcmtmax),gr(nrcmtmax),cf(3,nrcmtmax)
@@ -71,7 +71,7 @@ complex(8) zt1(ld,mtord),zt2(ld)
 
 ikglob=ikptloc(iproc,1)+ik-1
 
-allocate(acoeff(ld,mtord,natmtot,nspinor,nstsv))
+allocate(acoeff(ld,mtord,natmtot,nstsv))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 
 call match(ngk(ikglob,1),gkc(1,ik,1),tpgkc(1,1,ik,1),sfacgk(1,1,ik,1),apwalm)
@@ -84,13 +84,13 @@ else
 endif
 
 bndchr=0.d0
-do j=1,nstsv
+do j=1,nstfv
   do ispn=1,nspinor
     do ias=1,natmtot
       do isym=1,nsym1
         zt1=dcmplx(0.d0,0.d0)
         do io1=1,mtord
-          call rotzflm(symlatc(1,1,lsplsymc(isym)),3,1,ld,acoeff(1:ld,io1,ias,ispn,j),zt2)
+          call rotzflm(symlatc(1,1,lsplsymc(isym)),3,1,ld,acoeff(1:ld,io1,ias,j+(ispn-1)*nstfv),zt2)
           do lm=1,ld
             do lm1=1,ld
               zt1(lm,io1)=zt1(lm,io1)+rlm2ylm(lm1,lm)*zt2(lm1)
