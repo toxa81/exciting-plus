@@ -1,6 +1,9 @@
 subroutine wann_plot
 use modmain
 use modwann
+#ifdef _MPI_
+use mpi
+#endif
 implicit none
 
 real(8) r(3),r1(3),t(3),d
@@ -9,7 +12,7 @@ real(8) bound2d(3,2),orig2d(3)
 complex(4), allocatable :: wf(:,:)
 
 integer ntr(3),i,ivec,nrxyz(3),nrtot
-integer i1,i2,i3,ir,n
+integer i1,i2,i3,ir,n,ierr
 integer mtord,ik,ikloc,ispn,istfv,j,ig
 real(8), allocatable :: ufr(:,:,:,:)
 complex(8), allocatable :: evecfv(:,:,:)
