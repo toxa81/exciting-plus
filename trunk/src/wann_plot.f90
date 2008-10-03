@@ -16,6 +16,7 @@ complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
 complex(8), allocatable :: evec(:,:,:)
 complex(8), allocatable :: acoeff(:,:,:,:,:)
+complex(8), allocatable :: acoefftmp(:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: bcoeff(:,:,:,:,:,:,:)
 complex(8), allocatable :: evec1(:,:,:)
@@ -136,22 +137,34 @@ enddo
 
 allocate(bcoeff(lmmaxvr,mtord,natmtot,wf_dim,tlim(1,1):tlim(2,1),tlim(1,2):tlim(2,2),tlim(1,3):tlim(2,3)))
 bcoeff=dcmplx(0.d0,0.d0)
+
+allocate(acoefftmp(lmmaxvr,mtord,natmtot,wf_dim,nkpt))
+acoefftmp=dcmplx(0.d0,0.d0)
+do n=1,wf_dim
+  do ik=1,nkpt
+    do i=1,nstfv
+      acoefftmp(:,:,:,n,ik)=acoefftmp(:,:,:,n,ik) + &
+        a_ort(n,i,1,ik)*acoeff(:,:,:,i,ik)
+    enddo
+  enddo
+enddo
+
 do i1=tlim(1,1),tlim(2,1)
 do i2=tlim(1,2),tlim(2,2)
 do i3=tlim(1,3),tlim(2,3)
   t(:)=i1*avec(:,1)+i2*avec(:,2)+i3*avec(:,3)
   do n=1,wf_dim
     do ik=1,nkpt
-      do i=1,nstfv
-        bcoeff(:,:,:,n,i1,i2,i3)=bcoeff(:,:,:,n,i1,i2,i3) + &
-          exp(dcmplx(0.d0,dot_product(t,vkc(:,ik)))) * &
-          a_ort(n,i,1,ik)*acoeff(:,:,:,i,ik)/nkpt
-      enddo
+      bcoeff(:,:,:,n,i1,i2,i3)=bcoeff(:,:,:,n,i1,i2,i3) + &
+        exp(dcmplx(0.d0,dot_product(t,vkc(:,ik)))) * &
+        acoefftmp(:,:,:,n,ik)/nkpt
     enddo
   enddo
 enddo
 enddo
 enddo
+deallocate(acoefftmp)
+
 allocate(evec1(nmatmax,wf_dim,nkpt))
 evec1=dcmplx(0.d0,0.d0)
 do n=1,wf_dim
@@ -344,7 +357,6 @@ do is=1,nspecies
   end do
 end do
 ! otherwise use interstitial function
-sum=0.d0
 do ik=1,nkpt
   do ig=1,ngk(ik,1)
     t1=vgkc(1,ig,ik,1)*r(1)+vgkc(2,ig,ik,1)*r(2)+vgkc(3,ig,ik,1)*r(3)
@@ -354,7 +366,6 @@ do ik=1,nkpt
   end do
 end do
 10 continue
-val=sum
 return
 end
 
