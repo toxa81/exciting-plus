@@ -4,10 +4,12 @@ implicit none
 integer wann_natoms
 integer wann_nspins
 logical wann_use_lhen
+logical wann_add_poco
 integer, allocatable :: wann_iatom(:)
 integer, allocatable :: wann_iorb(:,:)
 real(8), allocatable :: wann_lhen(:,:,:,:)
 integer, allocatable :: wann_lhbnd(:,:,:,:)
+real(8), allocatable :: wann_deltav(:,:,:)
 
 integer wf_dim
 integer, allocatable :: wf_n(:,:)
@@ -19,5 +21,6 @@ real(8), allocatable :: wf_lhen(:,:,:)
 complex(8), allocatable :: a_ort(:,:,:,:)
 complex(8), allocatable :: wf_h(:,:,:,:)
 real(8), allocatable :: wf_e(:,:,:)
+real(8), allocatable :: wf_deltav(:,:)
   
 end module

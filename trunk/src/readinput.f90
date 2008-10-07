@@ -844,10 +844,12 @@ case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_natoms,wann_nspins
   read(50,*,err=20) wann_use_lhen
+  read(50,*,err=20) wann_add_poco
   allocate(wann_iatom(wann_natoms)) 
   allocate(wann_iorb(0:16,wann_natoms))
   allocate(wann_lhen(2,16,wann_nspins,wann_natoms))
   allocate(wann_lhbnd(2,16,wann_nspins,wann_natoms))
+  allocate(wann_deltav(16,wann_nspins,wann_natoms))
   do i=1,wann_natoms
     read(50,*,err=20) wann_iatom(i),wann_iorb(0,i)
     read(50,*,err=20)(wann_iorb(l,i),l=1,wann_iorb(0,i))
@@ -859,6 +861,7 @@ case('wannier')
         read(50,*,err=20)(wann_lhbnd(1,l,ispn,i),l=1,wann_iorb(0,i))
         read(50,*,err=20)(wann_lhbnd(2,l,ispn,i),l=1,wann_iorb(0,i))
       endif
+      read(50,*,err=20)(wann_deltav(l,ispn,i),l=1,wann_iorb(0,i))
     enddo
   enddo
 case('')

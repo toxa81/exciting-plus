@@ -71,7 +71,6 @@ do iscl=1,maxscl
   if (wannier) then
     call getufr(lmaxvr,mtord,ufr)
     call calc_uu(lmaxvr,mtord,ufr,uu)
-    a_ort=dcmplx(0.d0,0.d0)
   endif
   evalsv=0.d0
   spnchr=0.d0

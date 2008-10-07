@@ -30,6 +30,8 @@ if (allocated(wf_lhen)) deallocate(wf_lhen)
 allocate(wf_lhbnd(2,wann_nspins,wf_dim))
 allocate(wf_lhen(2,wann_nspins,wf_dim))
 
+allocate(wf_deltav(wann_nspins,wf_dim))
+
 j=0
 do i=1,wann_natoms
   do lm=1,wann_iorb(0,i)
@@ -39,7 +41,8 @@ do i=1,wann_natoms
     wf_n(j,3)=lm2l(wann_iorb(lm,i))
     do ispn=1,wann_nspins
       wf_lhbnd(:,ispn,j)=wann_lhbnd(:,lm,ispn,i)
-      wf_lhen(:,ispn,j)=wann_lhen(:,lm,ispn,i)   
+      wf_lhen(:,ispn,j)=wann_lhen(:,lm,ispn,i)
+      wf_deltav(ispn,j)=wann_deltav(lm,ispn,i)   
     enddo
   enddo
 enddo
@@ -47,7 +50,7 @@ enddo
 open(100,file='WANNIER.OUT',form='formatted',status='replace')
 write(100,*)'wf_dim=',wf_dim
 do i=1,wf_dim
-  write(100,*)'wf=',i,' atom=',wf_n(i,1),' lm=',wf_n(i,2),' l=',wf_n(i,3),'lh_bnd=',wf_lhbnd(:,1,i)
+  write(100,*)'wf=',i,' atom=',wf_n(i,1),' lm=',wf_n(i,2),' l=',wf_n(i,3),'lh_bnd=',wf_lhbnd(:,1,i),'deltav=',wf_deltav(1,i)
 enddo
 close(100)
 

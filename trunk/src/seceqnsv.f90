@@ -6,6 +6,7 @@
 
 subroutine seceqnsv(ik,apwalm,evalfv,evecfv,evecsv)
 use modmain
+use modwann
 implicit none
 ! arguments
 integer, intent(in) :: ik
@@ -15,7 +16,7 @@ complex(8), intent(in) :: evecfv(nmatmax,nstfv)
 complex(8), intent(out) :: evecsv(nstsv,nstsv)
 ! local variables
 integer ispn,jspn,ia,is,ias,ikglob
-integer ist,jst,i,j,k,l,lm,nm
+integer ist,jst,i,j,k,l,lm,nm,n
 integer ir,irc,igk,ifg
 integer nsc,lwork,info
 ! fine structure constant
@@ -43,12 +44,13 @@ complex(8), allocatable :: zfft1(:)
 complex(8), allocatable :: zfft2(:)
 complex(8), allocatable :: zv(:,:)
 complex(8), allocatable :: work(:)
+complex(8), allocatable :: wf_poco(:,:)
 ! external functions
 complex(8) zdotc,zfmtinp
 external zdotc,zfmtinp
 ikglob=ikptloc(iproc,1)+ik-1
 ! spin-unpolarised case
-if ((.not.spinpol).and.(ldapu.eq.0)) then
+if ((.not.spinpol).and.(ldapu.eq.0).and.(.not.(wannier.and.wann_add_poco))) then
   do i=1,nstsv
     evalsv(i,ikglob)=evalfv(i)
   end do
@@ -278,6 +280,25 @@ do ispn=1,nspinor
     evecsv(i,i)=evecsv(i,i)+evalfv(ist)
   end do
 end do
+
+if (wannier.and.wann_add_poco) then
+  allocate(wf_poco(nstfv,nstfv))
+  wf_poco=dcmplx(0.d0,0.d0)
+  do i=1,nstfv
+    do j=1,nstfv
+      do n=1,wf_dim
+        wf_poco(i,j)=wf_poco(i,j)+dconjg(a_ort(n,i,1,ikglob))*a_ort(n,j,1,ikglob)*wf_deltav(1,n)
+      enddo
+    enddo
+  enddo
+!  write(*,*)'WF poco'  
+!  do i=1,nstfv
+!    write(*,'(255F8.4)')(abs(wf_poco(i,j)),j=1,nstfv)
+!  enddo
+  evecsv(:,:)=evecsv(:,:)+wf_poco(:,:)
+  deallocate(wf_poco)
+endif
+
 ! diagonalise second-variational Hamiltonian
 if (ndmag.eq.1) then
 ! collinear: block diagonalise H
