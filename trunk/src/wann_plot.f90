@@ -26,7 +26,7 @@ complex(8), allocatable :: evec1(:,:,:)
 complex(8) zt1
 character*8 fname
 real(8) x(2),alph
-logical, parameter :: wf3d=.true.
+logical, parameter :: wf3d=.false.
 integer tlim(2,3)
 call init0
 call init1
@@ -59,8 +59,8 @@ bound3d(:,2)=(/0.d0,16.d0,0.d0/)
 bound3d(:,3)=(/0.d0,0.d0,16.d0/)
 orig3d(:)=(/-8.d0,-8.d0,-8.d0/)
 
-bound2d(:,1)=(/16.d0,0.d0,0.d0/)
-bound2d(:,2)=(/0.d0,16.d0,0.d0/)
+bound2d(:,1)=(/20.d0,0.d0,0.d0/)
+bound2d(:,2)=(/0.d0,20.d0,0.d0/)
 orig2d(:)=(/-8.d0,-8.d0, 0.d0/)
 
 nrxyz(:)=(/200,200,200/)
@@ -75,10 +75,23 @@ allocate(wf(wf_dim,nrtot))
 ! find the translation limits
 tlim(1,:)=1000
 tlim(2,:)=-1000
-do i1=0,1
-  do i2=0,1
-    do i3=0,1
-      r(:)=orig3d(:)+i1*bound3d(:,1)+i2*bound3d(:,2)+i3*bound3d(:,3)
+if (wf3d) then
+  do i1=0,1
+    do i2=0,1
+      do i3=0,1
+        r(:)=orig3d(:)+i1*bound3d(:,1)+i2*bound3d(:,2)+i3*bound3d(:,3)
+        call getntr(r,ntr)
+        do i=1,3
+          tlim(1,i)=min(ntr(i),tlim(1,i))
+          tlim(2,i)=max(ntr(i),tlim(2,i))
+        enddo
+      enddo
+    enddo
+  enddo
+else
+  do i1=0,1
+    do i2=0,1
+      r(:)=orig2d(:)+i1*bound2d(:,1)+i2*bound2d(:,2)
       call getntr(r,ntr)
       do i=1,3
         tlim(1,i)=min(ntr(i),tlim(1,i))
@@ -86,7 +99,7 @@ do i1=0,1
       enddo
     enddo
   enddo
-enddo
+endif  
 tlim(2,:)=tlim(2,:)+1
 if (iproc.eq.0) then
   write(*,'("Translation limits:",3(4x,2I4))')tlim(:,1),tlim(:,2),tlim(:,3)
