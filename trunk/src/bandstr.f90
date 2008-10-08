@@ -101,7 +101,7 @@ do ikloc=1,nkptloc(iproc)
 ! solve the first- and second-variational secular equations
   call seceqn(ikloc,evalfv,evecfv,evecsv)
   if (wannier) then
-    call wann_a_ort(ikloc,lmax,lmmax,mtord,uu,evecfv,evecsv)
+    call genwfc(ikloc,lmax,lmmax,mtord,uu,evecfv,evecsv)
   endif
   do ist=1,nstsv
 ! subtract the Fermi energy

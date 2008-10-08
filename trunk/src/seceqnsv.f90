@@ -15,10 +15,11 @@ real(8), intent(in) :: evalfv(nstfv)
 complex(8), intent(in) :: evecfv(nmatmax,nstfv)
 complex(8), intent(out) :: evecsv(nstsv,nstsv)
 ! local variables
-integer ispn,jspn,ia,is,ias,ikglob
+integer ispn,jspn,ia,is,ias
 integer ist,jst,i,j,k,l,lm,nm,n
 integer ir,irc,igk,ifg
 integer nsc,lwork,info
+integer, external :: ikglob
 ! fine structure constant
 real(8), parameter :: alpha=1.d0/137.03599911d0
 ! electron g factor
@@ -44,15 +45,13 @@ complex(8), allocatable :: zfft1(:)
 complex(8), allocatable :: zfft2(:)
 complex(8), allocatable :: zv(:,:)
 complex(8), allocatable :: work(:)
-complex(8), allocatable :: wf_poco(:,:)
 ! external functions
 complex(8) zdotc,zfmtinp
 external zdotc,zfmtinp
-ikglob=ikptloc(iproc,1)+ik-1
 ! spin-unpolarised case
 if ((.not.spinpol).and.(ldapu.eq.0).and.(.not.(wannier.and.wann_add_poco))) then
   do i=1,nstsv
-    evalsv(i,ikglob)=evalfv(i)
+    evalsv(i,ikglob(ik))=evalfv(i)
   end do
   evecsv(:,:)=0.d0
   do i=1,nstsv
@@ -135,7 +134,7 @@ do is=1,nspecies
     end if
 ! compute the first-variational wavefunctions
     do ist=1,nstfv
-      call wavefmt(lradstp,lmaxvr,is,ia,ngk(ikglob,1),apwalm,evecfv(1,ist), &
+      call wavefmt(lradstp,lmaxvr,is,ia,ngk(ikglob(ik),1),apwalm,evecfv(1,ist), &
        lmmaxvr,wfmt1(1,1,ist))
     end do
 ! begin loop over states
@@ -230,7 +229,7 @@ if (spinpol) then
   end if
   do jst=1,nstfv
     zfft1(:)=0.d0
-    do igk=1,ngk(ikglob,1)
+    do igk=1,ngk(ikglob(ik),1)
       ifg=igfft(igkig(igk,ik,1))
       zfft1(ifg)=evecfv(igk,jst)
     end do
@@ -239,7 +238,7 @@ if (spinpol) then
 ! multiply with magnetic field and transform to G-space
     zfft2(:)=zfft1(:)*bir(:,3)
     call zfftifc(3,ngrid,-1,zfft2)
-    do igk=1,ngk(ikglob,1)
+    do igk=1,ngk(ikglob(ik),1)
       ifg=igfft(igkig(igk,ik,1))
       zv(igk,1)=zfft2(ifg)
       zv(igk,2)=-zfft2(ifg)
@@ -247,7 +246,7 @@ if (spinpol) then
     if (nsc.eq.3) then
       zfft2(:)=zfft1(:)*cmplx(bir(:,1),-bir(:,2),8)
       call zfftifc(3,ngrid,-1,zfft2)
-      do igk=1,ngk(ikglob,1)
+      do igk=1,ngk(ikglob(ik),1)
         ifg=igfft(igkig(igk,ik,1))
         zv(igk,3)=zfft2(ifg)
       end do
@@ -266,7 +265,7 @@ if (spinpol) then
           j=jst+nstfv
         end if
         if (i.le.j) then
-          evecsv(i,j)=evecsv(i,j)+zdotc(ngk(ikglob,1),evecfv(1,ist),1,zv(1,k),1)
+          evecsv(i,j)=evecsv(i,j)+zdotc(ngk(ikglob(ik),1),evecfv(1,ist),1,zv(1,k),1)
         end if
       end do
     end do
@@ -282,30 +281,22 @@ do ispn=1,nspinor
 end do
 
 if (wannier.and.wann_add_poco) then
-  allocate(wf_poco(nstfv,nstfv))
-  wf_poco=dcmplx(0.d0,0.d0)
   do i=1,nstfv
     do j=1,nstfv
       do n=1,wf_dim
-        wf_poco(i,j)=wf_poco(i,j)+dconjg(a_ort(n,i,1,ikglob))*a_ort(n,j,1,ikglob)*wf_deltav(1,n)
+        evecsv(i,j)=evecsv(i,j)+dconjg(wfc(n,i,1,ik))*wfc(n,j,1,ik)*wf_deltav(1,n)
       enddo
     enddo
   enddo
-!  write(*,*)'WF poco'  
-!  do i=1,nstfv
-!    write(*,'(255F8.4)')(abs(wf_poco(i,j)),j=1,nstfv)
-!  enddo
-  evecsv(:,:)=evecsv(:,:)+wf_poco(:,:)
-  deallocate(wf_poco)
 endif
 
 ! diagonalise second-variational Hamiltonian
 if (ndmag.eq.1) then
 ! collinear: block diagonalise H
-  call zheev('V','U',nstfv,evecsv,nstsv,evalsv(1,ikglob),work,lwork,rwork,info)
+  call zheev('V','U',nstfv,evecsv,nstsv,evalsv(1,ikglob(ik)),work,lwork,rwork,info)
   if (info.ne.0) goto 20
   i=nstfv+1
-  call zheev('V','U',nstfv,evecsv(i,i),nstsv,evalsv(i,ikglob),work,lwork,rwork,info)
+  call zheev('V','U',nstfv,evecsv(i,i),nstsv,evalsv(i,ikglob(ik)),work,lwork,rwork,info)
   if (info.ne.0) goto 20
   do i=1,nstfv
     do j=1,nstfv
@@ -315,7 +306,7 @@ if (ndmag.eq.1) then
   end do
 else
 ! non-collinear or spin-unpolarised: full diagonalisation
-  call zheev('V','U',nstsv,evecsv,nstsv,evalsv(1,ikglob),work,lwork,rwork,info)
+  call zheev('V','U',nstsv,evecsv,nstsv,evalsv(1,ikglob(ik)),work,lwork,rwork,info)
   if (info.ne.0) goto 20
 end if
 deallocate(bmt,bir,vr,drv,cf,sor,rwork)
@@ -330,7 +321,7 @@ return
 write(*,*)
 write(*,'("Error(seceqnsv): diagonalisation of the second-variational &
  &Hamiltonian failed")')
-write(*,'(" for k-point ",I8)') ikglob
+write(*,'(" for k-point ",I8)') ikglob(ik)
 write(*,'(" ZHEEV returned INFO = ",I8)') info
 write(*,*)
 stop

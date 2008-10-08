@@ -54,9 +54,9 @@ do i=1,wf_dim
 enddo
 close(100)
 
-if (allocated(a_ort)) deallocate(a_ort)
-allocate(a_ort(wf_dim,nstfv,wann_nspins,nkpt))
-a_ort=dcmplx(0.d0,0.d0)
+if (allocated(wfc)) deallocate(wfc)
+allocate(wfc(wf_dim,nstfv,wann_nspins,nkptloc(iproc)))
+wfc=dcmplx(0.d0,0.d0)
 
 if (allocated(wf_h)) deallocate(wf_h)
 allocate(wf_h(wf_dim,wf_dim,wann_nspins,nkpt))

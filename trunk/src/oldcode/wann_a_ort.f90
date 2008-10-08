@@ -51,9 +51,9 @@ if (wann_use_lhen) then
     do n=1,wf_dim
       wf_lhbnd(1,ispn,n)=1
       do i=1,nstfv
-        if ((evalsv(i+(ispn-1)*nstfv,ikglob)-efermi).lt.wf_lhen(1,ispn,n)) &
+        if (evalsv(i+(ispn-1)*nstfv,ikglob).lt.wf_lhen(1,ispn,n)) &
           wf_lhbnd(1,ispn,n)=i+1
-        if ((evalsv(i+(ispn-1)*nstfv,ikglob)-efermi).le.wf_lhen(2,ispn,n)) &
+        if (evalsv(i+(ispn-1)*nstfv,ikglob).le.wf_lhen(2,ispn,n)) &
           wf_lhbnd(2,ispn,n)=i
       enddo
     enddo    
@@ -86,7 +86,7 @@ do n=1,wf_dim
 !  enddo
 enddo !n
 
-a_ort(:,:,:,ikglob)=dcmplx(0.d0,0.d0)
+a_ort(:,:,:,ik)=dcmplx(0.d0,0.d0)
 wf_h(:,:,:,ikglob)=dcmplx(0.d0,0.d0)
 allocate(s(wf_dim,wf_dim))
 do ispn=1,wann_nspins
@@ -110,11 +110,11 @@ do ispn=1,wann_nspins
   if (ierr.eq.0) then
     do m1=1,wf_dim
       do m2=1,wf_dim
-        a_ort(m1,:,ispn,ikglob)=a_ort(m1,:,ispn,ikglob)+a_tmp(m2,:,ispn)*dconjg(s(m2,m1))
+        a_ort(m1,:,ispn,ik)=a_ort(m1,:,ispn,ik)+a_tmp(m2,:,ispn)*dconjg(s(m2,m1))
       enddo
     enddo
   else
-    a_ort(:,:,ispn,ikglob)=a_tmp(:,:,ispn)
+    a_ort(:,:,ispn,ik)=a_tmp(:,:,ispn)
   endif
 ! check orthonormality
 !  s=dcmplx(0.d0,0.d0)
@@ -145,7 +145,7 @@ do ispn=1,wann_nspins
     do m2=1,wf_dim
       do j=1,nstfv
         wf_h(m1,m2,ispn,ikglob)=wf_h(m1,m2,ispn,ikglob)           + &
-	      dconjg(a_ort(m1,j,ispn,ikglob))*a_ort(m2,j,ispn,ikglob) * &
+	      dconjg(a_ort(m1,j,ispn,ik))*a_ort(m2,j,ispn,ik) * &
 	      evalsv(j+(ispn-1)*nstfv,ikglob)
       enddo
     enddo

@@ -29,18 +29,18 @@ real(8), intent(out) :: evalfv(nstfv,nspnfv)
 complex(8), intent(out) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(out) :: evecsv(nstsv,nstsv)
 ! local variables
-integer ispn,ikglob
+integer ispn
+integer, external :: ikglob
 ! allocatable arrays
 complex(8), allocatable :: apwalm(:,:,:,:,:)
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
-ikglob=ikptloc(iproc,1)+ik-1
 ! loop over first-variational spins (nspnfv=2 for spin-spirals only)
 do ispn=1,nspnfv
 ! find the matching coefficients
-  call match(ngk(ikglob,ispn),gkc(1,ik,ispn),tpgkc(1,1,ik,ispn), &
+  call match(ngk(ikglob(ik),ispn),gkc(1,ik,ispn),tpgkc(1,1,ik,ispn), &
    sfacgk(1,1,ik,ispn),apwalm(1,1,1,1,ispn))
 ! solve the first-variational secular equation
-  call seceqnfv(nmat(ikglob,ispn),ngk(ikglob,ispn),igkig(1,ik,ispn),vgkc(1,1,ik,ispn), &
+  call seceqnfv(nmat(ikglob(ik),ispn),ngk(ikglob(ik),ispn),igkig(1,ik,ispn),vgkc(1,1,ik,ispn), &
    apwalm(1,1,1,1,ispn),evalfv(1,ispn),evecfv(1,1,ispn))
 end do
 if (spinsprl) then
@@ -51,7 +51,7 @@ else
   call seceqnsv(ik,apwalm,evalfv,evecfv,evecsv)
 end if
 ! compute the spin characters
-call spinchar(ikglob,evecsv)
+call spinchar(ikglob(ik),evecsv)
 deallocate(apwalm)
 return
 end subroutine

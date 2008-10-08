@@ -47,9 +47,9 @@ call genapwfr
 call genlofr
 
 if (iproc.eq.0) then
-  call get_a_ort
+!  call get_a_ort
 endif
-call zsync(a_ort,wf_dim*nstfv*wann_nspins*nkpt,.false.,.true.)
+!call zsync(a_ort,wf_dim*nstfv*wann_nspins*nkpt,.false.,.true.)
 
 
 
@@ -63,7 +63,7 @@ bound2d(:,1)=(/16.d0,0.d0,0.d0/)
 bound2d(:,2)=(/0.d0,16.d0,0.d0/)
 orig2d(:)=(/-8.d0,-8.d0, 0.d0/)
 
-nrxyz(:)=(/10,10,10/)
+nrxyz(:)=(/200,200,200/)
 
 if (wf3d) then
   nrtot=nrxyz(1)*nrxyz(2)*nrxyz(3)
@@ -147,7 +147,7 @@ do n=1,wf_dim
   do ik=1,nkpt
     do i=1,nstfv
       acoefftmp(:,:,:,n,ik)=acoefftmp(:,:,:,n,ik) + &
-        a_ort(n,i,1,ik)*acoeff(:,:,:,i,ik)
+        wfc(n,i,1,ik)*acoeff(:,:,:,i,ik)
     enddo
   enddo
 enddo
@@ -173,7 +173,7 @@ evec1=dcmplx(0.d0,0.d0)
 do n=1,wf_dim
   do ik=1,nkpt
     do i=1,nstfv
-      evec1(:,n,ik)=evec1(:,n,ik)+a_ort(n,i,1,ik)*evec(:,i,ik)/nkpt
+      evec1(:,n,ik)=evec1(:,n,ik)+wfc(n,i,1,ik)*evec(:,i,ik)/nkpt
     enddo
   enddo
 enddo
@@ -402,16 +402,18 @@ end
 
 
 
-subroutine put_a_ort
+subroutine putwfc(ik,wfcp)
 use modmain
 use modwann
 implicit none
-integer ik,n,j,ispn
+integer, intent(in) :: ik
+complex(8), intent(in) :: wfcp(wf_dim,nstfv,wann_nspins)
+integer recl
 
-open(70,file='A_ORT.OUT',form='unformatted',status='replace')
-do ik=1,nkpt
-  write(70)(((a_ort(n,j,ispn,ik),n=1,wf_dim),j=1,nstfv),ispn=1,wann_nspins)
-enddo
+inquire(iolength=recl)ik,wf_dim,nstfv,wann_nspins,wfcp
+open(70,file='WFC.OUT',action='WRITE',form='UNFORMATTED', &
+  access='DIRECT',recl=recl)
+write(70,rec=ik)ik,wf_dim,nstfv,wann_nspins,wfcp
 close(70)
 
 return
@@ -420,17 +422,26 @@ end
 
 
 
-subroutine get_a_ort
+subroutine getwfc(ik,wfcp)
 use modmain
 use modwann
 implicit none
-integer ik,n,j,ispn
+integer, intent(in) :: ik
+complex(8), intent(out) :: wfcp(wf_dim,nstfv,wann_nspins)
+integer ik_,wf_dim_,nstfv_,wann_nspins_,recl
 
-open(70,file='A_ORT.OUT',form='unformatted',status='old')
-do ik=1,nkpt
-  read(70)(((a_ort(n,j,ispn,ik),n=1,wf_dim),j=1,nstfv),ispn=1,wann_nspins)
-enddo
+inquire(iolength=recl)ik_,wf_dim_,nstfv_,wann_nspins_,wfcp
+open(70,file='WFC.OUT',action='READ',form='UNFORMATTED', &
+  access='DIRECT',recl=recl)
+read(70,rec=ik)ik_,wf_dim_,nstfv_,wann_nspins_,wfcp
 close(70)
+if (ik_.ne.ik.or.wf_dim_.ne.wf_dim.or.nstfv_.ne.nstfv.or. &
+  wann_nspins_.ne.wann_nspins) then
+  write(*,*)
+  write(*,'("Error(getwfc): wrong dimensions")')
+  write(*,*)
+  call pstop
+endif
 
 return
 end

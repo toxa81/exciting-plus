@@ -51,8 +51,8 @@ SRC_routines_flux = \
  zfint.f90 rfpack.f90 rfint.f90 writefsm.f90 genbmatk.f90 writenn.f90 \
  zrhoplot.f90 zplot2d.f90 zfarray.f90 invzge.f90 dftsc.f90 zsh2rsh.f90 \
  response.f90 response_me.f90 response_chi0.f90 response_chi.f90 dsync.f90 \
- zmatin.f90 wann_init.f90 wann_a_ort.f90 isqrtzhe.f90 diag_mtrx.f90 \
- wann_plot.f90 wann_ene_occ.f90
+ zmatin.f90 wann_init.f90 isqrtzhe.f90 diag_mtrx.f90 \
+ wann_plot.f90 wann_ene_occ.f90 parallel.f90 genwfc.f90
  
 SRC_phonon = \
  phonon.f90 dyntask.f90 phcell.f90 phdisp.f90 readdyn.f90 dynqtor.f90 \

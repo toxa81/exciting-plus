@@ -18,7 +18,8 @@ integer, allocatable :: wf_lhbnd(:,:,:)
 real(8), allocatable :: wf_lhen(:,:,:)
 
   
-complex(8), allocatable :: a_ort(:,:,:,:)
+!complex(8), allocatable :: a_ort(:,:,:,:)
+complex(8), allocatable :: wfc(:,:,:,:)
 complex(8), allocatable :: wf_h(:,:,:,:)
 real(8), allocatable :: wf_e(:,:,:)
 real(8), allocatable :: wf_deltav(:,:)

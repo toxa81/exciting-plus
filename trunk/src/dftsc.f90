@@ -1,25 +1,22 @@
 subroutine dftsc(n,nu,mu,beta,f)
 use modmain
 use modwann
-#ifdef _MPI_
-use mpi
-#endif
-implicit   none
-
-integer              :: n
-real(8)              :: nu(n)
-real(8)              :: mu(n)
-real(8)              :: beta(n)
-real(8)              :: f(n)
-
+implicit none
+! arguments
+integer, intent(in) :: n
+real(8), intent(out) :: nu(n)
+real(8), intent(out) :: mu(n)
+real(8), intent(out) :: beta(n)
+real(8), intent(out) :: f(n)
 ! local variables
 logical exist
-integer ik,is,ia,idm,ikloc,ierr,i,mtord,j
+integer ik,is,ia,idm,ierr,i,mtord,j
 real(8) dv,timetot
 ! allocatable arrays
 real(8), allocatable :: evalfv(:,:,:)
 real(8), allocatable :: uu(:,:,:,:)
 real(8), allocatable :: ufr(:,:,:,:)
+integer, external :: ikglob
 
 allocate(evalfv(nstfv,nspnfv,nkptloc(iproc)))
 allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc(iproc)))
@@ -29,6 +26,16 @@ if (wannier) then
   call getmtord(lmaxvr,mtord)
   allocate(ufr(nrmtmax,0:lmaxvr,mtord,natmtot))
   allocate(uu(0:lmaxvr,mtord,mtord,natmtot))
+  if (wann_add_poco) then
+    do i=0,nproc-1
+      if (iproc.eq.i) then
+        do ik=1,nkptloc(iproc)
+          call getwfc(ikglob(ik),wfc(1,1,1,ik))
+        enddo
+      endif
+      call barrier
+    enddo
+  endif
 endif
 
 ! begin the self-consistent loop
@@ -82,24 +89,16 @@ do iscl=1,maxscl
   timepotcoul1=0.d0
   timepotxc1=0.d0
 ! begin parallel loop over k-points
-  do ikloc=1,nkptloc(iproc)
-#ifdef _MPI_
-    if (iproc.eq.0) then
-      write(60,'("k-step ",I4," out of ",I4)')ikloc,nkptloc(iproc)
-      call flushifc(60)
-    endif
-#endif
+  do ik=1,nkptloc(iproc)
 ! solve the first- and second-variational secular equations
-    call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
-    if (wannier) then
-      call wann_a_ort(ikloc,lmaxvr,lmmaxvr,mtord,uu,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
+    call seceqn(ik,evalfv(1,1,ik),evecfvloc(1,1,1,ik),evecsvloc(1,1,ik))
+    if (wannier.and..not.wann_add_poco) then
+      call genwfc(ik,lmaxvr,lmmaxvr,mtord,uu,evecfvloc(1,1,1,ik), &
+        evecsvloc(1,1,ik))
     endif
   enddo
   call dsync(evalsv,nstsv*nkpt,.true.,.false.)
   call dsync(spnchr,nspinor*nstsv*nkpt,.true.,.false.)
-  if (wannier) then
-    call zsync(a_ort,wf_dim*nstfv*wann_nspins*nkpt,.true.,.false.)
-  endif
   
   if (iproc.eq.0) then 
 ! find the occupation numbers and Fermi energy
@@ -111,7 +110,7 @@ do iscl=1,maxscl
   endif
   call dsync(occsv,nstsv*nkpt,.false.,.true.)
   
-  if (iproc.eq.0.and.wannier) then
+  if (wannier) then
     call wann_ene_occ
   endif
   
@@ -122,9 +121,9 @@ do iscl=1,maxscl
     magmt(:,:,:,:)=0.d0
     magir(:,:)=0.d0
   end if
-  do ikloc=1,nkptloc(iproc)
+  do ik=1,nkptloc(iproc)
 ! add to the density and magnetisation
-    call rhovalk(ikloc,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
+    call rhovalk(ik,evecfvloc(1,1,1,ik),evecsvloc(1,1,ik))
   end do
   call dsync(rhomt,lmmaxvr*nrmtmax*natmtot,.true.,.true.)
   call dsync(rhoir,ngrtot,.true.,.true.)
@@ -289,18 +288,18 @@ endif !iproc.eq.0
 
 do i=0,nproc-1
   if (iproc.eq.i) then
-    do ikloc=1,nkptloc(iproc)
-      ik=ikptloc(iproc,1)+ikloc-1
+    do ik=1,nkptloc(iproc)
 ! write the eigenvalues/vectors to file
-      call putevalfv(ik,evalfv(1,1,ikloc))
-      call putevalsv(ik,evalsv(1,ik))
-      call putevecfv(ik,evecfvloc(1,1,1,ikloc))
-      call putevecsv(ik,evecsvloc(1,1,ikloc))
+      call putevalfv(ikglob(ik),evalfv(1,1,ik))
+      call putevalsv(ikglob(ik),evalsv(1,ikglob(ik)))
+      call putevecfv(ikglob(ik),evecfvloc(1,1,1,ik))
+      call putevecsv(ikglob(ik),evecsvloc(1,1,ik))
+      if (wannier.and..not.wann_add_poco) then
+        call putwfc(ikglob(ik),wfc(1,1,1,ik))
+      endif
     enddo
   endif
-#ifdef _MPI_
-  call mpi_barrier(MPI_COMM_WORLD,ierr)
-#endif
+  call barrier
 enddo
 
 if (wannier.and.iproc.eq.0) then
@@ -319,7 +318,6 @@ if (wannier.and.iproc.eq.0) then
     enddo
   enddo	
   close(200)
-  call put_a_ort
 endif
 
 deallocate(evalfv,evecfvloc,evecsvloc)
