@@ -90,7 +90,6 @@ else
   call genveffig
   if (iproc.eq.0) write(60,'("Density and potential initialised from atomic data")')
 end if
-call readfermi
 if (iproc.eq.0) call flushifc(60)
 ! size of mixing vector
 n=lmmaxvr*nrmtmax*natmtot+ngrtot
