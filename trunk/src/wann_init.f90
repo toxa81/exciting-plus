@@ -66,5 +66,9 @@ if (allocated(wf_e)) deallocate(wf_e)
 allocate(wf_e(wf_dim,wann_nspins,nkpt))
 wf_e=0.d0
 
+if (allocated(wfpoco)) deallocate(wfpoco)
+allocate(wfpoco(nstsv,nstsv,nkptloc(iproc)))
+wfpoco=dcmplx(0.d0,0.d0)
+
 return
 end

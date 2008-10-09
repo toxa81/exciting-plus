@@ -26,16 +26,16 @@ if (wannier) then
   call getmtord(lmaxvr,mtord)
   allocate(ufr(nrmtmax,0:lmaxvr,mtord,natmtot))
   allocate(uu(0:lmaxvr,mtord,mtord,natmtot))
-  if (wann_add_poco) then
-    do i=0,nproc-1
-      if (iproc.eq.i) then
-        do ik=1,nkptloc(iproc)
-          call getwfc(ikglob(ik),wfc(1,1,1,ik))
-        enddo
-      endif
-      call barrier
-    enddo
-  endif
+!  if (wann_add_poco) then
+!    do i=0,nproc-1
+!      if (iproc.eq.i) then
+!        do ik=1,nkptloc(iproc)
+!          call getwfc(ikglob(ik),wfc(1,1,1,ik))
+!        enddo
+!      endif
+!      call barrier
+!    enddo
+!  endif
 endif
 
 ! begin the self-consistent loop
@@ -92,10 +92,11 @@ do iscl=1,maxscl
   do ik=1,nkptloc(iproc)
 ! solve the first- and second-variational secular equations
     call seceqn(ik,evalfv(1,1,ik),evecfvloc(1,1,1,ik),evecsvloc(1,1,ik))
-    if (wannier.and..not.wann_add_poco) then
+!    if (wannier.and..not.wann_add_poco) then
       call genwfc(ik,lmaxvr,lmmaxvr,mtord,uu,evecfvloc(1,1,1,ik), &
         evecsvloc(1,1,ik))
-    endif
+      call genwfpoco(ik)
+!    endif
   enddo
   call dsync(evalsv,nstsv*nkpt,.true.,.false.)
   call dsync(spnchr,nspinor*nstsv*nkpt,.true.,.false.)

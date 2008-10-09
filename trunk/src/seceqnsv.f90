@@ -281,13 +281,7 @@ do ispn=1,nspinor
 end do
 
 if (wannier.and.wann_add_poco) then
-  do i=1,nstfv
-    do j=1,nstfv
-      do n=1,wf_dim
-        evecsv(i,j)=evecsv(i,j)+dconjg(wfc(n,i,1,ik))*wfc(n,j,1,ik)*wf_deltav(1,n)
-      enddo
-    enddo
-  enddo
+  evecsv(:,:)=evecsv(:,:)+wfpoco(:,:,ik)
 endif
 
 ! diagonalise second-variational Hamiltonian

@@ -253,6 +253,8 @@ write(fnum,'(" ",A)') trim(sdescr)
 write(fnum,'("Smearing width : ",G18.10)') swidth
 write(fnum,*)
 write(fnum,'("Radial integration step length : ",I4)') lradstp
+write(fnum,*)
+write(fnum,'("Maximum number of radial functions : ",I2)')nrfmax
 call flushifc(fnum)
 return
 end subroutine
