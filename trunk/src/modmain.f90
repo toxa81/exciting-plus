@@ -882,6 +882,7 @@ integer, allocatable :: nkptloc(:)
 integer, allocatable :: ikptloc(:,:)
 complex(8), allocatable :: evecfvloc(:,:,:,:)
 complex(8), allocatable :: evecsvloc(:,:,:)
+complex(8), allocatable :: apwloalm(:,:,:,:,:)
 
 logical packed
 real(8) timematmt1
@@ -898,6 +899,8 @@ complex(8), allocatable :: rlm2ylm(:,:)
 logical wannier
 
 integer, allocatable :: lm2l(:)
+
+integer nrfmax
 
 end module
 

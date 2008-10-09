@@ -23,5 +23,7 @@ complex(8), allocatable :: wfc(:,:,:,:)
 complex(8), allocatable :: wf_h(:,:,:,:)
 real(8), allocatable :: wf_e(:,:,:)
 real(8), allocatable :: wf_deltav(:,:)
+
+complex(8), allocatable :: psao(:)
   
 end module

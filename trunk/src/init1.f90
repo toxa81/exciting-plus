@@ -293,6 +293,10 @@ do l1=0,lmaxmat
   end do
 end do
 
+call getmtord(lmaxvr,nrfmax)
+if (allocated(apwloalm)) deallocate(apwloalm)
+allocate(apwloalm(lmmaxvr,nrfmax,natmtot,nstsv,nkptloc(iproc)))
+
 call cpu_time(cpu1)
 timeinit=timeinit+cpu1-cpu0
 
