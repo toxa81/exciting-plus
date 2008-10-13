@@ -42,9 +42,6 @@ real(8), allocatable :: e(:,:)
 ! low precision for band character array saves memory
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
-real(8), allocatable :: uu(:,:,:,:)
-real(8), allocatable :: ufr(:,:,:,:)
-integer mtord
 ! initialise universal variables
 call init0
 call init1
@@ -78,11 +75,8 @@ call olprad
 call hmlrad
 
 if (task.eq.21.or.wannier) then
-  call getmtord(lmax,mtord)
-  allocate(ufr(nrmtmax,0:lmax,mtord,natmtot))
-  call getufr(lmax,mtord,ufr)
-  allocate(uu(0:lmax,mtord,mtord,natmtot))
-  call calc_uu(lmax,mtord,ufr,uu)
+  call getufr(lmaxvr,nrfmax,ufr)
+  call calc_uu(lmaxvr,nrfmax,ufr,ufrprod)
 endif
 
 allocate(evalfv(nstfv,nspnfv))
@@ -101,7 +95,7 @@ do ikloc=1,nkptloc(iproc)
 ! solve the first- and second-variational secular equations
   call seceqn(ikloc,evalfv,evecfv,evecsv)
   if (wannier) then
-    call genwfc(ikloc,lmax,lmmax,mtord,uu,evecfv,evecsv)
+    call genwfc(ikloc,lmax,lmmax,nrfmax,ufrprod,evecfv,evecsv)
   endif
   do ist=1,nstsv
 ! subtract the Fermi energy
@@ -113,7 +107,7 @@ do ikloc=1,nkptloc(iproc)
   end do
 ! compute the band characters if required
   if (task.eq.21) then
-    call bandchar(.false.,lmax,ikloc,mtord,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),uu)
+    call bandchar(.false.,lmax,ikloc,nrfmax,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),ufrprod)
   end if
 ! end loop over k-points
 end do
@@ -191,9 +185,6 @@ endif
 deallocate(e)
 if (task.eq.21) then
   deallocate(bndchr)
-endif
-if (task.eq.21.or.wannier) then
-  deallocate(ufr,uu)
 endif
 
 return

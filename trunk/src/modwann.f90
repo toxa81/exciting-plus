@@ -26,6 +26,7 @@ real(8), allocatable :: wf_e(:,:,:)
 real(8), allocatable :: wf_deltav(:,:)
 
 complex(8), allocatable :: wfpoco(:,:,:)
+complex(8), allocatable :: wfpoco1(:,:,:)
 
 complex(8), allocatable :: psao(:)
   

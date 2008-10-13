@@ -70,5 +70,9 @@ if (allocated(wfpoco)) deallocate(wfpoco)
 allocate(wfpoco(nstsv,nstsv,nkptloc(iproc)))
 wfpoco=dcmplx(0.d0,0.d0)
 
+if (allocated(wfpoco1)) deallocate(wfpoco1)
+allocate(wfpoco1(nstsv,nstsv,nkptloc(iproc)))
+wfpoco1=dcmplx(0.d0,0.d0)
+
 return
 end

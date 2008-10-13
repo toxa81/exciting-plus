@@ -8,6 +8,7 @@
 subroutine seceqn(ik,evalfv,evecfv,evecsv)
 ! !USES:
 use modmain
+use modwann
 ! !INPUT/OUTPUT PARAMETERS:
 !   ik     : k-point number (in,integer)
 !   evalfv : first-variational eigenvalues (out,real(nstfv))
@@ -30,6 +31,7 @@ complex(8), intent(out) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(out) :: evecsv(nstsv,nstsv)
 ! local variables
 integer ispn
+logical l1
 integer, external :: ikglob
 ! allocatable arrays
 complex(8), allocatable :: apwalm(:,:,:,:,:)
@@ -48,7 +50,19 @@ if (spinsprl) then
   call seceqnss(ik,apwalm,evalfv,evecfv,evecsv)
 else
 ! solve the second-variational secular equation
+  if (wannier) then
+    l1=wann_add_poco
+    wann_add_poco=.false.
+  endif
   call seceqnsv(ik,apwalm,evalfv,evecfv,evecsv)
+  if (wannier) then                                                                                                      
+    call genwfc(ik,lmaxvr,lmmaxvr,nrfmax,ufrprod,evecfv,evecsv)
+    if (l1) then
+      call genwfpoco(ik)
+      wann_add_poco=.true.
+      call seceqnsv(ik,apwalm,evalfv,evecfv,evecsv)
+    endif
+  endif                                                                                                                                         
 end if
 ! compute the spin characters
 call spinchar(ikglob(ik),evecsv)

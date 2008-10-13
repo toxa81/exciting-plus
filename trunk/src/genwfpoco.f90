@@ -10,6 +10,7 @@ complex(8) zt1
 
 complex(8), allocatable :: wtmp(:,:,:)
 
+wfpoco1(:,:,ik)=wfpoco(:,:,ik)
 ! calculate <u_{n,k,\sigma}|\phi_{i}>, where |u_{n,k,\sigma}> are Fourier-transforms of 
 !  Wannier functions and |\phi_{i}> are first-variational states
 allocate(wtmp(wf_dim,wann_nspins,nstfv))
@@ -36,6 +37,8 @@ do i=1,nstfv
   enddo
 enddo
 deallocate(wtmp)
+
+!wfpoco(:,:,ik)=0.1d0*wfpoco(:,:,ik)+0.9d0*wfpoco1(:,:,ik)
 
 return
 end

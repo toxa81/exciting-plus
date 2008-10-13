@@ -901,6 +901,8 @@ logical wannier
 integer, allocatable :: lm2l(:)
 
 integer nrfmax
+real(8), allocatable :: ufrprod(:,:,:,:)
+real(8), allocatable :: ufr(:,:,:,:)
 
 end module
 

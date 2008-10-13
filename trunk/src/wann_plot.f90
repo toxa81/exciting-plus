@@ -14,7 +14,6 @@ complex(4), allocatable :: wf(:,:)
 integer ntr(3),i,ivec,nrxyz(3),nrtot
 integer i1,i2,i3,ir,n,ierr
 integer mtord,ik,ikloc,ispn,istfv,j,ig
-real(8), allocatable :: ufr(:,:,:,:)
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
 complex(8), allocatable :: evec(:,:,:)
@@ -105,9 +104,7 @@ if (iproc.eq.0) then
   write(*,'("Translation limits:",3(4x,2I4))')tlim(:,1),tlim(:,2),tlim(:,3)
 endif
 
-call getmtord(lmaxvr,mtord)
-allocate(ufr(nrmtmax,0:lmaxvr,mtord,natmtot))
-call getufr(lmaxvr,mtord,ufr)
+call getufr(lmaxvr,nrfmax,ufr)
 
 allocate(acoeff(lmmaxvr,mtord,natmtot,nstsv,nkpt))
 allocate(evec(nmatmax,nstsv,nkpt))

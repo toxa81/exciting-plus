@@ -10,12 +10,10 @@ real(8), intent(out) :: beta(n)
 real(8), intent(out) :: f(n)
 ! local variables
 logical exist
-integer ik,is,ia,idm,ierr,i,mtord,j
+integer ik,is,ia,idm,ierr,i,j
 real(8) dv,timetot
 ! allocatable arrays
 real(8), allocatable :: evalfv(:,:,:)
-real(8), allocatable :: uu(:,:,:,:)
-real(8), allocatable :: ufr(:,:,:,:)
 integer, external :: ikglob
 
 allocate(evalfv(nstfv,nspnfv,nkptloc(iproc)))
@@ -23,9 +21,6 @@ allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc(iproc)))
 allocate(evecsvloc(nstsv,nstsv,nkptloc(iproc)))
 
 if (wannier) then
-  call getmtord(lmaxvr,mtord)
-  allocate(ufr(nrmtmax,0:lmaxvr,mtord,natmtot))
-  allocate(uu(0:lmaxvr,mtord,mtord,natmtot))
 !  if (wann_add_poco) then
 !    do i=0,nproc-1
 !      if (iproc.eq.i) then
@@ -76,8 +71,8 @@ do iscl=1,maxscl
 ! compute the Hamiltonian radial integrals
   call hmlrad
   if (wannier) then
-    call getufr(lmaxvr,mtord,ufr)
-    call calc_uu(lmaxvr,mtord,ufr,uu)
+    call getufr(lmaxvr,nrfmax,ufr)
+    call calc_uu(lmaxvr,nrfmax,ufr,ufrprod)
   endif
   evalsv=0.d0
   spnchr=0.d0
@@ -92,11 +87,6 @@ do iscl=1,maxscl
   do ik=1,nkptloc(iproc)
 ! solve the first- and second-variational secular equations
     call seceqn(ik,evalfv(1,1,ik),evecfvloc(1,1,1,ik),evecsvloc(1,1,ik))
-!    if (wannier.and..not.wann_add_poco) then
-      call genwfc(ik,lmaxvr,lmmaxvr,mtord,uu,evecfvloc(1,1,1,ik), &
-        evecsvloc(1,1,ik))
-      call genwfpoco(ik)
-!    endif
   enddo
   call dsync(evalsv,nstsv*nkpt,.true.,.false.)
   call dsync(spnchr,nspinor*nstsv*nkpt,.true.,.false.)
@@ -295,9 +285,9 @@ do i=0,nproc-1
       call putevalsv(ikglob(ik),evalsv(1,ikglob(ik)))
       call putevecfv(ikglob(ik),evecfvloc(1,1,1,ik))
       call putevecsv(ikglob(ik),evecsvloc(1,1,ik))
-      if (wannier.and..not.wann_add_poco) then
-        call putwfc(ikglob(ik),wfc(1,1,1,ik))
-      endif
+!      if (wannier.and..not.wann_add_poco) then
+!        call putwfc(ikglob(ik),wfc(1,1,1,ik))
+!      endif
     enddo
   endif
   call barrier

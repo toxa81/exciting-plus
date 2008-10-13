@@ -599,13 +599,11 @@ real(8), intent(in) :: gq0(ngvec_me)
 real(8), intent(out) :: uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,mtord,mtord,natmtot,ngvec_me)
 ! local variables
 integer ia,is,ias,l,io,ilo,ig,l1,l2,l3,io1,io2,ir
-real(8), allocatable :: ufr(:,:,:,:)
 real(8), allocatable :: jlgq0r(:,:,:,:)
 integer ordl(0:lmaxvr)
 real(8) fr(nrmtmax),gr(nrmtmax),cf(3,nrmtmax)
 real(8) t1,jl(0:lmaxexp)
 
-allocate(ufr(nrmtmax,0:lmaxvr,mtord,natmtot))
 allocate(jlgq0r(nrmtmax,0:lmaxexp,nspecies,ngvec_me))
 
 ! generate Bessel functions j_l(|G+q'|x)
@@ -645,7 +643,7 @@ do is=1,nspecies
   enddo !ia
 enddo !is
 
-deallocate(ufr,jlgq0r)
+deallocate(jlgq0r)
 return
 end   
 

@@ -30,7 +30,7 @@ use modmain
 implicit none
 ! local variables
 integer lmax,lmmax,l,m,lm,nsk(3),lm1,j,isym
-integer ik,ispn,is,ia,ir,ias,ist,iw,i,mtord,io1,io2
+integer ik,ispn,is,ia,ir,ias,ist,iw,i,io1,io2
 real(8) t1
 character(256) fname
 ! allocatable arrays
@@ -43,8 +43,6 @@ real(8), allocatable :: gp(:)
 real(8), allocatable :: pdos(:,:)
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
-real(8), allocatable :: ufr(:,:,:,:)
-real(8), allocatable :: uu(:,:,:,:)
 
 ! initialise universal variables
 call init0
@@ -68,11 +66,8 @@ call genapwfr
 call genlofr
 
 if (task.eq.11) then
-  call getmtord(lmax,mtord)
-  allocate(ufr(nrmtmax,0:lmax,mtord,natmtot))
-  call getufr(lmax,mtord,ufr)
-  allocate(uu(0:lmax,mtord,mtord,natmtot))
-  call calc_uu(lmax,mtord,ufr,uu)
+  call getufr(lmaxvr,nrfmax,ufr)
+  call calc_uu(lmaxvr,nrfmax,ufr,ufrprod)
 endif
 
 do ik=1,nkpt
@@ -82,7 +77,7 @@ do ik=1,nkpt
   if (task.eq.11) then
     call getevecfv(vkl(1,ik),vgkl(1,1,ik,1),evecfv)
 ! compute the band character (appromximate for spin-spirals)
-    call bandchar(.true.,lmax,ik,mtord,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),uu)
+    call bandchar(.true.,lmax,ik,nrfmax,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),ufrprod)
   endif
 ! compute the spin characters
   call spinchar(ik,evecsv)

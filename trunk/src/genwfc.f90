@@ -17,6 +17,7 @@ complex(8), allocatable :: prjao(:,:,:)
 complex(8), allocatable :: s(:,:)
 integer ispn,i,j,n,m1,m2,io1,io2,ias,lm1,lm2,ierr,l
 complex(8) zt2(wf_dim,wf_dim)
+complex(8), allocatable :: wfcnew(:,:)
 integer, external :: ikglob
 
 allocate(acoeff(lmmax,mtord,natmtot,nstsv))
@@ -61,6 +62,7 @@ do n=1,wf_dim
   enddo !ispn
 enddo !n
 
+allocate(wfcnew(wf_dim,nstfv))
 allocate(s(wf_dim,wf_dim))
 do ispn=1,wann_nspins
 ! compute ovelap matrix
@@ -82,16 +84,19 @@ do ispn=1,wann_nspins
     write(*,*)
   endif
 ! compute Wannier function expansion coefficients
-  wfc(:,:,ispn,ik)=dcmplx(0.d0,0.d0)
+!  wfc(:,:,ispn,ik)=dcmplx(0.d0,0.d0)
+  wfcnew(:,:)=dcmplx(0.d0,0.d0)
   if (ierr.eq.0) then
     do m1=1,wf_dim
       do m2=1,wf_dim
-        wfc(m1,:,ispn,ik)=wfc(m1,:,ispn,ik)+prjao(m2,:,ispn)*dconjg(s(m2,m1))
+        wfcnew(m1,:)=wfcnew(m1,:)+prjao(m2,:,ispn)*dconjg(s(m2,m1))
       enddo
     enddo
   else
-    wfc(:,:,ispn,ik)=prjao(:,:,ispn)
+    wfcnew(:,:)=prjao(:,:,ispn)
   endif
+!  wfc(:,:,ispn,ik)=0.d0*wfc(:,:,ispn,ik)+1.d0*wfcnew(:,:)
+  wfc(:,:,ispn,ik)=wfcnew(:,:)
 ! compute H(k) in WF basis
   zt2=dcmplx(0.d0,0.d0)
   do m1=1,wf_dim
@@ -106,7 +111,7 @@ do ispn=1,wann_nspins
   call diag_mtrx(wf_dim,zt2,wf_e(1,ispn,ikglob(ik)))
 enddo !ispn
 
-deallocate(acoeff,apwalm,prjao,s)
+deallocate(acoeff,apwalm,prjao,s,wfcnew)
 
 return
 end
