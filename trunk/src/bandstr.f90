@@ -190,12 +190,12 @@ endif
 return
 end subroutine
 
-subroutine calc_uu(lmax,mtord,ufr,uu)
+subroutine calc_uu(lmax,mtord,ufr1,uu)
 use modmain
 implicit none
 integer, intent(in) :: lmax
 integer, intent(in) :: mtord
-real(8), intent(in) :: ufr(nrmtmax,0:lmax,mtord,natmtot)
+real(8), intent(in) :: ufr1(nrmtmax,0:lmax,mtord,natmtot)
 real(8), intent(out) :: uu(0:lmax,mtord,mtord,natmtot)
 
 real(8) fr(nrmtmax),gr(nrmtmax),cf(3,nrmtmax)
@@ -208,7 +208,7 @@ do is=1,nspecies
       do io1=1,mtord
         do io2=1,mtord
           do ir=1,nrmt(is)
-            fr(ir)=ufr(ir,l,io1,ias)*ufr(ir,l,io2,ias)*(spr(ir,is)**2)                                                        
+            fr(ir)=ufr1(ir,l,io1,ias)*ufr1(ir,l,io2,ias)*(spr(ir,is)**2)                                                        
           enddo
           call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
           uu(l,io1,io2,ias)=gr(nrmt(is))

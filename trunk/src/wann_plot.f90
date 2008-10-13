@@ -285,7 +285,7 @@ return
 end
 
 
-subroutine wann_val(r,val,wf_dim,mtord,ufr,tlim,bcoeff,evec1)
+subroutine wann_val(r,val,wf_dim,mtord,ufr1,tlim,bcoeff,evec1)
 use modmain
 !use modwann
 implicit none
@@ -293,7 +293,7 @@ implicit none
 real(8), intent(in) :: r(3)
 integer, intent(in) :: mtord
 integer, intent(in) :: wf_dim
-real(8), intent(in) :: ufr(nrmtmax,0:lmaxvr,mtord,natmtot)
+real(8), intent(in) :: ufr1(nrmtmax,0:lmaxvr,mtord,natmtot)
 integer, intent(in) :: tlim(2,3)
 complex(8), intent(in) :: bcoeff(lmmaxvr,mtord,natmtot,wf_dim,tlim(1,1):tlim(2,1),tlim(1,2):tlim(2,2),tlim(1,3):tlim(2,3))
 complex(8), intent(in) :: evec1(nmatmax,wf_dim,nkpt)
@@ -351,7 +351,7 @@ do is=1,nspecies
                   lm=idxlm(l,m)
                   do j=1,nprad
                     i=ir0+j-1
-                    ya(j)=ufr(i,l,io,ias)
+                    ya(j)=ufr1(i,l,io,ias)
                   end do
                   t2=polynom(0,nprad,spr(ir0,is),ya,c,t1)
                   do n=1,wf_dim

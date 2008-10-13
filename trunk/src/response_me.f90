@@ -1035,18 +1035,18 @@ return
 end
 
 
-subroutine getufr(lmax,mtord,ufr)
+subroutine getufr(lmax,mtord,ufr1)
 use modmain
 implicit none
 ! arguments
 integer, intent(in) :: lmax
 integer, intent(in) :: mtord
-real(8), intent(out) :: ufr(nrmtmax,0:lmax,mtord,natmtot)
+real(8), intent(out) :: ufr1(nrmtmax,0:lmax,mtord,natmtot)
 
 integer is,ia,ias,l,io,ilo
 integer ordl(0:lmax)
 
-ufr=0.d0
+ufr1=0.d0
 do is=1,nspecies
   do ia=1,natoms(is)
     ias=idxas(ia,is)
@@ -1055,7 +1055,7 @@ do is=1,nspecies
     do l=0,lmax
       do io=1,apword(l,is)
         ordl(l)=ordl(l)+1
-        ufr(1:nrmt(is),l,ordl(l),ias)=apwfr(1:nrmt(is),1,io,l,ias)
+        ufr1(1:nrmt(is),l,ordl(l),ias)=apwfr(1:nrmt(is),1,io,l,ias)
       enddo
     enddo
 ! lo functions
@@ -1063,7 +1063,7 @@ do is=1,nspecies
       l=lorbl(ilo,is)
       if (l.le.lmax) then
         ordl(l)=ordl(l)+1
-        ufr(1:nrmt(is),l,ordl(l),ias)=lofr(1:nrmt(is),1,ilo,ias)
+        ufr1(1:nrmt(is),l,ordl(l),ias)=lofr(1:nrmt(is),1,ilo,ias)
       endif
     enddo
   enddo
