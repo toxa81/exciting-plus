@@ -58,7 +58,7 @@ logical, parameter :: meoff=.false.
 integer, allocatable :: igkignr2(:)
 real(8), allocatable :: docc(:,:)
 complex(8), allocatable :: zrhofc(:,:,:)
-complex(8), allocatable :: wfscmt2(:,:,:,:)
+complex(8), allocatable :: wfsvmt2(:,:,:,:)
 complex(8), allocatable :: wfsvit2(:,:)
 
 integer i,j,i1,ik,jk,ig,is,ikstep,ist1,ist2,ispn,ikloc,l,ia,ias,istfv
