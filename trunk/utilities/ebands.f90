@@ -1,31 +1,31 @@
-      program  ebands
-      implicit none
+program  ebands
+implicit none
       
-      integer              :: lmmax,natmtot,nspinor,nstfv,nstsv,nkpt,nlines
-      integer              :: lm,ias,ispn,ist,istfv,ik
-      real*8  ,allocatable :: bndchr(:,:,:,:,:)
-      real*8  ,allocatable :: dpp1d(:),e(:,:),w(:,:),lines(:,:)
-      integer ,allocatable :: orb(:,:),tmp(:)
-      integer              :: i,j,spin
-      real*8               :: scale,emin,emax,wmax,wmax1
-      real*8, parameter    :: ha2ev = 27.21138386d0            
+integer lmmax,natmtot,nspinor,nstfv,nstsv,nkpt,nlines
+integer lm,ias,ispn,ist,ik,spin
+real(4), allocatable :: bndchr(:,:,:,:,:)
+real(8), allocatable :: dpp1d(:),e(:,:),w(:,:),lines(:,:)
+integer, allocatable :: orb(:,:),tmp(:)
+integer i,j,ist1
+real(8) scale,emin,emax,wmax,wmax1
+real(8), parameter :: ha2ev = 27.21138386d0            
       
-      open(50,file='BANDS.OUT',form='formatted',status='old')
-      read(50,*)lmmax,natmtot,nspinor,nstfv,nstsv,nkpt,nlines
-      allocate(bndchr(lmmax,natmtot,nspinor,nstsv,nkpt))
-      allocate(dpp1d(nkpt))
-      allocate(e(nstsv,nkpt))
-      allocate(w(nstsv,nkpt))
-      allocate(orb(lmmax,natmtot))
-      allocate(tmp(lmmax))
+open(50,file='BANDS.OUT',form='formatted',status='old')
+read(50,*)lmmax,natmtot,nspinor,nstfv,nstsv,nkpt,nlines
+allocate(bndchr(lmmax,natmtot,nspinor,nstsv,nkpt))
+allocate(dpp1d(nkpt))
+allocate(e(nstsv,nkpt))
+allocate(w(nstsv,nkpt))
+allocate(orb(lmmax,natmtot))
+allocate(tmp(lmmax))
       
-      do ik = 1, nkpt
-        read(50,*)dpp1d(ik)
-        read(50,*)(e(ist,ik),ist=1,nstsv)
-        read(50,*)((((bndchr(lm,ias,ispn,ist,ik),lm=1,lmmax), &
-                      ias=1,natmtot),ispn=1,nspinor),ist=1,nstsv)
-      enddo
-      close(50)
+do ik=1,nkpt
+  read(50,*)dpp1d(ik)
+  read(50,*)(e(ist,ik),ist=1,nstsv)
+  read(50,*)((((bndchr(lm,ias,ispn,ist,ik),lm=1,lmmax), &
+                ias=1,natmtot),ispn=1,nspinor),ist=1,nstsv)
+enddo
+close(50)
       
       allocate(lines(4,nlines))
       
@@ -60,17 +60,21 @@
       write(*,*)'Input energy interval (emin emax) [eV]'
       read(*,*)emin,emax
       
-      ispn = 1
+      spin=1
+      if (nspinor.eq.2) then
+        write(*,'("Input spin direction (1 or 2)")')
+        read(*,*)spin
+      endif
       
       w = 0.d0
       do ik = 1, nkpt
       do ist = 1, nstsv
         do lm = 1, lmmax
         do ias = 1, natmtot
-	  do ispn=1,nspinor
-            w(ist,ik) = w(ist,ik) + bndchr(lm,ias,ispn,ist,ik)
+         do ispn=1,nspinor
+            w(ist,ik) = w(ist,ik)+bndchr(lm,ias,ispn,ist,ik)
           enddo
-	enddo
+        enddo
         enddo
       enddo
       enddo
@@ -81,32 +85,17 @@
       do ist = 1, nstsv
         do lm = 1, lmmax
         do ias = 1, natmtot
-	  do ispn=1,nspinor
-            w(ist,ik) = w(ist,ik) + orb(lm,ias)*bndchr(lm,ias,ispn,ist,ik)
-	  enddo
+          do ispn=1,nspinor
+            w(ist,ik) = w(ist,ik)+orb(lm,ias)*bndchr(lm,ias,ispn,ist,ik)
+          enddo
         enddo
         enddo
       enddo
       enddo
-      
-      !wmax = maxval(w(:,:))
-      !wmax1 = 0.d0
-      !do ik = 1, nkpt
-      !do ist = 1, nstsv
-      !    if (e(ist,ik).ge.emin.and.e(ist,ik).le.emax) wmax1 = max(wmax1,w(ist,ik))
-      !enddo
-      !enddo
-      !write(*,*)'Info: ratio of character weights:',wmax1/wmax
       
       scale = 1.d0
       write(*,*)'Input maximum line width [eV]'
       read(*,*)scale
-
-      spin=1
-      if (nspinor.eq.2) then
-        write(*,*)'Input spin direction (1 or 2)'
-        read(*,*)spin
-      endif
       
       scale = 0.5d0*scale/wmax
       
@@ -114,14 +103,14 @@
       open(51,file='BNDS1.DAT',form='formatted',status='replace')
       open(52,file='BNDS2.DAT',form='formatted',status='replace')
       open(53,file='BNDS3.DAT',form='formatted',status='replace')
-      do istfv = 1, nstfv
-        ist=istfv+(spin-1)*nstfv
+      do ist = 1,nstfv
+        ist1=ist+(spin-1)*nstfv
         do ik = 1, nkpt
-          write(50,*)dpp1d(ik),e(ist,ik)
-          write(51,*)dpp1d(ik),e(ist,ik)+scale*w(ist,ik)
-          write(52,*)dpp1d(ik),e(ist,ik)-scale*w(ist,ik)
-          write(53,*)dpp1d(ik),e(ist,ik)+scale*w(ist,ik)
-          write(53,*)dpp1d(ik),e(ist,ik)-scale*w(ist,ik)
+          write(50,*)dpp1d(ik),e(ist1,ik)
+          write(51,*)dpp1d(ik),e(ist1,ik)+scale*w(ist1,ik)
+          write(52,*)dpp1d(ik),e(ist1,ik)-scale*w(ist1,ik)
+          write(53,*)dpp1d(ik),e(ist1,ik)+scale*w(ist1,ik)
+          write(53,*)dpp1d(ik),e(ist1,ik)-scale*w(ist1,ik)
           write(53,*)
         enddo
         write(50,*)
