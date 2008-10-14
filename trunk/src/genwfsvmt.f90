@@ -61,19 +61,19 @@ endif
 ! calculate second-variational coefficients
 wfsvmt=dcmplx(0.d0,0.d0)
 do iwf=1,nwf
-  do ispn=1,nspinor
-    do ias=1,natmtot
-      do io=1,nrfmax
-        do lm=1,lmmax
-	  zt1=dcmplx(0.d0,0.d0)
+  do ias=1,natmtot
+    do io=1,nrfmax
+      do lm=1,lmmax
+        zt1=dcmplx(0.d0,0.d0)
+        do ispn=1,nspinor
           do istfv=1,nstfv
 	    zt1=zt1+evecsv(istfv+(ispn-1)*nstfv,iwf)*wffvmt(istfv,io,lm,ias)
 	  enddo !istfv
-	  wfsvmt(lm,io,ias,iwf)=zt1
-	enddo !lm
-      enddo !io
-    enddo !ias
-  enddo !ispn
+	enddo !ispn
+	wfsvmt(lm,io,ias,iwf)=zt1
+      enddo !lm
+    enddo !io
+  enddo !ias
 enddo !iwf
 deallocate(wffvmt)
 return
