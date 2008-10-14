@@ -71,8 +71,8 @@ do iscl=1,maxscl
 ! compute the Hamiltonian radial integrals
   call hmlrad
   if (wannier) then
-    call getufr(lmaxvr,nrfmax,ufr)
-    call calc_uu(lmaxvr,nrfmax,ufr,ufrprod)
+    call geturf
+    call genurfprod
   endif
   evalsv=0.d0
   spnchr=0.d0

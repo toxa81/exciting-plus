@@ -882,7 +882,11 @@ integer, allocatable :: nkptloc(:)
 integer, allocatable :: ikptloc(:,:)
 complex(8), allocatable :: evecfvloc(:,:,:,:)
 complex(8), allocatable :: evecsvloc(:,:,:)
-complex(8), allocatable :: apwloalm(:,:,:,:,:)
+
+! analytical represenatation of second-variational states
+integer nrfmax
+real(8), allocatable :: urf(:,:,:,:)
+real(8), allocatable :: urfprod(:,:,:,:)
 
 logical packed
 real(8) timematmt1
@@ -900,9 +904,6 @@ logical wannier
 
 integer, allocatable :: lm2l(:)
 
-integer nrfmax
-real(8), allocatable :: ufrprod(:,:,:,:)
-real(8), allocatable :: ufr(:,:,:,:)
 
 end module
 

@@ -1,8 +1,5 @@
 subroutine response
 use modmain
-#ifdef _MPI_
-use mpi
-#endif
 implicit none
 
 integer, allocatable :: igishell(:)
@@ -20,13 +17,13 @@ complex(8), allocatable :: sfacgknr(:,:,:)
 
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
-complex(8), allocatable :: evecloc(:,:,:)
-complex(8), allocatable :: acoeffloc(:,:,:,:,:)
+complex(8), allocatable :: wfsvitloc(:,:,:)
+complex(8), allocatable :: wfsvmtloc(:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 real(8), allocatable :: occsvnr(:,:)
 
-integer i,j,ngsh,ngshmin,ngvec1,ngvec_me,ngvec_chi,mtord,ik,ikloc,ig, &
-  ispn,istfv,ierr
+integer i,j,ngsh,ngshmin,ngvec1,ngvec_me,ngvec_chi,ik,ikloc,ig, &
+  ispn,istfv
 complex(8) zt1
 character*100 fname
 
@@ -109,22 +106,6 @@ endif
 allocate(nkptlocnr(0:nproc-1))
 allocate(ikptlocnr(0:nproc-1,2))
 call splitk(nkptnr,nproc,nkptlocnr,ikptlocnr)
-!if (iproc.eq.0.and.nproc.gt.1) then
-!  write(150,*)
-!  write(150,'("Reduced k-points division:")')
-!  write(150,'(" iproc  first k   last k   nkpt ")')
-!  write(150,'(" ------------------------------ ")')
-!  do i=0,nproc-1
-!    write(150,'(1X,I4,4X,I4,5X,I4,5X,I4)')i,ikptloc(i,1),ikptloc(i,2),nkptloc(i)
-!  enddo
-!  write(150,*)
-!  write(150,'("Non-reduced k-points division:")')
-!   write(150,'(" iproc  first k   last k   nkpt ")')
-!  write(150,'(" ------------------------------ ")')
-!  do i=0,nproc-1
-!    write(150,'(1X,I4,4X,I4,5X,I4,5X,I4)')i,ikptlocnr(i,1),ikptlocnr(i,2),nkptlocnr(i)
-!  enddo
-!endif
 
 if (task.eq.400.or.task.eq.403) then
 ! read the density and potentials from file
@@ -152,17 +133,14 @@ if (task.eq.400.or.task.eq.403) then
       vgklnr(1,1,ikloc),vgkcnr,gknr(1,ikloc),tpgknr(1,1,ikloc))
     call gensfacgp(ngknr(ikloc),vgkcnr,ngkmax,sfacgknr(1,1,ikloc))
   enddo
-! find maximum number of orbitals over all l-channels
-!  typical value: 1 APW radial function + 2 local orbitals = 3
-  call getmtord(lmaxvr,mtord)
-  allocate(acoeffloc(lmmaxvr,mtord,natmtot,nstsv,nkptlocnr(iproc)))
-  allocate(evecloc(nmatmax,nstsv,nkptlocnr(iproc)))
+  allocate(wfsvmtloc(lmmaxvr,nrfmax,natmtot,nstsv,nkptlocnr(iproc)))
+  allocate(wfsvitloc(nmatmax,nstsv,nkptlocnr(iproc)))
   allocate(evecfv(nmatmax,nstfv,nspnfv))
   allocate(evecsv(nstsv,nstsv))
   allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
   if (iproc.eq.0) then
     write(150,*)
-    write(150,'("Size of acoeff array (Mb) : ",I6)')lmmaxvr*mtord*natmtot*nstsv*nkptlocnr(0)/1024/1024
+    write(150,'("Size of acoeff array (Mb) : ",I6)')lmmaxvr*nrfmax*natmtot*nstsv*nkptlocnr(0)/1024/1024
     write(150,'("Size of evec array (Mb)   : ",I6)')nmatmax*nstsv*nkptlocnr(0)/1024/1024
     write(150,*)
     write(150,'("Reading eigen-vectors")')
@@ -176,30 +154,17 @@ if (task.eq.400.or.task.eq.403) then
         call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfv)
         call getevecsv(vklnr(1,ik),evecsv)
       endif
-#ifdef _MPI_
-      call mpi_barrier(MPI_COMM_WORLD,ierr)
-#endif
+      call barrier
     enddo !i
     if (ikloc.le.nkptlocnr(iproc)) then
-! get a-coeffs 
-      call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),sfacgknr(1,1,ikloc),apwalm)
-      call getacoeff(lmaxvr,lmmaxvr,ngknr(ikloc),mtord,apwalm,evecfv, &
-        evecsv,acoeffloc(1,1,1,1,ikloc))
-! transform eigen-vectors
-      do ispn=1,nspinor
-        do j=1,nstfv
-          do ig=1,ngknr(ikloc)
-            zt1=dcmplx(0.d0,0.d0)
-            do istfv=1,nstfv
-	      zt1=zt1+evecsv(istfv+(ispn-1)*nstfv,j+(ispn-1)*nstfv) * &
-	        evecfv(ig,istfv,1)
-            enddo
-	    evecloc(ig,j+(ispn-1)*nstfv,ikloc)=zt1
-          enddo !ig
-        enddo !j
-      enddo !ispn
+! get apw coeffs 
+      call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc), &
+        sfacgknr(1,1,ikloc),apwalm)
+      call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfv,evecsv,apwalm, &
+        wfsvmtloc(1,1,1,1,ikloc))
+      call genwfsvit(ngknr(ikloc),evecfv,evecsv,wfsvitloc(1,1,ikloc))
     endif
-  enddo
+  enddo !ikloc
   if (iproc.eq.0) then
     write(150,'("Done.")')
     call flushifc(150)
@@ -218,16 +183,14 @@ if (task.eq.400.or.task.eq.403) then
       call getoccsv(vklnr(1,ik),occsvnr(1,ik))
     enddo
   endif
-#ifdef _MPI_
-  call mpi_bcast(occsvnr,nstsv*nkptnr,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
-#endif  
+  call dsync(occsvnr,nstsv*nkptnr,.false.,.true.)
 endif
 
 if (task.eq.400) then
 ! calculate matrix elements
   do i=1,nvq0
-    call response_me(ivq0m_list(1,i),ngvec_me,ikptlocnr,nkptlocnr,mtord, &
-      acoeffloc,evecloc,ngknr,igkignr,occsvnr)
+    call response_me(ivq0m_list(1,i),ngvec_me,ikptlocnr,nkptlocnr, &
+      wfsvmtloc,wfsvitloc,ngknr,igkignr,occsvnr)
   enddo
 endif
 
@@ -247,8 +210,8 @@ endif
 
 if (task.eq.403) then
   do i=1,nvq0
-    call response_me(ivq0m_list(1,i),ngvec_me,ikptlocnr,nkptlocnr,mtord, &
-      acoeffloc,evecloc,ngknr,igkignr,occsvnr)
+    call response_me(ivq0m_list(1,i),ngvec_me,ikptlocnr,nkptlocnr, &
+      wfsvmtloc,wfsvitloc,ngknr,igkignr,occsvnr)
     call response_chi0(ivq0m_list(1,i),ikptlocnr,nkptlocnr)
     call response_chi(ivq0m_list(1,i),ngvec_chi)
   enddo
@@ -259,8 +222,8 @@ if (iproc.eq.0) close(150)
 deallocate(nkptlocnr)
 deallocate(ikptlocnr)
 if (task.eq.400.or.task.eq.403) then
-  deallocate(acoeffloc)
-  deallocate(evecloc)
+  deallocate(wfsvmtloc)
+  deallocate(wfsvitloc)
   deallocate(ngknr)
   deallocate(igkignr)
   deallocate(occsvnr)

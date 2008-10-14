@@ -31,7 +31,7 @@ use mpi
 implicit none
 ! local variables
 integer lmax,lmmax,l,m,lm,ierr,i,j
-integer ik,ikloc,ispn,is,ia,ias,iv,ist
+integer ik,ispn,is,ia,ias,iv,ist
 real(8) emin,emax,sum,emin0,emax0
 character(256) fname
 ! allocatable arrays
@@ -42,6 +42,7 @@ real(8), allocatable :: e(:,:)
 ! low precision for band character array saves memory
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
+integer, external :: ikglob
 ! initialise universal variables
 call init0
 call init1
@@ -75,8 +76,8 @@ call olprad
 call hmlrad
 
 if (task.eq.21.or.wannier) then
-  call getufr(lmaxvr,nrfmax,ufr)
-  call calc_uu(lmaxvr,nrfmax,ufr,ufrprod)
+  call geturf
+  call genurfprod
 endif
 
 allocate(evalfv(nstfv,nspnfv))
@@ -89,35 +90,23 @@ e=0.d0
 evalsv=0.0
 bndchr=0.d0
 ! begin parallel loop over k-points
-do ikloc=1,nkptloc(iproc)
-  ik=ikptloc(iproc,1)+ikloc-1
-  write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ik,nkpt
+do ik=1,nkptloc(iproc)
+  write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ikglob(ik),nkpt
 ! solve the first- and second-variational secular equations
-  call seceqn(ikloc,evalfv,evecfv,evecsv)
-  if (wannier) then
-    call genwfc(ikloc,lmax,lmmax,nrfmax,ufrprod,evecfv,evecsv)
-  endif
+  call seceqn(ik,evalfv,evecfv,evecsv)
   do ist=1,nstsv
 ! subtract the Fermi energy
-    e(ist,ik)=evalsv(ist,ik)-efermi
+    e(ist,ikglob(ik))=evalsv(ist,ikglob(ik))-efermi
 ! add scissors correction
-    if (e(ist,ik).gt.0.d0) e(ist,ik)=e(ist,ik)+scissor
-    emin=min(emin,e(ist,ik))
-    emax=max(emax,e(ist,ik))
+    if (e(ist,ikglob(ik)).gt.0.d0) e(ist,ikglob(ik))=e(ist,ikglob(ik))+scissor
   end do
 ! compute the band characters if required
   if (task.eq.21) then
-    call bandchar(.false.,lmax,ikloc,nrfmax,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),ufrprod)
+    call bandchar(.false.,lmax,ik,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ikglob(ik)))
   end if
 ! end loop over k-points
 end do
 deallocate(evalfv,evecfv,evecsv)
-#ifdef _MPI_
-call mpi_allreduce(emin,emin0,1,MPI_DOUBLE_PRECISION,MPI_MIN,MPI_COMM_WORLD,ierr)
-call mpi_allreduce(emax,emax0,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
-emin=emin0
-emax=emax0
-#endif
 call dsync(e,nstsv*nkpt,.true.,.false.)
 if (task.eq.21) then
   do ik=1,nkpt
@@ -127,12 +116,14 @@ endif
 if (wannier) then
   call dsync(wf_e,wf_dim*wann_nspins*nkpt,.true.,.false.)
 endif
+emin=minval(e)
+emax=maxval(e)
 
 if (iproc.eq.0) then
 emax=emax+(emax-emin)*0.5d0
 emin=emin-(emax-emin)*0.5d0
 ! output the band structure
-if (task.eq.20) then
+if (task.eq.20.or.task.eq.21) then
   open(50,file='BAND.OUT',action='WRITE',form='FORMATTED')
   do ist=1,nstsv
     do ik=1,nkpt
@@ -189,35 +180,4 @@ endif
 
 return
 end subroutine
-
-subroutine calc_uu(lmax,mtord,ufr1,uu)
-use modmain
-implicit none
-integer, intent(in) :: lmax
-integer, intent(in) :: mtord
-real(8), intent(in) :: ufr1(nrmtmax,0:lmax,mtord,natmtot)
-real(8), intent(out) :: uu(0:lmax,mtord,mtord,natmtot)
-
-real(8) fr(nrmtmax),gr(nrmtmax),cf(3,nrmtmax)
-integer is,ia,ias,l,io1,io2,ir
-
-do is=1,nspecies
-  do ia=1,natoms(is)
-    ias=idxas(ia,is)
-    do l=0,lmax
-      do io1=1,mtord
-        do io2=1,mtord
-          do ir=1,nrmt(is)
-            fr(ir)=ufr1(ir,l,io1,ias)*ufr1(ir,l,io2,ias)*(spr(ir,is)**2)                                                        
-          enddo
-          call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
-          uu(l,io1,io2,ias)=gr(nrmt(is))
-        enddo
-      enddo
-    enddo 
-  enddo
-enddo
-
-return
-end
 !EOC

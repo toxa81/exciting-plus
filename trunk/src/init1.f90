@@ -293,13 +293,11 @@ do l1=0,lmaxmat
   end do
 end do
 
-call getmtord(lmaxvr,nrfmax)
-if (allocated(apwloalm)) deallocate(apwloalm)
-allocate(apwloalm(lmmaxvr,nrfmax,natmtot,nstsv,nkptloc(iproc)))
-if (allocated(ufr)) deallocate(ufr)
-allocate(ufr(nrmtmax,0:lmaxvr,nrfmax,natmtot))
-if (allocated(ufrprod)) deallocate(ufrprod)
-allocate(ufrprod(0:lmaxvr,nrfmax,nrfmax,natmtot))
+call getnrfmax(lmaxvr)
+if (allocated(urf)) deallocate(urf)
+allocate(urf(nrmtmax,0:lmaxvr,nrfmax,natmtot))
+if (allocated(urfprod)) deallocate(urfprod)
+allocate(urfprod(0:lmaxvr,nrfmax,nrfmax,natmtot))
 
 call cpu_time(cpu1)
 timeinit=timeinit+cpu1-cpu0

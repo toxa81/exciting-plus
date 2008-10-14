@@ -1,18 +1,14 @@
-subroutine genwfc(ik,lmax,lmmax,mtord,uu,evecfv,evecsv)
+subroutine genwann(ik,evecfv,evecsv)
 use modmain
 use modwann
 implicit none
 ! arguments
 integer, intent(in) :: ik
-integer, intent(in) :: lmax
-integer, intent(in) :: lmmax
-integer, intent(in) :: mtord
-real(8), intent(in) :: uu(0:lmax,mtord,mtord,natmtot)
 complex(8), intent(in) :: evecfv(nmatmax,nstfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
 
 complex(8), allocatable :: apwalm(:,:,:,:)
-complex(8), allocatable :: acoeff(:,:,:,:)
+complex(8), allocatable :: wfsvmt(:,:,:,:)
 complex(8), allocatable :: prjao(:,:,:)
 complex(8), allocatable :: s(:,:)
 integer ispn,i,j,n,m1,m2,io1,io2,ias,lm1,lm2,ierr,l
@@ -20,11 +16,11 @@ complex(8) zt2(wf_dim,wf_dim)
 complex(8), allocatable :: wfcnew(:,:)
 integer, external :: ikglob
 
-allocate(acoeff(lmmax,mtord,natmtot,nstsv))
+allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 
 call match(ngk(ikglob(ik),1),gkc(1,ik,1),tpgkc(1,1,ik,1),sfacgk(1,1,ik,1),apwalm)
-call getacoeff(lmax,lmmax,ngk(ikglob(ik),1),mtord,apwalm,evecfv,evecsv,acoeff)
+call genwfsvmt(lmaxvr,lmmaxvr,ngk(ikglob(ik),1),evecfv,evecsv,apwalm,wfsvmt)
 
 ! find bands for a given energy interval 
 if (wann_use_lhen) then
@@ -52,10 +48,10 @@ do n=1,wf_dim
       do m1=-l,l
         lm1=idxlm(l,m1)
         lm2=wf_n(n,2)
-        do io1=1,mtord
+        do io1=1,nrfmax
           io2=2
-          prjao(n,j,ispn)=prjao(n,j,ispn)+dconjg(acoeff(lm1,io1,ias,j+(ispn-1)*nstfv)) * &
-            uu(l,io1,io2,ias)*ylm2rlm(lm2,lm1)
+          prjao(n,j,ispn)=prjao(n,j,ispn)+dconjg(wfsvmt(lm1,io1,ias,j+(ispn-1)*nstfv)) * &
+            urfprod(l,io1,io2,ias)*ylm2rlm(lm2,lm1)
         enddo !io1
       enddo !m
     enddo !j
@@ -111,7 +107,7 @@ do ispn=1,wann_nspins
   call diag_mtrx(wf_dim,zt2,wf_e(1,ispn,ikglob(ik)))
 enddo !ispn
 
-deallocate(acoeff,apwalm,prjao,s,wfcnew)
+deallocate(wfsvmt,apwalm,prjao,s,wfcnew)
 
 return
 end

@@ -66,8 +66,8 @@ call genapwfr
 call genlofr
 
 if (task.eq.11) then
-  call getufr(lmaxvr,nrfmax,ufr)
-  call calc_uu(lmaxvr,nrfmax,ufr,ufrprod)
+  call geturf
+  call genurfprod
 endif
 
 do ik=1,nkpt
@@ -77,7 +77,7 @@ do ik=1,nkpt
   if (task.eq.11) then
     call getevecfv(vkl(1,ik),vgkl(1,1,ik,1),evecfv)
 ! compute the band character (appromximate for spin-spirals)
-    call bandchar(.true.,lmax,ik,nrfmax,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik),ufrprod)
+    call bandchar(.true.,lmax,ik,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik))
   endif
 ! compute the spin characters
   call spinchar(ik,evecsv)

@@ -104,7 +104,7 @@ if (iproc.eq.0) then
   write(*,'("Translation limits:",3(4x,2I4))')tlim(:,1),tlim(:,2),tlim(:,3)
 endif
 
-call getufr(lmaxvr,nrfmax,ufr)
+call geturf
 
 allocate(acoeff(lmmaxvr,mtord,natmtot,nstsv,nkpt))
 allocate(evec(nmatmax,nstsv,nkpt))
@@ -126,7 +126,7 @@ do ikloc=1,nkptloc(0)
   if (ikloc.le.nkptloc(iproc)) then
 ! get a-coeffs 
     call match(ngk(ik,1),gkc(1,ikloc,1),tpgkc(1,1,ikloc,1),sfacgk(1,1,ikloc,1),apwalm)
-    call getacoeff(lmaxvr,lmmaxvr,ngk(ik,1),mtord,apwalm,evecfv, &
+    call genwfsvmt(lmaxvr,lmmaxvr,ngk(ik,1),mtord,apwalm,evecfv, &
         evecsv,acoeff(1,1,1,1,ik))
 ! transform eigen-vectors
     do ispn=1,nspinor
@@ -199,7 +199,7 @@ if (wf3d) then
                      i2*bound3d(:,2)/nrxyz(2)+ &
                      i3*bound3d(:,3)/nrxyz(3)
         ir=ir+1
-        call wann_val(r,wf(:,ir),wf_dim,mtord,ufr,tlim,bcoeff,evec1)
+        call wann_val(r,wf(:,ir),wf_dim,mtord,urf,tlim,bcoeff,evec1)
       enddo
     enddo
   enddo
@@ -212,7 +212,7 @@ else
       r(:)=orig2d(:)+i1*bound2d(:,1)/nrxyz(1)+ &
                      i2*bound2d(:,2)/nrxyz(2)
       ir=ir+1
-      call wann_val(r,wf(:,ir),wf_dim,mtord,ufr,tlim,bcoeff,evec1)
+      call wann_val(r,wf(:,ir),wf_dim,mtord,urf,tlim,bcoeff,evec1)
     enddo
   enddo
 endif

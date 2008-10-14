@@ -434,7 +434,7 @@ if (allocated(ylm2rlm)) deallocate(ylm2rlm)
 allocate(ylm2rlm(16,16))
 if (allocated(rlm2ylm)) deallocate(rlm2ylm)
 allocate(rlm2ylm(16,16))
-call getry
+call genshmat
 
 call cpu_time(cpu1)
 timeinit=timeinit+cpu1-cpu0

@@ -56,7 +56,7 @@ else
   endif
   call seceqnsv(ik,apwalm,evalfv,evecfv,evecsv)
   if (wannier) then                                                                                                      
-    call genwfc(ik,lmaxvr,lmmaxvr,nrfmax,ufrprod,evecfv,evecsv)
+    call genwann(ik,evecfv,evecsv)
     if (l1) then
       call genwfpoco(ik)
       wann_add_poco=.true.

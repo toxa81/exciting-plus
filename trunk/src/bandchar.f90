@@ -6,7 +6,7 @@
 !BOP
 ! !ROUTINE: bandchar
 ! !INTERFACE:
-subroutine bandchar(dosym,lmax,ik,mtord,evecfv,evecsv,ld,bndchr,uu)
+subroutine bandchar(dosym,lmax,ik,evecfv,evecsv,ld,bndchr)
 ! !USES:
 use modmain
 ! !INPUT/OUTPUT PARAMETERS:
@@ -51,31 +51,28 @@ implicit none
 logical, intent(in) :: dosym
 integer, intent(in) :: lmax
 integer, intent(in) :: ik
-integer, intent(in) :: mtord
 complex(8), intent(in) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
 integer, intent(in) :: ld
 real(4), intent(out) :: bndchr(ld,natmtot,nspinor,nstsv)
-real(8), intent(in) :: uu(0:lmax,mtord,mtord,natmtot)
 ! local variables
-integer ispn,jspn,is,ia,ias,ist,io1,io2,lm,ikglob
+integer ispn,jspn,is,ia,ias,ist,io1,io2,lm
 integer l,m,lm2,lm1
 integer irc,i,j,n,isym,lspl,nsym1
 integer lwork,info
 real(8) t1
-complex(8), allocatable :: acoeff(:,:,:,:)
+complex(8), allocatable :: wfsvmt(:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 ! automatic arrays
 real(8) fr(nrcmtmax),gr(nrcmtmax),cf(3,nrcmtmax)
-complex(8) zt1(ld,mtord),zt2(ld)
+complex(8) zt1(ld,nrfmax),zt2(ld)
+integer, external :: ikglob
 
-ikglob=ikptloc(iproc,1)+ik-1
-
-allocate(acoeff(ld,mtord,natmtot,nstsv))
+allocate(wfsvmt(ld,nrfmax,natmtot,nstsv))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 
-call match(ngk(ikglob,1),gkc(1,ik,1),tpgkc(1,1,ik,1),sfacgk(1,1,ik,1),apwalm)
-call getacoeff(lmax,ld,ngk(ikglob,1),mtord,apwalm,evecfv,evecsv,acoeff)
+call match(ngk(ikglob(ik),1),gkc(1,ik,1),tpgkc(1,1,ik,1),sfacgk(1,1,ik,1),apwalm)
+call genwfsvmt(lmax,ld,ngk(ikglob(ik),1),evecfv(:,:,1),evecsv,apwalm,wfsvmt)
 
 if (dosym) then
   nsym1=nsymcrys
@@ -84,13 +81,13 @@ else
 endif
 
 bndchr=0.d0
-do j=1,nstfv
+do j=1,nstsv
   do ispn=1,nspinor
     do ias=1,natmtot
       do isym=1,nsym1
         zt1=dcmplx(0.d0,0.d0)
-        do io1=1,mtord
-          call rotzflm(symlatc(1,1,lsplsymc(isym)),3,1,ld,acoeff(1:ld,io1,ias,j+(ispn-1)*nstfv),zt2)
+        do io1=1,nrfmax
+          call rotzflm(symlatc(1,1,lsplsymc(isym)),3,1,ld,wfsvmt(1:ld,io1,ias,j),zt2)
           do lm=1,ld
             do lm1=1,ld
               zt1(lm,io1)=zt1(lm,io1)+rlm2ylm(lm1,lm)*zt2(lm1)
@@ -100,10 +97,10 @@ do j=1,nstfv
         do l=0,lmax
           do m=-l,l
             lm=idxlm(l,m)
-            do io1=1,mtord
-              do io2=1,mtord
+            do io1=1,nrfmax
+              do io2=1,nrfmax
                 bndchr(lm,ias,ispn,j)=bndchr(lm,ias,ispn,j) + &
-                  uu(l,io1,io2,ias)*dreal(dconjg(zt1(lm,io1))*zt1(lm,io2))
+                  urfprod(l,io1,io2,ias)*dreal(dconjg(zt1(lm,io1))*zt1(lm,io2))
               enddo
             enddo
           enddo
@@ -114,68 +111,7 @@ do j=1,nstfv
 enddo
 bndchr=bndchr/nsym1
 
-deallocate(acoeff,apwalm)
+deallocate(wfsvmt,apwalm)
 return
 end subroutine
 !EOC
-
-
-
-
-
-
-
-subroutine getry
-use modmain
-implicit none
-complex(8) sqrt2,isqrt2
-integer l
-
-ylm2rlm=dcmplx(0.d0,0.d0)
-sqrt2=dcmplx(1.d0/sqrt(2.d0),0.d0)
-isqrt2=dcmplx(0.d0,1.d0/sqrt(2.d0))
-
-! construct Ylm to Rlm matrix first
-!   R_{lm} = \sum_{l'm'}ylm2rlm_{lm,l'm'}Y_{l'm'}
-! order of orbitals: s  y z x  xy xz 3z^2-r^2 yz x^2-y^2  f1 f2...
-do l=0,3
-  if (l.eq.0) then
-    ylm2rlm(idxlm(0,0),idxlm(0,0)) = dcmplx(1.d0,0.d0)
-  else if (l.eq.1) then
-    ylm2rlm(idxlm(1,-1),idxlm(1,-1)) = -isqrt2
-    ylm2rlm(idxlm(1,-1),idxlm(1, 1)) = -isqrt2
-    ylm2rlm(idxlm(1, 0),idxlm(1, 0)) =  dcmplx(1.d0,0.d0)
-    ylm2rlm(idxlm(1, 1),idxlm(1,-1)) = -sqrt2
-    ylm2rlm(idxlm(1, 1),idxlm(1, 1)) =  sqrt2
-  else if (l.eq.2) then
-    ylm2rlm(idxlm(2,-2),idxlm(2,-2)) = -isqrt2
-    ylm2rlm(idxlm(2,-2),idxlm(2, 2)) =  isqrt2
-    ylm2rlm(idxlm(2,-1),idxlm(2,-1)) = -isqrt2
-    ylm2rlm(idxlm(2,-1),idxlm(2, 1)) = -isqrt2
-    ylm2rlm(idxlm(2, 0),idxlm(2, 0)) =  dcmplx(1.d0,0.d0)
-    ylm2rlm(idxlm(2, 1),idxlm(2,-1)) = -sqrt2
-    ylm2rlm(idxlm(2, 1),idxlm(2, 1)) =  sqrt2
-    ylm2rlm(idxlm(2, 2),idxlm(2,-2)) =  sqrt2
-    ylm2rlm(idxlm(2, 2),idxlm(2, 2)) =  sqrt2
-  else if (l.eq.3) then
-    ylm2rlm(idxlm(3,-3),idxlm(3,-3)) = -isqrt2
-    ylm2rlm(idxlm(3,-3),idxlm(3, 3)) = -isqrt2
-    ylm2rlm(idxlm(3,-2),idxlm(3,-2)) = -isqrt2
-    ylm2rlm(idxlm(3,-2),idxlm(3, 2)) =  isqrt2
-    ylm2rlm(idxlm(3,-1),idxlm(3,-1)) = -isqrt2
-    ylm2rlm(idxlm(3,-1),idxlm(3, 1)) = -isqrt2
-    ylm2rlm(idxlm(3, 0),idxlm(3, 0)) =  dcmplx(1.d0,0.d0)
-    ylm2rlm(idxlm(3, 1),idxlm(3,-1)) = -sqrt2
-    ylm2rlm(idxlm(3, 1),idxlm(3, 1)) =  sqrt2
-    ylm2rlm(idxlm(3, 2),idxlm(3,-2)) =  sqrt2
-    ylm2rlm(idxlm(3, 2),idxlm(3, 2)) =  sqrt2
-    ylm2rlm(idxlm(3, 3),idxlm(3,-3)) = -sqrt2
-    ylm2rlm(idxlm(3, 3),idxlm(3, 3)) =  sqrt2
-  endif
-enddo
-! invert the matrix and get Rlm to Ylm transformation
-rlm2ylm=ylm2rlm
-call invzge(rlm2ylm,16)
-
-return
-end
