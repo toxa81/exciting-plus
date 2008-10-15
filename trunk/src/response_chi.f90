@@ -1,12 +1,16 @@
-subroutine response_chi(ivq0m,ngvec_chi)
+subroutine response_chi(ivq0m,gvecchi1,gvecchi2)
 use modmain
 implicit none
 integer, intent(in) :: ivq0m(3)
 ! number of G-vectors for chi
-integer, intent(inout) :: ngvec_chi
+integer, intent(inout) :: gvecchi1
+integer, intent(inout) :: gvecchi2
 
+integer gvecme1
+integer gvecme2
+integer ngvecchi
 ! number of G-vectors for matrix elements
-integer ngvec_me
+integer ngvecme
 ! number of energy-mesh points
 integer nepts
 ! energy mesh
@@ -21,8 +25,10 @@ real(8) vq0rl(3)
 real(8) vq0rc(3)
 ! index of G-vector which brings q to first BZ
 integer igq0
+integer igq0s
 ! Kohn-Sham polarisability
 complex(8), allocatable :: chi0(:,:,:,:)
+complex(8), allocatable :: chi0s(:,:,:)
 ! true polarisability
 complex(8), allocatable :: chi(:,:)
 ! G+q vectors in Cartesian coordinates
@@ -43,7 +49,7 @@ real(8), allocatable :: func(:,:)
 complex(8), allocatable :: epsilon(:,:)
 integer, allocatable :: ipiv(:)
 
-integer ie,ig,ngsh_me_,info,i,j
+integer ie,ig,ngsh_me_,info,i,j,ig1,ig2
 character*100 fname
 character*4 name1,name2,name3
 
@@ -56,7 +62,8 @@ if (iproc.eq.0) then
     ivq0m(1),ivq0m(2),ivq0m(3)
   write(150,'("Reading file ",A40)')trim(fname)
   open(160,file=trim(fname),form='unformatted',status='old')
-  read(160)ngsh_me,ngvec_me,nepts,igq0
+  read(160)nepts,igq0
+  read(160)gshme1,gshme2,gvecme1,gvecme2,ngvecme
   allocate(w(nepts))
   read(160)w(1:nepts)
   read(160)vq0l(1:3)
@@ -64,41 +71,36 @@ if (iproc.eq.0) then
   read(160)vq0c(1:3)
   read(160)vq0rc(1:3)
   read(160)spin_me,nspin_chi0
-  allocate(chi0(ngvec_me,ngvec_me,nepts,nspin_chi0))
+  allocate(chi0(ngvecme,ngvecme,nepts,nspin_chi0))
   do ie=1,nepts
-    read(160)chi0(1:ngvec_me,1:ngvec_me,ie,1:nspin_chi0)
+    read(160)chi0(1:ngvecme,1:ngvecme,ie,1:nspin_chi0)
   enddo
   if (task.eq.402) close(160)
   if (task.eq.403) close(160,status='delete')
-  
-  write(150,'("chi0 was calculated for ",I4," G-vector(s) (",I4,&
-    & " G-shell(s))")')ngvec_me,ngsh_me
+  write(150,'("chi0 was calculated for ")')
+  write(150,'("  G-shells  : ",I4," to ",I4)')gshme1,gshme2
+  write(150,'("  G-vectors : ",I4," to ",I4)')gvecme1,gvecme2
   if (spinpol) then 
     if (spin_me.eq.1) write(150,'("chi0 was calculated for spin up")')
     if (spin_me.eq.2) write(150,'("chi0 was calculated for spin dn")')
     if (spin_me.eq.3) write(150,'("chi0 was calculated for both spins")')
   endif
-  if (ngvec_chi.lt.ngvec_me) then
-    write(*,*)
-    write(*,'("Warning(response_chi): number of G-shells was changed from ",&
-      &I4," to ",I4)')ngsh_chi,ngsh_me
-    write(*,*)
-    ngsh_chi=ngsh_me
-    ngvec_chi=ngvec_me
+  if (gvecchi1.lt.gvecme1.or.gvecchi1.gt.gvecme2) then
+    write(150,*)
+    write(150,'("Warning: minimum number of G-vectors was changed from ",&
+      &I4," to ",I4)')gvecchi1,gvecme1
+    gvecchi1=gvecme1 
   endif
-  if (igq0.gt.ngvec_chi) then
+  if (gvecchi2.lt.gvecme1.or.gvecchi2.gt.gvecme2) then
+    write(150,*)
+    write(150,'("Warning: maximum number of G-vectors was changed from ",&
+      &I4," to ",I4)')gvecchi2,gvecme2
+    gvecchi2=gvecme2 
+  endif
+  if (igq0.lt.gvecchi1.or.igq0.gt.gvecchi2) then
     write(*,*)
     write(*,'("Error(response_chi): not enough G-vectors for calculation of &
       &chi")')
-    write(*,'("  Increase number of G-shells for chi")')
-    write(*,*)
-    call pstop
-  endif
-  if (ngsh_chi.gt.ngsh_me) then
-    write(*,*)
-    write(*,'("Error(response_chi): ngsh_chi > ngsh_me")')
-    write(*,'("  ngsh_chi = ",I4)'),ngsh_chi
-    write(*,'("  ngsh_me = ",I4)'),ngsh_me
     write(*,*)
     call pstop
   endif
@@ -135,47 +137,59 @@ if (iproc.eq.0) then
     chi0=chi0*2.d0
   endif  
   
-  allocate(chi(ngvec_chi,nepts))
+  ngvecchi=gvecchi2-gvecchi1+1  
+  write(150,*)
+  write(150,'("Minimum and maximum G-vectors for chi : ",2I4)')gvecchi1,gvecchi2
+  write(150,'("Number of G-vectors : ",I4)')ngvecchi
   
-  allocate(vgq0c(3,ngvec_chi))
-  allocate(vc(ngvec_chi))
-  allocate(gq0(ngvec_chi))
-  allocate(epsilon(ngvec_chi,ngvec_chi))
+  allocate(chi0s(ngvecchi,ngvecchi,nepts))
+  do ie=1,nepts
+    ig1=gvecchi1-gvecme1+1
+    ig2=ig1+ngvecchi-1
+    chi0s(1:ngvecchi,1:ngvecchi,ie)=chi0(ig1:ig2,ig1:ig2,ie,1)
+  enddo
+  igq0s=igq0-gvecchi1+1
+  
+  allocate(chi(ngvecchi,nepts))
+  allocate(vgq0c(3,ngvecchi))
+  allocate(vc(ngvecchi))
+  allocate(gq0(ngvecchi))
+  allocate(epsilon(ngvecchi,ngvecchi))
   allocate(epsilon_GqGq(nepts))
   allocate(epsilon_eff(nepts))
   allocate(chi_scalar(nepts))
-  allocate(mtrx(ngvec_chi,ngvec_chi))
+  allocate(mtrx(ngvecchi,ngvecchi))
   
   write(150,*)
   write(150,'("Coulomb potential matrix elements:")')
   write(150,'("   ig        |G+q|        Vc    ")')
   write(150,'(" ------------------------------ ")')
-  do ig=1,ngvec_chi
+  do ig=1,ngvecchi
 ! generate G+q vectors  
-    vgq0c(:,ig)=vgc(:,ig)+vq0rc(:)
+    vgq0c(:,ig)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
     gq0(ig)=sqrt(vgq0c(1,ig)**2+vgq0c(2,ig)**2+vgq0c(3,ig)**2)
     vc(ig)=fourpi/gq0(ig)**2 
     write(150,'(1X,I4,2X,2F12.6)')ig,gq0(ig),vc(ig)
   enddo
   
-  allocate(ipiv(ngvec_chi))
+  allocate(ipiv(ngvecchi))
   do ie=1,nepts
 ! compute epsilon=1-chi0*V
-    do i=1,ngvec_chi
-      do j=1,ngvec_chi
-        epsilon(i,j)=-chi0(i,j,ie,1)*vc(j)
+    do i=1,ngvecchi
+      do j=1,ngvecchi
+        epsilon(i,j)=-chi0s(i,j,ie)*vc(j)
       enddo
       epsilon(i,i)=dcmplx(1.d0,0.d0)+epsilon(i,i)
     enddo
-    epsilon_GqGq(ie)=epsilon(igq0,igq0)
-    chi_scalar(ie)=chi0(igq0,igq0,ie,1)/epsilon_GqGq(ie)
+    epsilon_GqGq(ie)=epsilon(igq0s,igq0s)
+    chi_scalar(ie)=chi0s(igq0s,igq0s,ie)/epsilon_GqGq(ie)
 ! compute epsilon effective
     mtrx(:,:)=epsilon(:,:)
-    call invzge(mtrx,ngvec_chi)
-    epsilon_eff(ie)=1.d0/mtrx(igq0,igq0)
+    call invzge(mtrx,ngvecchi)
+    epsilon_eff(ie)=1.d0/mtrx(igq0s,igq0s)
 ! solve [1-chi0*V]^{-1}*chi=chi0
-    chi(1:ngvec_chi,ie)=chi0(1:ngvec_chi,igq0,ie,1)
-    call zgesv(ngvec_chi,1,epsilon,ngvec_chi,ipiv,chi(1,ie),ngvec_chi,info)
+    chi(1:ngvecchi,ie)=chi0s(1:ngvecchi,igq0s,ie)
+    call zgesv(ngvecchi,1,epsilon,ngvecchi,ipiv,chi(1,ie),ngvecchi,info)
     if (info.ne.0) then
       write(*,*)'Error solving linear equations'
       write(*,*)'info=',info
@@ -184,15 +198,10 @@ if (iproc.eq.0) then
   enddo !ie
   deallocate(ipiv)
   
-  chi0=chi0/ha2ev/(au2ang)**3
+  chi0s=chi0s/ha2ev/(au2ang)**3
   chi=chi/ha2ev/(au2ang)**3
   chi_scalar=chi_scalar/ha2ev/(au2ang)**3
   
-!  write(name1,'(I4.3)')ivq0l(1)
-!  write(name2,'(I4.3)')ivq0l(2)
-!  write(name3,'(I4.3)')ivq0l(3)
-!  fname='response['//trim(adjustl(name1))//','//trim(adjustl(name2))//','//trim(adjustl(name3))//'].dat'
-
   write(fname,'("response[",I4.3,",",I4.3,",",I4.3,"].dat")') &
     ivq0m(1),ivq0m(2),ivq0m(3)
 
@@ -210,8 +219,8 @@ if (iproc.eq.0) then
   write(160,'("#   q-vector (Cart. coord.) [1/A]    : ",3F18.10)')vq0c/au2ang
   write(160,'("#   q-vector length         [1/A]    : ",3F18.10)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)/au2ang
   write(160,'("# G-vector information               : ")')
-  write(160,'("#   number of G-shells               : ",I4)')ngsh_chi
-  write(160,'("#   number of G-vectors              : ",I4)')ngvec_chi
+  write(160,'("#   G-shells                         : ",2I4)')gshchi1,gshchi2
+  write(160,'("#   G-vectors                        : ",2I4)')gvecchi1,gvecchi2
   write(160,'("#   index of Gq vector               : ",I4)')igq0
   write(160,'("#")')
   write(160,'("# Definition of columns")')
@@ -231,11 +240,11 @@ if (iproc.eq.0) then
   allocate(func(12,nepts))
   do ie=1,nepts
     func(1,ie)=dreal(w(ie))*ha2ev
-    func(2,ie)=-dreal(chi0(igq0,igq0,ie,1))
-    func(3,ie)=-dimag(chi0(igq0,igq0,ie,1))
-    func(4,ie)=-dreal(chi(igq0,ie))
-    func(5,ie)=-dimag(chi(igq0,ie))
-    func(6,ie)=-2.d0*dimag(chi(igq0,ie))
+    func(2,ie)=-dreal(chi0s(igq0s,igq0s,ie))
+    func(3,ie)=-dimag(chi0s(igq0s,igq0s,ie))
+    func(4,ie)=-dreal(chi(igq0s,ie))
+    func(5,ie)=-dimag(chi(igq0s,ie))
+    func(6,ie)=-2.d0*dimag(chi(igq0s,ie))
     func(7,ie)=-dreal(chi_scalar(ie))
     func(8,ie)=-dimag(chi_scalar(ie))
     func(9,ie)=dreal(epsilon_eff(ie))
@@ -249,6 +258,7 @@ if (iproc.eq.0) then
  
   deallocate(w)
   deallocate(chi0)
+  deallocate(chi0s)
   deallocate(chi)
   deallocate(vgq0c)
   deallocate(vc)

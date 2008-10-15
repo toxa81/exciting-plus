@@ -22,7 +22,7 @@ complex(8), allocatable :: wfsvmtloc(:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 real(8), allocatable :: occsvnr(:,:)
 
-integer i,j,ngsh,ngshmin,ngvec1,ngvec_me,ngvec_chi,ik,ikloc,ig, &
+integer i,j,ngsh,gshmin,gshmax,gvecme1,gvecme2,ngvecme,gvecchi1,gvecchi2,ngvecchi,ik,ikloc,ig, &
   ispn,istfv
 complex(8) zt1
 character*100 fname
@@ -65,30 +65,61 @@ if (task.eq.400.or.task.eq.403) then
   allocate(ishellng(ngvec,2))
   call getgshells(ngsh,igishell,ishellng)
 ! find minimum number of G-shells
-  ngshmin=1
+  gshmin=100000
+  gshmax=1
   do i=1,nvq0
 ! q-vector in lattice coordinates
     do j=1,3
-      vq0l(j)=1.d0*ivq0m_list(j,i)/ngridk(j)
+      vq0l(j)=1.d0*ivq0m_list(j,i)/ngridk(j)+1d-12
     enddo
 ! find G-vector which brings q0 to first BZ
     vgq0l(:)=floor(vq0l(:))
-    ngshmin=max(ngshmin,igishell(ivgig(vgq0l(1),vgq0l(2),vgq0l(3))))
+    gshmin=min(gshmin,igishell(ivgig(vgq0l(1),vgq0l(2),vgq0l(3))))
+    gshmax=max(gshmin,igishell(ivgig(vgq0l(1),vgq0l(2),vgq0l(3))))
   enddo !i
-  if (ngshmin.gt.ngsh_me) then
-    write(*,*)
-    write(*,'("Warning(response): number of G-shells was changed from ",&
-      &I4," to ",I4)')ngsh_me,ngshmin
-    write(*,*)
-    ngsh_me=ngshmin
+  if (iproc.eq.0) then
+    write(150,*)
+    write(150,'("Found minimum and maximum number of G-shells : ",2I4)')gshmin,gshmax
+    write(150,'("Input minimum and maximum number of G-shells : ",2I4)')gshme1,gshme2
   endif
-! test if G-shell is closed
-  ngvec_me=ishellng(ngsh_me,2)
-  if (abs(gc(ngvec_me)-gc(ngvec_me+1)).lt.epslat) then
+  if (gshmin.lt.gshme1) then
+    if (iproc.eq.0) then
+      write(150,*)
+      write(150,'("Warning: minimum number of G-shells was changed from ",&
+        &I4," to ",I4)')gshme1,gshmin
+    endif
+    gshme1=gshmin
+  endif
+  if (gshmax.gt.gshme2) then
+    if (iproc.eq.0) then
+      write(150,*)
+      write(150,'("Warning: maximum number of G-shells was changed from ",&
+        &I4," to ",I4)')gshme2,gshmax
+    endif
+    gshme2=gshmax
+  endif
+! test if G-shells are closed
+  i=ishellng(gshme1,2)
+  j=ishellng(gshme2,2)
+  if (abs(gc(i)-gc(i+1)).lt.epslat.or.abs(gc(j)-gc(j+1)).lt.epslat) then
     write(*,*)
-    write(*,'("Bug(response): G-shell is not closed")')
+    write(*,'("Bug(response): G-shells are not closed")')
     write(*,*)
     call pstop
+  endif
+  if (gshme1.eq.1) then
+    gvecme1=1
+  else
+    gvecme1=ishellng(gshme1-1,2)+1
+  endif
+  gvecme2=ishellng(gshme2,2)
+  ngvecme=gvecme2-gvecme1+1
+  if (iproc.eq.0) then
+    write(150,*)
+    write(150,'("G-shell limits      : ",2I4)')gshme1,gshme2
+    write(150,'("G-vector limits     : ",2I4)')gvecme1,gvecme2
+    write(150,'("number of G-vectors : ",I4)')ngvecme   
+    call flushifc(150)
   endif
   deallocate(igishell)
   deallocate(ishellng)
@@ -98,7 +129,12 @@ if (task.eq.402.or.task.eq.403) then
   allocate(igishell(ngvec))
   allocate(ishellng(ngvec,2))
   call getgshells(ngsh,igishell,ishellng)
-  ngvec_chi=ishellng(ngsh_chi,2)
+  if (gshchi1.eq.1) then
+    gvecchi1=1
+  else
+    gvecchi1=ishellng(gshchi1-1,2)+1
+  endif
+  gvecchi2=ishellng(gshchi2,2)
   deallocate(igishell)
   deallocate(ishellng)
 endif
@@ -189,8 +225,8 @@ endif
 if (task.eq.400) then
 ! calculate matrix elements
   do i=1,nvq0
-    call response_me(ivq0m_list(1,i),ngvec_me,ikptlocnr,nkptlocnr, &
-      wfsvmtloc,wfsvitloc,ngknr,igkignr,occsvnr)
+    call response_me(ivq0m_list(1,i),gvecme1,gvecme2,ngvecme,ikptlocnr, &
+      nkptlocnr,wfsvmtloc,wfsvitloc,ngknr,igkignr,occsvnr)
   enddo
 endif
 
@@ -204,16 +240,16 @@ endif
 if (task.eq.402) then
 ! calculate chi
   do i=1,nvq0
-    call response_chi(ivq0m_list(1,i),ngvec_chi)
+    call response_chi(ivq0m_list(1,i),gvecchi1,gvecchi2)
   enddo
 endif
 
 if (task.eq.403) then
   do i=1,nvq0
-    call response_me(ivq0m_list(1,i),ngvec_me,ikptlocnr,nkptlocnr, &
-      wfsvmtloc,wfsvitloc,ngknr,igkignr,occsvnr)
+    call response_me(ivq0m_list(1,i),gvecme1,gvecme2,ngvecme,ikptlocnr, &
+      nkptlocnr,wfsvmtloc,wfsvitloc,ngknr,igkignr,occsvnr)
     call response_chi0(ivq0m_list(1,i),ikptlocnr,nkptlocnr)
-    call response_chi(ivq0m_list(1,i),ngvec_chi)
+    call response_chi(ivq0m_list(1,i),gvecchi1,gvecchi2)
   enddo
 endif
 

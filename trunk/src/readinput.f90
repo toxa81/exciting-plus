@@ -154,8 +154,6 @@ taurdmn=1.d0
 taurdmc=0.5d0
 rdmalpha=0.7d0
 reducebf=1.d0
-ngsh_me=1
-ngsh_chi=1
 wannier=.false.
 
 !-------------------------------!
@@ -836,10 +834,16 @@ case('response')
   do i=1,nvq0
     read(50,*,err=20) ivq0m_list(:,i)
   enddo
-  read(50,*,err=20) ngsh_me, spin_me 
-  read(50,*,err=20) ngsh_chi, spin_chi
+  read(50,*,err=20) gshme1,gshme2,spin_me 
+  read(50,*,err=20) gshchi1,gshchi2,spin_chi
   read(50,*,err=20) maxomega, domega, eta
   read(50,*,err=20) afmchi0
+  if (gshchi1.gt.gshchi2) then
+    write(*,*)
+    write(*,'("Error(readinput): gshchi1 > gshchi2")')
+    write(*,*)
+    call pstop
+  endif
 case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_natoms,wann_nspins

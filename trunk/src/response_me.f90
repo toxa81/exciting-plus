@@ -1,4 +1,4 @@
-subroutine response_me(ivq0m,ngvec_me,ikptlocnr,nkptlocnr, &
+subroutine response_me(ivq0m,gvecme1,gvecme2,ngvecme,ikptlocnr,nkptlocnr, &
       wfsvmtloc,wfsvitloc,ngknr,igkignr,occsvnr)
 use modmain
 #ifdef _MPI_
@@ -8,8 +8,10 @@ implicit none
 ! arguments
 ! q-vector in k-mesh coordinates
 integer, intent(in) :: ivq0m(3)
+integer, intent(in) :: gvecme1
+integer, intent(in) :: gvecme2
 ! number of G-vectors for matrix elements calculation
-integer, intent(in) :: ngvec_me
+integer, intent(in) :: ngvecme
 integer, intent(in) :: ikptlocnr(0:nproc-1,2)
 integer, intent(in) :: nkptlocnr(0:nproc-1)
 complex(8), intent(in) :: wfsvmtloc(lmmaxvr,nrfmax,natmtot,nstsv,*)
@@ -100,9 +102,9 @@ if (iproc.eq.0) then
     if (spin_me.eq.2) write(150,'(" calculation of matrix elements for spin dn")')
     if (spin_me.eq.3) write(150,'(" calculation of matrix elements for both spins")')
   endif
-  write(150,*)
-  write(150,'("Number of G-shells  : ",I4)')ngsh_me
-  write(150,'("Number of G-vectors : ",I4)')ngvec_me
+!  write(150,*)
+!  write(150,'("Number of G-shells  : ",I4)')ngsh_me
+!  write(150,'("Number of G-vectors : ",I4)')ngvec_me
 endif
 
 allocate(ikptiproc(nkpt))
@@ -113,11 +115,11 @@ do i=0,nproc-1
 enddo
 
 allocate(ikq(nkptnr,2))
-allocate(vgq0c(3,ngvec_me))
-allocate(gq0(ngvec_me))
-allocate(tpgq0(2,ngvec_me))
-allocate(sfacgq0(ngvec_me,natmtot))
-allocate(ylmgq0(lmmaxexp,ngvec_me)) 
+allocate(vgq0c(3,ngvecme))
+allocate(gq0(ngvecme))
+allocate(tpgq0(2,ngvecme))
+allocate(sfacgq0(ngvecme,natmtot))
+allocate(ylmgq0(lmmaxexp,ngvecme)) 
 
 
 ! q-vector in lattice coordinates
@@ -132,15 +134,14 @@ vgq0l(:)=floor(vq0l(:))
 vq0rl(:)=vq0l(:)-vgq0l(:)
 
 ! check if we have enough G-shells to bring q-vector back to first BZ
-do ig=1,ngvec_me
-  if (sum(abs(vgq0l(:)-ivg(:,ig))).eq.0) then
-    igq0=ig
+do ig=1,ngvecme
+  if (sum(abs(vgq0l(:)-ivg(:,ig+gvecme1-1))).eq.0) then
+    igq0=ig+gvecme1-1
     goto 20
   endif
 enddo
 write(*,*)
-write(*,'("Bug(response_me): not enough G-vectors to reduce q-vector &
-  &to first BZ")')
+write(*,'("Bug(response_me): no G-vector to reduce q-vector to first BZ")')
 write(*,*)
 call pstop
 20 continue
@@ -163,6 +164,8 @@ if (iproc.eq.0) then
     & 3I4)')vgq0l
   write(150,'("index of G-vector                            : ",&
     & I4)')igq0
+  write(150,'("G-vector (lat.coord.)                        : ",&
+    & 3I4)')ivg(:,igq0)
   write(150,'("reduced q-vector (lat.coord.)                : ",&
     & 3G18.10)')vq0rl
   write(150,'("reduced q-vector (Cart.coord.) [a.u.]        : ",&
@@ -225,23 +228,26 @@ if (iproc.eq.0) then
 endif
 
 ! generate G+q' vectors, where q' is reduced q-vector
-do ig=1,ngvec_me
-  vgq0c(:,ig)=vgc(:,ig)+vq0rc(:)
+i=0
+do ig=gvecme1,gvecme2
+  i=i+1
+  vgq0c(:,i)=vgc(:,ig)+vq0rc(:)
 ! get spherical coordinates and length of G+q'
-  call sphcrd(vgq0c(:,ig),gq0(ig),tpgq0(:,ig))
+  call sphcrd(vgq0c(:,i),gq0(i),tpgq0(:,i))
 ! generate spherical harmonics for G+q'
-  call genylm(lmaxexp,tpgq0(:,ig),ylmgq0(:,ig))
+  call genylm(lmaxexp,tpgq0(:,i),ylmgq0(:,i))
 enddo
 
 ! generate structure factor for G+q' vectors
-call gensfacgp(ngvec_me,vgq0c,ngvec_me,sfacgq0)
+call gensfacgp(ngvecme,vgq0c,ngvecme,sfacgq0)
 
 write(fname,'("ZRHOFC[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
   ivq0m(1),ivq0m(2),ivq0m(3)
 
 if (iproc.eq.0) then
   open(160,file=trim(fname),form='unformatted',status='replace')
-  write(160)nkptnr,ngsh_me,ngvec_me,max_num_nnp,igq0
+  write(160)nkptnr,max_num_nnp,igq0
+  write(160)gshme1,gshme2,gvecme1,gvecme2,ngvecme
   write(160)nspinor,spin_me
   write(160)vq0l(1:3)
   write(160)vq0rl(1:3)
@@ -258,18 +264,18 @@ if (iproc.eq.0) then
   write(150,'("Calculating radial integrals")')
   write(150,'("  maximum number of radial functions : ",I4)')nrfmax
 endif
-allocate(uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,nrfmax,nrfmax,natmtot,ngvec_me))
-call calc_uuj(uuj,lmaxexp,gq0,ngvec_me)
+allocate(uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,nrfmax,nrfmax,natmtot,ngvecme))
+call calc_uuj(uuj,lmaxexp,gq0,ngvecme)
 if (iproc.eq.0) then
   write(150,'("Done.")')
   call flushifc(150)
 endif
 
-call getgu(.true.,ngvec_me,lmaxexp,uuj,ylmgq0,sfacgq0,ngumax,ngu,gu,igu)
-allocate(ngu(natmtot,ngvec_me))
-allocate(gu(ngumax,natmtot,ngvec_me))
-allocate(igu(4,ngumax,natmtot,ngvec_me))
-call getgu(.false.,ngvec_me,lmaxexp,uuj,ylmgq0,sfacgq0,ngumax,ngu,gu,igu)
+call getgu(.true.,ngvecme,lmaxexp,uuj,ylmgq0,sfacgq0,ngumax,ngu,gu,igu)
+allocate(ngu(natmtot,ngvecme))
+allocate(gu(ngumax,natmtot,ngvecme))
+allocate(igu(4,ngumax,natmtot,ngvecme))
+call getgu(.false.,ngvecme,lmaxexp,uuj,ylmgq0,sfacgq0,ngumax,ngu,gu,igu)
 if (iproc.eq.0) then
   write(150,*)
   write(150,'("Maximum number of Gaunt-like coefficients : ",I8)')ngumax
@@ -284,7 +290,7 @@ allocate(wfsvmt2(lmmaxvr,nrfmax,natmtot,nstsv))
 allocate(wfsvit2(nmatmax,nstsv))
 allocate(igkignr2(ngkmax))
 allocate(status(MPI_STATUS_SIZE))
-allocate(zrhofc(ngvec_me,max_num_nnp,nkptlocnr(iproc)))
+allocate(zrhofc(ngvecme,max_num_nnp,nkptlocnr(iproc)))
 
 
 ! do ikloc=1,nkptlocnr(iproc)
@@ -398,14 +404,15 @@ do ikstep=1,nkptlocnr(0)
     if (.not.meoff) then
 ! calculate interstitial contribution for all combinations of n,n'
       call cpu_time(cpu0)
-      call zrhoftit(ngvec_me,max_num_nnp,num_nnp(ikstep),nnp(1,1,ikstep),ngknr(ikstep),ngknr2, &
-        igkignr(1,ikstep),igkignr2,ikq(ik,2),wfsvitloc(1,1,ikstep),wfsvit2,zrhofc(1,1,ikstep))
+      call zrhoftit(ngvecme,gvecme1,max_num_nnp,num_nnp(ikstep), &
+        nnp(1,1,ikstep),ngknr(ikstep),ngknr2,igkignr(1,ikstep),  &
+        igkignr2,ikq(ik,2),wfsvitloc(1,1,ikstep),wfsvit2,zrhofc(1,1,ikstep))
       call cpu_time(cpu1)
       timeistl=cpu1-cpu0
 
 ! calculate muffin-tin contribution for all combinations of n,n'    
       call cpu_time(cpu0)
-      call zrhoftmt(ngvec_me,max_num_nnp,num_nnp(ikstep),nnp(1,1,ikstep), &
+      call zrhoftmt(ngvecme,max_num_nnp,num_nnp(ikstep),nnp(1,1,ikstep), &
         wfsvmtloc(1,1,1,1,ikstep),wfsvmt2,ngumax,ngu,gu,igu,zrhofc(1,1,ikstep))
       call cpu_time(cpu1)
       timemt=cpu1-cpu0
@@ -433,7 +440,7 @@ do i=0,nproc-1
       write(160)num_nnp(ikstep)
       write(160)nnp(1:num_nnp(ikstep),1:3,ikstep)
       write(160)docc(1:num_nnp(ikstep),ikstep)
-      write(160)zrhofc(1:ngvec_me,1:num_nnp(ikstep),ikstep)
+      write(160)zrhofc(1:ngvecme,1:num_nnp(ikstep),ikstep)
     enddo !ikstep
     close(160)
   endif !i.eq.iproc
@@ -447,7 +454,7 @@ deallocate(zrhofc)
   
 #else
 
-allocate(zrhofc(ngvec_me,max_num_nnp,1))
+allocate(zrhofc(ngvecme,max_num_nnp,1))
 
 open(160,file=trim(fname),form='unformatted',status='old',position='append')
 
@@ -466,14 +473,15 @@ do ik=1,nkptnr
   zrhofc=dcmplx(0.d0,0.d0)
 ! calculate interstitial contribution for all combinations of n,n'
   call cpu_time(cpu0)
-  call zrhoftit(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik),ngknr(ik),ngknr(jk), &
-    igkignr(1,ik),igkignr(1,jk),ikq(ik,2),wfsvitloc(1,1,ik),wfsvitloc(1,1,jk),zrhofc)
+  call zrhoftit(ngvecme,gvecme1,max_num_nnp,num_nnp(ik),nnp(1,1,ik), &
+    ngknr(ik),ngknr(jk),igkignr(1,ik),igkignr(1,jk),ikq(ik,2),       &
+    wfsvitloc(1,1,ik),wfsvitloc(1,1,jk),zrhofc)
   call cpu_time(cpu1)
   timeistl=cpu1-cpu0
 
 ! calculate muffin-tin contribution for all combinations of n,n'    
   call cpu_time(cpu0)
-  call zrhoftmt(ngvec_me,max_num_nnp,num_nnp(ik),nnp(1,1,ik), &
+  call zrhoftmt(ngvecme,max_num_nnp,num_nnp(ik),nnp(1,1,ik), &
     wfsvmtloc(1,1,1,1,ik),wfsvmtloc(1,1,1,1,jk),ngumax,ngu,gu,igu,zrhofc)
   call cpu_time(cpu1)
   timemt=cpu1-cpu0
@@ -484,7 +492,7 @@ do ik=1,nkptnr
     call flushifc(150)
   endif
   
-  write(160)zrhofc(1:ngvec_me,1:num_nnp(ik),1)
+  write(160)zrhofc(1:ngvecme,1:num_nnp(ik),1)
 enddo !ik
 close(160)
 
@@ -514,14 +522,14 @@ return
 end
 
 
-subroutine calc_uuj(uuj,lmaxexp,gq0,ngvec_me)
+subroutine calc_uuj(uuj,lmaxexp,gq0,ngvecme)
 use modmain
 implicit none
 ! arguments
 integer, intent(in) :: lmaxexp
-integer, intent(in) :: ngvec_me
-real(8), intent(in) :: gq0(ngvec_me)
-real(8), intent(out) :: uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,nrfmax,nrfmax,natmtot,ngvec_me)
+integer, intent(in) :: ngvecme
+real(8), intent(in) :: gq0(ngvecme)
+real(8), intent(out) :: uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,nrfmax,nrfmax,natmtot,ngvecme)
 ! local variables
 integer ia,is,ias,l,io,ilo,ig,l1,l2,l3,io1,io2,ir
 real(8), allocatable :: jlgq0r(:,:,:,:)
@@ -529,10 +537,10 @@ integer ordl(0:lmaxvr)
 real(8) fr(nrmtmax),gr(nrmtmax),cf(3,nrmtmax)
 real(8) t1,jl(0:lmaxexp)
 
-allocate(jlgq0r(nrmtmax,0:lmaxexp,nspecies,ngvec_me))
+allocate(jlgq0r(nrmtmax,0:lmaxexp,nspecies,ngvecme))
 
 ! generate Bessel functions j_l(|G+q'|x)
-do ig=1,ngvec_me
+do ig=1,ngvecme
   do is=1,nspecies
     do ir=1,nrmt(is)
       t1=gq0(ig)*spr(ir,is)
@@ -548,7 +556,7 @@ uuj=0.d0
 do is=1,nspecies
   do ia=1,natoms(is)
     ias=idxas(ia,is)
-    do ig=1,ngvec_me
+    do ig=1,ngvecme
       do l1=0,lmaxvr
         do l2=0,lmaxvr
           do l3=0,lmaxexp
@@ -572,12 +580,13 @@ deallocate(jlgq0r)
 return
 end   
 
-subroutine zrhoftit(ngvec_me,max_num_nnp,num_nnp,nnp,ngknr1,ngknr2,igkignr1,igkignr2, &
+subroutine zrhoftit(ngvecme,gvecme1,max_num_nnp,num_nnp,nnp,ngknr1,ngknr2,igkignr1,igkignr2, &
   igkq,wfsvit1,wfsvit2,zrhofc)
 use modmain
 implicit none
 ! arguments
-integer, intent(in) :: ngvec_me
+integer, intent(in) :: ngvecme
+integer, intent(in) :: gvecme1
 integer, intent(in) :: max_num_nnp
 integer, intent(in) :: num_nnp
 integer, intent(in) :: nnp(max_num_nnp,3)
@@ -588,7 +597,7 @@ integer, intent(in) :: igkignr1(ngkmax)
 integer, intent(in) :: igkignr2(ngkmax)
 complex(8), intent(in) :: wfsvit1(nmatmax,nstsv)
 complex(8), intent(in) :: wfsvit2(nmatmax,nstsv)
-complex(8), intent(inout) :: zrhofc(ngvec_me,max_num_nnp)
+complex(8), intent(inout) :: zrhofc(ngvecme,max_num_nnp)
 
 complex(8), allocatable :: mit(:,:)
 complex(8), allocatable :: a(:,:) 
@@ -619,12 +628,12 @@ endif
 
 allocate(mit(ngknr1,ngknr2))
 
-do ig=1,ngvec_me
+do ig=1,ngvecme
   mit=dcmplx(0.d0,0.d0)
   do ig1=1,ngknr1
     do ig2=1,ngknr2
       ! G1-G2+G+K
-      iv3g(:)=ivg(:,igkignr1(ig1))-ivg(:,igkignr2(ig2))+ivg(:,ig)+ivg(:,igkq)
+      iv3g(:)=ivg(:,igkignr1(ig1))-ivg(:,igkignr2(ig2))+ivg(:,ig+gvecme1-1)+ivg(:,igkq)
       if (sum(abs(iv3g)).eq.0) mit(ig1,ig2)=dcmplx(1.d0,0.d0)
       v2(:)=1.d0*iv3g(:)
       call r3mv(bvec,v2,v1)
@@ -664,27 +673,27 @@ deallocate(mit,a)
 return
 end
         
-subroutine zrhoftmt(ngvec_me,max_num_nnp,num_nnp,nnp, &
+subroutine zrhoftmt(ngvecme,max_num_nnp,num_nnp,nnp, &
   wfsvmt1,wfsvmt2,ngumax,ngu,gu,igu,zrhofc)
 use modmain
 implicit none
 ! arguments
-integer, intent(in) :: ngvec_me
+integer, intent(in) :: ngvecme
 integer, intent(in) :: max_num_nnp
 integer, intent(in) :: num_nnp
 integer, intent(in) :: nnp(max_num_nnp,3)
 integer, intent(in) :: ngumax
-integer, intent(in) :: ngu(natmtot,ngvec_me)
-integer, intent(in) :: igu(4,ngumax,natmtot,ngvec_me)
-complex(4), intent(in) :: gu(ngumax,natmtot,ngvec_me)
+integer, intent(in) :: ngu(natmtot,ngvecme)
+integer, intent(in) :: igu(4,ngumax,natmtot,ngvecme)
+complex(4), intent(in) :: gu(ngumax,natmtot,ngvecme)
 complex(8), intent(in) :: wfsvmt1(lmmaxvr,nrfmax,natmtot,nstsv)
 complex(8), intent(in) :: wfsvmt2(lmmaxvr,nrfmax,natmtot,nstsv)
-complex(8), intent(inout) :: zrhofc(ngvec_me,max_num_nnp)
+complex(8), intent(inout) :: zrhofc(ngvecme,max_num_nnp)
 ! local variables
 integer ig,i,j,ist1,ist2,ias,io1,io2,lm1,lm2 
 complex(8) a1(lmmaxvr,nrfmax),a2(lmmaxvr,nrfmax)
 
-do ig=1,ngvec_me
+do ig=1,ngvecme
   do i=1,num_nnp
     ist1=nnp(i,1)
     ist2=nnp(i,2)
@@ -759,20 +768,20 @@ enddo !ik
 return
 end
 
-subroutine getgu(req,ngvec_me,lmaxexp,uuj,ylmgq0,sfacgq0,ngumax,ngu,gu,igu)
+subroutine getgu(req,ngvecme,lmaxexp,uuj,ylmgq0,sfacgq0,ngumax,ngu,gu,igu)
 use modmain
 implicit none
 ! arguments
 logical, intent(in) :: req
-integer, intent(in) :: ngvec_me
+integer, intent(in) :: ngvecme
 integer, intent(in) :: lmaxexp
-real(8), intent(in) :: uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,nrfmax,nrfmax,natmtot,ngvec_me)
-complex(8), intent(in) :: ylmgq0((lmaxexp+1)**2,ngvec_me)
-complex(8), intent(in) :: sfacgq0(ngvec_me,natmtot)
+real(8), intent(in) :: uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,nrfmax,nrfmax,natmtot,ngvecme)
+complex(8), intent(in) :: ylmgq0((lmaxexp+1)**2,ngvecme)
+complex(8), intent(in) :: sfacgq0(ngvecme,natmtot)
 integer, intent(inout) :: ngumax
-integer, intent(out) :: ngu(natmtot,ngvec_me)
-complex(4), intent(out) :: gu(ngumax,natmtot,ngvec_me)
-integer, intent(out) :: igu(4,ngumax,natmtot,ngvec_me)
+integer, intent(out) :: ngu(natmtot,ngvecme)
+complex(4), intent(out) :: gu(ngumax,natmtot,ngvecme)
+integer, intent(out) :: igu(4,ngumax,natmtot,ngvecme)
 
 integer ig,ias,i,io1,io2,l1,m1,lm1,l2,m2,lm2,l3,m3,lm3
 real(8) t1
@@ -780,7 +789,7 @@ real(8), external :: gaunt
 
 if (req) ngumax=0 
 
-do ig=1,ngvec_me
+do ig=1,ngvecme
   do ias=1,natmtot
     i=0
     do io1=1,nrfmax

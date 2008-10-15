@@ -9,7 +9,11 @@ integer, intent(in) :: ivq0m(3)
 integer, intent(in) :: ikptlocnr(0:nproc-1,2)
 integer, intent(in) :: nkptlocnr(0:nproc-1)
 ! number of G-vectors for matrix elements
-integer ngvec_me
+integer ngvecme
+! minimum G-vector
+integer gvecme1
+! maximum G-vector
+integer gvecme2
 ! q-vector in lattice coordinates
 real(8) vq0l(3)
 ! q-vector in Cartesian coordinates
@@ -81,7 +85,8 @@ write(fname,'("ZRHOFC[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
 if (iproc.eq.0) then
   write(150,'("Reading file ",A40)')trim(fname)
   open(160,file=trim(fname),form='unformatted',status='old')
-  read(160)nkptnr_,ngsh_me,ngvec_me,max_num_nnp,igq0
+  read(160)nkptnr_,max_num_nnp,igq0
+  read(160)gshme1,gshme2,gvecme1,gvecme2,ngvecme
   read(160)nspinor_,spin_me
   if (nspinor_.eq.2) then
     write(150,'("  matrix elements were calculated for spin-polarized case")')
@@ -101,12 +106,16 @@ if (iproc.eq.0) then
     write(*,*)
     call pstop
   endif    
-  write(150,'("matrix elements were calculated for ",I4," G-vector(s) (", &
-    &I4," G-shell(s))")')ngvec_me,ngsh_me
+  write(150,'("matrix elements were calculated for: ")')
+  write(150,'("  G-shells  : ",I4," to ", I4)')gshme1,gshme2
+  write(150,'("  G-vectors : ",I4," to ", I4)')gvecme1,gvecme2
 endif
 #ifdef _MPI_
-call mpi_bcast(ngvec_me,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
-call mpi_bcast(ngsh_me,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(gshme1,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(gshme2,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(gvecme1,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(gvecme2,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(ngvecme,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(spin_me,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(max_num_nnp,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 call mpi_bcast(igq0,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
@@ -170,14 +179,14 @@ call mpi_bcast(evalsvnr,nstsv*nkptnr,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
 !evalsvnr(1:28,:)=-100000.d0
 !evalsvnr(57:,:)=100000.d0
 
-allocate(zrhofc1(ngvec_me,max_num_nnp))
-allocate(mtrx1(ngvec_me,ngvec_me))
-if (iproc.eq.0) allocate(chi0(ngvec_me,ngvec_me,nepts,nspin_chi0))
+allocate(zrhofc1(ngvecme,max_num_nnp))
+allocate(mtrx1(ngvecme,ngvecme))
+if (iproc.eq.0) allocate(chi0(ngvecme,ngvecme,nepts,nspin_chi0))
 
 ! different implementations for parallel and serial execution
 #ifdef _MPI_
 
-allocate(chi0_loc(ngvec_me,ngvec_me,nepts,nspin_chi0))
+allocate(chi0_loc(ngvecme,ngvecme,nepts,nspin_chi0))
 allocate(status(MPI_STATUS_SIZE))
 allocate(ikptiprocnr(nkptnr))
 do i=0,nproc-1
@@ -187,7 +196,7 @@ enddo
 allocate(num_nnp(nkptlocnr(iproc)))
 allocate(nnp(max_num_nnp,3,nkptlocnr(iproc)))
 allocate(docc(max_num_nnp,nkptlocnr(iproc)))
-allocate(zrhofc(ngvec_me,max_num_nnp,nkptlocnr(iproc)))
+allocate(zrhofc(ngvecme,max_num_nnp,nkptlocnr(iproc)))
 allocate(nnp1(max_num_nnp,3))
 allocate(docc1(max_num_nnp))
 
@@ -204,7 +213,7 @@ do ik=1,nkptnr
     read(160)num_nnp1
     read(160)nnp1(1:num_nnp1,1:3)
     read(160)docc1(1:num_nnp1)
-    read(160)zrhofc1(1:ngvec_me,1:num_nnp1)
+    read(160)zrhofc1(1:ngvecme,1:num_nnp1)
     if (ik.le.nkptlocnr(0)) then
       num_nnp(ik)=num_nnp1
       nnp(:,:,ik)=nnp1(:,:)
@@ -221,7 +230,7 @@ do ik=1,nkptnr
       call mpi_send(docc1,max_num_nnp,MPI_DOUBLE_PRECISION,          &
         ikptiprocnr(ik),tag,MPI_COMM_WORLD,ierr)
       tag=tag+1
-      call mpi_send(zrhofc1,ngvec_me*max_num_nnp,MPI_DOUBLE_COMPLEX, &
+      call mpi_send(zrhofc1,ngvecme*max_num_nnp,MPI_DOUBLE_COMPLEX, &
         ikptiprocnr(ik),tag,MPI_COMM_WORLD,ierr)
     endif
   else
@@ -237,7 +246,7 @@ do ik=1,nkptnr
       call mpi_recv(docc(1,ikloc),max_num_nnp,               &
         MPI_DOUBLE_PRECISION,0,tag,MPI_COMM_WORLD,status,ierr)
       tag=tag+1
-      call mpi_recv(zrhofc(1,1,ikloc),ngvec_me*max_num_nnp,  &
+      call mpi_recv(zrhofc(1,1,ikloc),ngvecme*max_num_nnp,  &
         MPI_DOUBLE_COMPLEX,0,tag,MPI_COMM_WORLD,status,ierr)
     endif
   endif
@@ -261,8 +270,8 @@ do ikloc=1,nkptlocnr(iproc)
     call flushifc(150)
   endif
   do i=1,num_nnp(ikloc)
-    do ig1=1,ngvec_me
-      do ig2=1,ngvec_me
+    do ig1=1,ngvecme
+      do ig2=1,ngvecme
         mtrx1(ig1,ig2)=zrhofc(ig1,i,ikloc)*dconjg(zrhofc(ig2,i,ikloc))
       enddo
     enddo
@@ -273,7 +282,7 @@ do ikloc=1,nkptlocnr(iproc)
     endif
     do ie=1,nepts
       wt=docc(i,ikloc)/(evalsvnr(nnp(i,1,ikloc),ik)-evalsvnr(nnp(i,2,ikloc),ikq(ik))+w(ie))
-      call zaxpy(ngvec_me*ngvec_me,wt,mtrx1,1,chi0_loc(1,1,ie,ispn),1)
+      call zaxpy(ngvecme*ngvecme,wt,mtrx1,1,chi0_loc(1,1,ie,ispn),1)
     enddo !ie
   enddo !i
 enddo !ikloc
@@ -288,7 +297,7 @@ call mpi_barrier(MPI_COMM_WORLD,ierr)
 do ispn=1,nspin_chi0
   do ie=1,nepts
     call mpi_reduce(chi0_loc(1,1,ie,ispn),chi0(1,1,ie,ispn), &
-      ngvec_me*ngvec_me,MPI_DOUBLE_COMPLEX,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+      ngvecme*ngvecme,MPI_DOUBLE_COMPLEX,MPI_SUM,0,MPI_COMM_WORLD,ierr)
   enddo !ie
 enddo !ispn
 
@@ -319,11 +328,11 @@ do ik=1,nkptnr
   read(160)num_nnp1
   read(160)nnp1(1:num_nnp1,1:3)
   read(160)docc1(1:num_nnp1)
-  read(160)zrhofc1(1:ngvec_me,1:num_nnp1)
+  read(160)zrhofc1(1:ngvecme,1:num_nnp1)
 
   do i=1,num_nnp1
-    do ig1=1,ngvec_me
-      do ig2=1,ngvec_me
+    do ig1=1,ngvecme
+      do ig2=1,ngvecme
         mtrx1(ig1,ig2)=zrhofc1(ig1,i)*dconjg(zrhofc1(ig2,i))
       enddo
     enddo
@@ -334,7 +343,7 @@ do ik=1,nkptnr
     endif
     do ie=1,nepts
       wt=docc1(i)/(evalsvnr(nnp1(i,1),ik)-evalsvnr(nnp1(i,2),ikq(ik))+w(ie))
-      call zaxpy(ngvec_me*ngvec_me,wt,mtrx1,1,chi0(1,1,ie,ispn),1)
+      call zaxpy(ngvecme*ngvecme,wt,mtrx1,1,chi0(1,1,ie,ispn),1)
     enddo !ie
   enddo !i
 enddo !ik
@@ -352,7 +361,8 @@ if (iproc.eq.0) then
   write(fname,'("CHI0[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
     ivq0m(1),ivq0m(2),ivq0m(3)
   open(160,file=trim(fname),form='unformatted',status='replace')
-  write(160)ngsh_me,ngvec_me,nepts,igq0
+  write(160)nepts,igq0
+  write(160)gshme1,gshme2,gvecme1,gvecme2,ngvecme
   write(160)w(1:nepts)
   write(160)vq0l(1:3)
   write(160)vq0rl(1:3)
@@ -360,7 +370,7 @@ if (iproc.eq.0) then
   write(160)vq0rc(1:3)
   write(160)spin_me,nspin_chi0
   do ie=1,nepts
-    write(160)chi0(1:ngvec_me,1:ngvec_me,ie,1:nspin_chi0)
+    write(160)chi0(1:ngvecme,1:ngvecme,ie,1:nspin_chi0)
   enddo
   close(160)
 endif
