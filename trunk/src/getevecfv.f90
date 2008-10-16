@@ -86,11 +86,12 @@ si(:,:)=symlat(:,:,ilspl)
 !     translate and rotate APW coefficients     !
 !-----------------------------------------------!
 allocate(evecfvt(nmatmax,nstfv))
-do ist=1,nstfv
-  do igk=1,ngk(ik,1)
-    evecfvt(igk,ist)=evecfv(igk,ist,1)
-  end do
-end do
+evecfvt(:,:)=evecfv(:,:,1)
+!do ist=1,nstfv
+!  do igk=1,ngk(ik,1)
+!    evecfvt(igk,ist)=evecfv(igk,ist,1)
+!  end do
+!end do
 do igk=1,ngk(ik,1)
   call r3mtv(si,vgkl(1,igk,ik,1),v)
   do igp=1,ngk(ik,1)
@@ -101,9 +102,8 @@ do igk=1,ngk(ik,1)
   end do
 10 continue
 end do
-deallocate(evecfvt)
 ! return if there are no local-orbitals
-if (nlotot.le.0) return
+if (nlotot.le.0) goto 20
 !---------------------------------------------------------!
 !     translate and rotate local-orbital coefficients     !
 !---------------------------------------------------------!
@@ -130,7 +130,7 @@ do is=1,nspecies
         do m=-l,l
           lm=idxlm(l,m)
           i=ngk(ik,1)+idxlo(lm,ilo,ias)
-          zflm(lm,ist)=evecfv(i,ist,1)
+          zflm(lm,ist)=evecfvt(i,ist)
         end do
       end do
       call rotzflm(sc,l,nstfv,lolmmax,zflm,zflm)
@@ -145,6 +145,8 @@ do is=1,nspecies
   end do
 end do
 deallocate(zflm)
+20 continue
+deallocate(evecfvt)
 return
 end subroutine
 
