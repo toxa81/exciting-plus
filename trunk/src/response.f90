@@ -21,6 +21,7 @@ complex(8), allocatable :: wfsvitloc(:,:,:)
 complex(8), allocatable :: wfsvmtloc(:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 real(8), allocatable :: occsvnr(:,:)
+real(8), allocatable :: wfnrmdev(:,:)
 
 integer i,j,ngsh,gshmin,gshmax,gvecme1,gvecme2,ngvecme,gvecchi1,gvecchi2,ngvecchi,ik,ikloc,ig, &
   ispn,istfv
@@ -184,6 +185,8 @@ if (task.eq.400.or.task.eq.403) then
     write(150,'("Reading eigen-vectors")')
     call flushifc(150)
   endif
+  allocate(wfnrmdev(nstsv*(nstsv+1)/2,nkptnr))
+  wfnrmdev=0.d0
 ! read and transform eigen-vectors
   do ikloc=1,nkptlocnr(0)
     do i=0,nproc-1
@@ -201,13 +204,19 @@ if (task.eq.400.or.task.eq.403) then
       call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfv,evecsv,apwalm, &
         wfsvmtloc(1,1,1,1,ikloc))
       call genwfsvit(ngknr(ikloc),evecfv,evecsv,wfsvitloc(1,1,ikloc))
-!      call wfsvprodk(ngknr(ikloc),igkignr(1,ikloc),wfsvmtloc(1,1,1,1,ikloc),wfsvitloc(1,1,ikloc))
+      call wfsvprodk(ngknr(ikloc),igkignr(1,ikloc),wfsvmtloc(1,1,1,1,ikloc), &
+        wfsvitloc(1,1,ikloc),wfnrmdev(1,ik))
     endif
   enddo !ikloc
+  call dsync(wfnrmdev,nkptnr*(nstsv*(nstsv+1)/2),.true.,.false.)
   if (iproc.eq.0) then
     write(150,'("Done.")')
+    write(150,*)
+    write(150,'("Maximum WF norm deviation : ",G18.10)')maxval(wfnrmdev)
+    write(150,'("Average WF norm deviation : ",G18.10)')sum(wfnrmdev)/nkptnr/(nstsv*(nstsv+1)/2.d0)
     call flushifc(150)
   endif
+  deallocate(wfnrmdev)
   deallocate(evecfv,evecsv)
   deallocate(apwalm)
   deallocate(vgklnr)

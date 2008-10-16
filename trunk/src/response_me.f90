@@ -942,13 +942,14 @@ return
 end
 
 
-subroutine wfsvprodk(ngp,igpig,wfsvmt,wfsvit)
+subroutine wfsvprodk(ngp,igpig,wfsvmt,wfsvit,wfnrmdev)
 use modmain
 implicit none
 integer, intent(in) :: ngp
 integer, intent(in) :: igpig(ngkmax)
 complex(8), intent(in) :: wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv)
 complex(8), intent(in) :: wfsvit(nmatmax,nstsv)
+real(8), intent(out) :: wfnrmdev(nstsv*(nstsv+1)/2)
 
 complex(8) norm
 real(8) t1
@@ -956,7 +957,7 @@ real(8) t1
 complex(8), allocatable :: mit(:,:)
 complex(8), allocatable :: a(:,:) 
 
-integer is,ia,ias,ig1,ig2,ist1,ist2,io1,io2,l,m,lm,i
+integer is,ia,ias,ig1,ig2,ist1,ist2,io1,io2,l,m,lm,i,j
 integer iv2g(3)
 real(8) v1(3),v2(3),tp2g(2),len2g
 complex(8) sfac2g(natmtot)
@@ -997,8 +998,10 @@ do i=1,nstsv
   enddo
 enddo
 
+j=0
 do ist1=1,nstsv
   do ist2=ist1,nstsv
+    j=j+1
     norm=dcmplx(0.0,0.d0)
 ! interstitial contribution
     do ig2=1,ngp
@@ -1023,9 +1026,7 @@ do ist1=1,nstsv
     enddo !is
     t1=0.d0
     if (ist1.eq.ist2) t1=1.d0
-    if (abs(norm-t1).gt.1d-3) then
-      write(*,*)'Bad orthonormalization',abs(norm),'for ist1=',ist1,'ist2=',ist2
-    endif
+    wfnrmdev(j)=abs(norm-t1)
   enddo !ist1 
 enddo !ist2
 
