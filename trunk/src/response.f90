@@ -201,7 +201,7 @@ if (task.eq.400.or.task.eq.403) then
       call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfv,evecsv,apwalm, &
         wfsvmtloc(1,1,1,1,ikloc))
       call genwfsvit(ngknr(ikloc),evecfv,evecsv,wfsvitloc(1,1,ikloc))
-      call wfsvprodk(ngknr(ikloc),igkignr(1,ikloc),wfsvmtloc(1,1,1,1,ikloc),wfsvitloc(1,1,ikloc))
+!      call wfsvprodk(ngknr(ikloc),igkignr(1,ikloc),wfsvmtloc(1,1,1,1,ikloc),wfsvitloc(1,1,ikloc))
     endif
   enddo !ikloc
   if (iproc.eq.0) then
