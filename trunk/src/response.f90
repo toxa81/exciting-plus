@@ -179,8 +179,8 @@ if (task.eq.400.or.task.eq.403) then
   allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
   if (iproc.eq.0) then
     write(150,*)
-    write(150,'("Size of acoeff array (Mb) : ",I6)')lmmaxvr*nrfmax*natmtot*nstsv*nkptlocnr(0)/1024/1024
-    write(150,'("Size of evec array (Mb)   : ",I6)')nmatmax*nstsv*nkptlocnr(0)/1024/1024
+    write(150,'("Size of wfsvmt array (Mb) : ",I6)')lmmaxvr*nrfmax*natmtot*nstsv*nkptlocnr(0)/1024/1024
+    write(150,'("Size of wfsvit array (Mb) : ",I6)')nmatmax*nstsv*nkptlocnr(0)/1024/1024
     write(150,*)
     write(150,'("Reading eigen-vectors")')
     call flushifc(150)
