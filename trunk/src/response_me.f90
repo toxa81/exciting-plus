@@ -732,8 +732,13 @@ real(8), intent(out) :: docc(max_num_nnp,nkptnr)
 integer band1,band2
 integer i,ik,jk,istfv1,istfv2,ispn,ist1,ist2,ikloc
 
-band1=1
-band2=nstfv
+if (bndme1.eq.-1) then
+  band1=1
+  band2=nstfv
+else
+  band1=bndme1
+  band2=bndme2
+endif
 if (req.and.iproc.eq.0) then
   write(150,*)
   write(150,'("Band interval: ",2I4)')band1,band2

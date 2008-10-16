@@ -874,6 +874,7 @@ real(8) maxomega
 real(8) domega
 real(8) eta
 logical afmchi0 
+integer bndme1,bndme2
 
 logical ismpi
 integer iproc

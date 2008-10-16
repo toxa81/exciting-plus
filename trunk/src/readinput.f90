@@ -155,6 +155,8 @@ taurdmc=0.5d0
 rdmalpha=0.7d0
 reducebf=1.d0
 wannier=.false.
+bndme1=-1
+bndme2=-1
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -844,6 +846,8 @@ case('response')
     write(*,*)
     call pstop
   endif
+case('response1')
+  read(50,*,err=20) bndme1,bndme2
 case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_natoms,wann_nspins
