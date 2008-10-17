@@ -904,7 +904,6 @@ complex(8), allocatable :: rlm2ylm(:,:)
 logical wannier
 
 integer, allocatable :: lm2l(:)
-real(8), allocatable :: vgklglob(:,:,:,:)
 
 end module
 

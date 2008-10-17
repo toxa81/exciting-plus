@@ -149,10 +149,7 @@ if (allocated(tpgkc)) deallocate(tpgkc)
 allocate(tpgkc(2,ngkmax,nkptloc(iproc),nspnfv))
 if (allocated(sfacgk)) deallocate(sfacgk)
 allocate(sfacgk(ngkmax,natmtot,nkptloc(iproc),nspnfv))
-if (allocated(vgklglob)) deallocate(vgklglob)
-allocate(vgklglob(3,ngkmax,nkpt,nspnfv))
 ngk=0
-vgklglob=0.d0
 do ispn=1,nspnfv
   do ikloc=1,nkptloc(iproc)
     ik=ikptloc(iproc,1)+ikloc-1
@@ -172,13 +169,11 @@ do ispn=1,nspnfv
 ! generate the G+k-vectors
     call gengpvec(vl,vc,ngk(ik,ispn),igkig(1,ikloc,ispn),vgkl(1,1,ikloc,ispn), &
      vgkc(1,1,ikloc,ispn),gkc(1,ikloc,ispn),tpgkc(1,1,ikloc,ispn))
-    vgklglob(:,:,ik,ispn)=vgkl(:,:,ikloc,ispn)
 ! generate structure factors for G+k-vectors
     call gensfacgp(ngk(ik,ispn),vgkc(1,1,ikloc,ispn),ngkmax,sfacgk(1,1,ikloc,ispn))
   end do
 end do
 call isync(ngk,nkpt*nspnfv,.true.,.true.)
-call dsync(vgklglob,3*ngkmax*nkpt*nspnfv,.true.,.true.)
 !---------------------------------!
 !     APWs and local-orbitals     !
 !---------------------------------!

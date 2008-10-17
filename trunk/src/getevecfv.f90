@@ -22,19 +22,21 @@ complex(8) zt1
 ! allocatable arrays
 complex(8), allocatable :: evecfvt(:,:)
 complex(8), allocatable :: zflm(:,:)
+real(8), allocatable :: vgpl_(:,:)
 ! external functions
 real(8) r3taxi,r3dot
 external r3taxi,r3dot
+allocate(vgpl_(3,ngkmax))
 ! find the equivalent k-point number and crystal symmetry element
 call findkpt(vpl,isym,ik)
 ! index to spatial rotation in lattice point group
 lspl=lsplsymc(isym)
 ! find the record length
-inquire(iolength=recl) vkl_,nmatmax_,nstfv_,nspnfv_,evecfv
+inquire(iolength=recl) vkl_,nmatmax_,nstfv_,nspnfv_,evecfv,vgpl_
 !$OMP CRITICAL
 open(70,file=trim(scrpath)//'EVECFV'//trim(filext),action='READ', &
  form='UNFORMATTED',access='DIRECT',recl=recl)
-read(70,rec=ik) vkl_,nmatmax_,nstfv_,nspnfv_,evecfv
+read(70,rec=ik) vkl_,nmatmax_,nstfv_,nspnfv_,evecfv,vgpl_
 close(70)
 !$OMP END CRITICAL
 if (r3taxi(vkl(1,ik),vkl_).gt.epslat) then
@@ -93,7 +95,7 @@ evecfvt(:,:)=evecfv(:,:,1)
 !  end do
 !end do
 do igk=1,ngk(ik,1)
-  call r3mtv(si,vgklglob(1,igk,ik,1),v)
+  call r3mtv(si,vgpl_(1,igk),v)
   do igp=1,ngk(ik,1)
     if (r3taxi(v,vgpl(1,igp)).lt.epslat) then
       evecfv(igp,:,1)=evecfvt(igk,:)
@@ -146,7 +148,7 @@ do is=1,nspecies
 end do
 deallocate(zflm)
 20 continue
-deallocate(evecfvt)
+deallocate(evecfvt,vgpl_)
 return
 end subroutine
 
