@@ -59,3 +59,11 @@ integer, intent(in) :: ikloc
 ikglob=ikptloc(iproc,1)+ikloc-1
 return
 end
+
+integer function ikloc(ikglob)
+use modmain
+implicit none
+integer, intent(in) :: ikglob
+ikloc=ikglob-ikptloc(iproc,1)+1
+return
+end
