@@ -1,4 +1,3 @@
-
 ! Copyright (C) 2007 J. K. Dewhurst, S. Sharma and C. Ambrosch-Draxl.
 ! This file is distributed under the terms of the GNU General Public License.
 ! See the file COPYING for license details.
@@ -88,12 +87,12 @@ si(:,:)=symlat(:,:,ilspl)
 !     translate and rotate APW coefficients     !
 !-----------------------------------------------!
 allocate(evecfvt(nmatmax,nstfv))
-evecfvt(:,:)=evecfv(:,:,1)
-!do ist=1,nstfv
-!  do igk=1,ngk(ik,1)
-!    evecfvt(igk,ist)=evecfv(igk,ist,1)
-!  end do
-!end do
+evecfvt(ngk(ik,1)+1:,:)=evecfv(ngk(ik,1)+1:,:,1)
+do igk=1,ngk(ik,1)
+  t1=-twopi*dot_product(vgkl(:,igk,1,ik),vtlsymc(:,isym))
+  zt1=cmplx(cos(t1),sin(t1),8)
+  evecfvt(igk,:)=zt1*evecfv(igk,:,1)
+end do
 do igk=1,ngk(ik,1)
   call r3mtv(si,vgpl_(1,igk),v)
   do igp=1,ngk(ik,1)
