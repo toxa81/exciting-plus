@@ -298,6 +298,7 @@ do ispn=1,nspin_chi0
   do ie=1,nepts
     call mpi_reduce(chi0_loc(1,1,ie,ispn),chi0(1,1,ie,ispn), &
       ngvecme*ngvecme,MPI_DOUBLE_COMPLEX,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+    call mpi_barrier(MPI_COMM_WORLD,ierr)
   enddo !ie
 enddo !ispn
 
