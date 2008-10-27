@@ -89,7 +89,7 @@ si(:,:)=symlat(:,:,ilspl)
 allocate(evecfvt(nmatmax,nstfv))
 evecfvt(ngk(ik,1)+1:,:)=evecfv(ngk(ik,1)+1:,:,1)
 do igk=1,ngk(ik,1)
-  t1=-twopi*dot_product(vgkl(:,igk,1,ik),vtlsymc(:,isym))
+  t1=-twopi*dot_product(vgpl_(:,igk),vtlsymc(:,isym))
   zt1=cmplx(cos(t1),sin(t1),8)
   evecfvt(igk,:)=zt1*evecfv(igk,:,1)
 end do
