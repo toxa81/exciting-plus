@@ -157,9 +157,6 @@ if (task.eq.400.or.task.eq.403) then
   call genlofr
   call geturf
   call genurfprod
-  
-! write(*,*)lmaxvr,lmmaxvr,nmatmax,nstfv,nstsv,ngkmax,apwordmax,lmaxapw,lmmaxapw,natmtot,nrfmax
-  write(iproc+100,*)idxlo
 ! generate G+k vectors for entire BZ (this is required to compute 
 !   wave-functions at each k-point)
   allocate(vgklnr(3,ngkmax,nkptlocnr(iproc)))
@@ -202,21 +199,11 @@ if (task.eq.400.or.task.eq.403) then
     enddo !i
     if (ikloc.le.nkptlocnr(iproc)) then
 ! get apw coeffs 
-      apwalm=dcmplx(0.d0,0.d0)
       call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc), &
         sfacgknr(1,1,ikloc),apwalm)
-      wfsvmtloc(:,:,:,:,ikloc)=dcmplx(0.d0,0.d0)
       call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfv,evecsv,apwalm, &
         wfsvmtloc(1,1,1,1,ikloc))
-!	write(*,'(2I4,4F18.10)')ik,ngknr(ikloc),sum(abs(evecfv(1:ngknr(ikloc),:,1))), &
-!	  sum(abs(evecsv)),sum(abs(apwalm)),sum(abs(vgklnr(:,1:ngknr(ikloc),ikloc)))
-      
-      wfsvitloc(:,:,ikloc)=dcmplx(0.d0,0.d0)
       call genwfsvit(ngknr(ikloc),evecfv,evecsv,wfsvitloc(1,1,ikloc))
-	write(*,'(2I4,4F18.10)')ik,ngknr(ikloc),sum(abs(evecfv(1:ngknr(ikloc),:,1))), &
-	  sum(abs(evecsv)),sum(abs(apwalm)),sum(abs(wfsvitloc(:,:,ikloc)))
-	        
-      
       call wfsvprodk(ngknr(ikloc),igkignr(1,ikloc),wfsvmtloc(1,1,1,1,ikloc), &
         wfsvitloc(1,1,ikloc),wfnrmdev(1,ik))
     endif
@@ -229,7 +216,6 @@ if (task.eq.400.or.task.eq.403) then
     write(150,'("Average WF norm deviation : ",G18.10)')sum(wfnrmdev)/nkptnr/(nstsv*(nstsv+1)/2.d0)
     call flushifc(150)
   endif
-  call pstop
   deallocate(wfnrmdev)
   deallocate(evecfv,evecsv)
   deallocate(apwalm)
