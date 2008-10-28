@@ -16,8 +16,8 @@ do ispn=1,wann_nspins
     do ik=1,nkptloc(iproc)
       do i=1,nstfv
         w2=dconjg(wfc(n,i,ispn,ik))*wfc(n,i,ispn,ik)
-        wf_ene(n,ispn)=wf_ene(n,ispn)+w2*evalsv(i,ikglob(ik))*wkpt(ikglob(ik))
-        wf_occ(n,ispn)=wf_occ(n,ispn)+w2*occsv(i,ikglob(ik))*wkpt(ikglob(ik))
+        wf_ene(n,ispn)=wf_ene(n,ispn)+w2*evalsv(i+(ispn-1)*nstfv,ikglob(ik))*wkpt(ikglob(ik))
+        wf_occ(n,ispn)=wf_occ(n,ispn)+w2*occsv(i+(ispn-1)*nstfv,ikglob(ik))*wkpt(ikglob(ik))
       enddo
     enddo
   enddo

@@ -92,7 +92,10 @@ do ispn=1,wann_nspins
     wfcnew(:,:)=prjao(:,:,ispn)
   endif
 !  wfc(:,:,ispn,ik)=0.d0*wfc(:,:,ispn,ik)+1.d0*wfcnew(:,:)
+!  write(*,*)sum(abs(wfc(:,:,ispn,ik)-wfcnew(:,:)))
   wfc(:,:,ispn,ik)=wfcnew(:,:)
+!  wfc(:,:,ispn,ik)=0.9d0*wfc(:,:,ispn,ik)+0.1d0*wfcnew(:,:)
+
 ! compute H(k) in WF basis
   zt2=dcmplx(0.d0,0.d0)
   do m1=1,wf_dim
