@@ -51,6 +51,7 @@ if (task.eq.400) fname='RESPONSE_ME.OUT'
 if (task.eq.401) fname='RESPONSE_CHI0.OUT'
 if (task.eq.402) fname='RESPONSE_CHI.OUT'
 if (task.eq.403) fname='RESPONSE.OUT'
+if (task.eq.404) fname='RESPONSE.OUT'
 
 if (iproc.eq.0) then
   open(150,file=trim(fname),form='formatted',status='replace')
@@ -263,6 +264,10 @@ if (task.eq.403) then
     call response_chi0(ivq0m_list(1,i),ikptlocnr,nkptlocnr)
     call response_chi(ivq0m_list(1,i),gvecchi1,gvecchi2)
   enddo
+endif
+
+if (task.eq.404) then
+  call response_jdos
 endif
 
 if (iproc.eq.0) close(150)
