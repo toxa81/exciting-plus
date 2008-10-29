@@ -10,7 +10,7 @@ isqrt2=dcmplx(0.d0,1.d0/sqrt(2.d0))
 
 ! construct Ylm to Rlm matrix first
 !   R_{lm} = \sum_{l'm'}ylm2rlm_{lm,l'm'}Y_{l'm'}
-! order of orbitals: s  y z x  xy xz 3z^2-r^2 yz x^2-y^2  f1 f2...
+! order of orbitals: s  y z x  xy yz 3z^2-r^2 xz x^2-y^2  f1 f2...
 do l=0,3
   if (l.eq.0) then
     ylm2rlm(idxlm(0,0),idxlm(0,0))=dcmplx(1.d0,0.d0)
