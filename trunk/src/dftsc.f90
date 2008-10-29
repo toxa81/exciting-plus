@@ -70,10 +70,10 @@ do iscl=1,maxscl
   call olprad
 ! compute the Hamiltonian radial integrals
   call hmlrad
-  if (wannier) then
+!  if (wannier) then
     call geturf
     call genurfprod
-  endif
+!  endif
   evalsv=0.d0
   spnchr=0.d0
   timematmt1=0.d0
@@ -157,6 +157,7 @@ do iscl=1,maxscl
     call genvmatlu
 ! write the LDA+U matrices to file
     if (iproc.eq.0) call writeldapu
+    call gendmatrsh
   end if
   
 ! compute the effective potential
