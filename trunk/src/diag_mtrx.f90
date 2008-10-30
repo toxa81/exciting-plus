@@ -24,3 +24,28 @@
       deallocate(work,rwork)
 
       end
+
+subroutine diagdsy(n,mtrx,eval)
+implicit none
+integer, intent(in) :: n
+real(8), intent(inout) :: mtrx(n,n)
+real(8), intent(out) :: eval(n)
+
+integer lwork,info
+real(8), allocatable :: work(:)
+real(8) t1
+
+lwork=-1
+call dsyev('V','U',n,mtrx,n,eval,t1,lwork,info)
+lwork=int(t1)+1
+allocate(work(lwork))
+call dsyev('V','U',n,mtrx,n,eval,work,lwork,info)
+if (info.ne.0) then
+  write(*,*)
+  write(*,'("Warning(diagdsy) : info = ",I4)')info
+  write(*,*)
+endif
+deallocate(work)
+
+return
+end

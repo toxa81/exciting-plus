@@ -2,7 +2,7 @@ subroutine genshmat
 use modmain
 implicit none
 complex(8) sqrt2,isqrt2
-integer l
+integer l,ias,lm1,lm2,lm3
 
 ylm2rlm=dcmplx(0.d0,0.d0)
 sqrt2=dcmplx(1.d0/sqrt(2.d0),0.d0)
@@ -49,6 +49,23 @@ enddo
 ! invert the matrix and get Rlm to Ylm transformation
 rlm2ylm=ylm2rlm
 call invzge(rlm2ylm,16)
+
+! Y_{lm}=\sum_{l'm'} rlm2ylm_{lm,l'm'} R_{l'm'}
+! R^{loc}_{lm}=\sum_{l'm'} D_{l'm',lm} R_{l'm'} -> R_{lm}=\sum_{l'm'} D^{-1}_{l'm',lm} R^{loc}_{l'm'}
+! Y_{lm}=\sum_{l'm'} rlm2ylm_{lm,l'm'} \sum_{l"m"} D^{-1}_{l"m",l'm'} R^{loc}_{l"m"} = 
+!    \sum_{l"m"} R^{loc}_{l"m"} \sum_{l'm'} rlm2ylm_{lm,l'm'} D^{-1}_{l"m",l'm'}
+
+do ias=1,natmtot
+  call invdsy(16,lcsrsh(1,1,ias))
+  rlm2ylm1=dcmplx(0.d0,0.d0)
+  do lm1=1,16
+    do lm2=1,16
+      do lm3=1,16
+        rlm2ylm1(lm2,lm1,ias)=rlm2ylm1(lm1,lm2,ias)+rlm2ylm(lm1,lm3)*lcsrsh(lm2,lm3,ias)
+      enddo
+    enddo
+  enddo
+enddo
 
 return
 end

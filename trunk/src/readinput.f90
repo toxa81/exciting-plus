@@ -29,6 +29,7 @@ character(256) fname
 character(256) str
 character(256) bname
 character(256) sppath
+integer n,lm1,lm2
 
 !------------------------!
 !     default values     !
@@ -157,6 +158,8 @@ reducebf=1.d0
 wannier=.false.
 bndme1=-1
 bndme2=-1
+dmbnd1=-1
+dmbnd2=-1
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -872,6 +875,23 @@ case('wannier')
     read(50,*,err=20)(wann_iorb(l,i),l=1,wann_iorb(0,i))
     do ispn=1,wann_nspins
       read(50,*,err=20)(wann_deltav(l,ispn,i),l=1,wann_iorb(0,i))
+    enddo
+  enddo
+case('densmtrx')
+  read(50,*,err=20) dmbnd1,dmbnd2
+case('lcs')
+  allocate(lcsrsh(16,16,maxatoms))
+  lcsrsh=0.d0
+  do ias=1,maxatoms
+    do i=1,16
+      lcsrsh(i,i,ias)=1.d0
+    enddo
+  enddo
+  read(50,*,err=20) n
+  do i=1,n
+    read(50,*,err=20) ias,l
+    do lm1=l**2+1,(l+1)**2
+      read(50,*,err=20)(lcsrsh(lm1,lm2,ias),lm2=l**2+1,(l+1)**2)
     enddo
   enddo
 case('')

@@ -30,3 +30,40 @@
       deallocate(work,ipiv)
 
       end
+
+subroutine invdsy(n,mtrx)
+implicit none
+integer, intent(in) :: n
+real(8), intent(inout) :: mtrx(n,n)
+
+real(8) t1
+integer lwork,info
+integer, allocatable :: ipiv(:)
+real(8), allocatable :: work(:)
+
+allocate(ipiv(n))
+lwork=-1
+call dsytrf('U',n,mtrx,n,ipiv,t1,lwork,info)
+lwork=int(t1)+1
+allocate(work(lwork))
+call dsytrf('U',n,mtrx,n,ipiv,work,lwork,info)
+if (info.ne.0) then
+  write(*,*)
+  write(*,'("Warinig(invdsy) : factorization error")')
+  write(*,*)
+endif
+call dsytri('U',n,mtrx,n,ipiv,work,info)
+if (info.ne.0) then
+  write(*,*)
+  write(*,'("Warinig(invdsy) : inversion error")')
+  write(*,*)
+endif
+
+deallocate(ipiv,work)
+
+return
+end
+
+
+
+

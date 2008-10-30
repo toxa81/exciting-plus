@@ -297,6 +297,10 @@ if (allocated(urf)) deallocate(urf)
 allocate(urf(nrmtmax,0:lmaxvr,nrfmax,natmtot))
 if (allocated(urfprod)) deallocate(urfprod)
 allocate(urfprod(0:lmaxvr,nrfmax,nrfmax,natmtot))
+if (dmbnd1.eq.-1) then
+  dmbnd1=1
+  dmbnd2=nstfv
+endif
 
 call cpu_time(cpu1)
 timeinit=timeinit+cpu1-cpu0

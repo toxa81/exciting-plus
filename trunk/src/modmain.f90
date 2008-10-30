@@ -900,10 +900,14 @@ real(8) timepotxc1
 
 complex(8), allocatable :: ylm2rlm(:,:)
 complex(8), allocatable :: rlm2ylm(:,:)
+complex(8), allocatable :: rlm2ylm1(:,:,:)
 
 logical wannier
 
 integer, allocatable :: lm2l(:)
+integer dmbnd1,dmbnd2
+
+real(8), allocatable :: lcsrsh(:,:,:)
 
 end module
 
