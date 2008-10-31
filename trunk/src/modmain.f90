@@ -908,6 +908,8 @@ integer, allocatable :: lm2l(:)
 integer dmbnd1,dmbnd2
 
 real(8), allocatable :: lcsrsh(:,:,:)
+integer natlcs
+integer, allocatable :: iatlcs(:)
 
 end module
 

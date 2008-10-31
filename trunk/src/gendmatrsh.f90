@@ -88,7 +88,7 @@ if (iproc.eq.0) then
         enddo
         write(50,'(" eigen-vectors : ")')
         do m1=1,2*l+1
-          write(50,'(14F12.6)')(mtrx(m1,m2),m2=1,2*l+1)
+          write(50,'(14G18.10)')(mtrx(m1,m2),m2=1,2*l+1)
         enddo
         write(50,'(" eigen-values : ")')
         write(50,'(14F12.6)')(eval(m1),m1=1,2*l+1)

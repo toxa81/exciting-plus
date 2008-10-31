@@ -90,7 +90,7 @@ do j=1,nstfv
           call rotzflm(symlatc(1,1,lsplsymc(isym)),3,1,ld,wfsvmt(1:ld,io1,ias,j+(ispn-1)*nstfv),zt2)
           do lm=1,ld
             do lm1=1,ld
-              zt1(lm,io1)=zt1(lm,io1)+rlm2ylm(lm1,lm)*zt2(lm1)
+              zt1(lm,io1)=zt1(lm,io1)+rlm2ylm1(lm1,lm,ias)*zt2(lm1)
             enddo
           enddo
         enddo !io1

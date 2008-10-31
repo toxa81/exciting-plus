@@ -2,7 +2,7 @@ subroutine genshmat
 use modmain
 implicit none
 complex(8) sqrt2,isqrt2
-integer l,ias,lm1,lm2,lm3
+integer l,ias,lm1,lm2,lm3,i
 
 ylm2rlm=dcmplx(0.d0,0.d0)
 sqrt2=dcmplx(1.d0/sqrt(2.d0),0.d0)
@@ -56,12 +56,17 @@ call invzge(rlm2ylm,16)
 !    \sum_{l"m"} R^{loc}_{l"m"} \sum_{l'm'} rlm2ylm_{lm,l'm'} D^{-1}_{l"m",l'm'}
 
 do ias=1,natmtot
-  call invdsy(16,lcsrsh(1,1,ias))
-  rlm2ylm1=dcmplx(0.d0,0.d0)
+  rlm2ylm1(:,:,ias)=rlm2ylm(:,:)
+enddo
+
+do i=1,natlcs
+  ias=iatlcs(i)
+  !call invdsy(16,lcsrsh(1,1,i))
+  rlm2ylm1(:,:,ias)=dcmplx(0.d0,0.d0)
   do lm1=1,16
     do lm2=1,16
       do lm3=1,16
-        rlm2ylm1(lm2,lm1,ias)=rlm2ylm1(lm1,lm2,ias)+rlm2ylm(lm1,lm3)*lcsrsh(lm2,lm3,ias)
+        rlm2ylm1(lm1,lm2,ias)=rlm2ylm1(lm1,lm2,ias)+rlm2ylm(lm1,lm3)*lcsrsh(lm2,lm3,i)
       enddo
     enddo
   enddo

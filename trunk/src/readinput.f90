@@ -21,7 +21,7 @@ use modwann
 implicit none
 ! local variables
 integer is,js,ia,ja,ias,ispn
-integer i,l,iv,iostat
+integer i,l,iv,iostat,j
 integer ist,io,nlx,ilx,lx,ilo
 real(8) sc,sc1,sc2,sc3
 real(8) vacuum,v(3),t1,t2
@@ -880,18 +880,17 @@ case('wannier')
 case('densmtrx')
   read(50,*,err=20) dmbnd1,dmbnd2
 case('lcs')
-  allocate(lcsrsh(16,16,maxatoms))
+  read(50,*,err=20) natlcs
+  allocate(lcsrsh(16,16,natlcs))
+  allocate(iatlcs(natlcs))
   lcsrsh=0.d0
-  do ias=1,maxatoms
-    do i=1,16
-      lcsrsh(i,i,ias)=1.d0
+  do i=1,natlcs
+    do j=1,16
+      lcsrsh(j,j,i)=1.d0
     enddo
-  enddo
-  read(50,*,err=20) n
-  do i=1,n
-    read(50,*,err=20) ias,l
+    read(50,*,err=20) iatlcs(i),l
     do lm1=l**2+1,(l+1)**2
-      read(50,*,err=20)(lcsrsh(lm1,lm2,ias),lm2=l**2+1,(l+1)**2)
+      read(50,*,err=20)(lcsrsh(lm1,lm2,i),lm2=l**2+1,(l+1)**2)
     enddo
   enddo
 case('')
