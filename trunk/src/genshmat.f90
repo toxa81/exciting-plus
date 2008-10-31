@@ -66,7 +66,7 @@ do i=1,natlcs
   do lm1=1,16
     do lm2=1,16
       do lm3=1,16
-        rlm2ylm1(lm1,lm2,ias)=rlm2ylm1(lm1,lm2,ias)+rlm2ylm(lm1,lm3)*lcsrsh(lm2,lm3,i)
+        rlm2ylm1(lm1,lm2,ias)=rlm2ylm1(lm1,lm2,ias)+rlm2ylm(lm1,lm3)*lcsrsh(lm3,lm2,i)
       enddo
     enddo
   enddo
