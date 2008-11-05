@@ -51,7 +51,7 @@ do n=1,wf_dim
         do io1=1,nrfmax
           io2=2
           prjao(n,j,ispn)=prjao(n,j,ispn)+dconjg(wfsvmt(lm1,io1,ias,j+(ispn-1)*nstfv)) * &
-            urfprod(l,io1,io2,ias)*ylm2rlm(lm2,lm1)
+            urfprod(l,io1,io2,ias)*ylm2rlmloc(lm2,lm1,ias)
         enddo !io1
       enddo !m
     enddo !j

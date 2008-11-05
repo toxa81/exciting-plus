@@ -19,7 +19,6 @@ real(8), allocatable :: wf_lhen(:,:,:)
 real(8) wf_e1,wf_e2
 integer wf_n1,wf_n2
   
-!complex(8), allocatable :: a_ort(:,:,:,:)
 complex(8), allocatable :: wfc(:,:,:,:)
 complex(8), allocatable :: wf_h(:,:,:,:)
 real(8), allocatable :: wf_e(:,:,:)

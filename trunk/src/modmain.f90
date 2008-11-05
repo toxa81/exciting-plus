@@ -900,7 +900,8 @@ real(8) timepotxc1
 
 complex(8), allocatable :: ylm2rlm(:,:)
 complex(8), allocatable :: rlm2ylm(:,:)
-complex(8), allocatable :: rlm2ylm1(:,:,:)
+complex(8), allocatable :: rlmloc2ylm(:,:,:)
+complex(8), allocatable :: ylm2rlmloc(:,:,:)
 
 logical wannier
 

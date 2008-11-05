@@ -434,8 +434,10 @@ if (allocated(ylm2rlm)) deallocate(ylm2rlm)
 allocate(ylm2rlm(16,16))
 if (allocated(rlm2ylm)) deallocate(rlm2ylm)
 allocate(rlm2ylm(16,16))
-if (allocated(rlm2ylm1)) deallocate(rlm2ylm1)
-allocate(rlm2ylm1(16,16,natmtot))
+if (allocated(rlmloc2ylm)) deallocate(rlmloc2ylm)
+allocate(rlmloc2ylm(16,16,natmtot))
+if (allocated(ylm2rlmloc)) deallocate(ylm2rlmloc)
+allocate(ylm2rlmloc(16,16,natmtot))
 call genshmat
 
 call cpu_time(cpu1)

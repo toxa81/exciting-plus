@@ -50,26 +50,40 @@ enddo
 rlm2ylm=ylm2rlm
 call invzge(rlm2ylm,16)
 
-! Y_{lm}=\sum_{l'm'} rlm2ylm_{lm,l'm'} R_{l'm'}
-! R^{loc}_{lm}=\sum_{l'm'} D_{l'm',lm} R_{l'm'} -> R_{lm}=\sum_{l'm'} D^{-1}_{l'm',lm} R^{loc}_{l'm'}
-! Y_{lm}=\sum_{l'm'} rlm2ylm_{lm,l'm'} \sum_{l"m"} D^{-1}_{l"m",l'm'} R^{loc}_{l"m"} = 
-!    \sum_{l"m"} R^{loc}_{l"m"} \sum_{l'm'} rlm2ylm_{lm,l'm'} D^{-1}_{l"m",l'm'}
+! note:
+!   symmetric matrix decomposition: A=PVP^{T}, where P - matrix of eigenvectors and
+!     V - diagonal matrix of eigen values v
+!   from eigen-vector equation Ax=vx -> PVP^{T}x=vx -> VP^{T}x=vP^{T}x -> Vy=vy, 
+!     where y=P^{T}x or x=Py; x vector in old coord.sys, y - vector in new coord.sys 
+! transformation to LCS: R_m=\sum_{m'} P_{mm'} R^{loc}_{m'}, where
+!   P_{mm'} matrix of eigen-vectors (stored in columns) of some matrix
+!   computed in global R_m basis
+!
+! two more marices are required to go from R^{loc}_{lm} to Y_{lm} and back  
+!
+! from definition Y_{m}=\sum_{m'} rlm2ylm_{m,m'} R_{m'} in GCS:
+! Y_m = \sum_{m'} rlm2ylm_{mm'}R_{m'} = \sum_{m'} rlm2ylm_{mm'} \sum_{m"} P_{m'm"} R^{loc}_{m"} = 
+!    \sum_{m"} R^{loc}_{m"}  \sum_{m'} rlm2ylm_{mm'}P_{m'm"} = \sum_{m"} rlmloc2ylm_{mm"}R^{loc}_{m"}
+!    where rlmloc2ylm_{mm"}=\sum_{m'} rlm2ylm_{mm'}P_{m'm"}
+
 
 do ias=1,natmtot
-  rlm2ylm1(:,:,ias)=rlm2ylm(:,:)
+  rlmloc2ylm(:,:,ias)=rlm2ylm(:,:)
+  ylm2rlmloc(:,:,ias)=ylm2rlm(:,:)
 enddo
 
 do i=1,natlcs
   ias=iatlcs(i)
-  !call invdsy(16,lcsrsh(1,1,i))
-  rlm2ylm1(:,:,ias)=dcmplx(0.d0,0.d0)
+  rlmloc2ylm(:,:,ias)=dcmplx(0.d0,0.d0)
   do lm1=1,16
     do lm2=1,16
       do lm3=1,16
-        rlm2ylm1(lm1,lm2,ias)=rlm2ylm1(lm1,lm2,ias)+rlm2ylm(lm1,lm3)*lcsrsh(lm3,lm2,i)
+        rlmloc2ylm(lm1,lm2,ias)=rlmloc2ylm(lm1,lm2,ias)+rlm2ylm(lm1,lm3)*lcsrsh(lm3,lm2,i)
       enddo
     enddo
   enddo
+  ylm2rlmloc(:,:,ias)=rlmloc2ylm(:,:,ias)
+  call invzge(ylm2rlmloc(1,1,ias),16)
 enddo
 
 return
