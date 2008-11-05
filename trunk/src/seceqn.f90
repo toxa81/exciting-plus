@@ -50,11 +50,14 @@ if (spinsprl) then
   call seceqnss(ik,apwalm,evalfv,evecfv,evecsv)
 else
 ! solve the second-variational secular equation
+! if (wannier) then
+!    call genwann(ik,evecfv,evecsv)
+!    !call genwfpoco(ik)
+! endif
+  call seceqnsv(ik,apwalm,evalfv,evecfv,evecsv)
   if (wannier) then
     call genwann(ik,evecfv,evecsv)
-    call genwfpoco(ik)
   endif
-  call seceqnsv(ik,apwalm,evalfv,evecfv,evecsv)
 end if
 ! compute the spin characters
 call spinchar(ikglob(ik),evecsv)
