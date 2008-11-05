@@ -84,10 +84,16 @@ bndchr=0.d0
 do j=1,nstfv
   do ispn=1,nspinor
     do ias=1,natmtot
+      if (dosym) then
+        nsym1=nsymsite(ias)
+      else
+        nsym1=1
+      endif
       do isym=1,nsym1
+        lspl=lsplsyms(isym,ias)
         zt1=dcmplx(0.d0,0.d0)
         do io1=1,nrfmax
-          call rotzflm(symlatc(1,1,lsplsymc(isym)),3,1,ld,wfsvmt(1:ld,io1,ias,j+(ispn-1)*nstfv),zt2)
+          call rotzflm(symlatc(1,1,lspl),3,1,ld,wfsvmt(1:ld,io1,ias,j+(ispn-1)*nstfv),zt2)
           do lm=1,ld
             do lm1=1,ld
               zt1(lm,io1)=zt1(lm,io1)+rlm2ylm1(lm1,lm,ias)*zt2(lm1)
@@ -100,7 +106,7 @@ do j=1,nstfv
             do io1=1,nrfmax
               do io2=1,nrfmax
                 bndchr(lm,ias,ispn,j+(ispn-1)*nstfv)=bndchr(lm,ias,ispn,j+(ispn-1)*nstfv) + &
-                  urfprod(l,io1,io2,ias)*dreal(dconjg(zt1(lm,io1))*zt1(lm,io2))
+                  urfprod(l,io1,io2,ias)*dreal(dconjg(zt1(lm,io1))*zt1(lm,io2))/nsym1
               enddo
             enddo
           enddo
@@ -109,7 +115,6 @@ do j=1,nstfv
     enddo
   enddo
 enddo
-bndchr=bndchr/nsym1
 
 deallocate(wfsvmt,apwalm)
 return
