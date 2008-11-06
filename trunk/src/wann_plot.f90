@@ -344,13 +344,13 @@ do is=1,nspecies
             sum=0.d0
             do io=1,nrfmax
               do l=0,lmaxvr
+                do j=1,nprad
+                  i=ir0+j-1
+                  ya(j)=urf(i,l,io,ias)
+                end do
+                t2=polynom(0,nprad,spr(ir0,is),ya,c,t1)
                 do m=-l,l
                   lm=idxlm(l,m)
-                  do j=1,nprad
-                    i=ir0+j-1
-                    ya(j)=urf(i,l,io,ias)
-                  end do
-                  t2=polynom(0,nprad,spr(ir0,is),ya,c,t1)
                   do n=1,nwfplot
                     zt1(n)=zt1(n)+t2*ylm(lm)*bcoeff(lm,io,ias,n,ntr(1)+i1,ntr(2)+i2,ntr(3)+i3)
                   enddo
