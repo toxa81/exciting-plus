@@ -286,9 +286,9 @@ do i=0,nproc-1
       call putevalsv(ikglob(ik),evalsv(1,ikglob(ik)))
       call putevecfv(ikglob(ik),evecfvloc(1,1,1,ik))
       call putevecsv(ikglob(ik),evecsvloc(1,1,ik))
-!      if (wannier.and..not.wann_add_poco) then
-!        call putwfc(ikglob(ik),wfc(1,1,1,ik))
-!      endif
+      if (wannier) then
+        call putwfc(ikglob(ik),wfc(1,1,1,ik))
+      endif
     enddo
   endif
   call barrier
