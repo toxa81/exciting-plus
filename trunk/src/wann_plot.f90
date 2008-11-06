@@ -7,7 +7,7 @@ use mpi
 implicit none
 
 real(8) r(3),r1(3),t(3),d
-real(8) bound3d(3,3),orig3d(3)
+real(8) bound3d(3,3),orig3d(3),zero3d(3)
 real(8) bound2d(3,2),orig2d(3)
 complex(4), allocatable :: wf(:,:)
 
@@ -52,19 +52,21 @@ call genlofr
 
 call geturf
 
+zero3d(:)=(/4.34147d0,   4.34147d0,   4.34147d0/)
+
 ! Cartesian coordinates of boundary and origin
-bound3d(:,1)=(/14.d0,0.d0,0.d0/)
-bound3d(:,2)=(/0.d0,14.d0,0.d0/)
-bound3d(:,3)=(/0.d0,0.d0,14.d0/)
-orig3d(:)=(/-7.d0,-7.d0,-7.d0/)
+bound3d(:,1)=(/10.d0,0.d0,0.d0/)
+bound3d(:,2)=(/0.d0,10.d0,0.d0/)
+bound3d(:,3)=(/0.d0,0.d0,10.d0/)
+orig3d(:)=zero3d(:)-(bound3d(:,1)+bound3d(:,2)+bound3d(:,3))/2.d0
 
 bound2d(:,1)=(/20.d0,0.d0,0.d0/)
 bound2d(:,2)=(/0.d0,20.d0,0.d0/)
 orig2d(:)=(/-8.d0,-8.d0, 0.d0/)
 
-nrxyz(:)=(/300,300,300/)
+nrxyz(:)=(/40,40,40/)
 
-nwfplot=5
+nwfplot=8
 
 if (wf3d) then
   nrtot=nrxyz(1)*nrxyz(2)*nrxyz(3)
