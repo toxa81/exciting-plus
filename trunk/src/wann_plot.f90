@@ -53,16 +53,16 @@ call genlofr
 call geturf
 
 ! Cartesian coordinates of boundary and origin
-bound3d(:,1)=(/8.d0,0.d0,0.d0/)
-bound3d(:,2)=(/0.d0,8.d0,0.d0/)
-bound3d(:,3)=(/0.d0,0.d0,8.d0/)
-orig3d(:)=(/-4.d0,-4.d0,-4.d0/)
+bound3d(:,1)=(/14.d0,0.d0,0.d0/)
+bound3d(:,2)=(/0.d0,14.d0,0.d0/)
+bound3d(:,3)=(/0.d0,0.d0,14.d0/)
+orig3d(:)=(/-7.d0,-7.d0,-7.d0/)
 
 bound2d(:,1)=(/20.d0,0.d0,0.d0/)
 bound2d(:,2)=(/0.d0,20.d0,0.d0/)
 orig2d(:)=(/-8.d0,-8.d0, 0.d0/)
 
-nrxyz(:)=(/40,40,40/)
+nrxyz(:)=(/300,300,300/)
 
 nwfplot=5
 

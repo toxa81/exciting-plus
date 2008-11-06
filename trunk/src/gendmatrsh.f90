@@ -5,6 +5,7 @@ complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wfsvmt(:,:,:,:)
 complex(8), allocatable :: wf1(:,:,:)
 complex(8), allocatable :: dmatrsh(:,:,:,:,:)
+complex(8), allocatable :: dmatrshlcs(:,:,:,:,:)
 integer ik,is,ia,ias,l,lm1,lm2,lm3,m1,m2,io1,io2,ispn,j,n1,n2,isym,lspl
 real(8), allocatable :: mtrx(:,:)
 real(8), allocatable :: eval(:)
@@ -20,6 +21,7 @@ allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 allocate(wf1(lmmaxlu,nrfmax,nstsv))
 allocate(dmatrsh(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
+allocate(dmatrshlcs(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
 allocate(dm1(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
 allocate(dm2(lmmaxlu,lmmaxlu))
 dm1=dcmplx(0.d0,0.d0)
@@ -73,7 +75,9 @@ call zsync(dm1,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,.true.,.true.)
 call symdmatlu(dm1)
 
 dmatrsh=dcmplx(0.d0,0.d0)
+dmatrshlcs=dcmplx(0.d0,0.d0)
 do ias=1,natmtot
+! dens.mtrx. in GCS
   dm2=dcmplx(0.d0,0.d0)
   do lm1=1,lmmaxlu
     do lm2=1,lmmaxlu
@@ -87,6 +91,23 @@ do ias=1,natmtot
       do lm3=1,lmmaxlu
         dmatrsh(lm1,lm2,ispn,ispn,ias)=dmatrsh(lm1,lm2,ispn,ispn,ias) + &
           dm2(lm1,lm3)*ylm2rlm(lm2,lm3)
+      enddo
+    enddo
+  enddo
+! dens.mtrx. in LCS
+  dm2=dcmplx(0.d0,0.d0)
+  do lm1=1,lmmaxlu
+    do lm2=1,lmmaxlu
+      do lm3=1,lmmaxlu
+        dm2(lm1,lm2)=dm2(lm1,lm2)+dconjg(ylm2rlmloc(lm1,lm3,ias))*dm1(lm3,lm2,ispn,ispn,ias)
+      enddo
+    enddo
+  enddo
+  do lm1=1,lmmaxlu
+    do lm2=1,lmmaxlu
+      do lm3=1,lmmaxlu
+        dmatrshlcs(lm1,lm2,ispn,ispn,ias)=dmatrshlcs(lm1,lm2,ispn,ispn,ias) + &
+          dm2(lm1,lm3)*ylm2rlmloc(lm2,lm3,ias)
       enddo
     enddo
   enddo
@@ -109,6 +130,7 @@ if (iproc.eq.0) then
         enddo
         call diagdsy(2*l+1,mtrx,eval)
         write(50,'("ias : ",I2)')ias
+	write(50,'(" GCS :")')
         write(50,'(" real part : ")')
         do m1=-l,l
           write(50,'(14F12.6)')(dreal(dmatrsh(idxlm(l,m1),idxlm(l,m2),1,1,ias)),m2=-l,l)  
@@ -123,6 +145,16 @@ if (iproc.eq.0) then
         enddo
         write(50,'(" eigen-values : ")')
         write(50,'(14F12.6)')(eval(m1),m1=1,2*l+1)
+	write(50,'(" LCS :")')
+	write(50,'(" real part : ")')
+        do m1=-l,l
+          write(50,'(14F12.6)')(dreal(dmatrshlcs(idxlm(l,m1),idxlm(l,m2),1,1,ias)),m2=-l,l)  
+        enddo
+        write(50,'(" imag part : ")')
+        do m1=-l,l
+          write(50,'(14F12.6)')(dimag(dmatrshlcs(idxlm(l,m1),idxlm(l,m2),1,1,ias)),m2=-l,l)  
+        enddo
+
       enddo !ia
       deallocate(mtrx,eval)
     endif
