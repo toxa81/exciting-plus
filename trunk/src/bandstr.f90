@@ -31,7 +31,7 @@ use mpi
 implicit none
 ! local variables
 integer lmax,lmmax,l,m,lm,ierr,i,j
-integer ik,ispn,is,ia,ias,iv,ist
+integer ik,ispn,is,ia,ias,iv,ist,n
 real(8) emin,emax,sum,emin0,emax0
 character(256) fname
 ! allocatable arrays
@@ -163,12 +163,19 @@ if (task.eq.21) then
 ! write band-character information
   open(50,file='BANDS.OUT',action='WRITE',form='FORMATTED')
   write(50,*)lmmax,natmtot,nspinor,nstfv,nstsv,nkpt,nvp1d
-  do ik = 1, nkpt
+    do ik = 1, nkpt
     write(50,*)dpp1d(ik)
     write(50,*)(e(ist,ik),ist=1,nstsv)
     write(50,*)((((bndchr(lm,ias,ispn,ist,ik),lm=1,lmmax), &
                ias=1,natmtot),ispn=1,nspinor),ist=1,nstsv)
   enddo
+  write(50,*)wannier
+  if (wannier) then
+    write(50,*)wf_dim
+    do ik = 1, nkpt
+      write(50,*)((abs(wfc(n,i,1,ik)),n=1,wf_dim),i=1,nstfv)
+    enddo
+  endif
   close(50)
 endif
 endif

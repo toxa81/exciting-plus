@@ -5,10 +5,13 @@ integer lmmax,natmtot,nspinor,nstfv,nstsv,nkpt,nlines
 integer lm,ias,ispn,ist,ik,spin
 real(4), allocatable :: bndchr(:,:,:,:,:)
 real(8), allocatable :: dpp1d(:),e(:,:),w(:,:),lines(:,:)
-integer, allocatable :: orb(:,:),tmp(:)
-integer i,j,ist1
+integer, allocatable :: orb(:,:),tmp(:),wf1(:),wf2(:)
+integer i,j,ist1,n
 real(8) scale,emin,emax,wmax,wmax1
-real(8), parameter :: ha2ev = 27.21138386d0            
+real(8), parameter :: ha2ev = 27.21138386d0
+logical wannier,l1
+integer wf_dim
+real(8), allocatable :: wfc(:,:,:,:)
       
 open(50,file='BANDS.OUT',form='formatted',status='old')
 read(50,*)lmmax,natmtot,nspinor,nstfv,nstsv,nkpt,nlines
@@ -25,9 +28,39 @@ do ik=1,nkpt
   read(50,*)((((bndchr(lm,ias,ispn,ist,ik),lm=1,lmmax), &
                 ias=1,natmtot),ispn=1,nspinor),ist=1,nstsv)
 enddo
+read(50,*)wannier
+if (wannier) then
+  read(50,*)wf_dim
+  allocate(wfc(wf_dim,nstfv,nspinor,nkpt))
+  do ik=1,nkpt
+    read(50,*)((wfc(n,i,1,ik),n=1,wf_dim),i=1,nstfv)
+  enddo
+endif
 close(50)
+
+e=e*ha2ev
+ 
+emin=minval(e(:,:))
+emax=maxval(e(:,:))
+write(*,*)'Input energy interval (emin emax) [eV]'
+read(*,*)emin,emax
+      
+spin=1
+if (nspinor.eq.2) then
+  write(*,'("Input spin direction (1 or 2)")')
+  read(*,*)spin
+endif
+
       
       allocate(lines(4,nlines))
+      
+      l1=.false.
+      if (wannier) then
+        write(*,*)'Do you want band character of WFs (T) or lm- orbitals (F)'
+        read(*,*)l1
+      endif
+      if (l1) goto 20  
+      
       
       orb = 0
       write(*,*)'Number of atoms: ',natmtot
@@ -53,18 +86,6 @@ close(50)
         write(*,*)(orb(lm,ias),lm=1,lmmax)
       enddo
       
-      e = e*ha2ev
-      
-      emin = minval(e(:,:))
-      emax = maxval(e(:,:))
-      write(*,*)'Input energy interval (emin emax) [eV]'
-      read(*,*)emin,emax
-      
-      spin=1
-      if (nspinor.eq.2) then
-        write(*,'("Input spin direction (1 or 2)")')
-        read(*,*)spin
-      endif
       
       w = 0.d0
       do ik = 1, nkpt
@@ -92,6 +113,46 @@ close(50)
         enddo
       enddo
       enddo
+      
+      goto 30
+      
+      
+  20  continue
+  
+      allocate(wf1(wf_dim),wf2(wf_dim))
+      wf1=0
+      wf2=0
+      write(*,*)'Input WFs'
+      read(*,*)wf2
+      do i=1,wf_dim
+        if (wf2(i).gt.0.and.wf2(i).le.wf_dim) wf1(wf2(i))=1
+      enddo
+      write(*,*)(wf1(i),i=1,wf_dim)
+      
+      ispn=1
+      w=0.d0
+      do ik = 1, nkpt
+      do ist = 1, nstfv
+      do n=1,wf_dim
+        w(ist,ik)=w(ist,ik)+wfc(n,ist,ispn,ik)**2
+      enddo
+      enddo
+      enddo
+      wmax = maxval(w(:,:))
+
+      ispn=1
+      w=0.d0
+      do ik = 1, nkpt
+      do ist = 1, nstfv
+      do n=1,wf_dim
+        w(ist,ik)=w(ist,ik)+wfc(n,ist,ispn,ik)**2*wf1(n)
+      enddo
+      enddo
+      enddo
+      
+    30 continue
+      
+      
       
       scale = 1.d0
       write(*,*)'Input maximum line width [eV]'

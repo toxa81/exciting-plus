@@ -9,6 +9,7 @@
 subroutine dos
 ! !USES:
 use modmain
+use modwann
 ! !DESCRIPTION:
 !   Produces a total and partial density of states (DOS) for plotting. The total
 !   DOS is written to the file {\tt TDOS.OUT} while the partial DOS is written
@@ -30,7 +31,7 @@ use modmain
 implicit none
 ! local variables
 integer lmax,lmmax,l,m,lm,nsk(3),lm1,j,isym
-integer ik,ispn,is,ia,ir,ias,ist,iw,i,io1,io2
+integer ik,n,ispn,is,ia,ir,ias,ist,iw,i,io1,io2
 real(8) t1
 character(256) fname
 ! allocatable arrays
@@ -68,6 +69,9 @@ call genlofr
 if (task.eq.11) then
   call geturf
   call genurfprod
+  if (wannier) then
+    call wann_init
+  endif
 endif
 
 do ik=1,nkpt
@@ -78,6 +82,9 @@ do ik=1,nkpt
     call getevecfv(vkl(1,ik),vgkl(1,1,ik,1),evecfv)
 ! compute the band character (appromximate for spin-spirals)
     call bandchar(.true.,lmax,ik,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik))
+    if (wannier) then
+      call getwfc(ik,wfc(1,1,1,ik)) 
+    endif
   endif
 ! compute the spin characters
   call spinchar(ik,evecsv)
@@ -166,6 +173,23 @@ do is=1,nspecies
     end do
   end do
 end do
+if (wannier) then
+  do n=1,wf_dim
+    do ik=1,nkpt
+      do ist=1,nstfv
+        f(ist,ik)=abs(wfc(n,ist,1,ik))**2
+      end do
+    end do
+    call brzint(nsmdos,ngridk,nsk,ikmap,nwdos,wdos,nstsv,nstsv, &
+      e(1,1,1),f,gp) 
+    write(fname,'("WDOS_",I4.4,".OUT")')n
+    open(50,file=trim(fname),action='WRITE',form='FORMATTED')
+    do iw = 1, nwdos
+      write(50,'(2G18.10)')w(iw)*ha2ev, gp(iw)/ha2ev
+    enddo
+    close(50)
+  enddo
+endif 
 endif
 ! output interstitial DOS
 open(50,file='IDOS.OUT',action='WRITE',form='FORMATTED')
