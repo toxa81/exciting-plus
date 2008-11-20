@@ -187,13 +187,24 @@ if (task.eq.21) then
   write(50,*)wannier
   if (wannier) then
     write(50,*)wf_dim
-    do ik = 1, nkpt
-      write(50,*)((abs(wfc(n,i,1,ik)),n=1,wf_dim),i=1,nstfv)
-    enddo
   endif
-  close(50)
 endif
 endif
+
+if (task.eq.21.and.wannier) then
+  do i=0,nproc-1
+    if (i.eq.iproc) then
+      open(50,file='BANDS.OUT',action='WRITE',form='FORMATTED',status='OLD',position='APPEND')
+      do ik=1,nkptloc(iproc)
+        write(50,*)((abs(wfc(n,j,1,ik)),n=1,wf_dim),j=1,nstfv)
+      enddo
+      close(50)
+    endif
+    call barrier
+  enddo
+endif
+      
+  
 
 deallocate(e)
 if (task.eq.21) then

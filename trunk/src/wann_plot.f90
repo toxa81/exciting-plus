@@ -29,7 +29,7 @@ character*8 fname
 real(8) x(2),alph
 logical, parameter :: wf3d=.true.
 integer tlim(2,3)
-integer nwfplot
+integer nwfplot,firstwf
 integer, external :: ikglob
 
 call init0
@@ -52,21 +52,23 @@ call genlofr
 
 call geturf
 
-zero3d(:)=(/4.34147d0,   4.34147d0,   4.34147d0/)
+!zero3d(:)=(/4.68057,   8.10698,  -5.12068/)
+zero3d(:)=(/0.0,0.0,0.0/)
 
 ! Cartesian coordinates of boundary and origin
-bound3d(:,1)=(/10.d0,0.d0,0.d0/)
-bound3d(:,2)=(/0.d0,10.d0,0.d0/)
-bound3d(:,3)=(/0.d0,0.d0,10.d0/)
+bound3d(:,1)=(/12.d0,0.d0,0.d0/)
+bound3d(:,2)=(/0.d0,12.d0,0.d0/)
+bound3d(:,3)=(/0.d0,0.d0,12.d0/)
 orig3d(:)=zero3d(:)-(bound3d(:,1)+bound3d(:,2)+bound3d(:,3))/2.d0
 
 bound2d(:,1)=(/20.d0,0.d0,0.d0/)
 bound2d(:,2)=(/0.d0,20.d0,0.d0/)
 orig2d(:)=(/-8.d0,-8.d0, 0.d0/)
 
-nrxyz(:)=(/40,40,40/)
+nrxyz(:)=(/200,200,200/)
 
-nwfplot=8
+nwfplot=5
+firstwf=1
 
 if (wf3d) then
   nrtot=nrxyz(1)*nrxyz(2)*nrxyz(3)
@@ -105,6 +107,7 @@ else
     enddo
   enddo
 endif  
+tlim(1,:)=tlim(1,:)-1
 tlim(2,:)=tlim(2,:)+1
 if (iproc.eq.0) then
   write(*,'("Translation limits:",3(4x,2I4))')tlim(:,1),tlim(:,2),tlim(:,3)
@@ -138,7 +141,7 @@ zt2=dcmplx(0.d0,0.d0)
 do n=1,nwfplot
   do ik=1,nkptloc(iproc)
     do i=1,nstfv
-      zt2(:,:,:,n,ik)=zt2(:,:,:,n,ik)+wfc(n,i,1,ik)*wfsvmtloc(:,:,:,i,ik)
+      zt2(:,:,:,n,ik)=zt2(:,:,:,n,ik)+wfc(n+firstwf-1,i,1,ik)*wfsvmtloc(:,:,:,i,ik)
     enddo
   enddo
 enddo
@@ -174,7 +177,7 @@ ccoeff=dcmplx(0.d0,0.d0)
 do n=1,nwfplot
   do ik=1,nkptloc(iproc)
     do i=1,nstfv
-      ccoeff(:,n,ik)=ccoeff(:,n,ik)+wfc(n,i,1,ik)*wfsvitloc(:,i,ik)/nkpt
+      ccoeff(:,n,ik)=ccoeff(:,n,ik)+wfc(n+firstwf-1,i,1,ik)*wfsvitloc(:,i,ik)/nkpt
     enddo
   enddo
 enddo
@@ -324,9 +327,9 @@ do is=1,nspecies
   rmt2=rmt(is)**2
   do ia=1,natoms(is)
     ias=idxas(ia,is)
-    do i1=0,1
-    do i2=0,1
-    do i3=0,1
+    do i1=-1,1
+    do i2=-1,1
+    do i3=-1,1
       pos(:)=atposc(:,ia,is)+i1*avec(:,1)+i2*avec(:,2)+i3*avec(:,3)
       v1(:)=r1(:)-pos(:)
       t1=v1(1)**2+v1(2)**2+v1(3)**2

@@ -60,7 +60,7 @@ do ik=1,nkptloc(iproc)
           lm2=idxlm(l,m2)
           dm1(lm1,lm2,ispn,ispn,ias)=dm1(lm1,lm2,ispn,ispn,ias)+ &
             wf1(lm1,io1,j)*dconjg(wf1(lm2,io2,j))*urfprod(l,io1,io2,ias)* &
-            wkpt(ik) !*occsv(j,ik)
+            wkpt(ik)*occsv(j,ik)
         enddo
         enddo
         enddo
