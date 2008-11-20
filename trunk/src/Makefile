@@ -54,7 +54,8 @@ SRC_routines_flux = \
  zmatin.f90 wann_init.f90 isqrtzhe.f90 diag_mtrx.f90 \
  wann_plot.f90 wann_ene_occ.f90 parallel.f90 genwann.f90 genwfpoco.f90 \
  getnrfmax.f90 geturf.f90 genurfprod.f90 genshmat.f90 genwfsvmt.f90 \
- genwfsvit.f90 writewann.f90 response_jdos.f90 gendmatrsh.f90 rotevecfv.f90
+ genwfsvit.f90 writewann.f90 response_jdos.f90 gendmatrsh.f90 rotevecfv.f90 \
+ hdf5_io.f90
  
 SRC_phonon = \
  phonon.f90 dyntask.f90 phcell.f90 phdisp.f90 readdyn.f90 dynqtor.f90 \

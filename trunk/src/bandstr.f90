@@ -30,8 +30,8 @@ use mpi
 !BOC
 implicit none
 ! local variables
-integer lmax,lmmax,l,m,lm,ierr,i,j
-integer ik,ispn,is,ia,ias,iv,ist,n
+integer lmax,lmmax,l,m,lm,ierr,i,j,i1,i2,i3
+integer ik,ik1,ispn,is,ia,ias,iv,ist,n
 real(8) emin,emax,sum,emin0,emax0
 character(256) fname
 ! allocatable arrays
@@ -43,12 +43,27 @@ real(8), allocatable :: e(:,:)
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
 integer, external :: ikglob
+integer nkpt1
+complex(8), allocatable :: wfpoco2(:,:,:)
+real(8), allocatable :: vkl1(:,:)
+real(8) t(3)
+character*4 c4
 ! initialise universal variables
 call init0
 call init1
 if (wannier) then
   call wann_init
 endif
+
+!call read_integer(nkpt1,1,'/dimensions','nkpt')
+!allocate(wfpoco2(nstsv,nstsv,nkpt1))
+!allocate(vkl1(3,nkpt1))
+!do ik=1,nkpt1
+!  write(c4,'(I4.4)')ik
+!  call read_complex16(wfpoco2(1,1,ik),nstsv*nstsv,'/kpoints/'//c4,'wfpoco')
+!  call read_real8(vkl1(1,ik),3,'/kpoints/'//c4,'vkl')
+!enddo
+
 ! allocate array for storing the eigenvalues
 allocate(e(nstsv,nkpt))
 ! maximum angular momentum for band character

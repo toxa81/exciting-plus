@@ -30,7 +30,7 @@ real(8), intent(out) :: evalfv(nstfv,nspnfv)
 complex(8), intent(out) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(out) :: evecsv(nstsv,nstsv)
 ! local variables
-integer ispn
+integer ispn,i
 logical l1
 integer, external :: ikglob
 ! allocatable arrays
@@ -50,14 +50,17 @@ if (spinsprl) then
   call seceqnss(ik,apwalm,evalfv,evecfv,evecsv)
 else
 ! solve the second-variational secular equation
-! if (wannier) then
-!    call genwann(ik,evecfv,evecsv)
-!    !call genwfpoco(ik)
-! endif
-  call seceqnsv(ik,apwalm,evalfv,evecfv,evecsv)
-  if (wannier) then
-    call genwann(ik,evecfv,evecsv)
-  endif
+  if ((task.eq.20.or.task.eq.21).and.wannier.and.wann_add_poco) then
+    do i=1,4
+       call seceqnsv(ik,apwalm,evalfv,evecfv,evecsv)
+       call genwann(ik,evecfv,evecsv)
+       call genwfpoco(ik,evecsv)
+    enddo
+  else
+    call seceqnsv(ik,apwalm,evalfv,evecfv,evecsv)
+    if (wannier) call genwann(ik,evecfv,evecsv)
+    if (wannier.and.wann_add_poco) call genwfpoco(ik,evecsv)
+  endif 
 end if
 ! compute the spin characters
 call spinchar(ikglob(ik),evecsv)

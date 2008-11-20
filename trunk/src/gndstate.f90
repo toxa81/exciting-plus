@@ -40,6 +40,12 @@ call init1
 if (wannier) then
   call wann_init
 endif
+if (task.eq.1) then
+  if (wannier) then 
+    call readwfpoco
+  endif
+endif
+call init3
 
 ! initialise OEP variables if required
 if (xctype.lt.0) call init2

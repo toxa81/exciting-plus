@@ -21,6 +21,7 @@ integer wf_n1,wf_n2
   
 complex(8), allocatable :: wfc(:,:,:,:)
 complex(8), allocatable :: wf_h(:,:,:,:)
+complex(8), allocatable :: wf_p(:,:,:,:,:)
 real(8), allocatable :: wf_e(:,:,:)
 real(8), allocatable :: wf_deltav(:,:)
 

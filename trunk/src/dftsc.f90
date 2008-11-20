@@ -20,19 +20,6 @@ allocate(evalfv(nstfv,nspnfv,nkptloc(iproc)))
 allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc(iproc)))
 allocate(evecsvloc(nstsv,nstsv,nkptloc(iproc)))
 
-if (wannier) then
-!  if (wann_add_poco) then
-!    do i=0,nproc-1
-!      if (iproc.eq.i) then
-!        do ik=1,nkptloc(iproc)
-!          call getwfc(ikglob(ik),wfc(1,1,1,ik))
-!        enddo
-!      endif
-!      call barrier
-!    enddo
-!  endif
-endif
-
 ! begin the self-consistent loop
 if (iproc.eq.0) then
   write(60,*)
@@ -310,6 +297,10 @@ if (wannier.and.iproc.eq.0) then
     enddo
   enddo	
   close(200)
+endif
+
+if (wannier) then
+  call writewfpoco
 endif
 
 deallocate(evalfv,evecfvloc,evecsvloc)

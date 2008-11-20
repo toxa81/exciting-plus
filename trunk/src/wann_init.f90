@@ -62,6 +62,10 @@ if (allocated(wf_h)) deallocate(wf_h)
 allocate(wf_h(wf_dim,wf_dim,wann_nspins,nkpt))
 wf_h=dcmplx(0.d0,0.d0)
 
+if (allocated(wf_p)) deallocate(wf_p)
+allocate(wf_p(3,wf_dim,wf_dim,wann_nspins,nkpt))
+wf_p=dcmplx(0.d0,0.d0)
+
 if (allocated(wf_e)) deallocate(wf_e)
 allocate(wf_e(wf_dim,wann_nspins,nkpt))
 wf_e=0.d0

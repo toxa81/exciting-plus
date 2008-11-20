@@ -9,6 +9,10 @@ use modmain
 #ifdef _MPI_
 use mpi     
 #endif
+#ifdef _HDF5_
+use hdf5
+#endif
+
 implicit none
 ! local variables
 integer itask,ierr
@@ -32,6 +36,9 @@ call mpi_init(ierr)
 call mpi_comm_size(MPI_COMM_WORLD,nproc,ierr)
 call mpi_comm_rank(MPI_COMM_WORLD,iproc,ierr)
 ismpi=.true.
+#endif
+#ifdef _HDF5_
+call h5open_f(ierr)
 #endif   
 
 ! read input files
@@ -121,6 +128,9 @@ end do
 #ifdef _MPI_
 call mpi_finalize(ierr)
 #endif    
+#ifdef _HDF5_
+call h5close_f(ierr)
+#endif   
 
 stop
 end program
