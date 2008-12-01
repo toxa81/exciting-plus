@@ -365,10 +365,6 @@ complex(8), allocatable :: zfshtapw(:,:)
 ! complex forward SHT matrix for lmaxvr
 complex(8), allocatable :: zfshtvr(:,:)
 
-complex(8), allocatable :: rzbshtapw(:,:)
-complex(8), allocatable :: rzfshtapw(:,:)
-
-
 !-----------------------------------------!
 !     potential and density variables     !
 !-----------------------------------------!
@@ -875,6 +871,7 @@ real(8) domega
 real(8) eta
 logical afmchi0 
 integer bndme1,bndme2
+integer lrtype
 
 logical ismpi
 integer iproc

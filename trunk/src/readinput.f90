@@ -160,6 +160,7 @@ bndme1=-1
 bndme2=-1
 dmbnd1=-1
 dmbnd2=-1
+lrtype=0
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -851,6 +852,7 @@ case('response')
   endif
 case('response1')
   read(50,*,err=20) bndme1,bndme2
+  read(50,*,err=20) lrtype
 case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_natoms,wann_nspins

@@ -742,31 +742,59 @@ if (req.and.iproc.eq.0) then
   write(150,'("Band interval: ",2I4)')band1,band2
 endif
 if (req) max_num_nnp=0
-do ikloc=1,nkptloc1
-  ik=ikptloc1+ikloc-1
-  jk=ikq(ik,1)
-  i=0
-  do ispn=1,nspinor
+! matrix elements between states with same spin
+if (lrtype.eq.0) then
+  do ikloc=1,nkptloc1
+    ik=ikptloc1+ikloc-1
+    jk=ikq(ik,1)
+    i=0
+    do ispn=1,nspinor
+      do istfv1=band1,band2
+        ist1=istfv1+(ispn-1)*nstfv
+        do istfv2=band1,band2
+          ist2=istfv2+(ispn-1)*nstfv
+          if ((ispn.eq.spin_me.or.spin_me.eq.3) .and. &
+	      abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-10) then
+            i=i+1
+	    if (.not.req) then
+              nnp(i,1,ikloc)=ist1
+              nnp(i,2,ikloc)=ist2
+	      nnp(i,3,ikloc)=ispn
+              docc(i,ikloc)=occsvnr(ist1,ik)-occsvnr(ist2,jk)
+	    endif
+	  endif
+        enddo !istfv2
+      enddo !istfv1
+    enddo !ispn
+    if (.not.req) num_nnp(ikloc)=i
+    if (req) max_num_nnp=max(max_num_nnp,i)
+  enddo !ikloc
+endif
+! matrix elements between states with different spins
+if (lrtype.eq.1) then
+  do ikloc=1,nkptloc1
+    ik=ikptloc1+ikloc-1
+    jk=ikq(ik,1)
+    i=0
     do istfv1=band1,band2
-      ist1=istfv1+(ispn-1)*nstfv
+      ist1=istfv1
       do istfv2=band1,band2
-        ist2=istfv2+(ispn-1)*nstfv
-        if ((ispn.eq.spin_me.or.spin_me.eq.3) .and. &
-	    abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-10) then
+        ist2=istfv2+nstfv
+        if (abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-10) then
           i=i+1
 	  if (.not.req) then
             nnp(i,1,ikloc)=ist1
             nnp(i,2,ikloc)=ist2
-	    nnp(i,3,ikloc)=ispn
+	    nnp(i,3,ikloc)=1
             docc(i,ikloc)=occsvnr(ist1,ik)-occsvnr(ist2,jk)
 	  endif
 	endif
       enddo !istfv2
     enddo !istfv1
-  enddo !ispn
-  if (.not.req) num_nnp(ikloc)=i
-  if (req) max_num_nnp=max(max_num_nnp,i)
-enddo !ik
+    if (.not.req) num_nnp(ikloc)=i
+    if (req) max_num_nnp=max(max_num_nnp,i)
+  enddo !ikloc
+endif
 
 return
 end

@@ -42,16 +42,22 @@ if (ndmag.eq.3) then
   call pstop
 endif
 
-if (.not.spinpol) then
+if (.not.spinpol.or.(spinpol.and.lrtype.eq.1)) then
   spin_me=1
   spin_chi=1
 endif
 
+if (lrtype.eq.1.and..not.spinpol) then
+  write(*,*)
+  write(*,'("Error(response): can''t do magnetic response for unpolarized ground state")')
+  write(*,*)
+  call pstop
+endif
+  
 if (task.eq.400) fname='RESPONSE_ME.OUT'
 if (task.eq.401) fname='RESPONSE_CHI0.OUT'
 if (task.eq.402) fname='RESPONSE_CHI.OUT'
-if (task.eq.403) fname='RESPONSE.OUT'
-if (task.eq.404) fname='RESPONSE.OUT'
+if (task.eq.403.or.task.eq.404) fname='RESPONSE.OUT'
 
 if (iproc.eq.0) then
   open(150,file=trim(fname),form='formatted',status='replace')
