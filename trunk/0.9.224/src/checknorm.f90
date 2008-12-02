@@ -2,7 +2,7 @@ subroutine checknorm
 use modmain
 implicit none
 
-integer ik,ist1,ist2
+integer ik,ist1,ist2,j
 integer ngknr
 real(8) t1
 complex(8) zt1
@@ -19,6 +19,9 @@ complex(8), allocatable :: wfmt(:,:,:,:,:)
 complex(8), allocatable :: wfir(:,:,:)
 complex(8), allocatable :: zrhomt(:,:,:)
 complex(8), allocatable :: zrhoir(:)
+complex(8), allocatable :: wfsvit(:,:)
+complex(8), allocatable :: wfsvmt(:,:,:,:)
+real(8), allocatable :: wfnrmdev(:)
 
 complex(8), external :: zfint
 
@@ -49,7 +52,9 @@ allocate(wfir(ngrtot,nspinor,nstsv))
 allocate(zrhomt(lmmaxvr,nrcmtmax,natmtot))
 allocate(zrhoir(ngrtot))
 
-
+allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv))
+allocate(wfsvit(nmatmax,nstsv))
+allocate(wfnrmdev(nstsv*(nstsv+1)/2))
 open(60,file='NORM.OUT',form='FORMATTED',status='REPLACE')
 
 do ik=1,nkptnr
@@ -65,9 +70,16 @@ do ik=1,nkptnr
   call match(ngknr,gkcnr,tpgkcnr,sfacgknr,apwalm)
 ! calculate the wavefunctions for all states
   call genwfsv(.false.,ngknr,igkignr,evalsv,apwalm,evecfv,evecsv,wfmt,wfir)
-
+  
+  call genwfsvmt(lmaxvr,lmmaxvr,ngknr,evecfv,evecsv,apwalm,wfsvmt)
+  call genwfsvit(ngknr,evecfv,evecsv,wfsvit)
+  wfnrmdev=0.d0
+  call wfsvprodk(ngknr,igkignr,wfsvmt,wfsvit,wfnrmdev)
+    
+  j=0
   do ist1=1,nstsv
     do ist2=ist1,nstsv
+      j=j+1
       call vnlrho(.true.,wfmt(:,:,:,:,ist1),wfmt(:,:,:,:,ist2), &
         wfir(:,:,ist1),wfir(:,:,ist2),zrhomt,zrhoir)
         zt1=zfint(zrhomt,zrhoir)
@@ -83,6 +95,7 @@ do ik=1,nkptnr
         write(*,'("ik : ",I4,4x,"n,n'' : ",2I4,4x,"dev : ",F18.10)')ik,ist1,ist2,t1
         write(*,*)
       endif
+      write(*,*)wfnrmdev(j),t1
     end do
   end do
 enddo
