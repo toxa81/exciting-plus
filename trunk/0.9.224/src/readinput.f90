@@ -169,6 +169,9 @@ vecql(:)=0.d0
 mustar=0.15d0
 sqados(1:2)=0.d0
 sqados(3)=1.d0
+bndme1=-1
+bndme2=-1
+lrtype=0
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -881,6 +884,25 @@ case('mustar')
   read(50,*,err=20) mustar
 case('sqados')
   read(50,*,err=20) sqados(:)
+case('response')
+  read(50,*,err=20) nvq0
+  allocate(ivq0m_list(3,nvq0))
+  do i=1,nvq0
+    read(50,*,err=20) ivq0m_list(:,i)
+  enddo
+  read(50,*,err=20) gshme1,gshme2,spin_me 
+  read(50,*,err=20) gshchi1,gshchi2,spin_chi
+  read(50,*,err=20) maxomega, domega, eta
+  read(50,*,err=20) afmchi0
+  if (gshchi1.gt.gshchi2) then
+    write(*,*)
+    write(*,'("Error(readinput): gshchi1 > gshchi2")')
+    write(*,*)
+    call pstop
+  endif
+case('response1')
+  read(50,*,err=20) bndme1,bndme2
+  read(50,*,err=20) lrtype
 case('')
   goto 10
 case default

@@ -6,9 +6,19 @@
 ! main routine for the EXCITING code
 program main
 use modmain
+#ifdef _MPI_
+use mpi
+#endif
 implicit none
 ! local variables
-integer itask
+integer itask,ierr
+nproc=1
+iproc=0
+#ifdef _MPI_
+call mpi_init(ierr)
+call mpi_comm_size(MPI_COMM_WORLD,nproc,ierr)
+call mpi_comm_rank(MPI_COMM_WORLD,iproc,ierr)
+#endif
 ! read input files
 call readinput
 ! perform the appropriate task
@@ -78,6 +88,8 @@ do itask=1,ntasks
     call alpha2f
   case(300)
     call rdmft
+  case(400,401,402)
+    call response
   case(500)
     call checknorm
   case default

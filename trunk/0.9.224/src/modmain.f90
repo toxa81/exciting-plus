@@ -918,5 +918,34 @@ integer nrfmax
 real(8), allocatable :: urf(:,:,:,:)
 real(8), allocatable :: urfprod(:,:,:,:)
 
+!logical ismpi
+integer iproc
+integer nproc
+integer, allocatable :: nkptloc(:)
+integer, allocatable :: ikptloc(:,:)
+integer, allocatable :: nkptnrloc(:)
+integer, allocatable :: ikptnrloc(:,:)
+!complex(8), allocatable :: evecfvloc(:,:,:,:)
+!complex(8), allocatable :: evecsvloc(:,:,:)
+
+real(8), parameter :: ha2ev=27.21138386d0
+real(8), parameter :: au2ang=0.5291772108d0
+
+!-------------------------!
+!     Linear response     !
+!-------------------------!
+integer nvq0
+integer, allocatable :: ivq0m_list(:,:) 
+integer gshme1,gshme2
+integer spin_me
+integer gshchi1,gshchi2
+integer spin_chi
+real(8) maxomega
+real(8) domega
+real(8) eta
+logical afmchi0 
+integer bndme1,bndme2
+integer lrtype
+
 end module
 
