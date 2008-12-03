@@ -17,14 +17,14 @@ complex(8), allocatable :: sfacgknr(:,:,:)
 
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
-complex(8), allocatable :: wfsvitloc(:,:,:)
-complex(8), allocatable :: wfsvmtloc(:,:,:,:,:)
+complex(8), allocatable :: wfsvitloc(:,:,:,:)
+complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 real(8), allocatable :: occsvnr(:,:)
 real(8), allocatable :: wfnrmdev(:,:)
 
 integer i,j,ngsh,gshmin,gshmax,gvecme1,gvecme2,ngvecme,gvecchi1,gvecchi2,ngvecchi,ik,ikloc,ig, &
-  ispn,istfv
+  ispn,istfv,i1
 complex(8) zt1
 character*100 fname
 
@@ -179,8 +179,8 @@ if (task.eq.400.or.task.eq.403) then
       vgklnr(1,1,ikloc),vgkcnr,gknr(1,ikloc),tpgknr(1,1,ikloc))
     call gensfacgp(ngknr(ikloc),vgkcnr,ngkmax,sfacgknr(1,1,ikloc))
   enddo
-  allocate(wfsvmtloc(lmmaxvr,nrfmax,natmtot,nstsv,nkptlocnr(iproc)))
-  allocate(wfsvitloc(nmatmax,nstsv,nkptlocnr(iproc)))
+  allocate(wfsvmtloc(lmmaxvr,nrfmax,natmtot,nstsv,nspinor,nkptlocnr(iproc)))
+  allocate(wfsvitloc(nmatmax,nstsv,nspinor,nkptlocnr(iproc)))
   allocate(evecfv(nmatmax,nstfv,nspnfv))
   allocate(evecsv(nstsv,nstsv))
   allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
@@ -209,10 +209,10 @@ if (task.eq.400.or.task.eq.403) then
       call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc), &
         sfacgknr(1,1,ikloc),apwalm)
       call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfv,evecsv,apwalm, &
-        wfsvmtloc(1,1,1,1,ikloc))
-      call genwfsvit(ngknr(ikloc),evecfv,evecsv,wfsvitloc(1,1,ikloc))
-      call wfsvprodk(ngknr(ikloc),igkignr(1,ikloc),wfsvmtloc(1,1,1,1,ikloc), &
-        wfsvitloc(1,1,ikloc),wfnrmdev(1,ik))
+        wfsvmtloc(1,1,1,1,1,ikloc))
+      call genwfsvit(ngknr(ikloc),evecfv,evecsv,wfsvitloc(1,1,1,ikloc))
+      call wfsvprodk(ngknr(ikloc),igkignr(1,ikloc),wfsvmtloc(1,1,1,1,1,ikloc), &
+        wfsvitloc(1,1,1,ikloc),wfnrmdev(1,ik))
     endif
   enddo !ikloc
   call dsync(wfnrmdev,nkptnr*(nstsv*(nstsv+1)/2),.true.,.false.)
@@ -221,6 +221,18 @@ if (task.eq.400.or.task.eq.403) then
     write(150,*)
     write(150,'("Maximum WF norm deviation : ",G18.10)')maxval(wfnrmdev)
     write(150,'("Average WF norm deviation : ",G18.10)')sum(wfnrmdev)/nkptnr/(nstsv*(nstsv+1)/2.d0)
+    if (.false.) then
+      do ik=1,nkptnr
+        write(150,*)'ik=',ik
+        j=0
+        do i=1,nstsv
+          do i1=i,nstsv
+            j=j+1
+            write(150,*)'i=',i,'i1=',i1,'norm dev=',wfnrmdev(j,ik)
+          enddo
+        enddo
+      enddo
+    endif
     call flushifc(150)
   endif
   deallocate(wfnrmdev)

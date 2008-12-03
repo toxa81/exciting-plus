@@ -8,7 +8,7 @@ integer, intent(in) :: ngp
 complex(8), intent(in) :: evecfv(nmatmax,nstfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
 complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
-complex(8), intent(out) :: wfsvmt(lmmax,nrfmax,natmtot,nstsv)
+complex(8), intent(out) :: wfsvmt(lmmax,nrfmax,natmtot,nstsv,nspinor)
 ! local variables
 integer j,l,m,ispn,istfv,is,ia,ias,lm,ig,i1,io,ilo,iwf,nwf
 integer ordl(0:lmax)
@@ -64,13 +64,13 @@ do iwf=1,nwf
   do ias=1,natmtot
     do io=1,nrfmax
       do lm=1,lmmax
-        zt1=dcmplx(0.d0,0.d0)
         do ispn=1,nspinor
+          zt1=dcmplx(0.d0,0.d0)
           do istfv=1,nstfv
 	    zt1=zt1+evecsv(istfv+(ispn-1)*nstfv,iwf)*wffvmt(istfv,io,lm,ias)
 	  enddo !istfv
+	  wfsvmt(lm,io,ias,iwf,ispn)=zt1
 	enddo !ispn
-	wfsvmt(lm,io,ias,iwf)=zt1
       enddo !lm
     enddo !io
   enddo !ias

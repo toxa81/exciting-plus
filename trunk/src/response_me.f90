@@ -14,8 +14,8 @@ integer, intent(in) :: gvecme2
 integer, intent(in) :: ngvecme
 integer, intent(in) :: ikptlocnr(0:nproc-1,2)
 integer, intent(in) :: nkptlocnr(0:nproc-1)
-complex(8), intent(in) :: wfsvmtloc(lmmaxvr,nrfmax,natmtot,nstsv,*)
-complex(8), intent(in) :: wfsvitloc(nmatmax,nstsv,*)
+complex(8), intent(in) :: wfsvmtloc(lmmaxvr,nrfmax,natmtot,nstsv,nspinor,*)
+complex(8), intent(in) :: wfsvitloc(nmatmax,nstsv,nspinor,*)
 integer, intent(in) :: ngknr(*)
 integer, intent(in) :: igkignr(ngkmax,*)
 real(8), intent(in) :: occsvnr(nstsv,nkptnr)
@@ -60,8 +60,8 @@ logical, parameter :: meoff=.false.
 integer, allocatable :: igkignr2(:)
 real(8), allocatable :: docc(:,:)
 complex(8), allocatable :: zrhofc(:,:,:)
-complex(8), allocatable :: wfsvmt2(:,:,:,:)
-complex(8), allocatable :: wfsvit2(:,:)
+complex(8), allocatable :: wfsvmt2(:,:,:,:,:)
+complex(8), allocatable :: wfsvit2(:,:,:)
 
 integer i,j,i1,ik,jk,ig,is,ikstep,ist1,ist2,ispn,ikloc,l,ia,ias,istfv
 integer ngknr2
@@ -286,8 +286,8 @@ deallocate(uuj)
 ! different implementation for parallel and serial execution
 #ifdef _MPI_
 
-allocate(wfsvmt2(lmmaxvr,nrfmax,natmtot,nstsv))
-allocate(wfsvit2(nmatmax,nstsv))
+allocate(wfsvmt2(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
+allocate(wfsvit2(nmatmax,nstsv,nspinor))
 allocate(igkignr2(ngkmax))
 allocate(status(MPI_STATUS_SIZE))
 allocate(zrhofc(ngvecme,max_num_nnp,nkptlocnr(iproc)))
@@ -352,11 +352,11 @@ do ikstep=1,nkptlocnr(0)
     if (isend(ikstep,i,1).eq.iproc.and.iproc.ne.i) then
       tag=(ikstep*nproc+i)*10
       ik=isend(ikstep,i,2)
-      call mpi_isend(wfsvitloc(1,1,ik),nmatmax*nstsv,        &
+      call mpi_isend(wfsvitloc(1,1,1,ik),nmatmax*nstsv*nspinor,        &
         MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
       tag=tag+1
-      call mpi_isend(wfsvmtloc(1,1,1,1,ik),                  &
-        lmmaxvr*nrfmax*natmtot*nstsv,                        &
+      call mpi_isend(wfsvmtloc(1,1,1,1,1,ik),                  &
+        lmmaxvr*nrfmax*natmtot*nstsv*nspinor,                        &
 	MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
       tag=tag+1
       call mpi_isend(ngknr(ik),1,MPI_INTEGER,i,tag,          &
@@ -370,10 +370,10 @@ do ikstep=1,nkptlocnr(0)
   if (isend(ikstep,iproc,1).ne.-1) then
     if (isend(ikstep,iproc,1).ne.iproc) then
       tag=(ikstep*nproc+iproc)*10
-      call mpi_recv(wfsvit2,nmatmax*nstsv,MPI_DOUBLE_COMPLEX,  &
+      call mpi_recv(wfsvit2,nmatmax*nstsv*nspinor,MPI_DOUBLE_COMPLEX,  &
         isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,status,ierr)
       tag=tag+1
-      call mpi_recv(wfsvmt2,lmmaxvr*nrfmax*natmtot*nstsv,      &
+      call mpi_recv(wfsvmt2,lmmaxvr*nrfmax*natmtot*nstsv*nspinor,      &
         MPI_DOUBLE_COMPLEX,isend(ikstep,iproc,1),tag,          &
         MPI_COMM_WORLD,status,ierr)
       tag=tag+1
@@ -384,8 +384,8 @@ do ikstep=1,nkptlocnr(0)
         tag,MPI_COMM_WORLD,status,ierr)
     else
       ik=isend(ikstep,iproc,2)
-      wfsvit2(:,:)=wfsvitloc(:,:,ik)
-      wfsvmt2(:,:,:,:)=wfsvmtloc(:,:,:,:,ik)
+      wfsvit2(:,:,:)=wfsvitloc(:,:,:,ik)
+      wfsvmt2(:,:,:,:,:)=wfsvmtloc(:,:,:,:,:,ik)
       ngknr2=ngknr(ik)
       igkignr2(:)=igkignr(:,ik)
     endif
@@ -406,14 +406,14 @@ do ikstep=1,nkptlocnr(0)
       call cpu_time(cpu0)
       call zrhoftit(ngvecme,gvecme1,max_num_nnp,num_nnp(ikstep), &
         nnp(1,1,ikstep),ngknr(ikstep),ngknr2,igkignr(1,ikstep),  &
-        igkignr2,ikq(ik,2),wfsvitloc(1,1,ikstep),wfsvit2,zrhofc(1,1,ikstep))
+        igkignr2,ikq(ik,2),wfsvitloc(1,1,1,ikstep),wfsvit2,zrhofc(1,1,ikstep))
       call cpu_time(cpu1)
       timeistl=cpu1-cpu0
 
 ! calculate muffin-tin contribution for all combinations of n,n'    
       call cpu_time(cpu0)
       call zrhoftmt(ngvecme,max_num_nnp,num_nnp(ikstep),nnp(1,1,ikstep), &
-        wfsvmtloc(1,1,1,1,ikstep),wfsvmt2,ngumax,ngu,gu,igu,zrhofc(1,1,ikstep))
+        wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,ngumax,ngu,gu,igu,zrhofc(1,1,ikstep))
       call cpu_time(cpu1)
       timemt=cpu1-cpu0
   
@@ -425,6 +425,7 @@ do ikstep=1,nkptlocnr(0)
     else
       zrhofc(:,:,ikstep)=dcmplx(1.d0,0.d0)
     endif
+    !write(*,*)ikstep,zrhofc(1,:,ikstep),nnp(:,1:2,ikstep)
   endif ! (ikstep.le.nkptlocnr(iproc))
   
 enddo !ikstep
@@ -475,14 +476,14 @@ do ik=1,nkptnr
   call cpu_time(cpu0)
   call zrhoftit(ngvecme,gvecme1,max_num_nnp,num_nnp(ik),nnp(1,1,ik), &
     ngknr(ik),ngknr(jk),igkignr(1,ik),igkignr(1,jk),ikq(ik,2),       &
-    wfsvitloc(1,1,ik),wfsvitloc(1,1,jk),zrhofc)
+    wfsvitloc(1,1,1,ik),wfsvitloc(1,1,1,jk),zrhofc)
   call cpu_time(cpu1)
   timeistl=cpu1-cpu0
 
 ! calculate muffin-tin contribution for all combinations of n,n'    
   call cpu_time(cpu0)
   call zrhoftmt(ngvecme,max_num_nnp,num_nnp(ik),nnp(1,1,ik), &
-    wfsvmtloc(1,1,1,1,ik),wfsvmtloc(1,1,1,1,jk),ngumax,ngu,gu,igu,zrhofc)
+    wfsvmtloc(1,1,1,1,1,ik),wfsvmtloc(1,1,1,1,1,jk),ngumax,ngu,gu,igu,zrhofc)
   call cpu_time(cpu1)
   timemt=cpu1-cpu0
   
@@ -593,36 +594,36 @@ integer, intent(in) :: ngknr2
 integer, intent(in) :: igkq
 integer, intent(in) :: igkignr1(ngkmax)
 integer, intent(in) :: igkignr2(ngkmax)
-complex(8), intent(in) :: wfsvit1(nmatmax,nstsv)
-complex(8), intent(in) :: wfsvit2(nmatmax,nstsv)
+complex(8), intent(in) :: wfsvit1(nmatmax,nstsv,nspinor)
+complex(8), intent(in) :: wfsvit2(nmatmax,nstsv,nspinor)
 complex(8), intent(inout) :: zrhofc(ngvecme,max_num_nnp)
 
 complex(8), allocatable :: mit(:,:)
-complex(8), allocatable :: a(:,:) 
+complex(8), allocatable :: a(:,:,:) 
 
-integer is,ia,ias,ig,ig1,ig2,ist1,ist2,i,i1,i2,ispn,istfv,nst1
+integer is,ia,ias,ig,ig1,ig2,ist1,ist2,i,i1,i2,ispn,ispn2,istfv,nst1
 integer iv3g(3)
 real(8) v1(3),v2(3),tp3g(2),len3g
 complex(8) sfac3g(natmtot)
 complex(8) zt1
 
-allocate(a(ngknr2,nstsv))
+allocate(a(ngknr2,nstsv,nspinor))
 
 ! compute coefficients for required spin(s) only
 !  for both spins compute nstfv+nstfv=nstsv states
 !  for one (up or down spin) compute nstfv states
-if (spin_me.ne.3) then
-  nst1=nstfv
-else
-  nst1=nstsv
-endif
+!if (spin_me.ne.3) then
+!  nst1=nstfv
+!else
+!  nst1=nstsv
+!endif
 ! for first spin or for two spins start summation from 1
 !  for second spin start summation from nstfv+1 (skip spin up block)
-if (spin_me.eq.1.or.spin_me.eq.3) then
-  ispn=1
-else
-  ispn=2
-endif
+!if (spin_me.eq.1.or.spin_me.eq.3) then
+!  ispn=1
+!else
+!  ispn=2
+!endif
 
 allocate(mit(ngknr1,ngknr2))
 
@@ -651,19 +652,29 @@ do ig=1,ngvecme
     enddo
   enddo
   a=dcmplx(0.d0,0.d0)
-  do i=1,nst1
+  do ispn=1,nspinor
+  do i=1,nstsv
     do ig2=1,ngknr2
       do ig1=1,ngknr1
-        a(ig2,i+(ispn-1)*nstfv)=a(ig2,i+(ispn-1)*nstfv) + &
-	  dconjg(wfsvit1(ig1,i+(ispn-1)*nstfv))*mit(ig1,ig2)
+        a(ig2,i,ispn)=a(ig2,i,ispn) + &
+	  dconjg(wfsvit1(ig1,i,ispn))*mit(ig1,ig2)
       enddo
     enddo
   enddo
-  do i=1,num_nnp
-    ist1=nnp(i,1)
-    ist2=nnp(i,2)
-    do ig2=1,ngknr2
-      zrhofc(ig,i)=zrhofc(ig,i)+wfsvit2(ig2,ist2)*a(ig2,ist1)
+  enddo
+  do ispn=1,nspinor
+    if (lrtype.eq.0) then
+      ispn2=ispn
+    endif
+    if (lrtype.eq.1) then
+      ispn2=3-ispn
+    endif
+    do i=1,num_nnp
+      ist1=nnp(i,1)
+      ist2=nnp(i,2)
+      do ig2=1,ngknr2
+        zrhofc(ig,i)=zrhofc(ig,i)+wfsvit2(ig2,ist2,ispn2)*a(ig2,ist1,ispn)
+      enddo
     enddo
   enddo
 enddo
@@ -684,20 +695,27 @@ integer, intent(in) :: ngumax
 integer, intent(in) :: ngu(natmtot,ngvecme)
 integer, intent(in) :: igu(4,ngumax,natmtot,ngvecme)
 complex(4), intent(in) :: gu(ngumax,natmtot,ngvecme)
-complex(8), intent(in) :: wfsvmt1(lmmaxvr,nrfmax,natmtot,nstsv)
-complex(8), intent(in) :: wfsvmt2(lmmaxvr,nrfmax,natmtot,nstsv)
+complex(8), intent(in) :: wfsvmt1(lmmaxvr,nrfmax,natmtot,nstsv,nspinor)
+complex(8), intent(in) :: wfsvmt2(lmmaxvr,nrfmax,natmtot,nstsv,nspinor)
 complex(8), intent(inout) :: zrhofc(ngvecme,max_num_nnp)
 ! local variables
-integer ig,i,j,ist1,ist2,ias,io1,io2,lm1,lm2 
+integer ig,i,j,ist1,ist2,ias,io1,io2,lm1,lm2,ispn,ispn2 
 complex(8) a1(lmmaxvr,nrfmax),a2(lmmaxvr,nrfmax)
 
 do ig=1,ngvecme
+  do ispn=1,nspinor
+    if (lrtype.eq.0) then
+      ispn2=ispn
+    endif
+    if (lrtype.eq.1) then
+      ispn2=3-ispn
+    endif
   do i=1,num_nnp
     ist1=nnp(i,1)
     ist2=nnp(i,2)
     do ias=1,natmtot
-      a1=dconjg(wfsvmt1(:,:,ias,ist1))
-      a2=wfsvmt2(:,:,ias,ist2)
+      a1=dconjg(wfsvmt1(:,:,ias,ist1,ispn))
+      a2=wfsvmt2(:,:,ias,ist2,ispn2)
       do j=1,ngu(ias,ig)
         lm1=igu(1,j,ias,ig)
         lm2=igu(2,j,ias,ig)
@@ -707,6 +725,7 @@ do ig=1,ngvecme
       enddo
     enddo !ias 
   enddo !i
+  enddo
 enddo !ig    
 
 return
@@ -975,22 +994,22 @@ use modmain
 implicit none
 integer, intent(in) :: ngp
 integer, intent(in) :: igpig(ngkmax)
-complex(8), intent(in) :: wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv)
-complex(8), intent(in) :: wfsvit(nmatmax,nstsv)
+complex(8), intent(in) :: wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv,nspinor)
+complex(8), intent(in) :: wfsvit(nmatmax,nstsv,nspinor)
 real(8), intent(out) :: wfnrmdev(nstsv*(nstsv+1)/2)
 
 complex(8) norm
 real(8) t1
 
 complex(8), allocatable :: mit(:,:)
-complex(8), allocatable :: a(:,:) 
+complex(8), allocatable :: a(:,:,:) 
 
-integer is,ia,ias,ig1,ig2,ist1,ist2,io1,io2,l,m,lm,i,j
+integer is,ia,ias,ig1,ig2,ist1,ist2,io1,io2,l,m,lm,i,j,ispn
 integer iv2g(3)
 real(8) v1(3),v2(3),tp2g(2),len2g
 complex(8) sfac2g(natmtot)
 
-allocate(a(ngp,nstsv))
+allocate(a(ngp,nstsv,nspinor))
 allocate(mit(ngp,ngp))
 
 mit=dcmplx(0.d0,0.d0)
@@ -1018,12 +1037,14 @@ do ig1=1,ngp
 enddo
 
 a=dcmplx(0.d0,0.d0)
+do ispn=1,nspinor
 do i=1,nstsv
   do ig2=1,ngp
     do ig1=1,ngp
-      a(ig2,i)=a(ig2,i) + dconjg(wfsvit(ig1,i))*mit(ig1,ig2)
+      a(ig2,i,ispn)=a(ig2,i,ispn)+dconjg(wfsvit(ig1,i,ispn))*mit(ig1,ig2)
     enddo
   enddo
+enddo
 enddo
 
 j=0
@@ -1031,9 +1052,10 @@ do ist1=1,nstsv
   do ist2=ist1,nstsv
     j=j+1
     norm=dcmplx(0.0,0.d0)
+    do ispn=1,nspinor
 ! interstitial contribution
     do ig2=1,ngp
-      norm=norm+wfsvit(ig2,ist2)*a(ig2,ist1)
+      norm=norm+wfsvit(ig2,ist2,ispn)*a(ig2,ist1,ispn)
     enddo
 ! muffin-tin contribution
     do is=1,nspecies
@@ -1044,19 +1066,20 @@ do ist1=1,nstsv
 	    do io2=1,nrfmax
 	      do m=-l,l
                 lm=idxlm(l,m)
-	        norm=norm+dconjg(wfsvmt(lm,io1,ias,ist1))* &
-		  wfsvmt(lm,io2,ias,ist2)*urfprod(l,io1,io2,ias)
+	        norm=norm+dconjg(wfsvmt(lm,io1,ias,ist1,ispn))* &
+		  wfsvmt(lm,io2,ias,ist2,ispn)*urfprod(l,io1,io2,ias)
 	      enddo !m
 	    enddo
 	  enddo
 	enddo !l
       enddo !ia
     enddo !is
+    enddo !ispn
     t1=0.d0
     if (ist1.eq.ist2) t1=1.d0
     wfnrmdev(j)=abs(norm-t1)
-  enddo !ist1 
-enddo !ist2
+  enddo !ist2
+enddo !ist1
 
 deallocate(mit,a)
 
