@@ -19,8 +19,8 @@ complex(8), allocatable :: wfmt(:,:,:,:,:)
 complex(8), allocatable :: wfir(:,:,:)
 complex(8), allocatable :: zrhomt(:,:,:)
 complex(8), allocatable :: zrhoir(:)
-complex(8), allocatable :: wfsvit(:,:)
-complex(8), allocatable :: wfsvmt(:,:,:,:)
+complex(8), allocatable :: wfsvit(:,:,:)
+complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 real(8), allocatable :: wfnrmdev(:)
 
 complex(8), external :: zfint
@@ -38,6 +38,9 @@ call genapwfr
 ! generate the local-orbital radial functions
 call genlofr
 
+call geturf
+call genurfprod
+
 allocate(igkignr(ngkmax))
 allocate(vgklnr(3,ngkmax))
 allocate(vgkcnr(3,ngkmax))
@@ -52,8 +55,8 @@ allocate(wfir(ngrtot,nspinor,nstsv))
 allocate(zrhomt(lmmaxvr,nrcmtmax,natmtot))
 allocate(zrhoir(ngrtot))
 
-allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv))
-allocate(wfsvit(nmatmax,nstsv))
+allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
+allocate(wfsvit(nmatmax,nstsv,nspinor))
 allocate(wfnrmdev(nstsv*(nstsv+1)/2))
 open(60,file='NORM.OUT',form='FORMATTED',status='REPLACE')
 
@@ -74,7 +77,7 @@ do ik=1,nkptnr
   call genwfsvmt(lmaxvr,lmmaxvr,ngknr,evecfv,evecsv,apwalm,wfsvmt)
   call genwfsvit(ngknr,evecfv,evecsv,wfsvit)
   wfnrmdev=0.d0
-  call wfsvprodk(ngknr,igkignr,wfsvmt,wfsvit,wfnrmdev)
+  call wfprodk(ngknr,igkignr,wfsvmt,wfsvit,wfnrmdev)
     
   j=0
   do ist1=1,nstsv
@@ -86,16 +89,16 @@ do ik=1,nkptnr
       t1=0.d0
       if (ist1.eq.ist2) t1=1.d0
       t1=abs(zt1-t1)
-      if (t1.gt.1.d-4) then
-        write(60,'("ik : ",I4,4x,"n,n'' : ",2I4,4x,"dev : ",F18.10)')ik,ist1,ist2,t1
-      end if
+      !if (t1.gt.1.d-4) then
+        write(60,'("ik : ",I4,4x,"n,n'' : ",2I4,4x,"dev : ",2F18.10)')ik,ist1,ist2,t1,wfnrmdev(j)
+      !end if
       if (t1.gt.1d-1) then
         write(*,*)
         write(*,'("Warning(checknorm) : very big deviation from norm")')
         write(*,'("ik : ",I4,4x,"n,n'' : ",2I4,4x,"dev : ",F18.10)')ik,ist1,ist2,t1
         write(*,*)
       endif
-      write(*,*)wfnrmdev(j),t1
+!      write(*,*)wfnrmdev(j),t1
     end do
   end do
 enddo

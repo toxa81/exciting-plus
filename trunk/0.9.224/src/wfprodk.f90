@@ -1,24 +1,24 @@
-subroutine wfsvprodk(ngp,igpig,wfsvmt,wfsvit,wfnrmdev)
+subroutine wfprodk(ngp,igpig,wfsvmt,wfsvit,wfnrmdev)
 use modmain
 implicit none
 integer, intent(in) :: ngp
 integer, intent(in) :: igpig(ngkmax)
-complex(8), intent(in) :: wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv)
-complex(8), intent(in) :: wfsvit(nmatmax,nstsv)
+complex(8), intent(in) :: wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv,nspinor)
+complex(8), intent(in) :: wfsvit(nmatmax,nstsv,nspinor)
 real(8), intent(out) :: wfnrmdev(nstsv*(nstsv+1)/2)
 
 complex(8) norm
 real(8) t1
 
 complex(8), allocatable :: mit(:,:)
-complex(8), allocatable :: a(:,:) 
+complex(8), allocatable :: a(:,:,:) 
 
-integer is,ia,ias,ig1,ig2,ist1,ist2,io1,io2,l,m,lm,i,j
+integer is,ia,ias,ig1,ig2,ist1,ist2,io1,io2,l,m,lm,i,j,ispn
 integer iv2g(3)
 real(8) v1(3),v2(3),tp2g(2),len2g
 complex(8) sfac2g(natmtot)
 
-allocate(a(ngp,nstsv))
+allocate(a(ngp,nstsv,nspinor))
 allocate(mit(ngp,ngp))
 
 mit=dcmplx(0.d0,0.d0)
@@ -46,10 +46,12 @@ do ig1=1,ngp
 enddo
 
 a=dcmplx(0.d0,0.d0)
-do i=1,nstsv
-  do ig2=1,ngp
-    do ig1=1,ngp
-      a(ig2,i)=a(ig2,i) + dconjg(wfsvit(ig1,i))*mit(ig1,ig2)
+do ispn=1,nspinor
+  do i=1,nstsv
+    do ig2=1,ngp
+      do ig1=1,ngp
+        a(ig2,i,ispn)=a(ig2,i,ispn)+dconjg(wfsvit(ig1,i,ispn))*mit(ig1,ig2)
+      enddo
     enddo
   enddo
 enddo
@@ -59,27 +61,29 @@ do ist1=1,nstsv
   do ist2=ist1,nstsv
     j=j+1
     norm=dcmplx(0.0,0.d0)
+    do ispn=1,nspinor
 ! interstitial contribution
-    do ig2=1,ngp
-      norm=norm+wfsvit(ig2,ist2)*a(ig2,ist1)
-    enddo
+      do ig2=1,ngp
+        norm=norm+wfsvit(ig2,ist2,ispn)*a(ig2,ist1,ispn)
+      enddo
 ! muffin-tin contribution
-    do is=1,nspecies
-      do ia=1,natoms(is)
-        ias=idxas(ia,is)
-	do l=0,lmaxvr
-	  do io1=1,nrfmax
-	    do io2=1,nrfmax
-	      do m=-l,l
-                lm=idxlm(l,m)
-	        norm=norm+dconjg(wfsvmt(lm,io1,ias,ist1))* &
-		  wfsvmt(lm,io2,ias,ist2)*urfprod(l,io1,io2,ias)
-	      enddo !m
+      do is=1,nspecies
+        do ia=1,natoms(is)
+          ias=idxas(ia,is)
+	  do l=0,lmaxvr
+	    do io1=1,nrfmax
+	      do io2=1,nrfmax
+	        do m=-l,l
+                  lm=idxlm(l,m)
+	          norm=norm+dconjg(wfsvmt(lm,io1,ias,ist1,ispn))* &
+		    wfsvmt(lm,io2,ias,ist2,ispn)*urfprod(l,io1,io2,ias)
+	        enddo !m
+	      enddo
 	    enddo
-	  enddo
-	enddo !l
-      enddo !ia
-    enddo !is
+	  enddo !l
+        enddo !ia
+      enddo !is
+    enddo !ispn
     t1=0.d0
     if (ist1.eq.ist2) t1=1.d0
     wfnrmdev(j)=abs(norm-t1)
