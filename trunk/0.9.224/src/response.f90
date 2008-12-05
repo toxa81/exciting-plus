@@ -268,10 +268,10 @@ endif
 
 if (task.eq.403) then
   do i=1,nvq0
-!    call response_me(ivq0m_list(1,i),gvecme1,gvecme2,ngvecme,ikptlocnr, &
-!      nkptlocnr,wfsvmtloc,wfsvitloc,ngknr,igkignr,occsvnr)
-!    call response_chi0(ivq0m_list(1,i),ikptlocnr,nkptlocnr)
-!    call response_chi(ivq0m_list(1,i),gvecchi1,gvecchi2)
+    call response_me(ivq0m_list(1,i),gvecme1,gvecme2,ngvecme,wfsvmtloc, &
+      wfsvitloc,ngknr,igkignr,occsvnr)
+    call response_chi0(ivq0m_list(1,i))
+    call response_chi(ivq0m_list(1,i),gvecchi1,gvecchi2)
   enddo
 endif
 
