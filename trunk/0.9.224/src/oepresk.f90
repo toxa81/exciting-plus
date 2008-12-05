@@ -102,14 +102,12 @@ do is=1,nspecies
               end if
               zt2=zde*zt1
 ! residuals for exchange potential and field
-!$OMP CRITICAL
               dvxmt(:,1:nrc,ias)=dvxmt(:,1:nrc,ias) &
                +dble(zt2*zrhomt(:,1:nrc,ias))
               do idm=1,ndmag
                 dbxmt(:,1:nrc,ias,idm)=dbxmt(:,1:nrc,ias,idm) &
                  +dble(zt2*zvfmt(:,1:nrc,idm))
               end do
-!$OMP END CRITICAL
 ! end loop over jst
             end if
           end do
@@ -149,7 +147,6 @@ do ist=1,nstsv
         end if
         zt2=zde*zt1
 ! residuals for exchange potential and field
-!$OMP CRITICAL
         do is=1,nspecies
           nrc=nrcmt(is)
           do ia=1,natoms(is)
@@ -165,7 +162,6 @@ do ist=1,nstsv
         do idm=1,ndmag
           dbxir(:,idm)=dbxir(:,idm)+dble(zt2*zmagir(:,idm))
         end do
-!$OMP END CRITICAL
 ! end loop over jst
       end if
     end do

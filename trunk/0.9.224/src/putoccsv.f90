@@ -13,12 +13,10 @@ real(8), intent(in) :: occsvp(nstsv)
 integer recl
 ! find the record length
 inquire(iolength=recl) vkl(:,ik),nstsv,occsvp
-!$OMP CRITICAL
 open(70,file=trim(scrpath)//'OCCSV'//trim(filext),action='WRITE', &
  form='UNFORMATTED',access='DIRECT',recl=recl)
 write(70,rec=ik) vkl(:,ik),nstsv,occsvp
 close(70)
-!$OMP END CRITICAL
 return
 end subroutine
 

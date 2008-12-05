@@ -65,14 +65,14 @@ if (iproc.eq.0) then
   write(150,'("Energy mesh parameters:")')
   write(150,'("  maximum energy [eV] : ", F7.2)')maxomega
   write(150,'("  energy step    [eV] : ", F7.2)')domega
-  write(150,'("  eta            [eV] : ", F7.2)')eta
+  write(150,'("  eta            [eV] : ", F7.2)')eta_r
 endif
   
 ! setup energy mesh
 nepts=1+maxomega/domega
 allocate(w(nepts))
 do i=1,nepts
-  w(i)=dcmplx(domega*(i-1),eta)/ha2ev
+  w(i)=dcmplx(domega*(i-1),eta_r)/ha2ev
 enddo
 
 allocate(ikq(nkptnr))

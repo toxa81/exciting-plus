@@ -20,12 +20,10 @@ call findkpt(vpl,isym,ik)
 lspn=lspnsymc(isym)
 ! find the record length
 inquire(iolength=recl) vkl_,nstsv_,evecsv
-!$OMP CRITICAL
 open(70,file=trim(scrpath)//'EVECSV'//trim(filext),action='READ', &
  form='UNFORMATTED',access='DIRECT',recl=recl)
 read(70,rec=ik) vkl_,nstsv_,evecsv
 close(70)
-!$OMP END CRITICAL
 t1=abs(vkl(1,ik)-vkl_(1))+abs(vkl(2,ik)-vkl_(2))+abs(vkl(3,ik)-vkl_(3))
 if (t1.gt.epslat) then
   write(*,*)

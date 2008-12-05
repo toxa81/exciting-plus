@@ -149,13 +149,9 @@ if (tfibs) then
     call genffacg(is,ffacg(:,is))
   end do
 ! compute k-point dependent contribution to the IBS force
-!$OMP PARALLEL DEFAULT(SHARED)
-!$OMP DO
   do ik=1,nkpt
     call forcek(ik,ffacg)
   end do
-!$OMP END DO
-!$OMP END PARALLEL
 ! symmetrise IBS force
   call symvect(.false.,forceibs)
   deallocate(ffacg)

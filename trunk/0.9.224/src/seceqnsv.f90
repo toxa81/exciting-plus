@@ -46,10 +46,11 @@ complex(8), allocatable :: work(:)
 ! external functions
 complex(8) zdotc,zfmtinp
 external zdotc,zfmtinp
+integer, external :: ikglob
 ! spin-unpolarised case
 if ((.not.spinpol).and.(ldapu.eq.0)) then
   do i=1,nstsv
-    evalsv(i,ik)=evalfv(i)
+    evalsv(i,ikglob(ik))=evalfv(i)
   end do
   evecsv(:,:)=0.d0
   do i=1,nstsv
@@ -134,7 +135,7 @@ do is=1,nspecies
     end if
 ! compute the first-variational wavefunctions
     do ist=1,nstfv
-      call wavefmt(lradstp,lmaxvr,is,ia,ngk(1,ik),apwalm,evecfv(:,ist), &
+      call wavefmt(lradstp,lmaxvr,is,ia,ngk(1,ikglob(ik)),apwalm,evecfv(:,ist), &
        lmmaxvr,wfmt1(:,:,ist))
     end do
 ! begin loop over states
@@ -229,7 +230,7 @@ if (spinpol) then
   end if
   do jst=1,nstfv
     zfft1(:)=0.d0
-    do igk=1,ngk(1,ik)
+    do igk=1,ngk(1,ikglob(ik))
       ifg=igfft(igkig(igk,1,ik))
       zfft1(ifg)=evecfv(igk,jst)
     end do
@@ -238,7 +239,7 @@ if (spinpol) then
 ! multiply with magnetic field and transform to G-space
     zfft2(:)=zfft1(:)*bir(:,3)
     call zfftifc(3,ngrid,-1,zfft2)
-    do igk=1,ngk(1,ik)
+    do igk=1,ngk(1,ikglob(ik))
       ifg=igfft(igkig(igk,1,ik))
       zv(igk,1)=zfft2(ifg)
       zv(igk,2)=-zfft2(ifg)
@@ -246,7 +247,7 @@ if (spinpol) then
     if (nsc.eq.3) then
       zfft2(:)=zfft1(:)*cmplx(bir(:,1),-bir(:,2),8)
       call zfftifc(3,ngrid,-1,zfft2)
-      do igk=1,ngk(1,ik)
+      do igk=1,ngk(1,ikglob(ik))
         ifg=igfft(igkig(igk,1,ik))
         zv(igk,3)=zfft2(ifg)
       end do
@@ -265,7 +266,7 @@ if (spinpol) then
           j=jst+nstfv
         end if
         if (i.le.j) then
-          evecsv(i,j)=evecsv(i,j)+zdotc(ngk(1,ik),evecfv(:,ist),1,zv(:,k),1)
+          evecsv(i,j)=evecsv(i,j)+zdotc(ngk(1,ikglob(ik)),evecfv(:,ist),1,zv(:,k),1)
         end if
       end do
     end do
@@ -282,10 +283,10 @@ end do
 ! diagonalise second-variational Hamiltonian
 if (ndmag.eq.1) then
 ! collinear: block diagonalise H
-  call zheev('V','U',nstfv,evecsv,nstsv,evalsv(:,ik),work,lwork,rwork,info)
+  call zheev('V','U',nstfv,evecsv,nstsv,evalsv(:,ikglob(ik)),work,lwork,rwork,info)
   if (info.ne.0) goto 20
   i=nstfv+1
-  call zheev('V','U',nstfv,evecsv(i,i),nstsv,evalsv(i,ik),work,lwork,rwork,info)
+  call zheev('V','U',nstfv,evecsv(i,i),nstsv,evalsv(i,ikglob(ik)),work,lwork,rwork,info)
   if (info.ne.0) goto 20
   do i=1,nstfv
     do j=1,nstfv
@@ -295,21 +296,19 @@ if (ndmag.eq.1) then
   end do
 else
 ! non-collinear or spin-unpolarised: full diagonalisation
-  call zheev('V','U',nstsv,evecsv,nstsv,evalsv(:,ik),work,lwork,rwork,info)
+  call zheev('V','U',nstsv,evecsv,nstsv,evalsv(:,ikglob(ik)),work,lwork,rwork,info)
   if (info.ne.0) goto 20
 end if
 deallocate(bmt,bir,vr,drv,cf,sor,rwork)
 deallocate(wfmt1,wfmt2,zfft1,zfft2,zv,work)
 call timesec(ts1)
-!$OMP CRITICAL
 timesv=timesv+ts1-ts0
-!$OMP END CRITICAL
 return
 20 continue
 write(*,*)
 write(*,'("Error(seceqnsv): diagonalisation of the second-variational &
  &Hamiltonian failed")')
-write(*,'(" for k-point ",I8)') ik
+write(*,'(" for k-point ",I8)') ikglob(ik)
 write(*,'(" ZHEEV returned INFO = ",I8)') info
 write(*,*)
 stop

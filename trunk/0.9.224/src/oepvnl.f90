@@ -11,16 +11,10 @@ complex(8), intent(out) :: vnlcv(ncrmax,natmtot,nstsv,nkpt)
 complex(8), intent(out) :: vnlvv(nstsv,nstsv,nkpt)
 ! local variables
 integer ik
-!$OMP PARALLEL DEFAULT(SHARED)
-!$OMP DO
 do ik=1,nkpt
-!$OMP CRITICAL
   write(*,'("Info(oepvnl): ",I6," of ",I6," k-points")') ik,nkpt
-!$OMP END CRITICAL
   call oepvnlk(ik,vnlcv(:,:,:,ik),vnlvv(:,:,ik))
 end do
-!$OMP END DO
-!$OMP END PARALLEL
 return
 end subroutine
 

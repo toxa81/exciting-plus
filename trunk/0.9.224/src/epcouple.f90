@@ -156,11 +156,6 @@ do iq=1,nqpt
 ! zero the phonon linewidths array
   gq(:,iq)=0.d0
 ! begin parallel loop over non-reduced k-points
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(epmat,jk,vkql,isym) &
-!$OMP PRIVATE(ikq,ist,jst,i) &
-!$OMP PRIVATE(x,t1,t2,t3,t4)
-!$OMP DO
   do ik=1,nkptnr
     allocate(epmat(nstsv,nstsv,n))
 ! equivalent reduced k-point
@@ -182,17 +177,13 @@ do iq=1,nqpt
           x=(evalsv(jst,jk)-efermi)/swidth
           t3=sdelta(stype,x)/swidth
           t4=dble(epmat(ist,jst,i))**2+aimag(epmat(ist,jst,i))**2
-!$OMP CRITICAL
           gq(i,iq)=gq(i,iq)+wq(i,iq)*t1*t2*t3*t4
-!$OMP END CRITICAL
         end do
       end do
     end do
     deallocate(epmat)
 ! end loop over k-points
   end do
-!$OMP END DO
-!$OMP END PARALLEL
 ! end loop over phonon q-points
 end do
 ! write the phonon linewidths to file

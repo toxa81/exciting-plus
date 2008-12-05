@@ -55,9 +55,7 @@ complex(8), allocatable :: work(:)
 ! external functions
 complex(8) zfinp
 external zfinp
-!$OMP CRITICAL
 write(*,'("Info(seceqnhf): ",I6," of ",I6," k-points")') ikp,nkpt
-!$OMP END CRITICAL
 ! allocate local arrays
 allocate(igkignr(ngkmax))
 allocate(vgklnr(3,ngkmax))

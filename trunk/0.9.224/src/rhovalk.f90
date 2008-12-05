@@ -50,6 +50,7 @@ complex(8), allocatable :: wfmt1(:,:)
 complex(8), allocatable :: wfmt2(:,:,:,:)
 complex(8), allocatable :: wfmt3(:,:,:)
 complex(8), allocatable :: zfft(:,:)
+integer, external :: ikglob
 call timesec(ts0)
 if (spinpol) then
   if (ncmag) then
@@ -70,7 +71,7 @@ allocate(wfmt3(lmmaxvr,nrcmtmax,nspinor))
 allocate(zfft(ngrtot,nspinor))
 ! find the matching coefficients
 do ispn=1,nspnfv
-  call match(ngk(ispn,ik),gkc(:,ispn,ik),tpgkc(:,:,ispn,ik), &
+  call match(ngk(ispn,ikglob(ik)),gkc(:,ispn,ik),tpgkc(:,:,ispn,ik), &
    sfacgk(:,:,ispn,ik),apwalm(:,:,:,:,ispn))
 end do
 !----------------------------!
@@ -83,7 +84,7 @@ do is=1,nspecies
     done(:,:)=.false.
     rfmt(:,:,:)=0.d0
     do j=1,nstsv
-      wo=wkpt(ik)*occsv(j,ik)
+      wo=wkpt(ikglob(ik))*occsv(j,ikglob(ik))
       if (abs(wo).gt.epsocc) then
         if (tevecsv) then
 ! generate spinor wavefunction from second-variational eigenvectors
@@ -100,7 +101,7 @@ do is=1,nspecies
               zt1=evecsv(i,j)
               if (abs(dble(zt1))+abs(aimag(zt1)).gt.epsocc) then
                 if (.not.done(ist,jspn)) then
-                  call wavefmt(lradstp,lmaxvr,is,ia,ngk(jspn,ik), &
+                  call wavefmt(lradstp,lmaxvr,is,ia,ngk(jspn,ikglob(ik)), &
                    apwalm(:,:,:,:,jspn),evecfv(:,ist,jspn),lmmaxvr,wfmt1)
 ! convert from spherical harmonics to spherical coordinates
                   call zgemm('N','N',lmmaxvr,nrcmt(is),lmmaxvr,zone,zbshtvr, &
@@ -114,7 +115,7 @@ do is=1,nspecies
           end do
         else
 ! spin-unpolarised wavefunction
-          call wavefmt(lradstp,lmaxvr,is,ia,ngk(1,ik),apwalm,evecfv(:,j,1), &
+          call wavefmt(lradstp,lmaxvr,is,ia,ngk(1,ikglob(ik)),apwalm,evecfv(:,j,1), &
            lmmaxvr,wfmt1)
 ! convert from spherical harmonics to spherical coordinates
           call zgemm('N','N',lmmaxvr,nrcmt(is),lmmaxvr,zone,zbshtvr,lmmaxvr, &
@@ -155,7 +156,6 @@ do is=1,nspecies
         call dgemv('N',lmmaxvr,lmmaxvr,1.d0,rfshtvr,lmmaxvr,rfmt(:,irc,i),1, &
          0.d0,rflm(:,i),1)
       end do
-!$OMP CRITICAL
       if (spinpol) then
 ! spin-polarised
         if (ncmag) then
@@ -170,7 +170,6 @@ do is=1,nspecies
 ! spin-unpolarised
         rhomt(:,ir,ias)=rhomt(:,ir,ias)+rflm(:,1)
       end if
-!$OMP END CRITICAL
     end do
   end do
 end do
@@ -178,7 +177,7 @@ end do
 !     interstitial density     !
 !------------------------------!
 do j=1,nstsv
-  wo=wkpt(ik)*occsv(j,ik)
+  wo=wkpt(ikglob(ik))*occsv(j,ikglob(ik))
   if (abs(wo).gt.epsocc) then
     t1=wo/omega
     zfft(:,:)=0.d0
@@ -195,7 +194,7 @@ do j=1,nstsv
           i=i+1
           zt1=evecsv(i,j)
           if (abs(dble(zt1))+abs(aimag(zt1)).gt.epsocc) then
-            do igk=1,ngk(jspn,ik)
+            do igk=1,ngk(jspn,ikglob(ik))
               ifg=igfft(igkig(igk,jspn,ik))
               zfft(ifg,ispn)=zfft(ifg,ispn)+zt1*evecfv(igk,ist,jspn)
             end do
@@ -204,7 +203,7 @@ do j=1,nstsv
       end do
     else
 ! spin-unpolarised wavefunction
-      do igk=1,ngk(1,ik)
+      do igk=1,ngk(1,ikglob(ik))
         ifg=igfft(igkig(igk,1,ik))
         zfft(ifg,1)=evecfv(igk,j,1)
       end do
@@ -213,7 +212,6 @@ do j=1,nstsv
     do ispn=1,nspinor
       call zfftifc(3,ngrid,1,zfft(:,ispn))
     end do
-!$OMP CRITICAL
     if (spinpol) then
 ! spin-polarised
       do ir=1,ngrtot
@@ -238,15 +236,12 @@ do j=1,nstsv
         rhoir(ir)=rhoir(ir)+t1*(dble(zt1)**2+aimag(zt1)**2)
       end do
     end if
-!$OMP END CRITICAL
   end if
 end do
 deallocate(done,rflm,rfmt,apwalm,wfmt1,wfmt3,zfft)
 if (tevecsv) deallocate(wfmt2)
 call timesec(ts1)
-!$OMP CRITICAL
 timerho=timerho+ts1-ts0
-!$OMP END CRITICAL
 return
 end subroutine
 !EOC

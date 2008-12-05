@@ -23,16 +23,10 @@ if (spinpol) then
 end if
 ! calculate the non-local matrix elements (i-jj-i)
 if ((rdmxctype.ne.0).and.(maxitc.lt.1)) then
-!$OMP PARALLEL DEFAULT(SHARED)
-!$OMP DO
   do ik=1,nkpt
-!$OMP CRITICAL
     write(*,'("Info(rdmminn): ",I6," of ",I6," k-points")') ik,nkpt
-!$OMP END CRITICAL
     call rdmvnln(ik)
   end do
-!$OMP END DO
-!$OMP END PARALLEL
 end if
 ep=0.d0
 ! begin iteration loop

@@ -75,9 +75,6 @@ do iscl=1,maxscl
     write(60,'("Reached self-consistent loops maximum")')
     tlast=.true.
   end if
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(evecsv)
-!$OMP DO
   do ik=1,nkpt
     allocate(evecsv(nstsv,nstsv))
     call getevecsv(vkl(:,ik),evecsv)
@@ -88,8 +85,6 @@ do iscl=1,maxscl
     call putevecsv(ik,evecsv)
     deallocate(evecsv)
   end do
-!$OMP END DO
-!$OMP END PARALLEL
 ! find the occupation numbers and Fermi energy
   call occupy
 ! write out the eigenvalues and occupation numbers
@@ -103,9 +98,6 @@ do iscl=1,maxscl
     magmt(:,:,:,:)=0.d0
     magir(:,:)=0.d0
   end if
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(evecfv,evecsv)
-!$OMP DO
   do ik=1,nkpt
     allocate(evecfv(nmatmax,nstfv,nspnfv))
     allocate(evecsv(nstsv,nstsv))
@@ -118,8 +110,6 @@ do iscl=1,maxscl
     call rhovalk(ik,evecfv,evecsv)
     deallocate(evecfv,evecsv)
   end do
-!$OMP END DO
-!$OMP END PARALLEL
 ! symmetrise the density
   call symrf(lradstp,rhomt,rhoir)
 ! symmetrise the magnetisation

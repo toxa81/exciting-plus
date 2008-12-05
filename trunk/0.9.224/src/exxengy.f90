@@ -28,16 +28,10 @@ allocate(zfmt(lmmaxvr,nrcmtmax))
 evv=0.d0
 ecv=0.d0
 ecc=0.d0
-!$OMP PARALLEL DEFAULT(SHARED)
-!$OMP DO
 do ik=1,nkpt
-!$OMP CRITICAL
   write(*,'("Info(exxengy): ",I6," of ",I6," k-points")') ik,nkpt
-!$OMP END CRITICAL
   call exxengyk(ik,evv,ecv)
 end do
-!$OMP END DO
-!$OMP END PARALLEL
 !-----------------------------------!
 !    core-core-core contribution    !
 !-----------------------------------!

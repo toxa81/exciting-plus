@@ -44,10 +44,6 @@ call olprad
 call hmlrad
 ik0=0
 ! begin parallel loop over k-points
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(evalfv,evecfv,evecsv) &
-!$OMP PRIVATE(i1,i2,i3,j1,j2,j3,ist)
-!$OMP DO
 do ik=1,nkpt
   allocate(evalfv(nstfv,nspnfv))
   allocate(evecfv(nmatmax,nstfv,nspnfv))
@@ -63,8 +59,6 @@ do ik=1,nkpt
   end do
   deallocate(evalfv,evecfv,evecsv)
 end do
-!$OMP END DO
-!$OMP END PARALLEL
 ! set up polynomial matrix
 i=0
 do i3=-ndspem,ndspem

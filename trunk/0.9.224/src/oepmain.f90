@@ -68,13 +68,9 @@ do it=1,maxitoep
     dbxir(:,:)=0.d0
   end if
 ! calculate the k-dependent residuals
-!$OMP PARALLEL DEFAULT(SHARED)
-!$OMP DO
   do ik=1,nkpt
     call oepresk(ik,vnlcv,vnlvv,dvxmt,dvxir,dbxmt,dbxir)
   end do
-!$OMP END DO
-!$OMP END PARALLEL
 ! convert muffin-tin residuals to spherical harmonics
   do is=1,nspecies
     do ia=1,natoms(is)

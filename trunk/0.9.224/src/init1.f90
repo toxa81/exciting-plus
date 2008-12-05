@@ -27,6 +27,7 @@ real(8) ts0,ts1
 ! external functions
 complex(8) gauntyry
 external gauntyry
+integer, external :: ikglob
 
 call timesec(ts0)
 
@@ -153,39 +154,41 @@ call getngkmax
 if (allocated(ngk)) deallocate(ngk)
 allocate(ngk(nspnfv,nkpt))
 if (allocated(igkig)) deallocate(igkig)
-allocate(igkig(ngkmax,nspnfv,nkpt))
+allocate(igkig(ngkmax,nspnfv,nkptloc(iproc)))
 if (allocated(vgkl)) deallocate(vgkl)
-allocate(vgkl(3,ngkmax,nspnfv,nkpt))
+allocate(vgkl(3,ngkmax,nspnfv,nkptloc(iproc)))
 if (allocated(vgkc)) deallocate(vgkc)
-allocate(vgkc(3,ngkmax,nspnfv,nkpt))
+allocate(vgkc(3,ngkmax,nspnfv,nkptloc(iproc)))
 if (allocated(gkc)) deallocate(gkc)
-allocate(gkc(ngkmax,nspnfv,nkpt))
+allocate(gkc(ngkmax,nspnfv,nkptloc(iproc)))
 if (allocated(tpgkc)) deallocate(tpgkc)
-allocate(tpgkc(2,ngkmax,nspnfv,nkpt))
+allocate(tpgkc(2,ngkmax,nspnfv,nkptloc(iproc)))
 if (allocated(sfacgk)) deallocate(sfacgk)
-allocate(sfacgk(ngkmax,natmtot,nspnfv,nkpt))
-do ik=1,nkpt
+allocate(sfacgk(ngkmax,natmtot,nspnfv,nkptloc(iproc)))
+ngk=0
+do ik=1,nkptloc(iproc)
   do ispn=1,nspnfv
     if (spinsprl) then
 ! spin-spiral case
       if (ispn.eq.1) then
-        vl(:)=vkl(:,ik)+0.5d0*vqlss(:)
-        vc(:)=vkc(:,ik)+0.5d0*vqcss(:)
+        vl(:)=vkl(:,ikglob(ik))+0.5d0*vqlss(:)
+        vc(:)=vkc(:,ikglob(ik))+0.5d0*vqcss(:)
       else
-        vl(:)=vkl(:,ik)-0.5d0*vqlss(:)
-        vc(:)=vkc(:,ik)-0.5d0*vqcss(:)
+        vl(:)=vkl(:,ikglob(ik))-0.5d0*vqlss(:)
+        vc(:)=vkc(:,ikglob(ik))-0.5d0*vqcss(:)
       end if
     else
-      vl(:)=vkl(:,ik)
-      vc(:)=vkc(:,ik)
+      vl(:)=vkl(:,ikglob(ik))
+      vc(:)=vkc(:,ikglob(ik))
     end if
 ! generate the G+k-vectors
-    call gengpvec(vl,vc,ngk(ispn,ik),igkig(:,ispn,ik),vgkl(:,:,ispn,ik), &
+    call gengpvec(vl,vc,ngk(ispn,ikglob(ik)),igkig(:,ispn,ik),vgkl(:,:,ispn,ik), &
      vgkc(:,:,ispn,ik),gkc(:,ispn,ik),tpgkc(:,:,ispn,ik))
 ! generate structure factors for G+k-vectors
-    call gensfacgp(ngk(ispn,ik),vgkc(:,:,ispn,ik),ngkmax,sfacgk(:,:,ispn,ik))
+    call gensfacgp(ngk(ispn,ikglob(ik)),vgkc(:,:,ispn,ik),ngkmax,sfacgk(:,:,ispn,ik))
   end do
 end do
+call isync(ngk,nspnfv*nkpt,.true.,.true.)
 
 !---------------------------------!
 !     APWs and local-orbitals     !
@@ -246,17 +249,26 @@ if (allocated(nmat)) deallocate(nmat)
 allocate(nmat(nspnfv,nkpt))
 if (allocated(npmat)) deallocate(npmat)
 allocate(npmat(nspnfv,nkpt))
+nmat=0
+npmat=0
+do ik=1,nkptloc(iproc)
+  do ispn=1,nspnfv
+    nmat(ispn,ikglob(ik))=ngk(ispn,ikglob(ik))+nlotot
+! packed matrix sizes
+    npmat(ispn,ikglob(ik))=(nmat(ispn,ikglob(ik))*(nmat(ispn,ikglob(ik))+1))/2
+  end do
+end do
+call isync(nmat,nspnfv*nkpt,.true.,.true.)
+call isync(npmat,nspnfv*nkpt,.true.,.true.)
 nmatmax=0
 do ik=1,nkpt
   do ispn=1,nspnfv
-    nmat(ispn,ik)=ngk(ispn,ik)+nlotot
     nmatmax=max(nmatmax,nmat(ispn,ik))
-! packed matrix sizes
-    npmat(ispn,ik)=(nmat(ispn,ik)*(nmat(ispn,ik)+1))/2
-! the number of first-variational states should not exceed the matrix size
+! the number of first-variational states should not exceed the matrix size 
     nstfv=min(nstfv,nmat(ispn,ik))
   end do
 end do
+
 ! number of second-variational states
 nstsv=nstfv*nspinor
 ! allocate second-variational arrays
@@ -296,6 +308,9 @@ do l1=0,lmaxmat
   end do
 end do
 
+!-----------------!
+!      addons     !
+!-----------------!
 call getnrfmax(lmaxvr)
 if (allocated(urf)) deallocate(urf)
 allocate(urf(nrmtmax,0:lmaxvr,nrfmax,natmtot))

@@ -251,7 +251,7 @@ if (iproc.eq.0) then
   write(160,'("# Energy mesh parameters             : ")')
   write(160,'("#   maximum energy [eV]              : ", F7.2)')maxomega
   write(160,'("#   energy step    [eV]              : ", F7.2)')domega
-  write(160,'("#   eta            [eV]              : ", F7.2)')eta
+  write(160,'("#   eta            [eV]              : ", F7.2)')eta_r
   write(160,'("# q-vector information               : ")')
   write(160,'("#   q-vector (mesh coord.)           : ",3I4)')ivq0m
   write(160,'("#   q-vector (lat. coord.)           : ",3F18.10)')vq0l

@@ -9,16 +9,15 @@ implicit none
 ! arguments
 integer, intent(in) :: ik
 complex(8), intent(in) :: evecfv(nmatmax,nstfv,nspnfv)
+integer, external :: ikloc
 ! local variables
 integer recl
 ! find the record length
-inquire(iolength=recl) vkl(:,ik),nmatmax,nstfv,nspnfv,evecfv
-!$OMP CRITICAL
+inquire(iolength=recl) vkl(:,ik),nmatmax,nstfv,nspnfv,evecfv,vgkl(:,:,1,ikloc(ik)),igkig(:,:,ikloc(ik))
 open(70,file=trim(scrpath)//'EVECFV'//trim(filext),action='WRITE', &
  form='UNFORMATTED',access='DIRECT',recl=recl)
-write(70,rec=ik) vkl(:,ik),nmatmax,nstfv,nspnfv,evecfv
+write(70,rec=ik) vkl(:,ik),nmatmax,nstfv,nspnfv,evecfv,vgkl(:,:,1,ikloc(ik)),igkig(:,:,ikloc(ik))
 close(70)
-!$OMP END CRITICAL
 return
 end subroutine
 

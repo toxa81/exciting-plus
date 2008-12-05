@@ -88,7 +88,7 @@ do itask=1,ntasks
     call alpha2f
   case(300)
     call rdmft
-  case(400,401,402)
+  case(400,401,402,403)
     call response
   case(500)
     call checknorm

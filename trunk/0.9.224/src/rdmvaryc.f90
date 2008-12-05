@@ -22,17 +22,11 @@ real(8) dznrm2
 complex(8) zdotc
 external dznrm2,zdotc
 allocate(dedc(nstsv,nstsv,nkpt))
-!$OMP PARALLEL DEFAULT(SHARED)
-!$OMP DO
 do ik=1,nkpt
-!$OMP CRITICAL
   write(*,'("Info(rdmvaryc): ",I6," of ",I6," k-points")') ik,nkpt
-!$OMP END CRITICAL
 ! compute the derivative w.r.t. evecsv
   call rdmdedc(ik,dedc(:,:,ik))
 end do
-!$OMP END DO
-!$OMP END PARALLEL
 allocate(evecsv(nstsv,nstsv))
 allocate(evecsvt(nstsv))
 sum=0.d0

@@ -38,6 +38,7 @@ complex(8), allocatable :: dmat(:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:,:)
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
+integer, external :: ikglob
 ! initialise universal variables
 call init0
 call init1
@@ -48,7 +49,12 @@ lmax=min(3,lmaxapw)
 lmmax=(lmax+1)**2
 if (task.eq.21) then
   allocate(bc(0:lmax,natmtot,nstsv,nkpt))
+  allocate(dmat(lmmax,lmmax,nspinor,nspinor,nstsv))
+  allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
 end if
+allocate(evalfv(nstfv,nspnfv))
+allocate(evecfv(nmatmax,nstfv,nspnfv))
+allocate(evecsv(nstsv,nstsv))
 ! read density and potentials from file
 call readstate
 ! read Fermi energy from file
@@ -66,38 +72,23 @@ call hmlrad
 emin=1.d5
 emax=-1.d5
 ! begin parallel loop over k-points
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(evalfv,evecfv,evecsv) &
-!$OMP PRIVATE(dmat,apwalm) &
-!$OMP PRIVATE(ispn,ist,is,ia,ias) &
-!$OMP PRIVATE(l,m,lm,sum)
-!$OMP DO
-do ik=1,nkpt
-  allocate(evalfv(nstfv,nspnfv))
-  allocate(evecfv(nmatmax,nstfv,nspnfv))
-  allocate(evecsv(nstsv,nstsv))
-!$OMP CRITICAL
-  write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ik,nkpt
-!$OMP END CRITICAL
+e=0.d0
+if (task.eq.21) bc=0.d0
+do ik=1,nkptloc(iproc)
+  write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ikglob(ik),nkpt
 ! solve the first- and second-variational secular equations
   call seceqn(ik,evalfv,evecfv,evecsv)
   do ist=1,nstsv
 ! subtract the Fermi energy
-    e(ist,ik)=evalsv(ist,ik)-efermi
+    e(ist,ikglob(ik))=evalsv(ist,ikglob(ik))-efermi
 ! add scissors correction
-    if (e(ist,ik).gt.0.d0) e(ist,ik)=e(ist,ik)+scissor
-!$OMP CRITICAL
-    emin=min(emin,e(ist,ik))
-    emax=max(emax,e(ist,ik))
-!$OMP END CRITICAL
+    if (e(ist,ikglob(ik)).gt.0.d0) e(ist,ikglob(ik))=e(ist,ikglob(ik))+scissor
   end do
 ! compute the band characters if required
   if (task.eq.21) then
-    allocate(dmat(lmmax,lmmax,nspinor,nspinor,nstsv))
-    allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
 ! find the matching coefficients
     do ispn=1,nspnfv
-      call match(ngk(ispn,ik),gkc(:,ispn,ik),tpgkc(:,:,ispn,ik), &
+      call match(ngk(ispn,ikglob(ik)),gkc(:,ispn,ik),tpgkc(:,:,ispn,ik), &
        sfacgk(:,:,ispn,ik),apwalm(:,:,:,:,ispn))
     end do
 ! average band character over spin and m for all atoms
@@ -105,7 +96,7 @@ do ik=1,nkpt
       do ia=1,natoms(is)
         ias=idxas(ia,is)
 ! generate the diagonal of the density matrix
-        call gendmat(.true.,.true.,0,lmax,is,ia,ngk(:,ik),apwalm,evecfv, &
+        call gendmat(.true.,.true.,0,lmax,is,ia,ngk(:,ikglob(ik)),apwalm,evecfv, &
          evecsv,lmmax,dmat)
         do ist=1,nstsv
           do l=0,lmax
@@ -116,20 +107,30 @@ do ik=1,nkpt
                 sum=sum+dble(dmat(lm,lm,ispn,ispn,ist))
               end do
             end do
-            bc(l,ias,ist,ik)=real(sum)
+            bc(l,ias,ist,ikglob(ik))=real(sum)
           end do
         end do
       end do
     end do
-    deallocate(dmat,apwalm)
   end if
-  deallocate(evalfv,evecfv,evecsv)
 ! end loop over k-points
 end do
-!$OMP END DO
-!$OMP END PARALLEL
+deallocate(evalfv,evecfv,evecsv) 
+if (task.eq.21) then
+  deallocate(dmat,apwalm)
+endif
+call dsync(e,nstsv*nkpt,.true.,.false.)
+if (task.eq.21) then
+  do ik=1,nkpt                                                                                                                              
+    call rsync(bc(1,1,1,ik),(lmax+1)*natmtot*nstsv,.true.,.false.)
+    call barrier                                                               
+  enddo                                                                                                                                     
+endif 
+emin=minval(e)
+emax=maxval(e)
 emax=emax+(emax-emin)*0.5d0
 emin=emin-(emax-emin)*0.5d0
+if (iproc.eq.0) then
 ! output the band structure
 if (task.eq.20) then
   open(50,file='BAND.OUT',action='WRITE',form='FORMATTED')
@@ -182,6 +183,7 @@ close(50)
 write(*,*)
 write(*,'(" vertex location lines written to BANDLINES.OUT")')
 write(*,*)
+endif
 deallocate(e)
 if (task.eq.21) deallocate(bc)
 return

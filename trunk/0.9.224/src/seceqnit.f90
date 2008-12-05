@@ -44,9 +44,6 @@ end if
 ! start iteration loop
 do it=1,nseqit
 ! begin parallel loop over states
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(h,is,ia,t1,i)
-!$OMP DO
   do ist=1,nstfv
     allocate(h(nmatp))
 ! operate with H and O on the current vector
@@ -102,20 +99,13 @@ do it=1,nseqit
     deallocate(h)
 ! end parallel loop over states
   end do
-!$OMP END DO
-!$OMP END PARALLEL
 ! perform Gram-Schmidt orthonormalisation
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(jst,zt1,t1,i)
-!$OMP DO ORDERED
   do ist=1,nstfv
-!$OMP ORDERED
     do jst=1,ist-1
       zt1=-zdotc(nmatp,evecfv(:,jst),1,o(:,ist),1)
       call zaxpy(nmatp,zt1,evecfv(:,jst),1,evecfv(:,ist),1)
       call zaxpy(nmatp,zt1,o(:,jst),1,o(:,ist),1)
     end do
-!$OMP END ORDERED
 ! normalise
     t1=dble(zdotc(nmatp,evecfv(:,ist),1,o(:,ist),1))
     if (t1.gt.0.d0) then
@@ -126,15 +116,11 @@ do it=1,nseqit
       end do
     end if
   end do
-!$OMP END DO
-!$OMP END PARALLEL
 ! end iteration loop
 end do
 deallocate(o)
 call timesec(ts1)
-!$OMP CRITICAL
 timefv=timefv+ts1-ts0
-!$OMP END CRITICAL
 return
 end subroutine
 

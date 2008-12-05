@@ -32,23 +32,16 @@ call olprad
 ! compute the Hamiltonian radial integrals
 call hmlrad
 ! begin parallel loop over reduced k-points set
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(evalfv,evecfv,evecsv) 
-!$OMP DO
 do ik=1,nkpt
   allocate(evalfv(nstfv,nspnfv))
   allocate(evecfv(nmatmax,nstfv,nspnfv))
   allocate(evecsv(nstsv,nstsv))
-!$OMP CRITICAL
   write(*,'("Info(fermisurf): ",I6," of ",I6," k-points")') ik,nkpt
-!$OMP END CRITICAL
 ! solve the first- and second-variational secular equations
   call seceqn(ik,evalfv,evecfv,evecsv)
   deallocate(evalfv,evecfv,evecsv)
 ! end loop over reduced k-points set
 end do
-!$OMP END DO
-!$OMP END PARALLEL
 if (ndmag.eq.1) then
 ! special case of collinear magnetism
   open(50,file='FERMISURF_UP.OUT',action='WRITE',form='FORMATTED')

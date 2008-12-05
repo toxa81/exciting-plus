@@ -9,6 +9,9 @@
 subroutine readstate
 ! !USES:
 use modmain
+#ifdef _MPI_
+use mpi
+#endif
 ! !DESCRIPTION:
 !   Reads in the charge density and other relevant variables from the file
 !   {\tt STATE.OUT}. Checks for version and parameter compatibility.
@@ -21,7 +24,7 @@ implicit none
 ! local variables
 logical spinpol_
 integer iostat
-integer is,ia,ias,lmmax,lm,ir,jr
+integer is,ia,ias,lmmax,lm,ir,jr,ierr
 integer idm,ngm,i1,i2,i3,j1,j2,j3
 integer version_(3),nspecies_,lmmaxvr_
 integer natoms_,nrmt_(maxspecies),nrmtmax_
@@ -45,6 +48,7 @@ real(8), allocatable :: bxcmt_(:,:,:,:)
 real(8), allocatable :: bxcir_(:,:)
 complex(8), allocatable :: veffig_(:)
 complex(8), allocatable :: vmatlu_(:,:,:,:,:)
+if (iproc.eq.0) then
 open(50,file='STATE'//trim(filext),action='READ',form='UNFORMATTED', &
  status='OLD',iostat=iostat)
 if (iostat.ne.0) then
@@ -249,6 +253,27 @@ end if
 deallocate(mapir,spr_,rhomt_,rhoir_,vclmt_,vclir_)
 deallocate(vxcmt_,vxcir_,veffmt_,veffir_,veffig_)
 if (spinpol_) deallocate(magmt_,magir_,bxcmt_,bxcir_)
+endif !iproc.eq.0
+#ifdef _MPI_
+  call mpi_bcast(rhomt,lmmaxvr*nrmtmax*natmtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+  call mpi_bcast(rhoir,ngrtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+  call mpi_bcast(vclmt,lmmaxvr*nrmtmax*natmtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+  call mpi_bcast(vclir,ngrtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+  call mpi_bcast(vxcmt,lmmaxvr*nrmtmax*natmtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+  call mpi_bcast(vxcir,ngrtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+  call mpi_bcast(veffmt,lmmaxvr*nrmtmax*natmtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+  call mpi_bcast(veffir,ngrtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+  call mpi_bcast(veffig,ngvec,MPI_DOUBLE_COMPLEX,0,MPI_COMM_WORLD,ierr)
+  if (spinpol) then
+    call mpi_bcast(magmt,lmmaxvr*nrmtmax*natmtot*ndmag,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+    call mpi_bcast(magir,ngrtot*ndmag,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+    call mpi_bcast(bxcmt,lmmaxvr*nrmtmax*natmtot*ndmag,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+    call mpi_bcast(bxcir,ngrtot*ndmag,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+  endif
+  if (ldapu.ne.0) then
+    call mpi_bcast(vmatlu,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,MPI_DOUBLE_COMPLEX,0,MPI_COMM_WORLD,ierr)
+  endif
+#endif    
 return
 end subroutine
 !EOC

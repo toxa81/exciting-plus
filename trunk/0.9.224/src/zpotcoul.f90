@@ -123,16 +123,11 @@ external factnm
 fpo=fourpi/omega
 ! solve Poisson's equation for the isolated charge in the muffin-tin
 do is=1,nspecies
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(ias)
-!$OMP DO
   do ia=1,natoms(is)
     ias=idxas(ia,is)
     call zpotclmt(ptnucl,lmaxvr,nr(is),r(:,is),zn(is),lmmaxvr,zrhomt(:,:,ias), &
      zvclmt(:,:,ias))
   end do
-!$OMP END DO
-!$OMP END PARALLEL
 end do
 ! compute (R_mt)^l
 do is=1,nspecies

@@ -80,9 +80,7 @@ end do
 call hmlistl(.false.,ngp,igpig,vgpc,v,h)
 call olpistl(.false.,ngp,igpig,v,o)
 call timesec(ts1)
-!$OMP CRITICAL
 timemat=timemat+ts1-ts0
-!$OMP END CRITICAL
 !------------------------------------!
 !     solve the secular equation     !
 !------------------------------------!
@@ -107,9 +105,7 @@ if (info.ne.0) then
   stop
 end if
 call timesec(ts1)
-!$OMP CRITICAL
 timefv=timefv+ts1-ts0
-!$OMP END CRITICAL
 deallocate(iwork,ifail,w,rwork,v,h,o,work)
 return
 end subroutine

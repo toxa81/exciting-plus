@@ -122,14 +122,10 @@ end do
 ! start of self-consistent loop
 do iscl=1,maxscl
 ! solve the Dirac equation for each state
-!$OMP PARALLEL DEFAULT(SHARED)
-!$OMP DO
   do ist=1,nst
     call rdirac(n(ist),l(ist),k(ist),np,nr,r,vr,eval(ist),rwf(:,1,ist), &
      rwf(:,2,ist))
   end do
-!$OMP END DO
-!$OMP END PARALLEL
 ! compute the charge density
   do ir=1,nr
     sum=0.d0

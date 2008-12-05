@@ -39,26 +39,19 @@ do is=1,nspecies
         vr(ir)=spvr(ir,is)+t1
       end do
       rhocr(:,ias)=0.d0
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(ir,t1)
-!$OMP DO
       do ist=1,spnst(is)
         if (spcore(ist,is)) then
 ! solve the Dirac equation
           call rdirac(spn(ist,is),spl(ist,is),spk(ist,is),nprad,spnr(is), &
            spr(:,is),vr,evalcr(ist,ias),rwfcr(:,1,ist,ias),rwfcr(:,2,ist,ias))
           t1=spocc(ist,is)
-!$OMP CRITICAL
           do ir=1,spnr(is)
 ! add to the core density
             rhocr(ir,ias)=rhocr(ir,ias) &
              +t1*(rwfcr(ir,1,ist,ias)**2+rwfcr(ir,2,ist,ias)**2)
           end do
-!$OMP END CRITICAL
         end if
       end do
-!$OMP END DO
-!$OMP END PARALLEL
       do ir=1,spnr(is)
         rhocr(ir,ias)=rhocr(ir,ias)/(fourpi*spr(ir,is)**2)
       end do

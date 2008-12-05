@@ -31,28 +31,26 @@ complex(8), intent(out) :: evecsv(nstsv,nstsv)
 integer ispn
 ! allocatable arrays
 complex(8), allocatable :: apwalm(:,:,:,:,:)
+integer, external :: ikglob
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
 ! loop over first-variational spins (nspnfv=2 for spin-spirals only)
-!$OMP PARALLEL DEFAULT(SHARED)
-!$OMP DO
 do ispn=1,nspnfv
 ! find the matching coefficients
-  call match(ngk(ispn,ik),gkc(:,ispn,ik),tpgkc(:,:,ispn,ik), &
+  call match(ngk(ispn,ikglob(ik)),gkc(:,ispn,ik),tpgkc(:,:,ispn,ik), &
    sfacgk(:,:,ispn,ik),apwalm(:,:,:,:,ispn))
 ! solve the first-variational secular equation
   if (tseqit) then
 ! iteratively
-    call seceqnit(nmat(ispn,ik),ngk(ispn,ik),igkig(:,ispn,ik),vkl(:,ik), &
-     vgkl(:,:,ispn,ik),vgkc(:,:,ispn,ik),apwalm(:,:,:,:,ispn),evalfv(:,ispn), &
-     evecfv(:,:,ispn))
+    call seceqnit(nmat(ispn,ikglob(ik)),ngk(ispn,ikglob(ik)), &
+     igkig(:,ispn,ik),vkl(:,ikglob(ik)),vgkl(:,:,ispn,ik),vgkc(:,:,ispn,ik), &
+     apwalm(:,:,:,:,ispn),evalfv(:,ispn),evecfv(:,:,ispn))
   else
 ! directly
-    call seceqnfv(nmat(ispn,ik),ngk(ispn,ik),igkig(:,ispn,ik), &
-     vgkc(:,:,ispn,ik),apwalm(:,:,:,:,ispn),evalfv(:,ispn),evecfv(:,:,ispn))
+    call seceqnfv(nmat(ispn,ikglob(ik)),ngk(ispn,ikglob(ik)), &
+     igkig(:,ispn,ik),vgkc(:,:,ispn,ik),apwalm(:,:,:,:,ispn), &
+     evalfv(:,ispn),evecfv(:,:,ispn))
   end if
 end do
-!$OMP END DO
-!$OMP END PARALLEL
 if (spinsprl) then
 ! solve the spin-spiral second-variational secular equation
   call seceqnss(ik,apwalm,evalfv,evecfv,evecsv)

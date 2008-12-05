@@ -228,9 +228,7 @@ end if
 deallocate(bmt,bir,rwork)
 deallocate(wfmt1,wfmt2,zfft1,zfft2,work)
 call timesec(ts1)
-!$OMP CRITICAL
 timesv=timesv+ts1-ts0
-!$OMP END CRITICAL
 return
 end subroutine
 
