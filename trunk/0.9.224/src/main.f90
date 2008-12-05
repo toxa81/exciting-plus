@@ -99,6 +99,9 @@ do itask=1,ntasks
     stop
   end select
 end do
+#ifdef _MPI_
+call mpi_finalize(ierr)
+#endif
 stop
 end program
 
