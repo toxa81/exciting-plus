@@ -141,6 +141,18 @@ if (iproc.eq.0) then
       chi0(:,:,:,1)=chi0(:,:,:,1)+chi0(:,:,:,2)
     endif
   endif
+  if (spinpol.and.spin_me.eq.3.and.lrtype.eq.1) then
+    if (spin_chi.eq.1) write(150,'("using chi0(up_dn)")')
+    if (spin_chi.eq.2) then
+      write(150,'("using chi0(dn_up)")')
+      chi0(:,:,:,1)=chi0(:,:,:,2)
+    endif
+    if (spin_chi.eq.3) then
+      write(150,'("using chi0(up_dn)+chi0(dn_up)")')
+      chi0(:,:,:,1)=chi0(:,:,:,1)+chi0(:,:,:,2)
+    endif
+  endif
+
   
   if (spinpol.and.afmchi0.and.(spin_chi.le.2).and.lrtype.eq.0) then
     write(150,'("AFM case: chi0 is multiplied by 2")')

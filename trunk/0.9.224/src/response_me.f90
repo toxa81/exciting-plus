@@ -762,8 +762,8 @@ do ikloc=1,nkptnrloc(iproc)
 	  endif
 	endif
 ! for magnetic response
-	if (ispn1.eq.1.and.ispn2.eq.2.and.lrtype.eq.1) then
-!	if (ispn1.ne.ispn2.and.lrtype.eq.1) then
+!	if (ispn1.eq.1.and.ispn2.eq.2.and.lrtype.eq.1) then
+	if (ispn1.ne.ispn2.and.lrtype.eq.1) then
           if (abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-10) then
             l1=.true.
           endif
