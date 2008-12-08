@@ -728,7 +728,8 @@ real(8), intent(out) :: docc(max_num_nnp,nkptnr)
 
 integer band1,band2
 integer i,ik,jk,istfv1,istfv2,ispn1,ispn2,ist1,ist2,ikloc
-logical l1
+logical l1,l2
+real(8) d1
 integer, external :: iknrglob
 
 if (bndme1.eq.-1) then
@@ -753,18 +754,19 @@ do ikloc=1,nkptnrloc(iproc)
       do istfv2=band1,band2
         ist1=istfv1+(ispn1-1)*nstfv
         ist2=istfv2+(ispn2-1)*nstfv
+	d1=occsvnr(ist1,ik)-occsvnr(ist2,jk)
+	l2=abs(d1).gt.1d-10
         l1=.false.
 ! possible candidate for charge response
         if (ispn1.eq.ispn2.and.lrtype.eq.0) then
-          if ((ispn1.eq.spin_me.or.spin_me.eq.3) .and. &
-	      abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-10) then
+          if ((ispn1.eq.spin_me.or.spin_me.eq.3).and.l2) then
 	    l1=.true.
 	  endif
 	endif
 ! for magnetic response
-!	if (ispn1.eq.1.and.ispn2.eq.2.and.lrtype.eq.1) then
-	if (ispn1.ne.ispn2.and.lrtype.eq.1) then
-          if (abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-10) then
+	if (ispn1.eq.1.and.ispn2.eq.2.and.lrtype.eq.1) then
+!	if (ispn1.ne.ispn2.and.lrtype.eq.1) then
+          if (l2) then
             l1=.true.
           endif
         endif
@@ -774,7 +776,7 @@ do ikloc=1,nkptnrloc(iproc)
             nnp(i,1,ikloc)=ist1
             nnp(i,2,ikloc)=ist2
             nnp(i,3,ikloc)=ispn1
-            docc(i,ikloc)=occsvnr(ist1,ik)-occsvnr(ist2,jk)
+            docc(i,ikloc)=d1
           endif
         endif
       enddo !istfv2
