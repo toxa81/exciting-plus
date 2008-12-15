@@ -30,7 +30,7 @@ integer igq0s
 complex(8), allocatable :: chi0(:,:,:,:)
 complex(8), allocatable :: chi0s(:,:,:)
 ! true polarisability
-complex(8), allocatable :: chi(:,:)
+complex(8), allocatable :: chi(:,:,:)
 ! G+q vectors in Cartesian coordinates
 real(8), allocatable :: vgq0c(:,:)
 ! length of G+q vectors
@@ -45,18 +45,19 @@ complex(8), allocatable :: chi_scalar(:)
 complex(8), allocatable :: epsilon_eff(:)
 complex(8), allocatable :: mtrx(:,:)
 integer nspin_chi0
+integer nspin_chi
 
 ! allocatable arrays
 real(8), allocatable :: func(:,:)
 complex(8), allocatable :: epsilon(:,:)
 integer, allocatable :: ipiv(:)
 
-integer ie,ig,ngsh_me_,info,i,j,ig1,ig2
+integer ie,ig,ngsh_me_,info,i,j,ig1,ig2,ispn
 character*100 fname
 integer iv(3)
 
 ! we need Bcx and magnetization from STATE.OUT
-if (lrtype.eq.1) call readstate
+if (lrtype.eq.1.or.lrtype.eq.2) call readstate
 
 if (iproc.eq.0) then
 
@@ -66,6 +67,9 @@ if (iproc.eq.0) then
   endif
   if (lrtype.eq.1) then
     write(150,'("Calculation of magnetic polarizability chi")')  
+  endif
+  if (lrtype.eq.2) then
+    write(150,'("Calculation of chi = chi^{+-} + chi^{-+}")')  
   endif
   
   write(fname,'("CHI0[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
@@ -130,49 +134,53 @@ if (iproc.eq.0) then
     call pstop
   endif
   
-  if (spinpol.and.spin_me.eq.3.and.lrtype.eq.0) then
-    if (spin_chi.eq.1) write(150,'("using chi0(up)")')
-    if (spin_chi.eq.2) then
-      write(150,'("using chi0(dn)")')
-      chi0(:,:,:,1)=chi0(:,:,:,2)
+  if (spinpol.and.spin_me.eq.3) then
+    if (lrtype.eq.0) then
+      if (spin_chi.eq.1) write(150,'("using chi0(up)")')
+      if (spin_chi.eq.2) then
+        write(150,'("using chi0(dn)")')
+        chi0(:,:,:,1)=chi0(:,:,:,2)
+      endif
+      if (spin_chi.eq.3) then
+        write(150,'("using chi0(up)+chi0(dn)")')
+        chi0(:,:,:,1)=chi0(:,:,:,1)+chi0(:,:,:,2)
+      endif
     endif
-    if (spin_chi.eq.3) then
-      write(150,'("using chi0(up)+chi0(dn)")')
-      chi0(:,:,:,1)=chi0(:,:,:,1)+chi0(:,:,:,2)
+    if (lrtype.eq.1) then
+      if (spin_chi.eq.1) write(150,'("using chi0(up_dn)")')
+      if (spin_chi.eq.2) then
+        write(150,'("using chi0(dn_up)")')
+        chi0(:,:,:,1)=chi0(:,:,:,2)
+      endif
+      if (spin_chi.eq.3) then
+        write(150,'("using chi0(up_dn)+chi0(dn_up)")')
+        chi0(:,:,:,1)=chi0(:,:,:,1)+chi0(:,:,:,2)
+      endif
     endif
   endif
-  if (spinpol.and.spin_me.eq.3.and.lrtype.eq.1) then
-    if (spin_chi.eq.1) write(150,'("using chi0(up_dn)")')
-    if (spin_chi.eq.2) then
-      write(150,'("using chi0(dn_up)")')
-      chi0(:,:,:,1)=chi0(:,:,:,2)
-    endif
-    if (spin_chi.eq.3) then
-      write(150,'("using chi0(up_dn)+chi0(dn_up)")')
-      chi0(:,:,:,1)=chi0(:,:,:,1)+chi0(:,:,:,2)
-    endif
-  endif
-
   
   if (spinpol.and.afmchi0.and.(spin_chi.le.2).and.lrtype.eq.0) then
     write(150,'("AFM case: chi0 is multiplied by 2")')
     chi0=chi0*2.d0
-  endif  
+  endif
+  
+  if (lrtype.eq.0.or.lrtype.eq.1) then
+    nspin_chi=1
+  endif
+  if (lrtype.eq.2) then
+    nspin_chi=2
+  endif
   
   ngvecchi=gvecchi2-gvecchi1+1  
   write(150,*)
   write(150,'("Minimum and maximum G-vectors for chi : ",2I4)')gvecchi1,gvecchi2
   write(150,'("Number of G-vectors : ",I4)')ngvecchi
-  
-  allocate(chi0s(ngvecchi,ngvecchi,nepts))
-  do ie=1,nepts
-    ig1=gvecchi1-gvecme1+1
-    ig2=ig1+ngvecchi-1
-    chi0s(1:ngvecchi,1:ngvecchi,ie)=chi0(ig1:ig2,ig1:ig2,ie,1)
-  enddo
+
   igq0s=igq0-gvecchi1+1
   
-  allocate(chi(ngvecchi,nepts))
+  
+  allocate(chi0s(ngvecchi,ngvecchi,nepts))
+  allocate(chi(ngvecchi,nepts,nspin_chi))
   allocate(vgq0c(3,ngvecchi))
   allocate(vc(ngvecchi))
   allocate(gq0(ngvecchi))
@@ -182,6 +190,7 @@ if (iproc.eq.0) then
   allocate(chi_scalar(nepts))
   allocate(mtrx(ngvecchi,ngvecchi))
   allocate(ixcft(ngvec))
+  allocate(ipiv(ngvecchi))
   
 ! for charge response
   if (lrtype.eq.0) then
@@ -198,62 +207,83 @@ if (iproc.eq.0) then
     enddo
   endif
 ! for magnetic response
-  if (lrtype.eq.1) then
+  if (lrtype.eq.1.or.lrtype.eq.2) then
     call genixc(ixcft)
+    write(150,*)
+    write(150,'("Ixc matrix elements:")')
+    write(150,'("   ig      |Ixc(G)|   ")')
+    write(150,'(" -------------------- ")')
+    do ig=1,20
+      write(150,'(1X,I4,2X,F12.6)')ig,abs(ixcft(ig))
+    enddo
   endif
   
-  allocate(ipiv(ngvecchi))
-  do ie=1,nepts
+  do ispn=1,nspin_chi
+    
+    ig1=gvecchi1-gvecme1+1
+    ig2=ig1+ngvecchi-1
+    do ie=1,nepts
+      chi0s(1:ngvecchi,1:ngvecchi,ie)=chi0(ig1:ig2,ig1:ig2,ie,ispn)
+    enddo
+  
+    do ie=1,nepts
 ! compute epsilon=1-chi0*V
-    if (lrtype.eq.0) then
-      do i=1,ngvecchi
-        do j=1,ngvecchi
-          epsilon(i,j)=-chi0s(i,j,ie)*vc(j)
+      if (lrtype.eq.0) then
+        do i=1,ngvecchi
+          do j=1,ngvecchi
+            epsilon(i,j)=-chi0s(i,j,ie)*vc(j)
+          enddo
+          epsilon(i,i)=dcmplx(1.d0,0.d0)+epsilon(i,i)
         enddo
-        epsilon(i,i)=dcmplx(1.d0,0.d0)+epsilon(i,i)
-      enddo
-    endif
+      endif
 ! compute epsilon=1-chi0*Ixc
-    if (lrtype.eq.1) then
+      if (lrtype.eq.1.or.lrtype.eq.2) then
 ! contruct Ixc_{GG'}=Ixc(G-G') matrix
-      do i=1,ngvecchi
-        do j=1,ngvecchi
-          ig1=gvecchi1+i-1
-          ig2=gvecchi1+j-1
-          iv(:)=ivg(:,ig1)-ivg(:,ig2)
-          mtrx(i,j)=ixcft(ivgig(iv(1),iv(2),iv(3)))
-        enddo
-      enddo
-      epsilon=dcmplx(0.d0,0.d0)
-      do ig1=1,ngvecchi
-        do ig2=1,ngvecchi
-          do i=1,ngvecchi
-            epsilon(ig1,ig2)=epsilon(ig1,ig2)-chi0s(ig1,i,ie)*mtrx(i,ig2)
+        do i=1,ngvecchi
+          do j=1,ngvecchi
+            ig1=gvecchi1+i-1
+            ig2=gvecchi1+j-1
+            iv(:)=ivg(:,ig1)-ivg(:,ig2)
+            mtrx(i,j)=ixcft(ivgig(iv(1),iv(2),iv(3)))
           enddo
         enddo
+        epsilon=dcmplx(0.d0,0.d0)
+        do ig1=1,ngvecchi
+          do ig2=1,ngvecchi
+            do i=1,ngvecchi
+              epsilon(ig1,ig2)=epsilon(ig1,ig2)-chi0s(ig1,i,ie)*mtrx(i,ig2)
+            enddo
+        enddo
         epsilon(ig1,ig1)=dcmplx(1.d0,0.d0)+epsilon(ig1,ig1)
-      enddo
-    endif
-    epsilon_GqGq(ie)=epsilon(igq0s,igq0s)
-    chi_scalar(ie)=chi0s(igq0s,igq0s,ie)/epsilon_GqGq(ie)
+        enddo
+      endif
+      epsilon_GqGq(ie)=epsilon(igq0s,igq0s)
+      chi_scalar(ie)=chi0s(igq0s,igq0s,ie)/epsilon_GqGq(ie)
 ! compute epsilon effective
-    mtrx(:,:)=epsilon(:,:)
-    call invzge(mtrx,ngvecchi)
-    epsilon_eff(ie)=1.d0/mtrx(igq0s,igq0s)
+      mtrx(:,:)=epsilon(:,:)
+      call invzge(mtrx,ngvecchi)
+      epsilon_eff(ie)=1.d0/mtrx(igq0s,igq0s)
 ! solve [1-chi0*V]^{-1}*chi=chi0
-    chi(1:ngvecchi,ie)=chi0s(1:ngvecchi,igq0s,ie)
-    call zgesv(ngvecchi,1,epsilon,ngvecchi,ipiv,chi(1,ie),ngvecchi,info)
-    if (info.ne.0) then
-      write(*,*)'Error solving linear equations'
-      write(*,*)'info=',info
-      stop
-    endif
-  enddo !ie
-  deallocate(ipiv)
+      chi(1:ngvecchi,ie,ispn)=chi0s(1:ngvecchi,igq0s,ie)
+      call zgesv(ngvecchi,1,epsilon,ngvecchi,ipiv,chi(1,ie,ispn),ngvecchi,info)
+      if (info.ne.0) then
+        write(*,*)'Error solving linear equations'
+        write(*,*)'info=',info
+        call pstop
+      endif
+    enddo !ie
+  
+  enddo !ispn
+    
   
   chi0s=chi0s/ha2ev/(au2ang)**3
   chi=chi/ha2ev/(au2ang)**3
   chi_scalar=chi_scalar/ha2ev/(au2ang)**3
+  
+  if (lrtype.eq.2) then
+    write(150,'("Making sum of chi_{ud} and chi_{du}")')
+    chi(:,:,1)=chi(:,:,1)+chi(:,:,2)
+  endif
   
   write(fname,'("response[",I4.3,",",I4.3,",",I4.3,"].dat")') &
     ivq0m(1),ivq0m(2),ivq0m(3)
@@ -295,9 +325,9 @@ if (iproc.eq.0) then
     func(1,ie)=dreal(w(ie))*ha2ev
     func(2,ie)=-dreal(chi0s(igq0s,igq0s,ie))
     func(3,ie)=-dimag(chi0s(igq0s,igq0s,ie))
-    func(4,ie)=-dreal(chi(igq0s,ie))
-    func(5,ie)=-dimag(chi(igq0s,ie))
-    func(6,ie)=-2.d0*dimag(chi(igq0s,ie))
+    func(4,ie)=-dreal(chi(igq0s,ie,1))
+    func(5,ie)=-dimag(chi(igq0s,ie,1))
+    func(6,ie)=-2.d0*dimag(chi(igq0s,ie,1))
     func(7,ie)=-dreal(chi_scalar(ie))
     func(8,ie)=-dimag(chi_scalar(ie))
     func(9,ie)=dreal(epsilon_eff(ie))
@@ -322,6 +352,7 @@ if (iproc.eq.0) then
   deallocate(chi_scalar)
   deallocate(mtrx)
   deallocate(ixcft)
+  deallocate(ipiv)
   
   write(150,*)
   write(150,'("Done.")')
@@ -371,11 +402,13 @@ do is=1,nspecies
 ! transform Bxc and m from real spherical harmonics to spherical coordinates 
       call dgemv('N',lmmaxvr,lmmaxvr,1.d0,rbshtapw,lmmaxapw,bxcmt(1,ir,ias,1),1, &
         0.d0,rftp1,1)
+!      call dgemv('N',lmmaxvr,lmmaxvr,1.d0,rbshtapw,lmmaxapw,vxcmt(1,ir,ias),1, &
+!        0.d0,rftp1,1)
       call dgemv('N',lmmaxvr,lmmaxvr,1.d0,rbshtapw,lmmaxapw,magmt(1,ir,ias,1),1, &
         0.d0,rftp2,1)
 ! calculate I(r)
       do itp=1,lmmaxvr
-        if (abs(rftp2(itp)).lt.1d-10) rftp2(itp)=1d10
+        !if (abs(rftp2(itp)).lt.1d-10) rftp2(itp)=1d10
         zt1(itp)=dcmplx(rftp1(itp)/rftp2(itp),0.d0)
         !zt1(itp)=dcmplx(rftp2(itp),0.d0)
       enddo
@@ -423,8 +456,9 @@ enddo !ig
 ! calculate Ixc(r)=Bxc(r)/m(r) in interstitial
 do ir=1,ngrtot
   rt1=magir(ir,1)
-  if (abs(rt1).lt.1d-10) rt1=1d10
+  !if (abs(rt1).lt.1d-10) rt1=1d10
   zt3(ir)=dcmplx(bxcir(ir,1)/rt1,0.d0)*cfunir(ir)*omega
+!  zt3(ir)=dcmplx(vxcir(ir)/rt1,0.d0)*cfunir(ir)*omega
   !zt3(ir)=rt1*cfunir(ir)*omega
 enddo       
 call zfftifc(3,ngrid,-1,zt3)

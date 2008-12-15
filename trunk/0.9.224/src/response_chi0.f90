@@ -52,6 +52,7 @@ real(8), allocatable :: docc1(:)
 integer i,ik,ie,nkptnr_,i1,i2,ikloc,ig1,ig2,nspinor_,ispn
 complex(8) wt
 character*100 fname
+real(8) emin
 
 ! for parallel execution
 integer, allocatable :: ikptiprocnr(:)
@@ -63,9 +64,9 @@ if (iproc.eq.0) then
   write(150,'("Calculation of KS polarisability chi0")')
   write(150,*)
   write(150,'("Energy mesh parameters:")')
-  write(150,'("  maximum energy [eV] : ", F7.2)')maxomega
-  write(150,'("  energy step    [eV] : ", F7.2)')domega
-  write(150,'("  eta            [eV] : ", F7.2)')eta_r
+  write(150,'("  maximum energy [eV] : ", F8.3)')maxomega
+  write(150,'("  energy step    [eV] : ", F8.3)')domega
+  write(150,'("  eta            [eV] : ", F8.3)')eta_r
 endif
   
 ! setup energy mesh
@@ -255,7 +256,7 @@ if (iproc.eq.0) then
   write(150,'("Finished reading matrix elements")')
   call flushifc(150)
 endif
-
+!emin=1000.d0
 if (iproc.eq.0) then
   write(150,*)
   write(150,'("Starting k-point summation")')
@@ -278,12 +279,17 @@ do ikloc=1,nkptnrloc(iproc)
     else
       ispn=nnp(i,3,ikloc)
     endif
+!    write(*,*)'ik1=',ikloc,'ik2=',ikq(ik),'n1=',nnp(i,1,ikloc),'n2=',nnp(i,2,ikloc),'docc=',docc(i,ikloc),'de=', &
+!      (evalsvnr(nnp(i,1,ikloc),ik)-evalsvnr(nnp(i,2,ikloc),ikq(ik)))
+!    if (docc(i,ikloc)*(evalsvnr(nnp(i,1,ikloc),ik)-evalsvnr(nnp(i,2,ikloc),ikq(ik))).gt.0.d0) write(*,*)'aaa'
+!    emin=min(emin,abs(evalsvnr(nnp(i,1,ikloc),ik)-evalsvnr(nnp(i,2,ikloc),ikq(ik))))
     do ie=1,nepts
       wt=docc(i,ikloc)/(evalsvnr(nnp(i,1,ikloc),ik)-evalsvnr(nnp(i,2,ikloc),ikq(ik))+w(ie))
       call zaxpy(ngvecme*ngvecme,wt,mtrx1,1,chi0_loc(1,1,ie,ispn),1)
     enddo !ie
   enddo !i
 enddo !ikloc
+write(*,*)emin
 
 if (iproc.eq.0) then
   write(150,*)
