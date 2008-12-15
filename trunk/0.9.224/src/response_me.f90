@@ -648,7 +648,7 @@ do ig=1,ngvecme
     if (lrtype.eq.0) then
       ispn2=ispn
     endif
-    if (lrtype.eq.1) then
+    if (lrtype.eq.1.or.lrtype.eq.2) then
       ispn2=3-ispn
     endif
     do i=1,num_nnp
@@ -689,7 +689,7 @@ do ig=1,ngvecme
     if (lrtype.eq.0) then
       ispn2=ispn
     endif
-    if (lrtype.eq.1) then
+    if (lrtype.eq.1.or.lrtype.eq.2) then
       ispn2=3-ispn
     endif
   do i=1,num_nnp
@@ -765,7 +765,7 @@ do ikloc=1,nkptnrloc(iproc)
 	endif
 ! for magnetic response
 !	if (ispn1.eq.2.and.ispn2.eq.1.and.lrtype.eq.1) then
-	if (ispn1.ne.ispn2.and.lrtype.eq.1) then
+	if (ispn1.ne.ispn2.and.(lrtype.eq.1.or.lrtype.eq.2)) then
           if (l2) then
             l1=.true.
           endif
