@@ -408,7 +408,6 @@ do ikstep=1,nkptnrloc(0)
     else
       zrhofc(:,:,ikstep)=dcmplx(1.d0,0.d0)
     endif
-    !write(*,*)ikstep,zrhofc(1,:,ikstep),nnp(:,1:2,ikstep)
   endif ! (ikstep.le.nkptnrloc(iproc))
   
 enddo !ikstep
@@ -728,7 +727,7 @@ real(8), intent(out) :: docc(max_num_nnp,nkptnr)
 
 integer band1,band2
 integer i,ik,jk,istfv1,istfv2,ispn1,ispn2,ist1,ist2,ikloc
-logical l1,l2
+logical laddme,ldocc
 real(8) d1
 integer, external :: iknrglob
 
@@ -755,22 +754,17 @@ do ikloc=1,nkptnrloc(iproc)
         ist1=istfv1+(ispn1-1)*nstfv
         ist2=istfv2+(ispn2-1)*nstfv
 	d1=occsvnr(ist1,ik)-occsvnr(ist2,jk)
-	l2=abs(d1).gt.1d-10
-        l1=.false.
+	ldocc=abs(d1).gt.1d-10
+        laddme=.false.
 ! possible candidate for charge response
         if (ispn1.eq.ispn2.and.lrtype.eq.0) then
-          if ((ispn1.eq.spin_me.or.spin_me.eq.3).and.l2) then
-	    l1=.true.
-	  endif
+          if ((ispn1.eq.spin_me.or.spin_me.eq.3).and.ldocc) laddme=.true.
 	endif
 ! for magnetic response
-!	if (ispn1.eq.2.and.ispn2.eq.1.and.lrtype.eq.1) then
-	if (ispn1.ne.ispn2.and.(lrtype.eq.1.or.lrtype.eq.2)) then
-          if (l2) then
-            l1=.true.
-          endif
+	if (ispn1.ne.ispn2.and.lrtype.eq.1) then
+	  if ((ispn1.eq.spin_me.or.spin_me.eq.3).and.ldocc) laddme=.true.
         endif
-        if (l1) then
+        if (laddme) then
           i=i+1
           if (.not.req) then
             nnp(i,1,ikloc)=ist1
