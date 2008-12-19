@@ -56,6 +56,8 @@ integer ie,ig,ngsh_me_,info,i,j,ig1,ig2,ispn
 character*100 fname
 integer iv(3)
 
+if (lrtype.eq.1) lrtype=2
+
 ! we need Bcx and magnetization from STATE.OUT
 if (lrtype.eq.1.or.lrtype.eq.2) call readstate
 
