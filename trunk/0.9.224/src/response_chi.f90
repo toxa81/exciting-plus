@@ -464,7 +464,8 @@ enddo
 call zfftifc(3,ngrid,-1,zt3)
 do ig=1,ngvec
   ixcft(ig)=ixcft(ig)+zt3(igfft(ig))
-enddo          
+enddo 
+ixcft=ixcft/omega         
 
 deallocate(rftp1)
 deallocate(rftp2)
