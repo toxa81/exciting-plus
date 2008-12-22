@@ -890,8 +890,9 @@ case('response')
   do i=1,nvq0
     read(50,*,err=20) ivq0m_list(:,i)
   enddo
-  read(50,*,err=20) gshme1,gshme2,spin_me 
-  read(50,*,err=20) gshchi1,gshchi2,spin_chi
+  read(50,*,err=20) gshme1,gshme2 
+  read(50,*,err=20) gshchi1,gshchi2
+  read(50,*,err=20) spin_me,lrtype
   read(50,*,err=20) maxomega, domega, eta_r
   read(50,*,err=20) afmchi0
   if (gshchi1.gt.gshchi2) then
@@ -902,7 +903,6 @@ case('response')
   endif
 case('response1')
   read(50,*,err=20) bndme1,bndme2
-  read(50,*,err=20) lrtype
 case('')
   goto 10
 case default

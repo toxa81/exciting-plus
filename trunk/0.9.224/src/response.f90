@@ -43,7 +43,6 @@ endif
 
 if (.not.spinpol) then
   spin_me=1
-  spin_chi=1
 endif
 
 if (lrtype.eq.1.and..not.spinpol) then

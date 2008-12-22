@@ -944,7 +944,6 @@ integer, allocatable :: ivq0m_list(:,:)
 integer gshme1,gshme2
 integer spin_me
 integer gshchi1,gshchi2
-integer spin_chi
 real(8) maxomega
 real(8) domega
 real(8) eta_r
