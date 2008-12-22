@@ -91,15 +91,15 @@ lmmaxexp=(lmaxexp+1)**2
 
 if (iproc.eq.0) then
   write(150,*)
-  write(150,'("Calculation of matrix elements <n,k|e^{-i(G+q)x}|n'',k+q>")')
-  if (spinpol) then
-    write(150,*)
-    write(150,'("Spin-polarized calculation")')
-    if (lrtype.eq.0) then
-      if (spin_me.eq.1) write(150,'(" calculation of matrix elements for spin up")')
-      if (spin_me.eq.2) write(150,'(" calculation of matrix elements for spin dn")')
-      if (spin_me.eq.3) write(150,'(" calculation of matrix elements for both spins")')
-    endif
+  write(150,'("Calculation of matrix elements:")')
+  if (.not.spinpol) write(150,'("  <n,k|e^{-i(G+q)x}|n'',k+q>")')
+  if (spinpol.and.lrtype.eq.0) then
+    if (spin_me.eq.1.or.spin_me.eq.3) write(150,'("  <n,k,up|e^{-i(G+q)x}|n'',k+q,up>")')
+    if (spin_me.eq.2.or.spin_me.eq.3) write(150,'("  <n,k,dn|e^{-i(G+q)x}|n'',k+q,dn>")')
+  endif
+  if (spinpol.and.lrtype.eq.1) then
+    if (spin_me.eq.1.or.spin_me.eq.3) write(150,'("  <n,k,up|e^{-i(G+q)x}|n'',k+q,dn>")')
+    if (spin_me.eq.2.or.spin_me.eq.3) write(150,'("  <n,k,dn|e^{-i(G+q)x}|n'',k+q,up>")')
   endif
 endif
 

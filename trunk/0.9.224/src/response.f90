@@ -182,8 +182,8 @@ if (task.eq.400.or.task.eq.403) then
     write(150,'("Reading eigen-vectors")')
     call flushifc(150)
   endif
-  allocate(wfnrmdev(nstsv*(nstsv+1)/2,nkptnr))
-  wfnrmdev=0.d0
+!  allocate(wfnrmdev(nstsv*(nstsv+1)/2,nkptnr))
+!  wfnrmdev=0.d0
 ! read and transform eigen-vectors
   do ikloc=1,nkptnrloc(0)
     do i=0,nproc-1
@@ -192,7 +192,9 @@ if (task.eq.400.or.task.eq.403) then
         call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfv)
         call getevecsv(vklnr(1,ik),evecsv)
       endif
+#ifndef _PIO_
       call barrier
+#endif
     enddo !i
     if (ikloc.le.nkptnrloc(iproc)) then
 ! get apw coeffs 
@@ -201,31 +203,32 @@ if (task.eq.400.or.task.eq.403) then
       call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfv,evecsv,apwalm, &
         wfsvmtloc(1,1,1,1,1,ikloc))
       call genwfsvit(ngknr(ikloc),evecfv,evecsv,wfsvitloc(1,1,1,ikloc))
-      call wfprodk(ngknr(ikloc),igkignr(1,ikloc),wfsvmtloc(1,1,1,1,1,ikloc), &
-        wfsvitloc(1,1,1,ikloc),wfnrmdev(1,ik))
+!      call wfprodk(ngknr(ikloc),igkignr(1,ikloc),wfsvmtloc(1,1,1,1,1,ikloc), &
+!        wfsvitloc(1,1,1,ikloc),wfnrmdev(1,ik))
     endif
   enddo !ikloc
-  call dsync(wfnrmdev,nkptnr*(nstsv*(nstsv+1)/2),.true.,.false.)
-  if (iproc.eq.0) then
-    write(150,'("Done.")')
-    write(150,*)
-    write(150,'("Maximum WF norm deviation : ",G18.10)')maxval(wfnrmdev)
-    write(150,'("Average WF norm deviation : ",G18.10)')sum(wfnrmdev)/nkptnr/(nstsv*(nstsv+1)/2.d0)
-    if (.false.) then
-      do ik=1,nkptnr
-        write(150,*)'ik=',ik
-        j=0
-        do i=1,nstsv
-          do i1=i,nstsv
-            j=j+1
-            write(150,*)'i=',i,'i1=',i1,'norm dev=',wfnrmdev(j,ik)
-          enddo
-        enddo
-      enddo
-    endif
-    call flushifc(150)
-  endif
-  deallocate(wfnrmdev)
+  call barrier
+!  call dsync(wfnrmdev,nkptnr*(nstsv*(nstsv+1)/2),.true.,.false.)
+!  if (iproc.eq.0) then
+!    write(150,'("Done.")')
+!    write(150,*)
+!    write(150,'("Maximum WF norm deviation : ",G18.10)')maxval(wfnrmdev)
+!    write(150,'("Average WF norm deviation : ",G18.10)')sum(wfnrmdev)/nkptnr/(nstsv*(nstsv+1)/2.d0)
+!    if (.false.) then
+!      do ik=1,nkptnr
+!        write(150,*)'ik=',ik
+!        j=0
+!        do i=1,nstsv
+!          do i1=i,nstsv
+!            j=j+1
+!            write(150,*)'i=',i,'i1=',i1,'norm dev=',wfnrmdev(j,ik)
+!          enddo
+!        enddo
+!      enddo
+!    endif
+!    call flushifc(150)
+!  endif
+!  deallocate(wfnrmdev)
   deallocate(evecfv,evecsv)
   deallocate(apwalm)
   deallocate(vgklnr)
