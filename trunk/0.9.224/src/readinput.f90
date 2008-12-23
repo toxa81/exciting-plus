@@ -24,6 +24,7 @@ integer i,l,iv,iostat
 real(8) sc,sc1,sc2,sc3
 real(8) vacuum,v(3),t1,t2
 character(256) str,bname
+integer ispn
 
 !------------------------!
 !     default values     !
@@ -172,6 +173,8 @@ sqados(3)=1.d0
 bndme1=-1
 bndme2=-1
 lrtype=0
+wannier=.false.
+natlcs=0
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -903,6 +906,32 @@ case('response')
   endif
 case('response1')
   read(50,*,err=20) bndme1,bndme2
+case('wannier')
+  read(50,*,err=20) wannier
+  read(50,*,err=20) wann_natoms,wann_nspins
+  read(50,*,err=20) wann_use_lhen
+  if (wann_use_lhen) then
+    read(50,*,err=20) wf_e1,wf_e2
+  else
+    read(50,*,err=20) wf_n1,wf_n2
+  endif
+  read(50,*,err=20) wann_add_poco
+  allocate(wann_iatom(wann_natoms)) 
+  allocate(wann_iorb(0:16,wann_natoms))
+  allocate(wann_lhen(2,16,wann_nspins,wann_natoms))
+  allocate(wann_lhbnd(2,16,wann_nspins,wann_natoms))
+  allocate(wann_deltav(16,wann_nspins,wann_natoms))
+  wann_lhen(1,:,:,:)=wf_e1
+  wann_lhen(2,:,:,:)=wf_e2
+  wann_lhbnd(1,:,:,:)=wf_n1
+  wann_lhbnd(2,:,:,:)=wf_n2
+  do i=1,wann_natoms
+    read(50,*,err=20) wann_iatom(i),wann_iorb(0,i)
+    read(50,*,err=20)(wann_iorb(l,i),l=1,wann_iorb(0,i))
+    do ispn=1,wann_nspins
+      read(50,*,err=20)(wann_deltav(l,ispn,i),l=1,wann_iorb(0,i))
+    enddo
+  enddo  
 case('')
   goto 10
 case default

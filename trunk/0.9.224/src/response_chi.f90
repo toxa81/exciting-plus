@@ -197,7 +197,7 @@ if (iproc.eq.0) then
       do j=1,ngvecchi
         ig1=gvecchi1+i-1
         ig2=gvecchi1+j-1
-        iv(:)=ivg(:,ig1)-ivg(:,ig2)
+        iv(:)=-ivg(:,ig1)+ivg(:,ig2)
         krnl(i,j)=ixcft(ivgig(iv(1),iv(2),iv(3)))
       enddo
     enddo
@@ -224,24 +224,24 @@ if (iproc.eq.0) then
       chi(1,1),chi_scalar,epsilon_GqGq,epsilon_eff,spin_me)
   else
 ! chi from chi0(1)
-!    call solve_chi(ngvecchi,nepts,igq0,chi0(1,1,1,1),krnl,chi(1,1),chi_scalar, &
-!      epsilon_GqGq,epsilon_eff)
-!    call write_chi(nepts,igq0_in,ivq0m,vq0l,vq0c,gvecchi1,gvecchi2,w,chi0_GqGq(1,1), &
-!      chi(1,1),chi_scalar,epsilon_GqGq,epsilon_eff,1)
+    call solve_chi(ngvecchi,nepts,igq0,chi0(1,1,1,1),krnl,chi(1,1),chi_scalar, &
+      epsilon_GqGq,epsilon_eff)
+    call write_chi(nepts,igq0_in,ivq0m,vq0l,vq0c,gvecchi1,gvecchi2,w,chi0_GqGq(1,1), &
+      chi(1,1),chi_scalar,epsilon_GqGq,epsilon_eff,1)
 ! chi form chi0(2)
-!    call solve_chi(ngvecchi,nepts,igq0,chi0(1,1,1,2),krnl,chi(1,2),chi_scalar, &
-!      epsilon_GqGq,epsilon_eff)
-!    call write_chi(nepts,igq0_in,ivq0m,vq0l,vq0c,gvecchi1,gvecchi2,w,chi0_GqGq(1,2), &
-!      chi(1,2),chi_scalar,epsilon_GqGq,epsilon_eff,2)
+    call solve_chi(ngvecchi,nepts,igq0,chi0(1,1,1,2),krnl,chi(1,2),chi_scalar, &
+      epsilon_GqGq,epsilon_eff)
+    call write_chi(nepts,igq0_in,ivq0m,vq0l,vq0c,gvecchi1,gvecchi2,w,chi0_GqGq(1,2), &
+      chi(1,2),chi_scalar,epsilon_GqGq,epsilon_eff,2)
 ! chi form chi0(1)+chi0(2)
     call solve_chi(ngvecchi,nepts,igq0,chi0(1,1,1,3),krnl,chi(1,3),chi_scalar, &
       epsilon_GqGq,epsilon_eff)
     call write_chi(nepts,igq0_in,ivq0m,vq0l,vq0c,gvecchi1,gvecchi2,w,chi0_GqGq(1,3), &
       chi(1,3),chi_scalar,epsilon_GqGq,epsilon_eff,3)
 ! chi = chi(1)+chi(2)    
-!    chi(:,4)=chi(:,1)+chi(:,2)
-!   call write_chi(nepts,igq0_in,ivq0m,vq0l,vq0c,gvecchi1,gvecchi2,w,chi0_GqGq(1,3), &
-!      chi(1,4),chi_scalar,epsilon_GqGq,epsilon_eff,4)
+    chi(:,4)=chi(:,1)+chi(:,2)
+   call write_chi(nepts,igq0_in,ivq0m,vq0l,vq0c,gvecchi1,gvecchi2,w,chi0_GqGq(1,3), &
+      chi(1,4),chi_scalar,epsilon_GqGq,epsilon_eff,4)
   endif
       
   deallocate(w)

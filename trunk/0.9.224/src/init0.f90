@@ -57,12 +57,15 @@ if (lmaxmat.gt.lmaxapw) then
 end if
 ! index to (l,m) pairs
 if (allocated(idxlm)) deallocate(idxlm)
-allocate(idxlm(0:lmaxapw,-lmaxapw:lmaxapw))
+allocate(idxlm(0:50,-50:50))
+if (allocated(lm2l)) deallocate(lm2l)
+allocate(lm2l(51*51))
 lm=0
-do l=0,lmaxapw
+do l=0,50
   do m=-l,l
     lm=lm+1
     idxlm(l,m)=lm
+    lm2l(lm)=l
   end do
 end do
 ! array of i**l values
@@ -425,6 +428,16 @@ allocate(dpp1d(npp1d))
 ! zero self-consistent loop number
 iscl=0
 tlast=.false.
+
+if (allocated(rylm)) deallocate(rylm)
+allocate(rylm(16,16))
+if (allocated(yrlm)) deallocate(yrlm)
+allocate(yrlm(16,16))
+if (allocated(rylm_lcs)) deallocate(rylm_lcs)
+allocate(rylm_lcs(16,16,natmtot))
+if (allocated(yrlm_lcs)) deallocate(yrlm_lcs)
+allocate(yrlm_lcs(16,16,natmtot))
+call genshmat
 
 call timesec(ts1)
 timeinit=timeinit+ts1-ts0

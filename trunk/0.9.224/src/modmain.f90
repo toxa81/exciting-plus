@@ -932,6 +932,17 @@ complex(8), allocatable :: evecsvloc(:,:,:)
 integer nrfmax
 real(8), allocatable :: urf(:,:,:,:)
 real(8), allocatable :: urfprod(:,:,:,:)
+integer, allocatable :: lm2l(:)
+! for local coordinate system
+integer natlcs
+real(8), allocatable :: lcsrsh(:,:,:)
+integer, allocatable :: iatlcs(:)
+! real <-> complex spherical harmonic transformation
+complex(8), allocatable :: rylm(:,:)
+complex(8), allocatable :: yrlm(:,:)
+complex(8), allocatable :: rylm_lcs(:,:,:)
+complex(8), allocatable :: yrlm_lcs(:,:,:)
+
 ! unit conversion
 real(8), parameter :: ha2ev=27.21138386d0
 real(8), parameter :: au2ang=0.5291772108d0
@@ -950,6 +961,37 @@ real(8) eta_r
 logical afmchi0 
 integer bndme1,bndme2
 integer lrtype
+
+!------------------!
+!     Wannier      !
+!------------------!
+logical wannier
+integer wann_natoms
+integer wann_nspins
+logical wann_use_lhen
+logical wann_add_poco
+integer, allocatable :: wann_iatom(:)
+integer, allocatable :: wann_iorb(:,:)
+real(8), allocatable :: wann_lhen(:,:,:,:)
+integer, allocatable :: wann_lhbnd(:,:,:,:)
+real(8), allocatable :: wann_deltav(:,:,:)
+
+integer wf_dim
+integer, allocatable :: wf_n(:,:)
+  
+integer, allocatable :: wf_lhbnd(:,:,:)
+real(8), allocatable :: wf_lhen(:,:,:)
+real(8) wf_e1,wf_e2
+integer wf_n1,wf_n2
+  
+complex(8), allocatable :: wfc(:,:,:,:)
+complex(8), allocatable :: wf_h(:,:,:,:)
+complex(8), allocatable :: wf_p(:,:,:,:,:)
+real(8), allocatable :: wf_e(:,:,:)
+real(8), allocatable :: wf_deltav(:,:)
+
+complex(8), allocatable :: wfpoco(:,:,:)
+complex(8), allocatable :: wfpoco1(:,:,:)
 
 end module
 

@@ -51,7 +51,8 @@ SRC_routines_flux = \
  writefsm.f90 genbmatk.f90 seceqnit.f90 gdft.f90 genexpiqr.f90 writeexpiqr.f90 \
  elnes.f90 symdmat.f90 genlmirep.f90 checknorm.f90 getnrfmax.f90 genwfsvmt.f90 \
  genwfsvit.f90 wfprodk.f90 geturf.f90 genurfprod.f90 parallel.f90 getgshells.f90 \
- response.f90 response_me.f90 response_chi0.f90 response_chi.f90 lapack.f90
+ response.f90 response_me.f90 response_chi0.f90 response_chi.f90 lapack.f90 \
+ wann_init.f90 genwann.f90 genshmat.f90
 
 SRC_phonon = \
  phonon.f90 dyntask.f90 phcell.f90 phdisp.f90 readdyn.f90 dynqtor.f90 \
