@@ -324,6 +324,7 @@ do i=0,nproc-1
       call putevecfv(ikglob(ik),evecfvloc(1,1,1,ik))
       call putevecsv(ikglob(ik),evecsvloc(1,1,ik))
       call putoccsv(ikglob(ik),occsv(1,ikglob(ik)))
+      if (wannier) call putwfc(ikglob(ik),wfc(1,1,1,ik))
     end do
   end if
   call barrier

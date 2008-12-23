@@ -52,7 +52,7 @@ SRC_routines_flux = \
  elnes.f90 symdmat.f90 genlmirep.f90 checknorm.f90 getnrfmax.f90 genwfsvmt.f90 \
  genwfsvit.f90 wfprodk.f90 geturf.f90 genurfprod.f90 parallel.f90 getgshells.f90 \
  response.f90 response_me.f90 response_chi0.f90 response_chi.f90 lapack.f90 \
- wann_init.f90 genwann.f90 genshmat.f90
+ wann_init.f90 genwann.f90 genshmat.f90 wann_plot.f90 wann_init1.f90
 
 SRC_phonon = \
  phonon.f90 dyntask.f90 phcell.f90 phdisp.f90 readdyn.f90 dynqtor.f90 \
@@ -108,9 +108,17 @@ SRC = $(SRC_modules) $(SRC_main) $(SRC_routines) $(SRC_routines_flux) \
 OBJ = $(SRC:.f90=.o)
 EXE = exciting
 
+SRC_LIB = $(SRC_modules) $(SRC_routines) $(SRC_routines_flux) \
+ $(SRC_lib) $(SRC_lib_flux) $(SRC_advanced) $(SRC_phonon) $(SRC_optics) \
+ $(SRC_xc) $(SRC_LDAU) $(SRC_rdmft)
+
+OBJ_LIB = $(SRC_LIB:.f90=.o)
+
 exciting:	$(OBJ)
 	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) $(LIB_LPK) $(LIB_FFT) $(LIB_SYS)
 
+lib:
+	$(AR) -rc libexct.a $(OBJ_LIB)
 blas:
 	cd BLAS; $(MAKE); cp blas.a ..
 

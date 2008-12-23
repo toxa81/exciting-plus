@@ -917,7 +917,9 @@ character(80) notes(maxnlns)
 !      MPI parallel     !
 !-----------------------!
 integer iproc
+data iproc /0/
 integer nproc
+data nproc /1/
 integer, allocatable :: nkptloc(:)
 integer, allocatable :: ikptloc(:,:)
 integer, allocatable :: nkptnrloc(:)
@@ -992,6 +994,11 @@ real(8), allocatable :: wf_deltav(:,:)
 
 complex(8), allocatable :: wfpoco(:,:,:)
 complex(8), allocatable :: wfpoco1(:,:,:)
+
+! for MADNESS interoperability
+complex(8), allocatable :: wann_unkmt(:,:,:,:,:,:)
+complex(8), allocatable :: wann_unkit(:,:,:,:)
+
 
 end module
 
