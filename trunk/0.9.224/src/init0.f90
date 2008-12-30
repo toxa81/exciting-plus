@@ -439,6 +439,9 @@ if (allocated(yrlm_lcs)) deallocate(yrlm_lcs)
 allocate(yrlm_lcs(16,16,natmtot))
 call genshmat
 
+allocate(timer(ntimers,2))
+timer=0.d0
+
 call timesec(ts1)
 timeinit=timeinit+ts1-ts0
 

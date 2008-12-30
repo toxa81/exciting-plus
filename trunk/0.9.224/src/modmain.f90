@@ -999,6 +999,11 @@ complex(8), allocatable :: wfpoco1(:,:,:)
 complex(8), allocatable :: wann_unkmt(:,:,:,:,:,:)
 complex(8), allocatable :: wann_unkit(:,:,:,:)
 
+!----------------!
+!      timer     !
+!----------------!
+integer, parameter :: ntimers=10
+real(8), allocatable :: timer(:,:)
 
 end module
 
