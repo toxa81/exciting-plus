@@ -118,7 +118,7 @@ exciting:	$(OBJ)
 	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) $(LIB_LPK) $(LIB_FFT) $(LIB_SYS)
 
 lib:
-	$(AR) -rc libexct.a $(OBJ_LIB)
+	$(AR) -rc exciting.a $(OBJ_LIB)
 blas:
 	cd BLAS; $(MAKE); cp blas.a ..
 
