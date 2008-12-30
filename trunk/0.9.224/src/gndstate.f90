@@ -146,6 +146,8 @@ do iscl=1,maxscl
   call olprad
 ! compute the Hamiltonian radial integrals
   call hmlrad
+  call geturf
+  call genurfprod
 ! begin parallel loop over k-points
   evalsv=0.d0
   do ik=1,nkptloc(iproc)
@@ -162,6 +164,7 @@ do iscl=1,maxscl
     call writefermi
   endif
   call dsync(occsv,nstsv*nkpt,.false.,.true.)
+  if (wannier) call wann_ene_occ
 ! set the charge density and magnetisation to zero
   rhomt(:,:,:)=0.d0
   rhoir(:)=0.d0

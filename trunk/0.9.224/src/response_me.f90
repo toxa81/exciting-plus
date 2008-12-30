@@ -13,7 +13,7 @@ integer, intent(in) :: gvecme2
 ! number of G-vectors for matrix elements calculation
 integer, intent(in) :: ngvecme
 complex(8), intent(in) :: wfsvmtloc(lmmaxvr,nrfmax,natmtot,nstsv,nspinor,*)
-complex(8), intent(in) :: wfsvitloc(nmatmax,nstsv,nspinor,*)
+complex(8), intent(in) :: wfsvitloc(ngkmax,nstsv,nspinor,*)
 integer, intent(in) :: ngknr(*)
 integer, intent(in) :: igkignr(ngkmax,*)
 real(8), intent(in) :: occsvnr(nstsv,nkptnr)
@@ -270,7 +270,7 @@ deallocate(uuj)
 #ifdef _MPI_
 
 allocate(wfsvmt2(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
-allocate(wfsvit2(nmatmax,nstsv,nspinor))
+allocate(wfsvit2(ngkmax,nstsv,nspinor))
 allocate(igkignr2(ngkmax))
 allocate(stat(MPI_STATUS_SIZE))
 allocate(zrhofc(ngvecme,max_num_nnp,nkptnrloc(iproc)))
@@ -335,7 +335,7 @@ do ikstep=1,nkptnrloc(0)
     if (isend(ikstep,i,1).eq.iproc.and.iproc.ne.i) then
       tag=(ikstep*nproc+i)*10
       ik=isend(ikstep,i,2)
-      call mpi_isend(wfsvitloc(1,1,1,ik),nmatmax*nstsv*nspinor,        &
+      call mpi_isend(wfsvitloc(1,1,1,ik),ngkmax*nstsv*nspinor,        &
         MPI_DOUBLE_COMPLEX,i,tag,MPI_COMM_WORLD,req,ierr)
       tag=tag+1
       call mpi_isend(wfsvmtloc(1,1,1,1,1,ik),                  &
@@ -353,7 +353,7 @@ do ikstep=1,nkptnrloc(0)
   if (isend(ikstep,iproc,1).ne.-1) then
     if (isend(ikstep,iproc,1).ne.iproc) then
       tag=(ikstep*nproc+iproc)*10
-      call mpi_recv(wfsvit2,nmatmax*nstsv*nspinor,MPI_DOUBLE_COMPLEX,  &
+      call mpi_recv(wfsvit2,ngkmax*nstsv*nspinor,MPI_DOUBLE_COMPLEX,  &
         isend(ikstep,iproc,1),tag,MPI_COMM_WORLD,stat,ierr)
       tag=tag+1
       call mpi_recv(wfsvmt2,lmmaxvr*nrfmax*natmtot*nstsv*nspinor,      &
@@ -575,8 +575,8 @@ integer, intent(in) :: ngknr2
 integer, intent(in) :: igkq
 integer, intent(in) :: igkignr1(ngkmax)
 integer, intent(in) :: igkignr2(ngkmax)
-complex(8), intent(in) :: wfsvit1(nmatmax,nstsv,nspinor)
-complex(8), intent(in) :: wfsvit2(nmatmax,nstsv,nspinor)
+complex(8), intent(in) :: wfsvit1(ngkmax,nstsv,nspinor)
+complex(8), intent(in) :: wfsvit2(ngkmax,nstsv,nspinor)
 complex(8), intent(inout) :: zrhofc(ngvecme,max_num_nnp)
 
 complex(8), allocatable :: mit(:,:)

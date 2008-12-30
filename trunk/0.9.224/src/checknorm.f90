@@ -56,7 +56,7 @@ allocate(zrhomt(lmmaxvr,nrcmtmax,natmtot))
 allocate(zrhoir(ngrtot))
 
 allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
-allocate(wfsvit(nmatmax,nstsv,nspinor))
+allocate(wfsvit(ngkmax,nstsv,nspinor))
 allocate(wfnrmdev(nstsv*(nstsv+1)/2))
 open(60,file='NORM.OUT',form='FORMATTED',status='REPLACE')
 

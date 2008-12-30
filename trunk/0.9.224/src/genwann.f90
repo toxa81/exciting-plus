@@ -71,13 +71,13 @@ do ispn=1,wann_nspins
   enddo
 ! compute S^{-1/2}
   call isqrtzhe(wf_dim,s,ierr)
-!  if (ierr.ne.0) then
-!    write(*,*)
-!    write(*,'("Error(wann_a_ort): faild to calculate S^{-1/2} for spin ",I1,&
-!      &" during iteration ",I4)')ispn,iscl
-!    write(*,'("  non-orthogonal WF will be used")')
-!    write(*,*)
-!  endif
+  if (ierr.ne.0.and.nproc.eq.1) then
+    write(*,*)
+    write(*,'("Error(genwann): failed to calculate S^{-1/2} for spin ",I1,&
+      &" during iteration ",I4)')ispn,iscl
+    write(*,'("  non-orthogonal WF will be used")')
+    write(*,*)
+  endif
 ! compute Wannier function expansion coefficients
 !  wfc(:,:,ispn,ik)=dcmplx(0.d0,0.d0)
   wfcnew(:,:)=dcmplx(0.d0,0.d0)

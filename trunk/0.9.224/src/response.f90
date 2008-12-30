@@ -170,14 +170,14 @@ if (task.eq.400.or.task.eq.403) then
     call gensfacgp(ngknr(ikloc),vgkcnr,ngkmax,sfacgknr(1,1,ikloc))
   enddo
   allocate(wfsvmtloc(lmmaxvr,nrfmax,natmtot,nstsv,nspinor,nkptnrloc(iproc)))
-  allocate(wfsvitloc(nmatmax,nstsv,nspinor,nkptnrloc(iproc)))
+  allocate(wfsvitloc(ngkmax,nstsv,nspinor,nkptnrloc(iproc)))
   allocate(evecfv(nmatmax,nstfv,nspnfv))
   allocate(evecsv(nstsv,nstsv))
   allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
   if (iproc.eq.0) then
     write(150,*)
     write(150,'("Size of wfsvmt array (Mb) : ",I6)')lmmaxvr*nrfmax*natmtot*nstsv*nkptnrloc(0)/1024/1024
-    write(150,'("Size of wfsvit array (Mb) : ",I6)')nmatmax*nstsv*nkptnrloc(0)/1024/1024
+    write(150,'("Size of wfsvit array (Mb) : ",I6)')ngkmax*nstsv*nkptnrloc(0)/1024/1024
     write(150,*)
     write(150,'("Reading eigen-vectors")')
     call flushifc(150)

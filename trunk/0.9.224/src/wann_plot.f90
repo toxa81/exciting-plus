@@ -114,7 +114,7 @@ allocate(evecfv(nmatmax,nstfv,nspnfv))
 allocate(evecsv(nstsv,nstsv))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 allocate(wfsvmtloc(lmmaxvr,nrfmax,natmtot,nstsv,nspinor,nkptloc(iproc)))
-allocate(wfsvitloc(nmatmax,nstsv,nspinor,nkptloc(iproc)))
+allocate(wfsvitloc(ngkmax,nstsv,nspinor,nkptloc(iproc)))
 ! read and transform eigen-vectors
 do ik=1,nkptloc(0)
   do i=0,nproc-1
@@ -169,7 +169,7 @@ enddo
 deallocate(zt2)
 deallocate(zt3)
 
-allocate(ccoeff(nmatmax,nwfplot,nkptloc(iproc)))
+allocate(ccoeff(ngkmax,nwfplot,nkptloc(iproc)))
 ccoeff=dcmplx(0.d0,0.d0)
 do n=1,nwfplot
   do ik=1,nkptloc(iproc)
@@ -288,7 +288,7 @@ real(8), intent(in) :: r(3)
 integer, intent(in) :: nwfplot
 integer, intent(in) :: tlim(2,3)
 complex(8), intent(in) :: bcoeff(lmmaxvr,nrfmax,natmtot,nwfplot,tlim(1,1):tlim(2,1),tlim(1,2):tlim(2,2),tlim(1,3):tlim(2,3))
-complex(8), intent(in) :: ccoeff(nmatmax,nwfplot,nkptloc(iproc))
+complex(8), intent(in) :: ccoeff(ngkmax,nwfplot,nkptloc(iproc))
 complex(4), intent(out) :: val(nwfplot)
 
 integer ivec,ntr(3),n

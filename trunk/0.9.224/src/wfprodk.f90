@@ -4,7 +4,7 @@ implicit none
 integer, intent(in) :: ngp
 integer, intent(in) :: igpig(ngkmax)
 complex(8), intent(in) :: wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv,nspinor)
-complex(8), intent(in) :: wfsvit(nmatmax,nstsv,nspinor)
+complex(8), intent(in) :: wfsvit(ngkmax,nstsv,nspinor)
 real(8), intent(out) :: wfnrmdev(nstsv*(nstsv+1)/2)
 
 complex(8) norm

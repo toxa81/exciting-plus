@@ -5,7 +5,7 @@ implicit none
 integer, intent(in) :: ngp
 complex(8), intent(in) :: evecfv(nmatmax,nstfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
-complex(8), intent(out) :: wfsvit(nmatmax,nstsv,nspinor)
+complex(8), intent(out) :: wfsvit(ngkmax,nstsv,nspinor)
 
 integer iwf,ig,ispn,istfv
 complex(8) zt1

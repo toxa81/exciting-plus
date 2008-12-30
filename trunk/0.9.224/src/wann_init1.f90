@@ -31,10 +31,10 @@ allocate(evecfv(nmatmax,nstfv,nspnfv))
 allocate(evecsv(nstsv,nstsv))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
-allocate(wfsvit(nmatmax,nstsv,nspinor))
+allocate(wfsvit(ngkmax,nstsv,nspinor))
 
 allocate(wann_unkmt(lmmaxvr,nrfmax,natmtot,wf_dim,nspinor,nkpt))
-allocate(wann_unkit(nmatmax,wf_dim,nspinor,nkpt))
+allocate(wann_unkit(ngkmax,wf_dim,nspinor,nkpt))
 wann_unkmt=dcmplx(0.d0,0.d0)
 wann_unkit=dcmplx(0.d0,0.d0)
 
