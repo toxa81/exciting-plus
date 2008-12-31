@@ -33,6 +33,7 @@ if (iproc.eq.0) then
   write(150,'("  maximum energy [eV] : ", F8.3)')maxomega
   write(150,'("  energy step    [eV] : ", F8.3)')domega
   write(150,'("  eta            [eV] : ", F8.3)')lr_eta
+  call flushifc(150)
 endif
   
 ! setup energy mesh
@@ -212,6 +213,7 @@ endif !do_lr_io
 if (iproc.eq.0) then
   write(150,*)
   write(150,'("Starting k-point summation")')
+  call flushifc(150)
 endif
 allocate(chi0_loc(ngvecme,ngvecme,nepts,nspin_chi0))
 chi0_loc=dcmplx(0.d0,0.d0)
