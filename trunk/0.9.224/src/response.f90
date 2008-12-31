@@ -187,6 +187,7 @@ if (task.eq.400.or.task.eq.403) then
     write(150,'("Reading eigen-vectors")')
     call flushifc(150)
   endif
+  call timer_start(1)
 ! read and transform eigen-vectors
   do ikloc=1,nkptnrloc(0)
 #ifdef _PIO_
@@ -215,6 +216,11 @@ if (task.eq.400.or.task.eq.403) then
     endif
   enddo !ikloc
   call barrier
+  call timer_stop(1)
+  if (iproc.eq.0) then
+    write(150,'("Done in ",F8.2," seconds")')timer(1,2)
+    call flushifc(150)
+  endif
   deallocate(evecfv,evecsv)
   deallocate(apwalm)
   deallocate(vgklnr)

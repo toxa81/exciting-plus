@@ -428,9 +428,9 @@ if (ispin_me.eq.4) write(160,'("# chi = chi(1)+chi(2)")')
 write(160,'("#")')
 write(160,'("# k-mesh division                    : ",3I4)')ngridk(1),ngridk(2),ngridk(3)
 write(160,'("# Energy mesh parameters             : ")')
-write(160,'("#   maximum energy [eV]              : ", F7.2)')maxomega
-write(160,'("#   energy step    [eV]              : ", F7.2)')domega
-write(160,'("#   eta            [eV]              : ", F7.2)')lr_eta
+write(160,'("#   maximum energy [eV]              : ", F9.4)')maxomega
+write(160,'("#   energy step    [eV]              : ", F9.4)')domega
+write(160,'("#   eta            [eV]              : ", F9.4)')lr_eta
 write(160,'("# q-vector information               : ")')
 write(160,'("#   q-vector (mesh coord.)           : ",3I4)')ivq0m
 write(160,'("#   q-vector (lat. coord.)           : ",3F18.10)')vq0l

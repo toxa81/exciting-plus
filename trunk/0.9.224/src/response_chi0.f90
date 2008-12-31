@@ -25,14 +25,16 @@ integer, allocatable :: ikptnriproc(:)
 integer ierr,tag
 integer, allocatable :: status(:)
 
+call timer_start(2)
+
 if (iproc.eq.0) then
   write(150,*)
   write(150,'("Calculation of KS polarisability chi0")')
   write(150,*)
   write(150,'("Energy mesh parameters:")')
-  write(150,'("  maximum energy [eV] : ", F8.3)')maxomega
-  write(150,'("  energy step    [eV] : ", F8.3)')domega
-  write(150,'("  eta            [eV] : ", F8.3)')lr_eta
+  write(150,'("  maximum energy [eV] : ", F9.4)')maxomega
+  write(150,'("  energy step    [eV] : ", F9.4)')domega
+  write(150,'("  eta            [eV] : ", F9.4)')lr_eta
   call flushifc(150)
 endif
   
@@ -123,9 +125,7 @@ if (iproc.eq.0) then
     call getevalsv(vklnr(1,ik),evalsvnr(1,ik))
   enddo
 endif
-#ifdef _MPI_
-call mpi_bcast(evalsvnr,nstsv*nkptnr,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
-#endif
+call dsync(evalsvnr,nstsv*nkptnr,.false.,.true.)
 
 if (do_lr_io) then
   allocate(zrhofc1(ngvecme,max_num_nnp))
@@ -210,8 +210,11 @@ if (do_lr_io) then
   deallocate(ikptnriproc)
 endif !do_lr_io
 
+call timer_stop(2)
+
 if (iproc.eq.0) then
   write(150,*)
+  write(150,'("time spent in response_chi0: ",F8.2)')timer(2,2)
   write(150,'("Starting k-point summation")')
   call flushifc(150)
 endif
