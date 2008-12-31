@@ -1,4 +1,4 @@
-subroutine response_chi0(ivq0m)
+subroutine response_chi0(ivq0m,evalsvnr)
 use modmain
 #ifdef _MPI_
 use mpi
@@ -6,8 +6,8 @@ use mpi
 implicit none
 
 integer, intent(in) :: ivq0m(3)
+real(8), intent(in) :: evalsvnr(nstsv,nkptnr)
 
-real(8), allocatable :: evalsvnr(:,:)
 complex(8), allocatable :: zrhofc1(:,:)
 complex(8), allocatable :: chi0_loc(:,:,:,:)
 complex(8), allocatable :: mtrx1(:,:)
@@ -24,8 +24,6 @@ character*100 fname
 integer, allocatable :: ikptnriproc(:)
 integer ierr,tag
 integer, allocatable :: status(:)
-
-call timer_start(2)
 
 if (iproc.eq.0) then
   write(150,*)
@@ -118,15 +116,6 @@ if (do_lr_io) then
 endif
 #endif
 
-! get eigen-values
-allocate(evalsvnr(nstsv,nkptnr))
-if (iproc.eq.0) then  
-  do ik=1,nkptnr
-    call getevalsv(vklnr(1,ik),evalsvnr(1,ik))
-  enddo
-endif
-call dsync(evalsvnr,nstsv*nkptnr,.false.,.true.)
-
 if (do_lr_io) then
   allocate(zrhofc1(ngvecme,max_num_nnp))
   allocate(nnp1(max_num_nnp,3))
@@ -141,7 +130,7 @@ if (do_lr_io) then
   allocate(status(MPI_STATUS_SIZE))
   allocate(ikptnriproc(nkptnr))
   do i=0,nproc-1
-	ikptnriproc(ikptnrloc(i,1):ikptnrloc(i,2))=i
+    ikptnriproc(ikptnrloc(i,1):ikptnrloc(i,2))=i
   enddo
   
   allocate(num_nnp(nkptnrloc(iproc)))
@@ -210,11 +199,8 @@ if (do_lr_io) then
   deallocate(ikptnriproc)
 endif !do_lr_io
 
-call timer_stop(2)
-
 if (iproc.eq.0) then
   write(150,*)
-  write(150,'("time spent in response_chi0: ",F8.2)')timer(2,2)
   write(150,'("Starting k-point summation")')
   call flushifc(150)
 endif
@@ -326,7 +312,6 @@ if (iproc.eq.0.and.do_lr_io) then
   close(160)
 endif !iproc.eq.0.and.do_lr_io
 
-deallocate(evalsvnr)
 if (do_lr_io) then
   deallocate(lr_w)
   deallocate(zrhofc1)

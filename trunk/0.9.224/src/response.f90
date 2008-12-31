@@ -19,6 +19,7 @@ complex(8), allocatable :: wfsvitloc(:,:,:,:)
 complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 real(8), allocatable :: occsvnr(:,:)
+real(8), allocatable :: evalsvnr(:,:)
 
 integer i,j,ngsh,gshmin,gshmax,ik,ikloc,ig,ispn,istfv,i1
 complex(8) zt1
@@ -179,10 +180,10 @@ if (task.eq.400.or.task.eq.403) then
   allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
   if (iproc.eq.0) then
     write(150,*)
-    write(150,'("Size of wfsvmt array (Mb) : ",I6)') &
-      16*lmmaxvr*nrfmax*natmtot*nstsv*nkptnrloc(0)/1024/1024
-    write(150,'("Size of wfsvit array (Mb) : ",I6)') &
-      16*ngkmax*nstsv*nkptnrloc(0)/1024/1024
+    write(150,'("Size of wfsvmt array (Mb) : ",I6)')                   &
+      16*lmmaxvr*nrfmax*natmtot*nstsv*nspinor*nkptnrloc(0)/1024/1024
+    write(150,'("Size of wfsvit array (Mb) : ",I6)')                   &
+      16*ngkmax*nstsv*nspinor*nkptnrloc(0)/1024/1024
     write(150,*)
     write(150,'("Reading eigen-vectors")')
     call flushifc(150)
@@ -208,7 +209,7 @@ if (task.eq.400.or.task.eq.403) then
 #endif
     if (ikloc.le.nkptnrloc(iproc)) then
 ! get apw coeffs 
-      call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc), &
+      call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),         &
         sfacgknr(1,1,ikloc),apwalm)
       call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfv,evecsv,apwalm, &
         wfsvmtloc(1,1,1,1,1,ikloc))
@@ -228,16 +229,45 @@ if (task.eq.400.or.task.eq.403) then
   deallocate(gknr)
   deallocate(tpgknr)
   deallocate(sfacgknr)
-! get occupancy of states
+endif
+
+if (task.eq.400.or.task.eq.401.or.task.eq.403) then
+! get occupancies and energies of states
   allocate(occsvnr(nstsv,nkptnr))
+  allocate(evalsvnr(nstsv,nkptnr))
+  call timer_start(3)
+  if (iproc.eq.0) then
+    write(150,*)
+    write(150,'("Reading energies and occupancies of states")')
+    call flushifc(150)
+  endif
+#ifdef _PIO_
+  occsvnr=0.d0
+  evalsvnr=0.d0
+  do ikloc=1,nkptnrloc(iproc)
+    ik=iknrglob(ikloc)
+    call getoccsv(vklnr(1,ik),occsvnr(1,ik))
+    call getevalsv(vklnr(1,ik),evalsvnr(1,ik))
+  enddo
+  call dsync(occsvnr,nstsv*nkptnr,.true.,.true.)
+  call dsync(evalsvnr,nstsv*nkptnr,.true.,.true.)
+#else
   if (iproc.eq.0) then 
     do ik=1,nkptnr
       call getoccsv(vklnr(1,ik),occsvnr(1,ik))
+      call getevalsv(vklnr(1,ik),evalsvnr(1,ik))
     enddo
   endif
   call dsync(occsvnr,nstsv*nkptnr,.false.,.true.)
+  call dsync(evalsvnr,nstsv*nkptnr,.false.,.true.)
+#endif
+  call timer_stop(3)
+  if (iproc.eq.0) then
+    write(150,'("Done in ",F8.2," seconds")')timer(3,2)
+    call flushifc(150)
+  endif
 endif
-
+  
 if (task.eq.400) then
 ! calculate matrix elements
   do i=1,nvq0
@@ -249,7 +279,7 @@ endif
 if (task.eq.401) then
 ! calculate chi0
   do i=1,nvq0
-    call response_chi0(ivq0m_list(1,i))
+    call response_chi0(ivq0m_list(1,i),evalsvnr)
   enddo
 endif
 
@@ -264,13 +294,9 @@ if (task.eq.403) then
   do i=1,nvq0
     call response_me(ivq0m_list(1,i),wfsvmtloc,wfsvitloc,ngknr, &
       igkignr,occsvnr)
-    call response_chi0(ivq0m_list(1,i))
+    call response_chi0(ivq0m_list(1,i),evalsvnr)
     call response_chi(ivq0m_list(1,i))
   enddo
-endif
-
-if (task.eq.404) then
-!  call response_jdos
 endif
 
 if (iproc.eq.0) close(150)
