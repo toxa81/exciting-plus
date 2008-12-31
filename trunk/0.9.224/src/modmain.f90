@@ -952,17 +952,74 @@ real(8), parameter :: au2ang=0.5291772108d0
 !-------------------------!
 !     Linear response     !
 !-------------------------!
+! number of q-vectors
 integer nvq0
-integer, allocatable :: ivq0m_list(:,:) 
-integer gshme1,gshme2
+! list of q-vectors in k-mesh coordinates
+integer, allocatable :: ivq0m_list(:,:)
+! q-vector in lattice coordinates
+real(8) vq0l(3)
+! q-vector in Cartesian coordinates
+real(8) vq0c(3)
+! reduced q-vector in lattice coordinates
+real(8) vq0rl(3)
+! reduced q-vector in Cartesian coordinates
+real(8) vq0rc(3)
+! index of G-vector which brings q to first BZ
+integer lr_igq0
+! first G-shell for matrix elements
+integer gshme1
+! last G-shell for matrix elements
+integer gshme2
+! first G-vector for matrix elements
+integer gvecme1
+! last G-vector for matrix elements
+integer gvecme2
+! number of G-vectors for matrix elements
+integer ngvecme
+! number of spins for matrix elements
 integer spin_me
-integer gshchi1,gshchi2
+! number of spins for chi0
+integer nspin_chi0
+! first G-shell for chi
+integer gshchi1
+! last G-shell for chi
+integer gshchi2
+! first G-vector for chi
+integer gvecchi1
+! last G-vector for chi
+integer gvecchi2
+! number of G-vectors for chi
+integer ngvecchi
 real(8) maxomega
 real(8) domega
-real(8) eta_r
+real(8) lr_eta
 logical afmchi0 
 integer bndme1,bndme2
 integer lrtype
+! if .true. then read and write matrix elements and chi0
+logical do_lr_io
+! Fourier coeffiients of complex charge density
+complex(8), allocatable :: zrhofc(:,:,:)
+! array for k and k+q stuff
+!  1-st index: index of k-point in BZ
+!  2-nd index: 1: index of k'=k+q-K
+!              2: index of K-vector which brings k+q to first BZ
+integer, allocatable :: idxkq(:,:)
+! number of n,n' combinations of band indexes for each k-point
+integer, allocatable :: num_nnp(:)
+! maximum num_nnp over all k-points 
+integer max_num_nnp
+! pair of n,n' band indexes for each k-point
+integer, allocatable :: nnp(:,:,:)
+! difference of occupation numbers for |nk> and |n'k+q> states
+real(8), allocatable :: docc(:,:)
+! Kohn-Sham polarizability
+complex(8), allocatable :: chi0(:,:,:,:)
+! number of energy-mesh points
+integer nepts
+! energy mesh
+complex(8), allocatable :: lr_w(:)
+
 
 !------------------!
 !     Wannier      !

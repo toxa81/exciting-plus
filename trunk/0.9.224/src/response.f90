@@ -19,15 +19,12 @@ complex(8), allocatable :: wfsvitloc(:,:,:,:)
 complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 real(8), allocatable :: occsvnr(:,:)
-real(8), allocatable :: wfnrmdev(:,:)
 
-integer i,j,ngsh,gshmin,gshmax,gvecme1,gvecme2,ngvecme,gvecchi1, &
-  gvecchi2,ngvecchi,ik,ikloc,ig,ispn,istfv,i1
+integer i,j,ngsh,gshmin,gshmax,ik,ikloc,ig,ispn,istfv,i1
 complex(8) zt1
 character*100 fname
 integer, external :: iknrglob
 
-real(8) vq0l(3)
 integer vgq0l(3)
 
 ! initialise universal variables
@@ -55,11 +52,17 @@ endif
 if (task.eq.400) fname='RESPONSE_ME.OUT'
 if (task.eq.401) fname='RESPONSE_CHI0.OUT'
 if (task.eq.402) fname='RESPONSE_CHI.OUT'
-if (task.eq.403.or.task.eq.404) fname='RESPONSE.OUT'
+if (task.eq.403) fname='RESPONSE.OUT'
+
+do_lr_io=.true.
+#ifdef _MPI_
+if (task.eq.403) do_lr_io=.false.
+#endif
 
 if (iproc.eq.0) then
   open(150,file=trim(fname),form='formatted',status='replace')
   write(150,'("Running on ",I4," proc.")')nproc
+  if (.not.do_lr_io) write(150,'("I/O is turned off")')
 endif
 
 if (task.eq.400.or.task.eq.403) then
@@ -176,26 +179,32 @@ if (task.eq.400.or.task.eq.403) then
   allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
   if (iproc.eq.0) then
     write(150,*)
-    write(150,'("Size of wfsvmt array (Mb) : ",I6)')lmmaxvr*nrfmax*natmtot*nstsv*nkptnrloc(0)/1024/1024
-    write(150,'("Size of wfsvit array (Mb) : ",I6)')ngkmax*nstsv*nkptnrloc(0)/1024/1024
+    write(150,'("Size of wfsvmt array (Mb) : ",I6)') &
+      16*lmmaxvr*nrfmax*natmtot*nstsv*nkptnrloc(0)/1024/1024
+    write(150,'("Size of wfsvit array (Mb) : ",I6)') &
+      16*ngkmax*nstsv*nkptnrloc(0)/1024/1024
     write(150,*)
     write(150,'("Reading eigen-vectors")')
     call flushifc(150)
   endif
-!  allocate(wfnrmdev(nstsv*(nstsv+1)/2,nkptnr))
-!  wfnrmdev=0.d0
 ! read and transform eigen-vectors
   do ikloc=1,nkptnrloc(0)
+#ifdef _PIO_
+    if (ikloc.le.nkptnrloc(iproc)) then
+#else
     do i=0,nproc-1
-      if (iproc.eq.i.and.ikloc.le.nkptnrloc(iproc)) then
-        ik=iknrglob(ikloc)
-        call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfv)
-        call getevecsv(vklnr(1,ik),evecsv)
-      endif
-#ifndef _PIO_
-      call barrier
+    if (iproc.eq.i.and.ikloc.le.nkptnrloc(iproc)) then
 #endif
+      ik=iknrglob(ikloc)
+      call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfv)
+      call getevecsv(vklnr(1,ik),evecsv)
+#ifdef _PIO_
+    endif !ikloc.le.nkptnrloc(iproc)
+#else
+    endif !iproc.eq.i.and.ikloc.le.nkptnrloc(iproc)
+    call barrier
     enddo !i
+#endif
     if (ikloc.le.nkptnrloc(iproc)) then
 ! get apw coeffs 
       call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc), &
@@ -203,32 +212,9 @@ if (task.eq.400.or.task.eq.403) then
       call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfv,evecsv,apwalm, &
         wfsvmtloc(1,1,1,1,1,ikloc))
       call genwfsvit(ngknr(ikloc),evecfv,evecsv,wfsvitloc(1,1,1,ikloc))
-!      call wfprodk(ngknr(ikloc),igkignr(1,ikloc),wfsvmtloc(1,1,1,1,1,ikloc), &
-!        wfsvitloc(1,1,1,ikloc),wfnrmdev(1,ik))
     endif
   enddo !ikloc
   call barrier
-!  call dsync(wfnrmdev,nkptnr*(nstsv*(nstsv+1)/2),.true.,.false.)
-!  if (iproc.eq.0) then
-!    write(150,'("Done.")')
-!    write(150,*)
-!    write(150,'("Maximum WF norm deviation : ",G18.10)')maxval(wfnrmdev)
-!    write(150,'("Average WF norm deviation : ",G18.10)')sum(wfnrmdev)/nkptnr/(nstsv*(nstsv+1)/2.d0)
-!    if (.false.) then
-!      do ik=1,nkptnr
-!        write(150,*)'ik=',ik
-!        j=0
-!        do i=1,nstsv
-!          do i1=i,nstsv
-!            j=j+1
-!            write(150,*)'i=',i,'i1=',i1,'norm dev=',wfnrmdev(j,ik)
-!          enddo
-!        enddo
-!      enddo
-!    endif
-!    call flushifc(150)
-!  endif
-!  deallocate(wfnrmdev)
   deallocate(evecfv,evecsv)
   deallocate(apwalm)
   deallocate(vgklnr)
@@ -249,35 +235,31 @@ endif
 if (task.eq.400) then
 ! calculate matrix elements
   do i=1,nvq0
-    call response_me(ivq0m_list(1,i),gvecme1,gvecme2,ngvecme,wfsvmtloc, &
-      wfsvitloc,ngknr,igkignr,occsvnr)
-    !call write_zrhofc
+    call response_me(ivq0m_list(1,i),wfsvmtloc,wfsvitloc,ngknr, &
+      igkignr,occsvnr)
   enddo
 endif
 
 if (task.eq.401) then
 ! calculate chi0
   do i=1,nvq0
-    !call read_zrhofc
     call response_chi0(ivq0m_list(1,i))
-    !call write_chi0
   enddo
 endif
 
 if (task.eq.402) then
 ! calculate chi
   do i=1,nvq0
-    !call read_chi0
-    call response_chi(ivq0m_list(1,i),gvecchi1,gvecchi2)
+    call response_chi(ivq0m_list(1,i))
   enddo
 endif
 
 if (task.eq.403) then
   do i=1,nvq0
-    call response_me(ivq0m_list(1,i),gvecme1,gvecme2,ngvecme,wfsvmtloc, &
-      wfsvitloc,ngknr,igkignr,occsvnr)
+    call response_me(ivq0m_list(1,i),wfsvmtloc,wfsvitloc,ngknr, &
+      igkignr,occsvnr)
     call response_chi0(ivq0m_list(1,i))
-    call response_chi(ivq0m_list(1,i),gvecchi1,gvecchi2)
+    call response_chi(ivq0m_list(1,i))
   enddo
 endif
 

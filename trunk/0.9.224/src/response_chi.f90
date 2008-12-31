@@ -1,36 +1,11 @@
-subroutine response_chi(ivq0m,gvecchi1,gvecchi2)
+subroutine response_chi(ivq0m)
 use modmain
 implicit none
 integer, intent(in) :: ivq0m(3)
-! first G-vector for chi
-integer, intent(inout) :: gvecchi1
-! last G-vector for chi
-integer, intent(inout) :: gvecchi2
 
-integer gvecme1
-integer gvecme2
-! number of G-vectors for chi
-integer ngvecchi
-! number of G-vectors for matrix elements
-integer ngvecme
-! number of energy-mesh points
-integer nepts
-! energy mesh
-complex(8), allocatable :: w(:)
-! q-vector in lattice coordinates
-real(8) vq0l(3)
-! q-vector in Cartesian coordinates
-real(8) vq0c(3)
-! reduced q-vector in lattice coordinates
-real(8) vq0rl(3)
-! reduced q-vector in Cartesian coordinates
-real(8) vq0rc(3)
-! index of G-vector which brings q to first BZ
-integer igq0_in
 integer igq0
-! Kohn-Sham polarisability
-complex(8), allocatable :: chi0_in(:,:,:,:)
-complex(8), allocatable :: chi0(:,:,:,:)
+! Kohn-Sham polarisability submatrix
+complex(8), allocatable :: chi0s(:,:,:,:)
 complex(8), allocatable :: chi0_GqGq(:,:)
 ! true polarisability
 complex(8), allocatable :: chi(:,:)
@@ -47,7 +22,6 @@ complex(8), allocatable :: epsilon_eff(:)
 ! kernel of matrix equaiton
 complex(8), allocatable :: krnl(:,:)
 
-integer nspin_chi0
 
 integer ie,ig,ngsh_me_,info,i,j,ig1,ig2,ispn
 integer iv(3)
@@ -86,26 +60,27 @@ if (iproc.eq.0) then
     write(150,'("Calculation of chi = chi^{+-} + chi^{-+}")')  
   endif
   
-  write(fname,'("CHI0[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
-    ivq0m(1),ivq0m(2),ivq0m(3)
-  write(150,'("Reading file ",A40)')trim(fname)
-  open(160,file=trim(fname),form='unformatted',status='old')
-  read(160)nepts,igq0_in
-  read(160)gshme1,gshme2,gvecme1,gvecme2,ngvecme
-  allocate(w(nepts))
-  read(160)w(1:nepts)
-  read(160)vq0l(1:3)
-  read(160)vq0rl(1:3)
-  read(160)vq0c(1:3)
-  read(160)vq0rc(1:3)
-  read(160)spin_me,nspin_chi0
-  allocate(chi0_in(ngvecme,ngvecme,nepts,nspin_chi0))
-  do ie=1,nepts
-    read(160)chi0_in(1:ngvecme,1:ngvecme,ie,1:nspin_chi0)
-  enddo
-  if (task.eq.402) close(160)
-  if (task.eq.403) close(160,status='delete')
-  
+  if (do_lr_io) then
+    write(fname,'("CHI0[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
+      ivq0m(1),ivq0m(2),ivq0m(3)
+    write(150,'("Reading file ",A40)')trim(fname)
+    open(160,file=trim(fname),form='unformatted',status='old')
+    read(160)nepts,lr_igq0
+    read(160)gshme1,gshme2,gvecme1,gvecme2,ngvecme
+    allocate(lr_w(nepts))
+    read(160)lr_w(1:nepts)
+    read(160)vq0l(1:3)
+    read(160)vq0rl(1:3)
+    read(160)vq0c(1:3)
+    read(160)vq0rc(1:3)
+    read(160)spin_me,nspin_chi0
+    allocate(chi0(ngvecme,ngvecme,nepts,nspin_chi0))
+    do ie=1,nepts
+      read(160)chi0(1:ngvecme,1:ngvecme,ie,1:nspin_chi0)
+    enddo
+    if (task.eq.402) close(160)
+    if (task.eq.403) close(160,status='delete')
+  endif !do_lr_io
   write(150,'("chi0 was calculated for ")')
   write(150,'("  G-shells  : ",I4," to ",I4)')gshme1,gshme2
   write(150,'("  G-vectors : ",I4," to ",I4)')gvecme1,gvecme2
@@ -131,7 +106,7 @@ if (iproc.eq.0) then
       &I4," to ",I4)')gvecchi2,gvecme2
     gvecchi2=gvecme2 
   endif
-  if (igq0_in.lt.gvecchi1.or.igq0_in.gt.gvecchi2) then
+  if (lr_igq0.lt.gvecchi1.or.lr_igq0.gt.gvecchi2) then
     write(*,*)
     write(*,'("Error(response_chi): not enough G-vectors for calculation of &
       &chi")')
@@ -149,14 +124,14 @@ if (iproc.eq.0) then
   write(150,'("Minimum and maximum G-vectors for chi : ",2I4)')gvecchi1,gvecchi2
   write(150,'("Number of G-vectors : ",I4)')ngvecchi
 
-  igq0=igq0_in-gvecchi1+1
+  igq0=lr_igq0-gvecchi1+1
   
   if (nspin_chi0.eq.1) then
-    allocate(chi0(ngvecchi,ngvecchi,nepts,1))
+    allocate(chi0s(ngvecchi,ngvecchi,nepts,1))
     allocate(chi0_GqGq(nepts,1))
     allocate(chi(nepts,1))
   else
-    allocate(chi0(ngvecchi,ngvecchi,nepts,3))
+    allocate(chi0s(ngvecchi,ngvecchi,nepts,3))
     allocate(chi0_GqGq(nepts,3))
     allocate(chi(nepts,4))
   endif
@@ -207,46 +182,46 @@ if (iproc.eq.0) then
     ig1=gvecchi1-gvecme1+1
     ig2=ig1+ngvecchi-1
     do ie=1,nepts
-      chi0(1:ngvecchi,1:ngvecchi,ie,ispn)=chi0_in(ig1:ig2,ig1:ig2,ie,ispn)
+      chi0s(1:ngvecchi,1:ngvecchi,ie,ispn)=chi0(ig1:ig2,ig1:ig2,ie,ispn)
     enddo
   enddo
   if (nspin_chi0.eq.2) then
-    chi0(:,:,:,3)=chi0(:,:,:,1)+chi0(:,:,:,2)
+    chi0s(:,:,:,3)=chi0s(:,:,:,1)+chi0s(:,:,:,2)
   endif
   do ie=1,nepts
-    chi0_GqGq(ie,:)=chi0(igq0,igq0,ie,:)
+    chi0_GqGq(ie,:)=chi0s(igq0,igq0,ie,:)
   enddo
   
   if (nspin_chi0.eq.1) then
-    call solve_chi(ngvecchi,nepts,igq0,chi0(1,1,1,1),krnl,chi(1,1),chi_scalar, &
+    call solve_chi(ngvecchi,nepts,igq0,chi0s(1,1,1,1),krnl,chi(1,1),chi_scalar, &
       epsilon_GqGq,epsilon_eff)
-    call write_chi(nepts,igq0_in,ivq0m,vq0l,vq0c,gvecchi1,gvecchi2,w,chi0_GqGq(1,1), &
+    call write_chi(lr_igq0,ivq0m,chi0_GqGq(1,1), &
       chi(1,1),chi_scalar,epsilon_GqGq,epsilon_eff,spin_me)
   else
 ! chi from chi0(1)
-    call solve_chi(ngvecchi,nepts,igq0,chi0(1,1,1,1),krnl,chi(1,1),chi_scalar, &
+    call solve_chi(ngvecchi,nepts,igq0,chi0s(1,1,1,1),krnl,chi(1,1),chi_scalar, &
       epsilon_GqGq,epsilon_eff)
-    call write_chi(nepts,igq0_in,ivq0m,vq0l,vq0c,gvecchi1,gvecchi2,w,chi0_GqGq(1,1), &
+    call write_chi(lr_igq0,ivq0m,chi0_GqGq(1,1), &
       chi(1,1),chi_scalar,epsilon_GqGq,epsilon_eff,1)
 ! chi form chi0(2)
-    call solve_chi(ngvecchi,nepts,igq0,chi0(1,1,1,2),krnl,chi(1,2),chi_scalar, &
+    call solve_chi(ngvecchi,nepts,igq0,chi0s(1,1,1,2),krnl,chi(1,2),chi_scalar, &
       epsilon_GqGq,epsilon_eff)
-    call write_chi(nepts,igq0_in,ivq0m,vq0l,vq0c,gvecchi1,gvecchi2,w,chi0_GqGq(1,2), &
+    call write_chi(lr_igq0,ivq0m,chi0_GqGq(1,2), &
       chi(1,2),chi_scalar,epsilon_GqGq,epsilon_eff,2)
 ! chi form chi0(1)+chi0(2)
-    call solve_chi(ngvecchi,nepts,igq0,chi0(1,1,1,3),krnl,chi(1,3),chi_scalar, &
+    call solve_chi(ngvecchi,nepts,igq0,chi0s(1,1,1,3),krnl,chi(1,3),chi_scalar, &
       epsilon_GqGq,epsilon_eff)
-    call write_chi(nepts,igq0_in,ivq0m,vq0l,vq0c,gvecchi1,gvecchi2,w,chi0_GqGq(1,3), &
+    call write_chi(lr_igq0,ivq0m,chi0_GqGq(1,3), &
       chi(1,3),chi_scalar,epsilon_GqGq,epsilon_eff,3)
 ! chi = chi(1)+chi(2)    
     chi(:,4)=chi(:,1)+chi(:,2)
-   call write_chi(nepts,igq0_in,ivq0m,vq0l,vq0c,gvecchi1,gvecchi2,w,chi0_GqGq(1,3), &
+   call write_chi(lr_igq0,ivq0m,chi0_GqGq(1,3), &
       chi(1,4),chi_scalar,epsilon_GqGq,epsilon_eff,4)
   endif
       
-  deallocate(w)
-  deallocate(chi0_in)
+  deallocate(lr_w)
   deallocate(chi0)
+  deallocate(chi0s)
   deallocate(chi)
   deallocate(epsilon_GqGq)
   deallocate(epsilon_eff)
@@ -382,13 +357,13 @@ deallocate(zt3)
 return
 end
 
-subroutine solve_chi(ngvecchi,nepts,igq0,chi0,krnl,chi,chi_scalar, &
+subroutine solve_chi(ngvecchi,nepts,igq0,chi0_in,krnl,chi,chi_scalar, &
   epsilon_GqGq,epsilon_eff)
 implicit none
 integer, intent(in) :: ngvecchi
 integer, intent(in) :: nepts
 integer, intent(in) :: igq0
-complex(8), intent(in) :: chi0(ngvecchi,ngvecchi,nepts)
+complex(8), intent(in) :: chi0_in(ngvecchi,ngvecchi,nepts)
 complex(8), intent(in) :: krnl(ngvecchi,ngvecchi)
 complex(8), intent(out) :: chi(nepts)
 complex(8), intent(out) :: chi_scalar(nepts)
@@ -408,14 +383,14 @@ do ie=1,nepts
   enddo
 ! compute epsilon=1-chi0*V
   call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(-1.d0,0.d0), &
-    chi0(1,1,ie),ngvecchi,krnl,ngvecchi,dcmplx(1.d0,0.d0),epsilon, &
+    chi0_in(1,1,ie),ngvecchi,krnl,ngvecchi,dcmplx(1.d0,0.d0),epsilon, &
     ngvecchi)
   epsilon_GqGq(ie)=epsilon(igq0,igq0)
-  chi_scalar(ie)=chi0(igq0,igq0,ie)/epsilon_GqGq(ie)
+  chi_scalar(ie)=chi0_in(igq0,igq0,ie)/epsilon_GqGq(ie)
   call invzge(epsilon,ngvecchi)
   epsilon_eff(ie)=1.d0/epsilon(igq0,igq0)
   call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
-    epsilon,ngvecchi,chi0(1,1,ie),ngvecchi,dcmplx(0.d0,0.d0),chi_mtrx, &
+    epsilon,ngvecchi,chi0_in(1,1,ie),ngvecchi,dcmplx(0.d0,0.d0),chi_mtrx, &
     ngvecchi)
   chi(ie)=chi_mtrx(igq0,igq0)
 enddo !ie
@@ -423,19 +398,13 @@ deallocate(epsilon,chi_mtrx)
 return
 end
 
-subroutine write_chi(nepts,igq0,ivq0m,vq0l,vq0c,gvecchi1,gvecchi2,w,chi0, &
+subroutine write_chi(igq0,ivq0m,chi0_in, &
   chi,chi_scalar,epsilon_GqGq,epsilon_eff,ispin_me)
 use modmain
 implicit none
-integer, intent(in) :: nepts
 integer, intent(in) :: igq0
 integer, intent(in) :: ivq0m(3)
-real(8), intent(in) :: vq0l(3)
-real(8), intent(in) :: vq0c(3)
-integer, intent(in) :: gvecchi1
-integer, intent(in) :: gvecchi2
-complex(8), intent(in) :: w(nepts)
-complex(8), intent(in) :: chi0(nepts)
+complex(8), intent(in) :: chi0_in(nepts)
 complex(8), intent(in) :: chi(nepts)
 complex(8), intent(in) :: chi_scalar(nepts)
 complex(8), intent(in) :: epsilon_GqGq(nepts)
@@ -461,7 +430,7 @@ write(160,'("# k-mesh division                    : ",3I4)')ngridk(1),ngridk(2),
 write(160,'("# Energy mesh parameters             : ")')
 write(160,'("#   maximum energy [eV]              : ", F7.2)')maxomega
 write(160,'("#   energy step    [eV]              : ", F7.2)')domega
-write(160,'("#   eta            [eV]              : ", F7.2)')eta_r
+write(160,'("#   eta            [eV]              : ", F7.2)')lr_eta
 write(160,'("# q-vector information               : ")')
 write(160,'("#   q-vector (mesh coord.)           : ",3I4)')ivq0m
 write(160,'("#   q-vector (lat. coord.)           : ",3F18.10)')vq0l
@@ -491,9 +460,9 @@ if (ispin_me.le.3) then
   write(160,'("#")')
   allocate(func(12,nepts))
   do ie=1,nepts
-    func(1,ie)=dreal(w(ie))*ha2ev
-    func(2,ie)=-dreal(chi0(ie))/ha2ev/(au2ang)**3
-    func(3,ie)=-dimag(chi0(ie))/ha2ev/(au2ang)**3
+    func(1,ie)=dreal(lr_w(ie))*ha2ev
+    func(2,ie)=-dreal(chi0_in(ie))/ha2ev/(au2ang)**3
+    func(3,ie)=-dimag(chi0_in(ie))/ha2ev/(au2ang)**3
     func(4,ie)=-dreal(chi(ie))/ha2ev/(au2ang)**3
     func(5,ie)=-dimag(chi(ie))/ha2ev/(au2ang)**3
     func(6,ie)=-2.d0*dimag(chi(ie))/ha2ev/(au2ang)**3
@@ -515,7 +484,7 @@ else
   write(160,'("#")')
   allocate(func(4,nepts))
   do ie=1,nepts
-    func(1,ie)=dreal(w(ie))*ha2ev
+    func(1,ie)=dreal(lr_w(ie))*ha2ev
     func(2,ie)=-dreal(chi(ie))/ha2ev/(au2ang)**3
     func(3,ie)=-dimag(chi(ie))/ha2ev/(au2ang)**3
     func(4,ie)=-2.d0*dimag(chi(ie))/ha2ev/(au2ang)**3
