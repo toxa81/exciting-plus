@@ -251,19 +251,23 @@ if (task.eq.400) then
   do i=1,nvq0
     call response_me(ivq0m_list(1,i),gvecme1,gvecme2,ngvecme,wfsvmtloc, &
       wfsvitloc,ngknr,igkignr,occsvnr)
+    !call write_zrhofc
   enddo
 endif
 
 if (task.eq.401) then
 ! calculate chi0
   do i=1,nvq0
+    !call read_zrhofc
     call response_chi0(ivq0m_list(1,i))
+    !call write_chi0
   enddo
 endif
 
 if (task.eq.402) then
 ! calculate chi
   do i=1,nvq0
+    !call read_chi0
     call response_chi(ivq0m_list(1,i),gvecchi1,gvecchi2)
   enddo
 endif
