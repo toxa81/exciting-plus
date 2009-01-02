@@ -154,7 +154,7 @@ if (iproc.eq.0) then
       vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
       gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
       krnl(ig,ig)=fourpi/gq0**2 
-      write(150,'(1X,I4,2X,2F12.6)')ig,gq0,krnl(ig,ig)
+      write(150,'(1X,I4,2X,2F12.6)')ig,gq0,abs(krnl(ig,ig))
     enddo
   endif
 ! for magnetic response
@@ -385,7 +385,8 @@ do ie=1,nepts
   call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(-1.d0,0.d0), &
     chi0_in(1,1,ie),ngvecchi,krnl,ngvecchi,dcmplx(1.d0,0.d0),epsilon, &
     ngvecchi)
-  epsilon_GqGq(ie)=epsilon(igq0,igq0)
+!  epsilon_GqGq(ie)=epsilon(igq0,igq0)
+  epsilon_GqGq(ie)=1.d0-chi0_in(igq0,igq0,ie)*krnl(igq0,igq0)
   chi_scalar(ie)=chi0_in(igq0,igq0,ie)/epsilon_GqGq(ie)
   call invzge(epsilon,ngvecchi)
   epsilon_eff(ie)=1.d0/epsilon(igq0,igq0)
