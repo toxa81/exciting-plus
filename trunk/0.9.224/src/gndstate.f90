@@ -208,6 +208,7 @@ do iscl=1,maxscl
     call genvmatlu
 ! write the LDA+U matrices to file
     if (iproc.eq.0) call writeldapu
+    call gendmatrsh
   end if
 ! compute the effective potential
   call poteff

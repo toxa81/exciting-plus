@@ -20,7 +20,7 @@ use modmain
 implicit none
 ! local variables
 integer is,js,ia,ja,ias
-integer i,l,iv,iostat
+integer i,l,iv,iostat,j,lm1,lm2
 real(8) sc,sc1,sc2,sc3
 real(8) vacuum,v(3),t1,t2
 character(256) str,bname
@@ -175,6 +175,8 @@ bndme2=-1
 lrtype=0
 wannier=.false.
 natlcs=0
+dmbnd1=-1
+dmbnd2=-1
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -930,6 +932,22 @@ case('wannier')
     read(50,*,err=20)(wann_iorb(l,i),l=1,wann_iorb(0,i))
     do ispn=1,wann_nspins
       read(50,*,err=20)(wann_deltav(l,ispn,i),l=1,wann_iorb(0,i))
+    enddo
+  enddo  
+case('densmtrx')
+  read(50,*,err=20) dmbnd1,dmbnd2
+case('lcs')
+  read(50,*,err=20) natlcs
+  allocate(lcsrsh(16,16,natlcs))
+  allocate(iatlcs(natlcs))
+  lcsrsh=0.d0
+  do i=1,natlcs
+    do j=1,16
+      lcsrsh(j,j,i)=1.d0
+    enddo
+    read(50,*,err=20) iatlcs(i),l
+    do lm1=l**2+1,(l+1)**2
+      read(50,*,err=20)(lcsrsh(lm1,lm2,i),lm2=l**2+1,(l+1)**2)
     enddo
   enddo  
 case('')

@@ -36,6 +36,8 @@ do itask=1,ntasks
     call hartfock
   case(10)
     call dos
+  case(11)
+    call dosrlm
   case(15,16)
     call writelsj
   case(20,21)

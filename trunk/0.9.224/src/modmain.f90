@@ -939,6 +939,7 @@ integer, allocatable :: lm2l(:)
 integer natlcs
 real(8), allocatable :: lcsrsh(:,:,:)
 integer, allocatable :: iatlcs(:)
+integer dmbnd1,dmbnd2
 ! real <-> complex spherical harmonic transformation
 complex(8), allocatable :: rylm(:,:)
 complex(8), allocatable :: yrlm(:,:)
