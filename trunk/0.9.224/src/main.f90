@@ -96,6 +96,8 @@ do itask=1,ntasks
     call response
   case(500)
     call checknorm
+  case(501)
+    call test1
   case default
     write(*,*)
     write(*,'("Error(main): task not defined : ",I8)') task

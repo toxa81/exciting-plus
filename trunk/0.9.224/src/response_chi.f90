@@ -284,7 +284,7 @@ do is=1,nspecies
 ! calculate I(r)
       do itp=1,lmmaxvr
         !if (abs(rftp2(itp)).lt.1d-10) rftp2(itp)=1d10
-        zt1(itp)=dcmplx(rftp1(itp)/rftp2(itp),0.d0)
+        zt1(itp)=dcmplx(rftp1(itp)*rftp2(itp),0.d0)
         !zt1(itp)=dcmplx(rftp2(itp),0.d0)
       enddo
 ! transform I(r) from spherical coordinates to complex spherical harmonics
@@ -332,7 +332,7 @@ enddo !ig
 do ir=1,ngrtot
   rt1=magir(ir,1)
   !if (abs(rt1).lt.1d-10) rt1=1d10
-  zt3(ir)=dcmplx(bxcir(ir,1)/rt1,0.d0)*cfunir(ir)*omega
+  zt3(ir)=dcmplx(bxcir(ir,1)*rt1,0.d0)*cfunir(ir)*omega
 !  zt3(ir)=dcmplx(vxcir(ir)/rt1,0.d0)*cfunir(ir)*omega
   !zt3(ir)=rt1*cfunir(ir)*omega
 enddo       
@@ -340,7 +340,7 @@ call zfftifc(3,ngrid,-1,zt3)
 do ig=1,ngvec
   ixcft(ig)=ixcft(ig)+zt3(igfft(ig))
 enddo 
-ixcft=ixcft/omega         
+!ixcft=ixcft/omega         
 
 deallocate(rftp1)
 deallocate(rftp2)
