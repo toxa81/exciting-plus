@@ -98,7 +98,8 @@ do ispn=1,nspinor
     end do
   end do !ik
   call brzint(nsmdos,ngridk,nsk,ikmap,nwdos,wdos,nstsv,nstsv,e(1,1,ispn),f, &
-   g(1,ispn)) 
+   g(1,ispn))
+  g=occmax*g 
   do iw=1,nwdos
     write(50,'(2G18.10)') w(iw)*ha2ev,t1*g(iw,ispn)/ha2ev
   end do
@@ -134,7 +135,8 @@ do is=1,nspecies
             end do
           end do
           call brzint(nsmdos,ngridk,nsk,ikmap,nwdos,wdos,nstsv,nstsv, &
-           e(1,1,ispn),f,gp) 
+           e(1,1,ispn),f,gp)
+          gp=occmax*gp 
           do iw=1,nwdos
             write(160)gp(iw)/ha2ev
             g(iw,ispn)=g(iw,ispn)-gp(iw)
