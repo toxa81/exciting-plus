@@ -56,9 +56,7 @@ if (iproc.eq.0) then
   if (lrtype.eq.1) then
     write(150,'("Calculation of magnetic polarizability chi")')  
   endif
-  if (lrtype.eq.2) then
-    write(150,'("Calculation of chi = chi^{+-} + chi^{-+}")')  
-  endif
+  call flushifc(150)
   
   if (do_lr_io) then
     write(fname,'("CHI0[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
@@ -123,6 +121,8 @@ if (iproc.eq.0) then
   write(150,*)
   write(150,'("Minimum and maximum G-vectors for chi : ",2I4)')gvecchi1,gvecchi2
   write(150,'("Number of G-vectors : ",I4)')ngvecchi
+  
+  call flushifc(150)
 
   igq0=lr_igq0-gvecchi1+1
   
@@ -177,6 +177,7 @@ if (iproc.eq.0) then
       enddo
     enddo
   endif
+  call flushifc(150)
 ! prepare chi0
   do ispn=1,nspin_chi0
     ig1=gvecchi1-gvecme1+1
@@ -277,15 +278,12 @@ do is=1,nspecies
 ! transform Bxc and m from real spherical harmonics to spherical coordinates 
       call dgemv('N',lmmaxvr,lmmaxvr,1.d0,rbshtapw,lmmaxapw,bxcmt(1,ir,ias,1),1, &
         0.d0,rftp1,1)
-!      call dgemv('N',lmmaxvr,lmmaxvr,1.d0,rbshtapw,lmmaxapw,vxcmt(1,ir,ias),1, &
-!        0.d0,rftp1,1)
       call dgemv('N',lmmaxvr,lmmaxvr,1.d0,rbshtapw,lmmaxapw,magmt(1,ir,ias,1),1, &
         0.d0,rftp2,1)
 ! calculate I(r)
       do itp=1,lmmaxvr
-        !if (abs(rftp2(itp)).lt.1d-10) rftp2(itp)=1d10
-        zt1(itp)=dcmplx(rftp1(itp)*rftp2(itp),0.d0)
-        !zt1(itp)=dcmplx(rftp2(itp),0.d0)
+        if (abs(rftp2(itp)).lt.1d-10) rftp2(itp)=1d10
+        zt1(itp)=dcmplx(rftp1(itp)/rftp2(itp),0.d0)
       enddo
 ! transform I(r) from spherical coordinates to complex spherical harmonics
       call zgemv('N',lmmaxvr,lmmaxvr,zone,zfshtvr,lmmaxvr,zt1,1,zzero, &
@@ -331,16 +329,14 @@ enddo !ig
 ! calculate Ixc(r)=Bxc(r)/m(r) in interstitial
 do ir=1,ngrtot
   rt1=magir(ir,1)
-  !if (abs(rt1).lt.1d-10) rt1=1d10
-  zt3(ir)=dcmplx(bxcir(ir,1)*rt1,0.d0)*cfunir(ir)*omega
-!  zt3(ir)=dcmplx(vxcir(ir)/rt1,0.d0)*cfunir(ir)*omega
-  !zt3(ir)=rt1*cfunir(ir)*omega
+  if (abs(rt1).lt.1d-10) rt1=1d10
+  zt3(ir)=dcmplx(bxcir(ir,1)/rt1,0.d0)*cfunir(ir)*omega
 enddo       
 call zfftifc(3,ngrid,-1,zt3)
 do ig=1,ngvec
   ixcft(ig)=ixcft(ig)+zt3(igfft(ig))
 enddo 
-!ixcft=ixcft/omega         
+ixcft=ixcft/omega         
 
 deallocate(rftp1)
 deallocate(rftp2)
