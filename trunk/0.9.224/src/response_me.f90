@@ -590,7 +590,7 @@ do ig=1,ngvecme
     if (lrtype.eq.0) then
       ispn2=ispn
     endif
-    if (lrtype.eq.1.or.lrtype.eq.2) then
+    if (lrtype.eq.1) then
       ispn2=3-ispn
     endif
     do i=1,num_nnp0
@@ -629,7 +629,7 @@ do ig=1,ngvecme
     if (lrtype.eq.0) then
       ispn2=ispn
     endif
-    if (lrtype.eq.1.or.lrtype.eq.2) then
+    if (lrtype.eq.1) then
       ispn2=3-ispn
     endif
   do i=1,num_nnp0

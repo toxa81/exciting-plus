@@ -53,7 +53,7 @@ endif
 if (task.eq.400) fname='RESPONSE_ME.OUT'
 if (task.eq.401) fname='RESPONSE_CHI0.OUT'
 if (task.eq.402) fname='RESPONSE_CHI.OUT'
-if (task.eq.403) fname='RESPONSE.OUT'
+if (task.eq.403.or.task.eq.404) fname='RESPONSE.OUT'
 
 do_lr_io=.true.
 #ifdef _MPI_
@@ -231,7 +231,7 @@ if (task.eq.400.or.task.eq.403) then
   deallocate(sfacgknr)
 endif
 
-if (task.eq.400.or.task.eq.401.or.task.eq.403) then
+if (task.eq.400.or.task.eq.401.or.task.eq.403.or.task.eq.404) then
 ! get occupancies and energies of states
   allocate(occsvnr(nstsv,nkptnr))
   allocate(evalsvnr(nstsv,nkptnr))
@@ -298,6 +298,8 @@ if (task.eq.403) then
     call response_chi(ivq0m_list(1,i))
   enddo
 endif
+
+if (task.eq.404) call response_jdos(occsvnr,evalsvnr)
 
 if (iproc.eq.0) close(150)
 

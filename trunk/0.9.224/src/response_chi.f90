@@ -325,7 +325,6 @@ do ig=1,ngvec
   enddo !is
 enddo !ig
 
-
 ! calculate Ixc(r)=Bxc(r)/m(r) in interstitial
 do ir=1,ngrtot
   rt1=magir(ir,1)
