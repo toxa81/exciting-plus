@@ -57,6 +57,7 @@ if (iproc.eq.0) then
   call writekpts
 ! write lattice vectors and atomic positions to file
   call writegeom(.false.)
+  call writenn
 ! open INFO.OUT file
   open(60,file='INFO'//trim(filext),action='WRITE',form='FORMATTED')
 ! open TOTENERGY.OUT

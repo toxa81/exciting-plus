@@ -49,23 +49,22 @@ call genlofr
 
 call geturf
 
-!zero3d(:)=(/4.68057,   8.10698,  -5.12068/)
-zero3d(:)=(/0.0,0.0,0.0/)
+zero3d(:)=(/8.00990d0,   4.89892d0,   7.96820d0/)
 
 ! Cartesian coordinates of boundary and origin
-bound3d(:,1)=(/8.d0,0.d0,0.d0/)
-bound3d(:,2)=(/0.d0,8.d0,0.d0/)
-bound3d(:,3)=(/0.d0,0.d0,8.d0/)
+bound3d(:,1)=(/12.d0,0.d0,0.d0/)
+bound3d(:,2)=(/0.d0,12.d0,0.d0/)
+bound3d(:,3)=(/0.d0,0.d0,12.d0/)
 orig3d(:)=zero3d(:)-(bound3d(:,1)+bound3d(:,2)+bound3d(:,3))/2.d0
 
 bound2d(:,1)=(/20.d0,0.d0,0.d0/)
 bound2d(:,2)=(/0.d0,20.d0,0.d0/)
 orig2d(:)=(/-8.d0,-8.d0, 0.d0/)
 
-nrxyz(:)=(/50,50,50/)
+nrxyz(:)=(/200,200,200/)
 
 nwfplot=5
-firstwf=1
+firstwf=6
 
 if (wf3d) then
   nrtot=nrxyz(1)*nrxyz(2)*nrxyz(3)
