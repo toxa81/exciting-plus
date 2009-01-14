@@ -28,7 +28,8 @@ do ispn2=1,nspinor
         ist1=n1+(ispn1-1)*nstfv
 	ist2=n2+(ispn2-1)*nstfv
         do ik=1,nkptnrloc(iproc)
-          f(i)=f(i)+(occsvnr(ist1,iknrglob(ik))-occsvnr(ist2,iknrglob(ik)))/(evalsvnr(ist1,iknrglob(ik))-evalsvnr(ist2,iknrglob(ik))+w(i))
+          f(i)=f(i)+(occsvnr(ist1,iknrglob(ik))-occsvnr(ist2,iknrglob(ik)))/ &
+            (evalsvnr(ist1,iknrglob(ik))-evalsvnr(ist2,iknrglob(ik))+w(i))
         enddo
       enddo
     enddo
