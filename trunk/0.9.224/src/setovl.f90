@@ -14,42 +14,36 @@ integer l1,m1,lm1,l2,m2,lm2,l3,m3,lm3,io1,io2
 integer i,j,ilo1,ilo2
 integer iv(3)
 
-!----------------------!
-!     APW-APW term     !
-!----------------------!
-do ig=1,ngp
-  do is=1,nspecies
-    do ia=1,natoms(is)
-      ias=idxas(ia,is)
-      do l1=0,lmaxmat
-        do io1=1,apword(l1,is)
-          do m1=-l1,l1
-            lm1=idxlm(l1,m1)
-            call zaxpy(ig,dconjg(apwalm(ig,io1,lm1,ias)),apwalm(:,io1,lm1,ias),1,o(:,ig),1)
-          enddo !m1
-        enddo !io1
-      enddo !l1
-    enddo !ia
-  enddo !is
-enddo !ig
-
 do is=1,nspecies
   do ia=1,natoms(is)
     ias=idxas(ia,is)
+!----------------------!
+!     APW-APW term     !
+!----------------------!
+	do l1=0,lmaxmat
+	  do m1=-l1,l1
+	    lm1=idxlm(l1,m1)
+	    do io1=1,apword(l1,is)
+		  do ig=1,ngp
+		    call zaxpy(ig,apwalm(ig,io1,lm1,ias),dconjg(apwalm(:,io1,lm1,ias)),1,o(:,ig),1)
+		  enddo
+		enddo !io1
+	  enddo !m1
+	enddo !l1
 !---------------------!
 !     APW-lo term     !
 !---------------------!  
-	do ilo1=1,nlorb(is)
-	  l1=lorbl(ilo1,is)
-	  do m1=-l1,l1
-		lm1=idxlm(l1,m1)
-		i=ngp+idxlo(lm1,ilo1,ias)
-		do io1=1,apword(l1,is)
-		  zt1=dcmplx(oalo(io1,ilo1,ias),0.d0)
-		  call zaxpy(ngp,zt1,dconjg(apwalm(:,io1,lm1,ias)),1,o(:,i),1)
-		end do
-	  end do
-	end do
+    do ilo1=1,nlorb(is)
+      l1=lorbl(ilo1,is)
+      do m1=-l1,l1
+        lm1=idxlm(l1,m1)
+        i=ngp+idxlo(lm1,ilo1,ias)
+        do io1=1,apword(l1,is)
+          zt1=dcmplx(oalo(io1,ilo1,ias),0.d0)
+          call zaxpy(ngp,zt1,dconjg(apwalm(:,io1,lm1,ias)),1,o(:,i),1)
+        end do
+      end do
+    end do
 !--------------------!
 !     lo-lo term     !
 !--------------------!

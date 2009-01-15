@@ -16,9 +16,6 @@ integer l1,m1,lm1,l2,m2,lm2,l3,m3,lm3,io1,io2
 integer i,j,ilo1,ilo2
 integer iv(3)
 
-!----------------------!
-!     APW-APW term     !
-!----------------------!
 allocate(zv(ngp,lmmaxmat,apwordmax,natmtot))
 zv=dcmplx(0.d0,0.d0)
 do is=1,nspecies
@@ -60,27 +57,24 @@ do is=1,nspecies
     enddo !l1
   enddo !ia
 enddo !is
-! update Hamiltonian
-do ig=1,ngp
-  do is=1,nspecies
-    do ia=1,natoms(is)
-      ias=idxas(ia,is)
-      do l1=0,lmaxmat
-        do io1=1,apword(l1,is)
-          do m1=-l1,l1
-            lm1=idxlm(l1,m1)
-            call zaxpy(ig,dconjg(zv(ig,lm1,io1,ias)),apwalm(:,io1,lm1,ias),1,h(:,ig),1)
-            call zaxpy(ig,dconjg(apwalm(ig,io1,lm1,ias)),zv(:,lm1,io1,ias),1,h(:,ig),1)
-          enddo !m1
-        enddo !io1
-      enddo !l1
-    enddo !ia
-  enddo !is
-enddo !ig
-deallocate(zv)
+
 do is=1,nspecies
   do ia=1,natoms(is)
     ias=idxas(ia,is)
+!----------------------!
+!     APW-APW term     !
+!----------------------!
+    do l1=0,lmaxmat
+      do m1=-l1,l1
+        lm1=idxlm(l1,m1)
+        do io1=1,apword(l1,is)
+          do ig=1,ngp
+            call zaxpy(ig,zv(ig,lm1,io1,ias),dconjg(apwalm(:,io1,lm1,ias)),1,h(:,ig),1)
+            call zaxpy(ig,apwalm(ig,io1,lm1,ias),dconjg(zv(:,lm1,io1,ias)),1,h(:,ig),1)
+          enddo !ig
+        enddo !io1
+      enddo !m1
+    enddo !l1
 !---------------------!
 !     APW-lo term     !
 !---------------------!  
@@ -153,6 +147,8 @@ do j=1,ngp
     h(i,j)=h(i,j)+veffig(ig)+t1*cfunig(ig)
   end do
 end do
+
+deallocate(zv)
 
 return
 end
