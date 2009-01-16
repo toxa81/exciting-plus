@@ -49,7 +49,7 @@ complex(8), allocatable :: v(:)
 complex(8), allocatable :: h(:)
 complex(8), allocatable :: o(:)
 complex(8), allocatable :: work(:)
-logical, parameter :: packed = .true.
+logical, parameter :: packed = .false.
 integer, external :: ilaenv
 
 if (packed) then
@@ -96,6 +96,8 @@ if (packed) then
 else
   call sethml(ngp,nmatp,vgpc,igpig,apwalm,h)
   call setovl(ngp,nmatp,igpig,apwalm,o)
+  h=dconjg(h)
+  o=dconjg(o)
 endif
 call timesec(ts1)
 timemat=timemat+ts1-ts0

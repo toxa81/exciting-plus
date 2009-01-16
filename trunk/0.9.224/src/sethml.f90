@@ -69,8 +69,8 @@ do is=1,nspecies
         lm1=idxlm(l1,m1)
         do io1=1,apword(l1,is)
           do ig=1,ngp
-            call zaxpy(ig,zv(ig,lm1,io1,ias),dconjg(apwalm(:,io1,lm1,ias)),1,h(:,ig),1)
-            call zaxpy(ig,apwalm(ig,io1,lm1,ias),dconjg(zv(:,lm1,io1,ias)),1,h(:,ig),1)
+            call zaxpy(ig,dconjg(zv(ig,lm1,io1,ias)),apwalm(:,io1,lm1,ias),1,h(:,ig),1)
+            call zaxpy(ig,dconjg(apwalm(ig,io1,lm1,ias)),zv(:,lm1,io1,ias),1,h(:,ig),1)
           enddo !ig
         enddo !io1
       enddo !m1
@@ -97,7 +97,7 @@ do is=1,nspecies
                 end if
               end do !l3
               if (abs(dble(zsum))+abs(aimag(zsum)).gt.1.d-14) then
-                call zaxpy(ngp,dconjg(zsum),dconjg(apwalm(:,io1,lm1,ias)),1,h(:,i),1)
+                call zaxpy(ngp,zsum,apwalm(:,io1,lm1,ias),1,h(:,i),1)
               endif
             end do !io1
           end do !m1
@@ -127,7 +127,7 @@ do is=1,nspecies
                   end do
                 end if
               end do
-              h(i,j)=h(i,j)+zsum
+              h(i,j)=h(i,j)+dconjg(zsum)
             end if
           end do
         end do
@@ -144,7 +144,7 @@ do j=1,ngp
     iv(:)=ivg(:,igpig(i))-ivg(:,igpig(j))
     ig=ivgig(iv(1),iv(2),iv(3))
     t1=0.5d0*dot_product(vgpc(:,i),vgpc(:,j))
-    h(i,j)=h(i,j)+veffig(ig)+t1*cfunig(ig)
+    h(i,j)=h(i,j)+dconjg(veffig(ig)+t1*cfunig(ig))
   end do
 end do
 

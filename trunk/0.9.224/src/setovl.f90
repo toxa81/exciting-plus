@@ -25,7 +25,7 @@ do is=1,nspecies
 	    lm1=idxlm(l1,m1)
 	    do io1=1,apword(l1,is)
 		  do ig=1,ngp
-		    call zaxpy(ig,apwalm(ig,io1,lm1,ias),dconjg(apwalm(:,io1,lm1,ias)),1,o(:,ig),1)
+		    call zaxpy(ig,dconjg(apwalm(ig,io1,lm1,ias)),apwalm(:,io1,lm1,ias),1,o(:,ig),1)
 		  enddo
 		enddo !io1
 	  enddo !m1
@@ -40,7 +40,7 @@ do is=1,nspecies
         i=ngp+idxlo(lm1,ilo1,ias)
         do io1=1,apword(l1,is)
           zt1=dcmplx(oalo(io1,ilo1,ias),0.d0)
-          call zaxpy(ngp,zt1,dconjg(apwalm(:,io1,lm1,ias)),1,o(:,i),1)
+          call zaxpy(ngp,zt1,apwalm(:,io1,lm1,ias),1,o(:,i),1)
         end do
       end do
     end do
@@ -72,7 +72,7 @@ do j=1,ngp
   do i=1,j
     iv(:)=ivg(:,igpig(i))-ivg(:,igpig(j))
     ig=ivgig(iv(1),iv(2),iv(3))
-    o(i,j)=o(i,j)+cfunig(ig)
+    o(i,j)=o(i,j)+dconjg(cfunig(ig))
   end do
 end do
 
