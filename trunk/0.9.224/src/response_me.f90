@@ -329,7 +329,6 @@ do ikstep=1,nkptnrloc(0)
   if (ikstep.le.nkptnrloc(iproc)) then
     ik=ikptnrloc(iproc,1)+ikstep-1
     jk=idxkq(ik,1)
-    
     if (.not.meoff) then
 ! calculate interstitial contribution for all combinations of n,n'
       call cpu_time(cpu0)
@@ -338,14 +337,12 @@ do ikstep=1,nkptnrloc(0)
         wfsvitloc(1,1,1,ikstep),wfsvit2,zrhofc(1,1,ikstep))
       call cpu_time(cpu1)
       timeistl=cpu1-cpu0
-
 ! calculate muffin-tin contribution for all combinations of n,n'    
       call cpu_time(cpu0)
       call zrhoftmt(num_nnp(ikstep),nnp(1,1,ikstep), &
         wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,ngumax,ngu,gu,igu,zrhofc(1,1,ikstep))
       call cpu_time(cpu1)
       timemt=cpu1-cpu0
-  
       if (iproc.eq.0) then
         write(150,'("  interstitial time (seconds) : ",F12.2)')timeistl
         write(150,'("    muffin-tin time (seconds) : ",F12.2)')timemt
@@ -575,17 +572,19 @@ do ig=1,ngvecme
       enddo !is
     enddo
   enddo
+  
   a=dcmplx(0.d0,0.d0)
   do ispn=1,nspinor
-  do i=1,nstsv
-    do ig2=1,ngknr2
-      do ig1=1,ngknr1
-        a(ig2,i,ispn)=a(ig2,i,ispn) + &
-	  dconjg(wfsvit1(ig1,i,ispn))*mit(ig1,ig2)
+    do i=1,nstsv
+      do ig2=1,ngknr2
+        do ig1=1,ngknr1
+          a(ig2,i,ispn)=a(ig2,i,ispn) + &
+	    dconjg(wfsvit1(ig1,i,ispn))*mit(ig1,ig2)
+        enddo
       enddo
     enddo
   enddo
-  enddo
+  
   do ispn=1,nspinor
     if (lrtype.eq.0) then
       ispn2=ispn
@@ -695,10 +694,10 @@ do ikloc=1,nkptnrloc(iproc)
 ! possible candidate for charge response
         if (ispn1.eq.ispn2.and.lrtype.eq.0) then
           if ((ispn1.eq.spin_me.or.spin_me.eq.3).and.ldocc) laddme=.true.
-	    endif
+        endif
 ! for magnetic response
-	    if (ispn1.ne.ispn2.and.lrtype.eq.1) then
-	      if ((ispn1.eq.spin_me.or.spin_me.eq.3).and.ldocc) laddme=.true.
+        if (ispn1.ne.ispn2.and.lrtype.eq.1) then
+          if ((ispn1.eq.spin_me.or.spin_me.eq.3).and.ldocc) laddme=.true.
         endif
         if (laddme) then
           i=i+1
