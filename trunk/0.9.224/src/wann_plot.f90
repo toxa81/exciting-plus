@@ -9,9 +9,9 @@ real(8) r(3),r1(3),t(3),d
 real(8) bound3d(3,3),orig3d(3),zero3d(3)
 real(8) bound2d(3,2),orig2d(3)
 complex(4), allocatable :: wf(:,:)
-
+complex(4), allocatable :: wfp(:)
 integer ntr(3),i,ivec,nrxyz(3),nrtot
-integer i1,i2,i3,ir,n,ierr
+integer i1,i2,i3,ir,n,m,ierr
 integer ik,ispn,istfv,j,ig
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
@@ -24,9 +24,10 @@ complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
 complex(8) zt1
 complex(8), allocatable :: zt2(:,:,:,:,:)
 complex(8), allocatable :: zt3(:,:,:,:)
-character*8 fname
+character*40 fname
 real(8) x(2),alph
 logical, parameter :: wf3d=.true.
+logical, parameter :: wfprod=.true.
 integer tlim(2,3)
 integer nwfplot,firstwf
 integer, external :: ikglob
@@ -61,7 +62,7 @@ bound2d(:,1)=(/20.d0,0.d0,0.d0/)
 bound2d(:,2)=(/0.d0,20.d0,0.d0/)
 orig2d(:)=(/-8.d0,-8.d0, 0.d0/)
 
-nrxyz(:)=(/200,200,200/)
+nrxyz(:)=(/120,120,120/)
 
 nwfplot=5
 firstwf=6
@@ -73,6 +74,7 @@ else
 endif
 if (iproc.eq.0) then
   allocate(wf(nwfplot,nrtot))
+  allocate(wfp(nrtot))
 endif
 
 ! find the translation limits
@@ -220,7 +222,7 @@ endif
 
 do n=1,nwfplot
   write(fname,'("wf_",I2.2,".dx")')n
-  open(70,file=fname,status='replace',form='formatted')
+  open(70,file=trim(fname),status='replace',form='formatted')
   if (wf3d) then
     write(70,400)nrxyz(1),nrxyz(2),nrxyz(3)
     write(70,402)orig3d(:)
@@ -240,6 +242,36 @@ do n=1,nwfplot
   write(70,412)
   close(70)
 enddo
+
+if (wfprod) then
+  do n=1,nwfplot
+    do m=n,nwfplot
+      write(fname,'("wf_prod_",I2.2,"x",I2.2,".dx")')n,m
+      do ir=1,nrtot
+        wfp(ir)=wf(n,ir)*conjg(wf(m,ir))
+      enddo
+      open(70,file=trim(fname),status='replace',form='formatted')
+      if (wf3d) then
+        write(70,400)nrxyz(1),nrxyz(2),nrxyz(3)
+        write(70,402)orig3d(:)
+        do i=1,3
+          write(70,404)bound3d(:,i)/nrxyz(i)
+        enddo
+        write(70,406)nrxyz(1),nrxyz(2),nrxyz(3)
+      else
+        write(70,500)nrxyz(1),nrxyz(2)
+        write(70,502)(/0.d0, 0.d0/)
+        write(70,504)(/x(1),0.d0/)/nrxyz(1)
+        write(70,504)(/x(2)*cos(alph),x(2)*sin(alph)/)/nrxyz(2)
+        write(70,506)nrxyz(1),nrxyz(2)
+      endif
+      write(70,408)1,nrtot
+      write(70,410)(abs(wfp(ir)),ir=1,nrtot)
+      write(70,412)
+      close(70)
+    enddo
+  enddo
+endif
 
 endif
       
