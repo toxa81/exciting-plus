@@ -20,7 +20,7 @@ do iwf=1,nstsv
       enddo
       wfsvit(ig,iwf,ispn)=zt1
     enddo 
-      enddo !ig
+  enddo !ig
 enddo !iwf
 
 return
