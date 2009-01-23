@@ -20,6 +20,8 @@ complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 real(8), allocatable :: occsvnr(:,:)
 real(8), allocatable :: evalsvnr(:,:)
+complex(8), allocatable :: wfsvmt_t(:,:,:,:,:)
+complex(8), allocatable :: wfc_t(:,:,:)
 
 integer i,j,ngsh,gshmin,gshmax,ik,ikloc,ig,ispn,istfv,i1
 complex(8) zt1
@@ -145,92 +147,6 @@ if (task.eq.402.or.task.eq.403) then
   deallocate(ishellng)
 endif
 
-if (task.eq.400.or.task.eq.403) then
-! read the density and potentials from file
-  call readstate
-! read Fermi energy from file
-  call readfermi
-! find the new linearisation energies
-  call linengy
-! generate the APW radial functions
-  call genapwfr
-! generate the local-orbital radial functions
-  call genlofr
-  call geturf
-  call genurfprod
-! generate G+k vectors for entire BZ (this is required to compute 
-!   wave-functions at each k-point)
-  allocate(vgklnr(3,ngkmax,nkptnrloc(iproc)))
-  allocate(vgkcnr(3,ngkmax))
-  allocate(gknr(ngkmax,nkptnrloc(iproc)))
-  allocate(tpgknr(2,ngkmax,nkptnrloc(iproc)))
-  allocate(ngknr(nkptnrloc(iproc)))
-  allocate(sfacgknr(ngkmax,natmtot,nkptnrloc(iproc)))
-  allocate(igkignr(ngkmax,nkptnrloc(iproc)))
-  do ikloc=1,nkptnrloc(iproc)
-    ik=iknrglob(ikloc)
-    call gengpvec(vklnr(1,ik),vkcnr(1,ik),ngknr(ikloc),igkignr(1,ikloc), &
-      vgklnr(1,1,ikloc),vgkcnr,gknr(1,ikloc),tpgknr(1,1,ikloc))
-    call gensfacgp(ngknr(ikloc),vgkcnr,ngkmax,sfacgknr(1,1,ikloc))
-  enddo
-  allocate(wfsvmtloc(lmmaxvr,nrfmax,natmtot,nstsv,nspinor,nkptnrloc(iproc)))
-  allocate(wfsvitloc(ngkmax,nstsv,nspinor,nkptnrloc(iproc)))
-  allocate(evecfv(nmatmax,nstfv,nspnfv))
-  allocate(evecsv(nstsv,nstsv))
-  allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-  if (iproc.eq.0) then
-    write(150,*)
-    write(150,'("Size of wfsvmt array (Mb) : ",I6)')                   &
-      16*lmmaxvr*nrfmax*natmtot*nstsv*nspinor*nkptnrloc(0)/1024/1024
-    write(150,'("Size of wfsvit array (Mb) : ",I6)')                   &
-      16*ngkmax*nstsv*nspinor*nkptnrloc(0)/1024/1024
-    write(150,*)
-    write(150,'("Reading eigen-vectors")')
-    call flushifc(150)
-  endif
-  call timer_start(1)
-! read and transform eigen-vectors
-  do ikloc=1,nkptnrloc(0)
-#ifdef _PIO_
-    if (ikloc.le.nkptnrloc(iproc)) then
-#else
-    do i=0,nproc-1
-    if (iproc.eq.i.and.ikloc.le.nkptnrloc(iproc)) then
-#endif
-      ik=iknrglob(ikloc)
-      call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfv)
-      call getevecsv(vklnr(1,ik),evecsv)
-#ifdef _PIO_
-    endif !ikloc.le.nkptnrloc(iproc)
-#else
-    endif !iproc.eq.i.and.ikloc.le.nkptnrloc(iproc)
-    call barrier
-    enddo !i
-#endif
-    if (ikloc.le.nkptnrloc(iproc)) then
-! get apw coeffs 
-      call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),         &
-        sfacgknr(1,1,ikloc),apwalm)
-      call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfv,evecsv,apwalm, &
-        wfsvmtloc(1,1,1,1,1,ikloc))
-      call genwfsvit(ngknr(ikloc),evecfv,evecsv,wfsvitloc(1,1,1,ikloc))
-    endif
-  enddo !ikloc
-  call barrier
-  call timer_stop(1)
-  if (iproc.eq.0) then
-    write(150,'("Done in ",F8.2," seconds")')timer(1,2)
-    call flushifc(150)
-  endif
-  deallocate(evecfv,evecsv)
-  deallocate(apwalm)
-  deallocate(vgklnr)
-  deallocate(vgkcnr)
-  deallocate(gknr)
-  deallocate(tpgknr)
-  deallocate(sfacgknr)
-endif
-
 if (task.eq.400.or.task.eq.401.or.task.eq.403.or.task.eq.404) then
 ! get occupancies and energies of states
   allocate(occsvnr(nstsv,nkptnr))
@@ -267,6 +183,126 @@ if (task.eq.400.or.task.eq.401.or.task.eq.403.or.task.eq.404) then
     call flushifc(150)
   endif
 endif
+
+if (task.eq.400.or.task.eq.403) then
+! read the density and potentials from file
+  call readstate
+! read Fermi energy from file
+  call readfermi
+! find the new linearisation energies
+  call linengy
+! generate the APW radial functions
+  call genapwfr
+! generate the local-orbital radial functions
+  call genlofr
+  call geturf
+  call genurfprod
+! generate G+k vectors for entire BZ (this is required to compute 
+!   wave-functions at each k-point)
+  allocate(vgklnr(3,ngkmax,nkptnrloc(iproc)))
+  allocate(vgkcnr(3,ngkmax))
+  allocate(gknr(ngkmax,nkptnrloc(iproc)))
+  allocate(tpgknr(2,ngkmax,nkptnrloc(iproc)))
+  allocate(ngknr(nkptnrloc(iproc)))
+  allocate(sfacgknr(ngkmax,natmtot,nkptnrloc(iproc)))
+  allocate(igkignr(ngkmax,nkptnrloc(iproc)))
+  do ikloc=1,nkptnrloc(iproc)
+    ik=iknrglob(ikloc)
+    call gengpvec(vklnr(1,ik),vkcnr(1,ik),ngknr(ikloc),igkignr(1,ikloc), &
+      vgklnr(1,1,ikloc),vgkcnr,gknr(1,ikloc),tpgknr(1,1,ikloc))
+    call gensfacgp(ngknr(ikloc),vgkcnr,ngkmax,sfacgknr(1,1,ikloc))
+  enddo
+  allocate(wfsvmtloc(lmmaxvr,nrfmax,natmtot,nstsv,nspinor,nkptnrloc(iproc)))
+  allocate(wfsvitloc(ngkmax,nstsv,nspinor,nkptnrloc(iproc)))
+  allocate(evecfv(nmatmax,nstfv,nspnfv))
+  allocate(evecsv(nstsv,nstsv))
+  allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
+  if (wannier) then
+    allocate(wfsvmt_t(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
+    allocate(wfc_t(wf_dim,nstfv,wann_nspins))
+  endif
+  if (iproc.eq.0) then
+    write(150,*)
+    write(150,'("Size of wfsvmt array (Mb) : ",I6)')                   &
+      16*lmmaxvr*nrfmax*natmtot*nstsv*nspinor*nkptnrloc(0)/1024/1024
+    write(150,'("Size of wfsvit array (Mb) : ",I6)')                   &
+      16*ngkmax*nstsv*nspinor*nkptnrloc(0)/1024/1024
+    write(150,*)
+    write(150,'("Reading eigen-vectors")')
+    call flushifc(150)
+  endif
+  call timer_start(1)
+! read and transform eigen-vectors
+  do ikloc=1,nkptnrloc(0)
+#ifdef _PIO_
+    if (ikloc.le.nkptnrloc(iproc)) then
+#else
+    do i=0,nproc-1
+    if (iproc.eq.i.and.ikloc.le.nkptnrloc(iproc)) then
+#endif
+      ik=iknrglob(ikloc)
+      call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfv)
+      call getevecsv(vklnr(1,ik),evecsv)
+#ifdef _PIO_
+    endif !ikloc.le.nkptnrloc(iproc)
+#else
+    endif !iproc.eq.i.and.ikloc.le.nkptnrloc(iproc)
+    call barrier
+    enddo !i
+#endif
+    if (ikloc.le.nkptnrloc(iproc)) then
+! get apw coeffs 
+      call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),         &
+        sfacgknr(1,1,ikloc),apwalm)
+! generate wave functions in muffin-tins
+      call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfv,evecsv,apwalm, &
+        wfsvmtloc(1,1,1,1,1,ikloc))
+! generate wave functions in interstitial
+      call genwfsvit(ngknr(ikloc),evecfv,evecsv,wfsvitloc(1,1,1,ikloc))
+      if (wannier) then
+        wfsvmt_t=wfsvmtloc(:,:,:,:,:,ikloc)
+        call genwann2(evalsvnr(1,iknrglob(ikloc)),wfsvmt_t,wfc_t)
+	do ispn=1,wann_nspins
+!	  do j=23,25
+	  do j=9,22
+	    do istfv=1,nstfv
+	      wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
+	        wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(11,istfv,ispn)*dconjg(wfc_t(11,j,ispn))
+	      wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
+	        wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(12,istfv,ispn)*dconjg(wfc_t(12,j,ispn))
+	      wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
+	        wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(13,istfv,ispn)*dconjg(wfc_t(13,j,ispn))
+	      wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
+	        wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(14,istfv,ispn)*dconjg(wfc_t(14,j,ispn))
+	      wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
+	        wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(15,istfv,ispn)*dconjg(wfc_t(15,j,ispn))
+	      wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
+	        wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(16,istfv,ispn)*dconjg(wfc_t(16,j,ispn))
+	    enddo
+	  enddo
+	enddo
+	wfsvmtloc(:,:,:,:,:,ikloc)=wfsvmt_t
+      endif
+    endif
+  enddo !ikloc
+  call barrier
+  call timer_stop(1)
+  if (iproc.eq.0) then
+    write(150,'("Done in ",F8.2," seconds")')timer(1,2)
+    call flushifc(150)
+  endif
+  deallocate(evecfv,evecsv)
+  deallocate(apwalm)
+  deallocate(vgklnr)
+  deallocate(vgkcnr)
+  deallocate(gknr)
+  deallocate(tpgknr)
+  deallocate(sfacgknr)
+  if (wannier) then
+    deallocate(wfsvmt_t,wfc_t)
+  endif
+endif
+
   
 if (task.eq.400) then
 ! calculate matrix elements
