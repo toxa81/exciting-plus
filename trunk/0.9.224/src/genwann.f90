@@ -113,3 +113,91 @@ deallocate(wfsvmt,apwalm,prjao,s,wfcnew)
 
 return
 end
+
+subroutine genwann2(e,wfsvmt,wf)
+use modmain
+implicit none
+! arguments
+real(8), intent(in) :: e(nstsv)
+complex(8), intent(in) :: wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv,nspinor)
+complex(8), intent(out) :: wf(wf_dim,nstfv,wann_nspins)
+
+complex(8), allocatable :: prjao(:,:,:)
+complex(8), allocatable :: s(:,:)
+integer ispn,i,j,n,m1,m2,io1,io2,ias,lm1,lm2,ierr,l
+
+! find bands for a given energy interval 
+if (wann_use_lhen) then
+  do ispn=1,wann_nspins
+    do n=1,wf_dim
+      wf_lhbnd(1,ispn,n)=1
+      do i=1,nstfv
+        if (e(i+(ispn-1)*nstfv).lt.wf_lhen(1,ispn,n)) &
+          wf_lhbnd(1,ispn,n)=i+1
+        if (e(i+(ispn-1)*nstfv).le.wf_lhen(2,ispn,n)) &
+          wf_lhbnd(2,ispn,n)=i
+      enddo
+    enddo    
+  enddo
+endif
+
+! compute <\psi|g_n>
+allocate(prjao(wf_dim,nstfv,wann_nspins))
+prjao=dcmplx(0.d0,0.d0)
+do n=1,wf_dim
+  ias=wf_n(n,1)
+  do ispn=1,wann_nspins
+     do j=wf_lhbnd(1,ispn,n),wf_lhbnd(2,ispn,n)
+      l=wf_n(n,3)
+      do m1=-l,l
+        lm1=idxlm(l,m1)
+        lm2=wf_n(n,2)
+        do io1=1,nrfmax
+          io2=2
+          prjao(n,j,ispn)=prjao(n,j,ispn)+dconjg(wfsvmt(lm1,io1,ias,j+(ispn-1)*nstfv,ispn)) * &
+            urfprod(l,io1,io2,ias)*rylm_lcs(lm2,lm1,ias)
+        enddo !io1
+      enddo !m
+    enddo !j
+  enddo !ispn
+enddo !n
+
+allocate(s(wf_dim,wf_dim))
+do ispn=1,wann_nspins
+! compute ovelap matrix
+  s=dcmplx(0.d0,0.d0)
+  do m1=1,wf_dim
+    do m2=1,wf_dim
+      do j=1,nstfv
+        s(m1,m2)=s(m1,m2)+prjao(m1,j,ispn)*dconjg(prjao(m2,j,ispn))
+      enddo
+    enddo
+  enddo
+! compute S^{-1/2}
+  call isqrtzhe(wf_dim,s,ierr)
+  if (ierr.ne.0) then
+    write(*,*)
+    write(*,'("Error(genwann2): failed to calculate S^{-1/2} for spin ",I1)')ispn
+    do n=1,wf_dim
+      write(*,*)'n=',n,'wf_lhbnd=',wf_lhbnd(:,ispn,n)
+      write(*,*)'  prjao=',abs(prjao(n,:,ispn))
+    enddo
+    write(*,*)
+  endif
+! compute Wannier function expansion coefficients
+  wf(:,:,ispn)=dcmplx(0.d0,0.d0)
+  if (ierr.eq.0) then
+    do m1=1,wf_dim
+      do m2=1,wf_dim
+        wf(m1,:,ispn)=wf(m1,:,ispn)+prjao(m2,:,ispn)*dconjg(s(m2,m1))
+      enddo
+    enddo
+  else
+    wf(:,:,ispn)=prjao(:,:,ispn)
+  endif
+enddo !ispn
+
+deallocate(prjao,s)
+
+return
+end
