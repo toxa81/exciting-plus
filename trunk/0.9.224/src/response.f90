@@ -23,7 +23,7 @@ real(8), allocatable :: evalsvnr(:,:)
 complex(8), allocatable :: wfsvmt_t(:,:,:,:,:)
 complex(8), allocatable :: wfc_t(:,:,:)
 
-integer i,j,ngsh,gshmin,gshmax,ik,ikloc,ig,ispn,istfv,i1
+integer i,j,n,ngsh,gshmin,gshmax,ik,ikloc,ig,ispn,istfv,i1
 complex(8) zt1
 character*100 fname
 integer, external :: iknrglob
@@ -147,6 +147,17 @@ if (task.eq.402.or.task.eq.403) then
   deallocate(ishellng)
 endif
 
+if (.true.) then
+  gvecme1=282
+  gvecme2=282
+  ngvecme=1
+  gvecchi1=282
+  gvecchi2=282
+  ngvecchi=1
+endif
+  
+  
+
 if (task.eq.400.or.task.eq.401.or.task.eq.403.or.task.eq.404) then
 ! get occupancies and energies of states
   allocate(occsvnr(nstsv,nkptnr))
@@ -260,24 +271,36 @@ if (task.eq.400.or.task.eq.403) then
 ! generate wave functions in interstitial
       call genwfsvit(ngknr(ikloc),evecfv,evecsv,wfsvitloc(1,1,1,ikloc))
       if (wannier) then
+        if (iproc.eq.0.and.ikloc.eq.1) then
+	  write(150,*)
+	  write(150,'("Switching off Wannier functions content")')
+	  write(150,*)
+	endif
         wfsvmt_t=wfsvmtloc(:,:,:,:,:,ikloc)
         call genwann2(evalsvnr(1,iknrglob(ikloc)),wfsvmt_t,wfc_t)
 	do ispn=1,wann_nspins
-!	  do j=23,25
-	  do j=9,22
+	  do j=41,44
 	    do istfv=1,nstfv
-	      wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
-	        wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(11,istfv,ispn)*dconjg(wfc_t(11,j,ispn))
-	      wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
-	        wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(12,istfv,ispn)*dconjg(wfc_t(12,j,ispn))
-	      wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
-	        wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(13,istfv,ispn)*dconjg(wfc_t(13,j,ispn))
-	      wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
-	        wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(14,istfv,ispn)*dconjg(wfc_t(14,j,ispn))
-	      wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
-	        wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(15,istfv,ispn)*dconjg(wfc_t(15,j,ispn))
-	      wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
-	        wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(16,istfv,ispn)*dconjg(wfc_t(16,j,ispn))
+	      do n=9,10
+	        wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
+	          wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
+	      enddo
+	      do n=19,20
+	        wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
+	          wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
+	      enddo
+	    enddo
+	  enddo
+	  do j=45,61
+	    do istfv=1,nstfv
+	      do n=6,7
+	        wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
+	          wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
+	      enddo
+	      do n=16,17
+	        wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
+	          wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
+	      enddo
 	    enddo
 	  enddo
 	enddo
