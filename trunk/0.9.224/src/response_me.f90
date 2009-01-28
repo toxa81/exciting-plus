@@ -631,21 +631,21 @@ do ig=1,ngvecme
     if (lrtype.eq.1) then
       ispn2=3-ispn
     endif
-  do i=1,num_nnp0
-    ist1=nnp0(i,1)
-    ist2=nnp0(i,2)
-    do ias=1,natmtot
-      a1=dconjg(wfsvmt1(:,:,ias,ist1,ispn))
-      a2=wfsvmt2(:,:,ias,ist2,ispn2)
-      do j=1,ngu(ias,ig)
-        lm1=igu(1,j,ias,ig)
-        lm2=igu(2,j,ias,ig)
-        io1=igu(3,j,ias,ig)
-        io2=igu(4,j,ias,ig)
-        zrhofc0(ig,i)=zrhofc0(ig,i)+a1(lm1,io1)*a2(lm2,io2)*gu(j,ias,ig)
-      enddo
-    enddo !ias 
-  enddo !i
+    do i=1,num_nnp0
+      ist1=nnp0(i,1)
+      ist2=nnp0(i,2)
+      do ias=1,natmtot
+        a1=dconjg(wfsvmt1(:,:,ias,ist1,ispn))
+        a2=wfsvmt2(:,:,ias,ist2,ispn2)
+        do j=1,ngu(ias,ig)
+          lm1=igu(1,j,ias,ig)
+          lm2=igu(2,j,ias,ig)
+          io1=igu(3,j,ias,ig)
+          io2=igu(4,j,ias,ig)
+          zrhofc0(ig,i)=zrhofc0(ig,i)+a1(lm1,io1)*a2(lm2,io2)*gu(j,ias,ig)
+        enddo
+      enddo !ias 
+    enddo !i
   enddo
 enddo !ig    
 

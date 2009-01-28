@@ -1020,7 +1020,7 @@ complex(8), allocatable :: chi0(:,:,:,:)
 integer nepts
 ! energy mesh
 complex(8), allocatable :: lr_w(:)
-
+real(8) fxc1
 
 !------------------!
 !     Wannier      !
