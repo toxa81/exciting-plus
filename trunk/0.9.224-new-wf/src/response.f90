@@ -147,15 +147,14 @@ if (task.eq.402.or.task.eq.403) then
   deallocate(ishellng)
 endif
 
-if (.true.) then
-  gvecme1=282
-  gvecme2=282
-  ngvecme=1
-  gvecchi1=282
-  gvecchi2=282
-  ngvecchi=1
-endif
-  
+!if (.true.) then
+!  gvecme1=282
+!  gvecme2=282
+!  ngvecme=1
+!  gvecchi1=282
+!  gvecchi2=282
+!  ngvecchi=1
+!endif
   
 
 if (task.eq.400.or.task.eq.401.or.task.eq.403.or.task.eq.404) then
@@ -279,25 +278,13 @@ if (task.eq.400.or.task.eq.403) then
         wfsvmt_t=wfsvmtloc(:,:,:,:,:,ikloc)
         call genwann2(evalsvnr(1,iknrglob(ikloc)),wfsvmt_t,wfc_t)
 	do ispn=1,wann_nspin
-	  do j=41,44
+	  do j=41,61
 	    do istfv=1,nstfv
 	      do n=9,10
 	        wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
 	          wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
 	      enddo
 	      do n=19,20
-	        wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
-	          wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
-	      enddo
-	    enddo
-	  enddo
-	  do j=45,61
-	    do istfv=1,nstfv
-	      do n=6,7
-	        wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
-	          wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
-	      enddo
-	      do n=16,17
 	        wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)- &
 	          wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
 	      enddo

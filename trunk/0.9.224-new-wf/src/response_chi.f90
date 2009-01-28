@@ -147,13 +147,13 @@ if (iproc.eq.0) then
   if (lrtype.eq.0) then
     write(150,*)
     write(150,'("Coulomb potential matrix elements:")')
-    write(150,'("   ig        |G+q|        Vc    ")')
+    write(150,'("   ig        |G+q|        Vc-A/2  ")')
     write(150,'(" ------------------------------ ")')
     do ig=1,ngvecchi
 ! generate G+q vectors  
       vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
       gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
-      krnl(ig,ig)=fourpi/gq0**2 
+      krnl(ig,ig)=fourpi/gq0**2-fxc1/2.d0 
       write(150,'(1X,I4,2X,2F12.6)')ig,gq0,abs(krnl(ig,ig))
     enddo
   endif
