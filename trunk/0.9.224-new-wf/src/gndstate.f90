@@ -93,6 +93,16 @@ else
     &atomic data")')
 end if
 if (iproc.eq.0) call flushifc(60)
+if (wannier.and.task.eq.1) then
+  do i=0,nproc-1
+    if (iproc.eq.i) then
+      do ik=1,nkptloc(iproc)
+        call getwann(ik)
+      end do
+    end if
+    call barrier
+  end do
+endif
 ! size of mixing vector
 n=lmmaxvr*nrmtmax*natmtot+ngrtot
 if (spinpol) n=n*(1+ndmag)
@@ -329,7 +339,8 @@ do i=0,nproc-1
       call putevecfv(ikglob(ik),evecfvloc(1,1,1,ik))
       call putevecsv(ikglob(ik),evecsvloc(1,1,ik))
       call putoccsv(ikglob(ik),occsv(1,ikglob(ik)))
-      if (wannier) call putwfc(ikglob(ik),wann_c(1,1,1,ik))
+!      if (wannier) call putwfc(ikglob(ik),wann_c(1,1,1,ik))
+      if (wannier) call putwann(ik)
     end do
   end if
   call barrier

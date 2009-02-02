@@ -68,6 +68,12 @@ close(100)
 if (allocated(wann_c)) deallocate(wann_c)
 allocate(wann_c(wann_nmax,nstfv,wann_nspin,nkptloc(iproc)))
 wann_c=dcmplx(0.d0,0.d0)
+if (allocated(wann_unkmt)) deallocate(wann_unkmt)
+allocate(wann_unkmt(lmmaxvr,nrfmax,natmtot,wann_nmax,wann_nspin,nkptloc(iproc)))
+wann_unkmt=dcmplx(0.d0,0.d0)
+if (allocated(wann_unkit)) deallocate(wann_unkit)
+allocate(wann_unkit(ngkmax,wann_nmax,wann_nspin,nkptloc(iproc)))
+wann_unkit=dcmplx(0.d0,0.d0)
 
 if (allocated(wf_h)) deallocate(wf_h)
 allocate(wf_h(wann_nmax,wann_nmax,wann_nspin,nkpt))
@@ -81,14 +87,6 @@ if (allocated(wf_e)) deallocate(wf_e)
 allocate(wf_e(wann_nmax,wann_nspin,nkpt))
 wf_e=0.d0
 
-!if (allocated(wann_poco)) deallocate(wann_poco)
-!allocate(wann_poco(nstsv,nstsv,nkptloc(iproc)))
-!wann_poco=dcmplx(0.d0,0.d0)
-
-if (allocated(wann_unkmt)) deallocate(wann_unkmt)
-allocate(wann_unkmt(lmmaxvr,nrfmax,natmtot,wann_nmax,wann_nspin,nkptloc(iproc)))
-if (allocated(wann_unkit)) deallocate(wann_unkit)
-allocate(wann_unkit(ngkmax,wann_nmax,wann_nspin,nkptloc(iproc)))
 
 return
 end

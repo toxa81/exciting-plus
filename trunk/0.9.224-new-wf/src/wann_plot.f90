@@ -492,5 +492,53 @@ endif
 return
 end
 
+subroutine putwann(ik)
+use modmain
+implicit none
+integer, intent(in) :: ik
+integer recl
+integer, external :: ikglob
+
+inquire(iolength=recl)ik,wann_nmax,wann_nspin,nstfv,lmmaxvr,nrfmax, &
+  natmtot,ngkmax,wann_c(:,:,:,ik),wann_unkmt(:,:,:,:,:,ik),wann_unkit(:,:,:,ik)
+open(70,file='WANN.OUT',action='WRITE',form='UNFORMATTED', &
+  access='DIRECT',recl=recl)
+write(70,rec=ik)ikglob(ik),wann_nmax,wann_nspin,nstfv,lmmaxvr,nrfmax, &
+  natmtot,ngkmax,wann_c(:,:,:,ik),wann_unkmt(:,:,:,:,:,ik),wann_unkit(:,:,:,ik)
+close(70)
+
+return
+end
+
+
+
+
+subroutine getwann(ik)
+use modmain
+implicit none
+integer, intent(in) :: ik
+integer ik_,wann_nmax_,wann_nspin_,nstfv_,lmmaxvr_,nrfmax_, &
+  natmtot_,ngkmax_,recl
+integer, external :: ikglob
+
+inquire(iolength=recl)ik_,wann_nmax_,wann_nspin_,nstfv_,lmmaxvr_,nrfmax_, &
+  natmtot_,ngkmax_,wann_c(:,:,:,ik),wann_unkmt(:,:,:,:,:,ik),wann_unkit(:,:,:,ik)
+open(70,file='WANN.OUT',action='READ',form='UNFORMATTED', &
+  access='DIRECT',recl=recl)
+read(70,rec=ik)ik_,wann_nmax_,wann_nspin_,nstfv_,lmmaxvr_,nrfmax_, &
+  natmtot_,ngkmax_,wann_c(:,:,:,ik),wann_unkmt(:,:,:,:,:,ik),wann_unkit(:,:,:,ik)
+close(70)
+if (ik_.ne.ikglob(ik).or.wann_nmax_.ne.wann_nmax.or.wann_nspin_.ne.wann_nspin.or. &
+  nstfv_.ne.nstfv.or.lmmaxvr_.ne.lmmaxvr.or.nrfmax_.ne.nrfmax.or.natmtot_.ne.natmtot.or. &
+  ngkmax_.ne.ngkmax) then
+  write(*,*)
+  write(*,'("Error(getwann): wrong dimensions")')
+  write(*,*)
+  call pstop
+endif
+
+return
+end
+
 
 
