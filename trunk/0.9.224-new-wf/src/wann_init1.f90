@@ -33,8 +33,6 @@ allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
 allocate(wfsvit(ngkmax,nstsv,nspinor))
 
-allocate(wann_unkmt(lmmaxvr,nrfmax,natmtot,wann_nmax,nspinor,nkpt))
-allocate(wann_unkit(ngkmax,wann_nmax,nspinor,nkpt))
 wann_unkmt=dcmplx(0.d0,0.d0)
 wann_unkit=dcmplx(0.d0,0.d0)
 

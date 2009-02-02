@@ -8,22 +8,26 @@ complex(8), intent(in) :: evecsv(nstsv,nstsv)
 
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
+complex(8), allocatable :: wfsvit(:,:,:)
 complex(8), allocatable :: prjao(:,:,:)
 complex(8), allocatable :: s(:,:)
 integer ispn,i,j,n,m1,m2,io1,io2,ias,lm1,lm2,ierr,l
 complex(8), allocatable :: zt2(:,:)
 complex(8), allocatable :: wfcnew(:,:)
 integer, external :: ikglob
-
+! allocate arrays
 allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
+allocate(wfsvit(ngkmax,nstsv,nspinor))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-
 call match(ngk(1,ikglob(ik)),gkc(1,1,ik),tpgkc(1,1,1,ik),sfacgk(1,1,1,ik),apwalm)
+! generate second-varioational wave-functions
 call genwfsvmt(lmaxvr,lmmaxvr,ngk(1,ikglob(ik)),evecfv,evecsv,apwalm,wfsvmt)
-call genwann2(evalsv(1,ikglob(ik)),wfsvmt,wann_c(1,1,1,ik))
+call genwfsvit(ngk(1,ikglob(ik)),evecfv,evecsv,wfsvit)
+! calculate WF expansion coefficients
+call genwann_c(evalsv(1,ikglob(ik)),wfsvmt,wann_c(1,1,1,ik))
+! compute H(k) in WF basis
 do ispn=1,wann_nspin
   allocate(zt2(nwann(ispn),nwann(ispn)))
-! compute H(k) in WF basis
   zt2=dcmplx(0.d0,0.d0)
   do m1=1,nwann(ispn)
     do m2=1,nwann(ispn)
@@ -37,13 +41,26 @@ do ispn=1,wann_nspin
   call diagzhe(nwann(ispn),zt2,wf_e(1,ispn,ikglob(ik)))
   deallocate(zt2)
 enddo !ispn
+! compute Bloch-sums of Wannier functions
+wann_unkmt(:,:,:,:,:,ik)=dcmplx(0.d0,0.d0)
+wann_unkit(:,:,:,ik)=dcmplx(0.d0,0.d0)
+do ispn=1,wann_nspin
+  do n=1,nwann(ispn)
+    do i=1,nstfv
+      wann_unkmt(:,:,:,n,ispn,ik)=wann_unkmt(:,:,:,n,ispn,ik) + &
+        wfsvmt(:,:,:,i+(ispn-1)*nstfv,ispn)*wann_c(n,i,ispn,ik)
+      wann_unkit(:,n,ispn,ik)=wann_unkit(:,n,ispn,ik) + &
+        wfsvit(:,i+(ispn-1)*nstfv,1)*wann_c(n,i,ispn,ik)
+    enddo
+  enddo
+enddo
 
-deallocate(wfsvmt,apwalm)
+deallocate(wfsvmt,wfsvit,apwalm)
 
 return
 end
 
-subroutine genwann2(e,wfsvmt,wf)
+subroutine genwann_c(e,wfsvmt,wf)
 use modmain
 implicit none
 ! arguments

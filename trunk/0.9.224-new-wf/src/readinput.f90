@@ -912,22 +912,25 @@ case('response1')
 case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_use_eint
+  read(50,*,err=20) wann_add_poco
   read(50,*,err=20) wann_natom,wann_nspin,wann_norbgrp,wann_ntype
   allocate(wann_iorbgrp(0:16,2,wann_norbgrp))
   allocate(wann_eint(2,wann_ntype))
-  wann_eint=0.d0
   allocate(wann_nint(2,wann_ntype))
-  wann_nint=0
+  allocate(wann_v(wann_ntype))
   read(50,*,err=20) (wann_iorbgrp(0,1,i),i=1,wann_norbgrp)
   do i=1,wann_norbgrp
     read(50,*,err=20) (wann_iorbgrp(l,1,i),l=1,wann_iorbgrp(0,1,i))
     read(50,*,err=20) (wann_iorbgrp(l,2,i),l=1,wann_iorbgrp(0,1,i))
   enddo
+  wann_eint=0.d0
+  wann_nint=0
+  wann_v=0.d0
   do i=1,wann_ntype
     if (wann_use_eint) then
-      read(50,*,err=20) wann_eint(1,i),wann_eint(2,i)
+      read(50,*,err=20) wann_eint(1,i),wann_eint(2,i),wann_v(i)
     else
-      read(50,*,err=20) wann_nint(1,i),wann_nint(2,i)
+      read(50,*,err=20) wann_nint(1,i),wann_nint(2,i),wann_v(i)
     endif
   enddo
   allocate(wann_iatom(3,wann_natom))

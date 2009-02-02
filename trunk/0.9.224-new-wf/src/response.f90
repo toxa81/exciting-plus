@@ -276,7 +276,7 @@ if (task.eq.400.or.task.eq.403) then
 	  write(150,*)
 	endif
         wfsvmt_t=wfsvmtloc(:,:,:,:,:,ikloc)
-        call genwann2(evalsvnr(1,iknrglob(ikloc)),wfsvmt_t,wfc_t)
+        call genwann_c(evalsvnr(1,iknrglob(ikloc)),wfsvmt_t,wfc_t)
 	do ispn=1,wann_nspin
 	  do j=41,61
 	    do istfv=1,nstfv

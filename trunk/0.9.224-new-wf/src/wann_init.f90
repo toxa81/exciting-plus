@@ -29,15 +29,6 @@ wann_nmax=maxval(nwann)
 if (allocated(iwann)) deallocate(iwann)
 allocate(iwann(wann_nmax,wann_nspin,4))
 
-!if (allocated(wf_n)) deallocate(wf_n)
-!allocate(wf_n(wf_dim,3))
-!if (allocated(wf_lhbnd)) deallocate(wf_lhbnd)
-!if (allocated(wf_lhen)) deallocate(wf_lhen)
-!allocate(wf_lhbnd(2,wann_nspin,wf_dim))
-!allocate(wf_lhen(2,wann_nspin,wf_dim))
-
-!allocate(wf_deltav(wann_nspin,wf_dim))
-
 do ispn=1,wann_nspin
   n=0
   do i=1,wann_natom
@@ -69,27 +60,10 @@ do ispn=1,wann_nspin
     write(100,'("    type : ",I4)')iwann(n,ispn,4)
     write(100,'("    energy interval : [",F8.4,",",F8.4,"]")')wann_eint(:,itype)
     write(100,'("    band interval : from ",I4," to ",I4)')wann_nint(:,itype)
+    write(100,'("    potential : ",F8.4)')wann_v(itype)
   enddo
 enddo
 close(100)
-      
-  
-  
-  
-  
-!  do lm=1,wann_iorb(0,i)
-!    j=j+1
-!    wf_n(j,1)=wann_iatom(i)
-!    wf_n(j,2)=wann_iorb(lm,i)
-!    wf_n(j,3)=lm2l(wann_iorb(lm,i))
-!    do ispn=1,wann_nspin
-!      wf_lhbnd(:,ispn,j)=wann_lhbnd(:,lm,ispn,i)
-!      wf_lhen(:,ispn,j)=wann_lhen(:,lm,ispn,i)
-!      wf_deltav(ispn,j)=wann_deltav(lm,ispn,i)   
-!    enddo
-!  enddo
-!enddo
-
 
 if (allocated(wann_c)) deallocate(wann_c)
 allocate(wann_c(wann_nmax,nstfv,wann_nspin,nkptloc(iproc)))
@@ -107,13 +81,14 @@ if (allocated(wf_e)) deallocate(wf_e)
 allocate(wf_e(wann_nmax,wann_nspin,nkpt))
 wf_e=0.d0
 
-!if (allocated(wfpoco)) deallocate(wfpoco)
-!allocate(wfpoco(nstsv,nstsv,nkptloc(iproc)))
-!wfpoco=dcmplx(0.d0,0.d0)
+!if (allocated(wann_poco)) deallocate(wann_poco)
+!allocate(wann_poco(nstsv,nstsv,nkptloc(iproc)))
+!wann_poco=dcmplx(0.d0,0.d0)
 
-!if (allocated(wfpoco1)) deallocate(wfpoco1)
-!allocate(wfpoco1(nstsv,nstsv,nkptloc(iproc)))
-!wfpoco1=dcmplx(0.d0,0.d0)
+if (allocated(wann_unkmt)) deallocate(wann_unkmt)
+allocate(wann_unkmt(lmmaxvr,nrfmax,natmtot,wann_nmax,wann_nspin,nkptloc(iproc)))
+if (allocated(wann_unkit)) deallocate(wann_unkit)
+allocate(wann_unkit(ngkmax,wann_nmax,wann_nspin,nkptloc(iproc)))
 
 return
 end

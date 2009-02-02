@@ -1038,36 +1038,24 @@ logical wann_use_eint
 logical wann_add_poco
 integer, allocatable :: wann_iatom(:,:)
 integer, allocatable :: wann_iorb(:,:)
-!real(8), allocatable :: wann_lhen(:,:,:,:)
-!integer, allocatable :: wann_lhbnd(:,:,:,:)
-real(8), allocatable :: wann_deltav(:,:,:)
 integer, allocatable :: wann_iorbgrp(:,:,:)
 real(8), allocatable :: wann_eint(:,:)
 integer, allocatable :: wann_nint(:,:)
+real(8), allocatable :: wann_v(:)
 
 integer nwann(2)
 integer wann_nmax
 integer, allocatable :: iwann(:,:,:)
   
-!integer, allocatable :: wf_lhbnd(:,:,:)
-!real(8), allocatable :: wf_lhen(:,:,:)
-!real(8) wf_e1,wf_e2
-!integer wf_n1,wf_n2
-
 ! expansion coefficients of Wannier functions over Bloch eigen-functions  
 complex(8), allocatable :: wann_c(:,:,:,:)
+! Bloch-sums of WF
+complex(8), allocatable :: wann_unkmt(:,:,:,:,:,:)
+complex(8), allocatable :: wann_unkit(:,:,:,:)
 
 complex(8), allocatable :: wf_h(:,:,:,:)
 complex(8), allocatable :: wf_p(:,:,:,:,:)
 real(8), allocatable :: wf_e(:,:,:)
-real(8), allocatable :: wf_deltav(:,:)
-
-!complex(8), allocatable :: wfpoco(:,:,:)
-!complex(8), allocatable :: wfpoco1(:,:,:)
-
-! for MADNESS interoperability
-complex(8), allocatable :: wann_unkmt(:,:,:,:,:,:)
-complex(8), allocatable :: wann_unkit(:,:,:,:)
 
 !----------------!
 !      timer     !
