@@ -458,7 +458,7 @@ complex(8), intent(in) :: wfcp(wann_nmax,nstfv,wann_nspin)
 integer recl
 
 inquire(iolength=recl)ik,wann_nmax,nstfv,wann_nspin,wfcp
-open(70,file='WFC.OUT',action='WRITE',form='UNFORMATTED', &
+open(70,file='WANN_C.OUT',action='WRITE',form='UNFORMATTED', &
   access='DIRECT',recl=recl)
 write(70,rec=ik)ik,wann_nmax,nstfv,wann_nspin,wfcp
 close(70)
@@ -477,7 +477,7 @@ complex(8), intent(out) :: wfcp(wann_nmax,nstfv,wann_nspin)
 integer ik_,wann_nmax_,nstfv_,wann_nspin_,recl
 
 inquire(iolength=recl)ik_,wann_nmax_,nstfv_,wann_nspin_,wfcp
-open(70,file='WFC.OUT',action='READ',form='UNFORMATTED', &
+open(70,file='WANN_C.OUT',action='READ',form='UNFORMATTED', &
   access='DIRECT',recl=recl)
 read(70,rec=ik)ik_,wann_nmax_,nstfv_,wann_nspin_,wfcp
 close(70)
@@ -501,7 +501,7 @@ integer, external :: ikglob
 
 inquire(iolength=recl)ik,wann_nmax,wann_nspin,lmmaxvr,nrfmax,natmtot,ngkmax, &
   wann_unkmt(:,:,:,:,:,ik),wann_unkit(:,:,:,ik)
-open(70,file='WANN.OUT',action='WRITE',form='UNFORMATTED', &
+open(70,file='WANN_UNK.OUT',action='WRITE',form='UNFORMATTED', &
   access='DIRECT',recl=recl)
 write(70,rec=ikglob(ik))ikglob(ik),wann_nmax,wann_nspin,lmmaxvr,nrfmax,natmtot,ngkmax, &
   wann_unkmt(:,:,:,:,:,ik),wann_unkit(:,:,:,ik)
@@ -519,7 +519,7 @@ integer, external :: ikglob
 
 inquire(iolength=recl)ik_,wann_nmax_,wann_nspin_,lmmaxvr_,nrfmax_,natmtot_,ngkmax_, &
   wann_unkmt(:,:,:,:,:,ik),wann_unkit(:,:,:,ik)
-open(70,file='WANN.OUT',action='READ',form='UNFORMATTED',access='DIRECT',recl=recl)
+open(70,file='WANN_UNK.OUT',action='READ',form='UNFORMATTED',access='DIRECT',recl=recl)
 read(70,rec=ikglob(ik))ik_,wann_nmax_,wann_nspin_,lmmaxvr_,nrfmax_,natmtot_,ngkmax_, &
   wann_unkmt(:,:,:,:,:,ik),wann_unkit(:,:,:,ik)
 close(70)

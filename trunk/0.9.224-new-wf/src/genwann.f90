@@ -37,8 +37,8 @@ do ispn=1,wann_nspin
       enddo
     enddo
   enddo
-  wf_h(1:nwann(ispn),1:nwann(ispn),ispn,ikglob(ik))=zt2(:,:)
-  call diagzhe(nwann(ispn),zt2,wf_e(1,ispn,ikglob(ik)))
+  wann_h(1:nwann(ispn),1:nwann(ispn),ispn,ikglob(ik))=zt2(:,:)
+  call diagzhe(nwann(ispn),zt2,wann_e(1,ispn,ikglob(ik)))
   deallocate(zt2)
 enddo !ispn
 ! compute Bloch-sums of Wannier functions
@@ -134,6 +134,9 @@ do ispn=1,wann_nspin
     write(*,*)
     write(*,'("Error(genwann2): failed to calculate S^{-1/2} for spin ",I1)')ispn
     do n=1,nwann(ispn)
+      do j=1,wann_ntype
+        write(*,*)'type=',j,'N1,N2=',n1n2(1,ispn,j),n1n2(2,ispn,j)
+      enddo
       write(*,*)'  prjao=',abs(prjao(n,:,ispn))
     enddo
     write(*,*)

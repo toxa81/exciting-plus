@@ -69,6 +69,10 @@ call genlofr
 call olprad
 ! compute the Hamiltonian radial integrals
 call hmlrad
+! generate the local-orbital radial functions
+call genlofr
+call geturf
+call genurfprod
 emin=1.d5
 emax=-1.d5
 ! begin parallel loop over k-points
@@ -80,7 +84,7 @@ do ik=1,nkptloc(iproc)
   call seceqn(ik,evalfv,evecfv,evecsv)
   do ist=1,nstsv
 ! subtract the Fermi energy
-    e(ist,ikglob(ik))=evalsv(ist,ikglob(ik))-efermi
+    e(ist,ikglob(ik))=evalsv(ist,ikglob(ik)) !-efermi
 ! add scissors correction
     if (e(ist,ikglob(ik)).gt.0.d0) e(ist,ikglob(ik))=e(ist,ikglob(ik))+scissor
   end do
@@ -120,11 +124,12 @@ if (task.eq.21) then
   deallocate(dmat,apwalm)
 endif
 call dsync(e,nstsv*nkpt,.true.,.false.)
+if (wannier) call dsync(wann_e,wann_nmax*wann_nspin*nkpt,.true.,.false.)
 if (task.eq.21) then
-  do ik=1,nkpt                                                                                                                              
+  do ik=1,nkpt
     call rsync(bc(1,1,1,ik),(lmax+1)*natmtot*nstsv,.true.,.false.)
-    call barrier                                                               
-  enddo                                                                                                                                     
+    call barrier
+  enddo
 endif 
 emin=minval(e)
 emax=maxval(e)
@@ -144,6 +149,18 @@ if (task.eq.20) then
   write(*,*)
   write(*,'("Info(bandstr):")')
   write(*,'(" band structure plot written to BAND.OUT")')
+  if (wannier) then
+    open(50,file='WANN_BAND.OUT',action='WRITE',form='FORMATTED')
+    do ispn=1,wann_nspin
+      write(50,'("# spin : ",I1)')ispn
+      do ist=1,nwann(ispn)
+        do ik=1,nkpt
+          write(50,'(2G18.10)') dpp1d(ik),wann_e(ist,ispn,ik)
+        end do
+        write(50,'("     ")')
+      end do
+    enddo !ispn
+  endif
 else
   do is=1,nspecies
     do ia=1,natoms(is)

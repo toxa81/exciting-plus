@@ -75,17 +75,17 @@ if (allocated(wann_unkit)) deallocate(wann_unkit)
 allocate(wann_unkit(ngkmax,wann_nmax,wann_nspin,nkptloc(iproc)))
 wann_unkit=dcmplx(0.d0,0.d0)
 
-if (allocated(wf_h)) deallocate(wf_h)
-allocate(wf_h(wann_nmax,wann_nmax,wann_nspin,nkpt))
-wf_h=dcmplx(0.d0,0.d0)
+if (allocated(wann_h)) deallocate(wann_h)
+allocate(wann_h(wann_nmax,wann_nmax,wann_nspin,nkpt))
+wann_h=dcmplx(0.d0,0.d0)
+if (allocated(wann_e)) deallocate(wann_e)
+allocate(wann_e(wann_nmax,wann_nspin,nkpt))
+wann_e=0.d0
 
 !if (allocated(wf_p)) deallocate(wf_p)
 !allocate(wf_p(3,wf_dim,wf_dim,wann_nspin,nkpt))
 !wf_p=dcmplx(0.d0,0.d0)
 
-if (allocated(wf_e)) deallocate(wf_e)
-allocate(wf_e(wann_nmax,wann_nspin,nkpt))
-wf_e=0.d0
 
 
 return

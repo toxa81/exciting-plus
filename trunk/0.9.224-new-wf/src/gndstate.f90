@@ -23,7 +23,7 @@ use modmain
 implicit none
 ! local variables
 logical exist
-integer ik,is,ia,idm,i
+integer ik,is,ia,idm,i,j,ispn
 integer n,nwork
 real(8) dv,timetot
 ! allocatable arrays
@@ -93,7 +93,7 @@ else
     &atomic data")')
 end if
 if (iproc.eq.0) call flushifc(60)
-if (wannier.and.task.eq.1) then
+if (wannier.and.task.eq.1.and.maxscl.gt.1) then
   do i=0,nproc-1
     if (iproc.eq.i) then
       do ik=1,nkptloc(iproc)
@@ -345,8 +345,28 @@ do i=0,nproc-1
   end if
   call barrier
 end do
+if (wannier) call zsync(wann_h,wann_nmax*wann_nmax*wann_nspin*nkpt,.true.,.false.)
+if (wannier.and.iproc.eq.0) then
+! write first spin only
+  ispn=1
+  do i=1,nwann(ispn)
+    wann_h(i,i,ispn,:)=wann_h(i,i,ispn,:)-efermi
+  enddo
+  wann_h=wann_h*ha2ev
+  open(200,file='hamilt',form='formatted',status='replace')
+  write(200,*)nkpt,nwann(ispn)
+  do ik=1,nkpt
+    write(200,*)1.d0 !wtkp(ikp)
+    do i=1,nwann(ispn)
+      do j=1,nwann(ispn)
+        write(200,*)dreal(wann_h(i,j,ispn,ik)),dimag(wann_h(i,j,ispn,ik))
+      enddo
+    enddo
+  enddo	
+  close(200)
+endif
+
 call lsync(tstop,1,.true.)
-      
 !-----------------------!
 !     compute forces    !
 !-----------------------!
