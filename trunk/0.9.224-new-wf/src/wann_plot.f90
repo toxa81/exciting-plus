@@ -5,7 +5,7 @@ use mpi
 #endif
 implicit none
 
-real(8) r(3),r1(3),t(3),d
+real(8) r(3),r1(3),t(3),d,vr0l(3)
 real(8) bound3d(3,3),orig3d(3),zero3d(3)
 real(8) bound2d(3,2),orig2d(3)
 complex(4), allocatable :: wf(:,:)
@@ -85,7 +85,7 @@ if (wf3d) then
     do i2=0,1
       do i3=0,1
         r(:)=orig3d(:)+i1*bound3d(:,1)+i2*bound3d(:,2)+i3*bound3d(:,3)
-        call getntr(r,ntr)
+        call getntr(r,ntr,vr0l)
         do i=1,3
           tlim(1,i)=min(ntr(i),tlim(1,i))
           tlim(2,i)=max(ntr(i),tlim(2,i))
@@ -97,7 +97,7 @@ else
   do i1=0,1
     do i2=0,1
       r(:)=orig2d(:)+i1*bound2d(:,1)+i2*bound2d(:,2)
-      call getntr(r,ntr)
+      call getntr(r,ntr,vr0l)
       do i=1,3
         tlim(1,i)=min(ntr(i),tlim(1,i))
         tlim(2,i)=max(ntr(i),tlim(2,i))
@@ -421,17 +421,46 @@ return
 end
 
 
-subroutine getntr(v,ntr)
+!subroutine getntr(v,ntr)
+!use modmain
+!implicit none
+!real(8), intent(in) :: v(3)
+!integer, intent(out) :: ntr(3)
+!real(8) t
+!integer ivec
+!
+!do ivec=1,3
+!  t=dot_product(v,bvec(:,ivec))/twopi
+!  ntr(ivec)=floor(t)
+!enddo
+!
+!return
+!end
+
+subroutine getntr(vrc,ntr,vr0l)
 use modmain
 implicit none
-real(8), intent(in) :: v(3)
+real(8), intent(in) :: vrc(3)
 integer, intent(out) :: ntr(3)
+real(8), intent(out) :: vr0l(3)
 real(8) t
-integer ivec
+real(8) a(3,3)
+real(8) b(3)
+integer ivec,i,j,ipiv(3)
+real(8) work(24)
+integer lwork
 
-do ivec=1,3
-  t=dot_product(v,bvec(:,ivec))/twopi
-  ntr(ivec)=floor(t)
+do j=1,3
+  do i=1,j
+    a(i,j)=dot_product(avec(:,i),avec(:,j))
+  enddo
+  b(j)=dot_product(avec(:,j),vrc(:))
+enddo
+lwork=24
+call dsysv('U',3,1,a,3,ipiv,b,3,work,lwork,i)
+do i=1,3
+  ntr(i)=floor(b(i))
+  vr0l(i)=b(i)-ntr(i)
 enddo
 
 return

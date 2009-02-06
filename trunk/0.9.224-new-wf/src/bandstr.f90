@@ -69,8 +69,6 @@ call genlofr
 call olprad
 ! compute the Hamiltonian radial integrals
 call hmlrad
-! generate the local-orbital radial functions
-call genlofr
 call geturf
 call genurfprod
 emin=1.d5
