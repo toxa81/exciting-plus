@@ -55,15 +55,15 @@ enddo !ik
 return
 end
 
-subroutine wann_unk(n,vpl,vrc,val)
+subroutine wann_unk(n,r0,vrc,val)
 use modmain
 implicit none
 integer, intent(in) :: n
-real(8), intent(in) :: vpl(3)
+real(8), intent(in) :: r0
 real(8), intent(in) :: vrc(3)
 real(8), intent(out) :: val(2)
 
-integer isym,ik,i1,i2,i3,np2,is,ia,ias,ir,ir0,io,l,j,m,i,lm,ig
+integer ik,i1,i2,i3,np2,is,ia,ias,ir,ir0,io,l,j,m,i,lm,ig
 integer ntr(3)
 real(8) vpc(3),rmt2,pos(3),v1(3),t1,tr(3),tp(2)
 complex(8) zt1,zt2,ylm(lmmaxvr)
@@ -71,13 +71,18 @@ logical l1
 real(8) ya(nprad),c(nprad),t2
 real(8), external :: polynom
 
-call findkpt(vpl,isym,ik)
-call r3mv(bvec,vpl,vpc)
-call getntr(vrc,ntr)
+t1=sqrt(vrc(1)**2+vrc(2)**2+vrc(3)**2)
+if (t1.gt.r0) then
+  val(1)=0.d0
+  val(2)=0.d0
+  return
+endif
 
 np2=nprad/2
 zt1=dcmplx(0.d0,0.d0)
 zt2=dcmplx(0.d0,0.d0)
+
+call getntr(vrc,ntr)
 
 l1=.false.
 ! check if point is in a muffin-tin
@@ -114,11 +119,13 @@ do is=1,nspecies
                 t2=polynom(0,nprad,spr(ir0,is),ya,c,t1)
                 do m=-l,l
                   lm=idxlm(l,m)
-                  zt1=zt1+t2*ylm(lm)*wann_unkmt(lm,io,ias,n,1,ik)
-                 end do !m
+		  do ik=1,nkpt
+                    zt1=zt1+t2*ylm(lm)*wann_unkmt(lm,io,ias,n,1,ik)* &
+		      exp(zi*dot_product(vkc(:,ik),tr(:)))
+		  enddo
+                end do !m
               end do  !l
             enddo !io
-            zt1=zt1*exp(dcmplx(0.d0,dot_product(vpc,tr(:))))
             l1=.true.
             goto 10
           end if
@@ -132,14 +139,15 @@ end do !is
 10 continue
 ! otherwise use interstitial function
 if (.not.l1) then
-  do ig=1,ngk(1,ik)
-!    t1=vgc(1,ig)*vrc(1)+vgc(2,ig)*vrc(2)+vgc(3,ig)*vrc(3)
-    t1=vgkc(1,ig,1,ik)*vrc(1)+vgkc(2,ig,1,ik)*vrc(2)+vgkc(3,ig,1,ik)*vrc(3)
-    zt2=zt2+cmplx(cos(t1),sin(t1),8)*wann_unkit(ig,n,1,ik)/sqrt(omega)
+  do ik=1,nkpt
+    do ig=1,ngk(1,ik)
+      t1=vgkc(1,ig,1,ik)*vrc(1)+vgkc(2,ig,1,ik)*vrc(2)+vgkc(3,ig,1,ik)*vrc(3)
+      zt2=zt2+cmplx(cos(t1),sin(t1),8)*wann_unkit(ig,n,1,ik)/sqrt(omega)
+    enddo
   enddo
 endif
-val(1)=dreal(zt1+zt2)
-val(2)=dimag(zt1+zt2)
+val(1)=dreal(zt1+zt2)/nkpt
+val(2)=dimag(zt1+zt2)/nkpt
 
 return
 end
