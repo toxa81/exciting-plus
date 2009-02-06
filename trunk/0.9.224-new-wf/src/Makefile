@@ -122,11 +122,6 @@ exciting:	$(OBJ)
 
 lib:
 	$(AR) -rc exciting.a $(OBJ_LIB)
-blas:
-	cd BLAS; $(MAKE); cp blas.a ..
-
-lapack:
-	cd LAPACK; $(MAKE); cp lapack.a ..
 
 fft:
 	cd fftlib; $(MAKE); cp fftlib.a ..
@@ -134,7 +129,7 @@ fft:
 xc:
 	cd xclib; $(MAKE); cp xclib.a ..
 
-all:	blas lapack fft exciting
+all:	fft exciting
 
 clean:
 	rm -f *.o *.mod *~ fort.* ifc* *.gcno gmon.out *.aux *.dvi *.log *.pdf \
