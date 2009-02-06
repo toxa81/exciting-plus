@@ -136,6 +136,7 @@ if (iproc.eq.0) then
     & 3G18.10)')vq0rl
   write(150,'("reduced q-vector (Cart.coord.) [a.u.]        : ",&
     & 3G18.10)')vq0rc
+  call flushifc(150)
 endif
 
 ! find k+q and reduce them to first BZ (this is required to utilize the 
