@@ -1,9 +1,9 @@
-subroutine f_wann(n,ispn,d0,itr,vrc,val)
+subroutine f_wann(n,ispn,d1,itr,vrc,val)
 use modmain
 implicit none
 integer, intent(in) :: n
 integer, intent(in) :: ispn
-real(8), intent(in) :: d0
+real(8), intent(in) :: d1
 integer, intent(in) :: itr(3)
 real(8), intent(in) :: vrc(3)
 real(8), intent(out) :: val(2)
@@ -22,7 +22,7 @@ call r3mv(avec,dtr,trvec)
 vrc1(:)=vrc(:)-trvec(:)
 
 t1=sqrt(vrc1(1)**2+vrc1(2)**2+vrc1(3)**2)
-if (t1.gt.d0) then
+if (t1.gt.d1) then
   val(1)=0.d0
   val(2)=0.d0
   return
