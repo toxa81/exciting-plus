@@ -2,10 +2,9 @@ subroutine dosrlm
 use modmain
 implicit none
 ! local variables
-integer lmax,lmmax,l,m,lm,nsk(3),lm1,j,isym
-integer ik,n,ispn,is,ia,ir,ias,ist,iw,i,io1,io2
+integer lmax,lmmax,l,m,lm,nsk(3)
+integer ik,ispn,is,ia,ias,ist,iw,i
 real(8) t1
-character(256) fname
 ! allocatable arrays
 real(4), allocatable :: bndchr(:,:,:,:,:)
 real(8), allocatable :: e(:,:,:)

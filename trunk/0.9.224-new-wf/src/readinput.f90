@@ -24,7 +24,6 @@ integer i,l,iv,iostat,j,lm1,lm2
 real(8) sc,sc1,sc2,sc3
 real(8) vacuum,v(3),t1,t2
 character(256) str,bname
-integer ispn
 
 !------------------------!
 !     default values     !

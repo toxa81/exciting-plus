@@ -2,7 +2,7 @@ subroutine checkwf
 use modmain
 implicit none
 
-integer ik,ist1,ist2,j
+integer ik,ist1,ist2
 integer ngknr
 real(8) t1
 complex(8) zt1
@@ -19,9 +19,6 @@ complex(8), allocatable :: wfmt(:,:,:,:,:)
 complex(8), allocatable :: wfir(:,:,:)
 complex(8), allocatable :: zrhomt(:,:,:)
 complex(8), allocatable :: zrhoir(:)
-complex(8), allocatable :: wfsvit(:,:,:)
-complex(8), allocatable :: wfsvmt(:,:,:,:,:)
-real(8), allocatable :: wfnrmdev(:)
 
 complex(8), external :: zfint
 

@@ -5,23 +5,21 @@ use mpi
 #endif
 implicit none
 
-real(8) r(3),r1(3),t(3),d,vr0l(3)
+real(8) r(3),t(3),vr0l(3)
 real(8) bound3d(3,3),orig3d(3),zero3d(3)
 real(8) bound2d(3,2),orig2d(3)
 complex(4), allocatable :: wf(:,:)
 complex(4), allocatable :: wfp(:)
-integer ntr(3),i,ivec,nrxyz(3),nrtot
-integer i1,i2,i3,ir,n,m,ierr
-integer ik,ispn,istfv,j,ig
+integer ntr(3),i,nrxyz(3),nrtot
+integer i1,i2,i3,ir,n,m
+integer ik
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
-complex(8), allocatable :: evec(:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: bcoeff(:,:,:,:,:,:,:)
 complex(8), allocatable :: ccoeff(:,:,:)
 complex(8), allocatable :: wfsvitloc(:,:,:,:)
 complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
-complex(8) zt1
 complex(8), allocatable :: zt2(:,:,:,:,:)
 complex(8), allocatable :: zt3(:,:,:,:)
 character*40 fname
@@ -275,14 +273,6 @@ endif
 
 endif
       
-  20  format('j:',i3,' dist:',f12.6,' |b|:',16f8.4)
-  
- 200  format(f6.2,' % complete')
-
- 290  format('# WF_',i1)
- 300  format('#   max_v  ', f14.10)
- 302  format('#   max_v^2', f14.10)
-
  400  format('object 1 class gridpositions counts ', 3i4)
  402  format('origin ', 3f12.6)
  404  format('delta ', 3f12.6)
@@ -324,7 +314,6 @@ complex(4), intent(out) :: val(nwfplot)
 
 integer ivec,ntr(3),n
 real(8) t(3),d,r1(3),pos(3),v1(3),t1,rmt2
-complex(8) sum
 integer i1,i2,i3,np2,is,ia,ias,ir,ir0,io,l,m,lm,i,j,ig,ik
 real(8) ya(nprad),c(nprad),tp(2),t2
 complex(8) ylm(lmmaxvr)
@@ -373,7 +362,6 @@ do is=1,nspecies
               ir0=ir-np2
             end if
             t1=max(t1,spr(1,is))
-            sum=0.d0
             do io=1,nrfmax
               do l=0,lmaxvr
                 do j=1,nprad
@@ -443,10 +431,9 @@ implicit none
 real(8), intent(in) :: vrc(3)
 integer, intent(out) :: ntr(3)
 real(8), intent(out) :: vr0l(3)
-real(8) t
 real(8) a(3,3)
 real(8) b(3)
-integer ivec,i,j,ipiv(3)
+integer i,j,ipiv(3)
 real(8) work(24)
 integer lwork
 
@@ -466,19 +453,6 @@ enddo
 return
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 subroutine putwfc(ik,wfcp)
 use modmain
 implicit none
@@ -494,9 +468,6 @@ close(70)
 
 return
 end
-
-
-
 
 subroutine getwfc(ik,wfcp)
 use modmain

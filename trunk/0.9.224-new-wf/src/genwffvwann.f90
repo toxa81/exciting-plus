@@ -8,13 +8,9 @@ complex(8), intent(in) :: wffvmt(nstfv,nrfmax,lmmaxvr,natmtot)
 complex(8), intent(in) :: evecfv(nmatmax,nstfv)
 complex(8), intent(out) :: wffvwann(nstfv,wann_nmax,wann_nspin)
 
-complex(8) norm
-real(8) t1
-
 complex(8), allocatable :: mit(:,:)
 complex(8), allocatable :: a(:,:) 
-
-integer is,ia,ias,ig1,ig2,istfv,io1,io2,l,m,lm,i,j,ispn,n
+integer is,ia,ias,ig1,ig2,istfv,io1,io2,l,m,lm,i,ispn,n
 integer iv2g(3)
 real(8) v1(3),v2(3),tp2g(2),len2g
 complex(8) sfac2g(natmtot)

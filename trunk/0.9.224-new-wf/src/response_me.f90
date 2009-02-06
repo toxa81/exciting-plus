@@ -33,10 +33,10 @@ integer, allocatable :: igkignr2(:)
 complex(8), allocatable :: wfsvmt2(:,:,:,:,:)
 complex(8), allocatable :: wfsvit2(:,:,:)
 
-integer i,j,i1,ik,jk,ig,is,ikstep,ist1,ist2,ispn,ikloc,l,ia,ias,istfv
+integer i,ik,jk,ig,ikstep
 integer ngknr2
-real(8) vkq0l(3),t1,jl(0:lmaxvr)
-integer ivg1(3),ivg2(3)
+real(8) vkq0l(3)
+integer ivg1(3)
 real(8) cpu0,cpu1,timeistl,timemt
 real(8), allocatable :: uuj(:,:,:,:,:,:,:)
 complex(4), allocatable :: gu(:,:,:)
@@ -457,9 +457,8 @@ integer, intent(in) :: lmaxexp
 real(8), intent(in) :: gq0(ngvecme)
 real(8), intent(out) :: uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,nrfmax,nrfmax,natmtot,ngvecme)
 ! local variables
-integer ia,is,ias,l,io,ilo,ig,l1,l2,l3,io1,io2,ir
+integer ia,is,ias,ig,l1,l2,l3,io1,io2,ir
 real(8), allocatable :: jlgq0r(:,:,:,:)
-integer ordl(0:lmaxvr)
 real(8) fr(nrmtmax),gr(nrmtmax),cf(3,nrmtmax)
 real(8) t1,jl(0:lmaxexp)
 
@@ -523,11 +522,10 @@ complex(8), intent(inout) :: zrhofc0(ngvecme,max_num_nnp)
 complex(8), allocatable :: mit(:,:)
 complex(8), allocatable :: a(:,:,:) 
 
-integer is,ia,ias,ig,ig1,ig2,ist1,ist2,i,i1,i2,ispn,ispn2,istfv,nst1
+integer is,ia,ias,ig,ig1,ig2,ist1,ist2,i,ispn,ispn2
 integer iv3g(3)
 real(8) v1(3),v2(3),tp3g(2),len3g
 complex(8) sfac3g(natmtot)
-complex(8) zt1
 
 allocate(a(ngknr2,nstsv,nspinor))
 
@@ -606,8 +604,8 @@ deallocate(mit,a)
 return
 end
         
-subroutine zrhoftmt(num_nnp0,nnp0, &
-  wfsvmt1,wfsvmt2,ngumax,ngu,gu,igu,zrhofc0)
+subroutine zrhoftmt(num_nnp0,nnp0,wfsvmt1,wfsvmt2,ngumax,ngu,gu,igu, &
+  zrhofc0)
 use modmain
 implicit none
 ! arguments

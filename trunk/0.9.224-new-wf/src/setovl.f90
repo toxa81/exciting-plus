@@ -7,10 +7,9 @@ integer, intent(in) :: igpig(ngkmax)
 complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 complex(8), intent(out) :: o(nmatp,nmatp)
 
-complex(8) zsum,zt1
-real(8) t1
-integer i1,i2,is,ia,ias,ig
-integer l1,m1,lm1,l2,m2,lm2,l3,m3,lm3,io1,io2
+complex(8) zt1
+integer is,ia,ias,ig
+integer l1,m1,lm1,io1
 integer i,j,ilo1,ilo2
 integer iv(3)
 

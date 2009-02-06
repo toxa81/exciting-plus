@@ -7,7 +7,6 @@
       integer lwork,nb,info
       real*8 ,allocatable :: work(:)
       integer ,allocatable :: ipiv(:)
-      integer i,j
       integer, external :: ilaenv
 
 

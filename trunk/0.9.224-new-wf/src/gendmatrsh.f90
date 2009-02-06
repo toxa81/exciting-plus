@@ -6,15 +6,11 @@ complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: wf1(:,:,:)
 complex(8), allocatable :: dmatrsh(:,:,:,:,:)
 complex(8), allocatable :: dmatrshlcs(:,:,:,:,:)
-integer ik,is,ia,ias,l,lm1,lm2,lm3,m1,m2,io1,io2,ispn,j,n1,n2,isym,lspl
+integer ik,is,ia,ias,l,lm1,lm2,lm3,m1,m2,io1,io2,ispn,j
 real(8), allocatable :: mtrx(:,:)
 real(8), allocatable :: eval(:)
-complex(8), allocatable :: zflm(:,:)
-complex(8), allocatable :: ulm(:,:,:)
-complex(8), allocatable :: ulmrsh(:,:,:)
 complex(8), allocatable :: dm1(:,:,:,:,:)
 complex(8), allocatable :: dm2(:,:)
-complex(8), allocatable :: dm3(:,:)
 integer, external :: ikglob
 
 allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))

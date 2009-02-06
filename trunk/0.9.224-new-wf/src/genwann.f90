@@ -9,11 +9,8 @@ complex(8), intent(in) :: evecsv(nstsv,nstsv)
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: wfsvit(:,:,:)
-complex(8), allocatable :: prjao(:,:,:)
-complex(8), allocatable :: s(:,:)
-integer ispn,i,j,n,m1,m2,io1,io2,ias,lm1,lm2,ierr,l
+integer ispn,i,j,n,m1,m2
 complex(8), allocatable :: zt2(:,:)
-complex(8), allocatable :: wfcnew(:,:)
 integer, external :: ikglob
 ! allocate arrays
 allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))

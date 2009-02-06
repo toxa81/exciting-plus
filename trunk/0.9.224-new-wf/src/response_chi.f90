@@ -23,7 +23,7 @@ complex(8), allocatable :: epsilon_eff(:)
 complex(8), allocatable :: krnl(:,:)
 
 
-integer ie,ig,ngsh_me_,info,i,j,ig1,ig2,ispn
+integer ie,ig,i,j,ig1,ig2,ispn
 integer iv(3)
 character*100 fname
 

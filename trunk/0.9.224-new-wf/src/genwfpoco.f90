@@ -10,7 +10,7 @@ complex(8), intent(in) :: evecsv(nstsv,nstsv)
 complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 complex(8), intent(out) :: wann_poco(nstsv,nstsv)
 
-integer i,j,n,ispn,istfv,itype
+integer i,j,n,ispn,itype
 complex(8) zt1
 complex(8), allocatable :: wffvwann(:,:,:)
 complex(8), allocatable :: wffvmt(:,:,:,:)

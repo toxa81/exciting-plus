@@ -23,8 +23,7 @@ real(8), allocatable :: evalsvnr(:,:)
 complex(8), allocatable :: wfsvmt_t(:,:,:,:,:)
 complex(8), allocatable :: wfc_t(:,:,:)
 
-integer i,j,n,ngsh,gshmin,gshmax,ik,ikloc,ig,ispn,istfv,i1
-complex(8) zt1
+integer i,j,n,ngsh,gshmin,gshmax,ik,ikloc,ispn,istfv
 character*100 fname
 integer, external :: iknrglob
 

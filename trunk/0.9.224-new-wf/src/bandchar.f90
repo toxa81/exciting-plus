@@ -56,15 +56,12 @@ complex(8), intent(in) :: evecsv(nstsv,nstsv)
 integer, intent(in) :: ld
 real(4), intent(out) :: bndchr(ld,natmtot,nspinor,nstsv)
 ! local variables
-integer ispn,jspn,is,ia,ias,ist,io1,io2,lm
-integer l,m,lm2,lm1
-integer irc,i,j,n,isym,lspl,nsym1
-integer lwork,info
-real(8) t1
+integer ispn,ias,io1,io2,lm
+integer l,m,lm1
+integer j,isym,lspl,nsym1
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 ! automatic arrays
-real(8) fr(nrcmtmax),gr(nrcmtmax),cf(3,nrcmtmax)
 complex(8) zt1(ld,nrfmax),zt2(ld)
 integer, external :: ikglob
 

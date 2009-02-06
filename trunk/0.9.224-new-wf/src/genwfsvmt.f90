@@ -10,8 +10,7 @@ complex(8), intent(in) :: evecsv(nstsv,nstsv)
 complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 complex(8), intent(out) :: wfsvmt(lmmax,nrfmax,natmtot,nstsv,nspinor)
 ! local variables
-integer j,l,m,ispn,istfv,is,ia,ias,lm,ig,i1,io,ilo,iwf
-integer ordl(0:lmax)
+integer ispn,istfv,io,lm,iwf,ias
 complex(8), allocatable :: wffvmt(:,:,:,:)
 complex(8) zt1
 

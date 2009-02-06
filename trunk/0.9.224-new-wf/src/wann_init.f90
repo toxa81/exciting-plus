@@ -2,7 +2,7 @@ subroutine wann_init
 use modmain
 implicit none
 
-integer i,j,n,lm,ispn,iwgrp,itype
+integer i,n,lm,ispn,iwgrp,itype
 
 if (nspnfv.eq.2) then
   write(*,*)
