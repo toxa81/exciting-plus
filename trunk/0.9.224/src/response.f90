@@ -21,7 +21,6 @@ complex(8), allocatable :: apwalm(:,:,:,:)
 real(8), allocatable :: occsvnr(:,:)
 real(8), allocatable :: evalsvnr(:,:)
 complex(8), allocatable :: wfsvmt_t(:,:,:,:,:)
-complex(8), allocatable :: wfsvit_t(:,:,:)
 complex(8), allocatable :: wfc_t(:,:,:)
 
 integer i,j,n,ngsh,gshmin,gshmax,ik,ikloc,ispn,istfv
@@ -147,14 +146,14 @@ if (task.eq.402.or.task.eq.403) then
   deallocate(ishellng)
 endif
 
-!if (.true.) then
-!  gvecme1=516
-!  gvecme2=516
-!  ngvecme=1
-!  gvecchi1=516
-!  gvecchi2=516
-!  ngvecchi=1
-!endif
+if (.true.) then
+  gvecme1=516
+  gvecme2=516
+  ngvecme=1
+  gvecchi1=516
+  gvecchi2=516
+  ngvecchi=1
+endif
   
 
 if (task.eq.400.or.task.eq.401.or.task.eq.403.or.task.eq.404) then
@@ -229,7 +228,6 @@ if (task.eq.400.or.task.eq.403) then
   allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
   if (wannier) then
     allocate(wfsvmt_t(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
-    allocate(wfsvit_t(ngkmax,nstsv,nspinor))
     allocate(wfc_t(wann_nmax,nstfv,wann_nspin))
   endif
   if (iproc.eq.0) then
@@ -270,7 +268,6 @@ if (task.eq.400.or.task.eq.403) then
         wfsvmtloc(1,1,1,1,1,ikloc))
 ! generate wave functions in interstitial
       call genwfsvit(ngknr(ikloc),evecfv,evecsv,wfsvitloc(1,1,1,ikloc))
-      
       if (wannier) then
         if (iproc.eq.0.and.ikloc.eq.1) then
 	  write(150,*)
@@ -280,43 +277,28 @@ if (task.eq.400.or.task.eq.403) then
         wfsvmt_t=wfsvmtloc(:,:,:,:,:,ikloc)
         call genwann_c(evalsvnr(1,iknrglob(ikloc)),wfsvmt_t,wfc_t)
 	wfsvmt_t=dcmplx(0.d0,0.d0)
-	wfsvit_t=dcmplx(0.d0,0.d0)
 	do ispn=1,wann_nspin
-	  do j=41,61
-	    if (evalsvnr(j,iknrglob(ikloc)).le.efermi) then
-	      do istfv=1,nstfv
-	        do n=9,10
-	          wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn) + &
-	            wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
-	          wfsvit_t(:,j,ispn)=wfsvit_t(:,j,ispn) + &
-	            wfsvitloc(:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
-	        enddo
-	        do n=19,20
-	          wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn) + &
-	            wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
-	          wfsvit_t(:,j,ispn)=wfsvit_t(:,j,ispn) + &
-	            wfsvitloc(:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
-	        enddo
+	  do j=23,40
+	    do istfv=1,nstfv
+	      do n=21,38
+	        wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn) + &
+	          wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
 	      enddo
-            endif
-	    if (evalsvnr(j,iknrglob(ikloc)).gt.efermi) then
-	      do istfv=1,nstfv
-	        do n=6,7
-	          wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn) + &
-	            wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
-	          wfsvit_t(:,j,ispn)=wfsvit_t(:,j,ispn) + &
-	            wfsvitloc(:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
-	        enddo
-	        do n=16,17
-	          wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn) + &
-	            wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
-	          wfsvit_t(:,j,ispn)=wfsvit_t(:,j,ispn) + &
-	            wfsvitloc(:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
-	        enddo
-	      enddo
-            endif
+	    enddo
 	  enddo
-	enddo  
+	  do j=45,61
+	    do istfv=1,nstfv
+	      do n=1,8
+	        wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn) + &
+	          wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
+	      enddo
+	      do n=11,18
+	        wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn) + &
+	          wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
+	      enddo
+	    enddo
+	  enddo
+	enddo
 
 	
 !	do ispn=1,wann_nspin
@@ -334,7 +316,6 @@ if (task.eq.400.or.task.eq.403) then
 !	  enddo
 !	enddo !ispn
 	wfsvmtloc(:,:,:,:,:,ikloc)=wfsvmt_t
-	wfsvitloc(:,:,:,ikloc)=wfsvit_t
       endif
     endif
   enddo !ikloc
@@ -352,7 +333,7 @@ if (task.eq.400.or.task.eq.403) then
   deallocate(tpgknr)
   deallocate(sfacgknr)
   if (wannier) then
-    deallocate(wfsvmt_t,wfsvit_t,wfc_t)
+    deallocate(wfsvmt_t,wfc_t)
   endif
 endif
 
