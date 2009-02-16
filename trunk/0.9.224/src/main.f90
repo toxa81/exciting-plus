@@ -36,12 +36,14 @@ do itask=1,ntasks
     call hartfock
   case(10)
     call dos
-  case(11)
+  case(12)
     call dosrlm
   case(15,16)
     call writelsj
   case(20,21)
     call bandstr
+  case(22)
+    call bandrlm
   case(25)
     call effmass
   case(31,32,33)
