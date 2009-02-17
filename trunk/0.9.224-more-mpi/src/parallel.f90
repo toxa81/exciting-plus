@@ -341,4 +341,108 @@ l1=tmp2(j,2)
 return
 end
 
+subroutine d_allreduce(mpi_comm,val,n)
+use mpi
+implicit none
+integer, intent(in) :: mpi_comm
+integer, intent(in) :: n
+real(8), intent(inout) :: val(n)
+real(8), allocatable :: tmp(:)
+integer ierr
+allocate(tmp(n))
+call mpi_allreduce(val,tmp,n,MPI_DOUBLE_PRECISION,MPI_SUM,mpi_comm,ierr)
+val=tmp
+deallocate(tmp)
+return
+end
+
+subroutine d_bcast(idims,val,n)
+use modmain
+use mpi
+implicit none
+integer, intent(in) :: idims(mpi_ndims)
+integer, intent(in) :: n
+real(8), intent(inout) :: val(n)
+logical ldims(mpi_ndims)
+integer i,root,mpi_comm,ierr,nsub_coord
+integer, allocatable :: sub_coord(:)
+nsub_coord=0
+do i=1,mpi_ndims
+  if (idims(i).eq.0) then
+    ldims(i)=.false.
+  else
+    ldims(i)=.true.
+    nsub_coord=nsub_coord+1
+  endif
+enddo
+call mpi_cart_sub(mpi_comm_cart,ldims,mpi_comm,ierr)
+allocate(sub_coord(nsub_coord))
+sub_coord=0
+call mpi_cart_rank(mpi_comm,sub_coord,root,ierr)
+call mpi_bcast(val,n,MPI_DOUBLE_PRECISION,root,mpi_comm,ierr)
+deallocate(sub_coord)
+return
+end
+
+subroutine i_bcast(idims,val,n)
+use modmain
+use mpi
+implicit none
+integer, intent(in) :: idims(mpi_ndims)
+integer, intent(in) :: n
+integer, intent(inout) :: val(n)
+logical ldims(mpi_ndims)
+integer i,root,mpi_comm,ierr,nsub_coord
+integer, allocatable :: sub_coord(:)
+nsub_coord=0
+do i=1,mpi_ndims
+  if (idims(i).eq.0) then
+    ldims(i)=.false.
+  else
+    ldims(i)=.true.
+    nsub_coord=nsub_coord+1
+  endif
+enddo
+call mpi_cart_sub(mpi_comm_cart,ldims,mpi_comm,ierr)
+allocate(sub_coord(nsub_coord))
+sub_coord=0
+call mpi_cart_rank(mpi_comm,sub_coord,root,ierr)
+call mpi_bcast(val,n,MPI_INTEGER,root,mpi_comm,ierr)
+deallocate(sub_coord)
+return
+end
+
+subroutine d_reduce(idims,all,val,n)
+use modmain
+use mpi
+implicit none
+integer, intent(in) :: idims(mpi_ndims)
+logical, intent(in) :: all
+integer, intent(in) :: n
+real(8), intent(inout) :: val(n)
+real(8), allocatable :: tmp(:)
+logical ldims(mpi_ndims)
+integer i,mpi_comm,ierr
+
+do i=1,mpi_ndims
+  if (idims(i).eq.0) then
+    ldims(i)=.false.
+  else
+    ldims(i)=.true.
+  endif
+enddo
+
+call mpi_cart_sub(mpi_comm_cart,ldims,mpi_comm,ierr)
+if (all) then
+  allocate(tmp(n))
+  call mpi_allreduce(val,tmp,n,MPI_DOUBLE_PRECISION,MPI_SUM,mpi_comm,ierr)
+  val=tmp
+  deallocate(tmp)
+else
+  write(*,*)'reduce not implemented'
+endif
+return
+end
+
+
 

@@ -935,6 +935,7 @@ integer, allocatable :: mpi_dims(:)
 integer, allocatable :: mpi_x(:)
 logical, allocatable :: mpi_periods(:)
 integer nkptnr_loc
+logical wproc
 
 !------------------!
 !      addons      !
@@ -1021,10 +1022,13 @@ complex(8), allocatable :: zrhofc(:,:,:)
 integer, allocatable :: idxkq(:,:)
 ! number of n,n' combinations of band indexes for each k-point
 integer, allocatable :: num_nnp(:)
+integer, allocatable :: nme(:)
 ! maximum num_nnp over all k-points 
 integer max_num_nnp
+integer nmemax
 ! pair of n,n' band indexes for each k-point
 integer, allocatable :: nnp(:,:,:)
+integer, allocatable :: ime(:,:,:)
 ! difference of occupation numbers for |nk> and |n'k+q> states
 real(8), allocatable :: docc(:,:)
 ! Kohn-Sham polarizability

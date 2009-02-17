@@ -26,7 +26,7 @@ real(8), allocatable :: evalsvnr(:,:)
 complex(8), allocatable :: wfsvmt_t(:,:,:,:,:)
 complex(8), allocatable :: wfc_t(:,:,:)
 
-integer i,j,n,ngsh,gshmin,gshmax,ik,ikloc,ispn,istfv,ierr
+integer i,j,n,ngsh,gshmin,gshmax,ik,ikloc,ispn,istfv,ierr,rank
 character*100 fname
 integer, external :: iknrglob
 integer, external :: iknrglob2
@@ -55,87 +55,71 @@ if (lrtype.eq.1.and..not.spinpol) then
   write(*,*)
   call pstop
 endif
-  
-if (task.eq.400) fname='RESPONSE_ME.OUT'
-if (task.eq.401) fname='RESPONSE_CHI0.OUT'
-if (task.eq.402) fname='RESPONSE_CHI.OUT'
-if (task.eq.403.or.task.eq.404) fname='RESPONSE.OUT'
 
 do_lr_io=.true.
-#ifdef _MPI_
-if (task.eq.403) do_lr_io=.false.
-#endif
 
-if (iproc.eq.0) then
-  open(150,file=trim(fname),form='formatted',status='replace')
-  write(150,'("Running on ",I4," proc.")')nproc
-  if (.not.do_lr_io) write(150,'("I/O is turned off")')
+! make MPI cartesian grid
+if (task.eq.400.or.task.eq.401) then
+  mpi_ndims=3
 endif
-
-if (task.eq.400.or.task.eq.403) then
-  allocate(igishell(ngvec))
-  allocate(ishellng(ngvec,2))
-  call getgshells(ngsh,igishell,ishellng)
-! find minimum number of G-shells
-  gshmin=100000
-  gshmax=1
-  do i=1,nvq0
-! q-vector in lattice coordinates
-    do j=1,3
-      vq0l(j)=1.d0*ivq0m_list(j,i)/ngridk(j)+1d-12
-    enddo
-! find G-vector which brings q0 to first BZ
-    vgq0l(:)=floor(vq0l(:))
-    gshmin=min(gshmin,igishell(ivgig(vgq0l(1),vgq0l(2),vgq0l(3))))
-    gshmax=max(gshmin,igishell(ivgig(vgq0l(1),vgq0l(2),vgq0l(3))))
-  enddo !i
-  if (iproc.eq.0) then
-    write(150,*)
-    write(150,'("Found minimum and maximum number of G-shells : ",2I4)')gshmin,gshmax
-    write(150,'("Input minimum and maximum number of G-shells : ",2I4)')gshme1,gshme2
-  endif
-  if (gshmin.lt.gshme1) then
-    if (iproc.eq.0) then
-      write(150,*)
-      write(150,'("Warning: minimum number of G-shells was changed from ",&
-        &I4," to ",I4)')gshme1,gshmin
-    endif
-    gshme1=gshmin
-  endif
-  if (gshmax.gt.gshme2) then
-    if (iproc.eq.0) then
-      write(150,*)
-      write(150,'("Warning: maximum number of G-shells was changed from ",&
-        &I4," to ",I4)')gshme2,gshmax
-    endif
-    gshme2=gshmax
-  endif
-! test if G-shells are closed
-  i=ishellng(gshme1,2)
-  j=ishellng(gshme2,2)
-  if (abs(gc(i)-gc(i+1)).lt.epslat.or.abs(gc(j)-gc(j+1)).lt.epslat) then
-    write(*,*)
-    write(*,'("Bug(response): G-shells are not closed")')
-    write(*,*)
-    call pstop
-  endif
-  if (gshme1.eq.1) then
-    gvecme1=1
+if (task.eq.402) then
+  mpi_ndims=2
+endif
+if (allocated(mpi_dims)) deallocate(mpi_dims)
+allocate(mpi_dims(mpi_ndims))
+if (allocated(mpi_x)) deallocate(mpi_x)
+allocate(mpi_x(mpi_ndims))
+if (allocated(mpi_periods)) deallocate(mpi_periods)
+allocate(mpi_periods(mpi_ndims))
+mpi_periods=.false.
+if (task.eq.400) then
+  if (nproc.le.nkptnr) then
+    mpi_dims=(/nproc,1,1/)
   else
-    gvecme1=ishellng(gshme1-1,2)+1
+    i=nproc/nkptnr
+    if (i.le.nvq0) then
+      mpi_dims=(/nkptnr,1,i/)
+    else
+      mpi_dims=(/nkptnr,nproc/(nkptnr*nvq0),nvq0/)
+    endif
   endif
-  gvecme2=ishellng(gshme2,2)
-  ngvecme=gvecme2-gvecme1+1
-  if (iproc.eq.0) then
-    write(150,*)
-    write(150,'("G-shell limits      : ",2I4)')gshme1,gshme2
-    write(150,'("G-vector limits     : ",2I4)')gvecme1,gvecme2
-    write(150,'("number of G-vectors : ",I4)')ngvecme   
-    call flushifc(150)
-  endif
-  deallocate(igishell)
-  deallocate(ishellng)
 endif
+call mpi_cart_create(MPI_COMM_WORLD,mpi_ndims,mpi_dims,mpi_periods,.false.,mpi_comm_cart,ierr)
+call mpi_cart_get(mpi_comm_cart,mpi_ndims,mpi_dims,mpi_periods,mpi_x,ierr)  
+if (task.eq.400) then
+  if (in_set((/0,0,1/))) then
+    wproc=.true.
+    write(fname,'("LR_ME_q_",I3.3,"_",I3.3,"_",I3.3,".OUT")')ivq0m_list(:,mpi_x(3)+1)
+    open(150,file=trim(fname),form='formatted',status='replace')
+  else
+    wproc=.false.
+  endif
+endif
+
+if (wproc) then
+  write(150,'("Running on ",I4," proc.")')nproc
+  if (.not.do_lr_io) write(150,'("Output of intermediate files is turned off")')
+#ifdef _PIO_
+  if (nproc.gt.1) then
+    write(150,'("Reading files in parallel")')
+  endif
+#endif
+  write(150,'("MPI grid size : ",3I4)')mpi_dims
+endif
+
+if (task.eq.400) then
+  call mpi_cart_sub(mpi_comm_cart,(/.true.,.false.,.false./),mpi_comm_k,ierr)
+  call mpi_cart_sub(mpi_comm_cart,(/.false.,.true.,.true./),mpi_comm_gq,ierr)
+  call mpi_cart_sub(mpi_comm_cart,(/.false.,.true.,.false./),mpi_comm_g,ierr)
+endif
+
+! distribute k-points over 1-st dimension of the grid
+if (allocated(nkptnrloc)) deallocate(nkptnrloc)
+allocate(nkptnrloc(0:mpi_dims(1)-1))
+if (allocated(ikptnrloc)) deallocate(ikptnrloc)
+allocate(ikptnrloc(0:mpi_dims(1)-1,2))
+call splitk(nkptnr,mpi_dims(1),nkptnrloc,ikptnrloc)
+nkptnr_loc=nkptnrloc(mpi_x(1))
 
 if (task.eq.402.or.task.eq.403) then
   allocate(igishell(ngvec))
@@ -151,49 +135,6 @@ if (task.eq.402.or.task.eq.403) then
   deallocate(ishellng)
 endif
 
-#ifdef _MPI_
-if (iproc.eq.0) then
-  write(150,*)
-  write(150,'("Making MPI grid")')
-endif
-mpi_ndims=3
-allocate(mpi_dims(mpi_ndims))
-allocate(mpi_x(mpi_ndims))
-allocate(mpi_periods(mpi_ndims))
-
-if (nproc.le.nkptnr) then
-  mpi_dims=(/nproc,1,1/)
-else
-  if (mod(nproc,nkptnr).ne.0.and.iproc.eq.0) then
-    write(150,*)
-    write(150,'("Warning: number of processors is not optimal")')
-  endif
-  mpi_dims=(/nkptnr,nproc/nkptnr,1/)
-endif
-mpi_dims=(/4,1,1/)
-if (iproc.eq.0) then
-  write(150,*)
-  write(150,'("grid layout")')
-  write(150,'("  k-points : ",I4)')mpi_dims(1)
-  write(150,'("  G-vectors : ",I4)')mpi_dims(2)
-  write(150,'("  q-points : ",I4)')mpi_dims(3)
-  call flushifc(150)
-endif
-mpi_periods=.false.
-call mpi_cart_create(MPI_COMM_WORLD,mpi_ndims,mpi_dims,mpi_periods,.false.,mpi_comm_cart,ierr)
-call mpi_cart_get(mpi_comm_cart,mpi_ndims,mpi_dims,mpi_periods,mpi_x,ierr)
-call mpi_cart_sub(mpi_comm_cart,(/.true.,.false.,.false./),mpi_comm_k,ierr)
-call mpi_cart_sub(mpi_comm_cart,(/.false.,.true.,.true./),mpi_comm_gq,ierr)
-call mpi_cart_sub(mpi_comm_cart,(/.false.,.true.,.false./),mpi_comm_g,ierr)
-#endif
-
-! distribute k-points over 1-st dimension of the grid
-if (allocated(nkptnrloc)) deallocate(nkptnrloc)
-allocate(nkptnrloc(0:mpi_dims(1)-1))
-if (allocated(ikptnrloc)) deallocate(ikptnrloc)
-allocate(ikptnrloc(0:mpi_dims(1)-1,2))
-call splitk(nkptnr,mpi_dims(1),nkptnrloc,ikptnrloc)
-nkptnr_loc=nkptnrloc(mpi_x(1))
 
 
 !if (.true.) then
@@ -206,12 +147,12 @@ nkptnr_loc=nkptnrloc(mpi_x(1))
 !endif
   
 
-if (task.eq.400.or.task.eq.401.or.task.eq.403.or.task.eq.404) then
+if (task.eq.400.or.task.eq.401.or.task.eq.404) then
 ! get occupancies and energies of states
   allocate(occsvnr(nstsv,nkptnr))
   allocate(evalsvnr(nstsv,nkptnr))
   call timer_start(3)
-  if (iproc.eq.0) then
+  if (wproc) then
     write(150,*)
     write(150,'("Reading energies and occupancies of states")')
     call flushifc(150)
@@ -228,8 +169,10 @@ if (task.eq.400.or.task.eq.401.or.task.eq.403.or.task.eq.404) then
       call getevalsv(vklnr(1,ik),evalsvnr(1,ik))
     enddo
   endif
-  call dsync2((/1,0,0/),occsvnr,nstsv*nkptnr,.true.,.true.)
-  call dsync2((/1,0,0/),evalsvnr,nstsv*nkptnr,.true.,.true.)
+  call d_reduce((/1,0,0/),.true.,evalsvnr,nstsv*nkptnr)
+  call d_bcast((/0,1,1/),evalsvnr,nstsv*nkptnr)
+  call d_reduce((/1,0,0/),.true.,occsvnr,nstsv*nkptnr)
+  call d_bcast((/0,1,1/),occsvnr,nstsv*nkptnr)
 ! if not parallel I/O
 #else
   if (iproc.eq.0) then 
@@ -242,13 +185,13 @@ if (task.eq.400.or.task.eq.401.or.task.eq.403.or.task.eq.404) then
   call dsync(evalsvnr,nstsv*nkptnr,.false.,.true.)
 #endif
   call timer_stop(3)
-  if (iproc.eq.0) then
+  if (wproc) then
     write(150,'("Done in ",F8.2," seconds")')timer(3,2)
     call flushifc(150)
   endif
 endif
 
-if (task.eq.400.or.task.eq.403) then
+if (task.eq.400) then
 ! read the density and potentials from file
   call readstate
 ! read Fermi energy from file
@@ -281,7 +224,7 @@ if (task.eq.400.or.task.eq.403) then
   allocate(evecfv(nmatmax,nstfv,nspnfv))
   allocate(evecsv(nstsv,nstsv))
   allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-  if (iproc.eq.0) then
+  if (wproc) then
     write(150,*)
     write(150,'("Size of wfsvmt array (Mb) : ",I6)')                   &
       16*lmmaxvr*nrfmax*natmtot*nstsv*nspinor*nkptnrloc(0)/1024/1024
@@ -320,13 +263,12 @@ if (task.eq.400.or.task.eq.403) then
 #endif
   endif !in_set
   call barrier
-  call dsync2((/1,0,0/),wfsvmtloc, &
-    lmmaxvr*nrfmax*natmtot*nstsv*nspinor*nkptnr_loc*2, &
-    .false.,.false.)
-  call dsync2((/1,0,0/),wfsvitloc, &
-    ngkmax*nstsv*nspinor*nkptnr_loc*2,.false.,.false.)
+  call d_bcast((/0,1,1/),wfsvmtloc, &
+    lmmaxvr*nrfmax*natmtot*nstsv*nspinor*nkptnr_loc*2)
+  call d_bcast((/0,1,1/),wfsvitloc, &
+    ngkmax*nstsv*nspinor*nkptnr_loc*2)
   call timer_stop(1)
-  if (iproc.eq.0) then
+  if (wproc) then
     write(150,'("Done in ",F8.2," seconds")')timer(1,2)
     call flushifc(150)
   endif
@@ -338,41 +280,26 @@ if (task.eq.400.or.task.eq.403) then
   deallocate(tpgknr)
   deallocate(sfacgknr)
 endif
-  
+
 if (task.eq.400) then
 ! calculate matrix elements
-  do i=1,nvq0
-    call response_me(ivq0m_list(1,i),wfsvmtloc,wfsvitloc,ngknr, &
-      igkignr,occsvnr)
-  enddo
+  call response_me(ivq0m_list(1,mpi_x(3)+1),wfsvmtloc,wfsvitloc,ngknr, &
+    igkignr,occsvnr)
 endif
 
 if (task.eq.401) then
 ! calculate chi0
-  do i=1,nvq0
-    call response_chi0(ivq0m_list(1,i),evalsvnr)
-  enddo
+  call response_chi0(ivq0m_list(1,mpi_x(3)+1),evalsvnr)
 endif
 
 if (task.eq.402) then
 ! calculate chi
-  do i=1,nvq0
-    call response_chi(ivq0m_list(1,i))
-  enddo
-endif
-
-if (task.eq.403) then
-  do i=1,nvq0
-    call response_me(ivq0m_list(1,i),wfsvmtloc,wfsvitloc,ngknr, &
-      igkignr,occsvnr)
-    call response_chi0(ivq0m_list(1,i),evalsvnr)
-    call response_chi(ivq0m_list(1,i))
-  enddo
+  call response_chi(ivq0m_list(1,mpi_x(2)+1))
 endif
 
 if (task.eq.404) call response_jdos(occsvnr,evalsvnr)
 
-if (iproc.eq.0) close(150)
+if (wproc) close(150)
 
 if (task.eq.400.or.task.eq.403) then
   deallocate(wfsvmtloc)
