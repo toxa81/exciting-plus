@@ -366,52 +366,57 @@ do ikstep=1,nkptnrloc(0)
     write(150,'("k-step ",I4," out of ",I4)')ikstep,nkptnrloc(0)
     call flushifc(150)
   endif
-! find the x1-coordinate to which the (G,q) group of processors should send data
-  do i=0,mpi_dims(1)-1
-    if (isend(ikstep,i,1).eq.mpi_x(1).and.mpi_x(1).ne.i) then
-      ik=isend(ikstep,i,2)
-      call mpi_cart_rank(mpi_comm_k,(/i/),rank,ierr)
-      tag=(ikstep*nproc+i)*10
-      call mpi_isend(wfsvitloc(1,1,1,ik),ngkmax*nstsv*nspinor,      &
-        MPI_DOUBLE_COMPLEX,rank,tag,mpi_comm_k,req,ierr)
-      tag=tag+1
-      call mpi_isend(wfsvmtloc(1,1,1,1,1,ik),                       &
-        lmmaxvr*nrfmax*natmtot*nstsv*nspinor,                       &
-	    MPI_DOUBLE_COMPLEX,rank,tag,mpi_comm_k,req,ierr)
-      tag=tag+1
-      call mpi_isend(ngknr(ik),1,MPI_INTEGER,rank,tag,                 &
-        mpi_comm_k,req,ierr)
-      tag=tag+1
-      call mpi_isend(igkignr(1,ik),ngkmax,MPI_INTEGER,rank,tag,        &
-        mpi_comm_k,req,ierr)  
-    endif
-  enddo
-! receive data
-  if (isend(ikstep,mpi_x(1),1).ne.-1) then
-    if (isend(ikstep,mpi_x(1),1).ne.mpi_x(1)) then
-      call mpi_cart_rank(mpi_comm_k,(/isend(ikstep,mpi_x(1),1)/),rank,ierr)
-      tag=(ikstep*nproc+mpi_x(1))*10
-      call mpi_recv(wfsvit2,ngkmax*nstsv*nspinor,MPI_DOUBLE_COMPLEX,  &
-        rank,tag,mpi_comm_k,stat,ierr)
-      tag=tag+1
-      call mpi_recv(wfsvmt2,lmmaxvr*nrfmax*natmtot*nstsv*nspinor,     &
-        MPI_DOUBLE_COMPLEX,rank,tag,                 &
-        mpi_comm_k,stat,ierr)
-      tag=tag+1
-      call mpi_recv(ngknr2,1,MPI_INTEGER,rank,       &
-        tag,mpi_comm_k,stat,ierr)
-      tag=tag+1
-      call mpi_recv(igkignr2,ngkmax,MPI_INTEGER,rank, &
-        tag,mpi_comm_k,stat,ierr)
-    else
-      ik=isend(ikstep,mpi_x(1),2)
-      wfsvit2(:,:,:)=wfsvitloc(:,:,:,ik)
-      wfsvmt2(:,:,:,:,:)=wfsvmtloc(:,:,:,:,:,ik)
-      ngknr2=ngknr(ik)
-      igkignr2(:)=igkignr(:,ik)
-    endif
-  endif
-
+  call wfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
+    wfsvit2,ngknr2,igkignr2)
+!
+!! find the x1-coordinate to which the (G,q) group of processors should send data
+!  do i=0,mpi_dims(1)-1
+!    if (isend(ikstep,i,1).eq.mpi_x(1).and.mpi_x(1).ne.i) then
+!      ik=isend(ikstep,i,2)
+!      call mpi_cart_rank(mpi_comm_k,(/i/),rank,ierr)
+!      tag=(ikstep*nproc+i)*10
+!      call mpi_isend(wfsvitloc(1,1,1,ik),ngkmax*nstsv*nspinor,      &
+!        MPI_DOUBLE_COMPLEX,rank,tag,mpi_comm_k,req,ierr)
+!      tag=tag+1
+!      call mpi_isend(wfsvmtloc(1,1,1,1,1,ik),                       &
+!        lmmaxvr*nrfmax*natmtot*nstsv*nspinor,                       &
+!	    MPI_DOUBLE_COMPLEX,rank,tag,mpi_comm_k,req,ierr)
+!      tag=tag+1
+!      call mpi_isend(ngknr(ik),1,MPI_INTEGER,rank,tag,                 &
+!        mpi_comm_k,req,ierr)
+!      tag=tag+1
+!      call mpi_isend(igkignr(1,ik),ngkmax,MPI_INTEGER,rank,tag,        &
+!        mpi_comm_k,req,ierr)  
+!    endif
+!  enddo
+!! receive data
+!  if (isend(ikstep,mpi_x(1),1).ne.-1) then
+!    if (isend(ikstep,mpi_x(1),1).ne.mpi_x(1)) then
+!      call mpi_cart_rank(mpi_comm_k,(/isend(ikstep,mpi_x(1),1)/),rank,ierr)
+!      tag=(ikstep*nproc+mpi_x(1))*10
+!      call mpi_recv(wfsvit2,ngkmax*nstsv*nspinor,MPI_DOUBLE_COMPLEX,  &
+!        rank,tag,mpi_comm_k,stat,ierr)
+!      tag=tag+1
+!      call mpi_recv(wfsvmt2,lmmaxvr*nrfmax*natmtot*nstsv*nspinor,     &
+!        MPI_DOUBLE_COMPLEX,rank,tag,                 &
+!        mpi_comm_k,stat,ierr)
+!      tag=tag+1
+!      call mpi_recv(ngknr2,1,MPI_INTEGER,rank,       &
+!        tag,mpi_comm_k,stat,ierr)
+!      tag=tag+1
+!      call mpi_recv(igkignr2,ngkmax,MPI_INTEGER,rank, &
+!        tag,mpi_comm_k,stat,ierr)
+!    else
+!      ik=isend(ikstep,mpi_x(1),2)
+!      wfsvit2(:,:,:)=wfsvitloc(:,:,:,ik)
+!      wfsvmt2(:,:,:,:,:)=wfsvmtloc(:,:,:,:,:,ik)
+!      ngknr2=ngknr(ik)
+!      igkignr2(:)=igkignr(:,ik)
+!    endif
+!  endif
+!  
+!  call wfkq(ikstep)
+!
   call mpi_barrier(MPI_COMM_WORLD,ierr)
   if (wproc) then
     write(150,'("  OK send and recieve")')
@@ -448,9 +453,10 @@ do ikstep=1,nkptnrloc(0)
 enddo !ikstep
 
 if (do_lr_io) then
-  if (in_set((/1,0,0/))) then
+  if (in_set((/1,0,1/))) then
     do i=0,mpi_dims(1)-1
-      if (i.eq.mpi_x(1)) then
+    do j=0,mpi_dims(3)-1
+      if (i.eq.mpi_x(1).and.j.eq.mpi_x(3)) then
         do ikstep=1,nkptnr_loc
           ik=ikptnrloc(mpi_x(1),1)+ikstep-1
           write(path,'("/kpoints/",I8.8)')ik
@@ -464,7 +470,8 @@ if (do_lr_io) then
             trim(fname),trim(path),'me')
         enddo !ikstep
       endif !i.eq.mpi_x(1)
-      call barrier2(mpi_comm_k)
+      call barrier2(mpi_comm_kq)
+    enddo
     enddo
   endif
 endif !do_lr_io
@@ -1065,5 +1072,121 @@ call h5gclose_f(group_id,ierr)
 call h5sclose_f(dataspace_id,ierr)
 call h5dclose_f(dataset_id,ierr)
 call h5fclose_f(h5_root_id,ierr)
+return
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+subroutine wfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
+  wfsvit2,ngknr2,igkignr2)
+use modmain
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+integer, intent(in) :: ikstep
+complex(8), intent(in) :: wfsvmtloc(lmmaxvr,nrfmax,natmtot,nstsv,nspinor,*)
+complex(8), intent(in) :: wfsvitloc(ngkmax,nstsv,nspinor,*)
+integer, intent(in) :: ngknr(*)
+integer, intent(in) :: igkignr(ngkmax,*)
+complex(8), intent(out) :: wfsvmt2(lmmaxvr,nrfmax,natmtot,nstsv,nspinor)
+complex(8), intent(out) :: wfsvit2(ngkmax,nstsv,nspinor)
+integer, intent(out) :: ngknr2
+integer, intent(out) :: igkignr2(ngkmax)
+
+
+integer idx0,bs,ip
+logical lsend,lrecv
+integer i,ik,jk,ikloc
+integer rank,tag,ierr,req
+integer, allocatable :: stat(:)
+
+#ifdef _MPI_
+! each proc in k-group knows that it needs wave-function at jk=idxkq(1,ik) point
+!
+! the distribution of k-points could look like this
+!                p0          p1          p2
+!          +-----------+-----------+-----------+
+! ikstep=1 | ik=1 jk=3 | ik=4 jk=2 | ik=7 jk=5 |
+! ikstep=2 | ik=2 jk=4 | ik=5 jk=7 | ik=8 jk=6 |
+! ikstep=3 | ik=3 jk=1 | ik=6 jk=8 |  -        |
+!          +-----------+-----------+-----------+
+allocate(stat(MPI_STATUS_SIZE))
+do i=1,mpi_dims(1)
+  call idxbos(nkptnr,mpi_dims(1),i,idx0,bs)
+  if (ikstep.le.bs) then
+! for step ikstep process i handles k-point ik
+    call idxglob(nkptnr,mpi_dims(1),i,ikstep,ik)
+! for step ikstep process i requires k-point jk
+    jk=idxkq(1,ik)
+! find the process which stores the k-point jk and it's local index
+    call idxloc(nkptnr,mpi_dims(1),jk,ip,ikloc)
+! send/recv when ip.ne.i (when k-points ik and jk are on different procs)
+    if (mpi_x(1).eq.ip-1.and.ip.ne.i) then
+! destination proc is i-1
+      call mpi_cart_rank(mpi_comm_k,(/i-1/),rank,ierr) 
+! send muffin-tin part
+      tag=(ikstep*nproc+i-1)*10
+      call mpi_isend(wfsvmtloc(1,1,1,1,1,ikloc),                     &
+        lmmaxvr*nrfmax*natmtot*nstsv*nspinor,                        & 
+	    MPI_DOUBLE_COMPLEX,rank,tag,mpi_comm_k,req,ierr)
+! send interstitial part
+      tag=tag+1
+      call mpi_isend(wfsvitloc(1,1,1,ikloc),ngkmax*nstsv*nspinor,    & 
+        MPI_DOUBLE_COMPLEX,rank,tag,mpi_comm_k,req,ierr)
+! send ngknr      
+      tag=tag+1
+      call mpi_isend(ngknr(ikloc),1,MPI_INTEGER,rank,tag,mpi_comm_k, &
+        req,ierr)
+! send igkignr
+      tag=tag+1
+      call mpi_isend(igkignr(1,ikloc),ngkmax,MPI_INTEGER,rank,tag,   &
+        mpi_comm_k,req,ierr)  
+    endif
+    if (mpi_x(1).eq.i-1.and.ip.ne.i) then
+! source proc is ip-1
+      call mpi_cart_rank(mpi_comm_k,(/ip-1/),rank,ierr)
+      tag=(ikstep*nproc+mpi_x(1))*10
+      call mpi_recv(wfsvmt2,lmmaxvr*nrfmax*natmtot*nstsv*nspinor,    &
+        MPI_DOUBLE_COMPLEX,rank,tag,mpi_comm_k,stat,ierr)
+      tag=tag+1
+      call mpi_recv(wfsvit2,ngkmax*nstsv*nspinor,MPI_DOUBLE_COMPLEX, &
+        rank,tag,mpi_comm_k,stat,ierr)
+      tag=tag+1
+      call mpi_recv(ngknr2,1,MPI_INTEGER,rank,tag,mpi_comm_k,stat,   &
+        ierr)
+      tag=tag+1
+      call mpi_recv(igkignr2,ngkmax,MPI_INTEGER,rank,tag,mpi_comm_k, &
+        stat,ierr)
+    endif
+    if (mpi_x(1).eq.i-1.and.ip.eq.i) then
+      wfsvmt2(:,:,:,:,:)=wfsvmtloc(:,:,:,:,:,ikloc)
+      wfsvit2(:,:,:)=wfsvitloc(:,:,:,ikloc)
+      ngknr2=ngknr(ikloc)
+      igkignr2(:)=igkignr(:,ikloc)
+    endif
+  endif
+enddo
+deallocate(stat)
+#else
+  jk=idxkq(1,ikstep)
+  wfsvmt2(:,:,:,:,:)=wfsvmtloc(:,:,:,:,:,jk)
+  wfsvit2(:,:,:)=wfsvitloc(:,:,:,jk)
+  ngknr2=ngknr(jk)
+  igkignr2(:)=igkignr(:,jk)
+#endif
 return
 end

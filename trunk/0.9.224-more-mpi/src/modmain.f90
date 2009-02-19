@@ -928,6 +928,7 @@ complex(8), allocatable :: evecfvloc(:,:,:,:)
 complex(8), allocatable :: evecsvloc(:,:,:)
 integer mpi_comm_cart
 integer mpi_comm_k
+integer mpi_comm_kq
 integer mpi_comm_gq
 integer mpi_comm_g
 integer mpi_ndims

@@ -444,5 +444,134 @@ endif
 return
 end
 
+subroutine idxbos(length,nblocks,iblock,idx0,blocksize)
+implicit none
+integer, intent(in) :: length
+integer, intent(in) :: nblocks
+integer, intent(in) :: iblock
+integer, intent(out) :: idx0
+integer, intent(out) :: blocksize
+
+integer n1,n2
+logical lerr
+
+lerr=.false.
+if (length.lt.1) lerr=.true.
+if (nblocks.lt.1) lerr=.true.
+if (iblock.lt.1.or.iblock.gt.nblocks) lerr=.true.
+if (lerr) then
+  write(*,*)
+  write(*,'("Error(idxbos) : wrong input arguments")')
+  write(*,'("  length : ",I8)')length
+  write(*,'("  nblocks : ",I8)')nblocks
+  write(*,'("  iblock : ",I8)')iblock
+  write(*,*)
+  call pstop
+endif
+n1=length/nblocks
+n2=mod(length,nblocks)
+if (n1.eq.0) then
+  if (iblock.le.n2) then
+    idx0=iblock-1
+    blocksize=1
+  else
+    idx0=-1
+    blocksize=0
+  endif
+else
+  if (iblock.le.n2) then
+    idx0=(n1+1)*(iblock-1)
+    blocksize=n1+1
+  else
+    idx0=(n1+1)*n2+n1*(iblock-n2-1)
+    blocksize=n1
+  endif
+endif
+return
+end
+
+subroutine idxloc(length,nblocks,idxg,iblock,idxl)
+implicit none
+integer, intent(in) :: length
+integer, intent(in) :: nblocks
+integer, intent(in) :: idxg
+integer, intent(out) :: iblock
+integer, intent(out) :: idxl
+
+integer n1,n2
+logical lerr
+
+lerr=.false.
+if (length.lt.1) lerr=.true.
+if (nblocks.lt.1) lerr=.true.
+if (idxg.lt.1.or.idxg.gt.length) lerr=.true.
+if (lerr) then
+  write(*,*)
+  write(*,'("Error(idxloc) : wrong input arguments")')
+  write(*,'("  length : ",I8)')length
+  write(*,'("  nblocks : ",I8)')nblocks
+  write(*,'("  idxg : ",I8)')idxg
+  write(*,*)
+  call pstop
+endif
+n1=length/nblocks
+n2=mod(length,nblocks)
+if (idxg.le.(n1+1)*n2) then
+  iblock=(idxg-1)/(n1+1)+1
+  idxl=mod(idxg-1,n1+1)+1
+else
+  iblock=n2+(idxg-(n1+1)*n2-1)/n1+1
+  idxl=mod(idxg-(n1+1)*n2-1,n1)+1
+endif
+return
+end
+
+subroutine idxglob(length,nblocks,iblock,idxl,idxg)
+implicit none
+integer, intent(in) :: length
+integer, intent(in) :: nblocks
+integer, intent(in) :: iblock
+integer, intent(in) :: idxl
+integer, intent(out) :: idxg
+
+integer n1,n2
+logical lerr
+
+lerr=.false.
+if (length.lt.1) lerr=.true.
+if (nblocks.lt.1) lerr=.true.
+if (iblock.lt.1.or.iblock.gt.nblocks) lerr=.true.
+if (idxl.lt.1) lerr=.true.
+if (lerr) then
+  write(*,*)
+  write(*,'("Error(idxglob) : wrong input arguments")')
+  write(*,'("  length : ",I8)')length
+  write(*,'("  nblocks : ",I8)')nblocks
+  write(*,'("  iblock : ",I8)')iblock
+  write(*,'("  idxl : ",I8)')idxl
+  write(*,*)
+  call pstop
+endif
+n1=length/nblocks
+n2=mod(length,nblocks)
+lerr=.false.
+if (iblock.le.n2.and.(idxl.gt.(n1+1))) lerr=.true.
+if (iblock.gt.n2.and.(idxl.gt.n1)) lerr=.true.
+if (lerr) then
+  write(*,*)
+  write(*,'("Error(idxloc) : local index out of boundary")')
+  write(*,'("  iblock : ",I8)')iblock
+  write(*,'("  idxl : ",I8)')idxl
+  write(*,*)
+  call pstop
+endif  
+if (iblock.le.n2) then
+  idxg=(iblock-1)*(n1+1)+idxl
+else
+  idxg=n2*(n1+1)+(iblock-n2-1)*n1+idxl
+endif
+return
+end
+
 
 

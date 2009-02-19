@@ -109,6 +109,7 @@ endif
 
 if (task.eq.400) then
   call mpi_cart_sub(mpi_comm_cart,(/.true.,.false.,.false./),mpi_comm_k,ierr)
+  call mpi_cart_sub(mpi_comm_cart,(/.true.,.false.,.true./),mpi_comm_kq,ierr)
   call mpi_cart_sub(mpi_comm_cart,(/.false.,.true.,.true./),mpi_comm_gq,ierr)
   call mpi_cart_sub(mpi_comm_cart,(/.false.,.true.,.false./),mpi_comm_g,ierr)
 endif
