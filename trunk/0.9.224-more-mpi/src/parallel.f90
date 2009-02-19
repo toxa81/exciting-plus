@@ -7,7 +7,7 @@ call mpi_barrier(MPI_COMM_WORLD,ierr)
 return
 end
 
-subroutine barrier2(mpi_comm)
+subroutine grpbarrier(mpi_comm)
 use modmain
 #ifdef _MPI_
 use mpi
@@ -153,7 +153,7 @@ real(8), allocatable :: tmp(:)
 logical ldims(mpi_ndims)
 logical ldims2(mpi_ndims)
 integer rank
-logical, external :: in_set
+logical, external :: root_of
 
 do i=1,mpi_ndims
   if (idims(i).eq.0) then
@@ -166,7 +166,7 @@ do i=1,mpi_ndims
 enddo
 call mpi_cart_sub(mpi_comm_cart,ldims,mpi_comm_tmp,ierr)
 
-if (in_set(idims)) then
+if (root_of(idims)) then
   call mpi_cart_rank(mpi_comm_tmp,mpi_x,rank,ierr)
   if (doreduce.and.rank.eq.0) allocate(tmp(n))
   if (doreduce) then
@@ -292,7 +292,7 @@ if (doreduce.and.iproc.eq.0) deallocate(tmp)
 return
 end
 
-logical function in_set(idims)
+logical function root_of(idims)
 use modmain
 implicit none
 integer, intent(in) :: idims(mpi_ndims)
@@ -302,63 +302,69 @@ l1=.true.
 do i=1,mpi_ndims
   if (idims(i).eq.0.and.mpi_x(i).ne.0) l1=.false.
 enddo
-in_set=l1
+root_of=l1
 return
 end
 
-subroutine split_idx(l,n,j,l0,l1)
-implicit none
-! arguments
-integer, intent(in) :: l
-integer, intent(in) :: n
-integer, intent(in) :: j
-integer, intent(out) :: l0
-integer, intent(out) :: l1 
-! local variables
-integer i,n1,n2
-integer tmp(n),tmp2(n,2)
-
-! minimum number of points for each segment
-n1=l/n
-! remaining number of points which will be distributed among first n2 segments
-n2=l-n1*n
-! each segment gets n1 points
-tmp(:)=n1
-! additionally, first n2 segments get extra point
-do i=1,n2
-  tmp(i)=tmp(i)+1
-enddo 
-! build index of first and last point for each segment
-tmp2(1,1)=1
-tmp2(1,2)=tmp(1)
-do i=2,n
-  tmp2(i,1)=tmp2(i-1,2)+1
-  tmp2(i,2)=tmp2(i,1)+tmp(i)-1
-enddo
-l0=tmp2(j,1)
-l1=tmp2(j,2)
-   
-return
-end
+!subroutine split_idx(l,n,j,l0,l1)
+!implicit none
+!! arguments
+!integer, intent(in) :: l
+!integer, intent(in) :: n
+!integer, intent(in) :: j
+!integer, intent(out) :: l0
+!integer, intent(out) :: l1 
+!! local variables
+!integer i,n1,n2
+!integer tmp(n),tmp2(n,2)
+!
+!! minimum number of points for each segment
+!n1=l/n
+!! remaining number of points which will be distributed among first n2 segments
+!n2=l-n1*n
+!! each segment gets n1 points
+!tmp(:)=n1
+!! additionally, first n2 segments get extra point
+!do i=1,n2
+!  tmp(i)=tmp(i)+1
+!enddo 
+!! build index of first and last point for each segment
+!tmp2(1,1)=1
+!tmp2(1,2)=tmp(1)
+!do i=2,n
+!  tmp2(i,1)=tmp2(i-1,2)+1
+!  tmp2(i,2)=tmp2(i,1)+tmp(i)-1
+!enddo
+!l0=tmp2(j,1)
+!l1=tmp2(j,2)
+!   
+!return
+!end
 
 subroutine d_allreduce(mpi_comm,val,n)
+#ifdef _MPI_
 use mpi
+#endif
 implicit none
 integer, intent(in) :: mpi_comm
 integer, intent(in) :: n
 real(8), intent(inout) :: val(n)
 real(8), allocatable :: tmp(:)
 integer ierr
+#ifdef _MPI_
 allocate(tmp(n))
 call mpi_allreduce(val,tmp,n,MPI_DOUBLE_PRECISION,MPI_SUM,mpi_comm,ierr)
 val=tmp
 deallocate(tmp)
+#endif
 return
 end
 
 subroutine d_bcast(idims,val,n)
 use modmain
+#ifdef _MPI_
 use mpi
+#endif
 implicit none
 integer, intent(in) :: idims(mpi_ndims)
 integer, intent(in) :: n
@@ -366,6 +372,7 @@ real(8), intent(inout) :: val(n)
 logical ldims(mpi_ndims)
 integer i,root,mpi_comm,ierr,nsub_coord
 integer, allocatable :: sub_coord(:)
+#ifdef _MPI_
 nsub_coord=0
 do i=1,mpi_ndims
   if (idims(i).eq.0) then
@@ -381,12 +388,15 @@ sub_coord=0
 call mpi_cart_rank(mpi_comm,sub_coord,root,ierr)
 call mpi_bcast(val,n,MPI_DOUBLE_PRECISION,root,mpi_comm,ierr)
 deallocate(sub_coord)
+#endif
 return
 end
 
 subroutine i_bcast(idims,val,n)
 use modmain
+#ifdef _MPI_
 use mpi
+#endif
 implicit none
 integer, intent(in) :: idims(mpi_ndims)
 integer, intent(in) :: n
@@ -394,6 +404,7 @@ integer, intent(inout) :: val(n)
 logical ldims(mpi_ndims)
 integer i,root,mpi_comm,ierr,nsub_coord
 integer, allocatable :: sub_coord(:)
+#ifdef _MPI_
 nsub_coord=0
 do i=1,mpi_ndims
   if (idims(i).eq.0) then
@@ -409,12 +420,15 @@ sub_coord=0
 call mpi_cart_rank(mpi_comm,sub_coord,root,ierr)
 call mpi_bcast(val,n,MPI_INTEGER,root,mpi_comm,ierr)
 deallocate(sub_coord)
+#endif
 return
 end
 
 subroutine d_reduce(idims,all,val,n)
 use modmain
+#ifdef _MPI_
 use mpi
+#endif
 implicit none
 integer, intent(in) :: idims(mpi_ndims)
 logical, intent(in) :: all
@@ -423,7 +437,7 @@ real(8), intent(inout) :: val(n)
 real(8), allocatable :: tmp(:)
 logical ldims(mpi_ndims)
 integer i,mpi_comm,ierr
-
+#ifdef _MPI_
 do i=1,mpi_ndims
   if (idims(i).eq.0) then
     ldims(i)=.false.
@@ -441,6 +455,7 @@ if (all) then
 else
   write(*,*)'reduce not implemented'
 endif
+#endif
 return
 end
 

@@ -30,7 +30,7 @@ integer i,j,n,ngsh,gshmin,gshmax,ik,ikloc,ispn,istfv,ierr,rank
 character*100 fname
 integer, external :: iknrglob
 integer, external :: iknrglob2
-logical, external :: in_set
+logical, external :: root_of
 
 integer vgq0l(3)
 
@@ -73,6 +73,7 @@ if (allocated(mpi_periods)) deallocate(mpi_periods)
 allocate(mpi_periods(mpi_ndims))
 mpi_periods=.false.
 if (task.eq.400) then
+#ifdef _MPI_
   if (nproc.le.nkptnr) then
     mpi_dims=(/nproc,1,1/)
   else
@@ -83,11 +84,18 @@ if (task.eq.400) then
       mpi_dims=(/nkptnr,nproc/(nkptnr*nvq0),nvq0/)
     endif
   endif
+#else
+  mpi_dims=(/1,1,1/)
+#endif
 endif
-call mpi_cart_create(MPI_COMM_WORLD,mpi_ndims,mpi_dims,mpi_periods,.false.,mpi_comm_cart,ierr)
-call mpi_cart_get(mpi_comm_cart,mpi_ndims,mpi_dims,mpi_periods,mpi_x,ierr)  
+#ifdef _MPI_
+call mpi_cart_create(MPI_COMM_WORLD,mpi_ndims,mpi_dims,mpi_periods,   &
+  .false.,mpi_comm_cart,ierr)
+call mpi_cart_get(mpi_comm_cart,mpi_ndims,mpi_dims,mpi_periods,mpi_x, &
+  ierr)  
+#endif
 if (task.eq.400) then
-  if (in_set((/0,0,1/))) then
+  if (root_of((/0,0,1/))) then
     wproc=.true.
     write(fname,'("LR_ME_q_",I3.3,"_",I3.3,"_",I3.3,".OUT")')ivq0m_list(:,mpi_x(3)+1)
     open(150,file=trim(fname),form='formatted',status='replace')
@@ -107,12 +115,14 @@ if (wproc) then
   write(150,'("MPI grid size : ",3I4)')mpi_dims
 endif
 
+#ifdef _MPI_
 if (task.eq.400) then
   call mpi_cart_sub(mpi_comm_cart,(/.true.,.false.,.false./),mpi_comm_k,ierr)
   call mpi_cart_sub(mpi_comm_cart,(/.true.,.false.,.true./),mpi_comm_kq,ierr)
   call mpi_cart_sub(mpi_comm_cart,(/.false.,.true.,.true./),mpi_comm_gq,ierr)
   call mpi_cart_sub(mpi_comm_cart,(/.false.,.true.,.false./),mpi_comm_g,ierr)
 endif
+#endif
 
 ! distribute k-points over 1-st dimension of the grid
 if (allocated(nkptnrloc)) deallocate(nkptnrloc)
@@ -163,7 +173,7 @@ if (task.eq.400.or.task.eq.401.or.task.eq.404) then
   occsvnr=0.d0
   evalsvnr=0.d0
 ! only subset of processors will read from file
-  if (in_set((/1,0,0/))) then
+  if (root_of((/1,0,0/))) then
     do ikloc=1,nkptnr_loc
       ik=iknrglob2(ikloc,mpi_x(1))
       call getoccsv(vklnr(1,ik),occsvnr(1,ik))
@@ -239,7 +249,7 @@ if (task.eq.400) then
 ! read and transform eigen-vectors
   wfsvmtloc=0.d0
   wfsvitloc=0.d0
-  if (in_set((/1,0,0/))) then
+  if (root_of((/1,0,0/))) then
 #ifndef _PIO_
     do i=0,mpi_dims(1)-1
       if (i.eq.mpi_x(1)) then
@@ -259,10 +269,10 @@ if (task.eq.400) then
         enddo !ikloc
 #ifndef _PIO_
       endif
-      call barrier2(mpi_comm_k)
+      call grpbarrier(mpi_comm_k)
     enddo
 #endif
-  endif !in_set
+  endif !root_of
   call barrier
   call d_bcast((/0,1,1/),wfsvmtloc, &
     lmmaxvr*nrfmax*natmtot*nstsv*nspinor*nkptnr_loc*2)
