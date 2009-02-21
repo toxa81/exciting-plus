@@ -424,7 +424,13 @@ deallocate(sub_coord)
 return
 end
 
-subroutine d_reduce(idims,all,val,n)
+
+
+
+
+
+
+subroutine d_reduce_cart(idims,all,val,n)
 use modmain
 #ifdef _MPI_
 use mpi
@@ -435,26 +441,38 @@ logical, intent(in) :: all
 integer, intent(in) :: n
 real(8), intent(inout) :: val(n)
 real(8), allocatable :: tmp(:)
+integer, allocatable :: sub_coord(:)
+integer  nsub_coord,root
 logical ldims(mpi_ndims)
 integer i,mpi_comm,ierr
 #ifdef _MPI_
+nsub_coord=0
 do i=1,mpi_ndims
   if (idims(i).eq.0) then
     ldims(i)=.false.
   else
     ldims(i)=.true.
+    nsub_coord=nsub_coord+1
   endif
 enddo
 
 call mpi_cart_sub(mpi_comm_cart,ldims,mpi_comm,ierr)
+allocate(sub_coord(nsub_coord))
+sub_coord=0
 if (all) then
   allocate(tmp(n))
   call mpi_allreduce(val,tmp,n,MPI_DOUBLE_PRECISION,MPI_SUM,mpi_comm,ierr)
   val=tmp
   deallocate(tmp)
 else
-  write(*,*)'reduce not implemented'
+  call mpi_cart_rank(mpi_comm,sub_coord,root,ierr)
+  allocate(tmp(n))
+  call mpi_reduce(val,tmp,n,MPI_DOUBLE_PRECISION,MPI_SUM,root, &
+    mpi_comm,ierr)
+  val=tmp
+  deallocate(tmp)
 endif
+deallocate(sub_coord)
 #endif
 return
 end

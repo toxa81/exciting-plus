@@ -27,7 +27,7 @@ complex(8), allocatable :: wfsvmt_t(:,:,:,:,:)
 complex(8), allocatable :: wfc_t(:,:,:)
 
 integer i,j,n,ngsh,gshmin,gshmax,ik,ikloc,ispn,istfv,ierr,rank
-character*100 fname
+character*100 fname,qnm
 integer, external :: iknrglob
 integer, external :: iknrglob2
 logical, external :: root_of
@@ -72,7 +72,7 @@ allocate(mpi_x(mpi_ndims))
 if (allocated(mpi_periods)) deallocate(mpi_periods)
 allocate(mpi_periods(mpi_ndims))
 mpi_periods=.false.
-if (task.eq.400) then
+if (task.eq.400.or.task.eq.401) then
 #ifdef _MPI_
   if (nproc.le.nkptnr) then
     mpi_dims=(/nproc,1,1/)
@@ -88,16 +88,28 @@ if (task.eq.400) then
   mpi_dims=(/1,1,1/)
 #endif
 endif
+
 #ifdef _MPI_
 call mpi_cart_create(MPI_COMM_WORLD,mpi_ndims,mpi_dims,mpi_periods,   &
   .false.,mpi_comm_cart,ierr)
 call mpi_cart_get(mpi_comm_cart,mpi_ndims,mpi_dims,mpi_periods,mpi_x, &
   ierr)  
 #endif
+
+call qname(ivq0m_list(:,mpi_x(3)+1),qnm)
 if (task.eq.400) then
   if (root_of((/0,0,1/))) then
     wproc=.true.
-    write(fname,'("LR_ME_q_",I3.3,"_",I3.3,"_",I3.3,".OUT")')ivq0m_list(:,mpi_x(3)+1)
+    fname=trim(qnm)//"_ME.OUT"
+    open(150,file=trim(fname),form='formatted',status='replace')
+  else
+    wproc=.false.
+  endif
+endif
+if (task.eq.401) then
+  if (root_of((/0,0,1/))) then
+    wproc=.true.
+    fname=trim(qnm)//"_CHI0.OUT"
     open(150,file=trim(fname),form='formatted',status='replace')
   else
     wproc=.false.
@@ -122,6 +134,13 @@ if (task.eq.400) then
   call mpi_cart_sub(mpi_comm_cart,(/.false.,.true.,.true./),mpi_comm_gq,ierr)
   call mpi_cart_sub(mpi_comm_cart,(/.false.,.true.,.false./),mpi_comm_g,ierr)
 endif
+if (task.eq.401) then
+  call mpi_cart_sub(mpi_comm_cart,(/.true.,.false.,.false./),mpi_comm_k,ierr)
+  call mpi_cart_sub(mpi_comm_cart,(/.true.,.false.,.true./),mpi_comm_kq,ierr)
+!  call mpi_cart_sub(mpi_comm_cart,(/.false.,.true.,.true./),mpi_comm_gq,ierr)
+  call mpi_cart_sub(mpi_comm_cart,(/.false.,.true.,.false./),mpi_comm_b,ierr)
+endif
+
 #endif
 
 ! distribute k-points over 1-st dimension of the grid
@@ -180,9 +199,9 @@ if (task.eq.400.or.task.eq.401.or.task.eq.404) then
       call getevalsv(vklnr(1,ik),evalsvnr(1,ik))
     enddo
   endif
-  call d_reduce((/1,0,0/),.true.,evalsvnr,nstsv*nkptnr)
+  call d_reduce_cart((/1,0,0/),.true.,evalsvnr,nstsv*nkptnr)
   call d_bcast((/0,1,1/),evalsvnr,nstsv*nkptnr)
-  call d_reduce((/1,0,0/),.true.,occsvnr,nstsv*nkptnr)
+  call d_reduce_cart((/1,0,0/),.true.,occsvnr,nstsv*nkptnr)
   call d_bcast((/0,1,1/),occsvnr,nstsv*nkptnr)
 ! if not parallel I/O
 #else

@@ -931,6 +931,7 @@ integer mpi_comm_k
 integer mpi_comm_kq
 integer mpi_comm_gq
 integer mpi_comm_g
+integer mpi_comm_b
 integer mpi_ndims
 integer, allocatable :: mpi_dims(:)
 integer, allocatable :: mpi_x(:)
