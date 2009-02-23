@@ -267,6 +267,14 @@ do ie=ie1,ie2
 
 enddo
 
+call d_reduce_cart(comm_cart_100,.false.,lr_w,2*nepts)
+call d_reduce_cart(comm_cart_100,.false.,chi0_GqGq,2*nepts)
+call d_reduce_cart(comm_cart_100,.false.,chi,2*nepts)
+call d_reduce_cart(comm_cart_100,.false.,chi_scalar,2*nepts)
+call d_reduce_cart(comm_cart_100,.false.,epsilon_GqGq,2*nepts)
+call d_reduce_cart(comm_cart_100,.false.,epsilon_eff,2*nepts)
+
+
 if (root_cart((/1,0,0/))) then
   if (nspin_chi0.eq.1) then
     call write_chi(lr_igq0,ivq0m,chi0_GqGq(1,1),chi(1,1),chi_scalar, &
