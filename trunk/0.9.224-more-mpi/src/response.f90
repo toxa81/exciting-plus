@@ -3,6 +3,7 @@ use modmain
 #ifdef _MPI_
 use mpi
 #endif
+use hdf5
 implicit none
 
 integer, allocatable :: igishell(:)
@@ -29,6 +30,7 @@ complex(8), allocatable :: wfc_t(:,:,:)
 integer i,j,n,ngsh,gshmin,gshmax,ik,ikloc,ispn,istfv,ierr,rank
 integer sz
 character*100 fname,qnm
+character*2 c2
 integer, external :: iknrglob
 integer, external :: iknrglob2
 logical, external :: root_cart
@@ -38,6 +40,8 @@ integer vgq0l(3)
 ! initialise universal variables
 call init0
 call init1
+! initialize HDF5 library
+call h5open_f(ierr)
 
 if (ncmag) then
   write(*,*)
@@ -72,6 +76,14 @@ if (task.eq.401) then
   if (root_cart((/1,1,0/))) then
     wproc=.true.
     fname=trim(qnm)//"_CHI0.OUT"
+    open(150,file=trim(fname),form='formatted',status='replace')
+  endif
+endif
+if (task.eq.402) then
+  write(c2,'(I2.2)')mpi_x(2)
+  if (root_cart((/1,0,0/))) then
+    wproc=.true.
+    fname=trim(qnm)//"_CHI_"//c2//".OUT"
     open(150,file=trim(fname),form='formatted',status='replace')
   endif
 endif

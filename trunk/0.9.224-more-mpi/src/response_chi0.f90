@@ -38,11 +38,6 @@ integer(hid_t) h5_tmp_id
 
 logical, external :: root_cart
 
-
-! initialize HDF5 library
-call h5open_f(ierr)
-
-
 if (wproc) then
   write(150,*)
   write(150,'("Calculation of KS polarisability chi0")')
@@ -246,6 +241,7 @@ do ie=1,nepts
     call d_reduce_cart(comm_cart_100,.false.,chi0_loc,2*ngvecme*ngvecme*nspin_chi0)
   endif
   if (root_cart((/1,1,0/))) then
+    chi0_loc=chi0_loc/nkptnr/omega
     write(path,'("/iw/",I8.8)')ie
     call write_real8(lr_w(ie),2,trim(fname),trim(path),'w')
     call write_real8_array(chi0_loc,4,(/2,ngvecme,ngvecme,nspin_chi0/), &
@@ -259,11 +255,7 @@ do ie=1,nepts
   call barrier(comm_world)
 enddo !ie
 
-
-
-
 call barrier(comm_world)
-call pstop
 
 deallocate(lr_w)
 deallocate(idxkq)
@@ -273,224 +265,6 @@ deallocate(docc)
 deallocate(me)
 deallocate(mtrx1)
 deallocate(chi0_loc)
-
-
-!
-!
-!
-!
-!
-!
-!if (do_lr_io) then
-!  allocate(zrhofc1(ngvecme,max_num_nnp))
-!  allocate(nnp1(max_num_nnp,3))
-!  allocate(docc1(max_num_nnp))
-!endif
-!allocate(mtrx1(ngvecme,ngvecme))
-!
-!! different implementations for parallel and serial execution
-!#ifdef _MPI_
-!
-!if (do_lr_io) then
-!  allocate(status(MPI_STATUS_SIZE))
-!  allocate(ikptnriproc(nkptnr))
-!  do i=0,nproc-1
-!    ikptnriproc(ikptnrloc(i,1):ikptnrloc(i,2))=i
-!  enddo
-!  
-!  allocate(num_nnp(nkptnrloc(iproc)))
-!  allocate(nnp(max_num_nnp,3,nkptnrloc(iproc)))
-!  allocate(docc(max_num_nnp,nkptnrloc(iproc)))
-!  allocate(zrhofc(ngvecme,max_num_nnp,nkptnrloc(iproc)))
-!  
-!  do ik=1,nkptnr
-!! only root proc reads matrix elements from file
-!    if (iproc.eq.0) then
-!      read(160)i1,i2
-!      if (i1.ne.ik.or.idxkq(ik,1).ne.i2) then
-!        write(*,*)
-!        write(*,'("Error(response_chi0): failed to read file ZRHOFC[,,].OUT")')
-!        write(*,*)
-!        call pstop
-!      endif
-!      read(160)num_nnp1
-!      read(160)nnp1(1:num_nnp1,1:3)
-!      read(160)docc1(1:num_nnp1)
-!      read(160)zrhofc1(1:ngvecme,1:num_nnp1)
-!      if (ik.le.nkptnrloc(0)) then
-!        num_nnp(ik)=num_nnp1
-!        nnp(:,:,ik)=nnp1(:,:)
-!        docc(:,ik)=docc1(:)
-!        zrhofc(:,:,ik)=zrhofc1(:,:)
-!      else
-!        tag=ik*10
-!        call mpi_send(num_nnp1,1,MPI_INTEGER,                          &
-!          ikptnriproc(ik),tag,MPI_COMM_WORLD,ierr)
-!        tag=tag+1
-!        call mpi_send(nnp1,max_num_nnp*3,MPI_INTEGER,                  &
-!          ikptnriproc(ik),tag,MPI_COMM_WORLD,ierr)
-!        tag=tag+1
-!        call mpi_send(docc1,max_num_nnp,MPI_DOUBLE_PRECISION,          &
-!          ikptnriproc(ik),tag,MPI_COMM_WORLD,ierr)
-!        tag=tag+1
-!        call mpi_send(zrhofc1,ngvecme*max_num_nnp,MPI_DOUBLE_COMPLEX, &
-!          ikptnriproc(ik),tag,MPI_COMM_WORLD,ierr)
-!      endif
-!    else
-!      if (ik.ge.ikptnrloc(iproc,1).and.ik.le.ikptnrloc(iproc,2)) then
-!        ikloc=ik-ikptnrloc(iproc,1)+1
-!        tag=ik*10
-!        call mpi_recv(num_nnp(ikloc),1,                        &
-!          MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ierr)
-!        tag=tag+1
-!        call mpi_recv(nnp(1,1,ikloc),max_num_nnp*3,            &
-!          MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ierr)
-!        tag=tag+1
-!        call mpi_recv(docc(1,ikloc),max_num_nnp,               &
-!          MPI_DOUBLE_PRECISION,0,tag,MPI_COMM_WORLD,status,ierr)
-!        tag=tag+1
-!        call mpi_recv(zrhofc(1,1,ikloc),ngvecme*max_num_nnp,  &
-!          MPI_DOUBLE_COMPLEX,0,tag,MPI_COMM_WORLD,status,ierr)
-!      endif
-!    endif
-!  enddo !ik
-!  if (iproc.eq.0) then
-!    if (task.eq.401) close(160)
-!    if (task.eq.403) close(160,status='delete')
-!    write(150,'("Finished reading matrix elements")')
-!    call flushifc(150)
-!  endif
-!  deallocate(status)
-!  deallocate(ikptnriproc)
-!endif !do_lr_io
-!
-!if (iproc.eq.0) then
-!  write(150,*)
-!  write(150,'("Starting k-point summation")')
-!  call flushifc(150)
-!endif
-!allocate(chi0_loc(ngvecme,ngvecme,nepts,nspin_chi0))
-!chi0_loc=dcmplx(0.d0,0.d0)
-!do ikloc=1,nkptnrloc(iproc)
-!  ik=ikptnrloc(iproc,1)+ikloc-1
-!  if (iproc.eq.0) then
-!    write(150,'("k-step ",I4," out of ",I4)')ikloc,nkptnrloc(0)
-!    call flushifc(150)
-!  endif
-!  do i=1,num_nnp(ikloc)
-!    do ig1=1,ngvecme
-!      do ig2=1,ngvecme
-!        mtrx1(ig1,ig2)=zrhofc(ig1,i,ikloc)*dconjg(zrhofc(ig2,i,ikloc))
-!      enddo
-!    enddo
-!    if (nspin_chi0.eq.1) then
-!      ispn=1
-!    else
-!      ispn=nnp(i,3,ikloc)
-!    endif
-!    do ie=1,nepts
-!      wt=docc(i,ikloc)/(evalsvnr(nnp(i,1,ikloc),ik)-evalsvnr(nnp(i,2,ikloc),idxkq(ik,1))+lr_w(ie))
-!      call zaxpy(ngvecme*ngvecme,wt,mtrx1,1,chi0_loc(1,1,ie,ispn),1)
-!    enddo !ie
-!  enddo !i
-!enddo !ikloc
-!
-!if (iproc.eq.0) then
-!  write(150,*)
-!  write(150,'("Done.")')
-!  call flushifc(150)
-!endif
-!
-!call mpi_barrier(MPI_COMM_WORLD,ierr)
-!do ispn=1,nspin_chi0
-!  do ie=1,nepts
-!    call mpi_reduce(chi0_loc(1,1,ie,ispn),chi0(1,1,ie,ispn), &
-!      ngvecme*ngvecme,MPI_DOUBLE_COMPLEX,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-!    call mpi_barrier(MPI_COMM_WORLD,ierr)
-!  enddo !ie
-!enddo !ispn
-!
-!deallocate(chi0_loc)
-!deallocate(zrhofc)
-!deallocate(num_nnp)
-!deallocate(nnp)
-!deallocate(docc)
-!
-!#else
-!
-!chi0=dcmplx(0.d0,0.d0)
-!do ik=1,nkptnr
-!  read(160)i1,i2
-!  if (i1.ne.ik.or.idxkq(ik,1).ne.i2) then
-!    write(*,*)
-!    write(*,'("Error(response_chi0): failed to read file ZRHOFC[,,].OUT")')
-!    write(*,*)
-!    call pstop
-!  endif
-!  read(160)num_nnp1
-!  read(160)nnp1(1:num_nnp1,1:3)
-!  read(160)docc1(1:num_nnp1)
-!  read(160)zrhofc1(1:ngvecme,1:num_nnp1)
-!
-!  do i=1,num_nnp1
-!    do ig1=1,ngvecme
-!      do ig2=1,ngvecme
-!        mtrx1(ig1,ig2)=zrhofc1(ig1,i)*dconjg(zrhofc1(ig2,i))
-!      enddo
-!    enddo
-!    if (nspin_chi0.eq.1) then
-!      ispn=1
-!    else
-!      ispn=nnp1(i,3)
-!    endif
-!    do ie=1,nepts
-!      wt=docc1(i)/(evalsvnr(nnp1(i,1),ik)-evalsvnr(nnp1(i,2),idxkq(ik,1))+lr_w(ie))
-!      call zaxpy(ngvecme*ngvecme,wt,mtrx1,1,chi0(1,1,ie,ispn),1)
-!    enddo !ie
-!  enddo !i
-!enddo !ik
-!
-!if (do_lr_io) then
-!  if (task.eq.401) close(160)
-!  if (task.eq.403) close(160,status='delete')
-!endif
-!
-!#endif
-!
-!if (iproc.eq.0) chi0=chi0/nkptnr/omega
-!
-!if (iproc.eq.0.and.do_lr_io) then
-!  write(fname,'("CHI0[",I4.3,",",I4.3,",",I4.3,"].OUT")') &
-!    ivq0m(1),ivq0m(2),ivq0m(3)
-!  open(160,file=trim(fname),form='unformatted',status='replace')
-!  write(160)nepts,lr_igq0
-!  write(160)gshme1,gshme2,gvecme1,gvecme2,ngvecme
-!  write(160)lr_w(1:nepts)
-!  write(160)vq0l(1:3)
-!  write(160)vq0rl(1:3)
-!  write(160)vq0c(1:3)
-!  write(160)vq0rc(1:3)
-!  write(160)spin_me,nspin_chi0
-!  do ie=1,nepts
-!    write(160)chi0(1:ngvecme,1:ngvecme,ie,1:nspin_chi0)
-!  enddo
-!  close(160)
-!!  open(200,file='chi0.dat',form='formatted',status='replace')
-!!  do ie=1,nepts
-!!    write(200,*)dreal(lr_w(ie)),dreal(chi0(5,5,ie,1)),dimag(chi0(5,5,ie,1))
-!!  enddo
-!!  close(200)
-!endif !iproc.eq.0.and.do_lr_io
-!
-!if (do_lr_io) then
-!  deallocate(lr_w)
-!  deallocate(zrhofc1)
-!  deallocate(docc1)
-!  deallocate(nnp1)
-!endif
-!deallocate(mtrx1)
-!deallocate(idxkq)
-!if (iproc.eq.0.and.do_lr_io) deallocate(chi0)
 
 return
 end

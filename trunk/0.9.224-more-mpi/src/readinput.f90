@@ -176,6 +176,7 @@ wannier=.false.
 natlcs=0
 dmbnd1=-1
 dmbnd2=-1
+nfxca=1
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -907,7 +908,7 @@ case('response')
   endif
 case('response1')
   read(50,*,err=20) bndme1,bndme2
-  read(50,*,err=20) fxc1
+  read(50,*,err=20) nfxca,fxc1
 case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_use_eint

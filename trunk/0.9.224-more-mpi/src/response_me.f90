@@ -70,9 +70,6 @@ logical, external :: root_cart
 lmaxexp=lmaxvr
 lmmaxexp=(lmaxexp+1)**2
 
-! initialize HDF5 library
-call h5open_f(ierr)
-
 ! q-vector in lattice coordinates
 do i=1,3
   vq0l(i)=1.d0*ivq0m(i)/ngridk(i)+1d-12

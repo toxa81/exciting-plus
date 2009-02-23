@@ -36,6 +36,19 @@ if (task.eq.400.or.task.eq.401) then
     endif
   endif
 endif
+if (task.eq.402) then
+  if (nproc.le.nvq0) then
+    mpi_dims=(/1,1,nproc/)
+  else
+    i=nproc/nvq0
+    if (i.le.nfxca) then
+      mpi_dims=(/1,i,nvq0/)
+    else
+      mpi_dims=(/nproc/(nvq0*nfxca),nfxca,nvq0/)
+    endif
+  endif
+endif
+
 #else
 mpi_dims=1
 mpi_x=0
