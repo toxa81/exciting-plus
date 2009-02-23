@@ -126,7 +126,7 @@ if (wannier) call dsync(wann_e,wann_nmax*wann_nspin*nkpt,.true.,.false.)
 if (task.eq.21) then
   do ik=1,nkpt
     call rsync(bc(1,1,1,ik),(lmax+1)*natmtot*nstsv,.true.,.false.)
-    call barrier
+    call barrier(comm_world)
   enddo
 endif 
 emin=minval(e)

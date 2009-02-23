@@ -65,7 +65,7 @@ character*8 c8
 ! external functions
 real(8), external :: r3taxi
 complex(8), external :: zfint
-logical, external :: root_of
+logical, external :: root_cart
 
 lmaxexp=lmaxvr
 lmmaxexp=(lmaxexp+1)**2
@@ -230,11 +230,11 @@ enddo
 ! setup n,n' stuff
 call getmeidx(.true.,occsvnr)
 #ifdef _MPI_
-if (root_of((/1,0,0/))) then
-  call mpi_allreduce(nmemax,i,1,MPI_INTEGER,MPI_MAX,mpi_comm_k,ierr)
+if (root_cart((/0,1,1/))) then
+  call mpi_allreduce(nmemax,i,1,MPI_INTEGER,MPI_MAX,comm_cart_100,ierr)
   nmemax=i
 endif
-call i_bcast((/0,1,1/),nmemax,1)
+call i_bcast_cart(comm_cart_011,nmemax,1)
 #endif
 allocate(nme(nkptnr_loc))
 allocate(ime(3,nmemax,nkptnr_loc))
@@ -262,7 +262,7 @@ call gensfacgp(ngvecme,vgq0c,ngvecme,sfacgq0)
 call qname(ivq0m,qnm)
 fname=trim(qnm)//"_me.hdf5"
 
-if (root_of((/0,0,1/))) then
+if (root_cart((/1,1,0/))) then
   call h5fcreate_f(trim(fname),H5F_ACC_TRUNC_F,h5_root_id,ierr)
   call h5gcreate_f(h5_root_id,'parameters',h5_tmp_id,ierr)
   call h5gclose_f(h5_tmp_id,ierr)
@@ -331,7 +331,7 @@ do ikstep=1,nkptnrloc(0)
 ! transmit wave-functions
   call wfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
     wfsvit2,ngknr2,igkignr2)
-  call barrier
+  call barrier(comm_world)
   if (wproc) then
     write(150,'("  OK send and recieve")')
     call flushifc(150)
@@ -365,8 +365,8 @@ do ikstep=1,nkptnrloc(0)
     endif
   endif ! (ikstep.le.nkptnrloc(iproc))
 ! write matrix elements
-! add timer count for writing
-  if (root_of((/1,0,1/))) then
+! todo: add timer count for writing
+  if (root_cart((/0,1,0/))) then
     do i=0,mpi_dims(1)-1
       do j=0,mpi_dims(3)-1
         if (i.eq.mpi_x(1).and.j.eq.mpi_x(3).and.ikstep.le.nkptnr_loc) then
@@ -380,7 +380,7 @@ do ikstep=1,nkptnrloc(0)
           call write_real8_array(me,3,(/2,ngvecme,nme(ikstep)/), &
             trim(fname),trim(path),'me')
         endif 
-        call grpbarrier(mpi_comm_kq)
+        call barrier(comm_cart_101)
       enddo
     enddo
   endif
@@ -493,7 +493,6 @@ complex(8), intent(inout) :: zrhofc0(ngvecme,nmemax)
 complex(8), allocatable :: mit(:,:)
 complex(8), allocatable :: a(:,:,:) 
 complex(8), allocatable :: zrhofc_tmp(:,:)
-complex(8), allocatable :: zrhofc_tmp2(:,:)
 
 
 integer is,ia,ias,ig,ig1,ig2,ist1,ist2,i,ispn,ispn2
@@ -501,7 +500,6 @@ integer idx0,bs,idx_g1,idx_g2
 integer iv3g(3)
 real(8) v1(3),v2(3),tp3g(2),len3g
 complex(8) sfac3g(natmtot)
-integer rank,root,ierr
 
 allocate(a(ngknr2,nstsv,nspinor))
 allocate(zrhofc_tmp(ngvecme,nmemax))
@@ -567,27 +565,10 @@ do ig=idx_g1,idx_g2
   enddo
 enddo !ig
 
-#ifdef _MPI_
-call mpi_cart_rank(mpi_comm_g,(/mpi_x(2)/),rank,ierr)
-call mpi_cart_rank(mpi_comm_g,(/0/),root,ierr)
-
 if (mpi_dims(2).gt.1) then
-  if (rank.eq.root) then
-    allocate(zrhofc_tmp2(ngvecme,nmemax))
-    zrhofc_tmp2=dcmplx(0.d0,0.d0)
-  endif
-  call mpi_reduce(zrhofc_tmp,zrhofc_tmp2,ngvecme*nmemax,MPI_DOUBLE_COMPLEX,MPI_SUM,root, &
-     mpi_comm_g,ierr)
-  if (rank.eq.root) then
-    zrhofc0=zrhofc0+zrhofc_tmp2 
-    deallocate(zrhofc_tmp2)
-  endif
-else
-  zrhofc0=zrhofc0+zrhofc_tmp
+  call d_reduce_cart(comm_cart_010,.false.,zrhofc_tmp,2*ngvecme*nmemax)
 endif
-#else
 zrhofc0=zrhofc0+zrhofc_tmp
-#endif
 
 deallocate(mit,a,zrhofc_tmp)
 return
@@ -611,11 +592,10 @@ complex(8), intent(in) :: wfsvmt1(lmmaxvr,nrfmax,natmtot,nstsv,nspinor)
 complex(8), intent(in) :: wfsvmt2(lmmaxvr,nrfmax,natmtot,nstsv,nspinor)
 complex(8), intent(inout) :: zrhofc0(ngvecme,nmemax)
 ! local variables
-integer ig,i,j,ist1,ist2,ias,io1,io2,lm1,lm2,ispn,ispn2,ierr,rank,root
+integer ig,i,j,ist1,ist2,ias,io1,io2,lm1,lm2,ispn,ispn2
 integer idx_g1,idx_g2,idx0,bs
 complex(8) a1(lmmaxvr,nrfmax),a2(lmmaxvr,nrfmax)
 complex(8), allocatable :: zrhofc_tmp(:,:)
-complex(8), allocatable :: zrhofc_tmp2(:,:)
 
 
 allocate(zrhofc_tmp(ngvecme,nmemax))
@@ -651,27 +631,11 @@ do ig=idx_g1,idx_g2
   enddo
 enddo !ig    
 
-#ifdef _MPI_
-call mpi_cart_rank(mpi_comm_g,(/mpi_x(2)/),rank,ierr)
-call mpi_cart_rank(mpi_comm_g,(/0/),root,ierr)
-
 if (mpi_dims(2).gt.1) then
-  if (rank.eq.root) then
-    allocate(zrhofc_tmp2(ngvecme,nmemax))
-    zrhofc_tmp2=dcmplx(0.d0,0.d0)
-  endif
-  call mpi_reduce(zrhofc_tmp,zrhofc_tmp2,ngvecme*nmemax,MPI_DOUBLE_COMPLEX,MPI_SUM,root, &
-     mpi_comm_g,ierr)
-  if (rank.eq.root) then
-    zrhofc0=zrhofc0+zrhofc_tmp2 
-    deallocate(zrhofc_tmp2)
-  endif
-else
-  zrhofc0=zrhofc0+zrhofc_tmp
+  call d_reduce_cart(comm_cart_010,.false.,zrhofc_tmp,2*ngvecme*nmemax)
 endif
-#else
 zrhofc0=zrhofc0+zrhofc_tmp
-#endif
+
 deallocate(zrhofc_tmp)
 
 return
@@ -882,7 +846,7 @@ integer ierr
 integer(HSIZE_T), dimension(1) :: dims
 
 dims(1)=n
-call h5fopen_f(fname,H5F_ACC_RDWR_F,h5_root_id,ierr)
+call h5fopen_f(fname,H5F_ACC_RDONLY_F,h5_root_id,ierr)
 call h5gopen_f(h5_root_id,path,group_id,ierr)
 call h5dopen_f(group_id,nm,dataset_id,ierr)
 call h5dread_f(dataset_id,H5T_NATIVE_DOUBLE,a,dims,ierr)
@@ -943,7 +907,7 @@ do i=1,ndims
   h_dims(i)=dims(i)
 enddo
 
-call h5fopen_f(fname,H5F_ACC_RDWR_F,h5_root_id,ierr)
+call h5fopen_f(fname,H5F_ACC_RDONLY_F,h5_root_id,ierr)
 call h5gopen_f(h5_root_id,path,group_id,ierr)
 call h5dopen_f(group_id,nm,dataset_id,ierr)
 call h5dread_f(dataset_id,H5T_NATIVE_DOUBLE,a,h_dims,ierr)
@@ -1004,7 +968,7 @@ integer(HSIZE_T), dimension(ndims) :: h_dims
 do i=1,ndims
   h_dims(i)=dims(i)
 enddo
-call h5fopen_f(fname,H5F_ACC_RDWR_F,h5_root_id,ierr)
+call h5fopen_f(fname,H5F_ACC_RDONLY_F,h5_root_id,ierr)
 call h5gopen_f(h5_root_id,path,group_id,ierr)
 call h5dopen_f(group_id,nm,dataset_id,ierr)
 call h5dread_f(dataset_id,H5T_NATIVE_INTEGER,a,h_dims,ierr)
@@ -1056,7 +1020,7 @@ integer ierr
 integer(HSIZE_T), dimension(1) :: dims
 
 dims(1)=n
-call h5fopen_f(fname,H5F_ACC_RDWR_F,h5_root_id,ierr)
+call h5fopen_f(fname,H5F_ACC_RDONLY_F,h5_root_id,ierr)
 call h5gopen_f(h5_root_id,path,group_id,ierr)
 call h5dopen_f(group_id,nm,dataset_id,ierr)
 call h5dread_f(dataset_id,H5T_NATIVE_INTEGER,a,dims,ierr)
@@ -1126,39 +1090,39 @@ do i=1,mpi_dims(1)
 ! send/recv when ip.ne.i (when k-points ik and jk are on different procs)
     if (mpi_x(1).eq.ip-1.and.ip.ne.i) then
 ! destination proc is i-1
-      call mpi_cart_rank(mpi_comm_k,(/i-1/),rank,ierr) 
+      call mpi_cart_rank(comm_cart_100,(/i-1/),rank,ierr) 
 ! send muffin-tin part
       tag=(ikstep*nproc+i-1)*10
       call mpi_isend(wfsvmtloc(1,1,1,1,1,ikloc),                     &
         lmmaxvr*nrfmax*natmtot*nstsv*nspinor,                        & 
-	    MPI_DOUBLE_COMPLEX,rank,tag,mpi_comm_k,req,ierr)
+	    MPI_DOUBLE_COMPLEX,rank,tag,comm_cart_100,req,ierr)
 ! send interstitial part
       tag=tag+1
       call mpi_isend(wfsvitloc(1,1,1,ikloc),ngkmax*nstsv*nspinor,    & 
-        MPI_DOUBLE_COMPLEX,rank,tag,mpi_comm_k,req,ierr)
+        MPI_DOUBLE_COMPLEX,rank,tag,comm_cart_100,req,ierr)
 ! send ngknr      
       tag=tag+1
-      call mpi_isend(ngknr(ikloc),1,MPI_INTEGER,rank,tag,mpi_comm_k, &
+      call mpi_isend(ngknr(ikloc),1,MPI_INTEGER,rank,tag,comm_cart_100, &
         req,ierr)
 ! send igkignr
       tag=tag+1
       call mpi_isend(igkignr(1,ikloc),ngkmax,MPI_INTEGER,rank,tag,   &
-        mpi_comm_k,req,ierr)  
+        comm_cart_100,req,ierr)  
     endif
     if (mpi_x(1).eq.i-1.and.ip.ne.i) then
 ! source proc is ip-1
-      call mpi_cart_rank(mpi_comm_k,(/ip-1/),rank,ierr)
+      call mpi_cart_rank(comm_cart_100,(/ip-1/),rank,ierr)
       tag=(ikstep*nproc+mpi_x(1))*10
       call mpi_recv(wfsvmt2,lmmaxvr*nrfmax*natmtot*nstsv*nspinor,    &
-        MPI_DOUBLE_COMPLEX,rank,tag,mpi_comm_k,stat,ierr)
+        MPI_DOUBLE_COMPLEX,rank,tag,comm_cart_100,stat,ierr)
       tag=tag+1
       call mpi_recv(wfsvit2,ngkmax*nstsv*nspinor,MPI_DOUBLE_COMPLEX, &
-        rank,tag,mpi_comm_k,stat,ierr)
+        rank,tag,comm_cart_100,stat,ierr)
       tag=tag+1
-      call mpi_recv(ngknr2,1,MPI_INTEGER,rank,tag,mpi_comm_k,stat,   &
+      call mpi_recv(ngknr2,1,MPI_INTEGER,rank,tag,comm_cart_100,stat,   &
         ierr)
       tag=tag+1
-      call mpi_recv(igkignr2,ngkmax,MPI_INTEGER,rank,tag,mpi_comm_k, &
+      call mpi_recv(igkignr2,ngkmax,MPI_INTEGER,rank,tag,comm_cart_100, &
         stat,ierr)
     endif
     if (mpi_x(1).eq.i-1.and.ip.eq.i) then

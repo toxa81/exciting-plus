@@ -122,7 +122,7 @@ do ik=1,nkptloc(0)
       call getevecsv(vkl(1,ikglob(ik)),evecsv)
       call getwfc(ikglob(ik),wann_c(1,1,1,ik))
     endif
-    call barrier
+    call barrier(comm_world)
   enddo !i
   if (ik.le.nkptloc(iproc)) then
     call match(ngk(1,ikglob(ik)),gkc(1,1,ik),tpgkc(1,1,1,ik),sfacgk(1,1,1,ik),apwalm)

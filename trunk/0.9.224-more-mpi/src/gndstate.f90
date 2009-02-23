@@ -100,7 +100,7 @@ if (wannier.and.task.eq.1.and.maxscl.gt.1) then
         call getwann(ik)
       end do
     end if
-    call barrier
+    call barrier(comm_world)
   end do
 endif
 ! size of mixing vector
@@ -343,7 +343,7 @@ do i=0,nproc-1
       if (wannier) call putwann(ik)
     end do
   end if
-  call barrier
+  call barrier(comm_world)
 end do
 if (wannier) call zsync(wann_h,wann_nmax*wann_nmax*wann_nspin*nkpt,.true.,.false.)
 if (wannier.and.iproc.eq.0) then

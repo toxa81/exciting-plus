@@ -63,7 +63,7 @@ end
 !      call write_real8(vkl(1,ikglob(ik)),3,'/kpoints/'//c4,'vkl')
 !    enddo
 !  endif
-!  call barrier
+!  call barrier(comm_world)
 !enddo
 !return
 !end
@@ -84,7 +84,7 @@ end
 !      call read_complex16(wfpoco(1,1,ik),nstsv*nstsv,'/kpoints/'//c4,'wfpoco')
 !    enddo
 !  endif
-!  call barrier
+!  call barrier(comm_world)
 !enddo
 !return
 !end

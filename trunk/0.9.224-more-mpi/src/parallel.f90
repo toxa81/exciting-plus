@@ -1,22 +1,84 @@
-subroutine barrier
-#ifdef _MPI_
-use mpi
-integer ierr
-call mpi_barrier(MPI_COMM_WORLD,ierr)
-#endif
-return
-end
-
-subroutine grpbarrier(mpi_comm)
+subroutine pinit
 use modmain
 #ifdef _MPI_
 use mpi
 #endif
 implicit none
-integer, intent(in) :: mpi_comm
+#ifdef _MPI_
+integer i,ierr
+logical, allocatable :: mpi_periods(:)
+if (.not.lmpi_init) then
+  call mpi_init(ierr)
+  comm_world=MPI_COMM_WORLD
+  call mpi_comm_size(comm_world,nproc,ierr)
+  call mpi_comm_rank(comm_world,iproc,ierr)
+  lmpi_init=.true.
+endif
+#endif
+mpi_ndims=1
+if (task.eq.400.or.task.eq.401.or.task.eq.402) then
+  mpi_ndims=3
+endif
+if (allocated(mpi_dims)) deallocate(mpi_dims)
+allocate(mpi_dims(mpi_ndims))
+if (allocated(mpi_x)) deallocate(mpi_x)
+allocate(mpi_x(mpi_ndims))
+#ifdef _MPI_
+if (task.eq.400.or.task.eq.401) then
+  if (nproc.le.nkptnr) then
+    mpi_dims=(/nproc,1,1/)
+  else
+    i=nproc/nkptnr
+    if (i.le.nvq0) then
+      mpi_dims=(/nkptnr,1,i/)
+    else
+      mpi_dims=(/nkptnr,nproc/(nkptnr*nvq0),nvq0/)
+    endif
+  endif
+endif
+#else
+mpi_dims=1
+mpi_x=0
+#endif
+
+#ifdef _MPI_
+allocate(mpi_periods(mpi_ndims))
+mpi_periods=.false.
+call mpi_cart_create(comm_world,mpi_ndims,mpi_dims,mpi_periods,   &
+  .false.,comm_cart,ierr)
+call mpi_cart_get(comm_cart,mpi_ndims,mpi_dims,mpi_periods,mpi_x, &
+  ierr)
+deallocate(mpi_periods)
+if (mpi_ndims.ge.3) then
+  call mpi_cart_sub(comm_cart,(/.true.,.false.,.false./),comm_cart_100,ierr)
+  call mpi_cart_sub(comm_cart,(/.false.,.true.,.false./),comm_cart_010,ierr)
+  call mpi_cart_sub(comm_cart,(/.false.,.false.,.true./),comm_cart_001,ierr)
+  call mpi_cart_sub(comm_cart,(/.true.,.false.,.true./),comm_cart_101,ierr)
+  call mpi_cart_sub(comm_cart,(/.false.,.true.,.true./),comm_cart_011,ierr)
+  call mpi_cart_sub(comm_cart,(/.true.,.true.,.false./),comm_cart_110,ierr)
+endif
+#endif
+return
+end
+
+
+
+
+
+
+
+
+
+
+subroutine barrier(comm)
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+integer, intent(in) :: comm
 #ifdef _MPI_
 integer ierr
-call mpi_barrier(mpi_comm,ierr)
+call mpi_barrier(comm,ierr)
 #endif
 return
 end
@@ -134,57 +196,6 @@ if (doreduce.and.iproc.eq.0) deallocate(tmp)
 return
 end
 
-subroutine dsync2(idims,var,n,doreduce,dobcast)
-use modmain
-#ifdef _MPI_
-use mpi
-#endif
-implicit none
-! arguments
-integer, intent(in) :: idims(mpi_ndims)
-logical, intent(in) :: doreduce
-logical, intent(in) :: dobcast
-integer, intent(in) :: n
-real(8), intent(inout) :: var(n)
-
-#ifdef _MPI_
-integer mpi_comm_tmp,i,ierr
-real(8), allocatable :: tmp(:)
-logical ldims(mpi_ndims)
-logical ldims2(mpi_ndims)
-integer rank
-logical, external :: root_of
-
-do i=1,mpi_ndims
-  if (idims(i).eq.0) then
-    ldims(i)=.false.
-    ldims2(i)=.true.
-  else 
-    ldims(i)=.true.
-    ldims2(i)=.false.
-  endif
-enddo
-call mpi_cart_sub(mpi_comm_cart,ldims,mpi_comm_tmp,ierr)
-
-if (root_of(idims)) then
-  call mpi_cart_rank(mpi_comm_tmp,mpi_x,rank,ierr)
-  if (doreduce.and.rank.eq.0) allocate(tmp(n))
-  if (doreduce) then
-    call mpi_reduce(var,tmp,n,MPI_DOUBLE_PRECISION,MPI_SUM,0, &
-      mpi_comm_tmp,ierr)
-    if (rank.eq.0) var=tmp
-  endif
-  if (dobcast) call mpi_bcast(var,n,MPI_DOUBLE_PRECISION,0,mpi_comm_tmp,ierr)
-  if (doreduce.and.rank.eq.0) deallocate(tmp)
-endif
-
-call mpi_cart_sub(mpi_comm_cart,ldims2,mpi_comm_tmp,ierr)
-call mpi_bcast(var,n,MPI_DOUBLE_PRECISION,0,mpi_comm_tmp,ierr)
-
-#endif
-
-return
-end
 
 subroutine rsync(var,n,doreduce,dobcast)
 use modmain
@@ -292,7 +303,7 @@ if (doreduce.and.iproc.eq.0) deallocate(tmp)
 return
 end
 
-logical function root_of(idims)
+logical function root_cart(idims)
 use modmain
 implicit none
 integer, intent(in) :: idims(mpi_ndims)
@@ -300,126 +311,27 @@ logical l1
 integer i
 l1=.true.
 do i=1,mpi_ndims
-  if (idims(i).eq.0.and.mpi_x(i).ne.0) l1=.false.
+  if (idims(i).eq.1.and.mpi_x(i).ne.0) l1=.false.
 enddo
-root_of=l1
+root_cart=l1
 return
 end
 
-!subroutine split_idx(l,n,j,l0,l1)
-!implicit none
-!! arguments
-!integer, intent(in) :: l
-!integer, intent(in) :: n
-!integer, intent(in) :: j
-!integer, intent(out) :: l0
-!integer, intent(out) :: l1 
-!! local variables
-!integer i,n1,n2
-!integer tmp(n),tmp2(n,2)
-!
-!! minimum number of points for each segment
-!n1=l/n
-!! remaining number of points which will be distributed among first n2 segments
-!n2=l-n1*n
-!! each segment gets n1 points
-!tmp(:)=n1
-!! additionally, first n2 segments get extra point
-!do i=1,n2
-!  tmp(i)=tmp(i)+1
-!enddo 
-!! build index of first and last point for each segment
-!tmp2(1,1)=1
-!tmp2(1,2)=tmp(1)
-!do i=2,n
-!  tmp2(i,1)=tmp2(i-1,2)+1
-!  tmp2(i,2)=tmp2(i,1)+tmp(i)-1
-!enddo
-!l0=tmp2(j,1)
-!l1=tmp2(j,2)
-!   
-!return
-!end
 
-subroutine d_allreduce(mpi_comm,val,n)
-#ifdef _MPI_
-use mpi
-#endif
-implicit none
-integer, intent(in) :: mpi_comm
-integer, intent(in) :: n
-real(8), intent(inout) :: val(n)
-real(8), allocatable :: tmp(:)
-integer ierr
-#ifdef _MPI_
-allocate(tmp(n))
-call mpi_allreduce(val,tmp,n,MPI_DOUBLE_PRECISION,MPI_SUM,mpi_comm,ierr)
-val=tmp
-deallocate(tmp)
-#endif
-return
-end
-
-subroutine d_bcast(idims,val,n)
+subroutine i_bcast_cart(comm,val,n)
 use modmain
 #ifdef _MPI_
 use mpi
 #endif
 implicit none
-integer, intent(in) :: idims(mpi_ndims)
-integer, intent(in) :: n
-real(8), intent(inout) :: val(n)
-logical ldims(mpi_ndims)
-integer i,root,mpi_comm,ierr,nsub_coord
-integer, allocatable :: sub_coord(:)
-#ifdef _MPI_
-nsub_coord=0
-do i=1,mpi_ndims
-  if (idims(i).eq.0) then
-    ldims(i)=.false.
-  else
-    ldims(i)=.true.
-    nsub_coord=nsub_coord+1
-  endif
-enddo
-call mpi_cart_sub(mpi_comm_cart,ldims,mpi_comm,ierr)
-allocate(sub_coord(nsub_coord))
-sub_coord=0
-call mpi_cart_rank(mpi_comm,sub_coord,root,ierr)
-call mpi_bcast(val,n,MPI_DOUBLE_PRECISION,root,mpi_comm,ierr)
-deallocate(sub_coord)
-#endif
-return
-end
-
-subroutine i_bcast(idims,val,n)
-use modmain
-#ifdef _MPI_
-use mpi
-#endif
-implicit none
-integer, intent(in) :: idims(mpi_ndims)
+integer, intent(in) :: comm
 integer, intent(in) :: n
 integer, intent(inout) :: val(n)
-logical ldims(mpi_ndims)
-integer i,root,mpi_comm,ierr,nsub_coord
-integer, allocatable :: sub_coord(:)
+integer root,ierr,comm_x(mpi_ndims)
 #ifdef _MPI_
-nsub_coord=0
-do i=1,mpi_ndims
-  if (idims(i).eq.0) then
-    ldims(i)=.false.
-  else
-    ldims(i)=.true.
-    nsub_coord=nsub_coord+1
-  endif
-enddo
-call mpi_cart_sub(mpi_comm_cart,ldims,mpi_comm,ierr)
-allocate(sub_coord(nsub_coord))
-sub_coord=0
-call mpi_cart_rank(mpi_comm,sub_coord,root,ierr)
-call mpi_bcast(val,n,MPI_INTEGER,root,mpi_comm,ierr)
-deallocate(sub_coord)
+comm_x=0
+call mpi_cart_rank(comm,comm_x,root,ierr)
+call mpi_bcast(val,n,MPI_INTEGER,root,comm,ierr)
 #endif
 return
 end
@@ -430,52 +342,62 @@ end
 
 
 
-subroutine d_reduce_cart(idims,all,val,n)
+subroutine d_reduce_cart(comm,all,val,n)
 use modmain
 #ifdef _MPI_
 use mpi
 #endif
 implicit none
-integer, intent(in) :: idims(mpi_ndims)
+integer, intent(in) :: comm
 logical, intent(in) :: all
 integer, intent(in) :: n
 real(8), intent(inout) :: val(n)
 real(8), allocatable :: tmp(:)
-integer, allocatable :: sub_coord(:)
-integer  nsub_coord,root
-logical ldims(mpi_ndims)
-integer i,mpi_comm,ierr
+integer comm_dims(mpi_ndims),comm_x(mpi_ndims)
+logical comm_periods(mpi_ndims)
+integer root,rank,ierr
 #ifdef _MPI_
-nsub_coord=0
-do i=1,mpi_ndims
-  if (idims(i).eq.0) then
-    ldims(i)=.false.
-  else
-    ldims(i)=.true.
-    nsub_coord=nsub_coord+1
-  endif
-enddo
-
-call mpi_cart_sub(mpi_comm_cart,ldims,mpi_comm,ierr)
-allocate(sub_coord(nsub_coord))
-sub_coord=0
+comm_dims=-1
+comm_x=-1
+call mpi_cart_get(comm,mpi_ndims,comm_dims,comm_periods,comm_x,ierr)
+call mpi_cart_rank(comm,comm_x,rank,ierr)
+comm_x=0
+call mpi_cart_rank(comm,comm_x,root,ierr)
 if (all) then
   allocate(tmp(n))
-  call mpi_allreduce(val,tmp,n,MPI_DOUBLE_PRECISION,MPI_SUM,mpi_comm,ierr)
+  call mpi_allreduce(val,tmp,n,MPI_DOUBLE_PRECISION,MPI_SUM,comm,ierr)
   val=tmp
   deallocate(tmp)
 else
-  call mpi_cart_rank(mpi_comm,sub_coord,root,ierr)
-  allocate(tmp(n))
-  call mpi_reduce(val,tmp,n,MPI_DOUBLE_PRECISION,MPI_SUM,root, &
-    mpi_comm,ierr)
-  val=tmp
-  deallocate(tmp)
+  if (rank.eq.root) allocate(tmp(n))
+  call mpi_reduce(val,tmp,n,MPI_DOUBLE_PRECISION,MPI_SUM,root,comm,ierr)
+  if (rank.eq.root) then
+    val=tmp
+    deallocate(tmp)
+  endif
 endif
-deallocate(sub_coord)
 #endif
 return
 end
+
+subroutine d_bcast_cart(comm,val,n)
+use modmain
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+integer, intent(in) :: comm
+integer, intent(in) :: n
+real(8), intent(inout) :: val(n)
+integer root,ierr,comm_x(mpi_ndims)
+#ifdef _MPI_
+comm_x=0
+call mpi_cart_rank(comm,comm_x,root,ierr)
+call mpi_bcast(val,n,MPI_DOUBLE_PRECISION,root,comm,ierr)
+#endif
+return
+end
+
 
 subroutine idxbos(length,nblocks,iblock,idx0,blocksize)
 implicit none

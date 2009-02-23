@@ -916,6 +916,8 @@ character(80) notes(maxnlns)
 !-----------------------!
 !      MPI parallel     !
 !-----------------------!
+logical lmpi_init
+data lmpi_init /.false./
 integer iproc
 data iproc /0/
 integer nproc
@@ -926,16 +928,17 @@ integer, allocatable :: nkptnrloc(:)
 integer, allocatable :: ikptnrloc(:,:)
 complex(8), allocatable :: evecfvloc(:,:,:,:)
 complex(8), allocatable :: evecsvloc(:,:,:)
-integer mpi_comm_cart
-integer mpi_comm_k
-integer mpi_comm_kq
-integer mpi_comm_gq
-integer mpi_comm_g
-integer mpi_comm_b
+integer comm_world
+integer comm_cart
+integer comm_cart_100
+integer comm_cart_010
+integer comm_cart_001
+integer comm_cart_101
+integer comm_cart_011
+integer comm_cart_110
 integer mpi_ndims
 integer, allocatable :: mpi_dims(:)
 integer, allocatable :: mpi_x(:)
-logical, allocatable :: mpi_periods(:)
 integer nkptnr_loc
 logical wproc
 
