@@ -36,7 +36,7 @@ complex(8) sfac3g(natmtot),zt1
 
 
 
-if (.true.) then
+if (.false.) then
 allocate(a(ngknr2,nstsv,nspinor))
 allocate(zrhofc_tmp(ngvecme,nmemax))
 zrhofc_tmp=dcmplx(0.d0,0.d0)
