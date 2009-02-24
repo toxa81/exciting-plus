@@ -1081,7 +1081,7 @@ complex(8), allocatable :: wf_p(:,:,:,:,:)
 !----------------!
 !      timer     !
 !----------------!
-integer, parameter :: ntimers=10
+integer, parameter :: ntimers=20
 real(8), allocatable :: timer(:,:)
 
 end module

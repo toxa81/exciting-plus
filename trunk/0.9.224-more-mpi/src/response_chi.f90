@@ -286,11 +286,6 @@ endif
 
 
 
-call barrier(comm_world)
-call pstop
-
-
-
 
 
 

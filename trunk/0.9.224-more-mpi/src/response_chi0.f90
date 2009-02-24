@@ -5,30 +5,20 @@ use hdf5
 use mpi
 #endif
 implicit none
-
+! arguments
 integer, intent(in) :: ivq0m(3)
 real(8), intent(in) :: evalsvnr(nstsv,nkptnr)
-
-complex(8), allocatable :: zrhofc1(:,:)
+! local variables
 complex(8), allocatable :: chi0_loc(:,:,:)
-complex(8), allocatable :: mtrx1(:,:)
-
-integer num_nnp1
-integer, allocatable :: nnp1(:,:)
-real(8), allocatable :: docc1(:)
-
 complex(8), allocatable :: me(:,:,:)
-
 integer i,j,ik,ie,nkptnr_,i1,i2,ikloc,ig1,ig2,nspinor_,ispn
 integer idx0,bs
 complex(8) wt
 character*100 fname,path,qnm
 character*8 c8
-
-! for parallel execution
-integer, allocatable :: ikptnriproc(:)
-integer ierr,tag
-integer, allocatable :: status(:)
+integer ierr
+logical exist
+integer ie1
 
 ! HDF5
 integer(hid_t) h5_root_id
@@ -170,60 +160,64 @@ call i_bcast_cart(comm_cart_010,ime,3*nmemax*nkptnr_loc)
 call d_bcast_cart(comm_cart_010,docc,nmemax*nkptnr_loc)
 call d_bcast_cart(comm_cart_010,me,2*ngvecme*nmemax*nkptnr_loc)
 
+ie1=0
 fname=trim(qnm)//"_chi0.hdf5"
 if (root_cart((/1,1,0/))) then
-  call h5fcreate_f(trim(fname),H5F_ACC_TRUNC_F,h5_root_id,ierr)
-  call h5gcreate_f(h5_root_id,'parameters',h5_tmp_id,ierr)
-  call h5gclose_f(h5_tmp_id,ierr)
-  call h5gcreate_f(h5_root_id,'iw',h5_w_id,ierr)
-  do i=1,nepts
-    write(c8,'(I8.8)')i
-    call h5gcreate_f(h5_w_id,c8,h5_iw_id,ierr)
-    call h5gclose_f(h5_iw_id,ierr)
-  enddo
-  call h5gclose_f(h5_w_id,ierr)
-  call h5fclose_f(h5_root_id,ierr)
-  call write_integer(nepts,1,trim(fname),'/parameters','nepts')
-  call write_integer(lr_igq0,1,trim(fname),'/parameters','lr_igq0')
-  call write_integer(gshme1,1,trim(fname),'/parameters','gshme1')
-  call write_integer(gshme2,1,trim(fname),'/parameters','gshme2')
-  call write_integer(gvecme1,1,trim(fname),'/parameters','gvecme1')
-  call write_integer(gvecme2,1,trim(fname),'/parameters','gvecme2')
-  call write_integer(ngvecme,1,trim(fname),'/parameters','ngvecme')
-  call write_integer(spin_me,1,trim(fname),'/parameters','spin_me')
-  call write_integer(nspin_chi0,1,trim(fname),'/parameters','nspin_chi0')
-  call write_real8(vq0l,3,trim(fname),'/parameters','vq0l')
-  call write_real8(vq0rl,3,trim(fname),'/parameters','vq0rl')
-  call write_real8(vq0c,3,trim(fname),'/parameters','vq0c')
-  call write_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
+  inquire(file=trim(fname),exist=exist)
+  if (.not.exist) then
+	call h5fcreate_f(trim(fname),H5F_ACC_TRUNC_F,h5_root_id,ierr)
+	call h5gcreate_f(h5_root_id,'parameters',h5_tmp_id,ierr)
+	call h5gclose_f(h5_tmp_id,ierr)
+	call h5gcreate_f(h5_root_id,'iw',h5_w_id,ierr)
+	do i=1,nepts
+	  write(c8,'(I8.8)')i
+	  call h5gcreate_f(h5_w_id,c8,h5_iw_id,ierr)
+	  call h5gclose_f(h5_iw_id,ierr)
+	enddo
+	call h5gclose_f(h5_w_id,ierr)
+	call h5fclose_f(h5_root_id,ierr)
+	call write_integer(nepts,1,trim(fname),'/parameters','nepts')
+	call write_integer(lr_igq0,1,trim(fname),'/parameters','lr_igq0')
+	call write_integer(gshme1,1,trim(fname),'/parameters','gshme1')
+	call write_integer(gshme2,1,trim(fname),'/parameters','gshme2')
+	call write_integer(gvecme1,1,trim(fname),'/parameters','gvecme1')
+	call write_integer(gvecme2,1,trim(fname),'/parameters','gvecme2')
+	call write_integer(ngvecme,1,trim(fname),'/parameters','ngvecme')
+	call write_integer(spin_me,1,trim(fname),'/parameters','spin_me')
+	call write_integer(nspin_chi0,1,trim(fname),'/parameters','nspin_chi0')
+	call write_real8(vq0l,3,trim(fname),'/parameters','vq0l')
+	call write_real8(vq0rl,3,trim(fname),'/parameters','vq0rl')
+	call write_real8(vq0c,3,trim(fname),'/parameters','vq0c')
+	call write_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
+	call write_integer(0,1,trim(fname),'/parameters','ie1')
+  else
+    call read_integer(ie1,1,trim(fname),'/parameters','ie1')
+  endif
 endif
+call i_bcast_cart(comm_cart_110,ie1,1)
+ie1=ie1+1
 
-allocate(mtrx1(ngvecme,ngvecme))
+!allocate(mtrx1(ngvecme,ngvecme))
 allocate(chi0_loc(ngvecme,ngvecme,nspin_chi0))
 
 if (wproc) then
   write(150,*)
   write(150,'("Starting chi0 summation")')
+  write(150,'("  first energy point : ",I4)')ie1
   call flushifc(150)
 endif
-do ie=1,nepts
+do ie=ie1,nepts
   call timer_reset(1)
   call timer_start(1)
   chi0_loc=dcmplx(0.d0,0.d0)
+  j=0
   do ikloc=1,nkptnr_loc
     ik=ikptnrloc(mpi_x(1),1)+ikloc-1
     call idxbos(nme(ikloc),mpi_dims(2),mpi_x(2)+1,idx0,bs)
     i1=idx0+1
     i2=idx0+bs
+    j=j+bs
     do i=i1,i2
-      mtrx1=dcmplx(0.d0,0.d0)
-      do ig2=1,ngvecme
-        if (abs(me(ig2,i,ikloc)).gt.1d-10) then
-          do ig1=1,ngvecme
-            mtrx1(ig1,ig2)=me(ig1,i,ikloc)*dconjg(me(ig2,i,ikloc))
-          enddo
-        endif
-      enddo
       if (nspin_chi0.eq.1) then
         ispn=1
       else
@@ -231,7 +225,24 @@ do ie=1,nepts
       endif
       wt=docc(i,ikloc)/(evalsvnr(ime(1,i,ikloc),ik) - &
         evalsvnr(ime(2,i,ikloc),idxkq(1,ikloc))+lr_w(ie))
-      call zaxpy(ngvecme*ngvecme,wt,mtrx1,1,chi0_loc(1,1,ispn),1)
+      call zgerc(ngvecme,ngvecme,wt,me(1,i,ikloc),1,me(1,i,ikloc),1, &
+        chi0_loc(1,1,ispn),ngvecme)
+!      mtrx1=dcmplx(0.d0,0.d0)
+!      do ig2=1,ngvecme
+!        if (abs(me(ig2,i,ikloc)).gt.1d-10) then
+!          do ig1=1,ngvecme
+!            mtrx1(ig1,ig2)=me(ig1,i,ikloc)*dconjg(me(ig2,i,ikloc))
+!          enddo
+!        endif
+!      enddo
+!      if (nspin_chi0.eq.1) then
+!        ispn=1
+!      else
+!        ispn=ime(3,i,ikloc)
+!      endif
+!      wt=docc(i,ikloc)/(evalsvnr(ime(1,i,ikloc),ik) - &
+!        evalsvnr(ime(2,i,ikloc),idxkq(1,ikloc))+lr_w(ie))
+!      call zaxpy(ngvecme*ngvecme,wt,mtrx1,1,chi0_loc(1,1,ispn),1)
     enddo !i
   enddo !ikloc
   if (mpi_dims(2).gt.1) then
@@ -246,10 +257,12 @@ do ie=1,nepts
     call write_real8(lr_w(ie),2,trim(fname),trim(path),'w')
     call write_real8_array(chi0_loc,4,(/2,ngvecme,ngvecme,nspin_chi0/), &
       trim(fname),trim(path),'chi0')
+    call rewrite_integer(ie,1,trim(fname),'/parameters','ie1')
   endif
   call timer_stop(1)
   if (wproc) then
-    write(150,'("energy point ",I4," done in ",F8.2," seconds")')ie,timer(1,2)
+    write(150,'("energy point ",I4," done in ",F8.2," seconds, ",F8.2," MB/s")') &
+      ie,timer(1,2),(16.0*j*ngvecme**2)/1024/1024/timer(1,2)
     call flushifc(150)
   endif
   call barrier(comm_world)
@@ -263,7 +276,7 @@ deallocate(nme)
 deallocate(ime)
 deallocate(docc)
 deallocate(me)
-deallocate(mtrx1)
+!deallocate(mtrx1)
 deallocate(chi0_loc)
 
 return

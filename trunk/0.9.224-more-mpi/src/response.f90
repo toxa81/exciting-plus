@@ -272,18 +272,36 @@ endif
 
 if (task.eq.400) then
 ! calculate matrix elements
+  call timer_start(10)
   call response_me(ivq0m_list(1,mpi_x(3)+1),wfsvmtloc,wfsvitloc,ngknr, &
     igkignr,occsvnr)
+  call timer_stop(10)
+  if (wproc) then
+    write(150,'("Total time : ",F8.2," seconds")')timer(10,2)
+    call flushifc(150)
+  endif
 endif
 
 if (task.eq.401) then
 ! calculate chi0
+  call timer_start(11)
   call response_chi0(ivq0m_list(1,mpi_x(3)+1),evalsvnr)
+  call timer_stop(11)
+  if (wproc) then
+    write(150,'("Total time : ",F8.2," seconds")')timer(11,2)
+    call flushifc(150)
+  endif
 endif
 
 if (task.eq.402) then
 ! calculate chi
-  call response_chi(ivq0m_list(1,mpi_x(2)+1))
+  call timer_start(12)
+  call response_chi(ivq0m_list(1,mpi_x(3)+1))
+  call timer_stop(12)
+  if (wproc) then
+    write(150,'("Total time : ",F8.2," seconds")')timer(12,2)
+    call flushifc(150)
+  endif
 endif
 
 if (task.eq.404) call response_jdos(occsvnr,evalsvnr)
