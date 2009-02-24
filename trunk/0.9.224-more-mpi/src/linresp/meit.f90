@@ -118,7 +118,7 @@ allocate(zrhoir(ngrtot))
 !-----------------------------------!
 !     interstitial wavefunction     !
 !-----------------------------------!
-!t1=1.d0/sqrt(omega)
+!t1=1.d0 /sqrt(omega)
 wfir1(:,:,:)=dcmplx(0.d0,0.d0)
 wfir2(:,:,:)=dcmplx(0.d0,0.d0)
 
@@ -131,7 +131,7 @@ do j=1,nstsv
         i=i+1
         zt1=evecsv1(i,j)
         if (abs(dble(zt1))+abs(aimag(zt1)).gt.epsocc) then
-          zt1=t1*zt1
+          !zt1=t1*zt1
           do igp=1,ngknr1
             ifg=igfft(igkignr1(igp))
             wfir1(ifg,ispn,j)=wfir2(ifg,ispn,j)+zt1*evecfv1(igp,ist,1)
@@ -143,7 +143,7 @@ do j=1,nstsv
     do ispn=1,nspinor
       do ist=1,nstfv
         i=i+1
-        zt1=evecsv2(i,j)	
+        !zt1=evecsv2(i,j)	
         if (abs(dble(zt1))+abs(aimag(zt1)).gt.epsocc) then
           zt1=t1*zt1
           do igp=1,ngknr2
@@ -157,11 +157,11 @@ do j=1,nstsv
 ! spin-unpolarised wavefunction
     do igp=1,ngknr1
       ifg=igfft(igkignr1(igp))
-      wfir1(ifg,1,j)=t1*evecfv1(igp,j,1)
+      wfir1(ifg,1,j)=evecfv1(igp,j,1)
     end do
     do igp=1,ngknr2
       ifg=igfft(igkignr2(igp))
-      wfir2(ifg,1,j)=t1*evecfv2(igp,j,1)
+      wfir2(ifg,1,j)=evecfv2(igp,j,1)
     end do
   end if
 ! Fourier transform wavefunction to real-space
