@@ -165,31 +165,31 @@ fname=trim(qnm)//"_chi0.hdf5"
 if (root_cart((/1,1,0/))) then
   inquire(file=trim(fname),exist=exist)
   if (.not.exist) then
-	call h5fcreate_f(trim(fname),H5F_ACC_TRUNC_F,h5_root_id,ierr)
-	call h5gcreate_f(h5_root_id,'parameters',h5_tmp_id,ierr)
-	call h5gclose_f(h5_tmp_id,ierr)
-	call h5gcreate_f(h5_root_id,'iw',h5_w_id,ierr)
-	do i=1,nepts
-	  write(c8,'(I8.8)')i
-	  call h5gcreate_f(h5_w_id,c8,h5_iw_id,ierr)
-	  call h5gclose_f(h5_iw_id,ierr)
-	enddo
-	call h5gclose_f(h5_w_id,ierr)
-	call h5fclose_f(h5_root_id,ierr)
-	call write_integer(nepts,1,trim(fname),'/parameters','nepts')
-	call write_integer(lr_igq0,1,trim(fname),'/parameters','lr_igq0')
-	call write_integer(gshme1,1,trim(fname),'/parameters','gshme1')
-	call write_integer(gshme2,1,trim(fname),'/parameters','gshme2')
-	call write_integer(gvecme1,1,trim(fname),'/parameters','gvecme1')
-	call write_integer(gvecme2,1,trim(fname),'/parameters','gvecme2')
-	call write_integer(ngvecme,1,trim(fname),'/parameters','ngvecme')
-	call write_integer(spin_me,1,trim(fname),'/parameters','spin_me')
-	call write_integer(nspin_chi0,1,trim(fname),'/parameters','nspin_chi0')
-	call write_real8(vq0l,3,trim(fname),'/parameters','vq0l')
-	call write_real8(vq0rl,3,trim(fname),'/parameters','vq0rl')
-	call write_real8(vq0c,3,trim(fname),'/parameters','vq0c')
-	call write_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
-	call write_integer(0,1,trim(fname),'/parameters','ie1')
+    call h5fcreate_f(trim(fname),H5F_ACC_TRUNC_F,h5_root_id,ierr)
+    call h5gcreate_f(h5_root_id,'parameters',h5_tmp_id,ierr)
+    call h5gclose_f(h5_tmp_id,ierr)
+    call h5gcreate_f(h5_root_id,'iw',h5_w_id,ierr)
+    do i=1,nepts
+      write(c8,'(I8.8)')i
+      call h5gcreate_f(h5_w_id,c8,h5_iw_id,ierr)
+      call h5gclose_f(h5_iw_id,ierr)
+    enddo
+    call h5gclose_f(h5_w_id,ierr)
+    call h5fclose_f(h5_root_id,ierr)
+    call write_integer(nepts,1,trim(fname),'/parameters','nepts')
+    call write_integer(lr_igq0,1,trim(fname),'/parameters','lr_igq0')
+    call write_integer(gshme1,1,trim(fname),'/parameters','gshme1')
+    call write_integer(gshme2,1,trim(fname),'/parameters','gshme2')
+    call write_integer(gvecme1,1,trim(fname),'/parameters','gvecme1')
+    call write_integer(gvecme2,1,trim(fname),'/parameters','gvecme2')
+    call write_integer(ngvecme,1,trim(fname),'/parameters','ngvecme')
+    call write_integer(spin_me,1,trim(fname),'/parameters','spin_me')
+    call write_integer(nspin_chi0,1,trim(fname),'/parameters','nspin_chi0')
+    call write_real8(vq0l,3,trim(fname),'/parameters','vq0l')
+    call write_real8(vq0rl,3,trim(fname),'/parameters','vq0rl')
+    call write_real8(vq0c,3,trim(fname),'/parameters','vq0c')
+    call write_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
+    call write_integer(0,1,trim(fname),'/parameters','ie1')
   else
     call read_integer(ie1,1,trim(fname),'/parameters','ie1')
   endif
