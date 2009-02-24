@@ -362,7 +362,8 @@ do ikstep=1,nkptnrloc(0)
       call timer_start(5)
       call zrhoftit(nme(ikstep),ime(1,1,ikstep),ngknr(ikstep), &
         ngknr2,igkignr(1,ikstep),igkignr2,idxkq(2,ik),         &
-        wfsvitloc(1,1,1,ikstep),wfsvit2,me)
+        wfsvitloc(1,1,1,ikstep),wfsvit2,me,evecfvloc(1,1,1,ikstep), &
+        evecsvloc(1,1,ikstep),evecfv2,evecsv2,igfft1(1,ik))
       call timer_stop(5)
    else
       me=dcmplx(1.d0,0.d0)
@@ -406,6 +407,8 @@ deallocate(me)
 deallocate(wfsvmt2)
 deallocate(wfsvit2)
 deallocate(igkignr2)
+deallocate(evecfv2)
+deallocate(evecsv2)
 
 deallocate(nme)
 deallocate(ime)
