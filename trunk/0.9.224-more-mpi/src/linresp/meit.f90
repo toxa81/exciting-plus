@@ -31,7 +31,7 @@ complex(8), allocatable :: zrhoir(:)
 integer is,ia,ias,ig,ig1,ig2,ist1,ist2,i,ispn,ispn2,j,ist
 integer idx0,bs,idx_g1,idx_g2,igp,ifg,ir,i1,i2
 integer iv3g(3)
-real(8) v1(3),v2(3),tp3g(2),len3g,t1
+real(8) v1(3),v2(3),tp3g(2),len3g
 complex(8) sfac3g(natmtot),zt1
 
 
@@ -118,7 +118,6 @@ allocate(zrhoir(ngrtot))
 !-----------------------------------!
 !     interstitial wavefunction     !
 !-----------------------------------!
-!t1=1.d0 /sqrt(omega)
 wfir1(:,:,:)=dcmplx(0.d0,0.d0)
 wfir2(:,:,:)=dcmplx(0.d0,0.d0)
 
@@ -131,7 +130,6 @@ do j=1,nstsv
         i=i+1
         zt1=evecsv1(i,j)
         if (abs(dble(zt1))+abs(aimag(zt1)).gt.epsocc) then
-          !zt1=t1*zt1
           do igp=1,ngknr1
             ifg=igfft(igkignr1(igp))
             wfir1(ifg,ispn,j)=wfir2(ifg,ispn,j)+zt1*evecfv1(igp,ist,1)
@@ -143,9 +141,8 @@ do j=1,nstsv
     do ispn=1,nspinor
       do ist=1,nstfv
         i=i+1
-        !zt1=evecsv2(i,j)	
+        zt1=evecsv2(i,j)	
         if (abs(dble(zt1))+abs(aimag(zt1)).gt.epsocc) then
-          zt1=t1*zt1
           do igp=1,ngknr2
             ifg=igfft(igkignr2(igp))
             wfir2(ifg,ispn,j)=wfir2(ifg,ispn,j)+zt1*evecfv2(igp,ist,1)
@@ -192,9 +189,6 @@ do i=i1,i2
       zrhoir(ir)=conjg(wfir1(ir,1,ist1))*wfir2(ir,1,ist2)*cfunir(ir)
     end do
   end if
-!  do ir=1,ngrtot
-!    zrhoir(ir)=zrhoir(ir)*cfunir(ir)*omega
-!  enddo
   call zfftifc(3,ngrid,-1,zrhoir)
   do ig=1,ngvecme
     zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+zrhoir(igfft1(ig))
@@ -213,15 +207,6 @@ deallocate(wfir1,wfir2,zrhoir,zrhofc_tmp)
 
 
 endif
-!
-!! interstitial part
-!do ir=1,ngrtot
-!  zrhoir(ir)=zrhoir(ir)*cfunir(ir)*omega
-!enddo
-!call zfftifc(3,ngrid,-1,zrhoir)
-!do ig=1,ngvec_me
-!  zrhofc(ig,2)=zrhoir(igfft1(ig))
-!  zrhofc(ig,3)=zrhofc(ig,1)+zrhofc(ig,2)
-!enddo
+
 return
 end
