@@ -39,7 +39,6 @@ integer i,j,ik,jk,ig,ikstep,ierr
 integer ngknr2
 real(8) vkq0l(3)
 integer ivg1(3)
-real(8) cpu0,cpu1,timeistl,timemt
 real(8), allocatable :: uuj(:,:,:,:,:,:,:)
 complex(4), allocatable :: gu(:,:,:)
 integer, allocatable :: igu(:,:,:,:)
@@ -321,48 +320,46 @@ if (wproc) then
   write(150,'("Starting k-point loop")')
 endif
 do ikstep=1,nkptnrloc(0)
+  call timer_reset(1)
+  call timer_reset(2)
+  call timer_reset(3)
+  call timer_reset(4)
+  call timer_reset(5) 
   if (wproc) then
     write(150,'("k-step ",I4," out of ",I4)')ikstep,nkptnrloc(0)
     call flushifc(150)
   endif
 ! transmit wave-functions
+  call timer_start(1)
   call wfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
     wfsvit2,ngknr2,igkignr2)
   call barrier(comm_world)
-  if (wproc) then
-    write(150,'("  OK send and recieve")')
-    call flushifc(150)
-  endif
-
+  call timer_stop(1)
+! compute matrix elements  
+  call timer_start(2)
   if (ikstep.le.nkptnrloc(mpi_x(1))) then
     call idxglob(nkptnr,mpi_dims(1),mpi_x(1)+1,ikstep,ik)
     if (.not.meoff) then
       me=dcmplx(0.d0,0.d0)
-! calculate interstitial contribution for all combinations of n,n'
-      call cpu_time(cpu0)
-      call zrhoftit(nme(ikstep),ime(1,1,ikstep),ngknr(ikstep), &
-        ngknr2,igkignr(1,ikstep),igkignr2,idxkq(2,ik),         &
-        wfsvitloc(1,1,1,ikstep),wfsvit2,me)
-      call cpu_time(cpu1)
-      timeistl=cpu1-cpu0
 ! calculate muffin-tin contribution for all combinations of n,n'    
-      call cpu_time(cpu0)
+      call timer_start(4)
       call zrhoftmt(nme(ikstep),ime(1,1,ikstep),               &
         wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,ngumax,ngu,gu,igu, &
         me)
-      call cpu_time(cpu1)
-      timemt=cpu1-cpu0
-      if (wproc) then
-        write(150,'("  interstitial time (seconds) : ",F12.2)')timeistl
-        write(150,'("    muffin-tin time (seconds) : ",F12.2)')timemt
-        call flushifc(150)
-      endif
-    else
+      call timer_stop(4)
+! calculate interstitial contribution for all combinations of n,n'
+      call timer_start(5)
+      call zrhoftit(nme(ikstep),ime(1,1,ikstep),ngknr(ikstep), &
+        ngknr2,igkignr(1,ikstep),igkignr2,idxkq(2,ik),         &
+        wfsvitloc(1,1,1,ikstep),wfsvit2,me)
+      call timer_stop(5)
+   else
       me=dcmplx(1.d0,0.d0)
     endif
-  endif ! (ikstep.le.nkptnrloc(iproc))
+  endif ! ikstep.le.nkptnrloc(mpi_x(1))
+  call timer_stop(2)
 ! write matrix elements
-! todo: add timer count for writing
+  call timer_start(3)
   if (root_cart((/0,1,0/))) then
     do i=0,mpi_dims(1)-1
       do j=0,mpi_dims(3)-1
@@ -380,6 +377,17 @@ do ikstep=1,nkptnrloc(0)
         call barrier(comm_cart_101)
       enddo
     enddo
+  endif
+  call timer_stop(3)
+  if (wproc) then
+    write(150,'("Time (seconds)")')
+    write(150,'("  send/recv      : ",F8.2)')timer(1,2)
+    write(150,'("  matrix elements")')
+    write(150,'("    muffin-tins  : ",F8.2)')timer(4,2)
+    write(150,'("    interstitial : ",F8.2)')timer(5,2)
+    write(150,'("      total      : ",F8.2)')timer(2,2)
+    write(150,'("    writing      : ",F8.2)')timer(3,2)
+    call flushifc(150)
   endif
 enddo !ikstep
 
