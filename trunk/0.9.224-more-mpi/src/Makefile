@@ -9,7 +9,7 @@ include ../make.inc
 #-------------------------------------------------------------------------------
 .SUFFIXES: .o .f90
 .f90.o:
-	$(F90) $(F90_OPTS) -c $<
+	$(F90) $(F90_OPTS) -c -o $(*D)/$(*F).o $<
 
 #-------------------------------------------------------------------------------
 # Source files
@@ -51,9 +51,8 @@ SRC_routines_flux = \
  writefsm.f90 genbmatk.f90 seceqnit.f90 gdft.f90 genexpiqr.f90 writeexpiqr.f90 \
  elnes.f90 symdmat.f90 genlmirep.f90 checknorm.f90 getnrfmax.f90 genwfsvmt.f90 \
  genwfsvit.f90 wfprodk.f90 geturf.f90 genurfprod.f90 parallel.f90 getgshells.f90 \
- response.f90 response_me.f90 response_chi0.f90 response_chi.f90 lapack.f90 \
- wann_init.f90 genwann.f90 genshmat.f90 wann_plot.f90 timer.f90 \
- wann_ene_occ.f90 dosrlm.f90 bandchar.f90 gendmatrsh.f90 response_jdos.f90 \
+ lapack.f90 wann_init.f90 genwann.f90 genshmat.f90 wann_plot.f90 timer.f90 \
+ wann_ene_occ.f90 dosrlm.f90 gendmatrsh.f90 hdf5.f90 \
  writenn.f90 sethml.f90 setovl.f90 checkwf.f90 genwffvwann.f90 genwfpoco.f90 \
  f_veff.f90 f_rho.f90 f_wann.f90 exciting_init.f90 
 
@@ -104,9 +103,13 @@ SRC_xc = \
   xc_pzca.f90 xc_pwca.f90 xc_pbe.f90 xc_am05.f90 xc_xalpha.f90 xc_wc06.f90 \
   x_wc06.f90 x_pbe.f90 c_pbe.f90 c_pbe_gcor.f90 xc_vbh.f90
 
+SRC_resp := $(shell ls linresp/*.f90)
+
+SRC_addons := $(shell ls addons/*.f90)
+
 SRC = $(SRC_modules) $(SRC_main) $(SRC_routines) $(SRC_routines_flux) \
  $(SRC_lib) $(SRC_lib_flux) $(SRC_advanced) $(SRC_phonon) $(SRC_optics) \
- $(SRC_xc) $(SRC_LDAU) $(SRC_rdmft)
+ $(SRC_xc) $(SRC_LDAU) $(SRC_rdmft) $(SRC_resp) $(SRC_addons)
 
 OBJ = $(SRC:.f90=.o)
 EXE = exciting
