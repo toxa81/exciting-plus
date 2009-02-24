@@ -13,7 +13,6 @@ complex(8), intent(in) :: wfsvitloc(ngkmax,nstsv,nspinor,*)
 integer, intent(in) :: ngknr(*)
 integer, intent(in) :: igkignr(ngkmax,*)
 real(8), intent(in) :: occsvnr(nstsv,nkptnr)
-
 ! G-vector which brings q to first BZ
 integer vgq0l(3)
 ! G+q vectors in Cart.coord.
@@ -28,17 +27,21 @@ complex(8), allocatable :: ylmgq0(:,:)
 complex(8), allocatable :: sfacgq0(:,:)
 ! hack to switch off matrix elements
 logical, parameter :: meoff=.false.
+! indexes for fft-transform of u_{nk}^{*}u_{n'k'}exp{-iKx}, where k'=k+q-K
+integer, allocatable :: igfft1(:,:)
 
 ! allocatable arrays
 integer, allocatable :: igkignr2(:)
 complex(8), allocatable :: wfsvmt2(:,:,:,:,:)
 complex(8), allocatable :: wfsvit2(:,:,:)
+complex(8), allocatable :: evecfv2(:,:,:)
+complex(8), allocatable :: evecsv2(:,:)
 complex(8), allocatable :: me(:,:)
 
 integer i,j,ik,jk,ig,ikstep,ierr
 integer ngknr2
 real(8) vkq0l(3)
-integer ivg1(3)
+integer ivg1(3),ivg2(3)
 real(8), allocatable :: uuj(:,:,:,:,:,:,:)
 complex(4), allocatable :: gu(:,:,:)
 integer, allocatable :: igu(:,:,:,:)
@@ -148,7 +151,8 @@ allocate(vgq0c(3,ngvecme))
 allocate(gq0(ngvecme))
 allocate(tpgq0(2,ngvecme))
 allocate(sfacgq0(ngvecme,natmtot))
-allocate(ylmgq0(lmmaxexp,ngvecme)) 
+allocate(ylmgq0(lmmaxexp,ngvecme))
+allocate(igfft1(ngvecme,nkptnr))
 
 ! reduce q0 vector to first BZ
 vq0rl(:)=vq0l(:)-vgq0l(:)
@@ -221,6 +225,11 @@ do ik=1,nkptnr
   call pstop
 10 continue
   idxkq(2,ik)=ivgig(ivg1(1),ivg1(2),ivg1(3))
+  ! search for new fft indexes
+  do ig=1,ngvecme
+    ivg2(:)=ivg(:,ig)+ivg1(:)
+    igfft1(ig,ik)=igfft(ivgig(ivg2(1),ivg2(2),ivg2(3)))
+  enddo
 enddo
 
 ! setup n,n' stuff
@@ -314,6 +323,8 @@ allocate(me(ngvecme,nmemax))
 allocate(wfsvmt2(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
 allocate(wfsvit2(ngkmax,nstsv,nspinor))
 allocate(igkignr2(ngkmax))
+allocate(evecfv2(nmatmax,nstfv,nspnfv))
+allocate(evecsv2(nstsv,nstsv))
 
 if (wproc) then
   write(150,*)
@@ -332,7 +343,7 @@ do ikstep=1,nkptnrloc(0)
 ! transmit wave-functions
   call timer_start(1)
   call wfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
-    wfsvit2,ngknr2,igkignr2)
+    wfsvit2,ngknr2,igkignr2,evecfv2,evecsv2)
   call barrier(comm_world)
   call timer_stop(1)
 ! compute matrix elements  
@@ -422,59 +433,6 @@ return
 end
 
 
-subroutine calc_uuj(uuj,lmaxexp,gq0)
-use modmain
-implicit none
-! arguments
-integer, intent(in) :: lmaxexp
-real(8), intent(in) :: gq0(ngvecme)
-real(8), intent(out) :: uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,nrfmax,nrfmax,natmtot,ngvecme)
-! local variables
-integer ia,is,ias,ig,l1,l2,l3,io1,io2,ir
-real(8), allocatable :: jlgq0r(:,:,:,:)
-real(8) fr(nrmtmax),gr(nrmtmax),cf(3,nrmtmax)
-real(8) t1,jl(0:lmaxexp)
-
-allocate(jlgq0r(nrmtmax,0:lmaxexp,nspecies,ngvecme))
-
-! generate Bessel functions j_l(|G+q'|x)
-do ig=1,ngvecme
-  do is=1,nspecies
-    do ir=1,nrmt(is)
-      t1=gq0(ig)*spr(ir,is)
-      call sbessel(lmaxexp,t1,jl)
-      jlgq0r(ir,:,is,ig)=jl(:)
-    enddo
-  enddo
-enddo
-
-uuj=0.d0
-do is=1,nspecies
-  do ia=1,natoms(is)
-    ias=idxas(ia,is)
-    do ig=1,ngvecme
-      do l1=0,lmaxvr
-        do l2=0,lmaxvr
-          do l3=0,lmaxexp
-            do io1=1,nrfmax
-              do io2=1,nrfmax
-                do ir=1,nrmt(is)
-                  fr(ir)=urf(ir,l1,io1,ias)*urf(ir,l2,io2,ias)*jlgq0r(ir,l3,is,ig)*(spr(ir,is)**2)
-                enddo
-                call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
-                uuj(l1,l2,l3,io1,io2,ias,ig)=gr(nrmt(is))
-              enddo !io2
-            enddo !io1
-          enddo !l3
-        enddo !l2
-      enddo !l1   
-    enddo !ig
-  enddo !ia
-enddo !is
-
-deallocate(jlgq0r)
-return
-end   
 
 subroutine zrhoftit(nme0,ime0,ngknr1,ngknr2,igkignr1,igkignr2, &
   igkq,wfsvit1,wfsvit2,zrhofc0)
@@ -576,6 +534,16 @@ endif
 zrhofc0=zrhofc0+zrhofc_tmp
 
 deallocate(mit,a,zrhofc_tmp)
+!
+!! interstitial part
+!do ir=1,ngrtot
+!  zrhoir(ir)=zrhoir(ir)*cfunir(ir)*omega
+!enddo
+!call zfftifc(3,ngrid,-1,zrhoir)
+!do ig=1,ngvec_me
+!  zrhofc(ig,2)=zrhoir(igfft1(ig))
+!  zrhofc(ig,3)=zrhofc(ig,1)+zrhofc(ig,2)
+!enddo
 return
 end
         
@@ -774,425 +742,24 @@ enddo
 return
 end
 
-subroutine writegshells
-use modmain
-implicit none
-
-integer ngsh
-integer ,allocatable :: igishell(:)
-integer ,allocatable :: ishellng(:,:)
-
-integer ig,ish
-
-allocate(igishell(ngvec))
-allocate(ishellng(ngvec,2))
-
-call getgshells(ngsh,igishell,ishellng)
-open(170,file='GSHELLS.OUT',form='formatted',status='replace')
-write(170,*)
-write(170,'("  G-vec.       lat.coord.      length(a.u.)   shell ")')
-write(170,'(" ---------------------------------------------------")')
-do ig=1,ishellng(ngsh,2)
-  write(170,'(2X,I4,4X,3I5,4X,F12.6,5x,I4)')ig,ivg(:,ig),gc(ig),igishell(ig)
-enddo
-write(170,*)
-write(170,'("  G-shell    num. G-vec in shell      total num. G-vec. ")')
-write(170,'(" -------------------------------------------------------")')
-do ish=1,ngsh
-  write(170,'(2X,I4,14X,I4,18X,I4)')ish,ishellng(ish,1),ishellng(ish,2)
-enddo
-close(170)
-
-deallocate(igishell,ishellng)
-
-return
-end
-
-
-subroutine write_real8(a,n,fname,path,nm)
-use hdf5
-implicit none
-integer, intent(in) :: n
-real(8), intent(in) :: a(n)
-character(*), intent(in) :: fname
-character(*), intent(in) :: path
-character(*), intent(in) :: nm
-
-
-integer(hid_t) h5_root_id,dataspace_id,dataset_id,group_id
-integer ierr
-integer(HSIZE_T), dimension(1) :: dims
-
-dims(1)=n
-call h5fopen_f(fname,H5F_ACC_RDWR_F,h5_root_id,ierr)
-call h5screate_simple_f(1,dims,dataspace_id,ierr)
-call h5gopen_f(h5_root_id,path,group_id,ierr)
-call h5dcreate_f(group_id,nm,H5T_NATIVE_DOUBLE,dataspace_id, &
-  dataset_id,ierr)
-call h5dwrite_f(dataset_id,H5T_NATIVE_DOUBLE,a,dims,ierr)
-call h5gclose_f(group_id,ierr)
-call h5sclose_f(dataspace_id,ierr)
-call h5dclose_f(dataset_id,ierr)
-call h5fclose_f(h5_root_id,ierr)
-return
-end
-
-subroutine read_real8(a,n,fname,path,nm)
-use hdf5
-implicit none
-integer, intent(in) :: n
-real(8), intent(out) :: a(n)
-character(*), intent(in) :: fname
-character(*), intent(in) :: path
-character(*), intent(in) :: nm
-
-integer(hid_t) h5_root_id,dataspace_id,dataset_id,group_id
-integer ierr
-integer(HSIZE_T), dimension(1) :: dims
-
-dims(1)=n
-call h5fopen_f(fname,H5F_ACC_RDONLY_F,h5_root_id,ierr)
-call h5gopen_f(h5_root_id,path,group_id,ierr)
-call h5dopen_f(group_id,nm,dataset_id,ierr)
-call h5dread_f(dataset_id,H5T_NATIVE_DOUBLE,a,dims,ierr)
-call h5gclose_f(group_id,ierr)
-call h5dclose_f(dataset_id,ierr)
-call h5fclose_f(h5_root_id,ierr)
-return
-end
-
-
-subroutine write_real8_array(a,ndims,dims,fname,path,nm)
-use hdf5
-implicit none
-integer, intent(in) :: ndims
-integer, intent(in) :: dims(ndims)
-real(8), intent(in) :: a(*)
-character(*), intent(in) :: fname
-character(*), intent(in) :: path
-character(*), intent(in) :: nm
-
-
-integer(hid_t) h5_root_id,dataspace_id,dataset_id,group_id
-integer ierr,i
-integer(HSIZE_T), dimension(ndims) :: h_dims
-
-do i=1,ndims
-  h_dims(i)=dims(i)
-enddo
-call h5fopen_f(fname,H5F_ACC_RDWR_F,h5_root_id,ierr)
-call h5screate_simple_f(ndims,h_dims,dataspace_id,ierr)
-call h5gopen_f(h5_root_id,path,group_id,ierr)
-call h5dcreate_f(group_id,nm,H5T_NATIVE_DOUBLE,dataspace_id, &
-  dataset_id,ierr)
-call h5dwrite_f(dataset_id,H5T_NATIVE_DOUBLE,a,h_dims,ierr)
-call h5gclose_f(group_id,ierr)
-call h5sclose_f(dataspace_id,ierr)
-call h5dclose_f(dataset_id,ierr)
-call h5fclose_f(h5_root_id,ierr)
-return
-end
-
-subroutine read_real8_array(a,ndims,dims,fname,path,nm)
-use hdf5
-implicit none
-integer, intent(in) :: ndims
-integer, intent(in) :: dims(ndims)
-real(8), intent(out) :: a(*)
-character(*), intent(in) :: fname
-character(*), intent(in) :: path
-character(*), intent(in) :: nm
-
-
-integer(hid_t) h5_root_id,dataspace_id,dataset_id,group_id
-integer ierr,i
-integer(HSIZE_T), dimension(ndims) :: h_dims
-
-do i=1,ndims
-  h_dims(i)=dims(i)
-enddo
-
-call h5fopen_f(fname,H5F_ACC_RDONLY_F,h5_root_id,ierr)
-call h5gopen_f(h5_root_id,path,group_id,ierr)
-call h5dopen_f(group_id,nm,dataset_id,ierr)
-call h5dread_f(dataset_id,H5T_NATIVE_DOUBLE,a,h_dims,ierr)
-call h5gclose_f(group_id,ierr)
-call h5dclose_f(dataset_id,ierr)
-call h5fclose_f(h5_root_id,ierr)
-return
-end
-
-
-subroutine write_integer_array(a,ndims,dims,fname,path,nm)
-use hdf5
-implicit none
-integer, intent(in) :: ndims
-integer, intent(in) :: dims(ndims)
-integer, intent(in) :: a(*)
-character(*), intent(in) :: fname
-character(*), intent(in) :: path
-character(*), intent(in) :: nm
-
-
-integer(hid_t) h5_root_id,dataspace_id,dataset_id,group_id
-integer ierr,i
-integer(HSIZE_T), dimension(ndims) :: h_dims
-
-do i=1,ndims
-  h_dims(i)=dims(i)
-enddo
-call h5fopen_f(fname,H5F_ACC_RDWR_F,h5_root_id,ierr)
-call h5screate_simple_f(ndims,h_dims,dataspace_id,ierr)
-call h5gopen_f(h5_root_id,path,group_id,ierr)
-call h5dcreate_f(group_id,nm,H5T_NATIVE_INTEGER,dataspace_id, &
-  dataset_id,ierr)
-call h5dwrite_f(dataset_id,H5T_NATIVE_INTEGER,a,h_dims,ierr)
-call h5gclose_f(group_id,ierr)
-call h5sclose_f(dataspace_id,ierr)
-call h5dclose_f(dataset_id,ierr)
-call h5fclose_f(h5_root_id,ierr)
-return
-end
-
-
-subroutine read_integer_array(a,ndims,dims,fname,path,nm)
-use hdf5
-implicit none
-integer, intent(in) :: ndims
-integer, intent(in) :: dims(ndims)
-integer, intent(out) :: a(*)
-character(*), intent(in) :: fname
-character(*), intent(in) :: path
-character(*), intent(in) :: nm
-
-
-integer(hid_t) h5_root_id,dataspace_id,dataset_id,group_id
-integer ierr,i
-integer(HSIZE_T), dimension(ndims) :: h_dims
-
-do i=1,ndims
-  h_dims(i)=dims(i)
-enddo
-call h5fopen_f(fname,H5F_ACC_RDONLY_F,h5_root_id,ierr)
-call h5gopen_f(h5_root_id,path,group_id,ierr)
-call h5dopen_f(group_id,nm,dataset_id,ierr)
-call h5dread_f(dataset_id,H5T_NATIVE_INTEGER,a,h_dims,ierr)
-call h5gclose_f(group_id,ierr)
-call h5dclose_f(dataset_id,ierr)
-call h5fclose_f(h5_root_id,ierr)
-return
-end
-
-subroutine write_integer(a,n,fname,path,nm)
-use hdf5
-implicit none
-integer, intent(in) :: n
-integer, intent(in) :: a(n)
-character(*), intent(in) :: fname
-character(*), intent(in) :: path
-character(*), intent(in) :: nm
-
-
-integer(hid_t) h5_root_id,dataspace_id,dataset_id,group_id
-integer ierr
-integer(HSIZE_T), dimension(1) :: dims
-
-dims(1)=n
-call h5fopen_f(fname,H5F_ACC_RDWR_F,h5_root_id,ierr)
-call h5screate_simple_f(1,dims,dataspace_id,ierr)
-call h5gopen_f(h5_root_id,path,group_id,ierr)
-call h5dcreate_f(group_id,nm,H5T_NATIVE_INTEGER,dataspace_id, &
-  dataset_id,ierr)
-call h5dwrite_f(dataset_id,H5T_NATIVE_INTEGER,a,dims,ierr)
-call h5gclose_f(group_id,ierr)
-call h5sclose_f(dataspace_id,ierr)
-call h5dclose_f(dataset_id,ierr)
-call h5fclose_f(h5_root_id,ierr)
-return
-end
-
-subroutine rewrite_integer(a,n,fname,path,nm)
-use hdf5
-implicit none
-integer, intent(in) :: n
-integer, intent(in) :: a(n)
-character(*), intent(in) :: fname
-character(*), intent(in) :: path
-character(*), intent(in) :: nm
-
-
-integer(hid_t) h5_root_id,dataset_id,group_id
-integer ierr
-integer(HSIZE_T), dimension(1) :: dims
-
-dims(1)=n
-call h5fopen_f(fname,H5F_ACC_RDWR_F,h5_root_id,ierr)
-call h5gopen_f(h5_root_id,path,group_id,ierr)
-call h5dopen_f(group_id,nm,dataset_id,ierr)
-call h5dwrite_f(dataset_id,H5T_NATIVE_INTEGER,a,dims,ierr)
-call h5gclose_f(group_id,ierr)
-call h5dclose_f(dataset_id,ierr)
-call h5fclose_f(h5_root_id,ierr)
-return
-end
-
-subroutine read_integer(a,n,fname,path,nm)
-use hdf5
-implicit none
-integer, intent(in) :: n
-integer, intent(out) :: a(n)
-character(*), intent(in) :: fname
-character(*), intent(in) :: path
-character(*), intent(in) :: nm
-
-integer(hid_t) h5_root_id,dataspace_id,dataset_id,group_id
-integer ierr
-integer(HSIZE_T), dimension(1) :: dims
-
-dims(1)=n
-call h5fopen_f(fname,H5F_ACC_RDONLY_F,h5_root_id,ierr)
-call h5gopen_f(h5_root_id,path,group_id,ierr)
-call h5dopen_f(group_id,nm,dataset_id,ierr)
-call h5dread_f(dataset_id,H5T_NATIVE_INTEGER,a,dims,ierr)
-call h5gclose_f(group_id,ierr)
-call h5dclose_f(dataset_id,ierr)
-call h5fclose_f(h5_root_id,ierr)
-return
-end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-subroutine wfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
-  wfsvit2,ngknr2,igkignr2)
-use modmain
-#ifdef _MPI_
-use mpi
-#endif
-implicit none
-integer, intent(in) :: ikstep
-complex(8), intent(in) :: wfsvmtloc(lmmaxvr,nrfmax,natmtot,nstsv,nspinor,*)
-complex(8), intent(in) :: wfsvitloc(ngkmax,nstsv,nspinor,*)
-integer, intent(in) :: ngknr(*)
-integer, intent(in) :: igkignr(ngkmax,*)
-complex(8), intent(out) :: wfsvmt2(lmmaxvr,nrfmax,natmtot,nstsv,nspinor)
-complex(8), intent(out) :: wfsvit2(ngkmax,nstsv,nspinor)
-integer, intent(out) :: ngknr2
-integer, intent(out) :: igkignr2(ngkmax)
-
-
-integer idx0,bs,ip
-logical lsend,lrecv
-integer i,ik,jk,ikloc
-integer rank,tag,ierr,req
-integer, allocatable :: stat(:)
-
-#ifdef _MPI_
-! each proc in k-group knows that it needs wave-function at jk=idxkq(1,ik) point
-!
-! the distribution of k-points could look like this
-!                p0          p1          p2
-!          +-----------+-----------+-----------+
-! ikstep=1 | ik=1 jk=3 | ik=4 jk=2 | ik=7 jk=5 |
-! ikstep=2 | ik=2 jk=4 | ik=5 jk=7 | ik=8 jk=6 |
-! ikstep=3 | ik=3 jk=1 | ik=6 jk=8 |  -        |
-!          +-----------+-----------+-----------+
-allocate(stat(MPI_STATUS_SIZE))
-do i=1,mpi_dims(1)
-  call idxbos(nkptnr,mpi_dims(1),i,idx0,bs)
-  if (ikstep.le.bs) then
-! for step ikstep process i handles k-point ik
-    call idxglob(nkptnr,mpi_dims(1),i,ikstep,ik)
-! for step ikstep process i requires k-point jk
-    jk=idxkq(1,ik)
-! find the process which stores the k-point jk and it's local index
-    call idxloc(nkptnr,mpi_dims(1),jk,ip,ikloc)
-! send/recv when ip.ne.i (when k-points ik and jk are on different procs)
-    if (mpi_x(1).eq.ip-1.and.ip.ne.i) then
-! destination proc is i-1
-      call mpi_cart_rank(comm_cart_100,(/i-1/),rank,ierr) 
-! send muffin-tin part
-      tag=(ikstep*nproc+i-1)*10
-      call mpi_isend(wfsvmtloc(1,1,1,1,1,ikloc),                     &
-        lmmaxvr*nrfmax*natmtot*nstsv*nspinor,                        & 
-	    MPI_DOUBLE_COMPLEX,rank,tag,comm_cart_100,req,ierr)
-! send interstitial part
-      tag=tag+1
-      call mpi_isend(wfsvitloc(1,1,1,ikloc),ngkmax*nstsv*nspinor,    & 
-        MPI_DOUBLE_COMPLEX,rank,tag,comm_cart_100,req,ierr)
-! send ngknr      
-      tag=tag+1
-      call mpi_isend(ngknr(ikloc),1,MPI_INTEGER,rank,tag,comm_cart_100, &
-        req,ierr)
-! send igkignr
-      tag=tag+1
-      call mpi_isend(igkignr(1,ikloc),ngkmax,MPI_INTEGER,rank,tag,   &
-        comm_cart_100,req,ierr)  
-    endif
-    if (mpi_x(1).eq.i-1.and.ip.ne.i) then
-! source proc is ip-1
-      call mpi_cart_rank(comm_cart_100,(/ip-1/),rank,ierr)
-      tag=(ikstep*nproc+mpi_x(1))*10
-      call mpi_recv(wfsvmt2,lmmaxvr*nrfmax*natmtot*nstsv*nspinor,    &
-        MPI_DOUBLE_COMPLEX,rank,tag,comm_cart_100,stat,ierr)
-      tag=tag+1
-      call mpi_recv(wfsvit2,ngkmax*nstsv*nspinor,MPI_DOUBLE_COMPLEX, &
-        rank,tag,comm_cart_100,stat,ierr)
-      tag=tag+1
-      call mpi_recv(ngknr2,1,MPI_INTEGER,rank,tag,comm_cart_100,stat,   &
-        ierr)
-      tag=tag+1
-      call mpi_recv(igkignr2,ngkmax,MPI_INTEGER,rank,tag,comm_cart_100, &
-        stat,ierr)
-    endif
-    if (mpi_x(1).eq.i-1.and.ip.eq.i) then
-      wfsvmt2(:,:,:,:,:)=wfsvmtloc(:,:,:,:,:,ikloc)
-      wfsvit2(:,:,:)=wfsvitloc(:,:,:,ikloc)
-      ngknr2=ngknr(ikloc)
-      igkignr2(:)=igkignr(:,ikloc)
-    endif
-  endif
-enddo
-deallocate(stat)
-#else
-  jk=idxkq(1,ikstep)
-  wfsvmt2(:,:,:,:,:)=wfsvmtloc(:,:,:,:,:,jk)
-  wfsvit2(:,:,:)=wfsvitloc(:,:,:,jk)
-  ngknr2=ngknr(jk)
-  igkignr2(:)=igkignr(:,jk)
-#endif
-return
-end
-
-
-
-
-subroutine qname(ivq,name)
-implicit none
-integer, intent(in) :: ivq(3)
-character*(*), intent(out) :: name
-character*6 fmt1,str1
-integer i
-name='q_'
-do i=1,3
-  if (ivq(i).lt.0) then 
-    fmt1='(I4.3)'
-  else
-    fmt1='(I3.3)'
-  endif
-  write(str1,fmt1)ivq(i)
-  name=trim(name)//trim(adjustl(str1))
-  if (i.lt.3) name=trim(name)//"_"
-enddo
-return
-end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
