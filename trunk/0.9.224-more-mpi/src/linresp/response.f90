@@ -17,14 +17,13 @@ real(8), allocatable :: gknr(:,:)
 real(8), allocatable :: tpgknr(:,:,:)
 complex(8), allocatable :: sfacgknr(:,:,:)
 
-!complex(8), allocatable :: evecfv(:,:,:)
-!complex(8), allocatable :: evecsv(:,:)
+real(8), allocatable :: occsvnr(:,:)
+real(8), allocatable :: evalsvnr(:,:)
 complex(8), allocatable :: wfsvitloc(:,:,:,:)
 complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
-real(8), allocatable :: occsvnr(:,:)
-real(8), allocatable :: evalsvnr(:,:)
 complex(8), allocatable :: wfsvmt_t(:,:,:,:,:)
+complex(8), allocatable :: wfsvit_t(:,:,:)
 complex(8), allocatable :: wfc_t(:,:,:)
 
 integer i,j,n,ngsh,gshmin,gshmax,ik,ikloc,ispn,istfv,ierr,rank
@@ -108,22 +107,6 @@ if (allocated(ikptnrloc)) deallocate(ikptnrloc)
 allocate(ikptnrloc(0:mpi_dims(1)-1,2))
 call splitk(nkptnr,mpi_dims(1),nkptnrloc,ikptnrloc)
 nkptnr_loc=nkptnrloc(mpi_x(1))
-
-!if (task.eq.402.or.task.eq.403) then
-!  allocate(igishell(ngvec))
-!  allocate(ishellng(ngvec,2))
-!  call getgshells(ngsh,igishell,ishellng)
-!  if (gshchi1.eq.1) then
-!    gvecchi1=1
-!  else
-!    gvecchi1=ishellng(gshchi1-1,2)+1
-!  endif
-!  gvecchi2=ishellng(gshchi2,2)
-!  deallocate(igishell)
-!  deallocate(ishellng)
-!endif
-
-
 
 !if (.true.) then
 !  gvecme1=516
@@ -212,6 +195,11 @@ if (task.eq.400) then
   allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptnr_loc))
   allocate(evecsvloc(nstsv,nstsv,nkptnr_loc))
   allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
+  if (wannier) then
+    allocate(wfsvmt_t(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
+    allocate(wfsvit_t(ngkmax,nstsv,nspinor))
+    allocate(wfc_t(wann_nmax,nstfv,wann_nspin))
+  endif
   if (wproc) then
     sz=lmmaxvr*nrfmax*natmtot*nstsv*nspinor
     sz=sz+ngkmax*nstsv*nspinor
@@ -246,6 +234,46 @@ if (task.eq.400) then
 ! generate wave functions in interstitial
           call genwfsvit(ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
             evecsvloc(1,1,ikloc),wfsvitloc(1,1,1,ikloc))
+          if (wannier) then
+            if (wproc.and.ikloc.eq.1) then
+	      write(150,*)
+	      write(150,'("Keeping Wannier functions content")')
+	      write(150,*)
+	    endif
+            wfsvmt_t=wfsvmtloc(:,:,:,:,:,ikloc)
+	    wfsvit_t=wfsvitloc(:,:,:,ikloc)
+            call genwann_c(evalsvnr(1,iknrglob(ikloc)),wfsvmt_t,wfc_t)
+	    wfsvmt_t=dcmplx(0.d0,0.d0)
+	    wfsvit_t=dcmplx(0.d0,0.d0)
+	    do ispn=1,wann_nspin
+!	      do j=23,40
+!	        do istfv=1,nstfv
+!	          do n=21,38
+!	            wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn) + &
+!	              wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
+!	            wfsvit_t(:,j,ispn)=wfsvit_t(:,j,ispn) + &
+!	              wfsvitloc(:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
+!		  enddo
+!	        enddo
+!	      enddo
+	      do j=41,61
+!	        if (evalsvnr(j,iknrglob(ikloc)).gt.(efermi+1d-2)) then
+	          do istfv=1,nstfv
+	            do n=1,20
+		      if (.not.(n.eq.3.or.n.eq.8.or.n.eq.13.or.n.eq.18)) then
+	                wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn) + &
+	                  wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
+	                wfsvit_t(:,j,ispn)=wfsvit_t(:,j,ispn) + &
+	                  wfsvitloc(:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
+		      endif
+		    enddo
+	          enddo
+!               endif
+	      enddo
+  	    enddo !ispn  
+  	    wfsvmtloc(:,:,:,:,:,ikloc)=wfsvmt_t
+    	    wfsvitloc(:,:,:,ikloc)=wfsvit_t
+          endif
         enddo !ikloc
 #ifndef _PIO_
       endif
@@ -263,7 +291,11 @@ if (task.eq.400) then
     write(150,'("Done in ",F8.2," seconds")')timer(1,2)
     call flushifc(150)
   endif
-!  deallocate(evecfv,evecsv)
+  if (wannier) then
+    deallocate(wfsvmt_t)
+    deallocate(wfsvit_t)
+    deallocate(wfc_t)
+  endif
   deallocate(apwalm)
   deallocate(vgklnr)
   deallocate(vgkcnr)
