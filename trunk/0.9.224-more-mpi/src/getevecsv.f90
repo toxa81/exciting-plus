@@ -55,6 +55,22 @@ do i=1,nstsv
     zt2=evecsv(ist+nstfv,i)
     evecsv(ist,i)=su2(1,1)*zt1+su2(1,2)*zt2
     evecsv(ist+nstfv,i)=su2(2,1)*zt1+su2(2,2)*zt2
+    if (.not.ncmag) then
+      if (i.le.nstfv) then
+        if (abs(evecsv(ist+nstfv,i)).gt.abs(evecsv(ist,i))) then
+	  zt1=evecsv(ist+nstfv,i)
+	  evecsv(ist+nstfv,i)=evecsv(ist,i)
+	  evecsv(ist,i)=zt1
+	endif
+      endif
+      if (i.gt.nstfv) then
+        if (abs(evecsv(ist,i)).gt.abs(evecsv(ist+nstfv,i))) then
+	  zt1=evecsv(ist+nstfv,i)
+	  evecsv(ist+nstfv,i)=evecsv(ist,i)
+	  evecsv(ist,i)=zt1
+	endif
+      endif
+    endif
   end do
 end do
 return

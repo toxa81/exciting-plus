@@ -24,6 +24,7 @@ allocate(mpi_dims(mpi_ndims))
 if (allocated(mpi_x)) deallocate(mpi_x)
 allocate(mpi_x(mpi_ndims))
 #ifdef _MPI_
+mpi_dims=nproc
 if (task.eq.400.or.task.eq.401) then
   if (nproc.le.nkptnr) then
     mpi_dims=(/nproc,1,1/)
@@ -48,13 +49,6 @@ if (task.eq.402) then
     endif
   endif
 endif
-
-#else
-mpi_dims=1
-mpi_x=0
-#endif
-
-#ifdef _MPI_
 allocate(mpi_periods(mpi_ndims))
 mpi_periods=.false.
 call mpi_cart_create(comm_world,mpi_ndims,mpi_dims,mpi_periods,   &
@@ -62,7 +56,7 @@ call mpi_cart_create(comm_world,mpi_ndims,mpi_dims,mpi_periods,   &
 call mpi_cart_get(comm_cart,mpi_ndims,mpi_dims,mpi_periods,mpi_x, &
   ierr)
 deallocate(mpi_periods)
-if (mpi_ndims.ge.3) then
+if (mpi_ndims.eq.3) then
   call mpi_cart_sub(comm_cart,(/.true.,.false.,.false./),comm_cart_100,ierr)
   call mpi_cart_sub(comm_cart,(/.false.,.true.,.false./),comm_cart_010,ierr)
   call mpi_cart_sub(comm_cart,(/.false.,.false.,.true./),comm_cart_001,ierr)
@@ -70,6 +64,9 @@ if (mpi_ndims.ge.3) then
   call mpi_cart_sub(comm_cart,(/.false.,.true.,.true./),comm_cart_011,ierr)
   call mpi_cart_sub(comm_cart,(/.true.,.true.,.false./),comm_cart_110,ierr)
 endif
+#else
+mpi_dims=1
+mpi_x=0
 #endif
 return
 end
