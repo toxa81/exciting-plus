@@ -49,12 +49,7 @@ SRC_routines_flux = \
  genvmatk.f90 genvmat.f90 genwfsv.f90 gendmat.f90 findsymsite.f90 geomplot.f90 \
  hartfock.f90 genkinmat.f90 energykncr.f90 zfint.f90 rfpack.f90 rfint.f90 \
  writefsm.f90 genbmatk.f90 seceqnit.f90 gdft.f90 genexpiqr.f90 writeexpiqr.f90 \
- elnes.f90 symdmat.f90 genlmirep.f90 checknorm.f90 getnrfmax.f90 genwfsvmt.f90 \
- genwfsvit.f90 wfprodk.f90 geturf.f90 genurfprod.f90 parallel.f90 getgshells.f90 \
- lapack.f90 wann_init.f90 genwann.f90 genshmat.f90 wann_plot.f90 timer.f90 \
- wann_ene_occ.f90 dosrlm.f90 gendmatrsh.f90 \
- writenn.f90 sethml.f90 setovl.f90 checkwf.f90 genwffvwann.f90 genwfpoco.f90 \
- f_veff.f90 f_rho.f90 f_wann.f90 exciting_init.f90 
+ elnes.f90 symdmat.f90 genlmirep.f90 checknorm.f90 getnrfmax.f90 
 
 SRC_phonon = \
  phonon.f90 dyntask.f90 phcell.f90 phdisp.f90 readdyn.f90 dynqtor.f90 \
@@ -103,13 +98,11 @@ SRC_xc = \
   xc_pzca.f90 xc_pwca.f90 xc_pbe.f90 xc_am05.f90 xc_xalpha.f90 xc_wc06.f90 \
   x_wc06.f90 x_pbe.f90 c_pbe.f90 c_pbe_gcor.f90 xc_vbh.f90
 
-SRC_resp := $(shell ls linresp/*.f90)
-
-SRC_addons := $(shell ls addons/*.f90)
+SRC_addons := $(shell ls addons/*.f90 addons/linresp/*.f90 addons/wann/*.f90)
 
 SRC = $(SRC_modules) $(SRC_main) $(SRC_routines) $(SRC_routines_flux) \
  $(SRC_lib) $(SRC_lib_flux) $(SRC_advanced) $(SRC_phonon) $(SRC_optics) \
- $(SRC_xc) $(SRC_LDAU) $(SRC_rdmft) $(SRC_resp) $(SRC_addons)
+ $(SRC_xc) $(SRC_LDAU) $(SRC_rdmft) $(SRC_addons)
 
 OBJ = $(SRC:.f90=.o)
 EXE = exciting
