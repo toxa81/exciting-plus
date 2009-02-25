@@ -42,11 +42,6 @@ lmaxvr=4
 call init0
 call init1
 call pinit_cart
-!if (.not.lhdf5_init) then
-! initialize HDF5 library
-!  call h5open_f(ierr)
-!  lhdf5_init=.true.
-!endif
 
 if (ncmag) then
   write(*,*)

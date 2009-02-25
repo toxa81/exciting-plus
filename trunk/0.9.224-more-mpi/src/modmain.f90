@@ -916,8 +916,6 @@ character(80) notes(maxnlns)
 !-----------------------!
 !      MPI parallel     !
 !-----------------------!
-logical lmpi_init
-data lmpi_init /.false./
 integer iproc
 data iproc /0/
 integer nproc
@@ -968,9 +966,6 @@ complex(8), allocatable :: yrlm_lcs(:,:,:)
 ! unit conversion
 real(8), parameter :: ha2ev=27.21138386d0
 real(8), parameter :: au2ang=0.5291772108d0
-
-logical lhdf5_init
-data lhdf5_init /.false./
 
 !-------------------------!
 !     Linear response     !

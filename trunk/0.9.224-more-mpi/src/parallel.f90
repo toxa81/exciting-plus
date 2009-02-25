@@ -4,17 +4,8 @@ use modmain
 use mpi
 #endif
 implicit none
-#ifdef _MPI_
 integer i,ierr
 logical, allocatable :: mpi_periods(:)
-!if (.not.lmpi_init) then
-!  call mpi_init(ierr)
-!  comm_world=MPI_COMM_WORLD
-!  call mpi_comm_size(comm_world,nproc,ierr)
-!  call mpi_comm_rank(comm_world,iproc,ierr)
-!  lmpi_init=.true.
-!endif
-#endif
 mpi_ndims=1
 if (task.eq.400.or.task.eq.401.or.task.eq.402) then
   mpi_ndims=3
@@ -70,15 +61,6 @@ mpi_x=0
 #endif
 return
 end
-
-
-
-
-
-
-
-
-
 
 subroutine barrier(comm)
 #ifdef _MPI_

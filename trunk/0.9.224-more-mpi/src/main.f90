@@ -97,8 +97,10 @@ do itask=1,ntasks
     call alpha2f
   case(300)
     call rdmft
+#ifdef _HDF5_
   case(400,401,402,403,404)
     call response
+#endif
   case(500)
     call checknorm
   case(501)
