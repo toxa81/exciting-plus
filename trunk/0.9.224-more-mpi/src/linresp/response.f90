@@ -37,6 +37,8 @@ logical, external :: root_cart
 
 integer vgq0l(3)
 
+lmaxvr=4
+
 ! initialise universal variables
 call init0
 call init1
