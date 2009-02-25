@@ -9,9 +9,21 @@ use modmain
 #ifdef _MPI_
 use mpi
 #endif
+#ifdef _HDF5_
+use hdf5
+#endif
 implicit none
 ! local variables
 integer itask,ierr
+#ifdef _MPI_
+call mpi_init(ierr)
+comm_world=MPI_COMM_WORLD
+call mpi_comm_size(comm_world,nproc,ierr)
+call mpi_comm_rank(comm_world,iproc,ierr)
+#endif
+#ifdef _HDF5_
+call h5open_f(ierr)
+#endif	  
 ! read input files
 call readinput
 ! perform the appropriate task
@@ -98,6 +110,9 @@ do itask=1,ntasks
     stop
   end select
 end do
+#ifdef _HDF5_
+call h5close_f(ierr)
+#endif
 #ifdef _MPI_
 call mpi_finalize(ierr)
 #endif

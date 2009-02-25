@@ -969,6 +969,9 @@ complex(8), allocatable :: yrlm_lcs(:,:,:)
 real(8), parameter :: ha2ev=27.21138386d0
 real(8), parameter :: au2ang=0.5291772108d0
 
+logical lhdf5_init
+data lhdf5_init /.false./
+
 !-------------------------!
 !     Linear response     !
 !-------------------------!

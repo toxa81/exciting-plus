@@ -121,8 +121,6 @@ else
    wkptnr)
 end if
 
-call pinit
-
 if (allocated(nkptloc)) deallocate(nkptloc)
 allocate(nkptloc(0:nproc-1))
 if (allocated(ikptloc)) deallocate(ikptloc)
