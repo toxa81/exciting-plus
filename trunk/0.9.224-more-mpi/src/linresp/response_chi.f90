@@ -45,7 +45,6 @@ logical, external :: root_cart
 ! chi from chi0(2)
 ! chi from chi0(1)+chi0(2)
 ! chi = chi(1)+chi(2)
-!
 
 ! we need Bcx and magnetization from STATE.OUT
 if (lrtype.eq.1) call readstate
@@ -109,25 +108,30 @@ if (wproc) then
   call flushifc(150)
 endif
 
-if (gvecchi1.lt.gvecme1.or.gvecchi1.gt.gvecme2) then
-  write(150,*)
-  write(150,'("Warning: minimum number of G-vectors was changed from ",&
-    &I4," to ",I4)')gvecchi1,gvecme1
-  gvecchi1=gvecme1 
-endif
-if (gvecchi2.lt.gvecme1.or.gvecchi2.gt.gvecme2) then
-  write(150,*)
-  write(150,'("Warning: maximum number of G-vectors was changed from ",&
-    &I4," to ",I4)')gvecchi2,gvecme2
-  gvecchi2=gvecme2 
-endif
-if (lr_igq0.lt.gvecchi1.or.lr_igq0.gt.gvecchi2) then
-  write(*,*)
-  write(*,'("Error(response_chi): not enough G-vectors for calculation of &
-    &chi")')
-  write(*,*)
-  call pstop
-endif
+gshchi1=gshme1
+gshchi2=gshme2
+gvecchi1=gvecme1
+gvecchi2=gvecme2
+
+!if (gvecchi1.lt.gvecme1.or.gvecchi1.gt.gvecme2) then
+!  write(150,*)
+!  write(150,'("Warning: minimum number of G-vectors was changed from ",&
+!    &I4," to ",I4)')gvecchi1,gvecme1
+!  gvecchi1=gvecme1 
+!endif
+!if (gvecchi2.lt.gvecme1.or.gvecchi2.gt.gvecme2) then
+!  write(150,*)
+!  write(150,'("Warning: maximum number of G-vectors was changed from ",&
+!    &I4," to ",I4)')gvecchi2,gvecme2
+!  gvecchi2=gvecme2 
+!endif
+!if (lr_igq0.lt.gvecchi1.or.lr_igq0.gt.gvecchi2) then
+!  write(*,*)
+!  write(*,'("Error(response_chi): not enough G-vectors for calculation of &
+!    &chi")')
+!  write(*,*)
+!  call pstop
+!endif
 
 if (wproc.and.spinpol.and.afmchi0.and.nspin_chi0.eq.1.and.lrtype.eq.0) then
   write(150,'("AFM case: chi0 is multiplied by 2")')

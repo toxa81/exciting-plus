@@ -109,19 +109,19 @@ allocate(ikptnrloc(0:mpi_dims(1)-1,2))
 call splitk(nkptnr,mpi_dims(1),nkptnrloc,ikptnrloc)
 nkptnr_loc=nkptnrloc(mpi_x(1))
 
-if (task.eq.402.or.task.eq.403) then
-  allocate(igishell(ngvec))
-  allocate(ishellng(ngvec,2))
-  call getgshells(ngsh,igishell,ishellng)
-  if (gshchi1.eq.1) then
-    gvecchi1=1
-  else
-    gvecchi1=ishellng(gshchi1-1,2)+1
-  endif
-  gvecchi2=ishellng(gshchi2,2)
-  deallocate(igishell)
-  deallocate(ishellng)
-endif
+!if (task.eq.402.or.task.eq.403) then
+!  allocate(igishell(ngvec))
+!  allocate(ishellng(ngvec,2))
+!  call getgshells(ngsh,igishell,ishellng)
+!  if (gshchi1.eq.1) then
+!    gvecchi1=1
+!  else
+!    gvecchi1=ishellng(gshchi1-1,2)+1
+!  endif
+!  gvecchi2=ishellng(gshchi2,2)
+!  deallocate(igishell)
+!  deallocate(ishellng)
+!endif
 
 
 
