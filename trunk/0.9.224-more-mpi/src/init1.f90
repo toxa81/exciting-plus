@@ -127,12 +127,6 @@ if (allocated(ikptloc)) deallocate(ikptloc)
 allocate(ikptloc(0:nproc-1,2))
 call splitk(nkpt,nproc,nkptloc,ikptloc)
 
-!if (allocated(nkptnrloc)) deallocate(nkptnrloc)
-!allocate(nkptnrloc(0:nproc-1))
-!if (allocated(ikptnrloc)) deallocate(ikptnrloc)
-!allocate(ikptnrloc(0:nproc-1,2))
-!call splitk(nkptnr,nproc,nkptnrloc,ikptnrloc)
-
 !---------------------!
 !     G+k vectors     !
 !---------------------!
