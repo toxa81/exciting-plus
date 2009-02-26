@@ -1014,10 +1014,6 @@ real(8) lr_eta
 logical afmchi0 
 integer bndme1,bndme2
 integer lrtype
-! if .true. then read and write matrix elements and chi0
-logical do_lr_io
-! Fourier coeffiients of complex charge density
-complex(8), allocatable :: zrhofc(:,:,:)
 ! array for k and k+q stuff
 !  1-st index: index of k-point in BZ
 !  2-nd index: 1: index of k'=k+q-K
@@ -1042,6 +1038,7 @@ integer nepts
 complex(8), allocatable :: lr_w(:)
 real(8) fxc1
 integer nfxca
+logical lfftit
 
 !------------------!
 !     Wannier      !

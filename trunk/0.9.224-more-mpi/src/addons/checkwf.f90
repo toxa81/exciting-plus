@@ -65,6 +65,14 @@ do ik=1,nkptnr
 ! calculate the wavefunctions for all states
   call genwfsv(.false.,ngknr,igkignr,evalsv,apwalm,evecfv,evecsv,wfmt,wfir)
   
+  write(61,'("ik : ",I4)')ik
+  do ist1=1,nstsv
+    write(61,'("  band : ",I4)')ist1
+    do ist2=1,nstsv
+      write(61,'("    j : ",I4,"   evecsv : ",2G18.10)')ist2,dreal(evecsv(ist2,ist1)),dimag(evecsv(ist2,ist1))
+    enddo
+  enddo
+  
   if (spinpol.and..not.ncmag) then
     if (sum(abs(evecsv(1:nstfv,nstfv+1:nstsv))).gt.1d-10.or.&
         sum(abs(evecsv(nstfv+1:nstsv,1:nstfv))).gt.1d-10) then
@@ -72,6 +80,7 @@ do ik=1,nkptnr
     endif
   endif
   
+  if (.false.) then
   do ist1=1,nstsv
     do ist2=ist1,nstsv
       call vnlrho(.true.,wfmt(:,:,:,:,ist1),wfmt(:,:,:,:,ist2), &
@@ -89,6 +98,7 @@ do ik=1,nkptnr
       endif
     end do
   end do
+  endif
 enddo
 close(60)
 

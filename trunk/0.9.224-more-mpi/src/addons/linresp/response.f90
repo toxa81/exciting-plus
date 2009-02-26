@@ -61,10 +61,9 @@ if (lrtype.eq.1.and..not.spinpol) then
   call pstop
 endif
 
-do_lr_io=.true.
-
 call qname(ivq0m_list(:,mpi_x(3)+1),qnm)
 wproc=.false.
+
 if (task.eq.400) then
   if (root_cart((/1,1,0/))) then
     wproc=.true.
@@ -90,7 +89,6 @@ endif
 
 if (wproc) then
   write(150,'("Running on ",I4," proc.")')nproc
-  if (.not.do_lr_io) write(150,'("Output of intermediate files is turned off")')
 #ifdef _PIO_
   if (nproc.gt.1) then
     write(150,'("Reading files in parallel")')
@@ -174,6 +172,7 @@ if (task.eq.400) then
   call genlofr
   call geturf
   call genurfprod
+
 ! generate G+k vectors for entire BZ (this is required to compute 
 !   wave-functions at each k-point)
   allocate(vgklnr(3,ngkmax,nkptnr_loc))
@@ -235,43 +234,43 @@ if (task.eq.400) then
             evecsvloc(1,1,ikloc),wfsvitloc(1,1,1,ikloc))
           if (wannier) then
             if (wproc.and.ikloc.eq.1) then
-	      write(150,*)
-	      write(150,'("Keeping Wannier functions content")')
-	      write(150,*)
-	    endif
+              write(150,*)
+              write(150,'("Keeping Wannier functions content")')
+              write(150,*)
+            endif
             wfsvmt_t=wfsvmtloc(:,:,:,:,:,ikloc)
-	    wfsvit_t=wfsvitloc(:,:,:,ikloc)
+            wfsvit_t=wfsvitloc(:,:,:,ikloc)
             call genwann_c(evalsvnr(1,iknrglob(ikloc)),wfsvmt_t,wfc_t)
-	    wfsvmt_t=dcmplx(0.d0,0.d0)
-	    wfsvit_t=dcmplx(0.d0,0.d0)
-	    do ispn=1,wann_nspin
-!	      do j=23,40
-!	        do istfv=1,nstfv
-!	          do n=21,38
-!	            wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn) + &
-!	              wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
-!	            wfsvit_t(:,j,ispn)=wfsvit_t(:,j,ispn) + &
-!	              wfsvitloc(:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
-!		  enddo
-!	        enddo
-!	      enddo
-	      do j=41,61
-!	        if (evalsvnr(j,iknrglob(ikloc)).gt.(efermi+1d-2)) then
-	          do istfv=1,nstfv
-	            do n=1,20
-		      if (.not.(n.eq.3.or.n.eq.8.or.n.eq.13.or.n.eq.18)) then
-	                wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn) + &
-	                  wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
-	                wfsvit_t(:,j,ispn)=wfsvit_t(:,j,ispn) + &
-	                  wfsvitloc(:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
-		      endif
-		    enddo
-	          enddo
+            wfsvmt_t=dcmplx(0.d0,0.d0)
+            wfsvit_t=dcmplx(0.d0,0.d0)
+            do ispn=1,wann_nspin
+!             do j=23,40
+!               do istfv=1,nstfv
+!                 do n=21,38
+!                   wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn) + &
+!                     wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
+!                   wfsvit_t(:,j,ispn)=wfsvit_t(:,j,ispn) + &
+!                     wfsvitloc(:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
+!                 enddo
+!               enddo
+!             enddo
+              do j=41,61
+!               if (evalsvnr(j,iknrglob(ikloc)).gt.(efermi+1d-2)) then
+                  do istfv=1,nstfv
+                    do n=1,20
+                      if (.not.(n.eq.3.or.n.eq.8.or.n.eq.13.or.n.eq.18)) then
+                        wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn) + &
+                          wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
+                        wfsvit_t(:,j,ispn)=wfsvit_t(:,j,ispn) + &
+                          wfsvitloc(:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
+                      endif
+                    enddo
+                  enddo
 !               endif
-	      enddo
-  	    enddo !ispn  
-  	    wfsvmtloc(:,:,:,:,:,ikloc)=wfsvmt_t
-    	    wfsvitloc(:,:,:,ikloc)=wfsvit_t
+              enddo
+            enddo !ispn  
+            wfsvmtloc(:,:,:,:,:,ikloc)=wfsvmt_t
+            wfsvitloc(:,:,:,ikloc)=wfsvit_t
           endif
         enddo !ikloc
 #ifndef _PIO_
