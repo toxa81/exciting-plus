@@ -128,8 +128,8 @@ xc:
 all:	fft exciting
 
 clean:
-	rm -f *.o *.mod *~ fort.* ifc* *.gcno gmon.out *.aux *.dvi *.log *.pdf \
-         *.tex *.toc $(EXE)
+	rm -f *.mod *~ fort.* ifc* *.gcno gmon.out *.aux *.dvi *.log *.pdf \
+         *.tex *.toc $(OBJ) $(EXE)
 
 cleanall:
 	cd BLAS; $(MAKE) clean

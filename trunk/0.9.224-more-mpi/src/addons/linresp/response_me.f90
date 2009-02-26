@@ -1,3 +1,4 @@
+#ifdef _HDF5_
 subroutine response_me(ivq0m,wfsvmtloc,wfsvitloc,ngknr,igkignr,occsvnr)
 use modmain
 use hdf5
@@ -434,3 +435,4 @@ endif
 
 return
 end
+#endif

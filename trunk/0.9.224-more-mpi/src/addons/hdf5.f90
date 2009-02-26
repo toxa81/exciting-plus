@@ -1,3 +1,4 @@
+#ifdef _HDF5_
 subroutine write_real8(a,n,fname,path,nm)
 use hdf5
 implicit none
@@ -248,3 +249,4 @@ call h5dclose_f(dataset_id,ierr)
 call h5fclose_f(h5_root_id,ierr)
 return
 end
+#endif

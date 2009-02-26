@@ -1,3 +1,4 @@
+#ifdef _HDF5_
 subroutine response_chi(ivq0m)
 use modmain
 implicit none
@@ -744,3 +745,4 @@ close(160)
 return
 end
 
+#endif

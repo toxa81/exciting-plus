@@ -1,3 +1,4 @@
+#ifdef _HDF5_
 subroutine response_chi0(ivq0m,evalsvnr)
 use modmain
 use hdf5
@@ -281,3 +282,4 @@ deallocate(chi0_loc)
 
 return
 end
+#endif

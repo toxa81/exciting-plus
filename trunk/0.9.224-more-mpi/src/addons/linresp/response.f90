@@ -1,3 +1,4 @@
+#ifdef _HDF5_
 subroutine response
 use modmain
 #ifdef _MPI_
@@ -350,3 +351,4 @@ endif
 
 return
 end
+#endif
