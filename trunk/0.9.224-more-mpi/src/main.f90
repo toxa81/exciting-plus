@@ -47,6 +47,8 @@ do itask=1,ntasks
     call writelsj
   case(20,21)
     call bandstr
+  case(22)
+    call bandrlm
   case(25)
     call effmass
   case(31,32,33)

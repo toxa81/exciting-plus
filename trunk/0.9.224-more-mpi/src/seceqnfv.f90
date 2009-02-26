@@ -49,7 +49,7 @@ complex(8), allocatable :: v(:)
 complex(8), allocatable :: h(:)
 complex(8), allocatable :: o(:)
 complex(8), allocatable :: work(:)
-logical, parameter :: packed = .false.
+logical, parameter :: packed = .true.
 integer, external :: ilaenv
 
 if (packed) then
