@@ -44,16 +44,27 @@ allocate(mpi_periods(mpi_ndims))
 mpi_periods=.false.
 call mpi_cart_create(comm_world,mpi_ndims,mpi_dims,mpi_periods,   &
   .false.,comm_cart,ierr)
-call mpi_cart_get(comm_cart,mpi_ndims,mpi_dims,mpi_periods,mpi_x, &
-  ierr)
+mpi_x=-1
+if (comm_cart.ne.MPI_COMM_NULL) then 
+  call mpi_cart_get(comm_cart,mpi_ndims,mpi_dims,mpi_periods,mpi_x, &
+    ierr)
+endif
 deallocate(mpi_periods)
-if (mpi_ndims.eq.3) then
-  call mpi_cart_sub(comm_cart,(/.true.,.false.,.false./),comm_cart_100,ierr)
-  call mpi_cart_sub(comm_cart,(/.false.,.true.,.false./),comm_cart_010,ierr)
-  call mpi_cart_sub(comm_cart,(/.false.,.false.,.true./),comm_cart_001,ierr)
-  call mpi_cart_sub(comm_cart,(/.true.,.false.,.true./),comm_cart_101,ierr)
-  call mpi_cart_sub(comm_cart,(/.false.,.true.,.true./),comm_cart_011,ierr)
-  call mpi_cart_sub(comm_cart,(/.true.,.true.,.false./),comm_cart_110,ierr)
+comm_cart_100=MPI_COMM_NULL
+comm_cart_010=MPI_COMM_NULL
+comm_cart_001=MPI_COMM_NULL
+comm_cart_101=MPI_COMM_NULL
+comm_cart_011=MPI_COMM_NULL
+comm_cart_110=MPI_COMM_NULL
+if (comm_cart.ne.MPI_COMM_NULL) then
+  if (mpi_ndims.eq.3) then
+    call mpi_cart_sub(comm_cart,(/.true.,.false.,.false./),comm_cart_100,ierr)
+    call mpi_cart_sub(comm_cart,(/.false.,.true.,.false./),comm_cart_010,ierr)
+    call mpi_cart_sub(comm_cart,(/.false.,.false.,.true./),comm_cart_001,ierr)
+    call mpi_cart_sub(comm_cart,(/.true.,.false.,.true./),comm_cart_101,ierr)
+    call mpi_cart_sub(comm_cart,(/.false.,.true.,.true./),comm_cart_011,ierr)
+    call mpi_cart_sub(comm_cart,(/.true.,.true.,.false./),comm_cart_110,ierr)
+  endif
 endif
 #else
 mpi_dims=1
