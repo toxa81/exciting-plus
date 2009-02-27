@@ -120,7 +120,7 @@ if (in_cart()) then
     call flushifc(150)
   endif
   
-  ! distribute k-points over 1-st dimension of the grid
+! distribute k-points over 1-st dimension of the grid
   if (allocated(nkptnrloc)) deallocate(nkptnrloc)
   allocate(nkptnrloc(0:mpi_dims(1)-1))
   if (allocated(ikptnrloc)) deallocate(ikptnrloc)
@@ -138,7 +138,7 @@ if (in_cart()) then
   !endif
   
   if (task.eq.400.or.task.eq.401.or.task.eq.404) then
-  ! get occupancies and energies of states
+! get occupancies and energies of states
     allocate(occsvnr(nstsv,nkptnr))
     allocate(evalsvnr(nstsv,nkptnr))
     call timer_start(3)
@@ -147,11 +147,11 @@ if (in_cart()) then
       write(150,'("Reading energies and occupancies of states")')
       call flushifc(150)
     endif
-  ! if parallel I/O
+! if parallel I/O
 #ifdef _PIO_
     occsvnr=0.d0
     evalsvnr=0.d0
-  ! only subset of processors will read from file
+! only subset of processors will read from file
     if (root_cart((/0,1,1/))) then
       do ikloc=1,nkptnr_loc
         ik=iknrglob2(ikloc,mpi_x(1))
@@ -163,7 +163,7 @@ if (in_cart()) then
     endif
     call d_bcast_cart(comm_cart_011,evalsvnr,nstsv*nkptnr)
     call d_bcast_cart(comm_cart_011,occsvnr,nstsv*nkptnr)
-  ! if not parallel I/O
+! if not parallel I/O
 #else
     if (iproc.eq.0) then 
       do ik=1,nkptnr
@@ -220,7 +220,7 @@ if (in_cart()) then
       call flushifc(150)
     endif
     call timer_start(1)
-  ! read and transform eigen-vectors
+! read and transform eigen-vectors
     wfsvmtloc=0.d0
     wfsvitloc=0.d0
     if (root_cart((/0,1,1/))) then
@@ -232,13 +232,13 @@ if (in_cart()) then
             ik=iknrglob2(ikloc,mpi_x(1))
             call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfvloc(1,1,1,ikloc))
             call getevecsv(vklnr(1,ik),evecsvloc(1,1,ikloc))
-  ! get apw coeffs 
+! get apw coeffs 
             call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),        &
               sfacgknr(1,1,ikloc),apwalm)
-  ! generate wave functions in muffin-tins
+! generate wave functions in muffin-tins
             call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
               evecsvloc(1,1,ikloc),apwalm,wfsvmtloc(1,1,1,1,1,ikloc))
-  ! generate wave functions in interstitial
+! generate wave functions in interstitial
             call genwfsvit(ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
               evecsvloc(1,1,ikloc),wfsvitloc(1,1,1,ikloc))
             if (wannier) then
@@ -312,7 +312,7 @@ if (in_cart()) then
   endif
   
   if (task.eq.400) then
-  ! calculate matrix elements
+! calculate matrix elements
     call timer_start(10)
     call response_me(ivq0m_list(1,mpi_x(3)+1),wfsvmtloc,wfsvitloc,ngknr, &
       igkignr,occsvnr)
@@ -324,7 +324,7 @@ if (in_cart()) then
   endif
   
   if (task.eq.401) then
-  ! calculate chi0
+! calculate chi0
     call timer_start(11)
     call response_chi0(ivq0m_list(1,mpi_x(3)+1),evalsvnr)
     call timer_stop(11)
@@ -335,7 +335,7 @@ if (in_cart()) then
   endif
   
   if (task.eq.402) then
-  ! calculate chi
+! calculate chi
     call timer_start(12)
     call response_chi(ivq0m_list(1,mpi_x(3)+1))
     call timer_stop(12)
