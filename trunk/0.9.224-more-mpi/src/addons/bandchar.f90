@@ -101,9 +101,12 @@ do j=1,nstfv
           do m=-l,l
             lm=idxlm(l,m)
             do io1=1,nrfmax
-              do io2=2,2!1,nrfmax
+              do io2=1,nrfmax
                 bndchr(lm,ias,ispn,j+(ispn-1)*nstfv)=bndchr(lm,ias,ispn,j+(ispn-1)*nstfv) + &
                   urfprod(l,io1,io2,ias)*dreal(dconjg(zt1(lm,io1))*zt1(lm,io2))/nsym1
+! not tested: partial contribution from APW or lo
+!                bndchr(lm,ias,ispn,j+(ispn-1)*nstfv)=bndchr(lm,ias,ispn,j+(ispn-1)*nstfv) + &
+!                  dreal(dconjg(zt1(lm,io1))*zt1(lm,io2))*urfprod(l,2,io1,ias)*urfprod(l,2,io2,ias)/nsym1
               enddo
             enddo
           enddo

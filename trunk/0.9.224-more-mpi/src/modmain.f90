@@ -927,6 +927,7 @@ integer, allocatable :: ikptnrloc(:,:)
 complex(8), allocatable :: evecfvloc(:,:,:,:)
 complex(8), allocatable :: evecsvloc(:,:,:)
 integer comm_world
+integer comm_null
 integer comm_cart
 integer comm_cart_100
 integer comm_cart_010

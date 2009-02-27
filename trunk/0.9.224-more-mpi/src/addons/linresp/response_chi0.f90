@@ -266,10 +266,10 @@ do ie=ie1,nepts
       ie,timer(1,2),(16.0*j*ngvecme**2)/1024/1024/timer(1,2)
     call flushifc(150)
   endif
-  call barrier(comm_world)
+  call barrier(comm_cart)
 enddo !ie
 
-call barrier(comm_world)
+call barrier(comm_cart)
 
 deallocate(lr_w)
 deallocate(idxkq)

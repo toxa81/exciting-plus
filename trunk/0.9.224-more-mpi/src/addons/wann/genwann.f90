@@ -130,11 +130,14 @@ do ispn=1,wann_nspin
   if (ierr.ne.0) then
     write(*,*)
     write(*,'("Error(genwann2): failed to calculate S^{-1/2} for spin ",I1)')ispn
+    write(*,'("  ierr : ",I4)')ierr
     do n=1,nwann(ispn)
-      do j=1,wann_ntype
-        write(*,*)'type=',j,'N1,N2=',n1n2(1,ispn,j),n1n2(2,ispn,j)
-      enddo
-      write(*,*)'  prjao=',abs(prjao(n,:,ispn))
+      itype=iwann(n,ispn,4)
+      write(*,*)
+      write(*,'(" n : ",I4,"  type : ",I4,"  N1,N2 : ",2I4)')n,itype,n1,n2
+      write(*,'("   |<\psi_i|\phi_n>| : ")')
+      write(*,'(6X,10G18.10)')abs(prjao(n,:,ispn))
+      write(*,'("   sum(abs(|..|)) : ",G18.10)')sum(abs(prjao(n,:,ispn)))
     enddo
     write(*,*)
   endif

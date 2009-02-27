@@ -226,7 +226,7 @@ do ik=1,nkptnr
   call pstop
 10 continue
   idxkq(2,ik)=ivgig(ivg1(1),ivg1(2),ivg1(3))
-  ! search for new fft indexes
+! search for new fft indexes
   do ig=1,ngvecme
     ivg2(:)=ivg(:,ig)+ivg1(:)
     igfft1(ig,ik)=igfft(ivgig(ivg2(1),ivg2(2),ivg2(3)))
@@ -345,7 +345,7 @@ do ikstep=1,nkptnrloc(0)
   call timer_start(1)
   call wfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
     wfsvit2,ngknr2,igkignr2,evecfv2,evecsv2)
-  call barrier(comm_world)
+  call barrier(comm_cart)
   call timer_stop(1)
 ! compute matrix elements  
   call timer_start(2)

@@ -146,8 +146,8 @@ endif
 
 ierr=0
 do i=1,ndim
-  if (ev1(i).lt.1.d-10) then
-    ierr=1
+  if (ev1(i).lt.1.d-12) then
+    ierr=i
     ev(i)=0.d0
   else
     ev(i)=1.d0/dsqrt(ev1(i))

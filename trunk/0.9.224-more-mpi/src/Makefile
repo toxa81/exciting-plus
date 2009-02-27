@@ -129,7 +129,7 @@ all:	fft exciting
 
 clean:
 	rm -f *.mod *~ fort.* ifc* *.gcno gmon.out *.aux *.dvi *.log *.pdf \
-         *.tex *.toc $(OBJ) $(EXE)
+         *.tex *.toc *.a $(OBJ) $(EXE)
 
 cleanall:
 	cd BLAS; $(MAKE) clean

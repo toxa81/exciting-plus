@@ -18,6 +18,7 @@ integer itask,ierr
 #ifdef _MPI_
 call mpi_init(ierr)
 comm_world=MPI_COMM_WORLD
+comm_null=MPI_COMM_NULL
 call mpi_comm_size(comm_world,nproc,ierr)
 call mpi_comm_rank(comm_world,iproc,ierr)
 #endif
@@ -118,6 +119,7 @@ end do
 call h5close_f(ierr)
 #endif
 #ifdef _MPI_
+call mpi_barrier(MPI_COMM_WORLD,ierr)
 call mpi_finalize(ierr)
 #endif
 stop

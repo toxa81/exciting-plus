@@ -87,7 +87,7 @@ call dsync(e,nstsv*nkpt,.true.,.false.)
 if (wannier) call dsync(wann_e,wann_nmax*wann_nspin*nkpt,.true.,.false.)
 do ik=1,nkpt
   call rsync(bc(1,1,1,1,ik),lmmax*natmtot*nspinor*nstsv,.true.,.false.)
-  call barrier
+  call barrier(comm_world)
 enddo
 emin=minval(e)
 emax=maxval(e)
@@ -135,13 +135,13 @@ endif
 if (wannier) then
   do i=0,nproc-1
     if (i.eq.iproc) then
-      open(50,file='BNDCHR.OUT',action='WRITE',form='FORMATTED',status='OLD',position='APPEND')
+      open(50,file='BNDCHR.OUT',form='FORMATTED',status='OLD',position='APPEND')
       do ik=1,nkptloc(iproc)
         write(50,*)((abs(wann_c(n,j,1,ik)),n=1,nwann(1)),j=1,nstfv)
       enddo
       close(50)
     endif
-    call barrier
+    call barrier(comm_world)
   enddo
 endif
 

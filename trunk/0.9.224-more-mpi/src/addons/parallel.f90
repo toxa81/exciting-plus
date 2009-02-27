@@ -6,6 +6,7 @@ use mpi
 implicit none
 integer i,ierr
 logical, allocatable :: mpi_periods(:)
+logical, external :: in_cart
 mpi_ndims=1
 if (task.eq.400.or.task.eq.401.or.task.eq.402) then
   mpi_ndims=3
@@ -45,18 +46,18 @@ mpi_periods=.false.
 call mpi_cart_create(comm_world,mpi_ndims,mpi_dims,mpi_periods,   &
   .false.,comm_cart,ierr)
 mpi_x=-1
-if (comm_cart.ne.MPI_COMM_NULL) then 
+if (in_cart()) then 
   call mpi_cart_get(comm_cart,mpi_ndims,mpi_dims,mpi_periods,mpi_x, &
     ierr)
 endif
 deallocate(mpi_periods)
-comm_cart_100=MPI_COMM_NULL
-comm_cart_010=MPI_COMM_NULL
-comm_cart_001=MPI_COMM_NULL
-comm_cart_101=MPI_COMM_NULL
-comm_cart_011=MPI_COMM_NULL
-comm_cart_110=MPI_COMM_NULL
-if (comm_cart.ne.MPI_COMM_NULL) then
+comm_cart_100=comm_null
+comm_cart_010=comm_null
+comm_cart_001=comm_null
+comm_cart_101=comm_null
+comm_cart_011=comm_null
+comm_cart_110=comm_null
+if (in_cart()) then
   if (mpi_ndims.eq.3) then
     call mpi_cart_sub(comm_cart,(/.true.,.false.,.false./),comm_cart_100,ierr)
     call mpi_cart_sub(comm_cart,(/.false.,.true.,.false./),comm_cart_010,ierr)
@@ -69,6 +70,16 @@ endif
 #else
 mpi_dims=1
 mpi_x=0
+#endif
+return
+end
+
+logical function in_cart()
+use modmain
+#ifdef _MPI_
+in_cart=(comm_cart.ne.comm_null)
+#else
+in_cart=.true.
 #endif
 return
 end
