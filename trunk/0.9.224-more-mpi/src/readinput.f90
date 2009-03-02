@@ -179,6 +179,8 @@ dmbnd2=-1
 nfxca=1
 gshme1=1
 lfftit=.false.
+fxca0=0.d0
+fxca1=0.d0
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -910,7 +912,7 @@ case('response')
 !  endif
 case('response1')
   read(50,*,err=20) bndme1,bndme2
-  read(50,*,err=20) nfxca,fxc1
+  read(50,*,err=20) nfxca,fxca0,fxca1
   read(50,*,err=20) lfftit
 case('wannier')
   read(50,*,err=20) wannier

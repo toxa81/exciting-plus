@@ -153,7 +153,7 @@ allocate(ixcft(ngvec))
 krnl=dcmplx(0.d0,0.d0)
 ! for charge response
 if (lrtype.eq.0) then
-  fxca=fxc1*mpi_x(2)
+  fxca=fxca0+fxca1*mpi_x(2)
   if (wproc) then
     write(150,*)
     write(150,'("fxc A : ",F8.4)')fxca
@@ -651,18 +651,23 @@ complex(8), intent(in) :: epsilon_eff(nepts)
 integer, intent(in) :: ispin_me
 
 real(8), allocatable :: func(:,:)
+real(8) fxca
 character*100 fname,qnm
-character*4 c4
-character*2 c2
-character*1 c1
+character*10 c1,c2,c3,c4
+!character*4 c4
+!character*2 c2
+!character*1 c1
 integer ie
 
 call qname(ivq0m,qnm)
+fxca=fxca0+fxca1*mpi_x(2)
 write(c1,'(I1.1)')ispin_me
-write(c2,'(I2.2)')mpi_x(2)
-write(c4,'(I4.4)')ngvecchi
+write(c2,'(F5.2)')fxca
+write(c3,'(I8)')ngvecchi
+write(c4,'(F6.3)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)/au2ang
+
 if (lrtype.eq.0) then
-  fname=trim(qnm)//"_A"//c2//"_G"//c4//".dat"
+  fname=trim(qnm)//"__"//trim(adjustl(c4))//"__G_"//trim(adjustl(c3))//"__A_"//trim(adjustl(c2))//".dat"
 else
   fname=trim(qnm)//"_A"//c2//"_s"//c1//".dat"
 endif
@@ -693,7 +698,7 @@ write(160,'("#   G-vectors                        : ",2I4)')gvecchi1,gvecchi2
 write(160,'("#   index of Gq vector               : ",I4)')igq0
 if (lrtype.eq.0) then
   write(160,'("#")')
-  write(160,'("# fxc A : ",F8.4)')fxc1*mpi_x(2)
+  write(160,'("# fxc A : ",F8.4)')fxca
 endif
 write(160,'("#")')
 if (ispin_me.le.3) then
