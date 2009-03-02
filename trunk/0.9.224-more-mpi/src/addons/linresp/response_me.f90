@@ -233,6 +233,8 @@ do ik=1,nkptnr
   enddo
 enddo
 
+call timer_reset(1)
+call timer_start(1)
 ! setup n,n' stuff
 call getmeidx(.true.,occsvnr)
 #ifdef _MPI_
@@ -246,9 +248,11 @@ allocate(nme(nkptnr_loc))
 allocate(ime(3,nmemax,nkptnr_loc))
 allocate(docc(nmemax,nkptnr_loc))
 call getmeidx(.false.,occsvnr)
+call timer_stop(1)
 if (wproc) then
   write(150,*)
   write(150,'("Maximum number of interband transitions: ",I5)')nmemax
+  write(150,'("Done in ",F8.2," seconds")')timer(1,2)
 endif
 
 ! generate G+q' vectors, where q' is reduced q-vector
@@ -296,6 +300,8 @@ if (root_cart((/1,1,0/))) then
   call write_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
 endif
 
+call timer_reset(1)
+call timer_start(1)
 if (wproc) then
   write(150,*)
   write(150,'("Calculating radial integrals")')
@@ -303,19 +309,24 @@ if (wproc) then
 endif
 allocate(uuj(0:lmaxvr,0:lmaxvr,0:lmaxexp,nrfmax,nrfmax,natmtot,ngvecme))
 call calc_uuj(uuj,lmaxexp,gq0)
+call timer_stop(1)
 if (wproc) then
-  write(150,'("Done.")')
+  write(150,'("Done in ",F8.2," seconds")')timer(1,2)
   call flushifc(150)
 endif
 
+call timer_reset(1)
+call timer_start(1)
 call getgu(.true.,lmaxexp,uuj,ylmgq0,sfacgq0,ngumax,ngu,gu,igu)
 allocate(ngu(natmtot,ngvecme))
 allocate(gu(ngumax,natmtot,ngvecme))
 allocate(igu(4,ngumax,natmtot,ngvecme))
 call getgu(.false.,lmaxexp,uuj,ylmgq0,sfacgq0,ngumax,ngu,gu,igu)
+call timer_stop(1)
 if (wproc) then
   write(150,*)
   write(150,'("Maximum number of Gaunt-like coefficients : ",I8)')ngumax
+  write(150,'("Done in ",F8.2," seconds")')timer(1,2)
   call flushifc(150)
 endif
 deallocate(uuj)
