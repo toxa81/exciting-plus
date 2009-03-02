@@ -652,6 +652,7 @@ integer, intent(in) :: ispin_me
 
 real(8), allocatable :: func(:,:)
 character*100 fname,qnm
+character*4 c4
 character*2 c2
 character*1 c1
 integer ie
@@ -659,9 +660,12 @@ integer ie
 call qname(ivq0m,qnm)
 write(c1,'(I1.1)')ispin_me
 write(c2,'(I2.2)')mpi_x(2)
-fname=trim(qnm)//"_a"//c2//"_s"//c1//".dat"
-!write(fname,'("response",I1,"[",I4.3,",",I4.3,",",I4.3,"].dat")') &
-!  ispin_me,ivq0m(1),ivq0m(2),ivq0m(3)
+write(c4,'(I4.4)')ngvecchi
+if (lrtype.eq.0) then
+  fname=trim(qnm)//"_a"//c2//"_Gv"//c4//".dat"
+else
+  fname=trim(qnm)//"_a"//c2//"_s"//c1//".dat"
+endif
 open(160,file=trim(fname),form='formatted',status='replace')
 if (lrtype.eq.0) write(160,'("# charge density response")')
 if (lrtype.eq.1) write(160,'("# magnetization density response")')
