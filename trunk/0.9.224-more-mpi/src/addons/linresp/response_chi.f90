@@ -662,9 +662,9 @@ write(c1,'(I1.1)')ispin_me
 write(c2,'(I2.2)')mpi_x(2)
 write(c4,'(I4.4)')ngvecchi
 if (lrtype.eq.0) then
-  fname=trim(qnm)//"_a"//c2//"_Gv"//c4//".dat"
+  fname=trim(qnm)//"_A"//c2//"_G"//c4//".dat"
 else
-  fname=trim(qnm)//"_a"//c2//"_s"//c1//".dat"
+  fname=trim(qnm)//"_A"//c2//"_s"//c1//".dat"
 endif
 open(160,file=trim(fname),form='formatted',status='replace')
 if (lrtype.eq.0) write(160,'("# charge density response")')
