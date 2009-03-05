@@ -653,7 +653,7 @@ integer, intent(in) :: ispin_me
 real(8), allocatable :: func(:,:)
 real(8) fxca
 character*100 fname,qnm
-character*10 c1,c2,c3,c4
+character*10 c1,c2,c3,c4,c5
 !character*4 c4
 !character*2 c2
 !character*1 c1
@@ -665,9 +665,11 @@ write(c1,'(I1.1)')ispin_me
 write(c2,'(F5.2)')fxca
 write(c3,'(I8)')ngvecchi
 write(c4,'(F6.3)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)/au2ang
+write(c5,'(F5.3)')lr_eta
 
 if (lrtype.eq.0) then
-  fname=trim(qnm)//"__"//trim(adjustl(c4))//"__G_"//trim(adjustl(c3))//"__A_"//trim(adjustl(c2))//".dat"
+  fname=trim(qnm)//"__"//trim(adjustl(c4))//"__G_"//trim(adjustl(c3))//&
+    "__A_"//trim(adjustl(c2))//"__.dat"
 else
   fname=trim(qnm)//"_A"//c2//"_s"//c1//".dat"
 endif
