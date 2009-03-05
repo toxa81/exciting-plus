@@ -28,10 +28,9 @@ complex(8), allocatable :: wfsvit_t(:,:,:)
 complex(8), allocatable :: wfc_t(:,:,:)
 
 integer i,j,n,ngsh,gshmin,gshmax,ik,ikloc,ispn,istfv,ierr,rank
-integer sz
+integer sz,iint,iw
 character*100 fname,qnm
 character*2 c2
-integer, external :: iknrglob
 integer, external :: iknrglob2
 logical, external :: root_cart
 logical, external :: in_cart
@@ -128,16 +127,7 @@ if (in_cart()) then
   call splitk(nkptnr,mpi_dims(1),nkptnrloc,ikptnrloc)
   nkptnr_loc=nkptnrloc(mpi_x(1))
   
-  !if (.true.) then
-  !  gvecme1=516
-  !  gvecme2=516
-  !  ngvecme=1
-  !  gvecchi1=516
-  !  gvecchi2=516
-  !  ngvecchi=1
-  !endif
-  
-  if (task.eq.400.or.task.eq.401.or.task.eq.404) then
+   if (task.eq.400.or.task.eq.401.or.task.eq.404) then
 ! get occupancies and energies of states
     allocate(occsvnr(nstsv,nkptnr))
     allocate(evalsvnr(nstsv,nkptnr))
@@ -202,11 +192,6 @@ if (in_cart()) then
     allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptnr_loc))
     allocate(evecsvloc(nstsv,nstsv,nkptnr_loc))
     allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-    if (wannier) then
-      allocate(wfsvmt_t(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
-      allocate(wfsvit_t(ngkmax,nstsv,nspinor))
-      allocate(wfc_t(wann_nmax,nstfv,wann_nspin))
-    endif
     if (wproc) then
       sz=lmmaxvr*nrfmax*natmtot*nstsv*nspinor
       sz=sz+ngkmax*nstsv*nspinor
@@ -241,46 +226,6 @@ if (in_cart()) then
 ! generate wave functions in interstitial
             call genwfsvit(ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
               evecsvloc(1,1,ikloc),wfsvitloc(1,1,1,ikloc))
-            if (wannier) then
-              if (wproc.and.ikloc.eq.1) then
-                write(150,*)
-                write(150,'("Keeping Wannier functions content")')
-                write(150,*)
-              endif
-              wfsvmt_t=wfsvmtloc(:,:,:,:,:,ikloc)
-              wfsvit_t=wfsvitloc(:,:,:,ikloc)
-              call genwann_c(evalsvnr(1,iknrglob(ikloc)),wfsvmt_t,wfc_t)
-              wfsvmt_t=dcmplx(0.d0,0.d0)
-              wfsvit_t=dcmplx(0.d0,0.d0)
-              do ispn=1,wann_nspin
-  !             do j=23,40
-  !               do istfv=1,nstfv
-  !                 do n=21,38
-  !                   wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn) + &
-  !                     wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
-  !                   wfsvit_t(:,j,ispn)=wfsvit_t(:,j,ispn) + &
-  !                     wfsvitloc(:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
-  !                 enddo
-  !               enddo
-  !             enddo
-                do j=41,61
-  !               if (evalsvnr(j,iknrglob(ikloc)).gt.(efermi+1d-2)) then
-                    do istfv=1,nstfv
-                      do n=1,20
-                        if (.not.(n.eq.3.or.n.eq.8.or.n.eq.13.or.n.eq.18)) then
-                          wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn) + &
-                            wfsvmtloc(:,:,:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
-                          wfsvit_t(:,j,ispn)=wfsvit_t(:,j,ispn) + &
-                            wfsvitloc(:,istfv,ispn,ikloc)*wfc_t(n,istfv,ispn)*dconjg(wfc_t(n,j,ispn))
-                        endif
-                      enddo
-                    enddo
-  !               endif
-                enddo
-              enddo !ispn  
-              wfsvmtloc(:,:,:,:,:,ikloc)=wfsvmt_t
-              wfsvitloc(:,:,:,ikloc)=wfsvit_t
-            endif
           enddo !ikloc
 #ifndef _PIO_
         endif
@@ -293,15 +238,75 @@ if (in_cart()) then
       lmmaxvr*nrfmax*natmtot*nstsv*nspinor*nkptnr_loc*2)
     call d_bcast_cart(comm_cart_011,wfsvitloc, &
       ngkmax*nstsv*nspinor*nkptnr_loc*2)
+    if (wannier) then
+      allocate(wfsvmt_t(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
+      allocate(wfsvit_t(ngkmax,nstsv,nspinor))
+      allocate(wfc_t(wann_nmax,nstfv,wann_nspin))
+      do ikloc=1,nkptnr_loc
+        ik=iknrglob2(ikloc,mpi_x(1))
+        if (wproc.and.ikloc.eq.1) then
+          write(150,*)
+          if (laddwf) then
+            write(150,'("Adding Wannier functions content")')
+          else
+            write(150,'("Removing Wannier functions content")')
+          endif
+        endif
+        call genwann_c(evalsvnr(1,ik),wfsvmtloc(1,1,1,1,1,ikloc),wfc_t)
+        if (laddwf) then
+          wfsvmt_t=dcmplx(0.d0,0.d0)
+          wfsvit_t=dcmplx(0.d0,0.d0)
+        else
+          wfsvmt_t=wfsvmtloc(:,:,:,:,:,ikloc)
+          wfsvit_t=wfsvitloc(:,:,:,ikloc)
+        endif
+        do iint=1,nintwann      
+          if (wproc.and.ikloc.eq.1) then
+            write(150,*)
+            write(150,'("  energy interval : ",2F12.6)') &
+              ewannint(1,iint),ewannint(2,iint)
+            write(150,'("  Wannier functions : ",100I4)') &
+              (iwannint(j,iint),j=1,nwannint(iint))
+          endif
+          do ispn=1,wann_nspin
+            do j=1,nstfv
+              if (evalsvnr(j,ik).ge.ewannint(1,iint).and.&
+                  evalsvnr(j,ik).lt.ewannint(2,iint)) then
+                do istfv=1,nstfv
+                  do n=1,nwannint(iint)
+                    iw=iwannint(n,iint)
+                    if (laddwf) then
+                      wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)+&
+                        wfsvmtloc(:,:,:,istfv,ispn,ikloc)*& 
+                        wfc_t(iw,istfv,ispn)*dconjg(wfc_t(iw,j,ispn))
+                      wfsvit_t(:,j,ispn)=wfsvit_t(:,j,ispn)+&
+                        wfsvitloc(:,istfv,ispn,ikloc)*&
+                        wfc_t(iw,istfv,ispn)*dconjg(wfc_t(iw,j,ispn))
+                    else
+                      wfsvmt_t(:,:,:,j,ispn)=wfsvmt_t(:,:,:,j,ispn)-&
+                        wfsvmtloc(:,:,:,istfv,ispn,ikloc)*& 
+                        wfc_t(iw,istfv,ispn)*dconjg(wfc_t(iw,j,ispn))
+                      wfsvit_t(:,j,ispn)=wfsvit_t(:,j,ispn)-&
+                        wfsvitloc(:,istfv,ispn,ikloc)*&
+                        wfc_t(iw,istfv,ispn)*dconjg(wfc_t(iw,j,ispn))
+                    endif                       
+                  enddo
+                enddo
+              endif
+            enddo !j
+          enddo !ispn
+        enddo !iint
+        wfsvmtloc(:,:,:,:,:,ikloc)=wfsvmt_t
+        wfsvitloc(:,:,:,ikloc)=wfsvit_t
+      enddo !ikloc
+      deallocate(wfsvmt_t)
+      deallocate(wfsvit_t)
+      deallocate(wfc_t)
+    endif !wannier
     call timer_stop(1)
     if (wproc) then
       write(150,'("Done in ",F8.2," seconds")')timer(1,2)
       call flushifc(150)
-    endif
-    if (wannier) then
-      deallocate(wfsvmt_t)
-      deallocate(wfsvit_t)
-      deallocate(wfc_t)
     endif
     deallocate(apwalm)
     deallocate(vgklnr)

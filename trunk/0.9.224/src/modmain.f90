@@ -1041,6 +1041,14 @@ real(8) fxca0
 real(8) fxca1
 integer nfxca
 logical lfftit
+logical lscalar
+
+integer nintwann
+integer, parameter :: maxiwann=100
+real(8), allocatable :: ewannint(:,:)
+integer, allocatable :: nwannint(:)
+integer, allocatable :: iwannint(:,:)
+logical laddwf
 
 !------------------!
 !     Wannier      !

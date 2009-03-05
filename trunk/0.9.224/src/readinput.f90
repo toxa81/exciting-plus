@@ -181,6 +181,7 @@ gshme1=1
 lfftit=.false.
 fxca0=0.d0
 fxca1=0.d0
+lscalar=.false.
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -914,6 +915,17 @@ case('response1')
   read(50,*,err=20) bndme1,bndme2
   read(50,*,err=20) nfxca,fxca0,fxca1
   read(50,*,err=20) lfftit
+  read(50,*,err=20) lscalar
+case('response2')
+  read(50,*,err=20)laddwf
+  read(50,*,err=20)nintwann
+  allocate(ewannint(2,nintwann))
+  allocate(nwannint(nintwann))
+  allocate(iwannint(maxiwann,nintwann))
+  do i=1,nintwann
+    read(50,*,err=20)ewannint(1,i),ewannint(2,i),nwannint(i), &
+      (iwannint(l,i),l=1,nwannint(i))
+  enddo
 case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_use_eint

@@ -123,6 +123,17 @@ else
 endif
 gvecme2=ishellng(gshme2,2)
 ngvecme=gvecme2-gvecme1+1
+
+if (lscalar) then
+  if (wproc) then
+    write(150,*)
+    write(150,'("Scalar calculation")')
+  endif
+  gvecme1=ivgig(vgq0l(1),vgq0l(2),vgq0l(3))
+  gvecme2=gvecme1
+  ngvecme=1
+endif
+
 if (wproc) then
   write(150,*)
   write(150,'("G-shell limits      : ",2I4)')gshme1,gshme2
