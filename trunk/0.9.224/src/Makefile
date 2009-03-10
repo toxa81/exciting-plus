@@ -109,7 +109,7 @@ EXE = exciting
 
 SRC_LIB = $(SRC_modules) $(SRC_routines) $(SRC_routines_flux) \
  $(SRC_lib) $(SRC_lib_flux) $(SRC_advanced) $(SRC_phonon) $(SRC_optics) \
- $(SRC_xc) $(SRC_LDAU) $(SRC_rdmft)
+ $(SRC_xc) $(SRC_LDAU) $(SRC_rdmft) $(SRC_addons)
 
 OBJ_LIB = $(SRC_LIB:.f90=.o)
 
