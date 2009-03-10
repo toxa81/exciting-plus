@@ -251,6 +251,35 @@ if (doreduce.and.iproc.eq.0) deallocate(tmp)
 return
 end
 
+subroutine dsync2(comm,var,n,doreduce,dobcast)
+use modmain
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+! arguments
+integer, intent(in) :: comm
+logical, intent(in) :: doreduce
+logical, intent(in) :: dobcast
+integer, intent(in) :: n
+real(8), intent(inout) :: var(n)
+
+#ifdef _MPI_
+integer ierr
+real(8), allocatable :: tmp(:)
+
+if (doreduce.and.iproc.eq.0) allocate(tmp(n))
+if (doreduce) then
+  call mpi_reduce(var,tmp,n,MPI_DOUBLE_PRECISION,MPI_SUM,0, &
+    comm,ierr)
+  if (iproc.eq.0) var=tmp
+endif
+if (dobcast) call mpi_bcast(var,n,MPI_DOUBLE_PRECISION,0,comm,ierr)
+if (doreduce.and.iproc.eq.0) deallocate(tmp)
+#endif
+
+return
+end
 
 subroutine rsync(var,n,doreduce,dobcast)
 use modmain
@@ -310,6 +339,36 @@ if (doreduce.and.iproc.eq.0) deallocate(tmp)
 return
 end
 
+
+subroutine csync2(comm,var,n,doreduce,dobcast)
+use modmain
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+! arguments
+integer, intent(in) :: comm
+logical, intent(in) :: doreduce
+logical, intent(in) :: dobcast
+integer, intent(in) :: n
+complex(4), intent(inout) :: var(n)
+
+#ifdef _MPI_
+integer ierr
+complex(4), allocatable :: tmp(:)
+
+if (doreduce.and.iproc.eq.0) allocate(tmp(n))
+if (doreduce) then
+  call mpi_reduce(var,tmp,n,MPI_COMPLEX,MPI_SUM,0, &
+    comm,ierr)
+  if (iproc.eq.0) var=tmp
+endif
+if (dobcast) call mpi_bcast(var,n,MPI_COMPLEX,0,comm,ierr)
+if (doreduce.and.iproc.eq.0) deallocate(tmp)
+#endif
+return
+end
+
 subroutine lsync(var,n,dobcast)
 use modmain
 #ifdef _MPI_
@@ -357,6 +416,37 @@ if (doreduce.and.iproc.eq.0) deallocate(tmp)
 
 return
 end
+
+subroutine isync2(comm,var,n,doreduce,dobcast)
+use modmain
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+! arguments
+integer, intent(in) :: comm
+logical, intent(in) :: doreduce
+logical, intent(in) :: dobcast
+integer, intent(in) :: n
+integer, intent(inout) :: var(n)
+
+#ifdef _MPI_
+integer ierr
+integer, allocatable :: tmp(:)
+
+if (doreduce.and.iproc.eq.0) allocate(tmp(n))
+if (doreduce) then
+  call mpi_reduce(var,tmp,n,MPI_INTEGER,MPI_SUM,0, &
+    comm,ierr)
+  if (iproc.eq.0) var=tmp
+endif
+if (dobcast) call mpi_bcast(var,n,MPI_INTEGER,0,comm,ierr)
+if (doreduce.and.iproc.eq.0) deallocate(tmp)
+#endif
+
+return
+end
+
 
 logical function root_cart(idims)
 use modmain
