@@ -228,22 +228,6 @@ do ie=ie1,nepts
         evalsvnr(ime(2,i,ikloc),idxkq(1,ikloc))+lr_w(ie))
       call zgerc(ngvecme,ngvecme,wt,me(1,i,ikloc),1,me(1,i,ikloc),1, &
         chi0_loc(1,1,ispn),ngvecme)
-!      mtrx1=dcmplx(0.d0,0.d0)
-!      do ig2=1,ngvecme
-!        if (abs(me(ig2,i,ikloc)).gt.1d-10) then
-!          do ig1=1,ngvecme
-!            mtrx1(ig1,ig2)=me(ig1,i,ikloc)*dconjg(me(ig2,i,ikloc))
-!          enddo
-!        endif
-!      enddo
-!      if (nspin_chi0.eq.1) then
-!        ispn=1
-!      else
-!        ispn=ime(3,i,ikloc)
-!      endif
-!      wt=docc(i,ikloc)/(evalsvnr(ime(1,i,ikloc),ik) - &
-!        evalsvnr(ime(2,i,ikloc),idxkq(1,ikloc))+lr_w(ie))
-!      call zaxpy(ngvecme*ngvecme,wt,mtrx1,1,chi0_loc(1,1,ispn),1)
     enddo !i
   enddo !ikloc
   if (mpi_dims(2).gt.1) then
@@ -266,7 +250,7 @@ do ie=ie1,nepts
       ie,timer(1,2),(16.0*j*ngvecme**2)/1024/1024/timer(1,2)
     call flushifc(150)
   endif
-  call barrier(comm_cart)
+  call barrier(comm_cart_110)
 enddo !ie
 
 call barrier(comm_cart)
