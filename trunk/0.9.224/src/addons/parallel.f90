@@ -71,15 +71,15 @@ do i=2,mpi_ndims
 enddo
 
 group_tmp=MPI_GROUP_EMPTY
+allocate(ranks(nproc_grid))
+do i=1,nproc_grid
+  ranks(i)=i-1
+enddo
+call mpi_group_incl(group_world,nproc_grid,ranks,group_tmp,ierr)
+deallocate(ranks)
 if (iproc.lt.nproc_grid) then
-  allocate(ranks(nproc_grid))
-  do i=1,nproc_grid
-    ranks(i)=i-1
-  enddo
-  call mpi_group_incl(group_world,nproc_grid,ranks,group_tmp,ierr)
-  deallocate(ranks)
+  call mpi_comm_create(MPI_COMM_WORLD,group_tmp,comm_tmp,ierr)
 endif
-call mpi_comm_create(MPI_COMM_WORLD,group_tmp,comm_tmp,ierr)
 
 if (iproc.lt.nproc_grid) then
   call mpi_cart_create(comm_tmp,mpi_ndims,mpi_dims,mpi_periods,   &
@@ -107,6 +107,10 @@ if (in_cart()) then
     call mpi_cart_sub(comm_cart,(/.false.,.true.,.true./),comm_cart_011,ierr)
     call mpi_cart_sub(comm_cart,(/.true.,.true.,.false./),comm_cart_110,ierr)
   endif
+endif
+if (iproc.lt.nproc_grid) then
+  call mpi_comm_free(comm_tmp,ierr)
+  call mpi_group_free(group_tmp,ierr)
 endif
 #else
 mpi_dims=1

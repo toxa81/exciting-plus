@@ -39,7 +39,7 @@ complex(8), allocatable :: evecfv2(:,:,:)
 complex(8), allocatable :: evecsv2(:,:)
 complex(8), allocatable :: me(:,:)
 
-integer i,j,ik,jk,ig,ikstep,ierr
+integer i,j,ik,jk,ig,ikstep,ierr,sz
 integer ngknr2
 real(8) vkq0l(3)
 integer ivg1(3),ivg2(3)
@@ -334,9 +334,12 @@ allocate(gu(ngumax,natmtot,ngvecme))
 allocate(igu(4,ngumax,natmtot,ngvecme))
 call getgu(.false.,lmaxexp,uuj,ylmgq0,sfacgq0,ngumax,ngu,gu,igu)
 call timer_stop(1)
+sz=natmtot*ngvecme+ngumax*natmtot*ngvecme+4*ngumax*natmtot*ngvecme
+sz=8*sz/1024/1024
 if (wproc) then
   write(150,*)
   write(150,'("Maximum number of Gaunt-like coefficients : ",I8)')ngumax
+  write(150,'("  size (MB) : ",I6)')sz
   write(150,'("Done in ",F8.2," seconds")')timer(1,2)
   call flushifc(150)
 endif
