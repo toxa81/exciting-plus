@@ -6,13 +6,15 @@ complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: wf1(:,:,:)
 complex(8), allocatable :: dmatrsh(:,:,:,:,:)
 complex(8), allocatable :: dmatrshlcs(:,:,:,:,:)
-integer ik,is,ia,ias,l,lm1,lm2,lm3,m1,m2,io1,io2,ispn,j,nlcs
+integer is,ia,ias,l,lm1,lm2,lm3,m1,m2,io1,io2,ispn,j,nlcs
 real(8), allocatable :: mtrx(:,:)
 real(8), allocatable :: eval(:)
 complex(8), allocatable :: dm1(:,:,:,:,:)
 complex(8), allocatable :: dm2(:,:)
+complex(8) z1
 integer ib1,ib2
 logical ldensmtrx
+integer ikloc
 integer, external :: ikglob
 
 allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
@@ -37,9 +39,11 @@ endif
 ispn=1
 
 ! begin loop over k-points
-do ik=1,nkptloc(iproc)
-  call match(ngk(1,ikglob(ik)),gkc(1,1,ik),tpgkc(1,1,1,ik),sfacgk(1,1,1,ik),apwalm)
-  call genwfsvmt(lmaxvr,lmmaxvr,ngk(1,ikglob(ik)),evecfvloc(1,1,1,ik),evecsvloc(1,1,ik),apwalm,wfsvmt)
+do ikloc=1,nkptloc(iproc)
+  call match(ngk(1,ikglob(ikloc)),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc), &
+    sfacgk(1,1,1,ikloc),apwalm)
+  call genwfsvmt(lmaxvr,lmmaxvr,ngk(1,ikglob(ikloc)),evecfvloc(1,1,1,ikloc), &
+    evecsvloc(1,1,ikloc),apwalm,wfsvmt)
 ! begin loop over atoms and species
   do is=1,nspecies
     l=llu(is)
@@ -54,15 +58,14 @@ do ik=1,nkptloc(iproc)
         do m2=-l,l
           lm1=idxlm(l,m1)
           lm2=idxlm(l,m2)
-	  if (ldensmtrx) then
-            dm1(lm1,lm2,ispn,ispn,ias)=dm1(lm1,lm2,ispn,ispn,ias)+ &
-              wf1(lm1,io1,j)*dconjg(wf1(lm2,io2,j))*urfprod(l,io1,io2,ias)* &
-              wkpt(ik)
-	  else
-            dm1(lm1,lm2,ispn,ispn,ias)=dm1(lm1,lm2,ispn,ispn,ias)+ &
-              wf1(lm1,io1,j)*dconjg(wf1(lm2,io2,j))*urfprod(l,io1,io2,ias)* &
-              wkpt(ik)*occsv(j,ik)
-	  endif
+          z1=wf1(lm1,io1,j)*dconjg(wf1(lm2,io2,j))*&
+            urfprod(l,io1,io2,ias)*wkpt(ikglob(ikloc))
+          if (ldensmtrx) then
+            dm1(lm1,lm2,ispn,ispn,ias)=dm1(lm1,lm2,ispn,ispn,ias)+z1
+          else
+            dm1(lm1,lm2,ispn,ispn,ias)=dm1(lm1,lm2,ispn,ispn,ias)+&
+              z1*occsv(j,ikglob(ikloc))
+          endif
         enddo
         enddo
         enddo
@@ -71,7 +74,7 @@ do ik=1,nkptloc(iproc)
     enddo !ia
 10 continue
   enddo !is
-enddo !ik
+enddo !ikloc
 
 call zsync(dm1,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,.true.,.true.)
 call symdmat(lmaxlu,lmmaxlu,dm1)
@@ -131,7 +134,7 @@ if (iproc.eq.0) then
       allocate(eval(2*l+1))
       do ia=1,natoms(is)
         ias=idxas(ia,is)
-	nlcs=nlcs+1
+    nlcs=nlcs+1
         do m1=-l,l
           do m2=-l,l
             mtrx(m1+l+1,m2+l+1)=dreal(dmatrsh(idxlm(l,m1),idxlm(l,m2),1,1,ias))
@@ -139,7 +142,7 @@ if (iproc.eq.0) then
         enddo
         call diagdsy(2*l+1,mtrx,eval)
         write(50,'("ias : ",I2)')ias
-	write(50,'("  in global basis : ")')
+    write(50,'("  in global basis : ")')
         write(50,'("  real part : ")')
         do m1=-l,l
           write(50,'(2X,7F14.8)')(dreal(dmatrsh(idxlm(l,m1),idxlm(l,m2),1,1,ias)),m2=-l,l)  
@@ -154,8 +157,8 @@ if (iproc.eq.0) then
         enddo
         write(50,'("  eigen-values : ")')
         write(50,'(2X,7G18.10)')(eval(m1),m1=1,2*l+1)
-	write(50,'("  in local basis : ")')
-	write(50,'("  real part : ")')
+    write(50,'("  in local basis : ")')
+    write(50,'("  real part : ")')
         do m1=-l,l
           write(50,'(2X,7F14.8)')(dreal(dmatrshlcs(idxlm(l,m1),idxlm(l,m2),1,1,ias)),m2=-l,l)  
         enddo
@@ -179,7 +182,7 @@ if (iproc.eq.0) then
       allocate(eval(2*l+1))
       do ia=1,natoms(is)
         ias=idxas(ia,is)
-	write(50,'(2I4)')ias,l
+    write(50,'(2I4)')ias,l
         do m1=-l,l
           do m2=-l,l
             mtrx(m1+l+1,m2+l+1)=dreal(dmatrsh(idxlm(l,m1),idxlm(l,m2),1,1,ias))
