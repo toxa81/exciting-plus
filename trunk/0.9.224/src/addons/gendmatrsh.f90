@@ -142,7 +142,7 @@ if (iproc.eq.0) then
         enddo
         call diagdsy(2*l+1,mtrx,eval)
         write(50,'("ias : ",I2)')ias
-    write(50,'("  in global basis : ")')
+        write(50,'("  in global basis : ")')
         write(50,'("  real part : ")')
         do m1=-l,l
           write(50,'(2X,7F14.8)')(dreal(dmatrsh(idxlm(l,m1),idxlm(l,m2),1,1,ias)),m2=-l,l)  
@@ -157,8 +157,8 @@ if (iproc.eq.0) then
         enddo
         write(50,'("  eigen-values : ")')
         write(50,'(2X,7G18.10)')(eval(m1),m1=1,2*l+1)
-    write(50,'("  in local basis : ")')
-    write(50,'("  real part : ")')
+        write(50,'("  in local basis : ")')
+        write(50,'("  real part : ")')
         do m1=-l,l
           write(50,'(2X,7F14.8)')(dreal(dmatrshlcs(idxlm(l,m1),idxlm(l,m2),1,1,ias)),m2=-l,l)  
         enddo
@@ -182,7 +182,7 @@ if (iproc.eq.0) then
       allocate(eval(2*l+1))
       do ia=1,natoms(is)
         ias=idxas(ia,is)
-    write(50,'(2I4)')ias,l
+        write(50,'(2I4)')ias,l
         do m1=-l,l
           do m2=-l,l
             mtrx(m1+l+1,m2+l+1)=dreal(dmatrsh(idxlm(l,m1),idxlm(l,m2),1,1,ias))
