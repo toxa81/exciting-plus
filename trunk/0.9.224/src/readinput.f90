@@ -182,6 +182,15 @@ lfftit=.false.
 fxca0=0.d0
 fxca1=0.d0
 lscalar=.false.
+zero3d=(/0.d0,0.d0,0.d0/)
+bound3d=0.d0
+bound3d(1,1)=10.d0
+bound3d(2,2)=10.d0
+bound3d(3,3)=10.d0
+nrxyz=(/100,100,100/)
+nwfplot=1
+firstwf=1
+
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -954,6 +963,14 @@ case('wannier')
   do i=1,wann_natom
     read(50,*,err=20)(wann_iatom(1,i),wann_iatom(1+l,i),l=1,wann_nspin)
   enddo
+case('wannier1')
+  read(50,*,err=20)(zero3d(i),i=1,3)
+  read(50,*,err=20)(bound3d(i,1),i=1,3)
+  read(50,*,err=20)(bound3d(i,2),i=1,3)
+  read(50,*,err=20)(bound3d(i,3),i=1,3)
+  read(50,*,err=20)(nrxyz(i),i=1,3)
+  read(50,*,err=20)nwfplot,firstwf
+  
 case('densmtrx')
   read(50,*,err=20) dmbnd1,dmbnd2
 case('lcs')

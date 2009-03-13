@@ -6,11 +6,11 @@ use mpi
 implicit none
 
 real(8) r(3),t(3),vr0l(3)
-real(8) bound3d(3,3),orig3d(3),zero3d(3)
+real(8) orig3d(3)
 real(8) bound2d(3,2),orig2d(3)
 complex(4), allocatable :: wf(:,:)
 complex(4), allocatable :: wfp(:)
-integer ntr(3),i,nrxyz(3),nrtot
+integer ntr(3),i,nrtot
 integer i1,i2,i3,ir,n,m
 integer ik
 complex(8), allocatable :: evecfv(:,:,:)
@@ -22,13 +22,13 @@ complex(8), allocatable :: wfsvitloc(:,:,:,:)
 complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
 complex(8), allocatable :: zt2(:,:,:,:,:)
 complex(8), allocatable :: zt3(:,:,:,:)
+complex(8), allocatable :: zfft_vir(:)
 real(8), allocatable :: veff(:)
 character*40 fname
 real(8) x(2),alph
 logical, parameter :: wf3d=.true.
 logical, parameter :: wfprod=.false.
 integer tlim(2,3)
-integer nwfplot,firstwf
 integer, external :: ikglob
 
 call init0
@@ -50,22 +50,22 @@ call genlofr
 call geturf
 
 !zero3d(:)=(/8.00990d0,   4.89892d0,   7.96820d0/)
-zero3d(:)=(/0.d0,0.d0,0.d0/)
+!zero3d(:)=(/0.d0,0.d0,0.d0/)
 
 ! Cartesian coordinates of boundary and origin
-bound3d(:,1)=(/12.d0,0.d0,0.d0/)
-bound3d(:,2)=(/0.d0,12.d0,0.d0/)
-bound3d(:,3)=(/0.d0,0.d0,12.d0/)
-orig3d(:)=zero3d(:)-(bound3d(:,1)+bound3d(:,2)+bound3d(:,3))/2.d0
+!bound3d(:,1)=(/12.d0,0.d0,0.d0/)
+!bound3d(:,2)=(/0.d0,12.d0,0.d0/)
+!bound3d(:,3)=(/0.d0,0.d0,12.d0/)
+!orig3d(:)=zero3d(:)-(bound3d(:,1)+bound3d(:,2)+bound3d(:,3))/2.d0
 
-bound2d(:,1)=(/20.d0,0.d0,0.d0/)
-bound2d(:,2)=(/0.d0,20.d0,0.d0/)
-orig2d(:)=(/-8.d0,-8.d0, 0.d0/)
+!bound2d(:,1)=(/20.d0,0.d0,0.d0/)
+!bound2d(:,2)=(/0.d0,20.d0,0.d0/)
+!orig2d(:)=(/-8.d0,-8.d0, 0.d0/)
 
-nrxyz(:)=(/60,60,60/)
+!nrxyz(:)=(/20,20,20/)
 
-nwfplot=5
-firstwf=1
+!nwfplot=5
+!firstwf=1
 
 if (wf3d) then
   nrtot=nrxyz(1)*nrxyz(2)*nrxyz(3)
@@ -181,6 +181,12 @@ do n=1,nwfplot
   enddo
 enddo
 
+! Fourier transform potential to G-space
+allocate(zfft_vir(ngrtot))
+zfft_vir(:)=veffir(:)
+call zfftifc(3,ngrid,-1,zfft_vir)
+
+
 if (wf3d) then
   ir=0
   do i1=0,nrxyz(1)-1
@@ -194,8 +200,8 @@ if (wf3d) then
                      i2*bound3d(:,2)/nrxyz(2)+ &
                      i3*bound3d(:,3)/nrxyz(3)
         ir=ir+1
-        call wann_val(r,wf(:,ir),nwfplot,tlim,bcoeff,ccoeff)
-!	if (iproc.eq.0) call f_veff(r,veff(ir))
+        call wann_val(r,wf(:,ir),tlim,bcoeff,ccoeff)
+        call f_veff_p(r,zfft_vir,veff(ir))
       enddo
     enddo
   enddo
@@ -208,7 +214,7 @@ else
       r(:)=orig2d(:)+i1*bound2d(:,1)/nrxyz(1)+ &
                      i2*bound2d(:,2)/nrxyz(2)
       ir=ir+1
-      call wann_val(r,wf(:,ir),nwfplot,tlim,bcoeff,ccoeff)
+      call wann_val(r,wf(:,ir),tlim,bcoeff,ccoeff)
     enddo
   enddo
 endif
@@ -326,12 +332,11 @@ return
 end
 
 
-subroutine wann_val(r,val,nwfplot,tlim,bcoeff,ccoeff)
+subroutine wann_val(r,val,tlim,bcoeff,ccoeff)
 use modmain
 implicit none
 ! arguments
 real(8), intent(in) :: r(3)
-integer, intent(in) :: nwfplot
 integer, intent(in) :: tlim(2,3)
 complex(8), intent(in) :: bcoeff(lmmaxvr,nrfmax,natmtot,nwfplot,tlim(1,1):tlim(2,1),tlim(1,2):tlim(2,2),tlim(1,3):tlim(2,3))
 complex(8), intent(in) :: ccoeff(ngkmax,nwfplot,nkptloc(iproc))

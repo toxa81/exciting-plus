@@ -1083,6 +1083,12 @@ real(8), allocatable :: wann_e(:,:,:)
 
 complex(8), allocatable :: wf_p(:,:,:,:,:)
 
+real(8) zero3d(3)
+real(8) bound3d(3,3)
+integer nrxyz(3)
+integer nwfplot
+integer firstwf
+
 !----------------!
 !      timer     !
 !----------------!
