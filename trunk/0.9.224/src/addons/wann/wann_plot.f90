@@ -229,7 +229,7 @@ if (.not.wf3d) then
 endif
 
 do n=1,nwfplot
-  write(fname,'("wf_",I2.2,".dx")')n
+  write(fname,'("wf_",I3.3,".dx")')n
   open(70,file=trim(fname),status='replace',form='formatted')
   if (wf3d) then
     write(70,400)nrxyz(1),nrxyz(2),nrxyz(3)
@@ -246,7 +246,7 @@ do n=1,nwfplot
     write(70,506)nrxyz(1),nrxyz(2)
   endif
   write(70,408)2,nrtot
-  write(70,410)(abs(wf(n,ir)),abs(wf(n,ir))**2,ir=1,nrtot)
+  write(70,'(4G18.10)')(abs(wf(n,ir)),abs(wf(n,ir))**2,ir=1,nrtot)
   write(70,412)
   close(70)
 enddo
@@ -268,7 +268,7 @@ else
   write(70,506)nrxyz(1),nrxyz(2)
 endif
 write(70,408)1,nrtot
-write(70,410)(veff(ir),ir=1,nrtot)
+write(70,'(4G18.10)')(veff(ir),ir=1,nrtot)
 write(70,412)
 close(70)
 
