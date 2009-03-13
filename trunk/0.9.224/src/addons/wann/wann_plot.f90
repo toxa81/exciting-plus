@@ -56,7 +56,9 @@ call geturf
 !bound3d(:,1)=(/12.d0,0.d0,0.d0/)
 !bound3d(:,2)=(/0.d0,12.d0,0.d0/)
 !bound3d(:,3)=(/0.d0,0.d0,12.d0/)
-!orig3d(:)=zero3d(:)-(bound3d(:,1)+bound3d(:,2)+bound3d(:,3))/2.d0
+
+
+orig3d(:)=zero3d(:)-(bound3d(:,1)+bound3d(:,2)+bound3d(:,3))/2.d0
 
 !bound2d(:,1)=(/20.d0,0.d0,0.d0/)
 !bound2d(:,2)=(/0.d0,20.d0,0.d0/)
@@ -313,9 +315,9 @@ endif
  410  format(f10.6)
  412  format('object "regular positions regular connections" class field', &
             /'component "positions" value 1',   &
-	    /'component "connections" value 2', &
-	    /'component "data" value 3',        &
-	    /'end')
+        /'component "connections" value 2', &
+        /'component "data" value 3',        &
+        /'end')
 
  500  format('object 1 class gridpositions counts ', 2i4)
  502  format('origin ', 2f12.6)
@@ -439,21 +441,62 @@ return
 end
 
 
-!subroutine getntr(v,ntr)
-!use modmain
-!implicit none
-!real(8), intent(in) :: v(3)
-!integer, intent(out) :: ntr(3)
-!real(8) t
-!integer ivec
-!
-!do ivec=1,3
-!  t=dot_product(v,bvec(:,ivec))/twopi
-!  ntr(ivec)=floor(t)
-!enddo
-!
-!return
-!end
+
+logical function vrinmt(vr,is,ia,tr,vr0,ir0,r0)
+use modmain
+implicit none
+! arguments
+real(8), intent(in) :: vr(3)
+integer, intent(out) :: is
+integer, intent(out) :: ia
+integer, intent(out) :: tr(3)
+real(8), intent(out) :: vr0(3)
+integer, intent(out) :: ir0
+real(8), intent(out) :: r0
+! local variables
+real(8) vr0l(3),r1(3),rmt2,pos(3)
+integer i1,i2,i3,ir,np2
+
+vrinmt=.false.
+call getntr(vr,tr,vr0l)
+r1(:)=vr0l(1)*avec(:,1)+vr0l(2)*avec(:,2)+vr0l(3)*avec(:,3)
+
+np2=nprad/2
+do is=1,nspecies
+  rmt2=rmt(is)**2
+  do ia=1,natoms(is)
+    do i1=-1,1
+    do i2=-1,1
+    do i3=-1,1
+      pos(:)=atposc(:,ia,is)+i1*avec(:,1)+i2*avec(:,2)+i3*avec(:,3)
+      vr0(:)=r1(:)-pos(:)
+      r0=vr0(1)**2+vr0(2)**2+vr0(3)**2
+      if (r0.lt.rmt2) then
+        do ir=1,nrmt(is)
+          if (spr(ir,is).ge.r0) then
+            if (ir.le.np2) then
+              ir0=1
+            else if (ir.gt.nrmt(is)-np2) then
+              ir0=nrmt(is)-nprad+1
+            else
+              ir0=ir-np2
+            end if
+            r0=max(r0,spr(1,is))
+            tr(1)=tr(1)+i1
+            tr(2)=tr(2)+i2
+            tr(3)=tr(3)+i3
+            vrinmt=.true.
+            return
+          end if
+        end do !ir
+      end if
+    end do
+    end do
+    end do
+  end do
+end do
+return
+end
 
 subroutine getntr(vrc,ntr,vr0l)
 use modmain
@@ -467,6 +510,11 @@ integer i,j,ipiv(3)
 real(8) work(24)
 integer lwork
 
+! r=r0+T=r0+n1*a1+n2*a2+n3*a3=f1*a1+f2*a2+f3*a3
+! system of linear equtions for f1,f2,f3
+! r*a1=f1*a1*a1+f2*a2*a1+f3*a3*a1
+! r*a2=f1*a1*a2+f2*a2*a2+f3*a3*a2
+! r*a3=f1*a1*a3+f2*a2*a3+f3*a3*a3
 do j=1,3
   do i=1,j
     a(i,j)=dot_product(avec(:,i),avec(:,j))
@@ -479,7 +527,6 @@ do i=1,3
   ntr(i)=floor(b(i))
   vr0l(i)=b(i)-ntr(i)
 enddo
-
 return
 end
 
