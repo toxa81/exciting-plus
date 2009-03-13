@@ -313,11 +313,6 @@ allocate(urfprod(0:lmaxvr,nrfmax,nrfmax,natmtot))
 
 if (wannier) call wann_init
 
-if (dmbnd1.eq.-1) then
-  dmbnd1=1
-  dmbnd2=nstfv
-endif
-
 call timesec(ts1)
 timeinit=timeinit+ts1-ts0
 

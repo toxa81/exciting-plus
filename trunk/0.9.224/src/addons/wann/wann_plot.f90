@@ -22,10 +22,11 @@ complex(8), allocatable :: wfsvitloc(:,:,:,:)
 complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
 complex(8), allocatable :: zt2(:,:,:,:,:)
 complex(8), allocatable :: zt3(:,:,:,:)
+real(8), allocatable :: veff(:)
 character*40 fname
 real(8) x(2),alph
 logical, parameter :: wf3d=.true.
-logical, parameter :: wfprod=.true.
+logical, parameter :: wfprod=.false.
 integer tlim(2,3)
 integer nwfplot,firstwf
 integer, external :: ikglob
@@ -48,7 +49,8 @@ call genlofr
 
 call geturf
 
-zero3d(:)=(/8.00990d0,   4.89892d0,   7.96820d0/)
+!zero3d(:)=(/8.00990d0,   4.89892d0,   7.96820d0/)
+zero3d(:)=(/0.d0,0.d0,0.d0/)
 
 ! Cartesian coordinates of boundary and origin
 bound3d(:,1)=(/12.d0,0.d0,0.d0/)
@@ -60,10 +62,10 @@ bound2d(:,1)=(/20.d0,0.d0,0.d0/)
 bound2d(:,2)=(/0.d0,20.d0,0.d0/)
 orig2d(:)=(/-8.d0,-8.d0, 0.d0/)
 
-nrxyz(:)=(/120,120,120/)
+nrxyz(:)=(/60,60,60/)
 
 nwfplot=5
-firstwf=6
+firstwf=1
 
 if (wf3d) then
   nrtot=nrxyz(1)*nrxyz(2)*nrxyz(3)
@@ -73,6 +75,7 @@ endif
 if (iproc.eq.0) then
   allocate(wf(nwfplot,nrtot))
   allocate(wfp(nrtot))
+  allocate(veff(nrtot))
 endif
 
 ! find the translation limits
@@ -192,6 +195,7 @@ if (wf3d) then
                      i3*bound3d(:,3)/nrxyz(3)
         ir=ir+1
         call wann_val(r,wf(:,ir),nwfplot,tlim,bcoeff,ccoeff)
+!	if (iproc.eq.0) call f_veff(r,veff(ir))
       enddo
     enddo
   enddo
@@ -240,6 +244,27 @@ do n=1,nwfplot
   write(70,412)
   close(70)
 enddo
+
+write(fname,'("veff.dx")')
+open(70,file=trim(fname),status='replace',form='formatted')
+if (wf3d) then
+  write(70,400)nrxyz(1),nrxyz(2),nrxyz(3)
+  write(70,402)orig3d(:)
+  do i=1,3
+    write(70,404)bound3d(:,i)/nrxyz(i)
+  enddo
+  write(70,406)nrxyz(1),nrxyz(2),nrxyz(3)
+else
+  write(70,500)nrxyz(1),nrxyz(2)
+  write(70,502)(/0.d0, 0.d0/)
+  write(70,504)(/x(1),0.d0/)/nrxyz(1)
+  write(70,504)(/x(2)*cos(alph),x(2)*sin(alph)/)/nrxyz(2)
+  write(70,506)nrxyz(1),nrxyz(2)
+endif
+write(70,408)1,nrtot
+write(70,410)(veff(ir),ir=1,nrtot)
+write(70,412)
+close(70)
 
 if (wfprod) then
   do n=1,nwfplot
