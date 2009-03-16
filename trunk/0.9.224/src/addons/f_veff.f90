@@ -127,6 +127,7 @@ endif
 if (iproc.eq.0) then
   fp=sum+sum2
 endif
+call barrier(comm_world)
 deallocate(rlm)
 return
 end subroutine

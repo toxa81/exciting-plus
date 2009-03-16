@@ -81,6 +81,10 @@ do i1=0,nrxyz(1)-1
     enddo
   enddo
 enddo
+if (ir.ne.nrtot) then
+  write(*,*)'Error in r-mesh'
+  call pstop
+endif
 
 ! Fourier transform potential to G-space
 allocate(zfft_vir(ngrtot))
@@ -88,6 +92,9 @@ zfft_vir(:)=veffir(:)
 call zfftifc(3,ngrid,-1,zfft_vir)
 
 do ir=1,nrtot
+  if (mod(ir,nrxyz(2)*nrxyz(3)).eq.0.and.iproc.eq.0) then
+    write(*,*)'r-point : ',ir,' out of ',nrtot
+  endif
   call wann_val(vr(1,ir),wf(1,ir))
   if (iwfv.ne.0) call f_veff_p(vr(1,ir),zfft_vir,veff(ir))
 enddo
@@ -266,6 +273,7 @@ endif
 if (iproc.eq.0) then
   val(:)=(zt1(:)+zt2(:))/nkpt
 endif
+call barrier(comm_world)
 return
 end
 
