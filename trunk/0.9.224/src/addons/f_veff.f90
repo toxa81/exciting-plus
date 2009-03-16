@@ -120,7 +120,7 @@ if (.not.l1) then
   do ig=idx0+1,idx0+bs
     ifg=igfft(ig)
     t1=vgc(1,ig)*v1(1)+vgc(2,ig)*v1(2)+vgc(3,ig)*v1(3)
-    sum2=sum2+dble(zfft(ifg)*cmplx(cos(t1),sin(t1),8))
+    sum2=sum2+dble(zfft(ifg)*cmplx(cos(t1),sin(t1),8))/sqrt(omega)
   end do
   call dsync(sum2,1,.true.,.false.)
 endif

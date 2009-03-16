@@ -1088,6 +1088,7 @@ real(8) bound3d(3,3)
 integer nrxyz(3)
 integer nwfplot
 integer firstwf
+integer iwfv
 
 !----------------!
 !      timer     !
