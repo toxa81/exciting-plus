@@ -111,7 +111,7 @@ if (iproc.eq.0) then
   endif
   
   do n=1,nwfplot
-    write(fname,'("wf_",I3.3,".dx")')n
+    write(fname,'("wf_",I3.3,".dx")')n+firstwf-1
     open(70,file=trim(fname),status='replace',form='formatted')
     if (task.eq.363) then
       write(70,400)nrxyz(1),nrxyz(2),nrxyz(3)
