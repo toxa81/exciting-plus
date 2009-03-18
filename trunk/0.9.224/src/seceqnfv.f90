@@ -75,6 +75,7 @@ endif
 !     Hamiltonian and overlap set up     !
 !----------------------------------------!
 call timesec(ts0)
+call timer_start(t_seceqnfv_setup)
 ! set the matrices to zero
 h(:)=0.d0
 o(:)=0.d0
@@ -100,12 +101,14 @@ else
   o=dconjg(o)
 endif
 call timesec(ts1)
+call timer_stop(t_seceqnfv_setup)
 timemat=timemat+ts1-ts0
 
 !------------------------------------!
 !     solve the secular equation     !
 !------------------------------------!
 call timesec(ts0)
+call timer_start(t_seceqnfv_diag)
 vl=0.d0
 vu=0.d0
 if (packed) then
@@ -132,6 +135,7 @@ if (info.ne.0) then
 end if
 call timesec(ts1)
 timefv=timefv+ts1-ts0
+call timer_stop(t_seceqnfv_diag)
 deallocate(iwork,ifail,w,rwork,v,h,o,work)
 return
 end subroutine

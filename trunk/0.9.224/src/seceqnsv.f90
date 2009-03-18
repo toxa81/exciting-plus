@@ -70,6 +70,7 @@ else
   nsc=1
 end if
 call timesec(ts0)
+call timer_start(t_seceqnsv_setup)
 allocate(bmt(lmmaxvr,nrcmtmax,3))
 allocate(bir(ngrtot,3))
 allocate(vr(nrmtmax))
@@ -288,7 +289,8 @@ if (wannier.and.wann_add_poco) then
   evecsv(:,:)=evecsv(:,:)+wann_poco(:,:)
   deallocate(wann_poco)
 endif
-
+call timer_stop(t_seceqnsv_setup)
+call timer_start(t_seceqnsv_diag)
 ! diagonalise second-variational Hamiltonian
 if (ndmag.eq.1) then
 ! collinear: block diagonalise H
@@ -310,6 +312,7 @@ else
 end if
 deallocate(bmt,bir,vr,drv,cf,sor,rwork)
 deallocate(wfmt1,wfmt2,zfft1,zfft2,zv,work)
+call timer_stop(t_seceqnsv_diag)
 call timesec(ts1)
 timesv=timesv+ts1-ts0
 return

@@ -107,13 +107,13 @@ if (in_cart()) then
   endif
   
   if (wproc) then
-    write(150,'("Running on ",I4," proc.")')nproc
+    write(150,'("Running on ",I8," proc.")')nproc
 #ifdef _PIO_
     if (nproc.gt.1) then
       write(150,'("Reading files in parallel")')
     endif
 #endif
-    write(150,'("MPI grid size : ",3I4)')mpi_dims
+    write(150,'("MPI grid size : ",3I6)')mpi_dims
   endif
   if (wproc) then
     call flushifc(150)

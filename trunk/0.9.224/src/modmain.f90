@@ -1095,6 +1095,11 @@ integer iwfv
 !----------------!
 integer, parameter :: ntimers=20
 real(8), allocatable :: timer(:,:)
+integer, parameter :: t_seceqnfv_setup=1
+integer, parameter :: t_seceqnfv_diag=2
+integer, parameter :: t_seceqnsv_setup=3
+integer, parameter :: t_seceqnsv_diag=4
+integer, parameter :: t_rho=5
 
 end module
 

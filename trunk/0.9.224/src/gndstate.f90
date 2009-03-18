@@ -162,6 +162,10 @@ do iscl=1,maxscl
   call genurfprod
 ! begin parallel loop over k-points
   evalsv=0.d0
+  call timer_reset(t_seceqnfv_setup)
+  call timer_reset(t_seceqnfv_diag)
+  call timer_reset(t_seceqnsv_setup)
+  call timer_reset(t_seceqnsv_diag)
   do ik=1,nkptloc(iproc)
 ! solve the first- and second-variational secular equations
     call seceqn(ik,evalfv(1,1,ik),evecfvloc(1,1,1,ik),evecsvloc(1,1,ik))
@@ -178,6 +182,8 @@ do iscl=1,maxscl
   call dsync(occsv,nstsv*nkpt,.false.,.true.)
   if (wannier) call wann_ene_occ
 ! set the charge density and magnetisation to zero
+  call timer_reset(t_rho)
+  call timer_start(t_rho)
   rhomt(:,:,:)=0.d0
   rhoir(:)=0.d0
   if (spinpol) then
@@ -194,6 +200,7 @@ do iscl=1,maxscl
     call dsync(magmt,lmmaxvr*nrmtmax*natmtot*ndmag,.true.,.true.)
     call dsync(magir,ngrtot*ndmag,.true.,.true.)
   endif
+  call timer_stop(t_rho)
 ! symmetrise the density
   call symrf(lradstp,rhomt,rhoir)
 ! symmetrise the magnetisation
@@ -315,6 +322,11 @@ do iscl=1,maxscl
     timetot=timeinit+timemat+timefv+timesv+timerho+timepot+timefor
     write(60,*)
     write(60,'("Time (CPU seconds) : ",F12.2)') timetot
+    write(60,'("  first variational matrix setup            : ",F12.2)')timer(t_seceqnfv_setup,2)
+    write(60,'("  first variational matrix diagonalization  : ",F12.2)')timer(t_seceqnfv_diag,2)
+    write(60,'("  second variational matrix setup           : ",F12.2)')timer(t_seceqnsv_setup,2)
+    write(60,'("  second variational matrix diagonalization : ",F12.2)')timer(t_seceqnsv_diag,2)
+    write(60,'("  charge and magnetisation density setup    : ",F12.2)')timer(t_rho,2)
   end if !iproc.eq.0
 ! end the self-consistent loop
 end do !iscl

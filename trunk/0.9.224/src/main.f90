@@ -14,7 +14,7 @@ use hdf5
 #endif
 implicit none
 ! local variables
-integer itask,ierr
+integer itask,ierr,i
 #ifdef _MPI_
 call mpi_init(ierr)
 comm_world=MPI_COMM_WORLD
@@ -26,7 +26,11 @@ call mpi_comm_rank(comm_world,iproc,ierr)
 call h5open_f(ierr)
 #endif	  
 ! read input files
-call readinput
+do i=0,nproc-1
+  if (iproc.eq.i) call readinput
+  call barrier(comm_world)
+enddo
+call barrier(comm_world)
 ! perform the appropriate task
 do itask=1,ntasks
   task=tasks(itask)
