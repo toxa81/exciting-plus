@@ -47,9 +47,10 @@ integer, parameter :: maxit=2000
 integer kpa,it,nn,ir,irm,nnd,nndp
 ! energy convergence tolerance
 real(8), parameter :: eps=1.d-11
-real(8) t1,de
+real(8) t1,de,eval_in
 ! automatic arrays
 real(8) g1(nr),f1(nr),fr(nr),gr(nr),cf(3,nr)
+eval_in=eval
 if (k.le.0) then
   write(*,*)
   write(*,'("Error(rdirac): k <= 0 : ",I8)') k
@@ -105,7 +106,14 @@ end do
 write(*,*)
 write(*,'("Error(rdirac): maximum iterations exceeded")')
 write(*,*)
-stop
+write(*,*)'n=',n
+write(*,*)'l=',l
+write(*,*)'k=',k
+write(*,*)'np=',np
+write(*,*)'nr=',nr
+write(*,*)'eval_in=',eval_in
+write(*,*)'eval=',eval
+call pstop
 20 continue
 ! find effective infinity and set wavefunction to zero after that point
 ! major component
@@ -132,7 +140,14 @@ else
   write(*,*)
   write(*,'("Error(rdirac): zero wavefunction")')
   write(*,*)
-  stop
+  write(*,*)'n=',n
+  write(*,*)'l=',l
+  write(*,*)'k=',k
+  write(*,*)'np=',np
+  write(*,*)'nr=',nr
+  write(*,*)'eval_in=',eval_in
+  write(*,*)'eval=',eval
+  call pstop
 end if
 g0(:)=t1*g0(:)
 f0(:)=t1*f0(:)

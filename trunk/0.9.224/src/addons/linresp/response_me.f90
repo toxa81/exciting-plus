@@ -249,12 +249,13 @@ call timer_start(1)
 ! setup n,n' stuff
 call getmeidx(.true.,occsvnr)
 #ifdef _MPI_
-if (root_cart((/0,1,1/))) then
+if (root_cart((/0,1,0/))) then
   call mpi_allreduce(nmemax,i,1,MPI_INTEGER,MPI_MAX,comm_cart_100,ierr)
   nmemax=i
 endif
-call i_bcast_cart(comm_cart_011,nmemax,1)
+call i_bcast_cart(comm_cart_010,nmemax,1)
 #endif
+
 allocate(nme(nkptnr_loc))
 allocate(ime(3,nmemax,nkptnr_loc))
 allocate(docc(nmemax,nkptnr_loc))
