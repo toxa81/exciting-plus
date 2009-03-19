@@ -1,13 +1,16 @@
 #!/usr/bin/python
 
 import os
+import sys
+import getopt
 import glob
 
-title="V2O3 (PM phase)"
-qdir="[001]"
+#title="V2O3 (PM phase)"
+#qdir="[001]"
 
 
 def plotFile(fileName):
+    print fileName
     lines=open(fileName,'r').readlines()
     for line in lines:
         if line.find("k-mesh division")>-1:
@@ -55,7 +58,7 @@ def plotFile(fileName):
     out.write("unset xlabel\n")
     out.write("set origin 0,0.44\n")
     out.write("set size 0.46,0.44\n")
-    str="plot [0:15] "+"'"+fileName+"'"+\
+    str="plot [0:"+emax+"] "+"'"+fileName+"'"+\
       " using 1:($2)*1000 with lines title '-Re chiKS' lw LW, "+"'"+fileName+"'"+\
       " using 1:($3)*1000 with lines title '-Im chiKS' lw LW lt 1 lc rgb \""+"\x23"+"228b22\""
     out.write(str+"\n")
@@ -64,7 +67,7 @@ def plotFile(fileName):
     out.write("unset xlabel\n")
     out.write("set origin 0.48,0.44\n")
     out.write("set size 0.46,0.44\n")
-    str="plot [0:15] "+"'"+fileName+"'"+\
+    str="plot [0:"+emax+"] "+"'"+fileName+"'"+\
       " using 1:($5)*1000 with lines title '-Im chi' lw LW, "+"'"+fileName+"'"+\
       " using 1:($8)*1000 with lines title '-Im chi_scal' lw LW lc rgb \""+"\x23"+"FF0000\""
     out.write(str+"\n")
@@ -73,7 +76,7 @@ def plotFile(fileName):
     out.write("unset ylabel\n")
     out.write("set origin 0,0\n")
     out.write("set size 0.46,0.44\n") 
-    str="plot [0:15] "+"'"+fileName+"'"+\
+    str="plot [0:"+emax+"] "+"'"+fileName+"'"+\
       " using 1:11 with lines title '-Re eps_GqGq' lw LW, "+"'"+fileName+"'"+\
       " using 1:12 with lines title '-Im eps_GqGq' lw LW lt 1 lc rgb \""+"\x23"+"228b22\""
     out.write(str+"\n")
@@ -82,7 +85,7 @@ def plotFile(fileName):
     out.write("unset ylabel\n")
     out.write("set origin 0.48,0\n")
     out.write("set size 0.46,0.44\n")
-    str="plot [0:15] "+"'"+fileName+"'"+\
+    str="plot [0:"+emax+"] "+"'"+fileName+"'"+\
       " using 1:9 with lines title '-Re eps_eff' lw LW, "+"'"+fileName+"'"+\
       " using 1:10 with lines title '-Im eps_eff' lw LW lt 1 lc rgb \""+"\x23"+"228b22\""
     out.write(str+"\n")
@@ -91,5 +94,14 @@ def plotFile(fileName):
     out.close()
     os.system("gnuplot "+plotname)
     os.system("rm "+plotname)
+
+if len(sys.argv)!=4:
+    print "Usage: "+sys.argv[0]+" plot_title q_direction emax"
+    sys.exit(1)
+    
+title=sys.argv[1]
+qdir=sys.argv[2]
+emax=sys.argv[3]
+
 for fileName in glob.glob("q*.dat"):
     plotFile(fileName)
