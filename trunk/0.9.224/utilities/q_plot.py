@@ -27,7 +27,8 @@ def plotFile(fileName):
             print "ngv : ",ngv
         if line.find("eta            [eV]")>-1:
             t1=line.split()
-            eta=t1[4]
+            eta="%10.2f"%float(t1[4])
+            eta=eta.strip()
             print "eta : ",eta
         if line.find("fxc A")>-1:
             t1=line.split()
@@ -36,6 +37,7 @@ def plotFile(fileName):
             print "fxc A : ",fxcA
             
     (name,extension)=os.path.splitext(fileName)
+    name="plot__"+name
     plotname=name+".gnu"
     out=open(plotname,'w')
     out.write("set terminal pdf dashed fsize 14 size 8.5,11\n")
@@ -88,6 +90,6 @@ def plotFile(fileName):
     out.write("unset multiplot\n")
     out.close()
     os.system("gnuplot "+plotname)
-
+    os.system("rm "+plotname)
 for fileName in glob.glob("q*.dat"):
     plotFile(fileName)
