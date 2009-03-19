@@ -24,9 +24,9 @@ allocate(jlgq0r(nrmtmax,0:lmaxexp,nspecies,ngvecme))
 idx0=0
 bs=ngvecme
 #ifdef _MPI_
-call mpi_comm_size(comm_cart,cart_size,ierr)
-call mpi_comm_rank(comm_cart,cart_rank,ierr)
-call mpi_comm_group(comm_cart,cart_group,ierr)
+call mpi_comm_size(comm_cart_110,cart_size,ierr)
+call mpi_comm_rank(comm_cart_110,cart_rank,ierr)
+call mpi_comm_group(comm_cart_110,cart_group,ierr)
 tmp_size=min(cart_size,ngvecme)
 tmp_group=MPI_GROUP_EMPTY
 allocate(ranks(tmp_size))
@@ -35,7 +35,7 @@ do i=1,tmp_size
 enddo
 call mpi_group_incl(cart_group,tmp_size,ranks,tmp_group,ierr) 
 deallocate(ranks)
-call mpi_comm_create(comm_cart,tmp_group,tmp_comm,ierr)
+call mpi_comm_create(comm_cart_110,tmp_group,tmp_comm,ierr)
 idx0=0
 bs=0
 if (cart_rank.lt.tmp_size) then
@@ -89,7 +89,7 @@ if (cart_rank.lt.tmp_size) then
   enddo
 endif
 do ig=1,ngvecme
-  call dsync2(comm_cart,uuj(0,0,0,1,1,1,ig), &
+  call dsync2(comm_cart_110,uuj(0,0,0,1,1,1,ig), &
     (lmaxvr+1)*(lmaxvr+1)*(lmaxexp+1)*nrfmax*nrfmax*natmtot,.false.,.true.)
 enddo
 if (cart_rank.lt.tmp_size) then

@@ -28,9 +28,9 @@ real(8), external :: gaunt
 idx0=0
 bs=ngvecme
 #ifdef _MPI_
-call mpi_comm_size(comm_cart,cart_size,ierr)
-call mpi_comm_rank(comm_cart,cart_rank,ierr)
-call mpi_comm_group(comm_cart,cart_group,ierr)
+call mpi_comm_size(comm_cart_110,cart_size,ierr)
+call mpi_comm_rank(comm_cart_110,cart_rank,ierr)
+call mpi_comm_group(comm_cart_110,cart_group,ierr)
 tmp_size=min(cart_size,ngvecme)
 tmp_group=MPI_GROUP_EMPTY
 allocate(ranks(tmp_size))
@@ -39,7 +39,7 @@ do i=1,tmp_size
 enddo
 call mpi_group_incl(cart_group,tmp_size,ranks,tmp_group,ierr) 
 deallocate(ranks)
-call mpi_comm_create(comm_cart,tmp_group,tmp_comm,ierr)
+call mpi_comm_create(comm_cart_110,tmp_group,tmp_comm,ierr)
 idx0=0
 bs=0
 if (cart_rank.lt.tmp_size) then
@@ -97,7 +97,7 @@ if (req) then
     call mpi_reduce(ngumax,i,1,MPI_INTEGER,MPI_MAX,0,tmp_comm,ierr)
     ngumax=i
   endif
-  call mpi_bcast(ngumax,1,MPI_INTEGER,0,comm_cart,ierr)
+  call mpi_bcast(ngumax,1,MPI_INTEGER,0,comm_cart_110,ierr)
 else
   if (cart_rank.lt.tmp_size) then
     do ig=1,ngvecme
@@ -107,10 +107,10 @@ else
     call isync2(tmp_comm,ngu,natmtot*ngvecme,.true.,.false.)
   endif
   do ig=1,ngvecme
-    call csync2(comm_cart,gu(1,1,ig),ngumax*natmtot,.false.,.true.)
-    call isync2(comm_cart,igu(1,1,1,ig),4*ngumax*natmtot,.false.,.true.)
+    call csync2(comm_cart_110,gu(1,1,ig),ngumax*natmtot,.false.,.true.)
+    call isync2(comm_cart_110,igu(1,1,1,ig),4*ngumax*natmtot,.false.,.true.)
   enddo
-  call isync2(comm_cart,ngu,natmtot*ngvecme,.false.,.true.)
+  call isync2(comm_cart_110,ngu,natmtot*ngvecme,.false.,.true.)
 endif
 if (cart_rank.lt.tmp_size) then
   call mpi_comm_free(tmp_comm,ierr)
