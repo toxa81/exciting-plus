@@ -5,10 +5,6 @@ import sys
 import getopt
 import glob
 
-#title="V2O3 (PM phase)"
-#qdir="[001]"
-
-
 def plotFile(fileName):
     print fileName
     fxcA=""
