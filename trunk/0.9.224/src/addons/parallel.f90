@@ -529,6 +529,44 @@ endif
 return
 end
 
+subroutine s_reduce_cart(comm,all,val,n)
+use modmain
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+integer, intent(in) :: comm
+logical, intent(in) :: all
+integer, intent(in) :: n
+real(4), intent(inout) :: val(n)
+real(4), allocatable :: tmp(:)
+integer comm_dims(mpi_ndims),comm_x(mpi_ndims)
+logical comm_periods(mpi_ndims)
+integer root,rank,ierr
+#ifdef _MPI_
+comm_dims=-1
+comm_x=-1
+call mpi_cart_get(comm,mpi_ndims,comm_dims,comm_periods,comm_x,ierr)
+call mpi_cart_rank(comm,comm_x,rank,ierr)
+comm_x=0
+call mpi_cart_rank(comm,comm_x,root,ierr)
+if (all) then
+  allocate(tmp(n))
+  call mpi_allreduce(val,tmp,n,MPI_REAL,MPI_SUM,comm,ierr)
+  val=tmp
+  deallocate(tmp)
+else
+  if (rank.eq.root) allocate(tmp(n))
+  call mpi_reduce(val,tmp,n,MPI_REAL,MPI_SUM,root,comm,ierr)
+  if (rank.eq.root) then
+    val=tmp
+    deallocate(tmp)
+  endif
+endif
+#endif
+return
+end
+
 subroutine d_bcast_cart(comm,val,n)
 use modmain
 #ifdef _MPI_

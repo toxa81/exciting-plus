@@ -12,14 +12,18 @@ real(8), intent(in) :: evalsvnr(nstsv,nkptnr)
 ! local variables
 complex(8), allocatable :: chi0_loc(:,:,:)
 complex(8), allocatable :: me(:,:,:)
+complex(4), allocatable :: c_chi0_loc(:,:,:)
+complex(4), allocatable :: c_me(:,:,:)
 integer i,j,ik,ie,nkptnr_,i1,i2,ikloc,ig1,ig2,nspinor_,ispn
 integer idx0,bs
 complex(8) wt
+complex(4) c_wt
 character*100 fname,path,qnm
 character*8 c8
 integer ierr
 logical exist
 integer ie1
+logical, parameter :: lcmplx=.true.
 
 ! HDF5
 integer(hid_t) h5_root_id
@@ -115,6 +119,7 @@ allocate(nme(nkptnr_loc))
 allocate(ime(3,nmemax,nkptnr_loc))
 allocate(docc(nmemax,nkptnr_loc))
 allocate(me(ngvecme,nmemax,nkptnr_loc))
+if (lcmplx) allocate(c_me(ngvecme,nmemax,nkptnr_loc))
 
 if (wproc) then
   write(150,'("Reading matrix elements")')
@@ -161,6 +166,8 @@ call i_bcast_cart(comm_cart_010,ime,3*nmemax*nkptnr_loc)
 call d_bcast_cart(comm_cart_010,docc,nmemax*nkptnr_loc)
 call d_bcast_cart(comm_cart_010,me,2*ngvecme*nmemax*nkptnr_loc)
 
+if (lcmplx) c_me=cmplx(me)
+
 ie1=0
 fname=trim(qnm)//"_chi0.hdf5"
 if (root_cart((/1,1,0/))) then
@@ -198,8 +205,8 @@ endif
 call i_bcast_cart(comm_cart_110,ie1,1)
 ie1=ie1+1
 
-!allocate(mtrx1(ngvecme,ngvecme))
 allocate(chi0_loc(ngvecme,ngvecme,nspin_chi0))
+if (lcmplx) allocate(c_chi0_loc(ngvecme,ngvecme,nspin_chi0))
 
 if (wproc) then
   write(150,*)
@@ -210,7 +217,11 @@ endif
 do ie=ie1,nepts
   call timer_reset(1)
   call timer_start(1)
-  chi0_loc=dcmplx(0.d0,0.d0)
+  if (lcmplx) then
+    c_chi0_loc=cmplx(0.d0,0.d0)
+  else 
+    chi0_loc=dcmplx(0.d0,0.d0)
+  endif
   j=0
   do ikloc=1,nkptnr_loc
     ik=ikptnrloc(mpi_x(1),1)+ikloc-1
@@ -226,17 +237,33 @@ do ie=ie1,nepts
       endif
       wt=docc(i,ikloc)/(evalsvnr(ime(1,i,ikloc),ik) - &
         evalsvnr(ime(2,i,ikloc),idxkq(1,ikloc))+lr_w(ie))
-      call zgerc(ngvecme,ngvecme,wt,me(1,i,ikloc),1,me(1,i,ikloc),1, &
-        chi0_loc(1,1,ispn),ngvecme)
+      c_wt=cmplx(wt)
+      if (lcmplx) then
+        call cgerc(ngvecme,ngvecme,c_wt,c_me(1,i,ikloc),1,c_me(1,i,ikloc),1, &
+          c_chi0_loc(1,1,ispn),ngvecme)
+      else
+        call zgerc(ngvecme,ngvecme,wt,me(1,i,ikloc),1,me(1,i,ikloc),1, &
+          chi0_loc(1,1,ispn),ngvecme)
+      endif
     enddo !i
   enddo !ikloc
-  if (mpi_dims(2).gt.1) then
-    call d_reduce_cart(comm_cart_010,.false.,chi0_loc,2*ngvecme*ngvecme*nspin_chi0)
-  endif
-  if (root_cart((/0,1,0/)).and.mpi_dims(1).gt.1) then
-    call d_reduce_cart(comm_cart_100,.false.,chi0_loc,2*ngvecme*ngvecme*nspin_chi0)
+  if (lcmplx) then
+    if (mpi_dims(2).gt.1) then
+      call s_reduce_cart(comm_cart_010,.false.,c_chi0_loc,2*ngvecme*ngvecme*nspin_chi0)
+    endif
+    if (root_cart((/0,1,0/)).and.mpi_dims(1).gt.1) then
+      call s_reduce_cart(comm_cart_100,.false.,c_chi0_loc,2*ngvecme*ngvecme*nspin_chi0)
+    endif
+  else
+    if (mpi_dims(2).gt.1) then
+      call d_reduce_cart(comm_cart_010,.false.,chi0_loc,2*ngvecme*ngvecme*nspin_chi0)
+    endif
+    if (root_cart((/0,1,0/)).and.mpi_dims(1).gt.1) then
+      call d_reduce_cart(comm_cart_100,.false.,chi0_loc,2*ngvecme*ngvecme*nspin_chi0)
+    endif
   endif
   if (root_cart((/1,1,0/))) then
+    if (lcmplx) chi0_loc=dcmplx(c_chi0_loc)
     chi0_loc=chi0_loc/nkptnr/omega
     write(path,'("/iw/",I8.8)')ie
     call write_real8(lr_w(ie),2,trim(fname),trim(path),'w')
@@ -261,8 +288,11 @@ deallocate(nme)
 deallocate(ime)
 deallocate(docc)
 deallocate(me)
-!deallocate(mtrx1)
 deallocate(chi0_loc)
+if (lcmplx) then
+  deallocate(c_me)
+  deallocate(c_chi0_loc)
+endif
 
 return
 end
