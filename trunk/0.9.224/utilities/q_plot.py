@@ -11,6 +11,7 @@ import glob
 
 def plotFile(fileName):
     print fileName
+    fxcA=""
     lines=open(fileName,'r').readlines()
     for line in lines:
         if line.find("k-mesh division")>-1:
@@ -46,7 +47,11 @@ def plotFile(fileName):
     out.write("set terminal pdf dashed fsize 14 size 8.5,11\n")
     out.write("set output '"+name+".pdf'\n")
     str="set multiplot layout 2,2 title \"\\n"+title+", q="+q+" [1/A] || "+\
-      qdir+"\\n ["+kx+"x"+ky+"x"+kz+"] k-mesh, "+ngv+" G-vectors, eta="+eta+" eV\"" 
+      qdir+"\\n ["+kx+"x"+ky+"x"+kz+"] k-mesh, "+ngv+" G-vectors, eta="+eta+" eV"
+    if fxcA!="":
+	str=str+", fxcA="+fxcA+"\""
+    else:
+	str=str+"\"" 
     out.write(str+"\n")
     out.write("set tmargin 0\n")
     out.write("set bmargin 4\n")
