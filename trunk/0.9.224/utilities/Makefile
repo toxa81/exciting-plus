@@ -20,7 +20,7 @@ r3minv.o:
 r3mv.o:
 	$(F77) $(F77_OPTS) -c ../src/r3mv.f90
 	
-OBJ_writeinput = writeinput.o modmain.o readinput.o readspecies.o r3minv.o r3mv.o
+OBJ_writeinput =  modmain.o readinput.o readspecies.o r3minv.o r3mv.o writeinput.o 
 
 writeinput: $(OBJ_writeinput)
 	$(F77) -o $@ $(OBJ_writeinput)
