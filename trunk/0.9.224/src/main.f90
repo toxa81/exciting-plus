@@ -24,13 +24,24 @@ call mpi_comm_rank(comm_world,iproc,ierr)
 #endif
 #ifdef _HDF5_
 call h5open_f(ierr)
-#endif	  
+#endif
+
+! stress test
+!do i=1,100
+!  call readinput
+!enddo
+!call init0
+!call barrier(comm_world)
+!call pstop	  
+
 ! read input files
-do i=0,nproc-1
-  if (iproc.eq.i) call readinput
-  call barrier(comm_world)
-enddo
-call barrier(comm_world)
+call readinput
+!do i=0,nproc-1
+!  if (iproc.eq.i) call readinput
+!  call barrier(comm_world)
+!enddo
+!call barrier(comm_world)
+
 ! perform the appropriate task
 do itask=1,ntasks
   task=tasks(itask)

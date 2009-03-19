@@ -272,14 +272,14 @@ real(8), intent(inout) :: var(n)
 integer ierr
 real(8), allocatable :: tmp(:)
 
-if (doreduce.and.iproc.eq.0) allocate(tmp(n))
 if (doreduce) then
+  allocate(tmp(n))
   call mpi_reduce(var,tmp,n,MPI_DOUBLE_PRECISION,MPI_SUM,0, &
     comm,ierr)
-  if (iproc.eq.0) var=tmp
+  var=tmp
 endif
 if (dobcast) call mpi_bcast(var,n,MPI_DOUBLE_PRECISION,0,comm,ierr)
-if (doreduce.and.iproc.eq.0) deallocate(tmp)
+if (doreduce) deallocate(tmp)
 #endif
 
 return
@@ -361,14 +361,14 @@ complex(4), intent(inout) :: var(n)
 integer ierr
 complex(4), allocatable :: tmp(:)
 
-if (doreduce.and.iproc.eq.0) allocate(tmp(n))
 if (doreduce) then
+  allocate(tmp(n))
   call mpi_reduce(var,tmp,n,MPI_COMPLEX,MPI_SUM,0, &
     comm,ierr)
-  if (iproc.eq.0) var=tmp
+  var=tmp
 endif
 if (dobcast) call mpi_bcast(var,n,MPI_COMPLEX,0,comm,ierr)
-if (doreduce.and.iproc.eq.0) deallocate(tmp)
+if (doreduce) deallocate(tmp)
 #endif
 return
 end
@@ -438,14 +438,14 @@ integer, intent(inout) :: var(n)
 integer ierr
 integer, allocatable :: tmp(:)
 
-if (doreduce.and.iproc.eq.0) allocate(tmp(n))
 if (doreduce) then
+  allocate(tmp(n))
   call mpi_reduce(var,tmp,n,MPI_INTEGER,MPI_SUM,0, &
     comm,ierr)
-  if (iproc.eq.0) var=tmp
+  var=tmp
 endif
 if (dobcast) call mpi_bcast(var,n,MPI_INTEGER,0,comm,ierr)
-if (doreduce.and.iproc.eq.0) deallocate(tmp)
+if (doreduce) deallocate(tmp)
 #endif
 
 return
