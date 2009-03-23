@@ -75,7 +75,7 @@ do itask=1,ntasks
     call elfplot
   case(61,62,63,162)
     call wfplot
-  case(362,363)
+  case(361,362,363)
     call wann_plot
   case(72,73,82,83,142,143,152,153)
     call vecplot
