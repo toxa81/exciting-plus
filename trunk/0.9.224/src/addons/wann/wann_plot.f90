@@ -75,8 +75,8 @@ do i1=0,nrxyz(1)-1
   do i2=0,nrxyz(2)-1
     do i3=0,nrxyz(3)-1
       ir=ir+1
-      vr(:,ir)=orig(:)+i1*bound3d(:,1)/nrxyz(1)+ &
-                       i2*bound3d(:,2)/nrxyz(2)+ &
+      vr(:,ir)=orig(:)+i1*bound3d(:,1)/nrxyz(1)+&
+                       i2*bound3d(:,2)/nrxyz(2)+&
                        i3*bound3d(:,3)/nrxyz(3)
     enddo
   enddo
@@ -134,27 +134,36 @@ if (iproc.eq.0) then
     close(70)
   enddo
   
-  write(fname,'("veff.dx")')
-  open(70,file=trim(fname),status='replace',form='formatted')
-  if (task.eq.363) then
-    write(70,400)nrxyz(1),nrxyz(2),nrxyz(3)
-    write(70,402)orig(:)
-    do i=1,3
-      write(70,404)bound3d(:,i)/nrxyz(i)
+  if (task.eq.362.or.task.eq.363) then
+    write(fname,'("veff.dx")')
+    open(70,file=trim(fname),status='replace',form='formatted')
+    if (task.eq.363) then
+      write(70,400)nrxyz(1),nrxyz(2),nrxyz(3)
+      write(70,402)orig(:)
+      do i=1,3
+        write(70,404)bound3d(:,i)/nrxyz(i)
+      enddo
+      write(70,406)nrxyz(1),nrxyz(2),nrxyz(3)
+    endif
+    if (task.eq.362) then
+      write(70,500)nrxyz(1),nrxyz(2)
+      write(70,502)(/0.d0, 0.d0/)
+      write(70,504)(/x(1),0.d0/)/nrxyz(1)
+      write(70,504)(/x(2)*cos(alph),x(2)*sin(alph)/)/nrxyz(2)
+      write(70,506)nrxyz(1),nrxyz(2)
+    endif
+    write(70,408)1,nrtot
+    write(70,'(4G18.10)')(veff(ir),ir=1,nrtot)
+    write(70,412)
+    close(70)
+  endif
+  if (task.eq.361) then
+    open(70,file='veff.dat',status='replace',form='formatted')
+    do ir=1,nrtot
+      write(70,'(2G18.10)')(ir-1)*sqrt(sum((vr(:,2)-vr(:,1))**2)),veff(ir)
     enddo
-    write(70,406)nrxyz(1),nrxyz(2),nrxyz(3)
+    close(70)
   endif
-  if (task.eq.362) then
-    write(70,500)nrxyz(1),nrxyz(2)
-    write(70,502)(/0.d0, 0.d0/)
-    write(70,504)(/x(1),0.d0/)/nrxyz(1)
-    write(70,504)(/x(2)*cos(alph),x(2)*sin(alph)/)/nrxyz(2)
-    write(70,506)nrxyz(1),nrxyz(2)
-  endif
-  write(70,408)1,nrtot
-  write(70,'(4G18.10)')(veff(ir),ir=1,nrtot)
-  write(70,412)
-  close(70)
   
 !  if (wfprod) then
 !    do n=1,nwfplot
@@ -295,7 +304,7 @@ real(8) vr0l(3),r1(3),rmt2,pos(3)
 integer i1,i2,i3,ir,np2
 
 vrinmt=.false.
-call getntr(vr,tr,vr0l)
+call getntr(avec,vr,tr,vr0l)
 r1(:)=vr0l(1)*avec(:,1)+vr0l(2)*avec(:,2)+vr0l(3)*avec(:,3)
 
 np2=nprad/2
@@ -336,16 +345,17 @@ end do
 return
 end
 
-subroutine getntr(vrc,ntr,vr0l)
-use modmain
+subroutine getntr(avec,vrc,ntr,vr0l)
+!use modmain
 implicit none
+real(8), intent(in) :: avec(3,3)
 real(8), intent(in) :: vrc(3)
 integer, intent(out) :: ntr(3)
 real(8), intent(out) :: vr0l(3)
 real(8) a(3,3)
 real(8) b(3)
 integer i,j,ipiv(3)
-real(8) work(24)
+real(8) work(200)
 integer lwork
 
 ! r=r0+T=r0+n1*a1+n2*a2+n3*a3=f1*a1+f2*a2+f3*a3
@@ -359,7 +369,7 @@ do j=1,3
   enddo
   b(j)=dot_product(avec(:,j),vrc(:))
 enddo
-lwork=24
+lwork=200
 call dsysv('U',3,1,a,3,ipiv,b,3,work,lwork,i)
 do i=1,3
   ntr(i)=floor(b(i))
