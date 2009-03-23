@@ -32,7 +32,7 @@ np2=nprad/2
 zt1=dcmplx(0.d0,0.d0)
 zt2=dcmplx(0.d0,0.d0)
 
-call getntr(vrc1,ntr1,vr0l)
+call getntr(avec,vrc1,ntr1,vr0l)
 
 l1=.false.
 ! check if point is in a muffin-tin
