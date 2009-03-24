@@ -33,6 +33,7 @@ integer idx0,bs,idx_g1,idx_g2,igp,ifg,ir,i1,i2
 integer iv3g(3)
 real(8) v1(3),v2(3),tp3g(2),len3g
 complex(8) sfac3g(natmtot),zt1
+complex(8), external :: zdotu
 
 allocate(zrhofc_tmp(ngvecme,nmemax))
 zrhofc_tmp=dcmplx(0.d0,0.d0)
@@ -93,9 +94,11 @@ if (.not.lfftit) then
       do i=1,nme0
         ist1=ime0(1,i)
         ist2=ime0(2,i)
-        do ig2=1,ngknr2
-          zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+wfsvit2(ig2,ist2,ispn2)*a(ig2,ist1,ispn)
-        enddo
+	zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+&
+	  zdotu(ngknr2,wfsvit2(1,ist2,ispn2),1,a(1,ist1,ispn),1)
+!        do ig2=1,ngknr2
+!          zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+wfsvit2(ig2,ist2,ispn2)*a(ig2,ist1,ispn)
+!        enddo
       enddo
     enddo
   enddo !ig  
