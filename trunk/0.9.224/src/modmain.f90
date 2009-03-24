@@ -1050,6 +1050,8 @@ integer, allocatable :: nwannint(:)
 integer, allocatable :: iwannint(:,:)
 logical laddwf
 
+integer, allocatable :: spinor_ud(:,:,:)
+
 !------------------!
 !     Wannier      !
 !------------------!
