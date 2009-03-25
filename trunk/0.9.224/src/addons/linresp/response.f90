@@ -66,8 +66,6 @@ endif
 if (task.eq.400) then
 ! read the density and potentials from file
   call readstate
-! read Fermi energy from file
-  call readfermi
 ! find the new linearisation energies
   call linengy
 ! generate the APW radial functions
@@ -238,6 +236,10 @@ if (in_cart()) then
       lmmaxvr*nrfmax*natmtot*nstsv*nspinor*nkptnr_loc*2)
     call d_bcast_cart(comm_cart_011,wfsvitloc, &
       ngkmax*nstsv*nspinor*nkptnr_loc*2)
+    call d_bcast_cart(comm_cart_011,evecfvloc, &
+      nmatmax*nstfv*nspnfv*nkptnr_loc*2)
+    call d_bcast_cart(comm_cart_011,evecsvloc, &
+      nstsv*nstsv*nkptnr_loc*2)
     if (wannier) then
       allocate(wfsvmt_t(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
       allocate(wfsvit_t(ngkmax,nstsv,nspinor))
