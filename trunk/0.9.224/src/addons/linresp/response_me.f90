@@ -39,7 +39,7 @@ complex(8), allocatable :: evecfv2(:,:,:)
 complex(8), allocatable :: evecsv2(:,:)
 complex(8), allocatable :: me(:,:)
 
-integer i,j,ik,jk,ig,ikstep,ierr,sz
+integer i,j,ik,jk,ig,ikstep,ierr,sz,ikloc
 integer ngknr2
 real(8) vkq0l(3)
 integer ivg1(3),ivg2(3)
@@ -48,6 +48,7 @@ complex(4), allocatable :: gu(:,:,:)
 integer, allocatable :: igu(:,:,:,:)
 integer, allocatable :: ngu(:,:)
 integer ngumax
+complex(8) zt1
 
 integer lmaxexp
 integer lmmaxexp
@@ -69,6 +70,7 @@ character*8 c8
 real(8), external :: r3taxi
 complex(8), external :: zfint
 logical, external :: root_cart
+integer, external :: iknrglob2
 
 lmaxexp=lmaxvr
 lmmaxexp=(lmaxexp+1)**2
@@ -79,7 +81,6 @@ do i=1,3
 enddo
 ! find G-vector which brings q0 to first BZ
 vgq0l(:)=floor(vq0l(:))
-
 ! find G-shell for a given q-vector
 allocate(igishell(ngvec))
 allocate(ishellng(ngvec,2))
@@ -244,18 +245,28 @@ do ik=1,nkptnr
   enddo
 enddo
 
+! setup n,n' stuff
 call timer_reset(1)
 call timer_start(1)
-! setup n,n' stuff
+if (spinpol) then
+  allocate(spinor_ud(2,nstsv,nkptnr))
+  spinor_ud=0
+  do ikloc=1,nkptnr_loc
+    ik=iknrglob2(ikloc,mpi_x(1))
+    do j=1,nstsv
+      zt1=sum(abs(evecsvloc(1:nstfv,j,ikloc)))
+      if (abs(zt1).gt.1d-10) spinor_ud(1,j,ik)=1
+      zt1=sum(abs(evecsvloc(nstfv+1:nstsv,j,ikloc)))
+      if (abs(zt1).gt.1d-10) spinor_ud(2,j,ik)=1
+    enddo
+  enddo
+  call i_reduce_cart(comm_cart_100,.true.,spinor_ud,2*nstsv*nkptnr)
+endif
 call getmeidx(.true.,occsvnr)
 #ifdef _MPI_
-if (root_cart((/0,1,0/))) then
-  call mpi_allreduce(nmemax,i,1,MPI_INTEGER,MPI_MAX,comm_cart_100,ierr)
-  nmemax=i
-endif
-call i_bcast_cart(comm_cart_010,nmemax,1)
+call mpi_allreduce(nmemax,i,1,MPI_INTEGER,MPI_MAX,comm_cart_100,ierr)
+nmemax=i
 #endif
-
 allocate(nme(nkptnr_loc))
 allocate(ime(3,nmemax,nkptnr_loc))
 allocate(docc(nmemax,nkptnr_loc))
@@ -265,6 +276,9 @@ if (wproc) then
   write(150,*)
   write(150,'("Maximum number of interband transitions: ",I5)')nmemax
   write(150,'("Done in ",F8.2," seconds")')timer(1,2)
+endif
+if (spinpol) then
+  deallocate(spinor_ud)
 endif
 
 ! generate G+q' vectors, where q' is reduced q-vector
@@ -372,6 +386,10 @@ do ikstep=1,nkptnrloc(0)
   call wfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
     wfsvit2,ngknr2,igkignr2,evecfv2,evecsv2)
   call barrier(comm_cart)
+  if (wproc) then
+    write(150,'("  wave-functions are distributed")')
+    call flushifc(150)
+  endif
   call timer_stop(1)
 ! compute matrix elements  
   call timer_start(2)
@@ -426,6 +444,7 @@ do ikstep=1,nkptnrloc(0)
     write(150,'("    interstitial : ",F8.2)')timer(5,2)
     write(150,'("      total      : ",F8.2)')timer(2,2)
     write(150,'("    writing      : ",F8.2)')timer(3,2)
+    write(150,'("  speed (me/sec) : ",F10.2)')ngvecme*nme(ikstep)/timer(2,2)
     call flushifc(150)
   endif
 enddo !ikstep
