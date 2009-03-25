@@ -190,7 +190,8 @@ bound3d(3,3)=10.d0
 nrxyz=(/100,100,100/)
 nwfplot=1
 firstwf=1
-
+afmchi0=.false.
+spin_me=1
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -904,14 +905,12 @@ case('mustar')
 case('sqados')
   read(50,*,err=20) sqados(:)
 case('response')
-  read(50,*,err=20) nvq0
+  read(50,*,err=20) nvq0,gshme2,lrtype
   allocate(ivq0m_list(3,nvq0))
   do i=1,nvq0
     read(50,*,err=20) ivq0m_list(:,i)
   enddo
-  read(50,*,err=20) gshme2,spin_me,lrtype
   read(50,*,err=20) maxomega, domega, lr_eta
-  read(50,*,err=20) afmchi0
 case('response1')
   read(50,*,err=20) bndme1,bndme2
   read(50,*,err=20) nfxca,fxca0,fxca1
