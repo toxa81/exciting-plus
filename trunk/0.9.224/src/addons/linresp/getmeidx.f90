@@ -9,6 +9,7 @@ integer band1,band2
 integer i,ik,jk,istfv1,istfv2,ispn1,ispn2,ist1,ist2,ikloc
 logical laddme,ldocc
 real(8) d1
+logical l11,l12,l21,l22
 integer, external :: iknrglob2
 
 if (bndme1.eq.-1) then
@@ -36,14 +37,18 @@ do ikloc=1,nkptnr_loc
         d1=occsvnr(ist1,ik)-occsvnr(ist2,jk)
         ldocc=abs(d1).gt.1d-10
         laddme=.false.
-! possible candidate for charge response
-        if (ispn1.eq.ispn2.and.lrtype.eq.0) then
-          if ((ispn1.eq.spin_me.or.spin_me.eq.3).and.ldocc) laddme=.true.
-        endif
-! for magnetic response
-        if (ispn1.ne.ispn2.and.lrtype.eq.1) then
-          if ((ispn1.eq.spin_me.or.spin_me.eq.3).and.ldocc) laddme=.true.
-        endif
+	if (ldocc) then
+	  if (.not.spinpol) then
+	    laddme=.true.
+	  else
+	    l11=spinor_ud(1,ist1,ik).eq.1.and.spinor_ud(1,ist2,jk).eq.1
+	    l12=spinor_ud(1,ist1,ik).eq.1.and.spinor_ud(2,ist2,jk).eq.1
+	    l21=spinor_ud(2,ist1,ik).eq.1.and.spinor_ud(1,ist2,jk).eq.1
+	    l22=spinor_ud(2,ist1,ik).eq.1.and.spinor_ud(2,ist2,jk).eq.1
+	    if (lrtype.eq.0.and.(l11.or.l22)) laddme=.true.
+	    if (lrtype.eq.1.and.(l12.or.l21)) laddme=.true.
+	  endif
+	endif
         if (laddme) then
           i=i+1
           if (.not.req) then
