@@ -78,13 +78,13 @@ do is=1,nspecies
     ias=idxas(ia,is)
     rfmt(:,:,:)=0.d0
 !$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(j,wo,wfmt1,wfmt2,wfmt3,i,ispn,jspn,ist,irc,itp,done,zt1,zt2,zt3,rfmt)
+!$OMP PRIVATE(j,wo,wfmt1,wfmt2,wfmt3,i,ispn,jspn,ist,irc,itp,done,zt1,zt2,zt3)
     allocate(done(nstfv,nspnfv))
     allocate(wfmt1(lmmaxvr,nrcmtmax))
     if (tevecsv) allocate(wfmt2(lmmaxvr,nrcmtmax,nstfv,nspnfv))
     allocate(wfmt3(lmmaxvr,nrcmtmax,nspinor))
     done(:,:)=.false.
-!$OMP DO REDUCTION (+:rfmt)
+!$OMP DO
     do j=1,nstsv
       wo=wkpt(ikglob(ik))*occsv(j,ikglob(ik))
       if (abs(wo).gt.epsocc) then
