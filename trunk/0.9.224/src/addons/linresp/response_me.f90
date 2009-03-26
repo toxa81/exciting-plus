@@ -1,5 +1,5 @@
 #ifdef _HDF5_
-subroutine response_me(ivq0m,wfsvmtloc,wfsvitloc,ngknr,igkignr,occsvnr)
+subroutine response_me(ivq0m,wfsvmtloc,wfsvitloc,ngknr,igkignr,occsvnr,evalsvnr)
 use modmain
 use hdf5
 #ifdef _MPI_
@@ -14,6 +14,7 @@ complex(8), intent(in) :: wfsvitloc(ngkmax,nstsv,nspinor,*)
 integer, intent(in) :: ngknr(*)
 integer, intent(in) :: igkignr(ngkmax,*)
 real(8), intent(in) :: occsvnr(nstsv,nkptnr)
+real(8), intent(in) :: evalsvnr(nstsv,nkptnr)
 ! G-vector which brings q to first BZ
 integer vgq0l(3)
 ! G+q vectors in Cart.coord.
@@ -262,7 +263,7 @@ if (spinpol) then
   enddo
   call i_reduce_cart(comm_cart_100,.true.,spinor_ud,2*nstsv*nkptnr)
 endif
-call getmeidx(.true.,occsvnr)
+call getmeidx(.true.,occsvnr,evalsvnr)
 #ifdef _MPI_
 call mpi_allreduce(nmemax,i,1,MPI_INTEGER,MPI_MAX,comm_cart_100,ierr)
 nmemax=i
@@ -270,7 +271,7 @@ nmemax=i
 allocate(nme(nkptnr_loc))
 allocate(ime(3,nmemax,nkptnr_loc))
 allocate(docc(nmemax,nkptnr_loc))
-call getmeidx(.false.,occsvnr)
+call getmeidx(.false.,occsvnr,evalsvnr)
 call timer_stop(1)
 if (wproc) then
   write(150,*)

@@ -322,7 +322,7 @@ if (in_cart()) then
 ! calculate matrix elements
     call timer_start(10)
     call response_me(ivq0m_list(1,mpi_x(3)+1),wfsvmtloc,wfsvitloc,ngknr, &
-      igkignr,occsvnr)
+      igkignr,occsvnr,evalsvnr)
     call timer_stop(10)
     if (wproc) then
       write(150,'("Total time : ",F8.2," seconds")')timer(10,2)

@@ -154,6 +154,7 @@ if (root_cart((/0,1,0/))) then
   enddo
 #endif
 endif
+call barrier(comm_cart)
 call timer_stop(1)
 if (wproc) then
    write(150,'("Done in ",F8.2," seconds")')timer(1,2)

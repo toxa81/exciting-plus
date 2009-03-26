@@ -169,8 +169,6 @@ vecql(:)=0.d0
 mustar=0.15d0
 sqados(1:2)=0.d0
 sqados(3)=1.d0
-bndme1=-1
-bndme2=-1
 lrtype=0
 wannier=.false.
 natlcs=0
@@ -192,6 +190,8 @@ nwfplot=1
 firstwf=1
 afmchi0=.false.
 spin_me=1
+lr_e1=-100.d0
+lr_e2=100.d0
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -912,7 +912,7 @@ case('response')
   enddo
   read(50,*,err=20) maxomega, domega, lr_eta
 case('response1')
-  read(50,*,err=20) bndme1,bndme2
+  read(50,*,err=20) lr_e1,lr_e2
   read(50,*,err=20) nfxca,fxca0,fxca1
   read(50,*,err=20) lfftit
   read(50,*,err=20) lscalar
