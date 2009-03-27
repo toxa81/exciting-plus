@@ -112,6 +112,48 @@ call h5fclose_f(h5_root_id,ierr)
 return
 end
 
+subroutine read_real8_array_p(a,ndims,dims,fname,path,nm,comm)
+use hdf5
+use mpi
+implicit none
+integer, intent(in) :: ndims
+integer, intent(in) :: dims(ndims)
+real(8), intent(out) :: a(*)
+character(*), intent(in) :: fname
+character(*), intent(in) :: path
+character(*), intent(in) :: nm
+integer, intent(in) :: comm
+
+integer(hid_t) h5_root_id,dataspace_id,dataset_id,group_id,plist_id
+integer ierr,i,info
+integer(HSIZE_T), dimension(ndims) :: h_dims
+
+info=MPI_INFO_NULL
+
+do i=1,ndims
+  h_dims(i)=dims(i)
+enddo
+
+call h5pcreate_f(H5P_FILE_ACCESS_F,plist_id,ierr)
+call h5pset_fapl_mpio_f(plist_id,comm,info,ierr)
+call h5fopen_f(fname,H5F_ACC_RDONLY_F,h5_root_id,ierr,access_prp=plist_id)
+call h5pclose_f(plist_id,ierr)
+
+call h5gopen_f(h5_root_id,path,group_id,ierr)
+call h5dopen_f(group_id,nm,dataset_id,ierr)
+
+call h5pcreate_f(H5P_DATASET_XFER_F,plist_id,ierr)
+!call h5pset_dxpl_mpio_f(plist_id,H5FD_MPIO_COLLECTIVE_F,ierr)
+call h5pset_dxpl_mpio_f(plist_id,H5FD_MPIO_INDEPENDENT_F,ierr)
+call h5dread_f(dataset_id,H5T_NATIVE_DOUBLE,a,h_dims,ierr,xfer_prp=plist_id)
+call h5pclose_f(plist_id,ierr)
+
+call h5gclose_f(group_id,ierr)
+call h5dclose_f(dataset_id,ierr)
+call h5fclose_f(h5_root_id,ierr)
+return
+end
+
 
 subroutine write_integer_array(a,ndims,dims,fname,path,nm)
 use hdf5
