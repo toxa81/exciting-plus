@@ -1041,6 +1041,8 @@ real(8) fxca0
 real(8) fxca1
 integer nfxca
 logical lfftit
+logical lmeoff
+logical lsfio
 logical lscalar
 
 integer nintwann

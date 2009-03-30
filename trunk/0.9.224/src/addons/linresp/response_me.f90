@@ -28,7 +28,7 @@ complex(8), allocatable :: ylmgq0(:,:)
 ! structure factor for G+q vectors
 complex(8), allocatable :: sfacgq0(:,:)
 ! hack to switch off matrix elements
-logical, parameter :: meoff=.false.
+!logical, parameter :: meoff=.false.
 ! indexes for fft-transform of u_{nk}^{*}u_{n'k'}exp{-iKx}, where k'=k+q-K
 integer, allocatable :: igfft1(:,:)
 
@@ -149,15 +149,16 @@ deallocate(ishellng)
 if (wproc) then
   write(150,*)
   write(150,'("Calculation of matrix elements:")')
-  if (.not.spinpol) write(150,'("  <n,k|e^{-i(G+q)x}|n'',k+q>")')
-  if (spinpol.and.lrtype.eq.0) then
-    if (spin_me.eq.1.or.spin_me.eq.3) write(150,'("  <n,k,up|e^{-i(G+q)x}|n'',k+q,up>")')
-    if (spin_me.eq.2.or.spin_me.eq.3) write(150,'("  <n,k,dn|e^{-i(G+q)x}|n'',k+q,dn>")')
-  endif
-  if (spinpol.and.lrtype.eq.1) then
-    if (spin_me.eq.1.or.spin_me.eq.3) write(150,'("  <n,k,up|e^{-i(G+q)x}|n'',k+q,dn>")')
-    if (spin_me.eq.2.or.spin_me.eq.3) write(150,'("  <n,k,dn|e^{-i(G+q)x}|n'',k+q,up>")')
-  endif
+  write(150,'("  <n,k|e^{-i(G+q)x}|n'',k+q>")')
+!  if (.not.spinpol) write(150,'("  <n,k|e^{-i(G+q)x}|n'',k+q>")')
+!  if (spinpol.and.lrtype.eq.0) then
+!    if (spin_me.eq.1.or.spin_me.eq.3) write(150,'("  <n,k,up|e^{-i(G+q)x}|n'',k+q,up>")')
+!    if (spin_me.eq.2.or.spin_me.eq.3) write(150,'("  <n,k,dn|e^{-i(G+q)x}|n'',k+q,dn>")')
+!  endif
+!  if (spinpol.and.lrtype.eq.1) then
+!    if (spin_me.eq.1.or.spin_me.eq.3) write(150,'("  <n,k,up|e^{-i(G+q)x}|n'',k+q,dn>")')
+!    if (spin_me.eq.2.or.spin_me.eq.3) write(150,'("  <n,k,dn|e^{-i(G+q)x}|n'',k+q,up>")')
+!  endif
 endif
 
 allocate(idxkq(2,nkptnr))
@@ -298,16 +299,15 @@ call gensfacgp(ngvecme,vgq0c,ngvecme,sfacgq0)
 
 call qname(ivq0m,qnm)
 fname=trim(qnm)//"_me.hdf5"
-
 if (root_cart((/1,1,0/))) then
   call h5fcreate_f(trim(fname),H5F_ACC_TRUNC_F,h5_root_id,ierr)
   call h5gcreate_f(h5_root_id,'parameters',h5_tmp_id,ierr)
   call h5gclose_f(h5_tmp_id,ierr)
   call h5gcreate_f(h5_root_id,'kpoints',h5_kpoints_id,ierr)
   do ik=1,nkptnr
-    write(c8,'(I8.8)')ik
-    call h5gcreate_f(h5_kpoints_id,c8,h5_kpoint_id,ierr)
-    call h5gclose_f(h5_kpoint_id,ierr)
+	write(c8,'(I8.8)')ik
+	call h5gcreate_f(h5_kpoints_id,c8,h5_kpoint_id,ierr)
+	call h5gclose_f(h5_kpoint_id,ierr)
   enddo
   call h5gclose_f(h5_kpoints_id,ierr)
   call h5fclose_f(h5_root_id,ierr)
@@ -325,6 +325,19 @@ if (root_cart((/1,1,0/))) then
   call write_real8(vq0rl,3,trim(fname),'/parameters','vq0rl')
   call write_real8(vq0c,3,trim(fname),'/parameters','vq0c')
   call write_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
+endif
+if ((.not.lsfio).and.root_cart((/0,1,0/))) then
+  do ikloc=1,nkptnr_loc
+	call idxglob(nkptnr,mpi_dims(1),mpi_x(1)+1,ikloc,ik)
+    write(c8,'(I8.8)')ik
+    fname=trim(qnm)//"_me_k_"//c8//".hdf5"
+	call h5fcreate_f(trim(fname),H5F_ACC_TRUNC_F,h5_root_id,ierr)
+	call h5gcreate_f(h5_root_id,'kpoints',h5_kpoints_id,ierr)
+	call h5gcreate_f(h5_kpoints_id,c8,h5_kpoint_id,ierr)
+	call h5gclose_f(h5_kpoint_id,ierr)
+	call h5gclose_f(h5_kpoints_id,ierr)
+	call h5fclose_f(h5_root_id,ierr)
+  enddo
 endif
 
 call timer_reset(1)
@@ -396,7 +409,7 @@ do ikstep=1,nkptnrloc(0)
   call timer_start(2)
   if (ikstep.le.nkptnrloc(mpi_x(1))) then
     call idxglob(nkptnr,mpi_dims(1),mpi_x(1)+1,ikstep,ik)
-    if (.not.meoff) then
+    if (.not.lmeoff) then
       me=dcmplx(0.d0,0.d0)
 ! calculate muffin-tin contribution for all combinations of n,n'    
       call timer_start(4)
@@ -418,23 +431,39 @@ do ikstep=1,nkptnrloc(0)
   call timer_stop(2)
 ! write matrix elements
   call timer_start(3)
-  if (root_cart((/0,1,0/))) then
-    do i=0,mpi_dims(1)-1
-      do j=0,mpi_dims(3)-1
-        if (i.eq.mpi_x(1).and.j.eq.mpi_x(3).and.ikstep.le.nkptnr_loc) then
-          write(path,'("/kpoints/",I8.8)')ik
-          call write_integer(idxkq(1,ik),1,trim(fname),trim(path),'kq')
-          call write_integer(nme(ikstep),1,trim(fname),trim(path),'nme')
-          call write_integer_array(ime(1,1,ikstep),2,(/3,nme(ikstep)/), &
-            trim(fname),trim(path),'ime')
-          call write_real8(docc(1,ikstep),nme(ikstep), &
-            trim(fname),trim(path),'docc')
-          call write_real8_array(me,3,(/2,ngvecme,nme(ikstep)/), &
-            trim(fname),trim(path),'me')
-        endif 
-        call barrier(comm_cart_101)
-      enddo
-    enddo
+  if (lsfio) then
+	if (root_cart((/0,1,0/))) then
+	  do i=0,mpi_dims(1)-1
+		do j=0,mpi_dims(3)-1
+		  if (i.eq.mpi_x(1).and.j.eq.mpi_x(3).and.ikstep.le.nkptnr_loc) then
+			write(path,'("/kpoints/",I8.8)')ik
+			call write_integer(idxkq(1,ik),1,trim(fname),trim(path),'kq')
+			call write_integer(nme(ikstep),1,trim(fname),trim(path),'nme')
+			call write_integer_array(ime(1,1,ikstep),2,(/3,nme(ikstep)/), &
+			  trim(fname),trim(path),'ime')
+			call write_real8(docc(1,ikstep),nme(ikstep), &
+			  trim(fname),trim(path),'docc')
+			call write_real8_array(me,3,(/2,ngvecme,nme(ikstep)/), &
+			  trim(fname),trim(path),'me')
+		  endif 
+		  call barrier(comm_cart_101)
+		enddo
+	  enddo
+	endif
+  else
+    if (root_cart((/0,1,0/)).and.ikstep.le.nkptnr_loc) then
+	  write(fname,'("_me_k_",I8.8)')ik
+	  fname=trim(qnm)//trim(fname)//".hdf5"
+	  write(path,'("/kpoints/",I8.8)')ik
+	  call write_integer(idxkq(1,ik),1,trim(fname),trim(path),'kq')
+	  call write_integer(nme(ikstep),1,trim(fname),trim(path),'nme')
+	  call write_integer_array(ime(1,1,ikstep),2,(/3,nme(ikstep)/), &
+		trim(fname),trim(path),'ime')
+	  call write_real8(docc(1,ikstep),nme(ikstep), &
+		trim(fname),trim(path),'docc')
+	  call write_real8_array(me,3,(/2,ngvecme,nme(ikstep)/), &
+		trim(fname),trim(path),'me')
+    endif
   endif
   call timer_stop(3)
   if (wproc) then

@@ -139,6 +139,8 @@ end do !is
 !---------------------!
 !     interstitial    !
 !---------------------!
+!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(j,i,iv,ig,t1)
+!$OMP DO
 do j=1,ngp
   do i=1,j
     iv(:)=ivg(:,igpig(i))-ivg(:,igpig(j))
@@ -147,7 +149,8 @@ do j=1,ngp
     h(i,j)=h(i,j)+dconjg(veffig(ig)+t1*cfunig(ig))
   end do
 end do
-
+!$OMP END DO
+!$OMP END PARALLEL
 deallocate(zv)
 
 return

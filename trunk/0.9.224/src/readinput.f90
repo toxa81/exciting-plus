@@ -177,6 +177,8 @@ dmbnd2=-1
 nfxca=1
 gshme1=1
 lfftit=.false.
+lmeoff=.false.
+lsfio=.true.
 fxca0=0.d0
 fxca1=0.d0
 lscalar=.false.
@@ -914,7 +916,6 @@ case('response')
 case('response1')
   read(50,*,err=20) lr_e1,lr_e2
   read(50,*,err=20) nfxca,fxca0,fxca1
-  read(50,*,err=20) lfftit
   read(50,*,err=20) lscalar
 case('response2')
   read(50,*,err=20)laddwf
@@ -926,6 +927,10 @@ case('response2')
     read(50,*,err=20)ewannint(1,i),ewannint(2,i),nwannint(i), &
       (iwannint(l,i),l=1,nwannint(i))
   enddo
+case('response3')
+    read(50,*,err=20) lfftit
+    read(50,*,err=20) lmeoff
+    read(50,*,err=20) lsfio
 case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_use_eint
