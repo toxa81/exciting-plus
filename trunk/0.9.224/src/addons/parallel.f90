@@ -30,16 +30,6 @@ if (task.eq.400.or.task.eq.401) then
       mpi_dims=(/nkptnr,nproc/(nkptnr*nvq0),nvq0/)
     endif
   endif
-!  if (nproc.le.nkptnr) then
-!    mpi_dims=(/nproc,1,1/)
-!  else
-!    i=nproc/nkptnr
-!    if (i.le.nvq0) then
-!      mpi_dims=(/nkptnr,1,i/)
-!    else
-!      mpi_dims=(/nkptnr,nproc/(nkptnr*nvq0),nvq0/)
-!    endif
-!  endif
 endif
 if (task.eq.402) then
   if (nproc.le.nvq0) then

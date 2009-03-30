@@ -145,13 +145,8 @@ if (root_cart((/0,1,0/))) then
           trim(fname),trim(path),'ime')
         call read_real8(docc(1,ikloc),nme(ikloc),trim(fname), &
           trim(path),'docc')
-#ifdef _PIO_
-!        call read_real8_array_p(me(1,1,ikloc),3,(/2,ngvecme,nme(ikloc)/), &
-!          trim(fname),trim(path),'me',comm_cart_100)
-#else        
         call read_real8_array(me(1,1,ikloc),3,(/2,ngvecme,nme(ikloc)/), &
           trim(fname),trim(path),'me')
-#endif
       enddo
 #ifndef _PIO_      
     endif
