@@ -129,6 +129,7 @@ endif
 call timer_reset(1)
 call timer_start(1)
 ! read matrix elements
+if (lsfio) then
 if (root_cart((/0,1,0/))) then
 #ifndef _PIO_
   do i=0,mpi_dims(1)-1
@@ -145,8 +146,8 @@ if (root_cart((/0,1,0/))) then
         call read_real8(docc(1,ikloc),nme(ikloc),trim(fname), &
           trim(path),'docc')
 #ifdef _PIO_
-        call read_real8_array_p(me(1,1,ikloc),3,(/2,ngvecme,nme(ikloc)/), &
-          trim(fname),trim(path),'me',comm_cart_100)
+!        call read_real8_array_p(me(1,1,ikloc),3,(/2,ngvecme,nme(ikloc)/), &
+!          trim(fname),trim(path),'me',comm_cart_100)
 #else        
         call read_real8_array(me(1,1,ikloc),3,(/2,ngvecme,nme(ikloc)/), &
           trim(fname),trim(path),'me')
@@ -159,6 +160,25 @@ if (root_cart((/0,1,0/))) then
   enddo
 #endif
 endif
+else
+  if (root_cart((/0,1,0/))) then
+    do ikloc=1,nkptnr_loc
+      ik=ikptnrloc(mpi_x(1),1)+ikloc-1
+      write(fname,'("_me_k_",I8.8)')ik
+      fname=trim(qnm)//trim(fname)//".hdf5"
+      write(path,'("/kpoints/",I8.8)')ik
+      call read_integer(idxkq(1,ikloc),1,trim(fname),trim(path),'kq')
+      call read_integer(nme(ikloc),1,trim(fname),trim(path),'nme')
+      call read_integer_array(ime(1,1,ikloc),2,(/3,nme(ikloc)/), &
+        trim(fname),trim(path),'ime')
+      call read_real8(docc(1,ikloc),nme(ikloc),trim(fname), &
+        trim(path),'docc')
+      call read_real8_array(me(1,1,ikloc),3,(/2,ngvecme,nme(ikloc)/), &
+        trim(fname),trim(path),'me')
+    enddo
+  endif
+endif
+
 call barrier(comm_cart)
 call timer_stop(1)
 if (wproc) then
