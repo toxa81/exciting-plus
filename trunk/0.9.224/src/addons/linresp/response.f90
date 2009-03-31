@@ -77,13 +77,11 @@ if (task.eq.400) then
 endif
 
 if (in_cart()) then
-
   call qname(ivq0m_list(:,mpi_x(3)+1),qnm)
   if (root_cart((/1,1,1/))) call system("mkdir -p "//trim(qnm))
+  call barrier(comm_cart)
   qnm="./"//trim(qnm)//"/"//trim(qnm)
-
   wproc=.false.
-  
   if (task.eq.400) then
     if (root_cart((/1,1,0/))) then
       wproc=.true.
@@ -111,7 +109,7 @@ if (in_cart()) then
     write(150,'("Running on ",I8," proc.")')nproc
 #ifdef _PIO_
     if (nproc.gt.1) then
-      write(150,'("Reading files in parallel")')
+      write(150,'("Using parallel I/O")')
     endif
 #endif
     write(150,'("MPI grid size : ",3I6)')mpi_dims
