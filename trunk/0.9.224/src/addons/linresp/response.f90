@@ -77,8 +77,11 @@ if (task.eq.400) then
 endif
 
 if (in_cart()) then
-  
+
   call qname(ivq0m_list(:,mpi_x(3)+1),qnm)
+  if (root_cart((/1,1,1/))) call system("mkdir -p "//trim(qnm))
+  qnm="./"//trim(qnm)//"/"//trim(qnm)
+
   wproc=.false.
   
   if (task.eq.400) then

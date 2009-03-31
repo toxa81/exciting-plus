@@ -52,6 +52,7 @@ do i=1,nepts
 enddo
 
 call qname(ivq0m,qnm)
+qnm="./"//trim(qnm)//"/"//trim(qnm)
 fname=trim(qnm)//"_me.hdf5"
 
 if (root_cart((/1,1,0/))) then

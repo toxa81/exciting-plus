@@ -62,6 +62,7 @@ if (wproc) then
 endif
 
 call qname(ivq0m,qnm)
+qnm="./"//trim(qnm)//"/"//trim(qnm)
 fname=trim(qnm)//"_chi0.hdf5"
 if (root_cart((/1,1,0/))) then
   call read_integer(nepts,1,trim(fname),'/parameters','nepts')
@@ -660,6 +661,7 @@ character*10 c1,c2,c3,c4,c5
 integer ie
 
 call qname(ivq0m,qnm)
+qnm="./"//trim(qnm)//"/"//trim(qnm)
 fxca=fxca0+fxca1*mpi_x(2)
 write(c1,'(I1.1)')ispin_me
 write(c2,'(F5.2)')fxca

@@ -298,6 +298,7 @@ enddo
 call gensfacgp(ngvecme,vgq0c,ngvecme,sfacgq0)
 
 call qname(ivq0m,qnm)
+qnm="./"//trim(qnm)//"/"//trim(qnm)
 fname=trim(qnm)//"_me.hdf5"
 if (root_cart((/1,1,0/))) then
   call h5fcreate_f(trim(fname),H5F_ACC_TRUNC_F,h5_root_id,ierr)
