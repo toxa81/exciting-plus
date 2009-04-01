@@ -78,7 +78,7 @@ endif
 
 if (in_cart()) then
   call qname(ivq0m_list(:,mpi_x(3)+1),qnm)
-  if (root_cart((/1,1,1/))) call system("mkdir -p "//trim(qnm))
+  if (root_cart((/1,1,0/))) call system("mkdir -p "//trim(qnm))
   call barrier(comm_cart)
   qnm="./"//trim(qnm)//"/"//trim(qnm)
   wproc=.false.
