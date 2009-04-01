@@ -238,6 +238,9 @@ if (wproc) then
 endif
 do ie=ie1,nepts
   call timer_reset(1)
+  call timer_reset(2)
+  call timer_reset(3)
+  call timer_reset(4)
   call timer_start(1)
   if (lcmplx) then
     c_chi0_loc=cmplx(0.d0,0.d0)
@@ -245,6 +248,7 @@ do ie=ie1,nepts
     chi0_loc=dcmplx(0.d0,0.d0)
   endif
   j=0
+  call timer_start(2)
   do ikloc=1,nkptnr_loc
     ik=ikptnrloc(mpi_x(1),1)+ikloc-1
     call idxbos(nme(ikloc),mpi_dims(2),mpi_x(2)+1,idx0,bs)
@@ -269,6 +273,8 @@ do ie=ie1,nepts
       endif
     enddo !i
   enddo !ikloc
+  call timer_stop(2)
+  call timer_start(3)
   if (lcmplx) then
     if (mpi_dims(2).gt.1) then
       call s_reduce_cart(comm_cart_010,.false.,c_chi0_loc,2*ngvecme*ngvecme*nspin_chi0)
@@ -284,6 +290,8 @@ do ie=ie1,nepts
       call d_reduce_cart(comm_cart_100,.false.,chi0_loc,2*ngvecme*ngvecme*nspin_chi0)
     endif
   endif
+  call timer_stop(3)
+  call timer_start(4)
   if (root_cart((/1,1,0/))) then
     if (lcmplx) chi0_loc=dcmplx(c_chi0_loc)
     chi0_loc=chi0_loc/nkptnr/omega
@@ -293,10 +301,11 @@ do ie=ie1,nepts
       trim(fname),trim(path),'chi0')
     call rewrite_integer(ie,1,trim(fname),'/parameters','ie1')
   endif
+  call timer_stop(4)
   call timer_stop(1)
   if (wproc) then
-    write(150,'("energy point ",I4," done in ",F8.2," seconds, ",F8.2," MB/s")') &
-      ie,timer(1,2),(16.0*j*ngvecme**2)/1024/1024/timer(1,2)
+    write(150,'("energy point ",I4," done in ",3F8.2," seconds, ",F8.2," MB/s")') &
+      ie,timer(2,2),timer(3,2),timer(4,2),(16.0*j*ngvecme**2)/1024/1024/timer(1,2)
     call flushifc(150)
   endif
   call barrier(comm_cart_110)
