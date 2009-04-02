@@ -67,6 +67,8 @@ end do !is
 !---------------------!
 !     interstitial    !
 !---------------------!
+!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(j,i,iv,ig)
+!$OMP DO
 do j=1,ngp
   do i=1,j
     iv(:)=ivg(:,igpig(i))-ivg(:,igpig(j))
@@ -74,6 +76,8 @@ do j=1,ngp
     o(i,j)=o(i,j)+dconjg(cfunig(ig))
   end do
 end do
+!$OMP END DO
+!$OMP END PARALLEL
 
 return
 end

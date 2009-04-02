@@ -20,6 +20,7 @@ complex(8) wt
 complex(4) c_wt
 character*100 fname,path,qnm
 character*8 c8
+real(8) s1
 integer ierr
 logical exist
 integer ie1
@@ -304,8 +305,10 @@ do ie=ie1,nepts
   call timer_stop(4)
   call timer_stop(1)
   if (wproc) then
+    s1=16.d0
+    if (lcmplx) s1=8.d0
     write(150,'("energy point ",I4," done in ",3F8.2," seconds, ",F8.2," MB/s")') &
-      ie,timer(2,2),timer(3,2),timer(4,2),(16.0*j*ngvecme**2)/1024/1024/timer(1,2)
+      ie,timer(2,2),timer(3,2),timer(4,2),(s1*j*ngvecme**2)/1024/1024/timer(1,2)
     call flushifc(150)
   endif
   call barrier(comm_cart_110)
