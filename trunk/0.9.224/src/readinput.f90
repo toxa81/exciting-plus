@@ -172,8 +172,9 @@ sqados(3)=1.d0
 lrtype=0
 wannier=.false.
 natlcs=0
-dmbnd1=-1
-dmbnd2=-1
+dm_e1=-100.d0
+dm_e2=100.d0
+ldensmtrx=.false.
 nfxca=1
 gshme1=1
 lfftit=.false.
@@ -968,7 +969,8 @@ case('wannier1')
   read(50,*,err=20)nwfplot,firstwf
   read(50,*,err=20)iwfv
 case('densmtrx')
-  read(50,*,err=20) dmbnd1,dmbnd2
+  read(50,*,err=20) dm_e1,dm_e2
+  ldensmtrx=.true.
 case('lcs')
   read(50,*,err=20) natlcs
   allocate(lcsrsh(16,16,natlcs))

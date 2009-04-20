@@ -67,7 +67,7 @@ complex(8), intent(out) :: wf(wann_nmax,nstfv,wann_nspin)
 
 complex(8), allocatable :: prjao(:,:,:)
 complex(8), allocatable :: s(:,:)
-integer ispn,i,j,n,m1,m2,io1,io2,ias,lm1,lm2,ierr,l,itype
+integer ispn,i,j,n,m1,m2,io1,io2,ias,lm1,lm,ierr,l,itype
 integer n1n2(2,2,wann_ntype),n1,n2
 
 n1n2=0
@@ -90,6 +90,8 @@ prjao=dcmplx(0.d0,0.d0)
 do ispn=1,wann_nspin
   do n=1,nwann(ispn)
     ias=iwann(n,ispn,1)
+    lm=iwann(n,ispn,2)
+    l=iwann(n,ispn,3)
     itype=iwann(n,ispn,4)
     if (wann_use_eint) then
       n1=n1n2(1,ispn,itype)
@@ -99,14 +101,12 @@ do ispn=1,wann_nspin
       n2=wann_nint(2,itype)
     endif
     do j=n1,n2
-      l=iwann(n,ispn,3)
       do m1=-l,l
         lm1=idxlm(l,m1)
-        lm2=iwann(n,ispn,2)
+        io2=2
         do io1=1,nrfmax
-          io2=2
           prjao(n,j,ispn)=prjao(n,j,ispn)+dconjg(wfsvmt(lm1,io1,ias,j+(ispn-1)*nstfv,ispn)) * &
-            urfprod(l,io1,io2,ias)*rylm_lcs(lm2,lm1,ias)
+            urfprod(l,io1,io2,ias)*rylm_lcs(lm,lm1,ias)
         enddo !io1
       enddo !m
     enddo !j

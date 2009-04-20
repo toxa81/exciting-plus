@@ -4,40 +4,40 @@ implicit none
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: wf1(:,:,:)
-complex(8), allocatable :: dmatrsh(:,:,:,:,:)
-complex(8), allocatable :: dmatrshlcs(:,:,:,:,:)
-integer is,ia,ias,l,lm1,lm2,lm3,m1,m2,io1,io2,ispn,j,nlcs
+complex(8), allocatable :: dmatrlm(:,:,:,:,:)
+complex(8), allocatable :: dmatylm(:,:,:,:,:)
+complex(8), allocatable :: dmatrlmlcs(:,:,:,:,:)
+integer is,ia,ias,l,lm1,lm2,lm3,m1,m2,io1,io2,ispn,jspn,j,nlcs
 real(8), allocatable :: mtrx(:,:)
 real(8), allocatable :: eval(:)
-complex(8), allocatable :: dm1(:,:,:,:,:)
 complex(8), allocatable :: dm2(:,:)
 complex(8) z1
-integer ib1,ib2
-logical ldensmtrx
+integer i1
+real(8) d1(nspinor)
 integer ikloc
+character*2 :: c2
+character*20 :: fmt
 integer, external :: ikglob
 
 allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 allocate(wf1(lmmaxlu,nrfmax,nstsv))
-allocate(dmatrsh(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
-allocate(dmatrshlcs(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
-allocate(dm1(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
+allocate(dmatrlm(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
+allocate(dmatylm(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
+allocate(dmatrlmlcs(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
 allocate(dm2(lmmaxlu,lmmaxlu))
-dm1=dcmplx(0.d0,0.d0)
 
-if (dmbnd1.eq.-1) then
-  ldensmtrx=.false.
-  ib1=1
-  ib2=nstfv
-else
-  ldensmtrx=.true.
-  ib1=dmbnd1
-  ib2=dmbnd2
-endif
+!if (dmbnd1.eq.-1) then
+!  ldensmtrx=.false.
+!  ib1=1
+!  ib2=nstfv
+!else
+!  ldensmtrx=.true.
+!  ib1=dmbnd1
+!  ib2=dmbnd2
+!endif
 
-ispn=1
-
+dmatylm=dcmplx(0.d0,0.d0)
 ! begin loop over k-points
 do ikloc=1,nkptloc(iproc)
   call match(ngk(1,ikglob(ikloc)),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc), &
@@ -50,22 +50,36 @@ do ikloc=1,nkptloc(iproc)
     if (l.lt.0) goto 10
     do ia=1,natoms(is)
       ias=idxas(ia,is)
-      wf1(1:lmmaxlu,:,:)=wfsvmt(1:lmmaxlu,:,ias,:,ispn)
-      do j=ib1,ib2
+      do j=1,nstsv
+        do ispn=1,nspinor
+        do jspn=1,nspinor
         do io1=1,nrfmax
         do io2=1,nrfmax
         do m1=-l,l
         do m2=-l,l
+
           lm1=idxlm(l,m1)
           lm2=idxlm(l,m2)
-          z1=wf1(lm1,io1,j)*dconjg(wf1(lm2,io2,j))*&
+          z1=wfsvmt(lm1,io1,ias,j,ispn)*dconjg(wfsvmt(lm2,io2,ias,j,jspn))*&
             urfprod(l,io1,io2,ias)*wkpt(ikglob(ikloc))
+            
           if (ldensmtrx) then
-            dm1(lm1,lm2,ispn,ispn,ias)=dm1(lm1,lm2,ispn,ispn,ias)+z1
+            if (evalsv(j,ikglob(ikloc)).ge.dm_e1.and. &
+                evalsv(j,ikglob(ikloc)).le.dm_e2) then
+              dmatylm(lm1,lm2,ispn,jspn,ias)=dmatylm(lm1,lm2,ispn,jspn,ias)+z1
+            endif                 
           else
-            dm1(lm1,lm2,ispn,ispn,ias)=dm1(lm1,lm2,ispn,ispn,ias)+&
+            dmatylm(lm1,lm2,ispn,jspn,ias)=dmatylm(lm1,lm2,ispn,jspn,ias)+&
               z1*occsv(j,ikglob(ikloc))
           endif
+!          z1=wf1(lm1,io1,j)*dconjg(wf1(lm2,io2,j))*&
+!            urfprod(l,io1,io2,ias)*wkpt(ikglob(ikloc))
+!          if (ldensmtrx) then
+!            dm1(lm1,lm2,ispn,ispn,ias)=dm1(lm1,lm2,ispn,ispn,ias)+z1
+!          else
+!          endif
+        enddo
+        enddo
         enddo
         enddo
         enddo
@@ -76,25 +90,27 @@ do ikloc=1,nkptloc(iproc)
   enddo !is
 enddo !ikloc
 
-call zsync(dm1,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,.true.,.true.)
-call symdmat(lmaxlu,lmmaxlu,dm1)
+call zsync(dmatylm,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,.true.,.true.)
+call symdmat(lmaxlu,lmmaxlu,dmatylm)
 
-dmatrsh=dcmplx(0.d0,0.d0)
-dmatrshlcs=dcmplx(0.d0,0.d0)
+dmatrlm=dcmplx(0.d0,0.d0)
+dmatrlmlcs=dcmplx(0.d0,0.d0)
+do ispn=1,nspinor
+do jspn=1,nspinor
 do ias=1,natmtot
 ! dens.mtrx. in GCS in RSH
   dm2=dcmplx(0.d0,0.d0)
   do lm1=1,lmmaxlu
     do lm2=1,lmmaxlu
       do lm3=1,lmmaxlu
-        dm2(lm1,lm2)=dm2(lm1,lm2)+dconjg(rylm(lm1,lm3))*dm1(lm3,lm2,ispn,ispn,ias)
+        dm2(lm1,lm2)=dm2(lm1,lm2)+dconjg(rylm(lm1,lm3))*dmatylm(lm3,lm2,ispn,jspn,ias)
       enddo
     enddo
   enddo
   do lm1=1,lmmaxlu
     do lm2=1,lmmaxlu
       do lm3=1,lmmaxlu
-        dmatrsh(lm1,lm2,ispn,ispn,ias)=dmatrsh(lm1,lm2,ispn,ispn,ias) + &
+        dmatrlm(lm1,lm2,ispn,jspn,ias)=dmatrlm(lm1,lm2,ispn,jspn,ias) + &
           dm2(lm1,lm3)*rylm(lm2,lm3)
       enddo
     enddo
@@ -104,25 +120,27 @@ do ias=1,natmtot
   do lm1=1,lmmaxlu
     do lm2=1,lmmaxlu
       do lm3=1,lmmaxlu
-        dm2(lm1,lm2)=dm2(lm1,lm2)+dconjg(rylm_lcs(lm1,lm3,ias))*dm1(lm3,lm2,ispn,ispn,ias)
+        dm2(lm1,lm2)=dm2(lm1,lm2)+dconjg(rylm_lcs(lm1,lm3,ias))*dmatylm(lm3,lm2,ispn,jspn,ias)
       enddo
     enddo
   enddo
   do lm1=1,lmmaxlu
     do lm2=1,lmmaxlu
       do lm3=1,lmmaxlu
-        dmatrshlcs(lm1,lm2,ispn,ispn,ias)=dmatrshlcs(lm1,lm2,ispn,ispn,ias) + &
+        dmatrlmlcs(lm1,lm2,ispn,jspn,ias)=dmatrlmlcs(lm1,lm2,ispn,jspn,ias) + &
           dm2(lm1,lm3)*rylm_lcs(lm2,lm3,ias)
       enddo
     enddo
   enddo
+enddo
+enddo
 enddo
 
 if (iproc.eq.0) then
   open(50,file='DMATRSH.OUT',form='formatted',status='replace')
   if (ldensmtrx) then
     write(50,'("Density matrix")')
-    write(50,'("  band interval : ",2I4)')ib1,ib2
+    write(50,'("  band interval (Ha) : ",2F8.2)')dm_e1,dm_e2
   else
     write(50,'("Occupancy matrix")')
   endif
@@ -134,73 +152,139 @@ if (iproc.eq.0) then
       allocate(eval(2*l+1))
       do ia=1,natoms(is)
         ias=idxas(ia,is)
-    nlcs=nlcs+1
+        nlcs=nlcs+1
+        write(c2,'(I2)')2*l+1
+        fmt=trim(c2)//"F12.6"
+        if (spinpol) then
+          fmt=trim(fmt)//",4X,"//trim(fmt)
+        endif  
+        fmt="("//trim(fmt)//")"
+        write(50,'("ias : ",I2)')ias
+        write(50,'("  in complex harmonics (global basis) ")')
+        write(50,'("  real part : ")')
+        do ispn=1,nspinor
+          do m1=-l,l
+          write(50,trim(fmt)) &
+            ((dreal(dmatylm(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
+              m2=-l,l),jspn=1,nspinor)
+          enddo
+          write(50,*)
+        enddo
+        write(50,'("  imag part : ")')
+        do ispn=1,nspinor
+          do m1=-l,l
+          write(50,trim(fmt)) &
+            ((dimag(dmatylm(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
+              m2=-l,l),jspn=1,nspinor)
+          enddo
+          write(50,*)
+        enddo
+        write(50,'("  in real harmonics (global basis) ")')
+        write(50,'("  real part : ")')
+        do ispn=1,nspinor
+          do m1=-l,l
+          write(50,trim(fmt)) &
+            ((dreal(dmatrlm(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
+              m2=-l,l),jspn=1,nspinor)
+          enddo
+          write(50,*)
+        enddo
+        write(50,'("  imag part : ")')
+        do ispn=1,nspinor
+          do m1=-l,l
+          write(50,trim(fmt)) &
+            ((dimag(dmatrlm(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
+              m2=-l,l),jspn=1,nspinor)
+          enddo
+          write(50,*)
+        enddo
+        write(50,'("  in real harmonics (local basis) ")')
+        write(50,'("  real part : ")')
+        do ispn=1,nspinor
+          do m1=-l,l
+          write(50,trim(fmt)) &
+            ((dreal(dmatrlmlcs(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
+              m2=-l,l),jspn=1,nspinor)
+          enddo
+          write(50,*)
+        enddo
+        write(50,'("  imag part : ")')
+        do ispn=1,nspinor
+          do m1=-l,l
+          write(50,trim(fmt)) &
+            ((dimag(dmatrlmlcs(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
+              m2=-l,l),jspn=1,nspinor)
+          enddo
+          write(50,*)
+        enddo
+        write(50,'("  eigen vectors and values : ")')
+        do ispn=1,nspinor
+        do jspn=1,nspinor
+        write(50,'("  ispn jspn : ",2I2)')ispn,jspn
         do m1=-l,l
           do m2=-l,l
-            mtrx(m1+l+1,m2+l+1)=dreal(dmatrsh(idxlm(l,m1),idxlm(l,m2),1,1,ias))
+            i1=dreal(dmatrlm(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias))*1000000
+!            mtrx(m1+l+1,m2+l+1)=dreal(dmatrlm(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias))
+            mtrx(m1+l+1,m2+l+1)=i1/1000000.d0
           enddo
         enddo
         call diagdsy(2*l+1,mtrx,eval)
-        write(50,'("ias : ",I2)')ias
-        write(50,'("  in global basis : ")')
-        write(50,'("  real part : ")')
-        do m1=-l,l
-          write(50,'(2X,7F14.8)')(dreal(dmatrsh(idxlm(l,m1),idxlm(l,m2),1,1,ias)),m2=-l,l)  
-        enddo
-        write(50,'("  imag part : ")')
-        do m1=-l,l
-          write(50,'(2X,7F14.8)')(dimag(dmatrsh(idxlm(l,m1),idxlm(l,m2),1,1,ias)),m2=-l,l)  
-        enddo
-        write(50,'("  eigen-vectors : ")')
         do m1=1,2*l+1
           write(50,'(2X,7G18.10)')(mtrx(m1,m2),m2=1,2*l+1)
         enddo
-        write(50,'("  eigen-values : ")')
+        write(50,*)
         write(50,'(2X,7G18.10)')(eval(m1),m1=1,2*l+1)
-        write(50,'("  in local basis : ")')
-        write(50,'("  real part : ")')
-        do m1=-l,l
-          write(50,'(2X,7F14.8)')(dreal(dmatrshlcs(idxlm(l,m1),idxlm(l,m2),1,1,ias)),m2=-l,l)  
+        write(50,*)
         enddo
-        write(50,'("  imag part : ")')
-        do m1=-l,l
-          write(50,'(2X,7F14.8)')(dimag(dmatrshlcs(idxlm(l,m1),idxlm(l,m2),1,1,ias)),m2=-l,l)  
         enddo
-      enddo !ia
-      deallocate(mtrx,eval)
-    endif
-  enddo !is
-  write(50,*)
-  write(50,'("add to input file : ")')
-  write(50,*)
-  write(50,'("lcs")')
-  write(50,'(I4)')nlcs
-  do is=1,nspecies
-    l=llu(is)
-    if (l.gt.0) then
-      allocate(mtrx(2*l+1,2*l+1))
-      allocate(eval(2*l+1))
-      do ia=1,natoms(is)
-        ias=idxas(ia,is)
-        write(50,'(2I4)')ias,l
-        do m1=-l,l
-          do m2=-l,l
-            mtrx(m1+l+1,m2+l+1)=dreal(dmatrsh(idxlm(l,m1),idxlm(l,m2),1,1,ias))
+        if (.not.ldensmtrx) then
+          d1=0.d0
+          do ispn=1,nspinor
+            do m1=-l,l
+              d1(ispn)=d1(ispn)+dreal(dmatrlm(idxlm(l,m1),idxlm(l,m1),ispn,ispn,ias))
+            enddo
+            write(50,'("  spin : ",I1,"  occupancy : ",F12.6)')ispn,d1(ispn)
           enddo
-        enddo
-        call diagdsy(2*l+1,mtrx,eval)
-        do m1=1,2*l+1
-          write(50,'(7G18.10)')(mtrx(m1,m2),m2=1,2*l+1)
-        enddo
+          write(50,'("     total  occupancy : ",F12.6)')sum(d1)
+          write(50,*)
+        endif
       enddo !ia
       deallocate(mtrx,eval)
     endif
   enddo !is
+  if (.not.spinpol) then
+    write(50,*)
+    write(50,'("add to input file : ")')
+    write(50,*)
+    write(50,'("lcs")')
+    write(50,'(I4)')nlcs
+    do is=1,nspecies
+      l=llu(is)
+      if (l.gt.0) then
+        allocate(mtrx(2*l+1,2*l+1))
+        allocate(eval(2*l+1))
+        do ia=1,natoms(is)
+          ias=idxas(ia,is)
+          write(50,'(2I4)')ias,l
+          do m1=-l,l
+            do m2=-l,l
+              mtrx(m1+l+1,m2+l+1)=dreal(dmatrlm(idxlm(l,m1),idxlm(l,m2),1,1,ias))
+            enddo
+          enddo
+          call diagdsy(2*l+1,mtrx,eval)
+          do m1=1,2*l+1
+            write(50,'(7G18.10)')(mtrx(m1,m2),m2=1,2*l+1)
+          enddo
+        enddo !ia
+        deallocate(mtrx,eval)
+      endif
+    enddo !is
+  endif
   close(50)
 endif  
 
-deallocate(wfsvmt,apwalm,wf1,dmatrsh)
-deallocate(dmatrshlcs,dm1,dm2)
+deallocate(wfsvmt,apwalm,wf1,dmatrlm)
+deallocate(dmatrlmlcs,dmatylm,dm2)
 
 return
 end
