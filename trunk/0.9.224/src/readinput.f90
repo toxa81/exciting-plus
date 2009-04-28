@@ -958,7 +958,12 @@ case('wannier')
   enddo
   allocate(wann_iatom(3,wann_natom))
   do i=1,wann_natom
-    read(50,*,err=20)(wann_iatom(1,i),wann_iatom(1+l,i),l=1,wann_nspin)
+!    read(50,*,err=20)(wann_iatom(1,i),wann_iatom(1+l,i),l=1,wann_nspin)
+    if (wann_nspin.eq.1) then
+      read(50,*,err=20) wann_iatom(1,i), wann_iatom(2,i)
+    else
+      read(50,*,err=20) wann_iatom(1,i), wann_iatom(2,i), wann_iatom(3,i)
+    end if
   enddo
 case('wannier1')
   read(50,*,err=20)(zero3d(i),i=1,3)
@@ -968,6 +973,8 @@ case('wannier1')
   read(50,*,err=20)(nrxyz(i),i=1,3)
   read(50,*,err=20)nwfplot,firstwf
   read(50,*,err=20)iwfv
+case('bandrange')
+  read(50,*,err=20)bndranglow,bndranghi
 case('densmtrx')
   read(50,*,err=20) dm_e1,dm_e2
   ldensmtrx=.true.

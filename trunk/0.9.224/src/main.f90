@@ -73,7 +73,7 @@ do itask=1,ntasks
     call potplot
   case(51,52,53)
     call elfplot
-  case(61,62,63,162)
+  case(61,62,63,64,162)
     call wfplot
   case(361,362,363)
     call wann_plot

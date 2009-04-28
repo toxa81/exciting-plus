@@ -964,6 +964,8 @@ complex(8), allocatable :: yrlm(:,:)
 complex(8), allocatable :: rylm_lcs(:,:,:)
 ! lcs real to complex
 complex(8), allocatable :: yrlm_lcs(:,:,:)
+! band range for task 64
+integer bndranglow, bndranghi
 
 ! unit conversion
 real(8), parameter :: ha2ev=27.21138386d0
