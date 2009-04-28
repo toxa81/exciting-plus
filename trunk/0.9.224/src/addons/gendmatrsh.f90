@@ -7,6 +7,9 @@ complex(8), allocatable :: wf1(:,:,:)
 complex(8), allocatable :: dmatrlm(:,:,:,:,:)
 complex(8), allocatable :: dmatylm(:,:,:,:,:)
 complex(8), allocatable :: dmatrlmlcs(:,:,:,:,:)
+complex(8), allocatable :: ematrlm(:,:,:,:,:)
+complex(8), allocatable :: ematylm(:,:,:,:,:)
+complex(8), allocatable :: ematrlmlcs(:,:,:,:,:)
 integer is,ia,ias,l,lm1,lm2,lm3,m1,m2,io1,io2,ispn,jspn,j,nlcs
 real(8), allocatable :: mtrx(:,:)
 real(8), allocatable :: eval(:)
@@ -25,19 +28,13 @@ allocate(wf1(lmmaxlu,nrfmax,nstsv))
 allocate(dmatrlm(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
 allocate(dmatylm(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
 allocate(dmatrlmlcs(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
+allocate(ematrlm(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
+allocate(ematylm(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
+allocate(ematrlmlcs(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
 allocate(dm2(lmmaxlu,lmmaxlu))
 
-!if (dmbnd1.eq.-1) then
-!  ldensmtrx=.false.
-!  ib1=1
-!  ib2=nstfv
-!else
-!  ldensmtrx=.true.
-!  ib1=dmbnd1
-!  ib2=dmbnd2
-!endif
-
 dmatylm=dcmplx(0.d0,0.d0)
+ematylm=dcmplx(0.d0,0.d0)
 ! begin loop over k-points
 do ikloc=1,nkptloc(iproc)
   call match(ngk(1,ikglob(ikloc)),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc), &
@@ -72,12 +69,8 @@ do ikloc=1,nkptloc(iproc)
             dmatylm(lm1,lm2,ispn,jspn,ias)=dmatylm(lm1,lm2,ispn,jspn,ias)+&
               z1*occsv(j,ikglob(ikloc))
           endif
-!          z1=wf1(lm1,io1,j)*dconjg(wf1(lm2,io2,j))*&
-!            urfprod(l,io1,io2,ias)*wkpt(ikglob(ikloc))
-!          if (ldensmtrx) then
-!            dm1(lm1,lm2,ispn,ispn,ias)=dm1(lm1,lm2,ispn,ispn,ias)+z1
-!          else
-!          endif
+          ematylm(lm1,lm2,ispn,jspn,ias)=ematylm(lm1,lm2,ispn,jspn,ias)+&
+              z1*evalsv(j,ikglob(ikloc))
         enddo
         enddo
         enddo
@@ -91,7 +84,9 @@ do ikloc=1,nkptloc(iproc)
 enddo !ikloc
 
 call zsync(dmatylm,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,.true.,.true.)
+call zsync(ematylm,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,.true.,.true.)
 call symdmat(lmaxlu,lmmaxlu,dmatylm)
+call symdmat(lmaxlu,lmmaxlu,ematylm)
 
 dmatrlm=dcmplx(0.d0,0.d0)
 dmatrlmlcs=dcmplx(0.d0,0.d0)
@@ -115,6 +110,23 @@ do ias=1,natmtot
       enddo
     enddo
   enddo
+! e.mtrx. in GCS in RSH
+  dm2=dcmplx(0.d0,0.d0)
+  do lm1=1,lmmaxlu
+    do lm2=1,lmmaxlu
+      do lm3=1,lmmaxlu
+        dm2(lm1,lm2)=dm2(lm1,lm2)+dconjg(rylm(lm1,lm3))*ematylm(lm3,lm2,ispn,jspn,ias)
+      enddo
+    enddo
+  enddo
+  do lm1=1,lmmaxlu
+    do lm2=1,lmmaxlu
+      do lm3=1,lmmaxlu
+        ematrlm(lm1,lm2,ispn,jspn,ias)=ematrlm(lm1,lm2,ispn,jspn,ias) + &
+          dm2(lm1,lm3)*rylm(lm2,lm3)
+      enddo
+    enddo
+  enddo
 ! dens.mtrx. in LCS in RSH
   dm2=dcmplx(0.d0,0.d0)
   do lm1=1,lmmaxlu
@@ -128,6 +140,23 @@ do ias=1,natmtot
     do lm2=1,lmmaxlu
       do lm3=1,lmmaxlu
         dmatrlmlcs(lm1,lm2,ispn,jspn,ias)=dmatrlmlcs(lm1,lm2,ispn,jspn,ias) + &
+          dm2(lm1,lm3)*rylm_lcs(lm2,lm3,ias)
+      enddo
+    enddo
+  enddo
+! e.mtrx. in LCS in RSH
+  dm2=dcmplx(0.d0,0.d0)
+  do lm1=1,lmmaxlu
+    do lm2=1,lmmaxlu
+      do lm3=1,lmmaxlu
+        dm2(lm1,lm2)=dm2(lm1,lm2)+dconjg(rylm_lcs(lm1,lm3,ias))*ematylm(lm3,lm2,ispn,jspn,ias)
+      enddo
+    enddo
+  enddo
+  do lm1=1,lmmaxlu
+    do lm2=1,lmmaxlu
+      do lm3=1,lmmaxlu
+        ematrlmlcs(lm1,lm2,ispn,jspn,ias)=ematrlmlcs(lm1,lm2,ispn,jspn,ias) + &
           dm2(lm1,lm3)*rylm_lcs(lm2,lm3,ias)
       enddo
     enddo
@@ -248,6 +277,34 @@ if (iproc.eq.0) then
           write(50,'("     total  occupancy : ",F12.6)')sum(d1)
           write(50,*)
         endif
+
+        write(50,'("Energy matrix in real harmonics (local basis) ")')
+        write(50,'("  real part : ")')
+        do ispn=1,nspinor
+          do m1=-l,l
+          write(50,trim(fmt)) &
+            ((dreal(ematrlmlcs(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
+              m2=-l,l),jspn=1,nspinor)
+          enddo
+          write(50,*)
+        enddo
+        write(50,'("  imag part : ")')
+        do ispn=1,nspinor
+          do m1=-l,l
+          write(50,trim(fmt)) &
+            ((dimag(ematrlmlcs(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
+              m2=-l,l),jspn=1,nspinor)
+          enddo
+          write(50,*)
+        enddo
+	d1=0.d0
+        do ispn=1,nspinor
+          do m1=-l,l
+            d1(ispn)=d1(ispn)+dreal(ematrlmlcs(idxlm(l,m1),idxlm(l,m1),ispn,ispn,ias))
+          enddo
+          write(50,'("  spin : ",I1,"  E_l: ",F12.6)')ispn,d1(ispn)/(2*l+1)
+        enddo
+	
       enddo !ia
       deallocate(mtrx,eval)
     endif
