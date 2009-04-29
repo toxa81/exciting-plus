@@ -48,33 +48,33 @@ mpi_periods=.false.
 comm_cart=comm_null
 
 ! normally, to create cartiesin grid, one needs to do a single call
-! call mpi_cart_create(MPI_COMM_WORLD,mpi_ndims,mpi_dims,mpi_periods,   &
-!   .false.,comm_cart,ierr)
+ call mpi_cart_create(MPI_COMM_WORLD,mpi_ndims,mpi_dims,mpi_periods,   &
+   .false.,comm_cart,ierr)
 ! but on Cray this doesn't work if number of world processors greater than
 !  the number of processors in the grid
 !
 ! we'll create grid in a different way
-call mpi_comm_group(MPI_COMM_WORLD,group_world,ierr)
-nproc_grid=mpi_dims(1)
-do i=2,mpi_ndims
-  nproc_grid=nproc_grid*mpi_dims(i)
-enddo
-
-group_tmp=MPI_GROUP_EMPTY
-allocate(ranks(nproc_grid))
-do i=1,nproc_grid
-  ranks(i)=i-1
-enddo
-call mpi_group_incl(group_world,nproc_grid,ranks,group_tmp,ierr)
-deallocate(ranks)
-if (iproc.lt.nproc_grid) then
-  call mpi_comm_create(MPI_COMM_WORLD,group_tmp,comm_tmp,ierr)
-endif
-
-if (iproc.lt.nproc_grid) then
-  call mpi_cart_create(comm_tmp,mpi_ndims,mpi_dims,mpi_periods,   &
-   .false.,comm_cart,ierr)
-endif
+!call mpi_comm_group(MPI_COMM_WORLD,group_world,ierr)
+!nproc_grid=mpi_dims(1)
+!do i=2,mpi_ndims
+!  nproc_grid=nproc_grid*mpi_dims(i)
+!enddo
+!
+!group_tmp=MPI_GROUP_EMPTY
+!allocate(ranks(nproc_grid))
+!do i=1,nproc_grid
+!  ranks(i)=i-1
+!enddo
+!call mpi_group_incl(group_world,nproc_grid,ranks,group_tmp,ierr)
+!deallocate(ranks)
+!if (iproc.lt.nproc_grid) then
+!  call mpi_comm_create(MPI_COMM_WORLD,group_tmp,comm_tmp,ierr)
+!endif
+!
+!if (iproc.lt.nproc_grid) then
+!  call mpi_cart_create(comm_tmp,mpi_ndims,mpi_dims,mpi_periods,   &
+!   .false.,comm_cart,ierr)
+!endif
 
 mpi_x=-1
 if (in_cart()) then 
@@ -98,10 +98,10 @@ if (in_cart()) then
     call mpi_cart_sub(comm_cart,(/.true.,.true.,.false./),comm_cart_110,ierr)
   endif
 endif
-if (iproc.lt.nproc_grid) then
-  call mpi_comm_free(comm_tmp,ierr)
-  call mpi_group_free(group_tmp,ierr)
-endif
+!if (iproc.lt.nproc_grid) then
+!  call mpi_comm_free(comm_tmp,ierr)
+!  call mpi_group_free(group_tmp,ierr)
+!endif
 #else
 mpi_dims=1
 mpi_x=0
