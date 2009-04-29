@@ -45,13 +45,6 @@ call init0
 call init1
 call pinit_cart
 
-if (ncmag) then
-  write(*,*)
-  write(*,'("Error(response): can''t do response + non-collinear magnetism")')
-  write(*,*)
-  call pstop
-endif
-
 if (.not.spinpol) then
   spin_me=1
 endif
