@@ -61,9 +61,14 @@ if (spinpol) then
 else
   nsd=1
 end if
+allocate(done(nstfv,nspnfv))
 allocate(rflm(lmmaxvr,nsd))
 allocate(rfmt(lmmaxvr,nrcmtmax,nsd))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
+allocate(wfmt1(lmmaxvr,nrcmtmax))
+if (tevecsv) allocate(wfmt2(lmmaxvr,nrcmtmax,nstfv,nspnfv))
+allocate(wfmt3(lmmaxvr,nrcmtmax,nspinor))
+allocate(zfft(ngrtot,nspinor))
 ! find the matching coefficients
 do ispn=1,nspnfv
   call match(ngk(ispn,ikglob(ik)),gkc(:,ispn,ik),tpgkc(:,:,ispn,ik), &
@@ -76,15 +81,8 @@ do is=1,nspecies
   n=lmmaxvr*nrcmt(is)
   do ia=1,natoms(is)
     ias=idxas(ia,is)
-    rfmt(:,:,:)=0.d0
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(j,wo,wfmt1,wfmt2,wfmt3,i,ispn,jspn,ist,irc,itp,done,zt1,zt2,zt3)
-    allocate(done(nstfv,nspnfv))
-    allocate(wfmt1(lmmaxvr,nrcmtmax))
-    if (tevecsv) allocate(wfmt2(lmmaxvr,nrcmtmax,nstfv,nspnfv))
-    allocate(wfmt3(lmmaxvr,nrcmtmax,nspinor))
     done(:,:)=.false.
-!$OMP DO
+    rfmt(:,:,:)=0.d0
     do j=1,nstsv
       wo=wkpt(ikglob(ik))*occsv(j,ikglob(ik))
       if (abs(wo).gt.epsocc) then
@@ -150,12 +148,6 @@ do is=1,nspecies
         end if
       end if
     end do
-!$OMP END DO
-    deallocate(done)
-    deallocate(wfmt1)
-    if (tevecsv) deallocate(wfmt2)
-    deallocate(wfmt3)
-!$OMP END PARALLEL
 ! convert to spherical harmonics and add to rhomt and magmt
     irc=0
     do ir=1,nrmt(is),lradstp
@@ -184,10 +176,6 @@ end do
 !------------------------------!
 !     interstitial density     !
 !------------------------------!
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(j,wo,t1,t2,t3,zfft,i,ispn,jspn,ist,zt1,zt2,zt3,igk,ifg,ir)
-allocate(zfft(ngrtot,nspinor))
-!$OMP DO
 do j=1,nstsv
   wo=wkpt(ikglob(ik))*occsv(j,ikglob(ik))
   if (abs(wo).gt.epsocc) then
@@ -250,10 +238,8 @@ do j=1,nstsv
     end if
   end if
 end do
-!$OMP END DO
-deallocate(zfft)
-!$OMP END PARALLEL
-deallocate(rflm,rfmt,apwalm)
+deallocate(done,rflm,rfmt,apwalm,wfmt1,wfmt3,zfft)
+if (tevecsv) deallocate(wfmt2)
 call timesec(ts1)
 timerho=timerho+ts1-ts0
 return
