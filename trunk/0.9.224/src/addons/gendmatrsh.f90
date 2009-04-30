@@ -275,6 +275,7 @@ if (iproc.eq.0) then
             write(50,'("  spin : ",I1,"  occupancy : ",F12.6)')ispn,d1(ispn)
           enddo
           write(50,'("     total  occupancy : ",F12.6)')sum(d1)
+          if (spinpol) write(50,'("     spin moment : ",F12.6)')d1(1)-d1(2)
           write(50,*)
         endif
 
