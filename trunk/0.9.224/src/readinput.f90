@@ -991,7 +991,17 @@ case('lcs')
     do lm1=l**2+1,(l+1)**2
       read(50,*,err=20)(lcsrsh(lm1,lm2,i),lm2=l**2+1,(l+1)**2)
     enddo
-  enddo  
+  enddo 
+case('clda')
+  read(50,*,err=20)clda
+  read(50,*,err=20)clda_rlmlcs
+  read(50,*,err=20)clda_norb,clda_iat(1),clda_ispn(1),clda_iat(2),clda_ispn(2)
+  allocate(clda_iorb(2,clda_norb))
+  allocate(clda_vorb(2,clda_norb))
+  read(50,*,err=20)(clda_iorb(1,i),i=1,clda_norb)
+  read(50,*,err=20)(clda_vorb(1,i),i=1,clda_norb)
+  read(50,*,err=20)(clda_iorb(2,i),i=1,clda_norb)
+  read(50,*,err=20)(clda_vorb(2,i),i=1,clda_norb)
 case('')
   goto 10
 case default

@@ -2,7 +2,7 @@ subroutine wann_init
 use modmain
 implicit none
 
-integer i,n,lm,ispn,iwgrp,itype
+integer i,j,n,lm,ispn,iwgrp,itype
 
 if (nspnfv.eq.2) then
   write(*,*)
@@ -28,17 +28,23 @@ enddo
 wann_nmax=maxval(nwann)
 if (allocated(iwann)) deallocate(iwann)
 allocate(iwann(wann_nmax,wann_nspin,4))
+if (allocated(iasiwann)) deallocate(iasiwann)
+allocate(iasiwann(natmtot,lmmaxlu,nspinor))
+iasiwann=-1
 
 do ispn=1,wann_nspin
   n=0
   do i=1,wann_natom
     iwgrp=wann_iatom(1+ispn,i)
-    do lm=1,wann_iorbgrp(0,1,iwgrp)
+    do j=1,wann_iorbgrp(0,1,iwgrp)
       n=n+1
+      lm=wann_iorbgrp(j,1,iwgrp)
+      itype=wann_iorbgrp(j,2,iwgrp)
       iwann(n,ispn,1)=wann_iatom(1,i)
-      iwann(n,ispn,2)=wann_iorbgrp(lm,1,iwgrp)
-      iwann(n,ispn,3)=lm2l(iwann(n,ispn,2))
-      iwann(n,ispn,4)=wann_iorbgrp(lm,2,iwgrp)
+      iwann(n,ispn,2)=lm
+      iwann(n,ispn,3)=lm2l(lm)
+      iwann(n,ispn,4)=itype
+      iasiwann(iwann(n,ispn,1),iwann(n,ispn,2),ispn)=n
     enddo
   enddo !i
 enddo !ispn

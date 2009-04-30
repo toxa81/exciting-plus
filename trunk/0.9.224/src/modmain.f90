@@ -1097,6 +1097,8 @@ integer nwfplot
 integer firstwf
 integer iwfv
 
+integer, allocatable :: iasiwann(:,:,:)
+
 !----------------!
 !      timer     !
 !----------------!
@@ -1107,6 +1109,18 @@ integer, parameter :: t_seceqnfv_diag=2
 integer, parameter :: t_seceqnsv_setup=3
 integer, parameter :: t_seceqnsv_diag=4
 integer, parameter :: t_rho=5
+
+
+!-----------------------!
+!      constrain LDA    !
+!-----------------------!
+logical clda
+logical clda_rlmlcs
+integer clda_norb
+integer clda_iat(2)
+integer clda_ispn(2)
+integer, allocatable :: clda_iorb(:,:)
+real(8), allocatable :: clda_vorb(:,:)
 
 end module
 

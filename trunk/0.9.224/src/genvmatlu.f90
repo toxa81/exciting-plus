@@ -6,11 +6,22 @@
 subroutine genvmatlu
 use modmain
 ! local variables
-integer ias
+integer ias,lm
 real(8) t1,t2
 ! allocatable arrays
 real(8), allocatable :: enfll(:)
 complex(8), allocatable :: vmfll(:,:,:,:,:)
+! constrained LDA
+if (clda) then
+  vmatlu=0.d0
+  do lm=1,clda_norb
+    vmatlu(clda_iorb(1,lm),clda_iorb(1,lm),clda_ispn(1),clda_ispn(1),clda_iat(1))=&
+      clda_vorb(1,lm)
+    vmatlu(clda_iorb(2,lm),clda_iorb(2,lm),clda_ispn(2),clda_ispn(2),clda_iat(2))=&
+      clda_vorb(2,lm)
+  enddo
+  return
+endif
 ! fully localised limit (FLL) or around mean field (AFM)
 if ((ldapu.eq.1).or.(ldapu.eq.2)) then
   call genvmatlu_12
