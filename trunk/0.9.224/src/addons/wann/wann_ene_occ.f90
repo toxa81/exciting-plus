@@ -113,6 +113,11 @@ if (iproc.eq.0) then
           do lm1=l**2+1,(l+1)**2
             write(60,'(2X,7F12.6)')(dimag(wf_occ_mtrx(lm1,lm2,ispn,ispn,ias)),lm2=l**2+1,(l+1)**2)
           enddo
+          w2=0.d0
+          do lm1=l**2+1,(l+1)**2
+            w2=w2+dreal(wf_occ_mtrx(lm1,lm1,ispn,ispn,ias))
+          enddo
+          write(60,'("    occupancy : ",F12.6)')w2
           write(60,'("  energy matrix")')
           write(60,'("    real part")')
           do lm1=l**2+1,(l+1)**2
@@ -122,6 +127,13 @@ if (iproc.eq.0) then
           do lm1=l**2+1,(l+1)**2
             write(60,'(2X,7F12.6)')(dimag(wf_ene_mtrx(lm1,lm2,ispn,ispn,ias)),lm2=l**2+1,(l+1)**2)
           enddo
+          w2=0.d0
+          n=0
+          do lm1=l**2+1,(l+1)**2
+            if (iasiwann(ias,lm1,ispn).gt.0) n=n+1
+            w2=w2+dreal(wf_ene_mtrx(lm1,lm1,ispn,ispn,ias))
+          enddo
+          if (n.ne.0)   write(60,'("    average energy : ",F12.6)')w2/n
         endif
       enddo
     enddo
