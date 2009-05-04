@@ -92,6 +92,24 @@ do ias=1,natmtot
   call mtrxbas(lmmaxlu,rylm_lcs(1,1,ias),wf_occ_mtrx(1,1,1,1,ias))
   call mtrxbas(lmmaxlu,rylm_lcs(1,1,ias),wf_ene_mtrx(1,1,1,1,ias))
 enddo
+! save energies and occupancies
+do ispn=1,wann_nspin
+  do i=1,wann_natom
+    ias=wann_iatom(1,i)
+    do l=0,lmaxlu
+      do m1=-l,l
+        lm1=idxlm(l,m1)
+        lm2=idxlm(l,m2)
+        n1=iasiwann(ias,lm1,ispn)
+        if (n1.ne.-1) then
+          wann_ene(n1,ispn)=wf_ene_mtrx(lm1,lm1,ispn,ispn,ias)
+          wann_occ(n1,ispn)=wf_occ_mtrx(lm1,lm1,ispn,ispn,ias)
+        endif
+      enddo !m1
+    enddo !l
+  enddo !i
+enddo !ispn
+
 if (iproc.eq.0) then
   write(60,*)
   write(60,'("On-site matrices in WF basis")')

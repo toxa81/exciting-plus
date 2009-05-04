@@ -1,4 +1,4 @@
-subroutine genwfpoco(ik,ngp,igpig,evecfv,evecsv,apwalm,wann_poco)
+subroutine genwfpoco(ik,ngp,igpig,evecfv,apwalm,wann_poco)
 use modmain
 implicit none
 ! arguments
@@ -6,27 +6,39 @@ integer, intent(in) :: ik
 integer, intent(in) :: ngp
 integer, intent(in) :: igpig(ngkmax)
 complex(8), intent(in) :: evecfv(nmatmax,nstfv)
-complex(8), intent(in) :: evecsv(nstsv,nstsv)
 complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 complex(8), intent(out) :: wann_poco(nstsv,nstsv)
 
-integer i,j,n,ispn,itype
+integer i,j,n,ispn,itype,istfv
 complex(8) zt1
 complex(8), allocatable :: wffvwann(:,:,:)
 complex(8), allocatable :: wffvmt(:,:,:,:)
+complex(8), allocatable :: pwit(:,:)
 
 ! calculate first-fariatinal states
-allocate(wffvmt(nstfv,nrfmax,lmmaxvr,natmtot))
-call genwffvmt(lmaxvr,lmmaxvr,ngp,evecfv,apwalm,wffvmt)
+allocate(wffvmt(lmmaxvr,nrfmax,natmtot,nstfv))
+call genwffvmt2(ngp,evecfv,apwalm,wffvmt)
+
+wann_poco=zzero
+
+allocate(pwit(ngp,ngp))
+call genpwit(ngp,ngp,igpig,igpig,(/0,0,0/),pwit)
 ! calculate <u_{n,k,\sigma}|\phi_{i}>, where |u_{n,k,\sigma}> are Fourier-transforms of 
 !  Wannier functions and |\phi_{i}> are first-variational states
 allocate(wffvwann(nstfv,wann_nmax,wann_nspin))
-call genwffvwann(ik,ngp,igpig,wffvmt,evecfv,wffvwann)
+do ispn=1,wann_nspin
+  do n=1,nwann(ispn)
+    do istfv=1,nstfv
+      call genwfprod(wann_unkmt(1,1,1,n,ispn,ik),wann_unkit(1,n,ispn,ik),&
+        wffvmt(1,1,1,istfv),evecfv(1,istfv),ngp,ngp,pwit,wffvwann(istfv,n,ispn))
+    enddo
+  enddo
+enddo
 
 do i=1,nstfv
   do j=1,nstfv
     do ispn=1,wann_nspin
-      zt1=dcmplx(0.d0,0.d0)
+      zt1=zzero
       do n=1,nwann(ispn)
         itype=iwann(n,ispn,4)
         zt1=zt1+wffvwann(i,n,ispn)*dconjg(wffvwann(j,n,ispn))*wann_v(itype)
@@ -36,8 +48,7 @@ do i=1,nstfv
   enddo
 enddo
 deallocate(wffvmt,wffvwann)
-
-
+deallocate(pwit)
 return
 end
 

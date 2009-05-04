@@ -284,7 +284,7 @@ do ispn=1,nspinor
 end do
 if (wannier.and.wann_add_poco) then
   allocate(wann_poco(nstsv,nstsv))
-  call genwfpoco(ik,ngk(1,ikglob(ik)),igkig(1,1,ik),evecfv,evecsv, &
+  call genwfpoco(ik,ngk(1,ikglob(ik)),igkig(1,1,ik),evecfv, &
     apwalm,wann_poco)
   evecsv(:,:)=evecsv(:,:)+wann_poco(:,:)
   deallocate(wann_poco)

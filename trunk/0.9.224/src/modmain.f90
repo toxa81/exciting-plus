@@ -1088,6 +1088,9 @@ complex(8), allocatable :: wann_h(:,:,:,:)
 ! e(k) of WF H(k) (required for band-sctructure plot only)
 real(8), allocatable :: wann_e(:,:,:)
 
+real(8), allocatable :: wann_ene(:,:)
+real(8), allocatable :: wann_occ(:,:)
+
 complex(8), allocatable :: wf_p(:,:,:,:,:)
 
 real(8) zero3d(3)

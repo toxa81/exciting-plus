@@ -88,6 +88,13 @@ if (allocated(wann_e)) deallocate(wann_e)
 allocate(wann_e(wann_nmax,wann_nspin,nkpt))
 wann_e=0.d0
 
+if (allocated(wann_ene)) deallocate(wann_ene)
+allocate(wann_ene(wann_nmax,wann_nspin))
+wann_ene=0.d0
+if (allocated(wann_occ)) deallocate(wann_occ)
+allocate(wann_occ(wann_nmax,wann_nspin))
+wann_occ=0.d0
+
 !if (allocated(wf_p)) deallocate(wf_p)
 !allocate(wf_p(3,wf_dim,wf_dim,wann_nspin,nkpt))
 !wf_p=dcmplx(0.d0,0.d0)

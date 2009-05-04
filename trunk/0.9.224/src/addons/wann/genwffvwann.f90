@@ -13,7 +13,10 @@ complex(8), allocatable :: a(:,:)
 integer is,ia,ias,ig1,ig2,istfv,io1,io2,l,m,lm,i,ispn,n
 integer iv2g(3)
 real(8) v1(3),v2(3),tp2g(2),len2g
-complex(8) sfac2g(natmtot)
+complex(8) sfac2g(natmtot),z1
+
+
+
 
 wffvwann=dcmplx(0.d0,0.d0)
 

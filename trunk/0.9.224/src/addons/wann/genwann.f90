@@ -5,10 +5,11 @@ implicit none
 integer, intent(in) :: ik
 complex(8), intent(in) :: evecfv(nmatmax,nstfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
-
+! local variables
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: wfsvit(:,:,:)
+complex(8), allocatable :: wann_c_old(:,:,:)
 integer ispn,i,j,n,m1,m2
 complex(8), allocatable :: zt2(:,:)
 integer, external :: ikglob
@@ -16,12 +17,16 @@ integer, external :: ikglob
 allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
 allocate(wfsvit(ngkmax,nstsv,nspinor))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
+allocate(wann_c_old(wann_nmax,nstfv,wann_nspin)) 
 call match(ngk(1,ikglob(ik)),gkc(1,1,ik),tpgkc(1,1,1,ik),sfacgk(1,1,1,ik),apwalm)
 ! generate second-varioational wave-functions
 call genwfsvmt(lmaxvr,lmmaxvr,ngk(1,ikglob(ik)),evecfv,evecsv,apwalm,wfsvmt)
 call genwfsvit(ngk(1,ikglob(ik)),evecfv,evecsv,wfsvit)
 ! calculate WF expansion coefficients
+wann_c_old(:,:,:)=wann_c(:,:,:,ik)
 call genwann_c(evalsv(1,ikglob(ik)),wfsvmt,wann_c(1,1,1,ik))
+wann_c(:,:,:,ik)=0.5d0*wann_c(:,:,:,ik)+0.5d0*wann_c_old(:,:,:)
+
 ! compute H(k) in WF basis
 do ispn=1,wann_nspin
   allocate(zt2(nwann(ispn),nwann(ispn)))
@@ -52,7 +57,7 @@ do ispn=1,wann_nspin
   enddo
 enddo
 
-deallocate(wfsvmt,wfsvit,apwalm)
+deallocate(wfsvmt,wfsvit,apwalm,wann_c_old)
 
 return
 end
