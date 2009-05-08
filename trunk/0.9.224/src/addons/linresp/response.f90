@@ -130,23 +130,23 @@ if (in_cart()) then
       call flushifc(150)
     endif
 ! if parallel I/O
-#ifdef _PIO_
-    occsvnr=0.d0
-    evalsvnr=0.d0
-! only subset of processors will read from file
-    if (root_cart((/0,1,1/))) then
-      do ikloc=1,nkptnr_loc
-        ik=iknrglob2(ikloc,mpi_x(1))
-        call getoccsv(vklnr(1,ik),occsvnr(1,ik))
-        call getevalsv(vklnr(1,ik),evalsvnr(1,ik))
-      enddo
-      call d_reduce_cart(comm_cart_100,.true.,evalsvnr,nstsv*nkptnr)
-      call d_reduce_cart(comm_cart_100,.true.,occsvnr,nstsv*nkptnr)
-    endif
-    call d_bcast_cart(comm_cart_011,evalsvnr,nstsv*nkptnr)
-    call d_bcast_cart(comm_cart_011,occsvnr,nstsv*nkptnr)
-! if not parallel I/O
-#else
+!#ifdef _PIO_
+!    occsvnr=0.d0
+!    evalsvnr=0.d0
+!! only subset of processors will read from file
+!    if (root_cart((/0,1,1/))) then
+!      do ikloc=1,nkptnr_loc
+!        ik=iknrglob2(ikloc,mpi_x(1))
+!        call getoccsv(vklnr(1,ik),occsvnr(1,ik))
+!        call getevalsv(vklnr(1,ik),evalsvnr(1,ik))
+!      enddo
+!      call d_reduce_cart(comm_cart_100,.true.,evalsvnr,nstsv*nkptnr)
+!      call d_reduce_cart(comm_cart_100,.true.,occsvnr,nstsv*nkptnr)
+!    endif
+!    call d_bcast_cart(comm_cart_011,evalsvnr,nstsv*nkptnr)
+!    call d_bcast_cart(comm_cart_011,occsvnr,nstsv*nkptnr)
+!! if not parallel I/O
+!#else
     if (iproc.eq.0) then 
       do ik=1,nkptnr
         call getoccsv(vklnr(1,ik),occsvnr(1,ik))
@@ -155,7 +155,7 @@ if (in_cart()) then
     endif
     call d_bcast_cart(comm_cart,evalsvnr,nstsv*nkptnr)
     call d_bcast_cart(comm_cart,occsvnr,nstsv*nkptnr)
-#endif
+!#endif
     call timer_stop(3)
     if (wproc) then
       write(150,'("Done in ",F8.2," seconds")')timer(3,2)
