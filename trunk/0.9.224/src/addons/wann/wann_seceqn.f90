@@ -35,7 +35,7 @@ do ispn=1,nspinor
 enddo
 
 ! collinear: block diagonalise H
-call zheev('V','U',nstfv,z1,nstsv,evalsv(1,ikglob(ik)),work,lwork,rwork,info)
+call zheev('V','U',nstfv,z1(1,1),nstsv,evalsv(1,ikglob(ik)),work,lwork,rwork,info)
 if (info.ne.0) goto 20
 i=nstfv+1
 call zheev('V','U',nstfv,z1(i,i),nstsv,evalsv(i,ikglob(ik)),work,lwork,rwork,info)
@@ -57,7 +57,10 @@ do i1=1,nstsv
 enddo
 evecsv=z2
 
-deallocate(z1,z2,rwork,work)
+deallocate(z1)
+deallocate(z2)
+deallocate(rwork)
+deallocate(work)
 return
 
 
