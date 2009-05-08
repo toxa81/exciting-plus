@@ -121,7 +121,7 @@ do ispn=1,wann_nspin
             urfprod(l,io1,io2,ias)*rylm_lcs(lm,lm1,ias)
         enddo !io1
       enddo !m
-      if (abs(prjao(n,j,ispn)).lt.0.05d0) prjao(n,j,ispn)=zzero
+      if (abs(prjao(n,j,ispn)).lt.0.05d0) prjao(n,j,ispn)=zzero 
     enddo !j
   enddo !n
 enddo !ispn
