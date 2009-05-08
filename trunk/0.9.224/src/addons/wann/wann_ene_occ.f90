@@ -36,13 +36,13 @@ if (iproc.eq.0) then
       write(60,'(1X,I2,1X,F12.6,1X,F12.6,1X,F12.6)')n,wf_ene(n,ispn),wf_ene(n,ispn)*ha2ev,wf_occ(n,ispn)
     enddo
   enddo
-  if (nwann(ispn).gt.10) then
-    write(60,*)
-    write(60,'("E1 : ",F12.6)')sum(wf_ene(1:5,1))/5.d0
-    write(60,'("E2 : ",F12.6)')sum(wf_ene(6:10,1))/5.d0
-    write(60,'("N1 : ",F12.6)')sum(wf_occ(1:5,1))
-    write(60,'("N2 : ",F12.6)')sum(wf_occ(6:10,1))
-  endif
+!  if (nwann(ispn).gt.10) then
+!    write(60,*)
+!    write(60,'("E1 : ",F12.6)')sum(wf_ene(1:5,1))/5.d0
+!    write(60,'("E2 : ",F12.6)')sum(wf_ene(6:10,1))/5.d0
+!    write(60,'("N1 : ",F12.6)')sum(wf_occ(1:5,1))
+!    write(60,'("N2 : ",F12.6)')sum(wf_occ(6:10,1))
+!  endif
 endif
 
 allocate(wf_ene_mtrx(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))

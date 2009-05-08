@@ -282,13 +282,13 @@ do ispn=1,nspinor
     evecsv(i,i)=evecsv(i,i)+evalfv(ist)
   end do
 end do
-if (wannier.and.wann_add_poco) then
-  allocate(wann_poco(nstsv,nstsv))
-  call genwfpoco(ik,ngk(1,ikglob(ik)),igkig(1,1,ik),evecfv, &
-    apwalm,wann_poco)
-  evecsv(:,:)=evecsv(:,:)+wann_poco(:,:)
-  deallocate(wann_poco)
-endif
+!if (wannier.and.wann_add_poco) then
+!  allocate(wann_poco(nstsv,nstsv))
+!  call genwfpoco(ik,ngk(1,ikglob(ik)),igkig(1,1,ik),evecfv, &
+!    apwalm,wann_poco)
+!  evecsv(:,:)=evecsv(:,:)+wann_poco(:,:)
+!  deallocate(wann_poco)
+!endif
 call timer_stop(t_seceqnsv_setup)
 call timer_start(t_seceqnsv_diag)
 ! diagonalise second-variational Hamiltonian

@@ -13,6 +13,7 @@ complex(8), allocatable :: wann_unkmt_new(:,:,:,:,:)
 complex(8), allocatable :: wann_unkit_new(:,:,:)
 integer ispn,i,j,n,m1,m2
 complex(8), allocatable :: zt2(:,:)
+real(8) d1
 integer, external :: ikglob
 ! allocate arrays
 allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
@@ -57,7 +58,12 @@ do ispn=1,wann_nspin
   enddo
 enddo
 
-!if (mod(iscl,10).eq.0) then
+!d1=sum(abs(wann_unkmt(:,:,:,:,:,ik)-wann_unkmt_new(:,:,:,:,:)))
+!d1=d1+sum(abs(wann_unkit(:,:,:,ik)-wann_unkit_new(:,:,:)))
+!
+!write(*,*)'ik=',ik,'wf_diff=',d1
+
+!if (mod(iscl,2).eq.0) then
 !  wann_unkmt(:,:,:,:,:,ik)=0.75d0*wann_unkmt(:,:,:,:,:,ik)+0.25d0*wann_unkmt_new(:,:,:,:,:)
 !  wann_unkit(:,:,:,ik)    =0.75d0*wann_unkit(:,:,:,ik)    +0.25d0*wann_unkit_new(:,:,:)
   wann_unkmt(:,:,:,:,:,ik)=wann_unkmt_new(:,:,:,:,:)
@@ -121,7 +127,7 @@ do ispn=1,wann_nspin
             urfprod(l,io1,io2,ias)*rylm_lcs(lm,lm1,ias)
         enddo !io1
       enddo !m
-      if (abs(prjao(n,j,ispn)).lt.0.05d0) prjao(n,j,ispn)=zzero 
+      if (abs(prjao(n,j,ispn)).lt.1d-2) prjao(n,j,ispn)=zzero 
     enddo !j
   enddo !n
 enddo !ispn
