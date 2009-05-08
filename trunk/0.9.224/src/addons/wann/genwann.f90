@@ -9,7 +9,8 @@ complex(8), intent(in) :: evecsv(nstsv,nstsv)
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: wfsvit(:,:,:)
-complex(8), allocatable :: wann_c_old(:,:,:)
+complex(8), allocatable :: wann_unkmt_new(:,:,:,:,:)
+complex(8), allocatable :: wann_unkit_new(:,:,:)
 integer ispn,i,j,n,m1,m2
 complex(8), allocatable :: zt2(:,:)
 integer, external :: ikglob
@@ -17,15 +18,12 @@ integer, external :: ikglob
 allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
 allocate(wfsvit(ngkmax,nstsv,nspinor))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-allocate(wann_c_old(wann_nmax,nstfv,wann_nspin)) 
 call match(ngk(1,ikglob(ik)),gkc(1,1,ik),tpgkc(1,1,1,ik),sfacgk(1,1,1,ik),apwalm)
 ! generate second-varioational wave-functions
 call genwfsvmt(lmaxvr,lmmaxvr,ngk(1,ikglob(ik)),evecfv,evecsv,apwalm,wfsvmt)
 call genwfsvit(ngk(1,ikglob(ik)),evecfv,evecsv,wfsvit)
 ! calculate WF expansion coefficients
-wann_c_old(:,:,:)=wann_c(:,:,:,ik)
 call genwann_c(evalsv(1,ikglob(ik)),wfsvmt,wann_c(1,1,1,ik))
-wann_c(:,:,:,ik)=0.5d0*wann_c(:,:,:,ik)+0.5d0*wann_c_old(:,:,:)
 
 ! compute H(k) in WF basis
 do ispn=1,wann_nspin
@@ -44,20 +42,29 @@ do ispn=1,wann_nspin
   deallocate(zt2)
 enddo !ispn
 ! compute Bloch-sums of Wannier functions
-wann_unkmt(:,:,:,:,:,ik)=dcmplx(0.d0,0.d0)
-wann_unkit(:,:,:,ik)=dcmplx(0.d0,0.d0)
+allocate(wann_unkmt_new(lmmaxvr,nrfmax,natmtot,wann_nmax,wann_nspin))
+allocate(wann_unkit_new(ngkmax,wann_nmax,wann_nspin))
+wann_unkmt_new=zzero
+wann_unkit_new=zzero
 do ispn=1,wann_nspin
   do n=1,nwann(ispn)
     do i=1,nstfv
-      wann_unkmt(:,:,:,n,ispn,ik)=wann_unkmt(:,:,:,n,ispn,ik) + &
+      wann_unkmt_new(:,:,:,n,ispn)=wann_unkmt_new(:,:,:,n,ispn) + &
         wfsvmt(:,:,:,i+(ispn-1)*nstfv,ispn)*wann_c(n,i,ispn,ik)
-      wann_unkit(:,n,ispn,ik)=wann_unkit(:,n,ispn,ik) + &
+      wann_unkit_new(:,n,ispn)=wann_unkit_new(:,n,ispn) + &
         wfsvit(:,i+(ispn-1)*nstfv,1)*wann_c(n,i,ispn,ik)
     enddo
   enddo
 enddo
 
-deallocate(wfsvmt,wfsvit,apwalm,wann_c_old)
+!if (mod(iscl,10).eq.0) then
+!  wann_unkmt(:,:,:,:,:,ik)=0.75d0*wann_unkmt(:,:,:,:,:,ik)+0.25d0*wann_unkmt_new(:,:,:,:,:)
+!  wann_unkit(:,:,:,ik)    =0.75d0*wann_unkit(:,:,:,ik)    +0.25d0*wann_unkit_new(:,:,:)
+  wann_unkmt(:,:,:,:,:,ik)=wann_unkmt_new(:,:,:,:,:)
+  wann_unkit(:,:,:,ik)=wann_unkit_new(:,:,:)
+!endif
+
+deallocate(wfsvmt,wfsvit,apwalm,wann_unkmt_new,wann_unkit_new)
 
 return
 end
@@ -114,6 +121,7 @@ do ispn=1,wann_nspin
             urfprod(l,io1,io2,ias)*rylm_lcs(lm,lm1,ias)
         enddo !io1
       enddo !m
+      if (abs(prjao(n,j,ispn)).lt.0.05d0) prjao(n,j,ispn)=zzero
     enddo !j
   enddo !n
 enddo !ispn
