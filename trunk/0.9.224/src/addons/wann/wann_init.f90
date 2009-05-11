@@ -95,6 +95,11 @@ if (allocated(wann_occ)) deallocate(wann_occ)
 allocate(wann_occ(wann_nmax,wann_nspin))
 wann_occ=0.d0
 
+!if (allocated(wannmt)) deallocate(wannmt)
+!allocate(wannmt(lmmaxvr,nrcmtmax,natmtot,nspinor,wann_nmax,nkptloc(iproc)))
+!if (allocated(wannit)) deallocate(wannit)
+!allocate(wannit(ngrtot,nspinor,wann_nmax,nkptloc(iproc)))
+
 !if (allocated(wf_p)) deallocate(wf_p)
 !allocate(wf_p(3,wf_dim,wf_dim,wann_nspin,nkpt))
 !wf_p=dcmplx(0.d0,0.d0)

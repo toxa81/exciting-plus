@@ -1083,6 +1083,9 @@ complex(8), allocatable :: wann_c(:,:,:,:)
 ! Bloch-sums of WF
 complex(8), allocatable :: wann_unkmt(:,:,:,:,:,:)
 complex(8), allocatable :: wann_unkit(:,:,:,:)
+
+!complex(8), allocatable :: wannmt(:,:,:,:,:,:)
+!complex(8), allocatable :: wannit(:,:,:,:)
 ! H(k) in WF basis
 complex(8), allocatable :: wann_h(:,:,:,:)
 ! e(k) of WF H(k) (required for band-sctructure plot only)

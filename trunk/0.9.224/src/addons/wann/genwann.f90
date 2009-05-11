@@ -53,7 +53,7 @@ do ispn=1,wann_nspin
       wann_unkmt_new(:,:,:,n,ispn)=wann_unkmt_new(:,:,:,n,ispn) + &
         wfsvmt(:,:,:,i+(ispn-1)*nstfv,ispn)*wann_c(n,i,ispn,ik)
       wann_unkit_new(:,n,ispn)=wann_unkit_new(:,n,ispn) + &
-        wfsvit(:,i+(ispn-1)*nstfv,1)*wann_c(n,i,ispn,ik)
+        wfsvit(:,i+(ispn-1)*nstfv,ispn)*wann_c(n,i,ispn,ik)
     enddo
   enddo
 enddo

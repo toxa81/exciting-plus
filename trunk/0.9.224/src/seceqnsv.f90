@@ -43,13 +43,12 @@ complex(8), allocatable :: zfft1(:)
 complex(8), allocatable :: zfft2(:)
 complex(8), allocatable :: zv(:,:)
 complex(8), allocatable :: work(:)
-complex(8), allocatable :: wann_poco(:,:)
 ! external functions
 complex(8) zdotc,zfmtinp
 external zdotc,zfmtinp
 integer, external :: ikglob
 ! spin-unpolarised case
-if ((.not.spinpol).and.(ldapu.eq.0).and..not.(wannier.and.wann_add_poco)) then
+if ((.not.spinpol).and.(ldapu.eq.0)) then
   do i=1,nstsv
     evalsv(i,ikglob(ik))=evalfv(i)
   end do
@@ -282,13 +281,6 @@ do ispn=1,nspinor
     evecsv(i,i)=evecsv(i,i)+evalfv(ist)
   end do
 end do
-!if (wannier.and.wann_add_poco) then
-!  allocate(wann_poco(nstsv,nstsv))
-!  call genwfpoco(ik,ngk(1,ikglob(ik)),igkig(1,1,ik),evecfv, &
-!    apwalm,wann_poco)
-!  evecsv(:,:)=evecsv(:,:)+wann_poco(:,:)
-!  deallocate(wann_poco)
-!endif
 call timer_stop(t_seceqnsv_setup)
 call timer_start(t_seceqnsv_diag)
 ! diagonalise second-variational Hamiltonian
