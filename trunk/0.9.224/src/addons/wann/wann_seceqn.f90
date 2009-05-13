@@ -6,8 +6,8 @@ integer, intent(in) :: ik
 complex(8), intent(inout) :: evecsv(nstsv,nstsv)
 ! local variables
 complex(8), allocatable :: z1(:,:),z2(:,:)
-real(8), allocatable :: work(:)
-complex(8), allocatable :: rwork(:)
+complex(8), allocatable :: work(:)
+real(8), allocatable :: rwork(:)
 integer i,j,n,ispn,itype,i1,i2,info,lwork
 integer, external :: ikglob
 
