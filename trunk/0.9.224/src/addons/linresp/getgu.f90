@@ -78,7 +78,7 @@ do ig=idx0+1,idx0+bs
 !  2) angular part of integral:
 !     <Y_{l_1 m_1} | e^{-i{G+x}x} | Y_{l_2 m_2}> =
 !       = \int d \Omega Y_{l_1 m_1}^{*}Y_{l_3 m_3}^{*} Y_{l_2 m_2} = gaunt coeff, which is real
-!     so we can conjugate the intagral:
+!     so we can conjugate the integral:
 !     \int d \Omega Y_{l_1 m_1} Y_{l_3 m_3} Y_{l_2 m_2}^{*} = gaunt(lm2,lm1,lm3)
                   gu(i,ias,ig)=t1*ylmgq0(lm3,ig)*dconjg(zi**l3)*fourpi*dconjg(sfacgq0(ig,ias))
                   igu(1,i,ias,ig)=lm1
