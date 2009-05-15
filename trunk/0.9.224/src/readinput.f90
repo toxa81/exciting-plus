@@ -936,15 +936,17 @@ case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_use_eint
   read(50,*,err=20) wann_add_poco
-  read(50,*,err=20) wann_natom,wann_nspin,wann_norbgrp,wann_ntype
-  allocate(wann_iorbgrp(0:16,2,wann_norbgrp))
+  read(50,*,err=20) wann_natom,wann_norbgrp,wann_ntype
+  allocate(wann_norb(wann_norbgrp))
+  allocate(wann_iorb(3,32,wann_norbgrp))
   allocate(wann_eint(2,wann_ntype))
   allocate(wann_nint(2,wann_ntype))
   allocate(wann_v(wann_ntype))
-  read(50,*,err=20) (wann_iorbgrp(0,1,i),i=1,wann_norbgrp)
   do i=1,wann_norbgrp
-    read(50,*,err=20) (wann_iorbgrp(l,1,i),l=1,wann_iorbgrp(0,1,i))
-    read(50,*,err=20) (wann_iorbgrp(l,2,i),l=1,wann_iorbgrp(0,1,i))
+    read(50,*,err=20) wann_norb(i)
+    read(50,*,err=20) (wann_iorb(1,l,i),l=1,wann_norb(i))
+    read(50,*,err=20) (wann_iorb(2,l,i),l=1,wann_norb(i))
+    read(50,*,err=20) (wann_iorb(3,l,i),l=1,wann_norb(i))
   enddo
   wann_eint=0.d0
   wann_nint=0
@@ -956,14 +958,9 @@ case('wannier')
       read(50,*,err=20) wann_nint(1,i),wann_nint(2,i),wann_v(i)
     endif
   enddo
-  allocate(wann_iatom(3,wann_natom))
+  allocate(wann_iprj(2,wann_natom))
   do i=1,wann_natom
-!    read(50,*,err=20)(wann_iatom(1,i),wann_iatom(1+l,i),l=1,wann_nspin)
-    if (wann_nspin.eq.1) then
-      read(50,*,err=20) wann_iatom(1,i), wann_iatom(2,i)
-    else
-      read(50,*,err=20) wann_iatom(1,i), wann_iatom(2,i), wann_iatom(3,i)
-    end if
+    read(50,*,err=20) wann_iprj(1,i), wann_iprj(2,i)
   enddo
 case('wannier1')
   read(50,*,err=20)(zero3d(i),i=1,3)

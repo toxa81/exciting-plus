@@ -71,6 +71,15 @@ do ig=idx0+1,idx0+bs
               if (abs(t1).gt.1d-10) then
                 i=i+1
                 if (.not.req) then
+!  1) sfacgq0 and ylmgq0 are generated for exp^{+i(G+q)x}
+!     expansion of a plane-wave: 
+!       exp^{+igx}=4\pi \sum_{l_3 m_3} i^{l_3} j_{l_3}(gr)Y_{l_3 m_3}^{*}(\hat g)Y_{l_3 m_3}(\hat r)
+!     but we need exp^{-i(G+q)x}, so expansion terms will be conjugated
+!  2) angular part of integral:
+!     <Y_{l_1 m_1} | e^{-i{G+x}x} | Y_{l_2 m_2}> =
+!       = \int d \Omega Y_{l_1 m_1}^{*}Y_{l_3 m_3}^{*} Y_{l_2 m_2} = gaunt coeff, which is real
+!     so we can conjugate the intagral:
+!     \int d \Omega Y_{l_1 m_1} Y_{l_3 m_3} Y_{l_2 m_2}^{*} = gaunt(lm2,lm1,lm3)
                   gu(i,ias,ig)=t1*ylmgq0(lm3,ig)*dconjg(zi**l3)*fourpi*dconjg(sfacgq0(ig,ias))
                   igu(1,i,ias,ig)=lm1
                   igu(2,i,ias,ig)=lm2

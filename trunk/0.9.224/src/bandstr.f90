@@ -122,7 +122,7 @@ if (task.eq.21) then
   deallocate(dmat,apwalm)
 endif
 call dsync(e,nstsv*nkpt,.true.,.false.)
-if (wannier) call dsync(wann_e,wann_nmax*wann_nspin*nkpt,.true.,.false.)
+if (wannier) call dsync(wann_e,nwann*nkpt,.true.,.false.)
 if (task.eq.21) then
   do ik=1,nkpt
     call rsync(bc(1,1,1,ik),(lmax+1)*natmtot*nstsv,.true.,.false.)
@@ -149,15 +149,12 @@ if (task.eq.20) then
   write(*,'(" band structure plot written to BAND.OUT")')
   if (wannier) then
     open(50,file='WANN_BAND.OUT',action='WRITE',form='FORMATTED')
-    do ispn=1,wann_nspin
-      write(50,'("# spin : ",I1)')ispn
-      do ist=1,nwann(ispn)
-        do ik=1,nkpt
-          write(50,'(2G18.10)') dpp1d(ik),wann_e(ist,ispn,ik)
-        end do
-        write(50,'("     ")')
+    do ist=1,nwann
+      do ik=1,nkpt
+        write(50,'(2G18.10)') dpp1d(ik),wann_e(ist,ik)
       end do
-    enddo !ispn
+      write(50,'("     ")')
+    end do
   endif
 else
   do is=1,nspecies

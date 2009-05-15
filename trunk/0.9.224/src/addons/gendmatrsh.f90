@@ -22,7 +22,7 @@ character*2 :: c2
 character*20 :: fmt
 integer, external :: ikglob
 
-allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
+allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 allocate(wf1(lmmaxlu,nrfmax,nstsv))
 allocate(dmatrlm(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
@@ -57,7 +57,7 @@ do ikloc=1,nkptloc(iproc)
 
           lm1=idxlm(l,m1)
           lm2=idxlm(l,m2)
-          z1=wfsvmt(lm1,io1,ias,j,ispn)*dconjg(wfsvmt(lm2,io2,ias,j,jspn))*&
+          z1=wfsvmt(lm1,io1,ias,ispn,j)*dconjg(wfsvmt(lm2,io2,ias,jspn,j))*&
             urfprod(l,io1,io2,ias)*wkpt(ikglob(ikloc))
             
           if (ldensmtrx) then

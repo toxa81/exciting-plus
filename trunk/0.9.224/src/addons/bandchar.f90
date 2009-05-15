@@ -65,7 +65,7 @@ complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8) zt1(ld,nrfmax),zt2(ld)
 integer, external :: ikglob
 
-allocate(wfsvmt(ld,nrfmax,natmtot,nstsv,nspinor))
+allocate(wfsvmt(ld,nrfmax,natmtot,nspinor,nstsv))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 
 call match(ngk(1,ikglob(ik)),gkc(1,1,ik),tpgkc(1,1,1,ik),sfacgk(1,1,1,ik),apwalm)
@@ -90,7 +90,7 @@ do j=1,nstfv
         lspl=lsplsyms(isym,ias)
         zt1=dcmplx(0.d0,0.d0)
         do io1=1,nrfmax
-          call rotzflm(symlatc(1,1,lspl),3,1,ld,wfsvmt(1:ld,io1,ias,j+(ispn-1)*nstfv,ispn),zt2)
+          call rotzflm(symlatc(1,1,lspl),3,1,ld,wfsvmt(1:ld,io1,ias,ispn,j+(ispn-1)*nstfv),zt2)
           do lm=1,ld
             do lm1=1,ld
               zt1(lm,io1)=zt1(lm,io1)+yrlm_lcs(lm1,lm,ias)*zt2(lm1)

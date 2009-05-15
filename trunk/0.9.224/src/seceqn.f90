@@ -58,8 +58,8 @@ else
 ! solve the second-variational secular equation
   call seceqnsv(ik,apwalm,evalfv,evecfv,evecsv)
 end if
+if (wannier) call genwann(ik,evecfv,evecsv)
 if (wannier.and.wann_add_poco) then
-  call genwann(ik,evecfv,evecsv)
   call wann_seceqn(ik,evecsv)
   call genwann(ik,evecfv,evecsv)
 endif

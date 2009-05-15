@@ -6,12 +6,12 @@ use mpi
 #endif
 implicit none
 integer, intent(in) :: ikstep
-complex(8), intent(in) :: wfsvmtloc(lmmaxvr,nrfmax,natmtot,nstsv,nspinor,*)
-complex(8), intent(in) :: wfsvitloc(ngkmax,nstsv,nspinor,*)
+complex(8), intent(in) :: wfsvmtloc(lmmaxvr,nrfmax,natmtot,nspinor,nstsv,*)
+complex(8), intent(in) :: wfsvitloc(ngkmax,nspinor,nstsv,*)
 integer, intent(in) :: ngknr(*)
 integer, intent(in) :: igkignr(ngkmax,*)
-complex(8), intent(out) :: wfsvmt2(lmmaxvr,nrfmax,natmtot,nstsv,nspinor)
-complex(8), intent(out) :: wfsvit2(ngkmax,nstsv,nspinor)
+complex(8), intent(out) :: wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
+complex(8), intent(out) :: wfsvit2(ngkmax,nspinor,nstsv)
 integer, intent(out) :: ngknr2
 integer, intent(out) :: igkignr2(ngkmax)
 complex(8), intent(out) :: evecfv2(nmatmax,nstfv,nspnfv)
@@ -50,12 +50,12 @@ do i=1,mpi_dims(1)
       call mpi_cart_rank(comm_cart_100,(/i-1/),rank,ierr) 
 ! send muffin-tin part
       tag=(ikstep*nproc+i-1)*10
-      call mpi_isend(wfsvmtloc(1,1,1,1,1,ikloc),                     &
-        lmmaxvr*nrfmax*natmtot*nstsv*nspinor,                        & 
+      call mpi_isend(wfsvmtloc(1,1,1,1,1,ikloc),                        &
+        lmmaxvr*nrfmax*natmtot*nspinor*nstsv,                           & 
 	    MPI_DOUBLE_COMPLEX,rank,tag,comm_cart_100,req,ierr)
 ! send interstitial part
       tag=tag+1
-      call mpi_isend(wfsvitloc(1,1,1,ikloc),ngkmax*nstsv*nspinor,    & 
+      call mpi_isend(wfsvitloc(1,1,1,ikloc),ngkmax*nspinor*nstsv,       & 
         MPI_DOUBLE_COMPLEX,rank,tag,comm_cart_100,req,ierr)
 ! send ngknr      
       tag=tag+1
@@ -63,11 +63,11 @@ do i=1,mpi_dims(1)
         req,ierr)
 ! send igkignr
       tag=tag+1
-      call mpi_isend(igkignr(1,ikloc),ngkmax,MPI_INTEGER,rank,tag,   &
+      call mpi_isend(igkignr(1,ikloc),ngkmax,MPI_INTEGER,rank,tag,      &
         comm_cart_100,req,ierr) 
 ! send evecfv      
       tag=tag+1
-      call mpi_isend(evecfvloc(1,1,1,ikloc),nmatmax*nstfv*nspnfv,    &
+      call mpi_isend(evecfvloc(1,1,1,ikloc),nmatmax*nstfv*nspnfv,       &
         MPI_DOUBLE_COMPLEX,rank,tag,comm_cart_100,req,ierr)
 ! send evecsv      
       tag=tag+1
@@ -78,10 +78,10 @@ do i=1,mpi_dims(1)
 ! source proc is ip-1
       call mpi_cart_rank(comm_cart_100,(/ip-1/),rank,ierr)
       tag=(ikstep*nproc+mpi_x(1))*10
-      call mpi_recv(wfsvmt2,lmmaxvr*nrfmax*natmtot*nstsv*nspinor,    &
+      call mpi_recv(wfsvmt2,lmmaxvr*nrfmax*natmtot*nspinor*nstsv,       &
         MPI_DOUBLE_COMPLEX,rank,tag,comm_cart_100,stat,ierr)
       tag=tag+1
-      call mpi_recv(wfsvit2,ngkmax*nstsv*nspinor,MPI_DOUBLE_COMPLEX, &
+      call mpi_recv(wfsvit2,ngkmax*nspinor*nstsv,MPI_DOUBLE_COMPLEX,    &
         rank,tag,comm_cart_100,stat,ierr)
       tag=tag+1
       call mpi_recv(ngknr2,1,MPI_INTEGER,rank,tag,comm_cart_100,stat,   &
@@ -90,10 +90,10 @@ do i=1,mpi_dims(1)
       call mpi_recv(igkignr2,ngkmax,MPI_INTEGER,rank,tag,comm_cart_100, &
         stat,ierr)
       tag=tag+1
-      call mpi_recv(evecfv2,nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX, &
+      call mpi_recv(evecfv2,nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX,    &
         rank,tag,comm_cart_100,stat,ierr)
       tag=tag+1
-      call mpi_recv(evecsv2,nstsv*nstsv,MPI_DOUBLE_COMPLEX, &
+      call mpi_recv(evecsv2,nstsv*nstsv,MPI_DOUBLE_COMPLEX,             &
         rank,tag,comm_cart_100,stat,ierr)
     endif
     if (mpi_x(1).eq.i-1.and.ip.eq.i) then

@@ -5,23 +5,16 @@ implicit none
 integer, intent(in) :: ngp
 complex(8), intent(in) :: evecfv(nmatmax,nstfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
-complex(8), intent(out) :: wfsvit(ngkmax,nstsv,nspinor)
-
-integer iwf,ig,ispn,istfv
-complex(8) zt1
-
-wfsvit=dcmplx(0.d0,0.d0)
-do iwf=1,nstsv
-  do ig=1,ngp
-    do ispn=1,nspinor
-      zt1=dcmplx(0.d0,0.d0)
-      do istfv=1,nstfv
-        zt1=zt1+evecsv(istfv+(ispn-1)*nstfv,iwf)*evecfv(ig,istfv)
-      enddo
-      wfsvit(ig,iwf,ispn)=zt1
-    enddo 
-  enddo !ig
-enddo !iwf
-
+complex(8), intent(out) :: wfsvit(ngkmax,nspinor,nstsv)
+integer j,ispn,istfv
+wfsvit=zzero
+do j=1,nstsv
+  do ispn=1,nspinor
+    do istfv=1,nstfv
+      wfsvit(:,ispn,j)=wfsvit(:,ispn,j)+&
+        evecsv(istfv+(ispn-1)*nstfv,j)*evecfv(:,istfv)
+    enddo
+  enddo
+enddo 
 return
 end

@@ -1062,24 +1062,22 @@ integer, allocatable :: spinor_ud(:,:,:)
 !------------------!
 logical wannier
 integer wann_natom
-integer wann_nspin
 integer wann_norbgrp
 integer wann_ntype
 logical wann_use_eint
 logical wann_add_poco
-integer, allocatable :: wann_iatom(:,:)
-integer, allocatable :: wann_iorb(:,:)
-integer, allocatable :: wann_iorbgrp(:,:,:)
+integer, allocatable :: wann_norb(:)
+integer, allocatable :: wann_iorb(:,:,:)
+integer, allocatable :: wann_iprj(:,:)
 real(8), allocatable :: wann_eint(:,:)
 integer, allocatable :: wann_nint(:,:)
 real(8), allocatable :: wann_v(:)
 
-integer nwann(2)
-integer wann_nmax
-integer, allocatable :: iwann(:,:,:)
+integer nwann
+integer, allocatable :: iwann(:,:)
   
-! expansion coefficients of Wannier functions over Bloch eigen-functions  
-complex(8), allocatable :: wann_c(:,:,:,:)
+! expansion coefficients of Wannier functions over spinor Bloch eigen-functions  
+complex(8), allocatable :: wann_c(:,:,:)
 ! Bloch-sums of WF
 complex(8), allocatable :: wann_unkmt(:,:,:,:,:,:)
 complex(8), allocatable :: wann_unkit(:,:,:,:)
@@ -1087,14 +1085,15 @@ complex(8), allocatable :: wann_unkit(:,:,:,:)
 !complex(8), allocatable :: wannmt(:,:,:,:,:,:)
 !complex(8), allocatable :: wannit(:,:,:,:)
 ! H(k) in WF basis
-complex(8), allocatable :: wann_h(:,:,:,:)
+complex(8), allocatable :: wann_h(:,:,:)
 ! e(k) of WF H(k) (required for band-sctructure plot only)
-real(8), allocatable :: wann_e(:,:,:)
+real(8), allocatable :: wann_e(:,:)
 
-real(8), allocatable :: wann_ene(:,:)
-real(8), allocatable :: wann_occ(:,:)
+real(8), allocatable :: wann_ene(:)
+real(8), allocatable :: wann_occ(:)
 
-complex(8), allocatable :: wf_p(:,:,:,:,:)
+!complex(8), allocatable :: wf_p(:,:,:,:,:)
+!complex(8), allocatable :: wf_v_mtrx(:,:,:,:,:)
 
 real(8) zero3d(3)
 real(8) bound3d(3,3)
@@ -1103,7 +1102,7 @@ integer nwfplot
 integer firstwf
 integer iwfv
 
-integer, allocatable :: iasiwann(:,:,:)
+!integer, allocatable :: iasiwann(:,:)
 
 !----------------!
 !      timer     !

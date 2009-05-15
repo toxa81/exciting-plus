@@ -9,8 +9,8 @@ implicit none
 ! arguments
 ! q-vector in k-mesh coordinates
 integer, intent(in) :: ivq0m(3)
-complex(8), intent(in) :: wfsvmtloc(lmmaxvr,nrfmax,natmtot,nstsv,nspinor,*)
-complex(8), intent(in) :: wfsvitloc(ngkmax,nstsv,nspinor,*)
+complex(8), intent(in) :: wfsvmtloc(lmmaxvr,nrfmax,natmtot,nspinor,nstsv,*)
+complex(8), intent(in) :: wfsvitloc(ngkmax,nspinor,nstsv,*)
 integer, intent(in) :: ngknr(*)
 integer, intent(in) :: igkignr(ngkmax,*)
 real(8), intent(in) :: occsvnr(nstsv,nkptnr)
@@ -376,8 +376,8 @@ endif
 deallocate(uuj)
 
 allocate(me(ngvecme,nmemax))
-allocate(wfsvmt2(lmmaxvr,nrfmax,natmtot,nstsv,nspinor))
-allocate(wfsvit2(ngkmax,nstsv,nspinor))
+allocate(wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
+allocate(wfsvit2(ngkmax,nspinor,nstsv))
 allocate(igkignr2(ngkmax))
 allocate(evecfv2(nmatmax,nstfv,nspnfv))
 allocate(evecsv2(nstsv,nstsv))

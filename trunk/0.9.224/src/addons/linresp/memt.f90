@@ -9,8 +9,8 @@ integer, intent(in) :: ngumax
 integer, intent(in) :: ngu(natmtot,ngvecme)
 integer, intent(in) :: igu(4,ngumax,natmtot,ngvecme)
 complex(4), intent(in) :: gu(ngumax,natmtot,ngvecme)
-complex(8), intent(in) :: wfsvmt1(lmmaxvr,nrfmax,natmtot,nstsv,nspinor)
-complex(8), intent(in) :: wfsvmt2(lmmaxvr,nrfmax,natmtot,nstsv,nspinor)
+complex(8), intent(in) :: wfsvmt1(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
+complex(8), intent(in) :: wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
 complex(8), intent(inout) :: zrhofc0(ngvecme,nmemax)
 ! local variables
 integer ig,i,j,ist1,ist2,ias,io1,io2,lm1,lm2,ispn,ispn2
@@ -38,8 +38,8 @@ do ig=idx_g1,idx_g2
       ist1=ime0(1,i)
       ist2=ime0(2,i)
       do ias=1,natmtot
-        a1=dconjg(wfsvmt1(:,:,ias,ist1,ispn))
-        a2=wfsvmt2(:,:,ias,ist2,ispn2)
+        a1=dconjg(wfsvmt1(:,:,ias,ispn,ist1))
+        a2=wfsvmt2(:,:,ias,ispn2,ist2)
         do j=1,ngu(ias,ig)
           lm1=igu(1,j,ias,ig)
           lm2=igu(2,j,ias,ig)

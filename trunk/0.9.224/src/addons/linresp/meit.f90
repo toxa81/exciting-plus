@@ -10,8 +10,8 @@ integer, intent(in) :: ngknr2
 integer, intent(in) :: igkq
 integer, intent(in) :: igkignr1(ngkmax)
 integer, intent(in) :: igkignr2(ngkmax)
-complex(8), intent(in) :: wfsvit1(ngkmax,nstsv,nspinor)
-complex(8), intent(in) :: wfsvit2(ngkmax,nstsv,nspinor)
+complex(8), intent(in) :: wfsvit1(ngkmax,nspinor,nstsv)
+complex(8), intent(in) :: wfsvit2(ngkmax,nspinor,nstsv)
 complex(8), intent(inout) :: zrhofc0(ngvecme,nmemax)
 complex(8), intent(in) :: evecfv1(nmatmax,nstfv,nspnfv)
 complex(8), intent(in) :: evecsv1(nstsv,nstsv)
@@ -52,7 +52,8 @@ if (.not.lfftit) then
     do ig1=1,ngknr1
       do ig2=1,ngknr2
         ! G1-G2+G+K
-        iv3g(:)=ivg(:,igkignr1(ig1))-ivg(:,igkignr2(ig2))+ivg(:,ig+gvecme1-1)+ivg(:,igkq)
+!        iv3g(:)=ivg(:,igkignr1(ig1))-ivg(:,igkignr2(ig2))+ivg(:,ig+gvecme1-1)+ivg(:,igkq)
+        iv3g(:)=-ivg(:,igkignr1(ig1))+ivg(:,igkignr2(ig2))-ivg(:,ig+gvecme1-1)+ivg(:,igkq)
         if (sum(abs(iv3g)).eq.0) mit(ig1,ig2)=dcmplx(1.d0,0.d0)
         v2(:)=1.d0*iv3g(:)
         call r3mv(bvec,v2,v1)
@@ -72,21 +73,22 @@ if (.not.lfftit) then
       enddo
     enddo
     
-!    a=dcmplx(0.d0,0.d0)
-!    do ispn=1,nspinor
-!      do i=1,nstsv
-!        do ig2=1,ngknr2
-!          do ig1=1,ngknr1
-!            a(ig2,i,ispn)=a(ig2,i,ispn) + &
-!              dconjg(wfsvit1(ig1,i,ispn))*mit(ig1,ig2)
-!          enddo
-!        enddo
-!      enddo
-!    enddo
+    a=dcmplx(0.d0,0.d0)
     do ispn=1,nspinor
-      call zgemm('C','N',ngknr2,nstsv,ngknr1,dcmplx(1.d0,0.d0),mit,ngknr1,&
-        wfsvit1(1,1,ispn),ngkmax,dcmplx(0.d0,0.d0),a(1,1,ispn),ngknr2)
+      do i=1,nstsv
+        do ig2=1,ngknr2
+          do ig1=1,ngknr1
+            a(ig2,i,ispn)=a(ig2,i,ispn) + &
+              dconjg(wfsvit1(ig1,ispn,i))*mit(ig1,ig2)
+          enddo
+        enddo
+      enddo
     enddo
+    
+!    do ispn=1,nspinor
+!      call zgemm('C','N',ngknr2,nstsv,ngknr1,dcmplx(1.d0,0.d0),mit,ngknr1,&
+!        wfsvit1(1,1,ispn),ngkmax,dcmplx(0.d0,0.d0),a(1,1,ispn),ngknr2)
+!    enddo
     
     do ispn=1,nspinor
       if (lrtype.eq.0) then
@@ -98,13 +100,13 @@ if (.not.lfftit) then
       do i=1,nme0
         ist1=ime0(1,i)
         ist2=ime0(2,i)
-!	zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+&
-!	  zdotu(ngknr2,wfsvit2(1,ist2,ispn2),1,a(1,ist1,ispn),1)
-	zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+&
-	  zdotc(ngknr2,a(1,ist1,ispn),1,wfsvit2(1,ist2,ispn2),1)
-!        do ig2=1,ngknr2
-!          zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+wfsvit2(ig2,ist2,ispn2)*a(ig2,ist1,ispn)
-!        enddo
+!        zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+&
+!          zdotu(ngknr2,wfsvit2(1,ist2,ispn2),1,a(1,ist1,ispn),1)
+!       zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+&
+!         zdotc(ngknr2,a(1,ist1,ispn),1,wfsvit2(1,ist2,ispn2),1)
+        do ig2=1,ngknr2
+          zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+wfsvit2(ig2,ispn2,ist2)*a(ig2,ist1,ispn)
+        enddo
       enddo
     enddo
   enddo !ig  
