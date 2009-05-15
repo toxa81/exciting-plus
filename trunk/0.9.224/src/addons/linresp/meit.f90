@@ -39,7 +39,8 @@ allocate(zrhofc_tmp(ngvecme,nmemax))
 zrhofc_tmp=dcmplx(0.d0,0.d0)
 
 if (.not.lfftit) then
-  allocate(a(ngknr2,nstsv,nspinor))
+!  allocate(a(ngknr2,nstsv,nspinor))
+  allocate(a(ngknr1,nstsv,nspinor))
   
   call idxbos(ngvecme,mpi_dims(2),mpi_x(2)+1,idx0,bs)
   idx_g1=idx0+1
@@ -48,42 +49,51 @@ if (.not.lfftit) then
   allocate(mit(ngknr1,ngknr2))
   
   do ig=idx_g1,idx_g2
-    mit=dcmplx(0.d0,0.d0)
-    do ig1=1,ngknr1
-      do ig2=1,ngknr2
-        ! G1-G2+G+K
+    call genpwit(ngknr1,ngknr2,igkignr1,igkignr2,-(ivg(:,ig+gvecme1-1)+ivg(:,igkq)),mit)
+
+!    mit=dcmplx(0.d0,0.d0)
+!    do ig1=1,ngknr1
+!      do ig2=1,ngknr2
+!        ! G1-G2+G+K
 !        iv3g(:)=ivg(:,igkignr1(ig1))-ivg(:,igkignr2(ig2))+ivg(:,ig+gvecme1-1)+ivg(:,igkq)
-        iv3g(:)=-ivg(:,igkignr1(ig1))+ivg(:,igkignr2(ig2))-ivg(:,ig+gvecme1-1)+ivg(:,igkq)
-        if (sum(abs(iv3g)).eq.0) mit(ig1,ig2)=dcmplx(1.d0,0.d0)
-        v2(:)=1.d0*iv3g(:)
-        call r3mv(bvec,v2,v1)
-        call sphcrd(v1,len3g,tp3g)
-        call gensfacgp(1,v1,1,sfac3g)
-        do is=1,nspecies
-          do ia=1,natoms(is)
-        ias=idxas(ia,is)
-        if (len3g.lt.1d-8) then
-          mit(ig1,ig2)=mit(ig1,ig2)-(fourpi/omega)*dconjg(sfac3g(ias))*(rmt(is)**3)/3.d0
-        else
-          mit(ig1,ig2)=mit(ig1,ig2)-(fourpi/omega)*dconjg(sfac3g(ias)) * &
-            (-(rmt(is)/len3g**2)*cos(len3g*rmt(is))+(1/len3g**3)*sin(len3g*rmt(is)))
-        endif
-      enddo !ia
-        enddo !is
-      enddo
-    enddo
+!        if (sum(abs(iv3g)).eq.0) mit(ig1,ig2)=dcmplx(1.d0,0.d0)
+!        v2(:)=1.d0*iv3g(:)
+!        call r3mv(bvec,v2,v1)
+!        call sphcrd(v1,len3g,tp3g)
+!        call gensfacgp(1,v1,1,sfac3g)
+!        do is=1,nspecies
+!          do ia=1,natoms(is)
+!        ias=idxas(ia,is)
+!        if (len3g.lt.1d-8) then
+!          mit(ig1,ig2)=mit(ig1,ig2)-(fourpi/omega)*dconjg(sfac3g(ias))*(rmt(is)**3)/3.d0
+!        else
+!          mit(ig1,ig2)=mit(ig1,ig2)-(fourpi/omega)*dconjg(sfac3g(ias)) * &
+!            (-(rmt(is)/len3g**2)*cos(len3g*rmt(is))+(1/len3g**3)*sin(len3g*rmt(is)))
+!        endif
+!      enddo !ia
+!        enddo !is
+!      enddo
+!    enddo
     
-    a=dcmplx(0.d0,0.d0)
+!    a=dcmplx(0.d0,0.d0)
+!    do ispn=1,nspinor
+!      do i=1,nstsv
+!        do ig2=1,ngknr2
+!          do ig1=1,ngknr1
+!            a(ig2,i,ispn)=a(ig2,i,ispn) + &
+!              dconjg(wfsvit1(ig1,ispn,i))*mit(ig1,ig2)
+!          enddo
+!        enddo
+!      enddo
+!    enddo
+    
+    a=zzero
     do ispn=1,nspinor
       do i=1,nstsv
-        do ig2=1,ngknr2
-          do ig1=1,ngknr1
-            a(ig2,i,ispn)=a(ig2,i,ispn) + &
-              dconjg(wfsvit1(ig1,ispn,i))*mit(ig1,ig2)
-          enddo
-        enddo
+        call zgemv('N',ngknr1,ngknr2,zone,mit,ngknr1,wfsvit2(1,ispn,i),1,zzero,a(1,i,ispn),1)
       enddo
     enddo
+
     
 !    do ispn=1,nspinor
 !      call zgemm('C','N',ngknr2,nstsv,ngknr1,dcmplx(1.d0,0.d0),mit,ngknr1,&
@@ -104,9 +114,16 @@ if (.not.lfftit) then
 !          zdotu(ngknr2,wfsvit2(1,ist2,ispn2),1,a(1,ist1,ispn),1)
 !       zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+&
 !         zdotc(ngknr2,a(1,ist1,ispn),1,wfsvit2(1,ist2,ispn2),1)
-        do ig2=1,ngknr2
-          zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+wfsvit2(ig2,ispn2,ist2)*a(ig2,ist1,ispn)
+!        do ig2=1,ngknr2
+!          zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+wfsvit2(ig2,ispn2,ist2)*a(ig2,ist1,ispn)
+!        enddo
+
+        do ig1=1,ngknr1
+          zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+dconjg(wfsvit1(ig1,ispn,ist1))*a(ig1,ist2,ispn2)
         enddo
+! this should also work
+!       zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+&
+!         zdotc(ngknr1,wfsvit1(1,ispn,ist1),1,a(1,ist2,ispn2),1)
       enddo
     enddo
   enddo !ig  
