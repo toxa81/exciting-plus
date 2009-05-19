@@ -8,7 +8,7 @@ complex(8), intent(in) :: wfsvmt(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
 complex(8), intent(out) :: wann_c_(nwann,nstsv)
 
 complex(8), allocatable :: prjao(:,:)
-complex(8), allocatable :: s(:,:)
+complex(8), allocatable :: s(:,:),sdiag(:)
 integer ispn,i,j,n,m1,m2,io1,io2,ias,lm1,lm,ierr,l,itype
 logical l1
 
@@ -55,6 +55,7 @@ do n=1,nwann
 enddo !n
 
 allocate(s(nwann,nwann))
+allocate(sdiag(nwann))
 ! compute ovelap matrix
 s=zzero
 do m1=1,nwann
@@ -63,6 +64,7 @@ do m1=1,nwann
       s(m1,m2)=s(m1,m2)+prjao(m1,j)*dconjg(prjao(m2,j))
     enddo
   enddo
+  sdiag(m1)=s(m1,m2)
 enddo
 ! compute S^{-1/2}
 call isqrtzhe(nwann,s,ierr)
@@ -72,6 +74,8 @@ if (ierr.ne.0) then
   write(*,'("  k-point : ",I4)')ik
   write(*,'("  iteration : ",I4)')iscl
   write(*,'("  number of linear dependent WFs : ",I4)')ierr
+  write(*,'("  diagonal elements of overlap matrix : ")')
+  write(*,'(6X,5G18.10)')abs(sdiag)
   write(*,'("Non-orthogonal WFs will be used")')
 !  do n=1,nwann
 !    itype=iwann(4,n)
@@ -94,7 +98,7 @@ if (ierr.eq.0) then
 else
   wann_c_=prjao
 endif
-deallocate(s)
+deallocate(s,sdiag)
 deallocate(prjao)
 
 return

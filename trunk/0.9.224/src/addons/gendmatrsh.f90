@@ -337,6 +337,30 @@ if (iproc.eq.0) then
         deallocate(mtrx,eval)
       endif
     enddo !is
+    write(50,*)
+    write(50,'("transponse of eigen-vector matrix (for easy copy-paste) : ")')
+    write(50,*)
+    do is=1,nspecies
+      l=llu(is)
+      if (l.gt.0) then
+        allocate(mtrx(2*l+1,2*l+1))
+        allocate(eval(2*l+1))
+        do ia=1,natoms(is)
+          ias=idxas(ia,is)
+          write(50,'(2I4)')ias,l
+          do m1=-l,l
+            do m2=-l,l
+              mtrx(m1+l+1,m2+l+1)=dreal(dmatrlm(idxlm(l,m1),idxlm(l,m2),1,1,ias))
+            enddo
+          enddo
+          call diagdsy(2*l+1,mtrx,eval)
+          do m1=1,2*l+1
+            write(50,'(7G18.10)')(mtrx(m2,m1),m2=1,2*l+1)
+          enddo
+        enddo !ia
+        deallocate(mtrx,eval)
+      endif
+    enddo !is
   endif
   close(50)
 endif  
