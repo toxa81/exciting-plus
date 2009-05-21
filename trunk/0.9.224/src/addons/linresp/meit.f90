@@ -65,12 +65,12 @@ if (.not.lfftit) then
       do i=1,nme0
         ist1=ime0(1,i)
         ist2=ime0(2,i)
-        do ig1=1,ngknr1
-          zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+dconjg(wfsvit1(ig1,ispn,ist1))*a(ig1,ist2,ispn2)
-        enddo
+!        do ig1=1,ngknr1
+!          zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+dconjg(wfsvit1(ig1,ispn,ist1))*a(ig1,ist2,ispn2)
+!        enddo
 ! this should also work
-!       zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+&
-!         zdotc(ngknr1,wfsvit1(1,ispn,ist1),1,a(1,ist2,ispn2),1)
+       zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+&
+         zdotc(ngknr1,wfsvit1(1,ispn,ist1),1,a(1,ist2,ispn2),1)
       enddo
     enddo
   enddo !ig  

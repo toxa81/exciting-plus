@@ -353,7 +353,7 @@ do i=0,nproc-1
       call putevecsv(ikglob(ik),evecsvloc(1,1,ik))
       call putoccsv(ikglob(ik),occsv(1,ikglob(ik)))
 !      if (wannier) call putwfc(ikglob(ik),wann_c(1,1,1,ik))
-!      if (wannier) call putwann(ik)
+      if (wannier) call putwann(ik)
     end do
   end if
   call barrier(comm_world)
