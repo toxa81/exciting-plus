@@ -62,7 +62,7 @@ integer j,isym,lspl,nsym1
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 ! automatic arrays
-complex(8) zt1(ld,nrfmax),zt2(ld)
+complex(8) zt1(ld,nrfmax),zt2(ld),zt3
 integer, external :: ikglob
 
 allocate(wfsvmt(ld,nrfmax,natmtot,nspinor,nstsv))
@@ -104,13 +104,16 @@ do j=1,nstfv
               do io2=1,nrfmax
                 bndchr(lm,ias,ispn,j+(ispn-1)*nstfv)=bndchr(lm,ias,ispn,j+(ispn-1)*nstfv) + &
                   urfprod(l,io1,io2,ias)*dreal(dconjg(zt1(lm,io1))*zt1(lm,io2))/nsym1
-! not tested: partial contribution from APW or lo
-!                bndchr(lm,ias,ispn,j+(ispn-1)*nstfv)=bndchr(lm,ias,ispn,j+(ispn-1)*nstfv) + &
-!                  dreal(dconjg(zt1(lm,io1))*zt1(lm,io2))*urfprod(l,2,io1,ias)*urfprod(l,2,io2,ias)/nsym1
               enddo
             enddo
-          enddo
-        enddo
+! not tested: partial contribution from APW (io2=1) or lo (io2=2)
+!            zt3=zzero
+!            do io1=1,nrfmax
+!	      zt3=zt3+dconjg(zt1(lm,io1))*urfprod(l,io1,2,ias)/nsym1
+!	    enddo
+!	    bndchr(lm,ias,ispn,j+(ispn-1)*nstfv)=abs(zt3)**2
+          enddo !m
+        enddo !l
       enddo !isym    
     enddo
   enddo

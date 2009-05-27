@@ -64,7 +64,7 @@ do m1=1,nwann
       s(m1,m2)=s(m1,m2)+prjao(m1,j)*dconjg(prjao(m2,j))
     enddo
   enddo
-  sdiag(m1)=s(m1,m2)
+  sdiag(m1)=s(m1,m1)
 enddo
 ! compute S^{-1/2}
 call isqrtzhe(nwann,s,ierr)
