@@ -20,10 +20,6 @@ enddo
 if (allocated(iwann)) deallocate(iwann)
 allocate(iwann(4,nwann))
 
-!if (allocated(iasiwann)) deallocate(iasiwann)
-!allocate(iasiwann(lmmaxlu,natmtot))
-!iasiwann=-1
-
 n=0
 do i=1,wann_natom
   iatom=wann_iprj(1,i)
@@ -58,10 +54,6 @@ if (.not.ncmag) then
   iwann=iwann_tmp
   deallocate(iwann_tmp)
 endif
-! mapping from (lm,iatom) -> iwann
-!do n=1,nwann
-!  iasiwann(iwann(2,n),iwann(1,n))=n
-!enddo
       
 open(100,file='WANNIER.OUT',form='formatted',status='replace')
 write(100,'("number of WF atoms : ", I4)')wann_natom
@@ -113,8 +105,8 @@ if (allocated(wann_occ)) deallocate(wann_occ)
 allocate(wann_occ(nwann))
 wann_occ=0.d0
 
-!if (allocated(wf_v_mtrx)) deallocate(wf_v_mtrx)
-!allocate(wf_v_mtrx(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
+if (allocated(wf_v_mtrx)) deallocate(wf_v_mtrx)
+allocate(wf_v_mtrx(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
 
 !if (allocated(wannmt)) deallocate(wannmt)
 !allocate(wannmt(lmmaxvr,nrcmtmax,natmtot,nspinor,wann_nmax,nkptloc(iproc)))

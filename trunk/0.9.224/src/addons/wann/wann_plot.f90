@@ -96,7 +96,7 @@ do ir=1,nrtot
     write(*,*)'r-point : ',ir,' out of ',nrtot
   endif
   call wann_val(vr(1,ir),wf(1,1,ir))
-  if (iwfv.ne.0) call f_veff_p(vr(1,ir),zfft_vir,veff(ir))
+  if (iwfv.ne.0) call f_veff_p(vr(1,ir),veffmt,zfft_vir,veff(ir))
 enddo
 
 if (iproc.eq.0) then

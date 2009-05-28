@@ -70,9 +70,10 @@ enddo
 ! symmetrise matrix
 call symdmat(lmaxlu,lmmaxlu,wf_occ_mtrx)
 call symdmat(lmaxlu,lmmaxlu,wf_ene_mtrx)
+!! generate "lda+u" matrix
 !dmatlu=wf_occ_mtrx
 !ujlu(1,1)=0.3
-!ujlu(2,1)=0.03
+!ujlu(2,1)=0.058
 !call genvmatlu
 !wf_v_mtrx=vmatlu
 !ujlu(1,1)=0.0
@@ -81,7 +82,7 @@ call symdmat(lmaxlu,lmmaxlu,wf_ene_mtrx)
 do ias=1,natmtot
   call mtrxbas(lmmaxlu,rylm_lcs(1,1,ias),wf_occ_mtrx(1,1,1,1,ias))
   call mtrxbas(lmmaxlu,rylm_lcs(1,1,ias),wf_ene_mtrx(1,1,1,1,ias))
-!  call mtrxbas(lmmaxlu,rylm_lcs(1,1,ias),wf_v_mtrx(1,1,1,1,ias))
+  call mtrxbas(lmmaxlu,rylm_lcs(1,1,ias),wf_v_mtrx(1,1,1,1,ias))
 enddo
 !! save energies and occupancies
 !do ispn=1,wann_nspin

@@ -5,19 +5,26 @@ real(8), intent(in) :: vrc(3)
 real(8), intent(out) :: val
 
 integer ntr(3)
-real(8) vr0l(3)
-
+real(8) vr0l(3),v1(3)
+complex(8), allocatable :: zfft(:)
+allocate(zfft(ngrtot))
+zfft(:)=veffir(:)
+call zfftifc(3,ngrid,-1,zfft)
 call getntr(avec,vrc,ntr,vr0l)
-call rfarray(lmaxvr,lmmaxvr,veffmt,veffir,1,vr0l,val)
-
+call r3mv(avec,vr0l,v1)
+call rfarray_p(lmaxvr,lmmaxvr,veffmt,zfft,v1,val)
+deallocate(zfft)
+!call getntr(avec,vrc,ntr,vr0l)
+!call rfarray(lmaxvr,lmmaxvr,veffmt,veffir,1,vr0l,val)
 return
 end
 
-subroutine f_veff_p(vrc,zfft_vir,val)
+subroutine f_veff_p(vrc,vmt,vig,val)
 use modmain
 implicit none
 real(8), intent(in) :: vrc(3)
-complex(8), intent(in) :: zfft_vir(ngrtot) 
+real(8), intent(in) :: vmt(lmmaxvr,nrmtmax,natmtot)
+complex(8), intent(in) :: vig(ngrtot) 
 real(8), intent(out) :: val
 
 integer ntr(3)
@@ -25,7 +32,7 @@ real(8) vr0l(3),v1(3)
 
 call getntr(avec,vrc,ntr,vr0l)
 call r3mv(avec,vr0l,v1)
-call rfarray_p(lmaxvr,lmmaxvr,veffmt,zfft_vir,v1,val)
+call rfarray_p(lmaxvr,lmmaxvr,vmt,vig,v1,val)
 
 return
 end
@@ -51,8 +58,10 @@ real(8) vr0(3),r0
 real(8) ya(nprad),c(nprad)
 ! allocatable arrays
 real(8), allocatable :: rlm(:)
-logical l1
+logical l1,l2
+real(8) a,b,f0,f1
 logical, external :: vrinmt
+integer ir
 
 ! external functions
 real(8), external :: polynom
@@ -63,6 +72,17 @@ sum=0.d0
 sum2=0.d0
 if (l1) then
   if (iproc.eq.0) then
+    l2=.false.
+    if (r0.lt.0.1) then
+      l2=.true.
+      do ir=1,nrmt(is)
+        if (spr(ir,is).gt.0.1) then
+          ir0=ir-nprad/2
+          goto 10
+        endif
+      enddo
+ 10   continue
+    endif
     ias=idxas(ia,is)
     call sphcrd(vr0,t1,tp)
     call genrlm(lmax,tp,rlm)
@@ -73,7 +93,19 @@ if (l1) then
           i=ir0+j-1
           ya(j)=rfmt(lm,i,ias)
         end do
-        t2=polynom(0,nprad,spr(ir0,is),ya,c,r0)
+        if (l2.and.l.eq.0) then
+          do j=1,nprad
+            i=ir0+j-1
+            ya(j)=rfmt(lm,i,ias)
+          end do
+          f0=polynom(0,nprad,spr(ir0,is),ya,c,spr(ir0+nprad/2,is))
+          f1=polynom(1,nprad,spr(ir0,is),ya,c,spr(ir0+nprad/2,is))
+          b=-f1/(f0*2*spr(ir0+nprad/2,is))
+          a=-f0/exp(-b*spr(ir0+nprad/2,is)**2)
+          t2=-a*exp(-b*r0**2)
+        else
+          t2=polynom(0,nprad,spr(ir0,is),ya,c,r0)
+        endif
         sum=sum+t2*rlm(lm)
       end do
     enddo
@@ -95,4 +127,3 @@ call barrier(comm_world)
 deallocate(rlm)
 return
 end subroutine
-
