@@ -1093,7 +1093,7 @@ real(8), allocatable :: wann_ene(:)
 real(8), allocatable :: wann_occ(:)
 
 !complex(8), allocatable :: wf_p(:,:,:,:,:)
-!complex(8), allocatable :: wf_v_mtrx(:,:,:,:,:)
+complex(8), allocatable :: wf_v_mtrx(:,:,:,:,:)
 
 real(8) zero3d(3)
 real(8) bound3d(3,3)
@@ -1101,8 +1101,6 @@ integer nrxyz(3)
 integer nwfplot
 integer firstwf
 integer iwfv
-
-!integer, allocatable :: iasiwann(:,:)
 
 !----------------!
 !      timer     !
