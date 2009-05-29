@@ -40,6 +40,8 @@ complex(8), allocatable :: evecfv2(:,:,:)
 complex(8), allocatable :: evecsv2(:,:)
 complex(8), allocatable :: me(:,:)
 
+complex(8), allocatable :: gvit(:,:,:)
+
 integer i,j,ik,jk,ig,ikstep,ierr,sz,ikloc
 integer ngknr2
 real(8) vkq0l(3)
@@ -375,6 +377,9 @@ if (wproc) then
 endif
 deallocate(uuj)
 
+allocate(gvit(intgv(1,1):intgv(1,2),intgv(2,1):intgv(2,2),intgv(3,1):intgv(3,2)))
+call gengvit(gvit)
+
 allocate(me(ngvecme,nmemax))
 allocate(wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
 allocate(wfsvit2(ngkmax,nspinor,nstsv))
@@ -423,7 +428,7 @@ do ikstep=1,nkptnrloc(0)
       call zrhoftit(nme(ikstep),ime(1,1,ikstep),ngknr(ikstep), &
         ngknr2,igkignr(1,ikstep),igkignr2,idxkq(2,ik),         &
         wfsvitloc(1,1,1,ikstep),wfsvit2,me,evecfvloc(1,1,1,ikstep), &
-        evecsvloc(1,1,ikstep),evecfv2,evecsv2,igfft1(1,ik))
+        evecsvloc(1,1,ikstep),evecfv2,evecsv2,igfft1(1,ik),gvit)
       call timer_stop(5)
    else
       me=dcmplx(1.d0,0.d0)
@@ -480,6 +485,7 @@ do ikstep=1,nkptnrloc(0)
   endif
 enddo !ikstep
 
+deallocate(gvit)
 deallocate(me)
 deallocate(wfsvmt2)
 deallocate(wfsvit2)

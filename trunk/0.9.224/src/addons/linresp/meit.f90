@@ -1,5 +1,5 @@
 subroutine zrhoftit(nme0,ime0,ngknr1,ngknr2,igkignr1,igkignr2, &
-  igkq,wfsvit1,wfsvit2,zrhofc0,evecfv1,evecsv1,evecfv2,evecsv2,igfft1)
+  igkq,wfsvit1,wfsvit2,zrhofc0,evecfv1,evecsv1,evecfv2,evecsv2,igfft1,gvit)
 use modmain
 implicit none
 ! arguments
@@ -18,7 +18,7 @@ complex(8), intent(in) :: evecsv1(nstsv,nstsv)
 complex(8), intent(in) :: evecfv2(nmatmax,nstfv,nspnfv)
 complex(8), intent(in) :: evecsv2(nstsv,nstsv)
 integer, intent(in) :: igfft1(ngvecme)
-
+complex(8), intent(in) :: gvit(intgv(1,1):intgv(1,2),intgv(2,1):intgv(2,2),intgv(3,1):intgv(3,2))
 
 complex(8), allocatable :: mit(:,:)
 complex(8), allocatable :: a(:,:,:) 
@@ -27,12 +27,9 @@ complex(8), allocatable :: wfir1(:,:,:)
 complex(8), allocatable :: wfir2(:,:,:)
 complex(8), allocatable :: zrhoir(:)
 
-
-integer is,ia,ias,ig,ig1,ig2,ist1,ist2,i,ispn,ispn2,j,ist
+integer ig,ist1,ist2,i,ispn,ispn2,j,ist
 integer idx0,bs,idx_g1,idx_g2,igp,ifg,ir,i1,i2
-integer iv3g(3)
-real(8) v1(3),v2(3),tp3g(2),len3g
-complex(8) sfac3g(natmtot),zt1
+complex(8) zt1
 complex(8), external :: zdotu,zdotc
 
 allocate(zrhofc_tmp(ngvecme,nmemax))
@@ -47,7 +44,8 @@ if (.not.lfftit) then
   idx_g2=idx0+bs
   
   do ig=idx_g1,idx_g2
-    call genpwit(ngknr1,ngknr2,igkignr1,igkignr2,-(ivg(:,ig+gvecme1-1)+ivg(:,igkq)),mit)
+!    call genpwit(ngknr1,ngknr2,igkignr1,igkignr2,-(ivg(:,ig+gvecme1-1)+ivg(:,igkq)),mit)
+    call genpwit2(ngknr1,ngknr2,igkignr1,igkignr2,-(ivg(:,ig+gvecme1-1)+ivg(:,igkq)),gvit,mit)
     a=zzero
     do ispn=1,nspinor
       do i=1,nstsv
@@ -65,12 +63,8 @@ if (.not.lfftit) then
       do i=1,nme0
         ist1=ime0(1,i)
         ist2=ime0(2,i)
-!        do ig1=1,ngknr1
-!          zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+dconjg(wfsvit1(ig1,ispn,ist1))*a(ig1,ist2,ispn2)
-!        enddo
-! this should also work
-       zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+&
-         zdotc(ngknr1,wfsvit1(1,ispn,ist1),1,a(1,ist2,ispn2),1)
+        zrhofc_tmp(ig,i)=zrhofc_tmp(ig,i)+&
+          zdotc(ngknr1,wfsvit1(1,ispn,ist1),1,a(1,ist2,ispn2),1)
       enddo
     enddo
   enddo !ig  
