@@ -24,6 +24,7 @@ complex(8), allocatable :: sigma(:)
 ! initialise universal variables
 call init0
 call init1
+if (iproc.ne.0) return
 ! read Fermi energy from file
 call readfermi
 do ik=1,nkpt

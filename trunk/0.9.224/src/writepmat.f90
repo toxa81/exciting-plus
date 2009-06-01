@@ -19,11 +19,12 @@ use modmain
 !BOC
 implicit none
 ! local variables
-integer ik,recl
+integer ikloc,recl,i
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: evecfv(:,:)
 complex(8), allocatable :: evecsv(:,:)
-complex(8), allocatable :: pmat(:,:,:)
+complex(8), allocatable :: pmat(:,:,:,:)
+integer, external :: ikglob
 ! initialise universal variables
 call init0
 call init1
@@ -31,7 +32,7 @@ allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 allocate(evecfv(nmatmax,nstfv))
 allocate(evecsv(nstsv,nstsv))
 ! allocate the momentum matrix elements array
-allocate(pmat(3,nstsv,nstsv))
+allocate(pmat(3,nstsv,nstsv,nkptloc(iproc)))
 ! read in the density and potentials from file
 call readstate
 ! find the new linearisation energies
@@ -40,26 +41,41 @@ call linengy
 call genapwfr
 ! generate the local-orbital radial functions
 call genlofr
+if (iproc.eq.0) then
+  open(50,file='PMAT.OUT')
+  close(50,status='DELETE')
+endif
 ! find the record length
-inquire(iolength=recl) pmat
-open(50,file='PMAT.OUT',action='WRITE',form='UNFORMATTED',access='DIRECT', &
- status='REPLACE',recl=recl)
-do ik=1,nkpt
+inquire(iolength=recl) pmat(:,:,:,1)
+do ikloc=1,nkptloc(iproc)
 ! get the eigenvectors from file
-  call getevecfv(vkl(:,ik),vgkl(:,:,:,ik),evecfv)
-  call getevecsv(vkl(:,ik),evecsv)
+  call getevecfv(vkl(:,ikglob(ikloc)),vgkl(:,:,:,ikloc),evecfv)
+  call getevecsv(vkl(:,ikglob(ikloc)),evecsv)
 ! find the matching coefficients
-  call match(ngk(1,ik),gkc(:,1,ik),tpgkc(:,:,1,ik),sfacgk(:,:,1,ik),apwalm)
+  call match(ngk(1,ikglob(ikloc)),gkc(:,1,ikloc),tpgkc(:,:,1,ikloc), &
+    sfacgk(:,:,1,ikloc),apwalm)
 ! calculate the momentum matrix elements
-  call genpmat(ngk(1,ik),igkig(:,1,ik),vgkc(:,:,1,ik),apwalm,evecfv,evecsv,pmat)
-! write the matrix elements to direct-access file
-  write(50,rec=ik) pmat
+  call genpmat(ngk(1,ikglob(ikloc)),igkig(:,1,ikloc),vgkc(:,:,1,ikloc), &
+    apwalm,evecfv,evecsv,pmat(1,1,1,ikloc))
 end do
-close(50)
-write(*,*)
-write(*,'("Info(writepmat):")')
-write(*,'(" momentum matrix elements written to file PMAT.OUT")')
-write(*,*)
+! write the matrix elements to direct-access file
+do i=0,nproc-1
+  if (i.eq.iproc) then
+    open(50,file='PMAT.OUT',action='WRITE',form='UNFORMATTED',access='DIRECT', &
+      recl=recl)
+    do ikloc=1,nkptloc(iproc)
+      write(50,rec=ikglob(ikloc)) pmat(:,:,:,ikloc)
+    enddo
+    close(50)
+  endif
+  call barrier(comm_world)
+enddo
+if (iproc.eq.0) then
+  write(*,*)
+  write(*,'("Info(writepmat):")')
+  write(*,'(" momentum matrix elements written to file PMAT.OUT")')
+  write(*,*)
+endif
 deallocate(apwalm,evecfv,evecsv,pmat)
 end subroutine
 !EOC
