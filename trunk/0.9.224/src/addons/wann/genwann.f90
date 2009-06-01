@@ -11,9 +11,7 @@ complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: wfsvit(:,:,:)
 complex(8), allocatable :: wann_unkmt_new(:,:,:,:,:)
 complex(8), allocatable :: wann_unkit_new(:,:,:)
-integer ispn,i,j,n,m1,m2
-complex(8), allocatable :: zt2(:,:)
-real(8) d1
+integer j,n
 integer, external :: ikglob
 ! allocate arrays
 allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
@@ -25,21 +23,6 @@ call genwfsvmt(lmaxvr,lmmaxvr,ngk(1,ikglob(ik)),evecfv,evecsv,apwalm,wfsvmt)
 call genwfsvit(ngk(1,ikglob(ik)),evecfv,evecsv,wfsvit)
 ! calculate WF expansion coefficients
 call genwann_c(ikglob(ik),evalsv(1,ikglob(ik)),wfsvmt,wann_c(1,1,ik))
-
-! compute H(k) in WF basis
-allocate(zt2(nwann,nwann))
-zt2=zzero
-do m1=1,nwann
-  do m2=1,nwann
-    do j=1,nstsv
-      zt2(m1,m2)=zt2(m1,m2)+dconjg(wann_c(m1,j,ik))*wann_c(m2,j,ik) * &
-        evalsv(j,ikglob(ik))
-    enddo
-  enddo
-enddo
-wann_h(:,:,ikglob(ik))=zt2(:,:)
-call diagzhe(nwann,zt2,wann_e(1,ikglob(ik)))
-deallocate(zt2)
 ! compute Bloch-sums of Wannier functions
 allocate(wann_unkmt_new(lmmaxvr,nrfmax,natmtot,nspinor,nwann))
 allocate(wann_unkit_new(ngkmax,nspinor,nwann))
@@ -53,21 +36,9 @@ do n=1,nwann
       wfsvit(:,:,j)*wann_c(n,j,ik)
   enddo
 enddo
-
-!d1=sum(abs(wann_unkmt(:,:,:,:,:,ik)-wann_unkmt_new(:,:,:,:,:)))
-!d1=d1+sum(abs(wann_unkit(:,:,:,ik)-wann_unkit_new(:,:,:)))
-!
-!write(*,*)'ik=',ik,'wf_diff=',d1
-
-!if (mod(iscl,2).eq.0) then
-!  wann_unkmt(:,:,:,:,:,ik)=0.75d0*wann_unkmt(:,:,:,:,:,ik)+0.25d0*wann_unkmt_new(:,:,:,:,:)
-!  wann_unkit(:,:,:,ik)    =0.75d0*wann_unkit(:,:,:,ik)    +0.25d0*wann_unkit_new(:,:,:)
-  wann_unkmt(:,:,:,:,:,ik)=wann_unkmt_new(:,:,:,:,:)
-  wann_unkit(:,:,:,ik)=wann_unkit_new(:,:,:)
-!endif
-
+wann_unkmt(:,:,:,:,:,ik)=wann_unkmt_new(:,:,:,:,:)
+wann_unkit(:,:,:,ik)=wann_unkit_new(:,:,:)
 deallocate(wfsvmt,wfsvit,apwalm,wann_unkmt_new,wann_unkit_new)
-
 return
 end
 

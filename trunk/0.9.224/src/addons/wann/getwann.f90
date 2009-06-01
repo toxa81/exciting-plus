@@ -5,10 +5,10 @@ integer, intent(in) :: ik
 integer ik_,nwann_,nspinor_,lmmaxvr_,nrfmax_,natmtot_,ngkmax_,recl
 integer, external :: ikglob
 inquire(iolength=recl)ik_,nwann_,nspinor_,lmmaxvr_,nrfmax_,natmtot_,ngkmax_, &
-  wann_unkmt(:,:,:,:,:,ik),wann_unkit(:,:,:,ik)
+  wann_unkmt(:,:,:,:,:,ik),wann_unkit(:,:,:,ik),wann_c(:,:,ik)
 open(70,file='WANN_UNK.OUT',action='READ',form='UNFORMATTED',access='DIRECT',recl=recl)
 read(70,rec=ikglob(ik))ik_,nwann_,nspinor_,lmmaxvr_,nrfmax_,natmtot_,ngkmax_, &
-  wann_unkmt(:,:,:,:,:,ik),wann_unkit(:,:,:,ik)
+  wann_unkmt(:,:,:,:,:,ik),wann_unkit(:,:,:,ik),wann_c(:,:,ik)
 close(70)
 if (ik_.ne.ikglob(ik).or.nwann_.ne.nwann.or.nspinor_.ne.nspinor.or. &
   lmmaxvr_.ne.lmmaxvr.or.nrfmax_.ne.nrfmax.or.natmtot_.ne.natmtot.or.ngkmax_.ne.ngkmax) then

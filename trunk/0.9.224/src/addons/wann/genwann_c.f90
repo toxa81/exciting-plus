@@ -6,24 +6,12 @@ integer, intent(in) :: ik
 real(8), intent(in) :: e(nstsv)
 complex(8), intent(in) :: wfsvmt(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
 complex(8), intent(out) :: wann_c_(nwann,nstsv)
-
+! local variables
 complex(8), allocatable :: prjao(:,:)
 complex(8), allocatable :: s(:,:),sdiag(:)
-integer ispn,i,j,n,m1,m2,io1,io2,ias,lm1,lm,ierr,l,itype
+integer ispn,j,n,m1,m2,io1,io2,ias,lm1,lm,ierr,l,itype
 logical l1
 
-!write(*,*)'ik=',ik
-!do i=1,nstsv
-!  do ispn=1,nspinor
-!    do ias=1,natmtot
-!      do io1=1,nrfmax
-!        do lm=1,lmmaxvr
-!          write(*,*)'lm=',lm,'io=',io1,'ias=',ias,'ispn=',ispn,'i=',i,'wfsvmt=',wfsvmt(lm,io1,ias,i,ispn)
-!        enddo
-!      enddo
-!    enddo
-!  enddo
-!enddo
 ! compute <\psi|g_n>
 allocate(prjao(nwann,nstsv))
 prjao=zzero
@@ -53,10 +41,9 @@ do n=1,nwann
     endif
   enddo !j
 enddo !n
-
+! compute ovelap matrix
 allocate(s(nwann,nwann))
 allocate(sdiag(nwann))
-! compute ovelap matrix
 s=zzero
 do m1=1,nwann
   do m2=1,nwann
@@ -77,14 +64,6 @@ if (ierr.ne.0) then
   write(*,'("  diagonal elements of overlap matrix : ")')
   write(*,'(6X,5G18.10)')abs(sdiag)
   write(*,'("Non-orthogonal WFs will be used")')
-!  do n=1,nwann
-!    itype=iwann(4,n)
-!    write(*,*)
-!    write(*,'(" n : ",I4,"  type : ",I4)')n,itype
-!    write(*,'("   |<\psi_i|\phi_n>| : ")')
-!    write(*,'(6X,10G18.10)')abs(prjao(n,:))
-!    write(*,'("   sum(abs(|..|)) : ",G18.10)')sum(abs(prjao(n,:)))
-!  enddo
   write(*,*)
 endif
 ! compute Wannier function expansion coefficients

@@ -74,6 +74,7 @@ do ik=1,nkptloc(iproc)
   write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ikglob(ik),nkpt
 ! solve the first- and second-variational secular equations
   call seceqn(ik,evalfv,evecfv,evecsv)
+  if (wannier) call genwann_h(ik)
   do ist=1,nstsv
 ! subtract the Fermi energy
     e(ist,ikglob(ik))=evalsv(ist,ikglob(ik)) !-efermi

@@ -352,31 +352,11 @@ do i=0,nproc-1
       call putevecfv(ikglob(ik),evecfvloc(1,1,1,ik))
       call putevecsv(ikglob(ik),evecsvloc(1,1,ik))
       call putoccsv(ikglob(ik),occsv(1,ikglob(ik)))
-!      if (wannier) call putwfc(ikglob(ik),wann_c(1,1,1,ik))
       if (wannier) call putwann(ik)
     end do
   end if
   call barrier(comm_world)
 end do
-if (wannier) call zsync(wann_h,nwann*nwann*nkpt,.true.,.false.)
-if (wannier.and.iproc.eq.0) then
-  do i=1,nwann
-    wann_h(i,i,:)=wann_h(i,i,:)-efermi
-  enddo
-  wann_h=wann_h*ha2ev
-  open(200,file='hamilt',form='formatted',status='replace')
-  write(200,*)nkpt,nwann
-  do ik=1,nkpt
-    write(200,*)1.d0 !wtkp(ikp)
-    do i=1,nwann
-      do j=1,nwann
-        write(200,*)dreal(wann_h(i,j,ik)),dimag(wann_h(i,j,ik))
-      enddo
-    enddo
-  enddo	
-  close(200)
-endif
-
 call lsync(tstop,1,.true.)
 !-----------------------!
 !     compute forces    !

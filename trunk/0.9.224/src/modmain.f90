@@ -1088,11 +1088,12 @@ complex(8), allocatable :: wann_unkit(:,:,:,:)
 complex(8), allocatable :: wann_h(:,:,:)
 ! e(k) of WF H(k) (required for band-sctructure plot only)
 real(8), allocatable :: wann_e(:,:)
+! momentum operator in WF basis
+complex(8), allocatable :: wann_p(:,:,:,:)
 
 real(8), allocatable :: wann_ene(:)
 real(8), allocatable :: wann_occ(:)
 
-!complex(8), allocatable :: wf_p(:,:,:,:,:)
 complex(8), allocatable :: wf_v_mtrx(:,:,:,:,:)
 
 real(8) zero3d(3)

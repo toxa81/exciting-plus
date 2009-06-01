@@ -97,6 +97,9 @@ wann_h=zzero
 if (allocated(wann_e)) deallocate(wann_e)
 allocate(wann_e(nwann,nkpt))
 wann_e=0.d0
+if (allocated(wann_p)) deallocate(wann_p)
+allocate(wann_p(3,nwann,nwann,nkpt))
+wann_p=zzero
 
 if (allocated(wann_ene)) deallocate(wann_ene)
 allocate(wann_ene(nwann))

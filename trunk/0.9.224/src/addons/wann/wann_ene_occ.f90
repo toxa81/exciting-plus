@@ -156,7 +156,7 @@ if (iproc.eq.0) then
         enddo !ispn
       endif
     enddo !l
-  enddo
+  enddo !i
 endif
 deallocate(wf_ene_mtrx,wf_occ_mtrx)
 return
