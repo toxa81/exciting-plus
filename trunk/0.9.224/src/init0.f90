@@ -443,6 +443,14 @@ if (allocated(timer)) deallocate(timer)
 allocate(timer(ntimers,2))
 timer=0.d0
 
+if (allocated(ias2is)) deallocate(ias2is)
+allocate(ias2is(natmtot))
+do is=1,nspecies
+  do ia=1,natoms(is)
+    ias2is(idxas(ia,is))=is
+  end do
+end do
+
 call timesec(ts1)
 timeinit=timeinit+ts1-ts0
 

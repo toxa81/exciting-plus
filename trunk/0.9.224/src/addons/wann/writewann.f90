@@ -1,7 +1,9 @@
 subroutine writewann
 use modmain
 implicit none
-integer i,j,ik,ikloc,idm
+integer i,j,ik,ikloc,idm,lm,ir,ispn,n,ias,io
+complex(8), allocatable :: wann_rf(:,:,:,:)
+character*20 fname
 integer, external :: ikglob
 
 if (.not.wannier) then
@@ -31,6 +33,10 @@ if (task.eq.601) then
   allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc(iproc)))
   allocate(evecsvloc(nstsv,nstsv,nkptloc(iproc)))
 endif
+if (task.eq.602) then
+  allocate(wann_rf(lmmaxvr,nrmtmax,nspinor,nwann))
+  wann_rf=zzero
+endif
 evalsv=0.d0
 do i=0,nproc-1
   if (iproc.eq.i) then
@@ -51,9 +57,29 @@ do ikloc=1,nkptloc(iproc)
   if (task.eq.600) call genwann_h(ikloc)
   if (task.eq.601) call genwann_p(ikloc,evecfvloc(1,1,1,ikloc), &
     evecsvloc(1,1,ikloc))
+  if (task.eq.602) then
+    do n=1,nwann
+      ias=iwann(1,n)
+      do ispn=1,nspinor
+        do ir=1,nrmt(ias2is(ias))
+          do lm=1,lmmaxvr
+            do io=1,nrfmax
+              wann_rf(lm,ir,ispn,n)=wann_rf(lm,ir,ispn,n)+&
+                urf(ir,lm2l(lm),io,ias)*wann_unkmt(lm,io,ias,ispn,n,ikloc)
+            enddo
+          enddo !lm
+        enddo !ir
+      enddo !ispn
+    enddo !n
+  endif
 enddo
 call zsync(wann_h,nwann*nwann*nkpt,.true.,.false.)
 call zsync(wann_p,3*nwann*nwann*nkpt,.true.,.false.)
+if (task.eq.602) then
+  do n=1,nwann
+    call zsync(wann_rf(1,1,1,n),lmmaxvr*nrmtmax*nspinor,.true.,.false.)
+  enddo
+endif
 if (iproc.eq.0.and.task.eq.600) then
   open(200,file='WANN_H0.OUT',form='formatted',status='replace')
   do i=1,nwann
@@ -108,9 +134,25 @@ if (iproc.eq.0.and.task.eq.601) then
   enddo
   close(200)
 endif
+if (iproc.eq.0.and.task.eq.602) then
+  do n=1,nwann
+    write(fname,'("WANN_",I3.3,"_rfmt.OUT")')n
+    open(200,file=trim(fname),form='formatted',status='replace')
+    do lm=1,16
+      do ir=1,nrmt(ias2is(iwann(1,n)))
+        write(200,'(2G18.10)')spr(ir,ias2is(iwann(1,n))),abs(wann_rf(lm,ir,1,n))
+      enddo
+      write(200,*)
+    enddo
+    close(200)
+  enddo
+endif
 if (task.eq.601) then
   deallocate(evecfvloc)
   deallocate(evecsvloc)
+endif
+if (task.eq.602) then
+  deallocate(wann_rf)
 endif
 return
 end

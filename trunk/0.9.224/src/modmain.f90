@@ -949,6 +949,7 @@ integer nrfmax
 real(8), allocatable :: urf(:,:,:,:)
 real(8), allocatable :: urfprod(:,:,:,:)
 integer, allocatable :: lm2l(:)
+integer, allocatable :: ias2is(:)
 ! for local coordinate system
 integer natlcs
 real(8), allocatable :: lcsrsh(:,:,:)

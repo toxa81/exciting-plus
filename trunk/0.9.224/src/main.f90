@@ -110,7 +110,7 @@ do itask=1,ntasks
     call checknorm
   case(501)
     call checkwf
-  case(600,601)
+  case(600,601,602)
     call writewann
   case default
     write(*,*)
