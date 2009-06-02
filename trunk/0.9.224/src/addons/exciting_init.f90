@@ -28,6 +28,12 @@ if (wannier) then
     call getwann(ik)
   enddo
 endif
+
+if (allocated(veffir_zfft)) deallocate(veffir_zfft)
+allocate(veffir_zfft(ngrtot))
+veffir_zfft(:)=veffir(:)
+call zfftifc(3,ngrid,-1,veffir_zfft)
+
   
 return
 end

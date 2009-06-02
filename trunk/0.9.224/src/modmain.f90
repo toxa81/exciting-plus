@@ -968,6 +968,8 @@ complex(8), allocatable :: yrlm_lcs(:,:,:)
 ! band range for task 64
 integer bndranglow, bndranghi
 
+complex(8), allocatable :: veffir_zfft(:)
+
 ! unit conversion
 real(8), parameter :: ha2ev=27.21138386d0
 real(8), parameter :: au2ang=0.5291772108d0
