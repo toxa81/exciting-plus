@@ -15,14 +15,8 @@ allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 allocate(pmat(3,nstsv,nstsv))
 call match(ngk(1,ikglob(ikloc)),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),&
   sfacgk(1,1,1,ikloc),apwalm)
-call genpmat(ngk(1,ikglob(ikloc)),igkig(1,1,ikloc),gkc(1,1,ikloc),&
+call genpmat(ngk(1,ikglob(ikloc)),igkig(1,1,ikloc),vgkc(1,1,1,ikloc),&
   apwalm,evecfv,evecsv,pmat)
-!do m1=1,nstsv
-!  do m2=m1,nstsv
-!    write(*,*)'ik=',ikloc,'m1=',m1,'m2=',m2,'grad=',pmat(:,m1,m2)
-!  enddo
-!enddo
-!call pstop
 ! compute p_nn'(k)=<W_n|\grad|W_n'> 
 allocate(zt2(3,nwann,nwann))
 zt2=zzero
