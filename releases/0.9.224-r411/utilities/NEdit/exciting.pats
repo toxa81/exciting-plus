@@ -1,0 +1,41 @@
+! Collection of Syntax Highlighting Patterns for NEdit
+! automatically created by the extract_blocks script
+! by Juergen Spitaler (Juergen.Spitaler@unileoben.ac.at)
+! date: Fri Jul 25 10:30:44 CEST 2008
+! blocks extracted from file: exciting-0.9.151/src/readinput.f90
+!
+! This files provides syntax highlighting for:
+! exciting.in and INFO.OUT
+! In NEdit Version 5.0.1 and beyond, load this pattern by starting nedit with:
+!
+!     nedit -import <name of this file>
+!
+! Then, check that the patterns were loaded correctly, and choose Save Defaults
+! from the Preferences menu.  The new patterns will now be incorporated into
+! your own .nedit file, so the next time you start NEdit, you will no longer
+! need to use -import.
+!
+! In version 5.0, without -import, you must edit your .nedit file by hand and
+! add the contents of each resource below to the corresponding list in your
+! .nedit file.  Be sure to separate new entries with \n, and continue resource
+! strings by escaping all newlines within a resource value with \ (backslash),
+! leaving only the last line of the resource value not ending in \.
+!
+nedit.highlightPatterns: \
+	Exciting_in:1:0{\n\
+    Block:"^ *(tasks|avec|scale|scale1|scale2|scale3|epslat|primcell|tshift|rlambda|autokpt|ngridk|vkloff|reducek|ngridq|reduceq|rgkmax|gmaxvr|lmaxapw|lmaxvr|lmaxmat|lmaxinr|fracinr|npsden|spinpol|spinorb|xctype|stype|swidth|epsocc|epschg|nempty|beta0|betamax|maxscl|epspot|epsengy|epsforce|cfdamp|sppath|scrpath|molecule|vacuum|atoms|plot1d|plot2d|plot3d|dos|bcsym|tau0atm|nstfsp|lradstp|chgexs|nprad|scissor|optcomp|usegdft|intraband|evalmin|deband|bfieldc|fixspin|momfix|mommtfix|taufsm|autormt|rmtapm|nosym|deltaph|phwrite|notes|tforce|tfibs|maxitoep|tauoep|kstlist|vklem|deltaem|ndspem|nosource|spinsprl|vqlss|nwrite|tevecsv|lda\\+u|rdmxctype|rdmmaxscl|maxitn|maxitc|taurdmn|taurdmc|rdmalpha|reducebf)":::Storage Type::\n\
+		Comment:"!.*":::Comment::\n\
+		Species:"'.*\\.in'":::Text Arg1::\n\
+	}\n\
+	Exciting_INFO:1:0{\n\
+		KeyWord:"(^ *\\n[^:]*:|Maximum angular momentum for)":::Storage Type::\n\
+		InitialItem:"(Time \\(hh:mm:ss\\)   :| parameters loaded from :| nuclear charge *:| electronic charge :| atomic mass *:| muffin-tin radius :| number of radial points in muffin-tin :| atomic position \\(lattice\\), magnetic field \\(Cartesian\\) :|Number of crystal symmetries         :|k-point offset :|Total number of k-points :|Maximum \\|G\\+k\\| for APW functions       :|Maximum \\|G\\| for potential and density :|Total number of G-vectors :| APW functions *:| computing H and O matrix elements :| potential and density             :|Total.*charge *:|Total number of valence states :|Smearing width :)":::Identifier1::\n\
+		Header:"^\\+-*\\+\\n.*\\n^\\+-*\\+\\n":::Regex::\n\
+		species:"species .... atom ....":::Identifier1::\n\
+		InitialInfo:"(Inversion symmetry.*|k-point set is.*reduced.*|(?<=Spin treatment :\\n).*|(?<=Smearing scheme :\\n).*)":::ItalicGreen::\n\
+		Item:" *[a-zA-Z].*:":::Pointer::\n\
+		TotEne:"(?<=:).*\\n *\\n(?=Density of states at Fermi)":::Keyword::\n\
+	}
+nedit.languageModes:	Exciting_in:.in:"tasks"::::::\n\
+	Exciting_INFO:.OUT:::::::
+nedit.styles: 	ItalicGreen:#229900:Italic
