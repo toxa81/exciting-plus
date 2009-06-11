@@ -2,7 +2,7 @@ subroutine writebz
 use modmain
 implicit none
 real(8) pt1(3,26),p0(3),pt2(3,26)
-integer i1,i2,i3,i,m,npt,nc,nf,n1
+integer i1,i2,i3,i,j,m,npt,nc,nf,n1,nptot
 integer connections(2,100)
 integer faces(0:10,100)
 logical vbz,l1
@@ -54,91 +54,71 @@ n1=0
 do i=1,nf
   n1=n1+faces(0,i)
 enddo
+nptot=npt+nc+nf
 
 open(150,file='bz.dx',status='replace',form='formatted')
-
-write(150,'("object 1 class array type string rank 1 shape 5 items",\
-  1x,I3,1x,"data follows")')npt
+! labels of the points
+write(150,'("object 1 class array type string rank 1 shape 5 items ",\
+  I3," data follows")')npt
 do i=1,npt
-  write(150,'(""",I2,""")')i-1
+  write(150,'("""",I2,"""")')i-1
 enddo
+write(150,'("attribute ""dep"" string ""positions""")')
+! color of points
+write(150,'("object 2 class array type float rank 1 shape 3 items ",\
+  I3," data follows")')npt
+do i=1,npt
+  write(150,'(3F12.6)')0.d0,0.d0,1.d0
+enddo
+write(150,'("attribute ""dep"" string ""positions""")')
+! positions
+write(150,'("object 3 class array type float rank 1 shape 3 items ",\
+  I3," data follows")')npt
+do i=1,npt
+  write(150,'(3F12.6)')pt2(:,i)
+enddo
+write(150,'("attribute ""dep"" string ""positions""")')
+! connections
+write(150,'("object 4 class array type int rank 1 shape 2 items ",\
+  I3," data follows")')nc
+do i=1,nc
+  write(150,'(2I4)')connections(:,i)
+enddo
+write(150,'("attribute ""element type"" string ""lines""")')
+write(150,'("attribute ""ref"" string ""positions""")')
+! faces
+write(150,'("object 5 class array type int rank 0 items ",\
+  I3," data follows")')n1
+do i=1,nf
+  write(150,'(10I4)')faces(1:faces(0,i),i)
+enddo
+write(150,'("attribute ""ref"" string ""positions""")')
+write(150,'("object 6 class array type int rank 0 items ",\
+  I3," data follows")')nf
+i=0
+j=1
+do while (i.lt.n1)
+  write(150,'(I3)')i
+  i=i+faces(0,j)
+  j=j+1
+enddo
+write(150,'("attribute ""ref"" string ""edges""")')
+write(150,'("object 7 class array type int rank 0 items ",\
+  I3," data follows")')nf
+do i=1,nf
+  write(150,'(I3)')i-1
+enddo
+write(150,'("attribute ""ref"" string ""loops""")')
+write(150,'("object ""bz"" class field")')
+write(150,'("component ""data"" value 1")')
+write(150,'("component ""colors"" value 2")')
+write(150,'("component ""positions"" value 3")')
+write(150,'("component ""connections"" value 4")')
+write(150,'("component ""edges"" value 5")') 
+write(150,'("component ""loops"" value 6")')
+write(150,'("component ""faces"" value 7")')
+write(150,'("end")')
 close(150)
-!write(64,14)
-
-!write(64,16)np
-!do i = 1, np
-!  write(64,18)0.d0,0.d0,1.d0
-!enddo
-!write(64,14)
-!
-!write(64,20)np
-!do i = 1, np
-!  write(64,18)bz_pt(i,:)
-!enddo
-!write(64,14)
-!
-!write(64,22)nc
-!do i = 1, nc
-!  write(64,24)connections(i,:)
-!enddo
-!write(64,26)
-!write(64,28)
-!
-!write(64,30)n1
-!do i = 1, nf
-!  write(64,32)faces(i,1:faces(i,0))
-!enddo
-!write(64,28)
-!
-!write(64,34)nf
-!i = 0
-!j = 1
-!do while ( i.lt.n1 )
-!  write(64,36)i
-!i = i + faces(j,0)
-!j = j + 1
-!enddo
-!write(64,38)
-!
-!write(64,40)nf
-!do i = 1, nf
-!  write(64,36)i-1
-!enddo
-!write(64,42)
-!
-!write(64,60)
-!
-!close(64)
-
-
-10  format('object 1 class array type string rank 1 shape 5 items',1x,i3,1x,'data follows')
-12  format('"',i2,'"')
-14  format('attribute "dep" string "positions"')
-16  format('object 2 class array type float rank 1 shape 3 items',1x,i3,1x,'data follows')
-18  format(3f12.6)
-20  format('object 3 class array type float rank 1 shape 3 items',1x,i3,1x,'data follows')
-22  format('object 4 class array type int rank 1 shape 2 items',1x,i3,1x,'data follows')
-24  format(2i3)
-26  format('attribute "element type" string "lines"')
-28  format('attribute "ref" string "positions"')
-30  format('object 5 class array type int rank 0 items',1x,i3,1x,'data follows')
-32  format(10i3)
-34  format('object 6 class array type int rank 0 items',1x,i3,1x,'data follows')
-36  format(i3)
-38  format('attribute "ref" string "edges"')
-40  format('object 7 class array type int rank 0 items',1x,i3,1x,'data follows')
-42  format('attribute "ref" string "loops"')
-60  format('object "bz" class field'          &
-       /'component "data" value 1'        &
-   /'component "colors" value 2'      &
-   /'component "positions" value 3'   &
-   /'component "connections" value 4' &
-   /'component "edges" value 5'       & 
-   /'component "loops" value 6'       &
-   /'component "faces" value 7'       &
-   /'end')
-
-end
 
 return
 end
@@ -152,8 +132,8 @@ real(8), intent(in) :: q2(3)
 real(8), intent(in) :: q3(3)
 real(8), intent(out) :: p0(3)
 ! local variables
-real(8) :: a(3,3),b(3),a1(3,3)
-real(8) :: det0,det1,det2,det3
+real(8) a(3,3),b(3),a1(3,3)
+real(8) det0,det1,det2,det3
 real(8), external :: r3mdet
 
 ! equation for a plane: \vec{n}*(\vec{x}-\vec{q})=0
@@ -194,7 +174,7 @@ a1(:,:)=a(:,:)
 a1(:,3)=b(:)
 det3=r3mdet(a1)
 
-p0(:)=(/det1/det0,det2/det0,det3/det0/)
+p0(:)=(/det1,det2,det3/)/det0
 
 return
 end
