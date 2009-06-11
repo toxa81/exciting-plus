@@ -1,11 +1,17 @@
 subroutine writebz
 use modmain
 implicit none
-real(8) pt1(3,26),p0(3),pt2(3,26)
+real(8) pt1(3,26),p0(3),pt2(3,26),pt3(3,200)
 integer i1,i2,i3,i,j,m,npt,nc,nf,n1,nptot
 integer connections(2,100)
 integer faces(0:10,100)
 logical vbz,l1
+character*24 lbl
+real(8) a(3,3)
+real(8) b(3)
+integer ipiv(3)
+real(8) work(200)
+integer lwork
 
 call readinput
 call init0
@@ -46,6 +52,20 @@ do i1=1,26
   enddo
 enddo
 call connect_pts(pt2,npt,connections,nc,faces,nf)
+
+nptot=npt+nc+nf
+pt3(:,1:npt)=pt2(:,1:npt)
+do i=1,nc
+  pt3(:,npt+i)=0.5d0*(pt2(:,connections(1,i))+pt2(:,connections(2,i)))
+enddo
+do i=1,nf
+  p0=0.d0
+  do m=1,faces(0,i)
+    p0(:)=p0(:)+pt2(:,faces(m,i))
+  enddo
+  pt3(:,npt+nc+i)=p0/faces(0,i)
+enddo
+
 ! count points starting from 0
 faces(1:10,:)=faces(1:10,:)-1
 connections(:,:)=connections(:,:)-1
@@ -54,28 +74,36 @@ n1=0
 do i=1,nf
   n1=n1+faces(0,i)
 enddo
-nptot=npt+nc+nf
 
 open(150,file='bz.dx',status='replace',form='formatted')
 ! labels of the points
-write(150,'("object 1 class array type string rank 1 shape 5 items ",\
-  I3," data follows")')npt
-do i=1,npt
-  write(150,'("""",I2,"""")')i-1
+write(150,'("object 1 class array type string rank 1 shape 25 items ",\
+  I3," data follows")')nptot
+do m=1,nptot
+  do j=1,3
+    do i=1,j
+      a(i,j)=dot_product(bvec(:,i),bvec(:,j))
+    enddo
+    b(j)=dot_product(bvec(:,j),pt3(:,m))
+  enddo
+  lwork=200
+  call dsysv('U',3,1,a,3,ipiv,b,3,work,lwork,i)
+  write(lbl,'(3F8.4)')b
+  write(150,'("""",A24,"""")')lbl
 enddo
 write(150,'("attribute ""dep"" string ""positions""")')
 ! color of points
 write(150,'("object 2 class array type float rank 1 shape 3 items ",\
-  I3," data follows")')npt
-do i=1,npt
+  I3," data follows")')nptot
+do i=1,nptot
   write(150,'(3F12.6)')0.d0,0.d0,1.d0
 enddo
 write(150,'("attribute ""dep"" string ""positions""")')
 ! positions
 write(150,'("object 3 class array type float rank 1 shape 3 items ",\
-  I3," data follows")')npt
-do i=1,npt
-  write(150,'(3F12.6)')pt2(:,i)
+  I3," data follows")')nptot
+do i=1,nptot
+  write(150,'(3F12.6)')pt3(:,i)
 enddo
 write(150,'("attribute ""dep"" string ""positions""")')
 ! connections
