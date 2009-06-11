@@ -13,7 +13,6 @@ integer ipiv(3)
 real(8) work(200)
 integer lwork
 
-call readinput
 call init0
 
 ! connect center point with neigbours
