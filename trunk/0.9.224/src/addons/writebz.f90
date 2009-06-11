@@ -1,12 +1,12 @@
 subroutine writebz
 use modmain
 implicit none
-real(8) pt1(3,26),p0(3),pt2(3,26),pt3(3,200)
+real(8) pt1(3,26),p0(3),pt2(3,100),pt3(3,200)
 integer i1,i2,i3,i,j,m,npt,nc,nf,n1,nptot
 integer connections(2,100)
 integer faces(0:10,100)
 logical vbz,l1
-character*24 lbl
+character*21 lbl
 real(8) a(3,3)
 real(8) b(3)
 integer ipiv(3)
@@ -21,7 +21,7 @@ do i1=-1,1
   do i2=-1,1
     do i3=-1,1
       if (.not.(i1.eq.0.and.i2.eq.0.and.i3.eq.0)) then
-        pt1(:,m)=i1*bvec(1,:)+i2*bvec(2,:)+i3*bvec(3,:)
+        pt1(:,m)=i1*bvec(:,1)+i2*bvec(:,2)+i3*bvec(:,3)
         m=m+1
     endif
     enddo
@@ -76,7 +76,7 @@ enddo
 
 open(150,file='bz.dx',status='replace',form='formatted')
 ! labels of the points
-write(150,'("object 1 class array type string rank 1 shape 25 items ",\
+write(150,'("object 1 class array type string rank 1 shape 22 items ",\
   I3," data follows")')nptot
 do m=1,nptot
   do j=1,3
@@ -87,8 +87,8 @@ do m=1,nptot
   enddo
   lwork=200
   call dsysv('U',3,1,a,3,ipiv,b,3,work,lwork,i)
-  write(lbl,'(3F8.4)')b
-  write(150,'("""",A24,"""")')lbl
+  write(lbl,'(3F7.3)')b
+  write(150,'("""",A21,"""")')lbl
 enddo
 write(150,'("attribute ""dep"" string ""positions""")')
 ! color of points
@@ -296,6 +296,7 @@ do i1=1,np-2
 ! first vector
           q1(:)=pts_in_plane(:,n)-q3(:)
           a1=-100.d0
+          j=-100
           do m=1,np1
             if (m.ne.n) then
 ! second vector
@@ -308,7 +309,7 @@ do i1=1,np-2
               q4(3)=q1(1)*q2(2)-q2(1)*q1(2)
 ! scalar product with the norm to check collinearity              
               a2=q4(1)*norm(1)+q4(2)*norm(2)+q4(3)*norm(3)
-              if (a2.gt.1d-4.and.a3.gt.a1) then
+              if (a2.gt.1d-6.and.a3.gt.a1) then
                 a1=a3
                 j=m
               endif
