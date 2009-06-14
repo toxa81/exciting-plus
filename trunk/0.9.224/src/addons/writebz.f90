@@ -2,6 +2,7 @@ subroutine writebz
 use modmain
 implicit none
 real(8) pt1(3,26),p0(3),pt2(3,100),pt3(3,200)
+integer pl(200)
 integer i1,i2,i3,i,j,m,npt,nc,nf,n1,nptot
 integer connections(2,100)
 integer faces(0:10,100)
@@ -78,7 +79,12 @@ open(150,file='bz.dx',status='replace',form='formatted')
 ! labels of the points
 write(150,'("object 1 class array type string rank 1 shape 22 items ",\
   I3," data follows")')nptot
+pl=1
 do m=1,nptot
+  do j=1,nptot
+! skip inverse points
+    if (sum(abs(pt3(:,m)+pt3(:,j))).lt.1d-8) pl(j)=0
+  enddo
   do j=1,3
     do i=1,j
       a(i,j)=dot_product(bvec(:,i),bvec(:,j))
@@ -87,7 +93,11 @@ do m=1,nptot
   enddo
   lwork=200
   call dsysv('U',3,1,a,3,ipiv,b,3,work,lwork,i)
-  write(lbl,'(3F7.3)')b
+  if (pl(m).eq.1) then
+    write(lbl,'(3F7.3)')b
+  else
+    lbl=""
+  endif
   write(150,'("""",A21,"""")')lbl
 enddo
 write(150,'("attribute ""dep"" string ""positions""")')
