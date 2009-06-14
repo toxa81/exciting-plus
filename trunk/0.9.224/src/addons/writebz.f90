@@ -7,12 +7,7 @@ integer i1,i2,i3,i,j,m,npt,nc,nf,n1,nptot
 integer connections(2,100)
 integer faces(0:10,100)
 logical vbz,l1
-character*21 lbl
-real(8) a(3,3)
 real(8) b(3)
-integer ipiv(3)
-real(8) work(200)
-integer lwork
 
 call init0
 
@@ -77,7 +72,7 @@ enddo
 
 open(150,file='bz.dx',status='replace',form='formatted')
 ! labels of the points
-write(150,'("object 1 class array type string rank 1 shape 22 items ",\
+write(150,'("object 1 class array type string rank 1 shape 4 items ",\
   I3," data follows")')nptot
 pl=1
 do m=1,nptot
@@ -85,20 +80,13 @@ do m=1,nptot
 ! skip inverse points
     if (sum(abs(pt3(:,m)+pt3(:,j))).lt.1d-8) pl(j)=0
   enddo
-  do j=1,3
-    do i=1,j
-      a(i,j)=dot_product(bvec(:,i),bvec(:,j))
-    enddo
-    b(j)=dot_product(bvec(:,j),pt3(:,m))
-  enddo
-  lwork=200
-  call dsysv('U',3,1,a,3,ipiv,b,3,work,lwork,i)
+! gat lattice coordinates of the point
+  call r3mv(binv,pt3(:,m),b)
   if (pl(m).eq.1) then
-    write(lbl,'(3F7.3)')b
+    write(150,'("""",I3,""""," # cart=",3F12.6," lat=",3F12.6)')m,pt3(:,m),b
   else
-    lbl=""
-  endif
-  write(150,'("""",A21,"""")')lbl
+    write(150,'("""   """," # cart=",3F12.6," lat=",3F12.6)')pt3(:,m),b    
+  endif  
 enddo
 write(150,'("attribute ""dep"" string ""positions""")')
 ! color of points
@@ -170,7 +158,7 @@ real(8), intent(in) :: q3(3)
 real(8), intent(out) :: p0(3)
 ! local variables
 real(8) a(3,3),b(3),a1(3,3)
-real(8) det0,det1,det2,det3
+real(8) det0
 real(8), external :: r3mdet
 
 ! equation for a plane: \vec{n}*(\vec{x}-\vec{q})=0
@@ -188,8 +176,8 @@ a(3,:)=q3(:)
 
 det0=r3mdet(a)
 ! linear dependent normals -> intersection of 3 planes is not a point
-if (abs(det0).lt.1d-6) then
-  p0(:)=1000.d0
+if (abs(det0).lt.1d-10) then
+  p0(:)=10000.d0
   return
 endif
 
@@ -198,20 +186,10 @@ b(1)=(q1(1)**2+q1(2)**2+q1(3)**2)
 b(2)=(q2(1)**2+q2(2)**2+q2(3)**2)
 b(3)=(q3(1)**2+q3(2)**2+q3(3)**2)
 
-! solve system of linear equations using Cramer's rule
-a1(:,:)=a(:,:)
-a1(:,1)=b(:)
-det1=r3mdet(a1)
-
-a1(:,:)=a(:,:)
-a1(:,2)=b(:)
-det2=r3mdet(a1)
-
-a1(:,:)=a(:,:)
-a1(:,3)=b(:)
-det3=r3mdet(a1)
-
-p0(:)=(/det1,det2,det3/)/det0
+! invert 3x3 matrix
+call r3minv(a,a1)
+! x=a^{-1}*b
+call r3mv(a1,b,p0)
 
 return
 end
@@ -223,19 +201,19 @@ real(8), intent(in) :: p0(3)
 real(8), intent(in) :: pt1(3,26)
 logical, intent(out) :: f
 
-real(8) q1,q2
+real(8) d0,d1
 integer i
 
-! distance from the center of BZ to the point p0
-q1=sqrt(p0(1)**2+p0(2)**2+p0(3)**2)-1.d-4
+! squared distance from the center of BZ to the point p0
+d0=p0(1)**2+p0(2)**2+p0(3)**2
 f=.true.
 
 do i=1,26
-! distance from the nearest neigbour lattice point to the point p0
-  q2=sqrt((p0(1)-pt1(1,i))**2+(p0(2)-pt1(2,i))**2+(p0(3)-pt1(3,i))**2)
+! squared distance from the nearest neigbour lattice point to the point p0
+  d1=(p0(1)-pt1(1,i))**2+(p0(2)-pt1(2,i))**2+(p0(3)-pt1(3,i))**2
 ! check the main property of BZ: for any point inside BZ distance to center 
 !   is smaller than distance to neighbouring lattice points
-  if (q2.lt.q1) f=.false.
+  if (d0.gt.(d1+1d-10)) f=.false.
 enddo
 
 return
@@ -280,14 +258,14 @@ do i1=1,np-2
       enddo
 ! if all scalar products have the same sign, then all poins are on the same side
 !  of the plane -> points i1,i2,i3 belong to the face of polyhedra 
-      if (all(fpt(:).gt.-1d-6).or.all(fpt(:).lt.1d-6)) then
+      if (all(fpt(:).gt.-1d-10).or.all(fpt(:).lt.1d-10)) then
 ! norm should point out of BZ (to the side of the plane without points)
-        if (all(fpt(:).gt.-1d-6)) norm(:)=-norm(:)
+        if (all(fpt(:).gt.-1d-10)) norm(:)=-norm(:)
 ! find all points lying in the plane; this are the points, satisfying the plane
 !  equation n*(x-p)=0
         np1=0
         do m=1,np
-          if (abs(fpt(m)).lt.1d-6) then
+          if (abs(fpt(m)).lt.1d-10) then
             np1=np1+1
             pts_in_plane(:,np1)=points(:,m)
             pts_idx(np1)=m
@@ -319,7 +297,7 @@ do i1=1,np-2
               q4(3)=q1(1)*q2(2)-q2(1)*q1(2)
 ! scalar product with the norm to check collinearity              
               a2=q4(1)*norm(1)+q4(2)*norm(2)+q4(3)*norm(3)
-              if (a2.gt.1d-6.and.a3.gt.a1) then
+              if (a2.gt.1d-10.and.a3.gt.a1) then
                 a1=a3
                 j=m
               endif
