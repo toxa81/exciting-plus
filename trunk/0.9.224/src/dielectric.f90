@@ -9,7 +9,7 @@ implicit none
 ! local variables
 integer ik,jk,isym
 integer ist,jst,iw,i,j,l
-integer recl,nsk(3)
+integer recl,nsk(3),idx0,bs
 real(8) eji,wd(2),wplas,t1,t2
 real(8) v1(3),v2(3),v3(3)
 complex(8) zv(3),eta,zt1
@@ -24,7 +24,6 @@ complex(8), allocatable :: sigma(:)
 ! initialise universal variables
 call init0
 call init1
-if (iproc.ne.0) return
 ! read Fermi energy from file
 call readfermi
 do ik=1,nkpt
@@ -68,6 +67,9 @@ open(50,file='PMAT.OUT',action='READ',form='UNFORMATTED',access='DIRECT', &
  recl=recl)
 ! i divided by the complex relaxation time
 eta=cmplx(0.d0,swidth)
+
+call idxbos(nkptnr,nproc,iproc+1,idx0,bs)
+
 ! loop over dielectric tensor components
 do l=1,noptcomp
   i=optcomp(1,l)
@@ -75,7 +77,7 @@ do l=1,noptcomp
   sigma(:)=0.d0
   if (intraband) f(:,:)=0.d0
 ! loop over non-reduced k-points
-  do ik=1,nkptnr
+  do ik=idx0+1,idx0+bs
 ! equivalent reduced k-point
     jk=ikmap(ivknr(1,ik),ivknr(2,ik),ivknr(3,ik))
 ! read momentum matrix elements from direct-access file
@@ -108,8 +110,9 @@ do l=1,noptcomp
   end do
   zt1=zi/(omega*dble(nkptnr))
   sigma(:)=zt1*sigma(:)
+  call dsync(sigma,2*nwdos,.true.,.false.)
 ! intraband contribution
-  if (intraband) then
+  if (intraband.and.iproc.eq.0) then
     if (i.eq.j) then
 ! compute plasma frequency
       do ik=1,nkpt
@@ -137,50 +140,54 @@ do l=1,noptcomp
       end do
     end if
   end if
+  if (iproc.eq.0) then
 ! write the optical conductivity to file
-  write(fname,'("SIGMA_",2I1,".OUT")') i,j
-  open(60,file=trim(fname),action='WRITE',form='FORMATTED')
-  do iw=1,nwdos
-    write(60,'(2G18.10)') w(iw),dble(sigma(iw))
-  end do
-  write(60,'("     ")')
-  do iw=1,nwdos
-    write(60,'(2G18.10)') w(iw),aimag(sigma(iw))
-  end do
-  close(60)
+    write(fname,'("SIGMA_",2I1,".OUT")') i,j
+    open(60,file=trim(fname),action='WRITE',form='FORMATTED')
+    do iw=1,nwdos
+      write(60,'(2G18.10)') w(iw),dble(sigma(iw))
+    end do
+    write(60,'("     ")')
+    do iw=1,nwdos
+      write(60,'(2G18.10)') w(iw),aimag(sigma(iw))
+    end do
+    close(60)
 ! write the dielectric function to file
-  write(fname,'("EPSILON_",2I1,".OUT")') i,j
-  open(60,file=trim(fname),action='WRITE',form='FORMATTED')
-  t1=0.d0
-  if (i.eq.j) t1=1.d0
-  do iw=1,nwdos
-    if (w(iw).gt.1.d-8) then
-      t2=t1-fourpi*aimag(sigma(iw)/(w(iw)+eta))
-      write(60,'(2G18.10)') w(iw),t2
-    end if
-  end do
-  write(60,'("     ")')
-  do iw=1,nwdos
-    if (w(iw).gt.1.d-8) then
-      t2=fourpi*dble(sigma(iw)/(w(iw)+eta))
-      write(60,'(2G18.10)') w(iw),t2
-    end if
-  end do
-  close(60)
+    write(fname,'("EPSILON_",2I1,".OUT")') i,j
+    open(60,file=trim(fname),action='WRITE',form='FORMATTED')
+    t1=0.d0
+    if (i.eq.j) t1=1.d0
+    do iw=1,nwdos
+      if (w(iw).gt.1.d-8) then
+        t2=t1-fourpi*aimag(sigma(iw)/(w(iw)+eta))
+        write(60,'(2G18.10)') w(iw),t2
+      end if
+    end do
+    write(60,'("     ")')
+    do iw=1,nwdos
+      if (w(iw).gt.1.d-8) then
+        t2=fourpi*dble(sigma(iw)/(w(iw)+eta))
+        write(60,'(2G18.10)') w(iw),t2
+      end if
+    end do
+    close(60)
+  endif
 ! end loop over tensor components
 end do
-write(*,*)
-write(*,'("Info(dielectric):")')
-write(*,'(" dielectric tensor written to EPSILON_ij.OUT")')
-write(*,'(" optical conductivity written to SIGMA_ij.OUT")')
-if (intraband) then
-  write(*,'(" plasma frequency written to PLASMA_ij.OUT")')
-end if
-write(*,'(" for components")')
-do l=1,noptcomp
-  write(*,'("  i = ",I1,", j = ",I1)') optcomp(1:2,l)
-end do
-write(*,*)
+if (iproc.eq.0) then
+  write(*,*)
+  write(*,'("Info(dielectric):")')
+  write(*,'(" dielectric tensor written to EPSILON_ij.OUT")')
+  write(*,'(" optical conductivity written to SIGMA_ij.OUT")')
+  if (intraband) then
+    write(*,'(" plasma frequency written to PLASMA_ij.OUT")')
+  end if
+  write(*,'(" for components")')
+  do l=1,noptcomp
+    write(*,'("  i = ",I1,", j = ",I1)') optcomp(1:2,l)
+  end do
+  write(*,*)
+endif
 deallocate(lspl,w,pmat,sigma)
 if (intraband) deallocate(f)
 if (usegdft) deallocate(delta)
