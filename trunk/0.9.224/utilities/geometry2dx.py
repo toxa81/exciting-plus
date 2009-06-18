@@ -368,7 +368,6 @@ class Cell:
       lbl2=self.bonds[ibond][1]
       length=self.bonds[ibond][2]
       extend=self.bonds[ibond][3]
-      #newAtomList=self.atomList[:]
       n0=len(self.atomList)
       # go over all atoms in the box
       for iat in range(n0):
@@ -474,7 +473,7 @@ cell=Cell(geometry,box)
 
 # 
 # cell.hide(label)
-#  hides species with a give label
+#  hides species with a given label
 #  example:
 #   cell.hide("Ca")
 cell.hide("Ca")
@@ -482,7 +481,7 @@ cell.hide("Ca")
 #
 # cell.atomSphere(label,color,radius)
 #  sets [r,g,b] color and radius of species with a given label
-#  example:
+#  example: red Mn sphere with radius 1.0
 #   cell.atomSphere("Mn",[1.0,0.0,0.0],1.0)
 cell.atomSphere("Mn",[1.0,0.0,0.0],1.0)
 cell.atomSphere("O",[0.0,0.0,1.0],0.7)
@@ -500,7 +499,7 @@ cell.bond("Mn","O",5,True)
 #  defines angular part of the site-centered orbital for a species 'label'
 #  example: 3z^2-r^2 orbital
 #    cell.atomOrbital("Mn",[0,0,1,0,0])
-cell.atomOrbital("Mn",[0.2423951697,      0.8750051716,      0.3337081080E-01,  0.1767794334,     -0.3784784700])
+cell.atomOrbital("Mn",[0.6188567923,     -0.3175590286,      0.6172490236,     0.3470833846,     -0.1212819072])
 
 # 
 # write to .dx files
