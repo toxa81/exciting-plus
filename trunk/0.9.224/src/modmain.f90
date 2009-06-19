@@ -1052,7 +1052,7 @@ logical lsfio
 logical lscalar
 
 integer nintwann
-integer, parameter :: maxiwann=100
+integer, parameter :: maxiwann=500
 real(8), allocatable :: ewannint(:,:)
 integer, allocatable :: nwannint(:)
 integer, allocatable :: iwannint(:,:)

@@ -13,7 +13,7 @@ real(8) rclust
 real(8) a(3),v1(3),d1,v2(3),v3(3),dst
 integer llim(3)
 
-rclust=10.d0
+rclust=20.d0
 
 open(50,file='NN.OUT',status='replace',form='formatted')
 
