@@ -249,7 +249,7 @@ if (in_cart()) then
         wfsvmt_t=wfsvmtloc(:,:,:,:,:,ikloc)
         wfsvit_t=wfsvitloc(:,:,:,ikloc)
         do j=1,nstsv
-          if (evalsvnr(j,ik).ge.-0.1d0.and.evalsvnr(j,ik).lt.0.1d0)) then
+          if (evalsvnr(j,ik).ge.-0.1d0.and.evalsvnr(j,ik).lt.0.1d0) then
             wfsvmt_t(2:4,:,9:20,:,j)=0.d0
           endif
         enddo
