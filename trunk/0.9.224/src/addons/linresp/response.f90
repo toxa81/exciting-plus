@@ -240,14 +240,34 @@ if (in_cart()) then
       nmatmax*nstfv*nspnfv*nkptnr_loc*2)
     call d_bcast_cart(comm_cart_011,evecsvloc, &
       nstsv*nstsv*nkptnr_loc*2)
+      
+    if (.true.) then
+      allocate(wfsvmt_t(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
+      allocate(wfsvit_t(ngkmax,nspinor,nstsv))
+      do ikloc=1,nkptnr_loc
+        ik=iknrglob2(ikloc,mpi_x(1))
+        wfsvmt_t=wfsvmtloc(:,:,:,:,:,ikloc)
+        wfsvit_t=wfsvitloc(:,:,:,ikloc)
+        do j=1,nstsv
+          if (evalsvnr(j,ik).ge.-0.1d0.and.evalsvnr(j,ik).lt.0.1d0)) then
+            wfsvmt_t(2:4,:,9:20,:,j)=0.d0
+          endif
+        enddo
+        wfsvmtloc(:,:,:,:,:,ikloc)=wfsvmt_t
+        wfsvitloc(:,:,:,ikloc)=wfsvit_t
+      enddo 
+      deallocate(wfsvmt_t)
+      deallocate(wfsvit_t)
+    endif
+
     if (wannier) then
       allocate(wfsvmt_t(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
       allocate(wfsvit_t(ngkmax,nspinor,nstsv))
       allocate(wfc_t(nwann,nstsv))
 !     allocate(wfh(nwann,nwann))
 !     allocate(wfe(nwann))
-!	  allocate(wann_unkmt_new(lmmaxvr,nrfmax,natmtot,nspinor,nwann))
-!	  allocate(wann_unkit_new(ngkmax,nspinor,nwann))
+!     allocate(wann_unkmt_new(lmmaxvr,nrfmax,natmtot,nspinor,nwann))
+!     allocate(wann_unkit_new(ngkmax,nspinor,nwann))
 !      
       do ikloc=1,nkptnr_loc
         ik=iknrglob2(ikloc,mpi_x(1))
@@ -261,34 +281,34 @@ if (in_cart()) then
         endif
         call genwann_c(ik,evalsvnr(1,ik),wfsvmtloc(1,1,1,1,1,ikloc),wfc_t)
 !       wfh=zzero
-!		do n1=1,nwann
-!		  do n2=1,nwann
-!			do j=1,nstsv
-!			  wfh(n1,n2)=wfh(n1,n2)+dconjg(wfc_t(n1,j))*wfc_t(n2,j) * &
-!				evalsvnr(j,ik)
-!			enddo
-!		  enddo
-!		enddo
-!		call diagzhe(nwann,wfh,wfe)
-!		wann_unkmt_new=zzero
-!		wann_unkit_new=zzero
-!		do n=1,nwann
-!		  do j=1,nstsv
-!			wann_unkmt_new(:,:,:,:,n)=wann_unkmt_new(:,:,:,:,n) + &
-!			  wfsvmtloc(:,:,:,:,j,ikloc)*wfc_t(n,j)
-!			wann_unkit_new(:,:,n)=wann_unkit_new(:,:,n) + &
-!			  wfsvitloc(:,:,j,ikloc)*wfc_t(n,j)
-!		  enddo
-!		enddo
+!       do n1=1,nwann
+!         do n2=1,nwann
+!           do j=1,nstsv
+!             wfh(n1,n2)=wfh(n1,n2)+dconjg(wfc_t(n1,j))*wfc_t(n2,j) * &
+!               evalsvnr(j,ik)
+!           enddo
+!         enddo
+!       enddo
+!       call diagzhe(nwann,wfh,wfe)
+!       wann_unkmt_new=zzero
+!       wann_unkit_new=zzero
+!       do n=1,nwann
+!         do j=1,nstsv
+!           wann_unkmt_new(:,:,:,:,n)=wann_unkmt_new(:,:,:,:,n) + &
+!             wfsvmtloc(:,:,:,:,j,ikloc)*wfc_t(n,j)
+!           wann_unkit_new(:,:,n)=wann_unkit_new(:,:,n) + &
+!             wfsvitloc(:,:,j,ikloc)*wfc_t(n,j)
+!         enddo
+!       enddo
 !
 !        wfsvmt_t=zzero
 !        wfsvit_t=zzero
-!		do n1=1,nwann
-!		  do n2=1,nwann
-!		    wfsvmt_t(:,:,:,:,4+n1)=wfsvmt_t(:,:,:,:,4+n1)+wfh(n2,n1)*wann_unkmt_new(:,:,:,:,n2)
-!		    wfsvit_t(:,:,4+n1)=wfsvit_t(:,:,4+n1)+wfh(n2,n1)*wann_unkit_new(:,:,n2)
-!		  enddo
-!		enddo
+!       do n1=1,nwann
+!         do n2=1,nwann
+!           wfsvmt_t(:,:,:,:,4+n1)=wfsvmt_t(:,:,:,:,4+n1)+wfh(n2,n1)*wann_unkmt_new(:,:,:,:,n2)
+!           wfsvit_t(:,:,4+n1)=wfsvit_t(:,:,4+n1)+wfh(n2,n1)*wann_unkit_new(:,:,n2)
+!         enddo
+!       enddo
 !
         if (laddwf) then
           wfsvmt_t=dcmplx(0.d0,0.d0)
@@ -338,8 +358,8 @@ if (in_cart()) then
       deallocate(wfsvit_t)
       deallocate(wfc_t)
 !      deallocate(wfh,wfe)
-!	  deallocate(wann_unkmt_new)
-!	  deallocate(wann_unkit_new)
+!     deallocate(wann_unkmt_new)
+!     deallocate(wann_unkit_new)
     endif !wannier
     call timer_stop(1)
     if (wproc) then
