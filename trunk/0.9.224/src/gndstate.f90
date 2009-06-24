@@ -192,7 +192,7 @@ do iscl=1,maxscl
   end if
   do ik=1,nkptloc(iproc)
 ! add to the density and magnetisation
-    call rhovalk(ik,evecfvloc(1,1,1,ik),evecsvloc(1,1,ik))
+    call rhomagk(ik,evecfvloc(1,1,1,ik),evecsvloc(1,1,ik))
   end do
   call dsync(rhomt,lmmaxvr*nrmtmax*natmtot,.true.,.true.)
   call dsync(rhoir,ngrtot,.true.,.true.)
@@ -200,6 +200,7 @@ do iscl=1,maxscl
     call dsync(magmt,lmmaxvr*nrmtmax*natmtot*ndmag,.true.,.true.)
     call dsync(magir,ngrtot*ndmag,.true.,.true.)
   endif
+  call rhomagsh
   call timer_stop(t_rho)
 ! symmetrise the density
   call symrf(lradstp,rhomt,rhoir)

@@ -27,17 +27,11 @@ real(8), allocatable :: tpgq0(:,:)
 complex(8), allocatable :: ylmgq0(:,:)
 ! structure factor for G+q vectors
 complex(8), allocatable :: sfacgq0(:,:)
-! hack to switch off matrix elements
-!logical, parameter :: meoff=.false.
-! indexes for fft-transform of u_{nk}^{*}u_{n'k'}exp{-iKx}, where k'=k+q-K
-integer, allocatable :: igfft1(:,:)
 
 ! allocatable arrays
 integer, allocatable :: igkignr2(:)
 complex(8), allocatable :: wfsvmt2(:,:,:,:,:)
 complex(8), allocatable :: wfsvit2(:,:,:)
-complex(8), allocatable :: evecfv2(:,:,:)
-complex(8), allocatable :: evecsv2(:,:)
 complex(8), allocatable :: me(:,:)
 
 complex(8), allocatable :: gvit(:,:,:)
@@ -45,7 +39,7 @@ complex(8), allocatable :: gvit(:,:,:)
 integer i,j,ik,jk,ig,ikstep,ierr,sz,ikloc
 integer ngknr2
 real(8) vkq0l(3)
-integer ivg1(3),ivg2(3)
+integer ivg1(3)
 real(8), allocatable :: uuj(:,:,:,:,:,:,:)
 complex(4), allocatable :: gu(:,:,:)
 integer, allocatable :: igu(:,:,:,:)
@@ -71,7 +65,6 @@ character*8 c8
 
 ! external functions
 real(8), external :: r3taxi
-complex(8), external :: zfint
 logical, external :: root_cart
 integer, external :: iknrglob2
 
@@ -152,15 +145,6 @@ if (wproc) then
   write(150,*)
   write(150,'("Calculation of matrix elements:")')
   write(150,'("  <n,k|e^{-i(G+q)x}|n'',k+q>")')
-!  if (.not.spinpol) write(150,'("  <n,k|e^{-i(G+q)x}|n'',k+q>")')
-!  if (spinpol.and.lrtype.eq.0) then
-!    if (spin_me.eq.1.or.spin_me.eq.3) write(150,'("  <n,k,up|e^{-i(G+q)x}|n'',k+q,up>")')
-!    if (spin_me.eq.2.or.spin_me.eq.3) write(150,'("  <n,k,dn|e^{-i(G+q)x}|n'',k+q,dn>")')
-!  endif
-!  if (spinpol.and.lrtype.eq.1) then
-!    if (spin_me.eq.1.or.spin_me.eq.3) write(150,'("  <n,k,up|e^{-i(G+q)x}|n'',k+q,dn>")')
-!    if (spin_me.eq.2.or.spin_me.eq.3) write(150,'("  <n,k,dn|e^{-i(G+q)x}|n'',k+q,up>")')
-!  endif
 endif
 
 allocate(idxkq(2,nkptnr))
@@ -169,7 +153,6 @@ allocate(gq0(ngvecme))
 allocate(tpgq0(2,ngvecme))
 allocate(sfacgq0(ngvecme,natmtot))
 allocate(ylmgq0(lmmaxexp,ngvecme))
-allocate(igfft1(ngvecme,nkptnr))
 
 ! reduce q0 vector to first BZ
 vq0rl(:)=vq0l(:)-vgq0l(:)
@@ -242,11 +225,6 @@ do ik=1,nkptnr
   call pstop
 10 continue
   idxkq(2,ik)=ivgig(ivg1(1),ivg1(2),ivg1(3))
-! search for new fft indexes
-  do ig=1,ngvecme
-    ivg2(:)=ivg(:,ig)+ivg1(:)
-    igfft1(ig,ik)=igfft(ivgig(ivg2(1),ivg2(2),ivg2(3)))
-  enddo
 enddo
 
 ! setup n,n' stuff
@@ -323,7 +301,6 @@ if (root_cart((/1,1,0/))) then
   call write_integer(gvecme2,1,trim(fname),'/parameters','gvecme2')
   call write_integer(ngvecme,1,trim(fname),'/parameters','ngvecme')
   call write_integer(nspinor,1,trim(fname),'/parameters','nspinor')
-  call write_integer(spin_me,1,trim(fname),'/parameters','spin_me')
   call write_real8(vq0l,3,trim(fname),'/parameters','vq0l')
   call write_real8(vq0rl,3,trim(fname),'/parameters','vq0rl')
   call write_real8(vq0c,3,trim(fname),'/parameters','vq0c')
@@ -384,8 +361,6 @@ allocate(me(ngvecme,nmemax))
 allocate(wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
 allocate(wfsvit2(ngkmax,nspinor,nstsv))
 allocate(igkignr2(ngkmax))
-allocate(evecfv2(nmatmax,nstfv,nspnfv))
-allocate(evecsv2(nstsv,nstsv))
 
 if (wproc) then
   write(150,*)
@@ -404,7 +379,7 @@ do ikstep=1,nkptnrloc(0)
 ! transmit wave-functions
   call timer_start(1)
   call wfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
-    wfsvit2,ngknr2,igkignr2,evecfv2,evecsv2)
+    wfsvit2,ngknr2,igkignr2)
   call barrier(comm_cart)
   if (wproc) then
     write(150,'("  wave-functions are distributed")')
@@ -416,7 +391,7 @@ do ikstep=1,nkptnrloc(0)
   if (ikstep.le.nkptnrloc(mpi_x(1))) then
     call idxglob(nkptnr,mpi_dims(1),mpi_x(1)+1,ikstep,ik)
     if (.not.lmeoff) then
-      me=dcmplx(0.d0,0.d0)
+      me=zzero
 ! calculate muffin-tin contribution for all combinations of n,n'    
       call timer_start(4)
       call zrhoftmt(nme(ikstep),ime(1,1,ikstep),               &
@@ -427,8 +402,7 @@ do ikstep=1,nkptnrloc(0)
       call timer_start(5)
       call zrhoftit(nme(ikstep),ime(1,1,ikstep),ngknr(ikstep), &
         ngknr2,igkignr(1,ikstep),igkignr2,idxkq(2,ik),         &
-        wfsvitloc(1,1,1,ikstep),wfsvit2,me,evecfvloc(1,1,1,ikstep), &
-        evecsvloc(1,1,ikstep),evecfv2,evecsv2,igfft1(1,ik),gvit)
+        wfsvitloc(1,1,1,ikstep),wfsvit2,me,gvit)
       call timer_stop(5)
    else
       me=dcmplx(1.d0,0.d0)
@@ -490,8 +464,6 @@ deallocate(me)
 deallocate(wfsvmt2)
 deallocate(wfsvit2)
 deallocate(igkignr2)
-deallocate(evecfv2)
-deallocate(evecsv2)
 
 deallocate(nme)
 deallocate(ime)

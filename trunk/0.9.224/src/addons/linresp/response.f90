@@ -7,9 +7,6 @@ use mpi
 use hdf5
 implicit none
 
-integer, allocatable :: igishell(:)
-integer, allocatable :: ishellng(:,:)
-
 integer, allocatable :: ngknr(:)
 integer, allocatable :: igkignr(:,:)
 real(8), allocatable :: vgklnr(:,:,:)
@@ -26,23 +23,14 @@ complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wfsvmt_t(:,:,:,:,:)
 complex(8), allocatable :: wfsvit_t(:,:,:)
 complex(8), allocatable :: wfc_t(:,:)
-complex(8), allocatable :: wfh(:,:)
-real(8), allocatable :: wfe(:)
-complex(8), allocatable :: wann_unkmt_new(:,:,:,:,:)
-complex(8), allocatable :: wann_unkit_new(:,:,:)
 
-
-integer i,j,n,ngsh,gshmin,gshmax,ik,ikloc,ispn,istsv,ierr,rank
-integer n1,n2
+integer j,n,ik,ikloc,istsv
 integer sz,iint,iw
 character*100 fname,qnm
 character*2 c2
 integer, external :: iknrglob2
 logical, external :: root_cart
 logical, external :: in_cart
-
-
-integer vgq0l(3)
 
 lmaxvr=4
 
@@ -51,9 +39,10 @@ call init0
 call init1
 call pinit_cart
 
-if (.not.spinpol) then
-  spin_me=1
-endif
+! MPI grid for tasks:
+!  400 (matrix elements) : (1) k-points x (2) G-vectors x (3) q-points 
+!  401 (chi0) : (1) k-points x (2) interband transition x (3) q-points 
+!  402 (chi) : (1) energy mesh x (2) number of fxc kernels x (3) q-points
 
 if (lrtype.eq.1.and..not.spinpol) then
   write(*,*)
@@ -240,8 +229,9 @@ if (in_cart()) then
       nmatmax*nstfv*nspnfv*nkptnr_loc*2)
     call d_bcast_cart(comm_cart_011,evecsvloc, &
       nstsv*nstsv*nkptnr_loc*2)
-      
-    if (.true.) then
+
+! remove l content form particular bands      
+    if (.false.) then
       allocate(wfsvmt_t(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
       allocate(wfsvit_t(ngkmax,nspinor,nstsv))
       do ikloc=1,nkptnr_loc
@@ -264,11 +254,6 @@ if (in_cart()) then
       allocate(wfsvmt_t(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
       allocate(wfsvit_t(ngkmax,nspinor,nstsv))
       allocate(wfc_t(nwann,nstsv))
-!     allocate(wfh(nwann,nwann))
-!     allocate(wfe(nwann))
-!     allocate(wann_unkmt_new(lmmaxvr,nrfmax,natmtot,nspinor,nwann))
-!     allocate(wann_unkit_new(ngkmax,nspinor,nwann))
-!      
       do ikloc=1,nkptnr_loc
         ik=iknrglob2(ikloc,mpi_x(1))
         if (wproc.and.ikloc.eq.1) then
@@ -280,36 +265,6 @@ if (in_cart()) then
           endif
         endif
         call genwann_c(ik,evalsvnr(1,ik),wfsvmtloc(1,1,1,1,1,ikloc),wfc_t)
-!       wfh=zzero
-!       do n1=1,nwann
-!         do n2=1,nwann
-!           do j=1,nstsv
-!             wfh(n1,n2)=wfh(n1,n2)+dconjg(wfc_t(n1,j))*wfc_t(n2,j) * &
-!               evalsvnr(j,ik)
-!           enddo
-!         enddo
-!       enddo
-!       call diagzhe(nwann,wfh,wfe)
-!       wann_unkmt_new=zzero
-!       wann_unkit_new=zzero
-!       do n=1,nwann
-!         do j=1,nstsv
-!           wann_unkmt_new(:,:,:,:,n)=wann_unkmt_new(:,:,:,:,n) + &
-!             wfsvmtloc(:,:,:,:,j,ikloc)*wfc_t(n,j)
-!           wann_unkit_new(:,:,n)=wann_unkit_new(:,:,n) + &
-!             wfsvitloc(:,:,j,ikloc)*wfc_t(n,j)
-!         enddo
-!       enddo
-!
-!        wfsvmt_t=zzero
-!        wfsvit_t=zzero
-!       do n1=1,nwann
-!         do n2=1,nwann
-!           wfsvmt_t(:,:,:,:,4+n1)=wfsvmt_t(:,:,:,:,4+n1)+wfh(n2,n1)*wann_unkmt_new(:,:,:,:,n2)
-!           wfsvit_t(:,:,4+n1)=wfsvit_t(:,:,4+n1)+wfh(n2,n1)*wann_unkit_new(:,:,n2)
-!         enddo
-!       enddo
-!
         if (laddwf) then
           wfsvmt_t=dcmplx(0.d0,0.d0)
           wfsvit_t=dcmplx(0.d0,0.d0)
@@ -357,9 +312,6 @@ if (in_cart()) then
       deallocate(wfsvmt_t)
       deallocate(wfsvit_t)
       deallocate(wfc_t)
-!      deallocate(wfh,wfe)
-!     deallocate(wann_unkmt_new)
-!     deallocate(wann_unkit_new)
     endif !wannier
     call timer_stop(1)
     if (wproc) then

@@ -177,7 +177,6 @@ dm_e2=100.d0
 ldensmtrx=.false.
 nfxca=1
 gshme1=1
-lfftit=.false.
 lmeoff=.false.
 lsfio=.true.
 fxca0=0.d0
@@ -191,8 +190,6 @@ bound3d(3,3)=10.d0
 nrxyz=(/100,100,100/)
 nwfplot=1
 firstwf=1
-afmchi0=.false.
-spin_me=1
 lr_e1=-100.d0
 lr_e2=100.d0
 
@@ -929,7 +926,6 @@ case('response2')
       (iwannint(l,i),l=1,nwannint(i))
   enddo
 case('response3')
-    read(50,*,err=20) lfftit
     read(50,*,err=20) lmeoff
     read(50,*,err=20) lsfio
 case('wannier')

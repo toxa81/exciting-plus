@@ -167,6 +167,38 @@ deallocate(z1,work,rwork,ev,ev1)
 return
 end
 
+      subroutine diagzge(ndim,mtrx,evalue)
+      implicit   none
+
+!---- passed var
+      integer       ,intent(in   ) :: ndim
+      complex*16    ,intent(inout) :: mtrx(ndim,ndim)
+      complex*16    ,intent(out  ) :: evalue(ndim)
+
+!---- local var
+      integer                      :: nb,lwork,inf
+      real*8        ,allocatable   :: rwork(:)
+      complex(8), allocatable :: work(:)
+      complex(8) zt1
+      complex(8), allocatable :: evec(:,:)
+      
+      integer       ,external      :: ilaenv
+
+      lwork=-1
+      call zgeev('N','V',ndim,mtrx,ndim,evalue,evec,ndim,evec,ndim,zt1,lwork,rwork,inf)
+      lwork=dble(zt1)+1
+      allocate(work(lwork))
+      allocate(rwork(2*ndim))
+      allocate(evec(ndim,ndim))
+      call zgeev('N','V',ndim,mtrx,ndim,evalue,evec,ndim,evec,ndim,work,lwork,rwork,inf)
+      if( inf.ne.0 ) then
+        write(*,*)'diagzge : Error finding eigenvectors.'
+        stop
+      endif
+      mtrx=evec
+      deallocate(work,rwork,evec)
+
+      end
 
 
 

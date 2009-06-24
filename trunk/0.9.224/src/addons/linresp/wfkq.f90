@@ -1,5 +1,5 @@
 subroutine wfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
-  wfsvit2,ngknr2,igkignr2,evecfv2,evecsv2)
+  wfsvit2,ngknr2,igkignr2)
 use modmain
 #ifdef _MPI_
 use mpi
@@ -14,9 +14,6 @@ complex(8), intent(out) :: wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
 complex(8), intent(out) :: wfsvit2(ngkmax,nspinor,nstsv)
 integer, intent(out) :: ngknr2
 integer, intent(out) :: igkignr2(ngkmax)
-complex(8), intent(out) :: evecfv2(nmatmax,nstfv,nspnfv)
-complex(8), intent(out) :: evecsv2(nstsv,nstsv)
-
 
 integer idx0,bs,ip
 logical lsend,lrecv
@@ -65,14 +62,6 @@ do i=1,mpi_dims(1)
       tag=tag+1
       call mpi_isend(igkignr(1,ikloc),ngkmax,MPI_INTEGER,rank,tag,      &
         comm_cart_100,req,ierr) 
-! send evecfv      
-      tag=tag+1
-      call mpi_isend(evecfvloc(1,1,1,ikloc),nmatmax*nstfv*nspnfv,       &
-        MPI_DOUBLE_COMPLEX,rank,tag,comm_cart_100,req,ierr)
-! send evecsv      
-      tag=tag+1
-      call mpi_isend(evecsvloc(1,1,ikloc),nstsv*nstsv,    &
-        MPI_DOUBLE_COMPLEX,rank,tag,comm_cart_100,req,ierr)
     endif
     if (mpi_x(1).eq.i-1.and.ip.ne.i) then
 ! source proc is ip-1
@@ -90,19 +79,12 @@ do i=1,mpi_dims(1)
       call mpi_recv(igkignr2,ngkmax,MPI_INTEGER,rank,tag,comm_cart_100, &
         stat,ierr)
       tag=tag+1
-      call mpi_recv(evecfv2,nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX,    &
-        rank,tag,comm_cart_100,stat,ierr)
-      tag=tag+1
-      call mpi_recv(evecsv2,nstsv*nstsv,MPI_DOUBLE_COMPLEX,             &
-        rank,tag,comm_cart_100,stat,ierr)
     endif
     if (mpi_x(1).eq.i-1.and.ip.eq.i) then
       wfsvmt2(:,:,:,:,:)=wfsvmtloc(:,:,:,:,:,ikloc)
       wfsvit2(:,:,:)=wfsvitloc(:,:,:,ikloc)
       ngknr2=ngknr(ikloc)
       igkignr2(:)=igkignr(:,ikloc)
-      evecfv2(:,:,:)=evecfvloc(:,:,:,ikloc)
-      evecsv2(:,:)=evecsvloc(:,:,ikloc)
     endif
   endif
 enddo
@@ -113,8 +95,6 @@ deallocate(stat)
   wfsvit2(:,:,:)=wfsvitloc(:,:,:,jk)
   ngknr2=ngknr(jk)
   igkignr2(:)=igkignr(:,jk)
-  evecfv2(:,:,:)=evecfvloc(:,:,:,jk)
-  evecsv2(:,:)=evecsvloc(:,:,jk)
 #endif
 return
 end

@@ -49,7 +49,7 @@ SRC_routines_flux = \
  genvmatk.f90 genvmat.f90 genwfsv.f90 gendmat.f90 findsymsite.f90 geomplot.f90 \
  hartfock.f90 genkinmat.f90 energykncr.f90 zfint.f90 rfpack.f90 rfint.f90 \
  writefsm.f90 genbmatk.f90 seceqnit.f90 gdft.f90 genexpiqr.f90 writeexpiqr.f90 \
- elnes.f90 symdmat.f90 genlmirep.f90
+ elnes.f90 symdmat.f90 genlmirep.f90 rhomagk.f90 rhomagsh.f90
 
 SRC_phonon = \
  phonon.f90 dyntask.f90 phcell.f90 phdisp.f90 readdyn.f90 dynqtor.f90 \

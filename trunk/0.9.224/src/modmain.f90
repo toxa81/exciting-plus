@@ -1001,10 +1001,6 @@ integer gvecme1
 integer gvecme2
 ! number of G-vectors for matrix elements
 integer ngvecme
-! number of spins for matrix elements
-integer spin_me
-! number of spins for chi0
-integer nspin_chi0
 ! first G-shell for chi
 integer gshchi1
 ! last G-shell for chi
@@ -1018,7 +1014,6 @@ integer ngvecchi
 real(8) maxomega
 real(8) domega
 real(8) lr_eta
-logical afmchi0 
 real(8) lr_e1,lr_e2
 integer lrtype
 ! array for k and k+q stuff
@@ -1046,7 +1041,6 @@ complex(8), allocatable :: lr_w(:)
 real(8) fxca0
 real(8) fxca1
 integer nfxca
-logical lfftit
 logical lmeoff
 logical lsfio
 logical lscalar
