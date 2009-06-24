@@ -1041,6 +1041,7 @@ complex(8), allocatable :: lr_w(:)
 real(8) fxca0
 real(8) fxca1
 integer nfxca
+integer fxctype
 logical lmeoff
 logical lsfio
 logical lscalar

@@ -38,11 +38,16 @@ if (lrtype.eq.1) call readstate
 if (wproc) then
   write(150,*)
   if (lrtype.eq.0) then
-    write(150,'("Calculation of charge polarizability chi")')  
+    write(150,'("Calculation of charge polarizability chi")')
+    write(150,'("  type of fxc kernel : ")')
+    if (fxctype.eq.0) write(150,'("    fxc=0 (RPA)")')
+    if (fxctype.eq.1) write(150,'("    fxc=-A/2 \delta_{GG''}")')
+    if (fxctype.eq.2) write(150,'("    fxc=-4*Pi*A/|G+q| \delta_{GG''}")')
   endif
   if (lrtype.eq.1) then
     write(150,'("Calculation of magnetic polarizability chi")')  
   endif
+  write(150,*)
   call flushifc(150)
 endif
 
@@ -113,7 +118,13 @@ if (lrtype.eq.0) then
 ! generate G+q vectors  
     vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
     gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
-    krnl(ig,ig)=fourpi/gq0**2-fxca/2.d0
+    krnl(ig,ig)=fourpi/gq0**2
+    if (fxctype.eq.1) then
+      krnl(ig,ig)=krnl(ig,ig)-fxca/2.d0
+    endif
+    if (fxctype.eq.2) then
+      krnl(ig,ig)=krnl(ig,ig)-fourpi*fxca/gq0**2
+    endif
     if (wproc) then
       write(150,'(1X,I4,2X,2F12.6)')ig,gq0,abs(krnl(ig,ig))
     endif

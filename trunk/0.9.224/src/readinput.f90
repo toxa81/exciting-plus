@@ -175,6 +175,7 @@ natlcs=0
 dm_e1=-100.d0
 dm_e2=100.d0
 ldensmtrx=.false.
+fxctype=0
 nfxca=1
 gshme1=1
 lmeoff=.false.
@@ -913,7 +914,7 @@ case('response')
   read(50,*,err=20) maxomega, domega, lr_eta
 case('response1')
   read(50,*,err=20) lr_e1,lr_e2
-  read(50,*,err=20) nfxca,fxca0,fxca1
+  read(50,*,err=20) fxctype,nfxca,fxca0,fxca1
   read(50,*,err=20) lscalar
 case('response2')
   read(50,*,err=20)laddwf
