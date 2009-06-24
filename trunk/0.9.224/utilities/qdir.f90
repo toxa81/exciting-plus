@@ -8,7 +8,7 @@ integer nq(3)
 real(8) work(24)
 
 ! q-vector, angstrom -> a.u.
-q=(/2.53365,   2.55538,   0.00000/)*au2ang
+q=(/9.98,   7.05,   0.00000/)*au2ang
 
 call readinput
 call init0
