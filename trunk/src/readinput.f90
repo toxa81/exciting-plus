@@ -193,6 +193,7 @@ nwfplot=1
 firstwf=1
 lr_e1=-100.d0
 lr_e2=100.d0
+alpha1=1.d0
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -915,7 +916,6 @@ case('response')
 case('response1')
   read(50,*,err=20) lr_e1,lr_e2
   read(50,*,err=20) fxctype,nfxca,fxca0,fxca1
-  read(50,*,err=20) lscalar
 case('response2')
   read(50,*,err=20)laddwf
   read(50,*,err=20)nintwann
@@ -926,7 +926,9 @@ case('response2')
     read(50,*,err=20)ewannint(1,i),ewannint(2,i),nwannint(i), &
       (iwannint(l,i),l=1,nwannint(i))
   enddo
+  read(50,*,err=20) alpha1
 case('response3')
+    read(50,*,err=20) lscalar
     read(50,*,err=20) lmeoff
     read(50,*,err=20) lsfio
 case('wannier')

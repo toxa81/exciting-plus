@@ -296,10 +296,10 @@ if (in_cart()) then
                   else
                     wfsvmt_t(:,:,:,:,j)=wfsvmt_t(:,:,:,:,j)-&
                       wfsvmtloc(:,:,:,:,istsv,ikloc)* &
-                      wfc_t(iw,istsv)*dconjg(wfc_t(iw,j))
+                      wfc_t(iw,istsv)*dconjg(wfc_t(iw,j))*alpha1
                     wfsvit_t(:,:,j)=wfsvit_t(:,:,j)-&
                       wfsvitloc(:,:,istsv,ikloc)*&
-                      wfc_t(iw,istsv)*dconjg(wfc_t(iw,j))
+                      wfc_t(iw,istsv)*dconjg(wfc_t(iw,j))*alpha1
                   endif                       
                 enddo
               enddo

@@ -33,7 +33,7 @@ do ikloc=1,nkptnr_loc
       le1=evalsvnr(ist1,ik).ge.lr_e1.and.evalsvnr(ist1,ik).le.lr_e2
       le2=evalsvnr(ist2,jk).ge.lr_e1.and.evalsvnr(ist2,jk).le.lr_e2
       d1=occsvnr(ist1,ik)-occsvnr(ist2,jk)
-      ldocc=abs(d1).gt.1d-10
+      ldocc=abs(d1).gt.1d-5
       laddme=.false.
       if (ldocc.and.le1.and.le2) then
         if (.not.spinpol) then
