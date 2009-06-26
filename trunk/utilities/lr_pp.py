@@ -76,7 +76,7 @@ class datFile:
       repr(self.ngv)+" G-vectors, eta="+eta+" eV"
     if self.fxca!="":
 	  str=str+", fxcA="+self.fxca
-    str=str+"\\n details : units are [eV], [1/eV/A^3], "+self.label+"\""
+    str=str+"\\n details : units are [eV], [1/eV/nm^3], "+self.label+"\""
     out.write(str+"\n")
     out.write("set tmargin 2\n")
     out.write("set bmargin 0\n")
@@ -125,7 +125,7 @@ class datFile:
 
     out.close()
     os.system("gnuplot "+plotname)
-    #os.system("rm "+plotname)
+    os.system("rm "+plotname)
     
 
 
