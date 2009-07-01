@@ -1,0 +1,114 @@
+subroutine write_chi(igq0,ivq0m,chi_,epsilon_,lmbd)
+use modmain
+implicit none
+integer, intent(in) :: igq0
+integer, intent(in) :: ivq0m(3)
+complex(8), intent(in) :: chi_(4,nepts)
+complex(8), intent(in) :: epsilon_(4,nepts)
+complex(8), intent(in) :: lmbd(ngvecchi,nepts)
+
+real(8), allocatable :: func(:,:)
+real(8) fxca
+character*100 fname,qnm
+character*10 c1,c2,c3,c4,c5
+integer ie,i
+
+call qname(ivq0m,qnm)
+qnm="./"//trim(qnm)//"/"//trim(qnm)
+fxca=fxca0+fxca1*mpi_x(2)
+write(c2,'(F6.3)')fxca
+write(c3,'(I8)')ngvecchi
+write(c4,'(F6.3)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)/au2ang
+write(c5,'(F5.3)')lr_eta
+
+if (lrtype.eq.0) then
+  fname=trim(qnm)//"__"//trim(adjustl(c4))//"__G_"//trim(adjustl(c3))//&
+    "__A_"//trim(adjustl(c2))//"__.dat"
+else
+  fname=trim(qnm)//"_A"//c2//"_s"//c1//".dat"
+endif
+open(160,file=trim(fname),form='formatted',status='replace')
+if (lrtype.eq.0) write(160,'("# charge density response")')
+if (lrtype.eq.1) write(160,'("# magnetization density response")')
+write(160,'("#")')
+write(160,'("# Band interval (Ha) : ",2F8.2)')lr_e1,lr_e2
+write(160,'("#")')
+write(160,'("# k-mesh division                    : ",3I4)')ngridk(1),ngridk(2),ngridk(3)
+write(160,'("# Energy mesh parameters             : ")')
+write(160,'("#   maximum energy [eV]              : ", F9.4)')maxomega
+write(160,'("#   energy step    [eV]              : ", F9.4)')domega
+write(160,'("#   eta            [eV]              : ", F9.4)')lr_eta
+write(160,'("# q-vector information               : ")')
+write(160,'("#   q-vector (mesh coord.)           : ",3I4)')ivq0m
+write(160,'("#   q-vector (lat. coord.)           : ",3F18.10)')vq0l
+write(160,'("#   q-vector (Cart. coord.) [a.u.]   : ",3F18.10)')vq0c
+write(160,'("#   q-vector length         [a.u.]   : ",3F18.10)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)
+write(160,'("#   q-vector (Cart. coord.) [1/A]    : ",3F18.10)')vq0c/au2ang
+write(160,'("#   q-vector length         [1/A]    : ",3F18.10)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)/au2ang
+write(160,'("# G-vector information               : ")')
+write(160,'("#   G-shells                         : ",2I4)')gshchi1,gshchi2
+write(160,'("#   G-vectors                        : ",2I4)')gvecchi1,gvecchi2
+write(160,'("#   index of Gq vector               : ",I4)')igq0
+if (lrtype.eq.0) then
+  write(160,'("#")')
+  write(160,'("# fxc type : ",I1)')fxctype
+  write(160,'("# fxc A : ",F8.4)')fxca
+endif
+write(160,'("#")')
+write(160,'("# Definition of columns")')
+write(160,'("#   1: energy            [eV]")')
+write(160,'("#   2: -Re chi0(Gq,Gq)   [1/eV/A^3]")')
+write(160,'("#   3: -Im chi0(Gq,Gq)   [1/eV/A^3]")')
+write(160,'("#   4: -Re chi(Gq,Gq)    [1/eV/A^3]")')
+write(160,'("#   5: -Im chi(Gq,Gq)    [1/eV/A^3]")')
+write(160,'("#   6:  S(q,w)           [1/eV/A^3]")')
+write(160,'("#   7: -Re chi_scalar    [1/eV/A^3]")')
+write(160,'("#   8: -Im chi_scalar    [1/eV/A^3]")')
+write(160,'("#   9:  Re epsilon_eff             ")')
+write(160,'("#  10:  Im epsilon_eff             ")')
+write(160,'("#  11:  Re epsilon_scalar_GqGq     ")')
+write(160,'("#  12:  Im epsilon_scalar_GqGq     ")')
+write(160,'("#  13:  Re epsilon_matrix_GqGq     ")')
+write(160,'("#  14:  Im epsilon_matrix_GqGq     ")')
+write(160,'("#  15:  Re 1/(epsilon^-1)_{GqGq}   ")')
+write(160,'("#  16:  Im 1/(epsilon^-1)_{GqGq}   ")')
+write(160,'("#  17: -Re chi_pseudo_scalar [1/eV/A^3]")')
+write(160,'("#  18: -Im chi_pseudo_scalar [1/eV/A^3]")')
+write(160,'("#")')
+allocate(func(18,nepts))
+do ie=1,nepts
+  func(1,ie)=dreal(lr_w(ie))*ha2ev
+  func(2,ie)=-dreal(chi_(1,ie))/ha2ev/(au2ang)**3
+  func(3,ie)=-dimag(chi_(1,ie))/ha2ev/(au2ang)**3
+  func(4,ie)=-dreal(chi_(4,ie))/ha2ev/(au2ang)**3
+  func(5,ie)=-dimag(chi_(4,ie))/ha2ev/(au2ang)**3
+  func(6,ie)=-2.d0*dimag(chi_(4,ie))/ha2ev/(au2ang)**3
+  func(7,ie)=-dreal(chi_(2,ie))/ha2ev/(au2ang)**3
+  func(8,ie)=-dimag(chi_(2,ie))/ha2ev/(au2ang)**3
+  func(9,ie)=dreal(epsilon_(4,ie))
+  func(10,ie)=dimag(epsilon_(4,ie))
+  func(11,ie)=dreal(epsilon_(2,ie))
+  func(12,ie)=dimag(epsilon_(2,ie))
+  func(13,ie)=dreal(epsilon_(1,ie))
+  func(14,ie)=dimag(epsilon_(1,ie))
+  func(15,ie)=dreal(epsilon_(3,ie))
+  func(16,ie)=dimag(epsilon_(3,ie))
+  func(17,ie)=-dreal(chi_(3,ie))/ha2ev/(au2ang)**3
+  func(18,ie)=-dimag(chi_(3,ie))/ha2ev/(au2ang)**3
+  write(160,'(18G18.10)')func(1:18,ie)
+enddo
+deallocate(func)
+close(160)
+! eigen-values of denominator matrix
+!fname=trim(qnm)//"__"//trim(adjustl(c4))//"__G_"//trim(adjustl(c3))//&
+!  "__A_"//trim(adjustl(c2))//"_epseval__.dat"
+!open(160,file=trim(fname),form='formatted',status='replace')
+!do i=1,ngvecchi
+!  do ie=1,nepts
+!    write(160,'(4G18.10)')dreal(lr_w(ie))*ha2ev,abs(1.d0/lmbd(i,ie)),dreal(lmbd(i,ie)),dimag(lmbd(i,ie))  
+!  enddo
+!  write(160,'(" ")')
+!enddo
+!close(160)
+return
+end
