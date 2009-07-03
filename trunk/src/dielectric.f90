@@ -5,22 +5,25 @@
 
 subroutine dielectric
 use modmain
+!use modtest
 implicit none
 ! local variables
 integer ik,jk,isym
 integer ist,jst,iw,i,j,l
-integer recl,nsk(3)
-real(8) eji,wd(2),wplas,t1,t2
+integer recl,iostat
+real(8) eji,wplas,t1,t2
 real(8) v1(3),v2(3),v3(3)
 complex(8) zv(3),eta,zt1
 character(256) fname
 ! allocatable arrays
 integer, allocatable :: lspl(:)
 real(8), allocatable :: w(:)
-real(8), allocatable :: f(:,:)
 real(8), allocatable :: delta(:,:,:)
 complex(8), allocatable :: pmat(:,:,:)
 complex(8), allocatable :: sigma(:)
+! external functions
+real(8) sdelta
+external sdelta
 ! initialise universal variables
 call init0
 call init1
@@ -35,7 +38,6 @@ end do
 ! allocate local arrays
 allocate(lspl(nkptnr))
 allocate(w(nwdos))
-if (intraband) allocate(f(nstsv,nkpt))
 if (usegdft) allocate(delta(nstsv,nstsv,nkpt))
 allocate(pmat(3,nstsv,nstsv))
 allocate(sigma(nwdos))
@@ -50,12 +52,10 @@ if (usegdft) then
     call gdft(ik,delta(:,:,ik))
   end do
 end if
-! energy interval should start from zero
-wdos(1)=0.d0
-! generate energy grid
-t1=(wdos(2)-wdos(1))/dble(nwdos)
+! generate energy grid (starting from zero)
+t1=wdos(2)/dble(nwdos)
 do iw=1,nwdos
-  w(iw)=t1*dble(iw-1)+wdos(1)
+  w(iw)=t1*dble(iw-1)
 end do
 ! find crystal symmetries which map non-reduced k-points to reduced equivalents
 do ik=1,nkptnr
@@ -65,15 +65,21 @@ end do
 ! find the record length for momentum matrix element file
 inquire(iolength=recl) pmat
 open(50,file='PMAT.OUT',action='READ',form='UNFORMATTED',access='DIRECT', &
- recl=recl)
+ recl=recl,iostat=iostat)
+if (iostat.ne.0) then
+  write(*,*)
+  write(*,'("Error(dielectric): error opening PMAT.OUT")')
+  write(*,*)
+  stop
+end if
 ! i divided by the complex relaxation time
 eta=cmplx(0.d0,swidth)
 ! loop over dielectric tensor components
 do l=1,noptcomp
   i=optcomp(1,l)
   j=optcomp(2,l)
+  wplas=0.d0
   sigma(:)=0.d0
-  if (intraband) f(:,:)=0.d0
 ! loop over non-reduced k-points
   do ik=1,nkptnr
 ! equivalent reduced k-point
@@ -82,28 +88,41 @@ do l=1,noptcomp
     read(50,rec=jk) pmat
 ! valance states
     do ist=1,nstsv
-      if (evalsv(ist,jk).lt.efermi) then
 ! conduction states
-        do jst=1,nstsv
-          if (evalsv(jst,jk).gt.efermi) then
+      do jst=1,nstsv
 ! rotate the matrix elements from the reduced to non-reduced k-point
 ! (note that the inverse operation is used)
-            v1(:)=dble(pmat(:,ist,jst))
-            call r3mv(symlatc(:,:,lspl(ik)),v1,v2)
-            v1(:)=aimag(pmat(:,ist,jst))
-            call r3mv(symlatc(:,:,lspl(ik)),v1,v3)
-            zv(:)=cmplx(v2(:),v3(:),8)
-            zt1=occmax*zv(i)*conjg(zv(j))
-            eji=evalsv(jst,jk)-evalsv(ist,jk)+scissor
-            if (usegdft) eji=eji+delta(jst,ist,jk)
-            t1=1.d0/(eji+swidth)
-            do iw=1,nwdos
-              sigma(iw)=sigma(iw)+t1*(zt1/(w(iw)-eji+eta) &
-               +conjg(zt1)/(w(iw)+eji+eta))
-            end do
+        v1(:)=dble(pmat(:,ist,jst))
+        call r3mv(symlatc(:,:,lspl(ik)),v1,v2)
+        v1(:)=aimag(pmat(:,ist,jst))
+        call r3mv(symlatc(:,:,lspl(ik)),v1,v3)
+        zv(:)=cmplx(v2(:),v3(:),8)
+        zt1=zv(i)*conjg(zv(j))
+        eji=evalsv(jst,jk)-evalsv(ist,jk)
+        if ((evalsv(ist,jk).le.efermi).and.(evalsv(jst,jk).gt.efermi)) then
+! scissors correction
+          eji=eji+scissor
+! generalised DFT correction
+          if (usegdft) eji=eji+delta(jst,ist,jk)
+        end if
+        t1=occsv(ist,jk)*(1.d0-occsv(jst,jk)/occmax)
+        if (abs(t1).gt.epsocc) then
+          t2=t1/(eji+swidth)
+          do iw=1,nwdos
+            sigma(iw)=sigma(iw)+t2*(zt1/(w(iw)-eji+eta) &
+             +conjg(zt1)/(w(iw)+eji+eta))
+          end do
+        end if
+! add to the plasma frequency
+        if (intraband) then
+          if (i.eq.j) then
+            if (abs(eji).gt.1.d-8) then
+              t2=occsv(jst,jk)-occsv(ist,jk)
+              wplas=wplas+wkptnr(ik)*dble(zt1)*t2/eji
+            end if
           end if
-        end do
-      end if
+        end if
+      end do
     end do
   end do
   zt1=zi/(omega*dble(nkptnr))
@@ -111,20 +130,7 @@ do l=1,noptcomp
 ! intraband contribution
   if (intraband) then
     if (i.eq.j) then
-! compute plasma frequency
-      do ik=1,nkpt
-        do ist=1,nstsv
-          zt1=pmat(i,ist,ist)
-          f(ist,ik)=dble(zt1)**2+aimag(zt1**2)
-        end do
-      end do
-      wd(1)=efermi-swidth
-      wd(2)=efermi+swidth
-! number of subdivisions used for interpolation
-      nsk(:)=max(ngrdos/ngridk(:),1)
-      call brzint(0,ngridk,nsk,ikmap,1,wd,nstsv,nstsv,evalsv,f,wplas)
-      wplas=abs(wplas)*occmax*4.d0*pi/omega
-      wplas=sqrt(wplas)
+      wplas=sqrt(abs(wplas)*fourpi/omega)
 ! write the plasma frequency to file
       write(fname,'("PLASMA_",2I1,".OUT")') i,j
       open(60,file=trim(fname),action='WRITE',form='FORMATTED')
@@ -167,6 +173,8 @@ do l=1,noptcomp
     end if
   end do
   close(60)
+! write sigma to test file
+!  call writetest(121,'optical conductivity',nv=nwdos,tol=1.d-2,zva=sigma)
 ! end loop over tensor components
 end do
 write(*,*)
@@ -182,7 +190,6 @@ do l=1,noptcomp
 end do
 write(*,*)
 deallocate(lspl,w,pmat,sigma)
-if (intraband) deallocate(f)
 if (usegdft) deallocate(delta)
 return
 end subroutine
