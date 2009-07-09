@@ -17,13 +17,23 @@ complex(8), allocatable :: ixcft(:)
 ! kernel of matrix equaiton
 complex(8), allocatable :: krnl(:,:)
 complex(8), allocatable :: chi0w(:,:)
+complex(8), allocatable :: chi0wf(:)
 complex(8), allocatable :: lmbd(:,:)
 real(8) fxca
 complex(8), allocatable :: epsilon_(:,:)
 complex(8), allocatable :: chi_(:,:)
 real(8) fourpiq0
+complex(8), allocatable :: mewf2(:,:,:)
+complex(8), allocatable :: mewf4(:,:,:)
+complex(8), allocatable :: mewf4_t(:,:,:,:)
+complex(8), allocatable :: ampl(:,:) 
+complex(8) zt1
+integer ntr1,ntr2
+integer, allocatable :: itr1l(:,:)
+integer, allocatable :: itr2l(:,:)
+integer, allocatable :: itridx(:,:)
 
-integer ie,ig,i,j,ig1,ig2,ie1,ie2,idx0,bs
+integer ie,ig,i,j,ig1,ig2,ie1,ie2,idx0,bs,n1,n2,it1,it2
 integer iv(3)
 character*100 fname,qnm,path
 logical, external :: root_cart
@@ -62,6 +72,10 @@ if (root_cart((/1,1,0/))) then
   call read_real8(vq0rl,3,trim(fname),'/parameters','vq0rl')
   call read_real8(vq0c,3,trim(fname),'/parameters','vq0c')
   call read_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
+  if (lwannresp) then
+    call read_integer(ntr1,1,trim(fname),'/wann','ntr1')
+    call read_integer(ntr2,1,trim(fname),'/wann','ntr2')
+  endif
 endif
 call i_bcast_cart(comm_cart_110,nepts,1)
 call i_bcast_cart(comm_cart_110,lr_igq0,1)
@@ -74,7 +88,34 @@ call d_bcast_cart(comm_cart_110,vq0l,3)
 call d_bcast_cart(comm_cart_110,vq0rl,3)
 call d_bcast_cart(comm_cart_110,vq0c,3)
 call d_bcast_cart(comm_cart_110,vq0rc,3)
-
+if (lwannresp) then
+  call i_bcast_cart(comm_cart_110,ntr1,1)
+  call i_bcast_cart(comm_cart_110,ntr2,1)
+  allocate(itr1l(3,ntr1))
+  allocate(itr2l(3,ntr2))
+  allocate(itridx(ntr1,ntr1))
+  call read_integer_array(itr1l,2,(/3,ntr1/),trim(fname),'/wann','itr1')
+  call read_integer_array(itr2l,2,(/3,ntr2/),trim(fname),'/wann','itr2')
+  do n1=1,ntr1
+    do n2=1,ntr1
+      iv(:)=itr1l(:,n1)-itr1l(:,n2)
+      do i=1,ntr2
+        if (itr2l(1,i).eq.iv(1).and.itr2l(2,i).eq.iv(2).and.itr2l(3,i).eq.iv(3)) then
+          itridx(n1,n2)=i
+        endif
+      enddo
+    enddo
+  enddo
+  allocate(mewf2(nwann*nwann,ntr1,ngvecme))
+  allocate(mewf4(nwann*nwann,nwann*nwann,ntr2))
+  allocate(mewf4_t(nwann*nwann,nwann*nwann,ntr2,nepts))
+  allocate(ampl(nwann*nwann,ntr1))
+  allocate(chi0wf(nepts))
+  chi0wf=zzero
+  call read_real8_array(mewf2,4,(/2,nwann*nwann,ntr1,ngvecme/), &
+    trim(fname),'/wann','mewf2')
+endif !lwannresp
+  
 if (wproc) then
   write(150,'("chi0 was calculated for ")')
   write(150,'("  G-shells  : ",I4," to ",I4)')gshme1,gshme2
@@ -183,6 +224,10 @@ do ie=ie1,ie2
         call read_real8(lr_w(ie),2,trim(fname),trim(path),'w')
         call read_real8_array(chi0w,3,(/2,ngvecme,ngvecme/), &
           trim(fname),trim(path),'chi0')
+        if (lwannresp) then
+          call read_real8_array(mewf4,4,(/2,nwann*nwann,nwann*nwann,ntr2/), &
+            trim(fname),trim(path),'mewf4')
+        endif
 #ifndef _PIO_      
       endif
       call barrier(comm_cart_101)
@@ -192,6 +237,9 @@ do ie=ie1,ie2
   endif
   call d_bcast_cart(comm_cart_010,lr_w(ie),2)
   call d_bcast_cart(comm_cart_010,chi0w,2*ngvecme*ngvecme)
+  if (lwannresp) then
+    call d_bcast_cart(comm_cart_010,mewf4,2*nwann*nwann*nwann*nwann*ntr2)
+  endif  
 ! prepare chi0
   ig1=gvecchi1-gvecme1+1
   ig2=ig1+ngvecchi-1
@@ -199,15 +247,83 @@ do ie=ie1,ie2
 ! solve matrix equation  
   call solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_(1,ie), &
     epsilon_(1,ie),lmbd(1,ie))
+! in Wannier basis
+  if (lwannresp) then
+!    do n1=1,nwann
+!      do n2=1,nwann
+!!        if (.not.((n1.eq.2.or.n1.eq.3.or.n1.eq.4.or.n1.eq.1).and.n1.eq.n2)) then
+!!          mewf2((n1-1)*nwann+n2,1,1)=zzero
+!!        else
+!!          mewf2((n1-1)*nwann+n2,1,1)=mewf2((n1-1)*nwann+n2,1,1)/abs(mewf2((n1-1)*nwann+n2,1,1))
+!!        endif
+!      enddo
+!    enddo
+!    mewf4(1,1,1)=zzero
+!    mewf4_t(:,:,:,ie)=mewf4(:,:,:)
+!    ampl=zzero
+!    do it1=1,ntr1
+!      do it2=1,ntr1
+!        do n1=1,nwann*nwann
+!          do n2=1,nwann*nwann
+!            ampl(n1,it1)=ampl(n1,it1)+mewf4(n1,n2,itridx(it1,it2))*dconjg(mewf2(n2,it2,1))
+!          enddo
+!        enddo
+!      enddo
+!    enddo
+!    mewf2(1,1,1)=zzero
+!    do it1=1,ntr1
+!      do n1=1,nwann*nwann
+!        chi0wf(ie)=chi0wf(ie)+ampl(n1,it1)*mewf2(n1,it1,1)
+!      enddo
+!    enddo
+    
+            
+    do it1=1,ntr1
+      do it2=1,ntr1
+        do n1=1,nwann*nwann
+          do n2=1,nwann*nwann
+            chi0wf(ie)=chi0wf(ie)+mewf4(n1,n2,itridx(it1,it2))*mewf2(n1,it1,1)*dconjg(mewf2(n2,it2,1))
+          enddo
+        enddo
+      enddo
+    enddo
+  endif
 enddo
 
 call d_reduce_cart(comm_cart_100,.false.,lr_w,2*nepts)
 call d_reduce_cart(comm_cart_100,.false.,lmbd,2*ngvecchi*nepts)
 call d_reduce_cart(comm_cart_100,.false.,chi_,2*4*nepts)
 call d_reduce_cart(comm_cart_100,.false.,epsilon_,2*4*nepts)
+if (lwannresp) then
+  call d_reduce_cart(comm_cart_100,.false.,chi0wf,2*nepts)
+endif
 
 if (root_cart((/1,0,0/))) then
   call write_chi(lr_igq0,ivq0m,chi_,epsilon_,lmbd)
+  if (lwannresp) then
+    open(130,file='chi0wann.dat',form='formatted',status='replace')
+    do ie=1,nepts
+      write(130,'(3G18.10)')dreal(lr_w(ie))*ha2ev,-dreal(chi0wf(ie))/ha2ev/(au2ang)**3, &
+        -dimag(chi0wf(ie))/ha2ev/(au2ang)**3
+    enddo
+    close(130)
+!    open(130,file='chi0int.dat',form='formatted',status='replace')
+!    do it2=1,ntr2
+!      do n1=1,nwann*nwann
+!        do ie=1,nepts
+!          write(130,'(2G18.10)')dreal(lr_w(ie))*ha2ev,abs(mewf4_t(n1,n1,it2,ie))
+!        enddo
+!        write(130,*)
+!      enddo
+!    enddo
+!    close(130)
+    do it1=1,ntr1
+      write(*,*)'itr=',it1
+      do n1=1,nwann
+        write(*,'(10(2F12.6))')(mewf2((n1-1)*nwann+n2,it1,1),n2=1,nwann)
+      enddo
+    enddo
+  endif
 endif
 
 deallocate(krnl,ixcft)

@@ -1,5 +1,5 @@
 subroutine wfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
-  wfsvit2,ngknr2,igkignr2)
+  wfsvit2,ngknr2,igkignr2,wann_c2)
 use modmain
 #ifdef _MPI_
 use mpi
@@ -14,6 +14,7 @@ complex(8), intent(out) :: wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
 complex(8), intent(out) :: wfsvit2(ngkmax,nspinor,nstsv)
 integer, intent(out) :: ngknr2
 integer, intent(out) :: igkignr2(ngkmax)
+complex(8), intent(out) :: wann_c2(nwann,nstsv)
 
 integer idx0,bs,ip
 logical lsend,lrecv
@@ -62,6 +63,11 @@ do i=1,mpi_dims(1)
       tag=tag+1
       call mpi_isend(igkignr(1,ikloc),ngkmax,MPI_INTEGER,rank,tag,      &
         comm_cart_100,req,ierr) 
+      if (wannier) then
+        tag=tag+1
+        call mpi_isend(wann_c(1,1,ikloc),nwann*nstsv,                   &
+          MPI_DOUBLE_COMPLEX,rank,tag,comm_cart_100,req,ierr)      
+      endif
     endif
     if (mpi_x(1).eq.i-1.and.ip.ne.i) then
 ! source proc is ip-1
@@ -78,13 +84,18 @@ do i=1,mpi_dims(1)
       tag=tag+1
       call mpi_recv(igkignr2,ngkmax,MPI_INTEGER,rank,tag,comm_cart_100, &
         stat,ierr)
-      tag=tag+1
+      if (wannier) then
+        tag=tag+1
+        call mpi_recv(wann_c2,nwann*nstsv,MPI_DOUBLE_COMPLEX,rank,tag,  &
+          comm_cart_100,stat,ierr)
+      endif        
     endif
     if (mpi_x(1).eq.i-1.and.ip.eq.i) then
       wfsvmt2(:,:,:,:,:)=wfsvmtloc(:,:,:,:,:,ikloc)
       wfsvit2(:,:,:)=wfsvitloc(:,:,:,ikloc)
       ngknr2=ngknr(ikloc)
       igkignr2(:)=igkignr(:,ikloc)
+      if (wannier) wann_c2(:,:)=wann_c(:,:,ikloc)
     endif
   endif
 enddo
@@ -95,6 +106,7 @@ deallocate(stat)
   wfsvit2(:,:,:)=wfsvitloc(:,:,:,jk)
   ngknr2=ngknr(jk)
   igkignr2(:)=igkignr(:,jk)
+  if (wannier) wann_c2(:,:)=wann_c(:,:,jk)
 #endif
 return
 end

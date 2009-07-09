@@ -32,7 +32,8 @@ complex(8), allocatable :: sfacgq0(:,:)
 integer, allocatable :: igkignr2(:)
 complex(8), allocatable :: wfsvmt2(:,:,:,:,:)
 complex(8), allocatable :: wfsvit2(:,:,:)
-complex(8), allocatable :: me(:,:)
+complex(8), allocatable :: wann_c2(:,:)
+complex(8), allocatable :: me(:,:,:)
 
 complex(8), allocatable :: gvit(:,:,:)
 
@@ -50,11 +51,14 @@ complex(8) zt1
 integer lmaxexp
 integer lmmaxexp
 
-character*100 :: qnm,fname,path
+character*100 :: qnm,fname
 
 integer, allocatable :: igishell(:)
 integer, allocatable :: ishellng(:,:)
 integer ngsh,gshq0
+
+logical lwritemek
+integer ik1
 
 ! HDF5
 integer(hid_t) h5_root_id
@@ -357,10 +361,29 @@ deallocate(uuj)
 allocate(gvit(intgv(1,1):intgv(1,2),intgv(2,1):intgv(2,2),intgv(3,1):intgv(3,2)))
 call gengvit(gvit)
 
-allocate(me(ngvecme,nmemax))
+sz=16*ngvecme*nmemax*nkptnrloc(0)/1024/1024
+if (sz.lt.150) then
+  if (wproc) then
+    write(150,*)
+    write(150,'("Size of matrix elements (Mb): ",I6)')sz
+    call flushifc(150)
+  endif
+  lwritemek=.false.
+else
+  lwritemek=.true.
+endif
+if (wannier) lwritemek=.true.
+if (lwritemek) then
+  allocate(me(ngvecme,nmemax,1))
+else
+  allocate(me(ngvecme,nmemax,nkptnr_loc))
+endif
 allocate(wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
 allocate(wfsvit2(ngkmax,nspinor,nstsv))
 allocate(igkignr2(ngkmax))
+if (wannier) then
+  allocate(wann_c2(nwann,nstsv))
+endif
 
 if (wproc) then
   write(150,*)
@@ -379,7 +402,7 @@ do ikstep=1,nkptnrloc(0)
 ! transmit wave-functions
   call timer_start(1)
   call wfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
-    wfsvit2,ngknr2,igkignr2)
+    wfsvit2,ngknr2,igkignr2,wann_c2)
   call barrier(comm_cart)
   if (wproc) then
     write(150,'("  wave-functions are distributed")')
@@ -390,62 +413,54 @@ do ikstep=1,nkptnrloc(0)
   call timer_start(2)
   if (ikstep.le.nkptnrloc(mpi_x(1))) then
     call idxglob(nkptnr,mpi_dims(1),mpi_x(1)+1,ikstep,ik)
-    if (.not.lmeoff) then
+    if (lwritemek) then
+      ik1=1
       me=zzero
+    else
+      ik1=ikstep
+    endif
+    me(:,:,ik1)=zzero
+    if (.not.lmeoff) then
 ! calculate muffin-tin contribution for all combinations of n,n'    
       call timer_start(4)
       call zrhoftmt(nme(ikstep),ime(1,1,ikstep),               &
         wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,ngumax,ngu,gu,igu, &
-        me)
+        me(1,1,ik1))
       call timer_stop(4)
 ! calculate interstitial contribution for all combinations of n,n'
       call timer_start(5)
       call zrhoftit(nme(ikstep),ime(1,1,ikstep),ngknr(ikstep), &
         ngknr2,igkignr(1,ikstep),igkignr2,idxkq(2,ik),         &
-        wfsvitloc(1,1,1,ikstep),wfsvit2,me,gvit)
+        wfsvitloc(1,1,1,ikstep),wfsvit2,me(1,1,ik1),gvit)
       call timer_stop(5)
-   else
-      me=dcmplx(1.d0,0.d0)
+    else
+      me(1:ngvecme,1:nme(ikstep),ik1)=zone
     endif
   endif ! ikstep.le.nkptnrloc(mpi_x(1))
   call timer_stop(2)
 ! write matrix elements
-  call timer_start(3)
-  if (lsfio) then
+  if (lwritemek) then
+    call timer_start(3)
+! only the plane of (k,q) processors will write
     if (root_cart((/0,1,0/))) then
-      do i=0,mpi_dims(1)-1
-        do j=0,mpi_dims(3)-1
-          if (i.eq.mpi_x(1).and.j.eq.mpi_x(3).and.ikstep.le.nkptnr_loc) then
-            write(path,'("/kpoints/",I8.8)')ik
-            call write_integer(idxkq(1,ik),1,trim(fname),trim(path),'kq')
-            call write_integer(nme(ikstep),1,trim(fname),trim(path),'nme')
-            call write_integer_array(ime(1,1,ikstep),2,(/3,nme(ikstep)/), &
-              trim(fname),trim(path),'ime')
-            call write_real8(docc(1,ikstep),nme(ikstep), &
-              trim(fname),trim(path),'docc')
-            call write_real8_array(me,3,(/2,ngvecme,nme(ikstep)/), &
-              trim(fname),trim(path),'me')
-          endif 
-          call barrier(comm_cart_101)
-        enddo
-      enddo
-    endif
-  else
-    if (root_cart((/0,1,0/)).and.ikstep.le.nkptnr_loc) then
-      write(fname,'("_me_k_",I8.8)')ik
-      fname=trim(qnm)//trim(fname)//".hdf5"
-      write(path,'("/kpoints/",I8.8)')ik
-      call write_integer(idxkq(1,ik),1,trim(fname),trim(path),'kq')
-      call write_integer(nme(ikstep),1,trim(fname),trim(path),'nme')
-      call write_integer_array(ime(1,1,ikstep),2,(/3,nme(ikstep)/), &
-        trim(fname),trim(path),'ime')
-      call write_real8(docc(1,ikstep),nme(ikstep), &
-        trim(fname),trim(path),'docc')
-      call write_real8_array(me,3,(/2,ngvecme,nme(ikstep)/), &
-        trim(fname),trim(path),'me')
-    endif
-  endif
-  call timer_stop(3)
+! if writing to one file
+      if (lsfio) then
+        do i=0,mpi_dims(1)-1
+          if (mpi_x(1).eq.i.and.ikstep.le.nkptnr_loc) then
+            call writeme(ikstep,fname,me,wann_c2)
+          endif
+          call barrier(comm_cart_100)
+        enddo   
+      else
+        if (ikstep.le.nkptnr_loc) then
+          write(fname,'("_me_k_",I8.8)')ik
+          fname=trim(qnm)//trim(fname)//".hdf5"
+          call writeme(ikstep,fname,me,wann_c2)
+        endif
+      endif !lsfio
+    endif !root_cart
+    call timer_stop(3)
+  endif !lwritemek
   if (wproc) then
     write(150,'("Time (seconds)")')
     write(150,'("  send/recv      : ",F8.2)')timer(1,2)
@@ -459,11 +474,43 @@ do ikstep=1,nkptnrloc(0)
   endif
 enddo !ikstep
 
+if (.not.lwritemek) then
+  if (wproc) then
+    write(150,*)
+    write(150,'("Writing matrix elements")')
+  endif
+  call timer_start(3)
+  if (root_cart((/0,1,0/))) then
+    if (lsfio) then
+      do i=0,mpi_dims(1)-1
+        if (mpi_x(1).eq.i) then
+          do ikstep=1,nkptnr_loc
+            call writeme(ikstep,fname,me(1,1,ikstep),wann_c2)
+          enddo
+        endif
+        call barrier(comm_cart_100)
+      enddo !i
+    else
+      do ikstep=1,nkptnr_loc
+        call idxglob(nkptnr,mpi_dims(1),mpi_x(1)+1,ikstep,ik)
+        write(fname,'("_me_k_",I8.8)')ik
+        fname=trim(qnm)//trim(fname)//".hdf5"
+        call writeme(ikstep,fname,me(1,1,ikstep),wann_c2)
+      enddo
+    endif !lsfio
+  endif !root_cart
+  call timer_stop(3)
+  if (wproc) write(150,'(" Done in : ",F8.2)')timer(3,2)
+endif
+
 deallocate(gvit)
 deallocate(me)
 deallocate(wfsvmt2)
 deallocate(wfsvit2)
 deallocate(igkignr2)
+if (wannier) then
+  deallocate(wann_c2)
+endif
 
 deallocate(nme)
 deallocate(ime)

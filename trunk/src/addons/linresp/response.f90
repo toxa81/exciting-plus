@@ -24,7 +24,7 @@ complex(8), allocatable :: wfsvmt_t(:,:,:,:,:)
 complex(8), allocatable :: wfsvit_t(:,:,:)
 complex(8), allocatable :: wfc_t(:,:)
 
-integer j,n,ik,ikloc,istsv
+integer j,n,ik,ikloc,istsv,ik1,isym
 integer sz,iint,iw
 character*100 fname,qnm
 character*2 c2
@@ -50,6 +50,8 @@ if (lrtype.eq.1.and..not.spinpol) then
   write(*,*)
   call pstop
 endif
+
+if (.not.wannier) lwannresp=.false.
 
 if (task.eq.400) then
 ! read the density and potentials from file
@@ -101,8 +103,6 @@ if (in_cart()) then
     endif
 #endif
     write(150,'("MPI grid size : ",3I6)')mpi_dims
-  endif
-  if (wproc) then
     call flushifc(150)
   endif
   
@@ -142,11 +142,21 @@ if (in_cart()) then
 !    call d_bcast_cart(comm_cart_011,occsvnr,nstsv*nkptnr)
 !! if not parallel I/O
 !#else
-    if (iproc.eq.0) then 
-      do ik=1,nkptnr
-        call getoccsv(vklnr(1,ik),occsvnr(1,ik))
-        call getevalsv(vklnr(1,ik),evalsvnr(1,ik))
+    if (iproc.eq.0) then
+! read from IBZ
+      do ik=1,nkpt
+        call getoccsv(vkl(1,ik),occsv(1,ik))
+        call getevalsv(vkl(1,ik),evalsv(1,ik))
       enddo
+      do ik=1,nkptnr
+        call findkpt(vklnr(1,ik),isym,ik1) 
+        occsvnr(:,ik)=occsv(:,ik1)
+        evalsvnr(:,ik)=evalsv(:,ik1)
+      enddo
+!      do ik=1,nkptnr
+!        call getoccsv(vklnr(1,ik),occsvnr(1,ik))
+!        call getevalsv(vklnr(1,ik),evalsvnr(1,ik))
+!      enddo
     endif
     call d_bcast_cart(comm_cart,evalsvnr,nstsv*nkptnr)
     call d_bcast_cart(comm_cart,occsvnr,nstsv*nkptnr)
@@ -251,63 +261,74 @@ if (in_cart()) then
     endif
 
     if (wannier) then
+      if (allocated(wann_c)) deallocate(wann_c)
+      allocate(wann_c(nwann,nstsv,nkptnr_loc))
       allocate(wfsvmt_t(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
       allocate(wfsvit_t(ngkmax,nspinor,nstsv))
       allocate(wfc_t(nwann,nstsv))
-      do ikloc=1,nkptnr_loc
-        ik=iknrglob2(ikloc,mpi_x(1))
-        if (wproc.and.ikloc.eq.1) then
+      if (wproc) then
+        write(150,*)
+        write(150,'("Generating Wannier functions")')
+        if (lwfexpand) then
           write(150,*)
           if (laddwf) then
             write(150,'("Adding Wannier functions content")')
           else
             write(150,'("Removing Wannier functions content")')
+            write(150,'("  dumping coefficient : ",F12.6)')alpha1
           endif
-        endif
-        call genwann_c(ik,evalsvnr(1,ik),wfsvmtloc(1,1,1,1,1,ikloc),wfc_t)
-        if (laddwf) then
-          wfsvmt_t=dcmplx(0.d0,0.d0)
-          wfsvit_t=dcmplx(0.d0,0.d0)
-        else
-          wfsvmt_t=wfsvmtloc(:,:,:,:,:,ikloc)
-          wfsvit_t=wfsvitloc(:,:,:,ikloc)
-        endif
-        do iint=1,nintwann      
-          if (wproc.and.ikloc.eq.1) then
+          do iint=1,nintwann      
             write(150,*)
             write(150,'("  energy interval : ",2F12.6)') &
               ewannint(1,iint),ewannint(2,iint)
             write(150,'("  Wannier functions : ",100I4)') &
               (iwannint(j,iint),j=1,nwannint(iint))
+          enddo !iint          
+        endif !lwfexpand
+        call flushifc(150)
+      endif !wproc
+      do ikloc=1,nkptnr_loc
+        ik=iknrglob2(ikloc,mpi_x(1))
+        call genwann_c(ik,evalsvnr(1,ik),wfsvmtloc(1,1,1,1,1,ikloc),wfc_t)
+        wann_c(:,:,ikloc)=wfc_t(:,:)
+        if (lwfexpand) then
+          if (laddwf) then
+            wfsvmt_t=dcmplx(0.d0,0.d0)
+            wfsvit_t=dcmplx(0.d0,0.d0)
+          else
+            wfsvmt_t=wfsvmtloc(:,:,:,:,:,ikloc)
+            wfsvit_t=wfsvitloc(:,:,:,ikloc)
           endif
-          do j=1,nstsv
-            if (evalsvnr(j,ik).ge.ewannint(1,iint).and.&
-                evalsvnr(j,ik).lt.ewannint(2,iint)) then
-              do istsv=1,nstsv
-                do n=1,nwannint(iint)
-                  iw=iwannint(n,iint)
-                  if (laddwf) then
-                    wfsvmt_t(:,:,:,:,j)=wfsvmt_t(:,:,:,:,j)+&
-                      wfsvmtloc(:,:,:,:,istsv,ikloc)* &
-                      wfc_t(iw,istsv)*dconjg(wfc_t(iw,j))
-                    wfsvit_t(:,:,j)=wfsvit_t(:,:,j)+&
-                      wfsvitloc(:,:,istsv,ikloc)*&
-                      wfc_t(iw,istsv)*dconjg(wfc_t(iw,j))
-                  else
-                    wfsvmt_t(:,:,:,:,j)=wfsvmt_t(:,:,:,:,j)-&
-                      wfsvmtloc(:,:,:,:,istsv,ikloc)* &
-                      wfc_t(iw,istsv)*dconjg(wfc_t(iw,j))*alpha1
-                    wfsvit_t(:,:,j)=wfsvit_t(:,:,j)-&
-                      wfsvitloc(:,:,istsv,ikloc)*&
-                      wfc_t(iw,istsv)*dconjg(wfc_t(iw,j))*alpha1
-                  endif                       
+          do iint=1,nintwann      
+            do j=1,nstsv
+              if (evalsvnr(j,ik).ge.ewannint(1,iint).and.&
+                  evalsvnr(j,ik).lt.ewannint(2,iint)) then
+                do istsv=1,nstsv
+                  do n=1,nwannint(iint)
+                    iw=iwannint(n,iint)
+                    if (laddwf) then
+                      wfsvmt_t(:,:,:,:,j)=wfsvmt_t(:,:,:,:,j)+&
+                        wfsvmtloc(:,:,:,:,istsv,ikloc)* &
+                        wfc_t(iw,istsv)*dconjg(wfc_t(iw,j))
+                      wfsvit_t(:,:,j)=wfsvit_t(:,:,j)+&
+                        wfsvitloc(:,:,istsv,ikloc)*&
+                        wfc_t(iw,istsv)*dconjg(wfc_t(iw,j))
+                    else
+                      wfsvmt_t(:,:,:,:,j)=wfsvmt_t(:,:,:,:,j)-&
+                        wfsvmtloc(:,:,:,:,istsv,ikloc)* &
+                        wfc_t(iw,istsv)*dconjg(wfc_t(iw,j))*alpha1
+                      wfsvit_t(:,:,j)=wfsvit_t(:,:,j)-&
+                        wfsvitloc(:,:,istsv,ikloc)*&
+                        wfc_t(iw,istsv)*dconjg(wfc_t(iw,j))*alpha1
+                    endif                       
+                  enddo
                 enddo
-              enddo
-            endif
-            enddo !j
-        enddo !iint
-        wfsvmtloc(:,:,:,:,:,ikloc)=wfsvmt_t
-        wfsvitloc(:,:,:,ikloc)=wfsvit_t
+              endif
+              enddo !j
+          enddo !iint
+          wfsvmtloc(:,:,:,:,:,ikloc)=wfsvmt_t
+          wfsvitloc(:,:,:,ikloc)=wfsvit_t
+        endif !lwfexpand
       enddo !ikloc
       deallocate(wfsvmt_t)
       deallocate(wfsvit_t)

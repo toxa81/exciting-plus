@@ -47,6 +47,7 @@ do ikloc=1,nkptnr_loc
           if (lrtype.eq.1.and.(l12.or.l21)) laddme=.true.
         endif
       endif
+      if (lwannresp.and.le1.and.le2) laddme=.true.
       if (laddme) then
         i=i+1
         if (.not.req) then
@@ -66,7 +67,9 @@ do ikloc=1,nkptnr_loc
 enddo !ikloc
 
 if (req) then
+#ifdef _MPI_
   call d_reduce_cart2(comm_cart_100,.false.,min_e12,1,MPI_MIN)
+#endif
   if (wproc) then
     write(150,*)
     write(150,'("Minimal energy transition (eV) : ",F12.6)')min_e12*ha2ev
