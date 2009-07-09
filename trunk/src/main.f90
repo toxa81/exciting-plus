@@ -14,7 +14,7 @@ use hdf5
 #endif
 implicit none
 ! local variables
-integer itask,ierr,i
+integer itask,ierr
 #ifdef _MPI_
 call mpi_init(ierr)
 comm_world=MPI_COMM_WORLD
