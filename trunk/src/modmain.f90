@@ -950,6 +950,7 @@ real(8), allocatable :: urf(:,:,:,:)
 real(8), allocatable :: urfprod(:,:,:,:)
 integer, allocatable :: lm2l(:)
 integer, allocatable :: ias2is(:)
+integer, allocatable :: ias2ia(:)
 ! for local coordinate system
 integer natlcs
 real(8), allocatable :: lcsrsh(:,:,:)
@@ -1045,6 +1046,8 @@ integer fxctype
 logical lmeoff
 logical lsfio
 logical lscalar
+logical lwannresp
+logical lwfexpand
 
 integer nintwann
 integer, parameter :: maxiwann=500
@@ -1099,6 +1102,9 @@ integer nrxyz(3)
 integer nwfplot
 integer firstwf
 integer iwfv
+logical wannier_lc
+integer nwann_lc
+integer, allocatable :: wann_iorb_lc(:,:,:)
 
 !----------------!
 !      timer     !
