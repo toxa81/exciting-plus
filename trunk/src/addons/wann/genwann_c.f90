@@ -11,35 +11,80 @@ complex(8), allocatable :: prjao(:,:)
 complex(8), allocatable :: s(:,:),sdiag(:)
 integer ispn,j,n,m1,m2,io1,io2,ias,lm1,lm,ierr,l,itype
 logical l1
+integer itr(3),i,iw
+real(8) tr(3),d1
+integer, allocatable :: wann_nint_tmp(:,:)
 
+allocate(wann_nint_tmp(2,wann_ntype))
+wann_nint_tmp=wann_nint
+10 continue
 ! compute <\psi|g_n>
 allocate(prjao(nwann,nstsv))
 prjao=zzero
 do n=1,nwann
-  ias=iwann(1,n)
-  lm=iwann(2,n)
-  l=lm2l(lm)
-  ispn=iwann(3,n)
-  itype=iwann(4,n)
-  do j=1,nstsv
-    l1=.false.
-    if (wann_use_eint) then
-      if (e(j).ge.wann_eint(1,itype).and.e(j).le.wann_eint(2,itype)) l1=.true.
-    else
-      if (j.ge.wann_nint(1,itype).and.j.le.wann_nint(2,itype)) l1=.true.
-    endif
-    if (l1) then
-      do m1=-l,l
-        lm1=idxlm(l,m1)
-        io2=2
-        do io1=1,nrfmax
-          prjao(n,j)=prjao(n,j)+dconjg(wfsvmt(lm1,io1,ias,ispn,j)) * &
-            urfprod(l,io1,io2,ias)*rylm_lcs(lm,lm1,ias)
-        enddo !io1
-      enddo !m
-      if (abs(prjao(n,j)).lt.1d-2) prjao(n,j)=zzero
-    endif
-  enddo !j
+  if (.not.wannier_lc) then
+    ias=iwann(1,n)
+    lm=iwann(2,n)
+    l=lm2l(lm)
+    ispn=iwann(3,n)
+    itype=iwann(4,n)
+    do j=1,nstsv
+      l1=.false.
+      if (wann_use_eint) then
+        if (e(j).ge.wann_eint(1,itype).and.e(j).le.wann_eint(2,itype)) l1=.true.
+      else
+        if (j.ge.wann_nint_tmp(1,itype).and.j.le.wann_nint_tmp(2,itype)) l1=.true.
+      endif
+      if (l1) then
+        do m1=-l,l
+          lm1=idxlm(l,m1)
+          io2=2
+          do io1=1,nrfmax
+            prjao(n,j)=prjao(n,j)+dconjg(wfsvmt(lm1,io1,ias,ispn,j)) * &
+              urfprod(l,io1,io2,ias)*rylm_lcs(lm,lm1,ias)
+          enddo !io1
+        enddo !m
+        if (abs(prjao(n,j)).lt.1d-2) prjao(n,j)=zzero
+      endif
+    enddo !j
+  else
+    do i=1,wann_iorb_lc(0,1,n)
+      if (i.eq.1) then 
+        d1=5.d0
+      else 
+        d1=-1.d0
+      endif    
+      iw=wann_iorb_lc(i,1,n)
+      itr(:)=wann_iorb_lc(i,2:4,n)
+      tr(:)=avec(:,1)*itr(1)+avec(:,2)*itr(2)+avec(:,3)*itr(3)
+      ias=iwann(1,iw)
+!      tr(:)=tr(:)+atposc(:,ias2ia(ias),ias2is(ias))
+      lm=iwann(2,iw)
+      l=lm2l(lm)
+      ispn=iwann(3,iw)
+      itype=iwann(4,iw)
+      do j=1,nstsv
+        l1=.false.
+        if (wann_use_eint) then
+          if (e(j).ge.wann_eint(1,itype).and.e(j).le.wann_eint(2,itype)) l1=.true.
+        else
+          if (j.ge.wann_nint_tmp(1,itype).and.j.le.wann_nint_tmp(2,itype)) l1=.true.
+        endif
+        if (l1) then
+          do m1=-l,l
+            lm1=idxlm(l,m1)
+            io2=2
+            do io1=1,nrfmax
+              prjao(n,j)=prjao(n,j)+dconjg(wfsvmt(lm1,io1,ias,ispn,j)) * &
+                urfprod(l,io1,io2,ias)*rylm_lcs(lm,lm1,ias)*&
+                exp(dcmplx(0.d0,dot_product(vkc(:,ik),tr(:))))*d1
+            enddo !io1
+          enddo !m
+          if (abs(prjao(n,j)).lt.1d-2) prjao(n,j)=zzero
+        endif
+      enddo !j
+    enddo
+  endif
 enddo !n
 ! compute ovelap matrix
 allocate(s(nwann,nwann))
@@ -79,6 +124,11 @@ else
 endif
 deallocate(s,sdiag)
 deallocate(prjao)
-
+!if (ierr.ne.0) then
+!  wann_nint_tmp(2,1)=wann_nint_tmp(2,1)+1
+!  goto 10
+!else
+  deallocate(wann_nint_tmp)
+!endif
 return
 end
