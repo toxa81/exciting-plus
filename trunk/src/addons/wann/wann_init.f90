@@ -78,7 +78,18 @@ do n=1,nwann
   write(100,'("    potential : ",F8.4)')wann_v(itype)
   write(100,*)
 enddo
+if (wannier_lc) then
+  write(100,*)
+  write(100,'("number of linear combinations of WF : ",I4)')nwann_lc
+  do n=1,nwann_lc
+    write(100,'("  wf : ",I4)')n
+    do i=1,wann_iorb_lc(0,1,n)
+      write(100,'("    ",4I4)')(wann_iorb_lc(i,j,n),j=1,4)
+    enddo
+  enddo  
+endif
 close(100)
+if (wannier_lc) nwann=nwann_lc
 
 if (allocated(wann_c)) deallocate(wann_c)
 allocate(wann_c(nwann,nstsv,nkptloc(iproc)))
