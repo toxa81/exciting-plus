@@ -25,15 +25,22 @@ complex(8), allocatable :: chi_(:,:)
 real(8) fourpiq0
 complex(8), allocatable :: mewf2(:,:,:)
 complex(8), allocatable :: mewf4(:,:,:)
-complex(8), allocatable :: mewf4_t(:,:,:,:)
-complex(8), allocatable :: ampl(:,:) 
+complex(8), allocatable :: mewf2_t(:,:,:)
 complex(8) zt1
 integer ntr1,ntr2
 integer, allocatable :: itr1l(:,:)
 integer, allocatable :: itr2l(:,:)
 integer, allocatable :: itridx(:,:)
 
-integer ie,ig,i,j,ig1,ig2,ie1,ie2,idx0,bs,n1,n2,it1,it2
+integer nwf1
+integer, allocatable :: iwf1(:)
+integer nwf2
+integer, allocatable :: iwf2(:)
+integer ntr
+integer, allocatable :: itr(:,:)
+
+
+integer ie,ig,i,j,ig1,ig2,ie1,ie2,idx0,bs,n1,n2,it1,it2,n3,n4
 integer iv(3)
 character*100 fname,qnm,path
 logical, external :: root_cart
@@ -94,8 +101,12 @@ if (lwannresp) then
   allocate(itr1l(3,ntr1))
   allocate(itr2l(3,ntr2))
   allocate(itridx(ntr1,ntr1))
-  call read_integer_array(itr1l,2,(/3,ntr1/),trim(fname),'/wann','itr1')
-  call read_integer_array(itr2l,2,(/3,ntr2/),trim(fname),'/wann','itr2')
+  if (root_cart((/1,1,0/))) then
+    call read_integer_array(itr1l,2,(/3,ntr1/),trim(fname),'/wann','itr1')
+    call read_integer_array(itr2l,2,(/3,ntr2/),trim(fname),'/wann','itr2')
+  endif
+  call i_bcast_cart(comm_cart_110,itr1l,3*ntr1)
+  call i_bcast_cart(comm_cart_110,itr2l,3*ntr2)
   do n1=1,ntr1
     do n2=1,ntr1
       iv(:)=itr1l(:,n1)-itr1l(:,n2)
@@ -108,12 +119,51 @@ if (lwannresp) then
   enddo
   allocate(mewf2(nwann*nwann,ntr1,ngvecme))
   allocate(mewf4(nwann*nwann,nwann*nwann,ntr2))
-  allocate(mewf4_t(nwann*nwann,nwann*nwann,ntr2,nepts))
-  allocate(ampl(nwann*nwann,ntr1))
   allocate(chi0wf(nepts))
   chi0wf=zzero
-  call read_real8_array(mewf2,4,(/2,nwann*nwann,ntr1,ngvecme/), &
-    trim(fname),'/wann','mewf2')
+  if (root_cart((/1,1,0/))) then
+    call read_real8_array(mewf2,4,(/2,nwann*nwann,ntr1,ngvecme/), &
+      trim(fname),'/wann','mewf2')
+  endif
+  call d_bcast_cart(comm_cart_110,mewf2,2*nwann*nwann*ntr1*ngvecme)
+! switch off some channels
+  if (.false.) then
+    nwf1=1
+    allocate(iwf1(nwf1))
+    iwf1(1)=2
+
+    nwf2=1
+    allocate(iwf2(nwf2))
+    iwf2(1)=4
+
+    ntr=2
+    allocate(itr(3,ntr))
+    itr(:,1)=(/-1,0,0/)
+    itr(:,2)=(/0,-1,-1/)
+
+    allocate(mewf2_t(nwann*nwann,ntr1,ngvecme))
+    mewf2_t=zzero
+
+    do it1=1,ntr1
+      do i=1,ntr
+        if (itr1l(1,it1).eq.itr(1,i).and.itr1l(2,it1).eq.itr(2,i).and.&
+          itr1l   (3,it1).eq.itr(3,i)) then
+          do n1=1,nwann
+            do n2=1,nwann
+              do n3=1,nwf1
+                do n4=1,nwf2
+                  if (iwf1(n3).eq.n1.and.iwf2(n4).eq.n2) then
+                    mewf2_t((n1-1)*nwann+n2,it1,:)=mewf2((n1-1)*nwann+n2,it1,:)
+                  endif
+                enddo
+              enddo
+            enddo
+          enddo
+        endif
+      enddo
+    enddo
+    mewf2=mewf2_t
+  endif
 endif !lwannresp
   
 if (wproc) then
@@ -249,35 +299,6 @@ do ie=ie1,ie2
     epsilon_(1,ie),lmbd(1,ie))
 ! in Wannier basis
   if (lwannresp) then
-!    do n1=1,nwann
-!      do n2=1,nwann
-!!        if (.not.((n1.eq.2.or.n1.eq.3.or.n1.eq.4.or.n1.eq.1).and.n1.eq.n2)) then
-!!          mewf2((n1-1)*nwann+n2,1,1)=zzero
-!!        else
-!!          mewf2((n1-1)*nwann+n2,1,1)=mewf2((n1-1)*nwann+n2,1,1)/abs(mewf2((n1-1)*nwann+n2,1,1))
-!!        endif
-!      enddo
-!    enddo
-!    mewf4(1,1,1)=zzero
-!    mewf4_t(:,:,:,ie)=mewf4(:,:,:)
-!    ampl=zzero
-!    do it1=1,ntr1
-!      do it2=1,ntr1
-!        do n1=1,nwann*nwann
-!          do n2=1,nwann*nwann
-!            ampl(n1,it1)=ampl(n1,it1)+mewf4(n1,n2,itridx(it1,it2))*dconjg(mewf2(n2,it2,1))
-!          enddo
-!        enddo
-!      enddo
-!    enddo
-!    mewf2(1,1,1)=zzero
-!    do it1=1,ntr1
-!      do n1=1,nwann*nwann
-!        chi0wf(ie)=chi0wf(ie)+ampl(n1,it1)*mewf2(n1,it1,1)
-!      enddo
-!    enddo
-    
-            
     do it1=1,ntr1
       do it2=1,ntr1
         do n1=1,nwann*nwann
@@ -288,7 +309,7 @@ do ie=ie1,ie2
       enddo
     enddo
   endif
-enddo
+enddo !ie
 
 call d_reduce_cart(comm_cart_100,.false.,lr_w,2*nepts)
 call d_reduce_cart(comm_cart_100,.false.,lmbd,2*ngvecchi*nepts)
