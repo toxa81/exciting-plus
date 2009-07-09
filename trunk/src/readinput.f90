@@ -20,7 +20,7 @@ use modmain
 implicit none
 ! local variables
 integer is,js,ia,ja,ias
-integer i,l,iv,iostat,j,lm1,lm2
+integer i,l,iv,iostat,j,lm1,lm2,n
 real(8) sc,sc1,sc2,sc3
 real(8) vacuum,v(3),t1,t2
 character(256) str,bname
@@ -194,6 +194,9 @@ firstwf=1
 lr_e1=-100.d0
 lr_e2=100.d0
 alpha1=1.d0
+wannier_lc=.false.
+lwannresp=.false.
+lwfexpand=.false.
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -913,10 +916,12 @@ case('response')
     read(50,*,err=20) ivq0m_list(:,i)
   enddo
   read(50,*,err=20) maxomega, domega, lr_eta
-case('response1')
+case('response_bands')
   read(50,*,err=20) lr_e1,lr_e2
+case('response_fxc')
   read(50,*,err=20) fxctype,nfxca,fxca0,fxca1
-case('response2')
+case('response_wann_expand')
+  lwfexpand=.true.
   read(50,*,err=20)laddwf
   read(50,*,err=20)nintwann
   allocate(ewannint(2,nintwann))
@@ -927,10 +932,11 @@ case('response2')
       (iwannint(l,i),l=1,nwannint(i))
   enddo
   read(50,*,err=20) alpha1
-case('response3')
-    read(50,*,err=20) lscalar
-    read(50,*,err=20) lmeoff
-    read(50,*,err=20) lsfio
+case('response_options')
+  read(50,*,err=20) lscalar
+  read(50,*,err=20) lmeoff
+  read(50,*,err=20) lsfio
+  read(50,*,err=20) lwannresp
 case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_use_eint
@@ -961,7 +967,7 @@ case('wannier')
   do i=1,wann_natom
     read(50,*,err=20) wann_iprj(1,i), wann_iprj(2,i)
   enddo
-case('wannier1')
+case('wannier_plot')
   read(50,*,err=20)(zero3d(i),i=1,3)
   read(50,*,err=20)(bound3d(i,1),i=1,3)
   read(50,*,err=20)(bound3d(i,2),i=1,3)
@@ -969,6 +975,16 @@ case('wannier1')
   read(50,*,err=20)(nrxyz(i),i=1,3)
   read(50,*,err=20)nwfplot,firstwf
   read(50,*,err=20)iwfv
+case('wannier_lc')
+  read(50,*,err=20)wannier_lc
+  read(50,*,err=20)nwann_lc
+  allocate(wann_iorb_lc(0:100,4,nwann_lc))
+  do n=1,nwann_lc
+    read(50,*,err=20)wann_iorb_lc(0,1,n)
+    do i=1,wann_iorb_lc(0,1,n)
+      read(50,*,err=20)(wann_iorb_lc(i,l,n),l=1,4)
+    enddo
+  enddo
 case('bandrange')
   read(50,*,err=20)bndranglow,bndranghi
 case('densmtrx')
