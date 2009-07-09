@@ -447,9 +447,12 @@ timer=0.d0
 
 if (allocated(ias2is)) deallocate(ias2is)
 allocate(ias2is(natmtot))
+if (allocated(ias2ia)) deallocate(ias2ia)
+allocate(ias2ia(natmtot))
 do is=1,nspecies
   do ia=1,natoms(is)
     ias2is(idxas(ia,is))=is
+    ias2ia(idxas(ia,is))=ia
   end do
 end do
 
