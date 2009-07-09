@@ -392,13 +392,6 @@ if (lwannresp) then
     call write_integer(ntr2,1,trim(fname),'/wann','ntr2')
     call write_integer_array(itr1l,2,(/3,ntr1/),trim(fname),'/wann','itr1')
     call write_integer_array(itr2l,2,(/3,ntr2/),trim(fname),'/wann','itr2')
-    do it1=1,ntr1
-      write(*,*)'itr=',it1
-      do n1=1,nwann
-        write(*,'(4("(",2F10.5,")"))')(mewf2((n1-1)*nwann+n2,it1,1),n2=1,nwann)
-      enddo
-    enddo
-
   endif
 endif
 
