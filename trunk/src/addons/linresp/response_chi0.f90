@@ -170,12 +170,14 @@ if (lsfio) then
           write(path,'("/kpoints/",I8.8)')ik
           call read_integer(idxkq(1,ikloc),1,trim(fname),trim(path),'kq')
           call read_integer(nme(ikloc),1,trim(fname),trim(path),'nme')
-          call read_integer_array(ime(1,1,ikloc),2,(/3,nme(ikloc)/), &
-            trim(fname),trim(path),'ime')
-          call read_real8(docc(1,ikloc),nme(ikloc),trim(fname), &
-            trim(path),'docc')
-          call read_real8_array(me(1,1,ikloc),3,(/2,ngvecme,nme(ikloc)/), &
-            trim(fname),trim(path),'me')
+          if (nme(ikloc).gt.0) then
+            call read_integer_array(ime(1,1,ikloc),2,(/3,nme(ikloc)/), &
+              trim(fname),trim(path),'ime')
+            call read_real8(docc(1,ikloc),nme(ikloc),trim(fname), &
+              trim(path),'docc')
+            call read_real8_array(me(1,1,ikloc),3,(/2,ngvecme,nme(ikloc)/), &
+              trim(fname),trim(path),'me')
+          endif
           if (wannier) then
             call read_real8_array(wann_c1(1,1,ikloc),3,(/2,nwann,nstsv/), &
               trim(fname),trim(path),'wann_c_k')
@@ -199,12 +201,14 @@ else
       write(path,'("/kpoints/",I8.8)')ik
       call read_integer(idxkq(1,ikloc),1,trim(fname),trim(path),'kq')
       call read_integer(nme(ikloc),1,trim(fname),trim(path),'nme')
-      call read_integer_array(ime(1,1,ikloc),2,(/3,nme(ikloc)/), &
-        trim(fname),trim(path),'ime')
-      call read_real8(docc(1,ikloc),nme(ikloc),trim(fname), &
-        trim(path),'docc')
-      call read_real8_array(me(1,1,ikloc),3,(/2,ngvecme,nme(ikloc)/), &
-        trim(fname),trim(path),'me')
+      if (nme(ikloc).gt.0) then
+        call read_integer_array(ime(1,1,ikloc),2,(/3,nme(ikloc)/), &
+          trim(fname),trim(path),'ime')
+        call read_real8(docc(1,ikloc),nme(ikloc),trim(fname), &
+          trim(path),'docc')
+        call read_real8_array(me(1,1,ikloc),3,(/2,ngvecme,nme(ikloc)/), &
+          trim(fname),trim(path),'me')
+      endif
       if (wannier) then
         call read_real8_array(wann_c1(1,1,ikloc),3,(/2,nwann,nstsv/), &
           trim(fname),trim(path),'wann_c_k')
@@ -289,16 +293,18 @@ do ie=ie1,nepts
   call timer_start(2)
   do ikloc=1,nkptnr_loc
     ik=ikptnrloc(mpi_x(1),1)+ikloc-1
-    call idxbos(nme(ikloc),mpi_dims(2),mpi_x(2)+1,idx0,bs)
-    i1=idx0+1
-    i2=idx0+bs
-    j=j+bs
-    do i=i1,i2
-      wt=docc(i,ikloc)/(evalsvnr(ime(1,i,ikloc),ik) - &
-        evalsvnr(ime(2,i,ikloc),idxkq(1,ikloc))+lr_w(ie))
-      call zgerc(ngvecme,ngvecme,wt,me(1,i,ikloc),1,me(1,i,ikloc),1, &
-        chi0w,ngvecme)
-    enddo !i
+    if (nme(ikloc).gt.0) then
+      call idxbos(nme(ikloc),mpi_dims(2),mpi_x(2)+1,idx0,bs)
+      i1=idx0+1
+      i2=idx0+bs
+      j=j+bs
+      do i=i1,i2
+        wt=docc(i,ikloc)/(evalsvnr(ime(1,i,ikloc),ik) - &
+          evalsvnr(ime(2,i,ikloc),idxkq(1,ikloc))+lr_w(ie))
+        call zgerc(ngvecme,ngvecme,wt,me(1,i,ikloc),1,me(1,i,ikloc),1, &
+          chi0w,ngvecme)
+      enddo !i
+    endif
     if (lwannresp) then
       do i=1,nme(ikloc)
         jk=idxkq(1,ikloc)
