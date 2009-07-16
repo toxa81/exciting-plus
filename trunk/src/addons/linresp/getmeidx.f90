@@ -18,7 +18,7 @@ integer, external :: iknrglob2
 
 if (req.and.wproc) then
   write(150,*)
-  write(150,'("Band interval (Ha) : ",2F8.2)')lr_e1,lr_e2
+  write(150,'("Band interval (Ha) : ",2F8.3)')lr_e1,lr_e2
 endif
 if (req) then
   nmemax=0
@@ -35,7 +35,7 @@ do ikloc=1,nkptnr_loc
       d1=occsvnr(ist1,ik)-occsvnr(ist2,jk)
       ldocc=abs(d1).gt.1d-5
       laddme=.false.
-      if (ldocc.and.le1.and.le2) then
+      if ((ldocc.or.lwannresp).and.le1.and.le2) then
         if (.not.spinpol) then
           laddme=.true.
         else
@@ -47,7 +47,6 @@ do ikloc=1,nkptnr_loc
           if (lrtype.eq.1.and.(l12.or.l21)) laddme=.true.
         endif
       endif
-      if (lwannresp.and.le1.and.le2) laddme=.true.
       if (laddme) then
         i=i+1
         if (.not.req) then
