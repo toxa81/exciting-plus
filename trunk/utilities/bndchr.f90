@@ -6,12 +6,13 @@ integer lm,ias,ispn,ist,ik,spin
 real(4), allocatable :: bndchr(:,:,:,:,:)
 real(8), allocatable :: dpp1d(:),e(:,:),w(:,:),lines(:,:)
 integer, allocatable :: orb(:,:),tmp(:),wf1(:),wf2(:)
-integer i,j,ist1,n
+integer i,j,ist1,n,iin
 real(8) scale,emin,emax,wmax,wmax1,efermi
 real(8), parameter :: ha2ev = 27.21138386d0
-logical wannier,l1
+logical wannier,l1,unitsev
 integer wf_dim
 real(8), allocatable :: wfc(:,:,:,:)
+character*100 str
       
 open(50,file='BNDCHR.OUT',form='formatted',status='old')
 read(50,*)lmmax,natmtot,nspinor,nstfv,nstsv,nkpt,nlines
@@ -39,16 +40,22 @@ if (wannier) then
 endif
 close(50)
 
-l1=.true.
-write(*,*)'Fermi level to zero? (T/F)'
-read(*,*)l1
-if (l1) e=e-efermi
+35 continue
+write(*,'("Put Fermi level to zero? (1-Yes,2-No)")')
+read(*,*)iin
+if (.not.(iin.eq.1.or.iin.eq.2)) goto 35
+if (iin.eq.1) e=e-efermi
 
-e=e*ha2ev
+40 continue
+write(*,'("Energy units? (1-Ha,2-eV)")')
+read(*,*)iin
+if (.not.(iin.eq.1.or.iin.eq.2)) goto 40
+if (iin.eq.2) e=e*ha2ev
  
 emin=minval(e(:,:))
 emax=maxval(e(:,:))
-write(*,*)'Input energy interval (emin emax) [eV]'
+write(*,'("Band energy range : ",2F8.2)')emin,emax
+write(*,'("Input energy interval (emin emax)")')
 read(*,*)emin,emax
       
 spin=1
@@ -170,6 +177,7 @@ endif
       open(51,file='BNDS1.DAT',form='formatted',status='replace')
       open(52,file='BNDS2.DAT',form='formatted',status='replace')
       open(53,file='BNDS3.DAT',form='formatted',status='replace')
+      open(54,file='BNDS_xydy.DAT',form='formatted',status='replace')
       do ist = 1,nstfv
         ist1=ist+(spin-1)*nstfv
         do ik = 1, nkpt
@@ -179,15 +187,18 @@ endif
           write(53,*)dpp1d(ik),e(ist1,ik)+scale*w(ist1,ik)
           write(53,*)dpp1d(ik),e(ist1,ik)-scale*w(ist1,ik)
           write(53,*)
+          write(54,*)dpp1d(ik),e(ist1,ik),2*scale*w(ist1,ik)
         enddo
         write(50,*)
         write(51,*)
         write(52,*)
+        write(54,*)
       enddo
       close(50) 
       close(51) 
       close(52) 
       close(53) 
+      close(54)
       
       open(50,file='BNDS.GNU',form='formatted',status='replace')
       write(50,*)'set term postscript portrait'
