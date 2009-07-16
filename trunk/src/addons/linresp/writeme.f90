@@ -1,10 +1,11 @@
-subroutine writeme(ikloc,fname,me,wann_c2)
+subroutine writeme(ikloc,fname,me,wann_c2,pmat)
 use modmain
 implicit none
 integer, intent(in) :: ikloc
 character*(*), intent(in) :: fname 
 complex(8), intent(in) :: me(ngvecme,nmemax)
 complex(8), intent(in) :: wann_c2(nwann,nstsv)
+complex(8), intent(in) :: pmat(3,nstsv,nstsv)
 
 character*100 path
 integer ik
@@ -28,6 +29,10 @@ if (wannier) then
   call write_real8_array(wann_c2,3,(/2,nwann,nstsv/), &
     trim(fname),trim(path),'wann_c_kq')
 endif   
+if (lwannopt) then
+  call write_real8_array(pmat,4,(/2,3,nstsv,nstsv/),&
+    trim(fname),trim(path),'pmat')
+endif
 
 return
 end

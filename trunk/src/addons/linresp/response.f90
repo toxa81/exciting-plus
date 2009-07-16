@@ -10,7 +10,7 @@ implicit none
 integer, allocatable :: ngknr(:)
 integer, allocatable :: igkignr(:,:)
 real(8), allocatable :: vgklnr(:,:,:)
-real(8), allocatable :: vgkcnr(:,:)
+real(8), allocatable :: vgkcnr(:,:,:)
 real(8), allocatable :: gknr(:,:)
 real(8), allocatable :: tpgknr(:,:,:)
 complex(8), allocatable :: sfacgknr(:,:,:)
@@ -23,6 +23,7 @@ complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wfsvmt_t(:,:,:,:,:)
 complex(8), allocatable :: wfsvit_t(:,:,:)
 complex(8), allocatable :: wfc_t(:,:)
+complex(8), allocatable :: pmat(:,:,:,:)
 
 integer j,n,ik,ikloc,istsv,ik1,isym
 integer sz,iint,iw
@@ -51,7 +52,12 @@ if (lrtype.eq.1.and..not.spinpol) then
   call pstop
 endif
 
-if (.not.wannier) lwannresp=.false.
+lwannopt=.true.
+
+if (.not.wannier) then
+  lwannresp=.false.
+  lwannopt=.false.
+endif
 
 if (task.eq.400) then
 ! read the density and potentials from file
@@ -172,7 +178,7 @@ if (in_cart()) then
 ! generate G+k vectors for entire BZ (this is required to compute 
 !   wave-functions at each k-point)
     allocate(vgklnr(3,ngkmax,nkptnr_loc))
-    allocate(vgkcnr(3,ngkmax))
+    allocate(vgkcnr(3,ngkmax,nkptnr_loc))
     allocate(gknr(ngkmax,nkptnr_loc))
     allocate(tpgknr(2,ngkmax,nkptnr_loc))
     allocate(ngknr(nkptnr_loc))
@@ -181,14 +187,17 @@ if (in_cart()) then
     do ikloc=1,nkptnr_loc
       ik=iknrglob2(ikloc,mpi_x(1))
       call gengpvec(vklnr(1,ik),vkcnr(1,ik),ngknr(ikloc),igkignr(1,ikloc), &
-        vgklnr(1,1,ikloc),vgkcnr,gknr(1,ikloc),tpgknr(1,1,ikloc))
-      call gensfacgp(ngknr(ikloc),vgkcnr,ngkmax,sfacgknr(1,1,ikloc))
+        vgklnr(1,1,ikloc),vgkcnr(1,1,ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc))
+      call gensfacgp(ngknr(ikloc),vgkcnr(1,1,ikloc),ngkmax,sfacgknr(1,1,ikloc))
     enddo
     allocate(wfsvmtloc(lmmaxvr,nrfmax,natmtot,nspinor,nstsv,nkptnr_loc))
     allocate(wfsvitloc(ngkmax,nspinor,nstsv,nkptnr_loc))
     allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptnr_loc))
     allocate(evecsvloc(nstsv,nstsv,nkptnr_loc))
     allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
+    if (lwannopt) then
+      allocate(pmat(3,nstsv,nstsv,nkptnr_loc))
+    endif
     if (wproc) then
       sz=lmmaxvr*nrfmax*natmtot*nstsv*nspinor
       sz=sz+ngkmax*nstsv*nspinor
@@ -223,6 +232,10 @@ if (in_cart()) then
 ! generate wave functions in interstitial
             call genwfsvit(ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
               evecsvloc(1,1,ikloc),wfsvitloc(1,1,1,ikloc))
+            if (lwannopt) then
+              call genpmat(ngknr(ikloc),igkignr(1,ikloc),vgkcnr(1,1,ikloc),&
+                apwalm,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),pmat(1,1,1,ikloc))
+            endif
           enddo !ikloc
 #ifndef _PIO_
         endif
@@ -351,7 +364,7 @@ if (in_cart()) then
 ! calculate matrix elements
     call timer_start(10)
     call response_me(ivq0m_list(1,mpi_x(3)+1),wfsvmtloc,wfsvitloc,ngknr, &
-      igkignr,occsvnr,evalsvnr)
+      igkignr,occsvnr,evalsvnr,pmat)
     call timer_stop(10)
     if (wproc) then
       write(150,'("Total time : ",F8.2," seconds")')timer(10,2)
@@ -384,6 +397,8 @@ if (in_cart()) then
   if (task.eq.404) call response_jdos(occsvnr,evalsvnr)
   
   if (wproc) close(150)
+  
+  if (task.eq.400.and.lwannopt) deallocate(pmat)
   
   if (task.eq.400.or.task.eq.403) then
     deallocate(wfsvmtloc)

@@ -1,5 +1,6 @@
 #ifdef _HDF5_
-subroutine response_me(ivq0m,wfsvmtloc,wfsvitloc,ngknr,igkignr,occsvnr,evalsvnr)
+subroutine response_me(ivq0m,wfsvmtloc,wfsvitloc,ngknr,igkignr,occsvnr,&
+  evalsvnr,pmat)
 use modmain
 use hdf5
 #ifdef _MPI_
@@ -15,6 +16,7 @@ integer, intent(in) :: ngknr(*)
 integer, intent(in) :: igkignr(ngkmax,*)
 real(8), intent(in) :: occsvnr(nstsv,nkptnr)
 real(8), intent(in) :: evalsvnr(nstsv,nkptnr)
+complex(8), intent(in) :: pmat(3,nstsv,nstsv,*)
 ! G-vector which brings q to first BZ
 integer vgq0l(3)
 ! G+q vectors in Cart.coord.
@@ -447,7 +449,7 @@ do ikstep=1,nkptnrloc(0)
       if (lsfio) then
         do i=0,mpi_dims(1)-1
           if (mpi_x(1).eq.i.and.ikstep.le.nkptnr_loc) then
-            call writeme(ikstep,fname,me,wann_c2)
+            call writeme(ikstep,fname,me,wann_c2,pmat(1,1,1,ikstep))
           endif
           call barrier(comm_cart_100)
         enddo   
@@ -455,7 +457,7 @@ do ikstep=1,nkptnrloc(0)
         if (ikstep.le.nkptnr_loc) then
           write(fname,'("_me_k_",I8.8)')ik
           fname=trim(qnm)//trim(fname)//".hdf5"
-          call writeme(ikstep,fname,me,wann_c2)
+          call writeme(ikstep,fname,me,wann_c2,pmat(1,1,1,ikstep))
         endif
       endif !lsfio
     endif !root_cart
@@ -485,7 +487,7 @@ if (.not.lwritemek) then
       do i=0,mpi_dims(1)-1
         if (mpi_x(1).eq.i) then
           do ikstep=1,nkptnr_loc
-            call writeme(ikstep,fname,me(1,1,ikstep),wann_c2)
+            call writeme(ikstep,fname,me(1,1,ikstep),wann_c2,pmat(1,1,1,ikstep))
           enddo
         endif
         call barrier(comm_cart_100)
@@ -495,7 +497,7 @@ if (.not.lwritemek) then
         call idxglob(nkptnr,mpi_dims(1),mpi_x(1)+1,ikstep,ik)
         write(fname,'("_me_k_",I8.8)')ik
         fname=trim(qnm)//trim(fname)//".hdf5"
-        call writeme(ikstep,fname,me(1,1,ikstep),wann_c2)
+        call writeme(ikstep,fname,me(1,1,ikstep),wann_c2,pmat(1,1,1,ikstep))
       enddo
     endif !lsfio
   endif !root_cart

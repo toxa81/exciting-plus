@@ -26,6 +26,11 @@ real(8) fourpiq0
 complex(8), allocatable :: mewf2(:,:,:)
 complex(8), allocatable :: mewf4(:,:,:)
 complex(8), allocatable :: mewf2_t(:,:,:)
+complex(8), allocatable :: mewfx(:,:,:)
+complex(8), allocatable :: mtrx1(:,:)
+complex(8), allocatable :: mtrx2(:,:)
+complex(8), allocatable :: epswf(:)
+
 complex(8) zt1
 integer ntr1,ntr2
 integer, allocatable :: itr1l(:,:)
@@ -147,7 +152,7 @@ if (lwannresp) then
     do it1=1,ntr1
       do i=1,ntr
         if (itr1l(1,it1).eq.itr(1,i).and.itr1l(2,it1).eq.itr(2,i).and.&
-          itr1l   (3,it1).eq.itr(3,i)) then
+          itr1l(3,it1).eq.itr(3,i)) then
           do n1=1,nwann
             do n2=1,nwann
               do n3=1,nwf1
@@ -165,7 +170,19 @@ if (lwannresp) then
     mewf2=mewf2_t
   endif
 endif !lwannresp
-  
+if (lwannopt) then
+  allocate(mewfx(3,nwann*nwann,ntr1))
+  if (root_cart((/1,1,0/))) then
+    call read_real8_array(mewfx,4,(/2,3,nwann*nwann,ntr1/), &
+      trim(fname),'/wann','mewfx')
+  endif
+  call d_bcast_cart(comm_cart_110,mewfx,2*3*nwann*nwann*ntr1)
+  allocate(mtrx1(nwann*nwann*ntr1,nwann*nwann*ntr1))
+  allocate(mtrx2(nwann*nwann*ntr1,nwann*nwann*ntr1)) 
+  allocate(epswf(nepts))
+  epswf=zzero
+endif
+
 if (wproc) then
   write(150,'("chi0 was calculated for ")')
   write(150,'("  G-shells  : ",I4," to ",I4)')gshme1,gshme2
@@ -309,6 +326,17 @@ do ie=ie1,ie2
       enddo
     enddo
   endif
+  if (lwannopt) then
+    do it1=1,ntr1
+      do it2=1,ntr1
+        do n1=1,nwann*nwann
+          do n2=1,nwann*nwann
+            epswf(ie)=epswf(ie)+mewf4(n1,n2,itridx(it1,it2))*mewfx(1,n1,it1)*dconjg(mewfx(1,n2,it2))
+          enddo
+        enddo
+      enddo
+    enddo 
+  endif
 enddo !ie
 
 call d_reduce_cart(comm_cart_100,.false.,lr_w,2*nepts)
@@ -317,6 +345,9 @@ call d_reduce_cart(comm_cart_100,.false.,chi_,2*4*nepts)
 call d_reduce_cart(comm_cart_100,.false.,epsilon_,2*4*nepts)
 if (lwannresp) then
   call d_reduce_cart(comm_cart_100,.false.,chi0wf,2*nepts)
+endif
+if (lwannopt) then
+  call d_reduce_cart(comm_cart_100,.false.,epswf,2*nepts)
 endif
 
 if (root_cart((/1,0,0/))) then
@@ -344,6 +375,13 @@ if (root_cart((/1,0,0/))) then
         write(*,'(10(2F12.6))')(mewf2((n1-1)*nwann+n2,it1,1),n2=1,nwann)
       enddo
     enddo
+  endif
+  if (lwannopt) then
+    open(130,file='epswf.dat',form='formatted',status='replace')
+    do ie=1,nepts
+      write(130,'(3G18.10)')dreal(lr_w(ie))*ha2ev,-dreal(epswf(ie)),-dimag(epswf(ie))
+    enddo
+    close(130)
   endif
 endif
 

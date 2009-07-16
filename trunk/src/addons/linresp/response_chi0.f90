@@ -33,6 +33,8 @@ real(8) vtrc(3)
 complex(8) zt1,zt2
 complex(8), allocatable :: mewf2(:,:,:)
 complex(8), allocatable :: mewf4(:,:,:)
+complex(8), allocatable :: mewfx(:,:,:)
+complex(8), allocatable :: pmat(:,:,:,:)
 integer, parameter :: maxtr=1
 ! HDF5
 integer(hid_t) h5_root_id
@@ -149,6 +151,9 @@ if (lwannresp) then
   allocate(zm1(nwann*nwann,nwann*nwann))
   allocate(mewf4(nwann*nwann,nwann*nwann,ntr2))
 endif
+if (lwannopt) then
+  allocate(pmat(3,nstsv,nstsv,nkptnr_loc))
+endif
 
 if (wproc) then
   write(150,'("Reading matrix elements")')
@@ -183,7 +188,11 @@ if (lsfio) then
               trim(fname),trim(path),'wann_c_k')
             call read_real8_array(wann_c2(1,1,ikloc),3,(/2,nwann,nstsv/), &
               trim(fname),trim(path),'wann_c_kq')
-          endif    
+          endif 
+          if (lwannopt) then
+            call read_real8_array(pmat(1,1,1,ikloc),4,(/2,3,nstsv,nstsv/), &
+              trim(fname),trim(path),'pmat')          
+          endif
         enddo
 #ifndef _PIO_      
       endif
@@ -215,6 +224,10 @@ else
         call read_real8_array(wann_c2(1,1,ikloc),3,(/2,nwann,nstsv/), &
           trim(fname),trim(path),'wann_c_kq')
       endif    
+      if (lwannopt) then
+        call read_real8_array(pmat(1,1,1,ikloc),4,(/2,3,nstsv,nstsv/), &
+          trim(fname),trim(path),'pmat')          
+      endif
     enddo
   endif
 endif
@@ -234,6 +247,9 @@ call d_bcast_cart(comm_cart_010,me,2*ngvecme*nmemax*nkptnr_loc)
 if (wannier) then
   call d_bcast_cart(comm_cart_010,wann_c1,2*nwann*nstsv*nkptnr_loc)
   call d_bcast_cart(comm_cart_010,wann_c2,2*nwann*nstsv*nkptnr_loc)
+endif
+if (lwannopt) then
+  call d_bcast_cart(comm_cart_010,pmat,2*3*nstsv*nstsv*nkptnr_loc)
 endif
 
 ie1=0
@@ -399,6 +415,39 @@ if (lwannresp) then
     call write_integer_array(itr1l,2,(/3,ntr1/),trim(fname),'/wann','itr1')
     call write_integer_array(itr2l,2,(/3,ntr2/),trim(fname),'/wann','itr2')
   endif
+  deallocate(mewf2)
+endif
+
+if (lwannopt) then
+  allocate(mewfx(3,nwann*nwann,ntr1))
+  mewfx=zzero
+  do it1=1,ntr1
+    vtrc(:)=avec(:,1)*itr1l(1,it1)+avec(:,2)*itr1l(2,it1)+avec(:,3)*itr1l(3,it1)
+    do ikloc=1,nkptnr_loc
+      ik=ikptnrloc(mpi_x(1),1)+ikloc-1
+      zt1=exp(dcmplx(0.d0,-dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
+      do n1=1,nwann
+        do n2=1,nwann
+          do ist1=1,nstsv
+            do ist2=1,nstsv
+              mewfx(:,(n1-1)*nwann+n2,it1)=mewfx(:,(n1-1)*nwann+n2,it1)+&
+                dconjg(wann_c1(n1,ist1,ikloc))*wann_c2(n2,ist2,ikloc)*zt1*&
+                pmat(:,ist1,ist2,ikloc)*zi/(evalsvnr(ist1,ik)-evalsvnr(ist2,ik)+swidth)
+            enddo
+          enddo
+        enddo
+      enddo
+    enddo !ikloc
+  enddo !itr1
+  if (root_cart((/0,1,0/)).and.mpi_dims(1).gt.1) then
+    call d_reduce_cart(comm_cart_100,.false.,mewfx,2*3*nwann*nwann*ntr1)
+  endif
+  if (root_cart((/1,1,0/))) then
+    mewfx=mewfx/nkptnr
+    call write_real8_array(mewfx,4,(/2,3,nwann*nwann,ntr1/), &
+      trim(fname),'/wann','mewfx')
+  endif
+  deallocate(mewfx)
 endif
 
 call barrier(comm_cart)
@@ -415,7 +464,6 @@ if (wannier) then
   deallocate(wann_c2)
 endif
 if (lwannresp) then
-  deallocate(mewf2)
   deallocate(mewf4)
   deallocate(zv1)
   deallocate(zm1)
