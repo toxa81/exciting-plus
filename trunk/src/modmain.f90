@@ -1047,6 +1047,7 @@ logical lmeoff
 logical lsfio
 logical lscalar
 logical lwannresp
+logical lwannopt
 logical lwfexpand
 
 integer nintwann
