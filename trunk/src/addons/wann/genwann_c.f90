@@ -9,7 +9,7 @@ complex(8), intent(out) :: wann_c_(nwann,nstsv)
 ! local variables
 complex(8), allocatable :: prjao(:,:)
 complex(8), allocatable :: s(:,:),sdiag(:)
-integer ispn,j,n,m1,m2,io1,io2,ias,lm1,lm,ierr,l,itype
+integer ispn,j,n,m1,m2,io1,io2,ias,lm1,lm,ierr,l,itype,jspn
 logical l1
 integer itr(3),i,iw
 real(8) tr(3),d1
@@ -28,25 +28,34 @@ do n=1,nwann
     l=lm2l(lm)
     ispn=iwann(3,n)
     itype=iwann(4,n)
+    do jspn=1,nspinor
+      do j=1,nstfv
+        i=(jspn-1)*nstfv+j
+        l1=.false.
+        if (wann_use_eint) then
+          if (e(i).ge.wann_eint(1,itype).and.e(i).le.wann_eint(2,itype)) l1=.true.
+        else
+          if (ncmag) then
+            if (i.ge.wann_nint_tmp(1,itype).and.i.le.wann_nint_tmp(2,itype)) l1=.true.
+          else
+            if (j.ge.wann_nint_tmp(1,itype).and.j.le.wann_nint_tmp(2,itype)) l1=.true.
+          endif
+        endif
+        if (l1) then
+          do m1=-l,l
+            lm1=idxlm(l,m1)
+            io2=2
+            do io1=1,nrfmax
+              prjao(n,i)=prjao(n,i)+dconjg(wfsvmt(lm1,io1,ias,ispn,i))*&
+                urfprod(l,io1,io2,ias)*rylm_lcs(lm,lm1,ias)
+            enddo !io1
+          enddo !m
+        endif
+      enddo !j
+    enddo !jspn
     do j=1,nstsv
-      l1=.false.
-      if (wann_use_eint) then
-        if (e(j).ge.wann_eint(1,itype).and.e(j).le.wann_eint(2,itype)) l1=.true.
-      else
-        if (j.ge.wann_nint_tmp(1,itype).and.j.le.wann_nint_tmp(2,itype)) l1=.true.
-      endif
-      if (l1) then
-        do m1=-l,l
-          lm1=idxlm(l,m1)
-          io2=2
-          do io1=1,nrfmax
-            prjao(n,j)=prjao(n,j)+dconjg(wfsvmt(lm1,io1,ias,ispn,j)) * &
-              urfprod(l,io1,io2,ias)*rylm_lcs(lm,lm1,ias)
-          enddo !io1
-        enddo !m
-        if (abs(prjao(n,j)).lt.1d-2) prjao(n,j)=zzero
-      endif
-    enddo !j
+      if (abs(prjao(n,j)).lt.1d-2) prjao(n,j)=zzero
+    enddo
   else
     do i=1,wann_iorb_lc(0,1,n)
       if (i.eq.1) then 
