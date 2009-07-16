@@ -27,7 +27,19 @@ do i=1,wann_natom
   do j=1,wann_norb(iwgrp)
     n=n+1
     lm=wann_iorb(1,j,iwgrp)
+    if (lm.lt.1.or.lm.gt.16) then
+      write(*,*)
+      write(*,'("Error(wann_init) : lm- value is out of range ")')
+      write(*,*)
+      call pstop
+    endif
     ispn=wann_iorb(2,j,iwgrp)
+    if ((spinpol.and.(ispn.lt.1.or.ispn.gt.2)).or.(.not.spinpol.and.ispn.ne.1)) then
+      write(*,*)
+      write(*,'("Error(wann_init) : spin projection value is out of range ")')
+      write(*,*)
+      call pstop
+    endif
     itype=wann_iorb(3,j,iwgrp)
     iwann(1,n)=iatom
     iwann(2,n)=lm
