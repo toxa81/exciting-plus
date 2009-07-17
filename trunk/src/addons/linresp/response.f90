@@ -52,8 +52,6 @@ if (lrtype.eq.1.and..not.spinpol) then
   call pstop
 endif
 
-lwannopt=.true.
-
 if (.not.wannier) then
   lwannresp=.false.
   lwannopt=.false.

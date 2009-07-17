@@ -1048,7 +1048,9 @@ logical lsfio
 logical lscalar
 logical lwannresp
 logical lwannopt
+logical lwanndiel
 logical lwfexpand
+integer lr_maxtr
 
 integer nintwann
 integer, parameter :: maxiwann=500

@@ -177,8 +177,8 @@ if (lwannopt) then
       trim(fname),'/wann','mewfx')
   endif
   call d_bcast_cart(comm_cart_110,mewfx,2*3*nwann*nwann*ntr1)
-  allocate(mtrx1(nwann*nwann*ntr1,nwann*nwann*ntr1))
-  allocate(mtrx2(nwann*nwann*ntr1,nwann*nwann*ntr1)) 
+!  allocate(mtrx1(nwann*nwann*ntr1,nwann*nwann*ntr1))
+!  allocate(mtrx2(nwann*nwann*ntr1,nwann*nwann*ntr1)) 
   allocate(epswf(nepts))
   epswf=zzero
 endif

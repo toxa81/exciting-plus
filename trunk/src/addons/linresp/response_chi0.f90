@@ -35,7 +35,7 @@ complex(8), allocatable :: mewf2(:,:,:)
 complex(8), allocatable :: mewf4(:,:,:)
 complex(8), allocatable :: mewfx(:,:,:)
 complex(8), allocatable :: pmat(:,:,:,:)
-integer, parameter :: maxtr=1
+
 ! HDF5
 integer(hid_t) h5_root_id
 integer(hid_t) h5_w_id
@@ -125,23 +125,23 @@ if (wannier) then
   allocate(wann_c2(nwann,nstsv,nkptnr_loc))
 endif  
 if (lwannresp) then
-  ntr1=(2*maxtr+1)**3
+  ntr1=(2*lr_maxtr+1)**3
   allocate(itr1l(3,ntr1))
   i=0
-  do i1=-maxtr,maxtr
-    do i2=-maxtr,maxtr
-      do i3=-maxtr,maxtr
+  do i1=-lr_maxtr,lr_maxtr
+    do i2=-lr_maxtr,lr_maxtr
+      do i3=-lr_maxtr,lr_maxtr
         i=i+1
         itr1l(:,i)=(/i1,i2,i3/)
       enddo
     enddo
   enddo
-  ntr2=(4*maxtr+1)**3
+  ntr2=(4*lr_maxtr+1)**3
   allocate(itr2l(3,ntr2))
   i=0
-  do i1=-2*maxtr,2*maxtr
-    do i2=-2*maxtr,2*maxtr
-      do i3=-2*maxtr,2*maxtr
+  do i1=-2*lr_maxtr,2*lr_maxtr
+    do i2=-2*lr_maxtr,2*lr_maxtr
+      do i3=-2*lr_maxtr,2*lr_maxtr
         i=i+1
         itr2l(:,i)=(/i1,i2,i3/)
       enddo

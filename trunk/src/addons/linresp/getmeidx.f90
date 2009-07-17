@@ -35,7 +35,7 @@ do ikloc=1,nkptnr_loc
       d1=occsvnr(ist1,ik)-occsvnr(ist2,jk)
       ldocc=abs(d1).gt.1d-5
       laddme=.false.
-      if ((ldocc.or.lwannresp).and.le1.and.le2) then
+      if ((ldocc.or.(lwannresp.and..not.lwanndiel)).and.(le1.and.le2)) then
         if (.not.spinpol) then
           laddme=.true.
         else
