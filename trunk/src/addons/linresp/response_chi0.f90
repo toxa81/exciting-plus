@@ -136,17 +136,18 @@ if (lwannresp) then
       enddo
     enddo
   enddo
-  ntr2=(4*lr_maxtr+1)**3
+  ntr2=(2*lr_maxtr+1)**3
   allocate(itr2l(3,ntr2))
-  i=0
-  do i1=-2*lr_maxtr,2*lr_maxtr
-    do i2=-2*lr_maxtr,2*lr_maxtr
-      do i3=-2*lr_maxtr,2*lr_maxtr
-        i=i+1
-        itr2l(:,i)=(/i1,i2,i3/)
-      enddo
-    enddo
-  enddo
+  itr2l=itr1l
+!  i=0
+!  do i1=-2*lr_maxtr,2*lr_maxtr
+!    do i2=-2*lr_maxtr,2*lr_maxtr
+!      do i3=-2*lr_maxtr,2*lr_maxtr
+!        i=i+1
+!        itr2l(:,i)=(/i1,i2,i3/)
+!      enddo
+!    enddo
+!  enddo
   allocate(zv1(nwann*nwann))
   allocate(zm1(nwann*nwann,nwann*nwann))
   allocate(mewf4(nwann*nwann,nwann*nwann,ntr2))

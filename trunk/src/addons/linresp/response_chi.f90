@@ -112,6 +112,7 @@ if (lwannresp) then
   endif
   call i_bcast_cart(comm_cart_110,itr1l,3*ntr1)
   call i_bcast_cart(comm_cart_110,itr2l,3*ntr2)
+  itridx=-1
   do n1=1,ntr1
     do n2=1,ntr1
       iv(:)=itr1l(:,n1)-itr1l(:,n2)
@@ -318,11 +319,13 @@ do ie=ie1,ie2
   if (lwannresp) then
     do it1=1,ntr1
       do it2=1,ntr1
-        do n1=1,nwann*nwann
-          do n2=1,nwann*nwann
-            chi0wf(ie)=chi0wf(ie)+mewf4(n1,n2,itridx(it1,it2))*mewf2(n1,it1,1)*dconjg(mewf2(n2,it2,1))
+        if (itridx(it1,it2).ne.-1) then
+          do n1=1,nwann*nwann
+            do n2=1,nwann*nwann
+              chi0wf(ie)=chi0wf(ie)+mewf4(n1,n2,itridx(it1,it2))*mewf2(n1,it1,1)*dconjg(mewf2(n2,it2,1))
+            enddo
           enddo
-        enddo
+        endif
       enddo
     enddo
   endif
