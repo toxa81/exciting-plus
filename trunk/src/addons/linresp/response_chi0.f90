@@ -324,7 +324,8 @@ do ie=ie1,nepts
       enddo !i
     endif
     if (lwannresp) then
-      sz2=nme(ikloc)*ntr2
+      sz2=sz2+(nme(ikloc)+ntr2)*nwann**4
+      zm1=zzero
       do i=1,nme(ikloc)
         jk=idxkq(1,ikloc)
         ist1=ime(1,i,ikloc)
@@ -335,16 +336,14 @@ do ie=ie1,nepts
             zv1((n1-1)*nwann+n2)=zt1*dconjg(wann_c2(n2,ist2,ikloc))
           enddo
         enddo
-        zm1=zzero
-        call zgerc(nwann*nwann,nwann*nwann,zone,zv1,1,zv1,1,zm1,nwann*nwann)
-        do it2=1,ntr2
-          vtrc(:)=avec(:,1)*itr2l(1,it2)+avec(:,2)*itr2l(2,it2)+avec(:,3)*itr2l(3,it2)
-          zt1=exp(dcmplx(0.d0,dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
-          wt=zt1*(docc(i,ikloc)/(evalsvnr(ist1,ik)-evalsvnr(ist2,jk)+lr_w(ie)))
-          call zaxpy(nwann**4,wt,zm1,1,mewf4(1,1,it2),1)
-!          mewf4(:,:,it2)=mewf4(:,:,it2)+wt*zm1(:,:)
-        enddo
+        zt1=(docc(i,ikloc)/(evalsvnr(ist1,ik)-evalsvnr(ist2,jk)+lr_w(ie)))
+        call zgerc(nwann*nwann,nwann*nwann,zt1,zv1,1,zv1,1,zm1,nwann*nwann)
       enddo !i
+      do it2=1,ntr2
+        vtrc(:)=avec(:,1)*itr2l(1,it2)+avec(:,2)*itr2l(2,it2)+avec(:,3)*itr2l(3,it2)
+        zt1=exp(dcmplx(0.d0,dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
+        call zaxpy(nwann**4,zt1,zm1,1,mewf4(1,1,it2),1)
+      enddo
     endif !lwannresp
   enddo !ikloc
   call timer_stop(2)
@@ -380,7 +379,7 @@ do ie=ie1,nepts
   call timer_stop(1)
   if (wproc) then
     write(150,'("energy point ",I4," done in ",3F8.2," seconds, ",F8.2," MB/s")') &
-      ie,timer(2,2),timer(3,2),timer(4,2),(16.d0*(j*ngvecme**2+sz2*nwann**4))/1024/1024/timer(1,2)
+      ie,timer(2,2),timer(3,2),timer(4,2),(16.d0*(j*ngvecme**2+sz2))/1024/1024/timer(1,2)
     call flushifc(150)
   endif
   call barrier(comm_cart_110)
