@@ -84,10 +84,10 @@ if (root_cart((/1,1,0/))) then
   call read_real8(vq0rl,3,trim(fname),'/parameters','vq0rl')
   call read_real8(vq0c,3,trim(fname),'/parameters','vq0c')
   call read_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
-  if (lwannresp) then
-    call read_integer(ntr1,1,trim(fname),'/wann','ntr1')
-    call read_integer(ntr2,1,trim(fname),'/wann','ntr2')
-  endif
+!  if (lwannresp) then
+!    call read_integer(ntr1,1,trim(fname),'/wann','ntr1')
+!    call read_integer(ntr2,1,trim(fname),'/wann','ntr2')
+!  endif
 endif
 call i_bcast_cart(comm_cart_110,nepts,1)
 call i_bcast_cart(comm_cart_110,lr_igq0,1)
@@ -100,89 +100,90 @@ call d_bcast_cart(comm_cart_110,vq0l,3)
 call d_bcast_cart(comm_cart_110,vq0rl,3)
 call d_bcast_cart(comm_cart_110,vq0c,3)
 call d_bcast_cart(comm_cart_110,vq0rc,3)
+
 if (lwannresp) then
-  call i_bcast_cart(comm_cart_110,ntr1,1)
-  call i_bcast_cart(comm_cart_110,ntr2,1)
-  allocate(itr1l(3,ntr1))
-  allocate(itr2l(3,ntr2))
-  allocate(itridx(ntr1,ntr1))
-  if (root_cart((/1,1,0/))) then
-    call read_integer_array(itr1l,2,(/3,ntr1/),trim(fname),'/wann','itr1')
-    call read_integer_array(itr2l,2,(/3,ntr2/),trim(fname),'/wann','itr2')
-  endif
-  call i_bcast_cart(comm_cart_110,itr1l,3*ntr1)
-  call i_bcast_cart(comm_cart_110,itr2l,3*ntr2)
-  itridx=-1
-  do n1=1,ntr1
-    do n2=1,ntr1
-      iv(:)=itr1l(:,n1)-itr1l(:,n2)
-      do i=1,ntr2
-        if (itr2l(1,i).eq.iv(1).and.itr2l(2,i).eq.iv(2).and.itr2l(3,i).eq.iv(3)) then
-          itridx(n1,n2)=i
-        endif
-      enddo
-    enddo
-  enddo
-  allocate(mewf2(nwann*nwann,ntr1,ngvecme))
-  allocate(mewf4(nwann*nwann,nwann*nwann,ntr2))
+!  call i_bcast_cart(comm_cart_110,ntr1,1)
+!  call i_bcast_cart(comm_cart_110,ntr2,1)
+!  allocate(itr1l(3,ntr1))
+!  allocate(itr2l(3,ntr2))
+!  allocate(itridx(ntr1,ntr1))
+!  if (root_cart((/1,1,0/))) then
+!    call read_integer_array(itr1l,2,(/3,ntr1/),trim(fname),'/wann','itr1')
+!    call read_integer_array(itr2l,2,(/3,ntr2/),trim(fname),'/wann','itr2')
+!  endif
+!  call i_bcast_cart(comm_cart_110,itr1l,3*ntr1)
+!  call i_bcast_cart(comm_cart_110,itr2l,3*ntr2)
+!  itridx=-1
+!  do n1=1,ntr1
+!    do n2=1,ntr1
+!      iv(:)=itr1l(:,n1)-itr1l(:,n2)
+!      do i=1,ntr2
+!        if (itr2l(1,i).eq.iv(1).and.itr2l(2,i).eq.iv(2).and.itr2l(3,i).eq.iv(3)) then
+!          itridx(n1,n2)=i
+!        endif
+!      enddo
+!    enddo
+!  enddo
+!  allocate(mewf2(nwann*nwann,ntr1,ngvecme))
+!  allocate(mewf4(nwann*nwann,nwann*nwann,ntr2))
   allocate(chi0wf(nepts))
   chi0wf=zzero
-  if (root_cart((/1,1,0/))) then
-    call read_real8_array(mewf2,4,(/2,nwann*nwann,ntr1,ngvecme/), &
-      trim(fname),'/wann','mewf2')
-  endif
-  call d_bcast_cart(comm_cart_110,mewf2,2*nwann*nwann*ntr1*ngvecme)
-! switch off some channels
-  if (.false.) then
-    nwf1=1
-    allocate(iwf1(nwf1))
-    iwf1(1)=2
-
-    nwf2=1
-    allocate(iwf2(nwf2))
-    iwf2(1)=4
-
-    ntr=2
-    allocate(itr(3,ntr))
-    itr(:,1)=(/-1,0,0/)
-    itr(:,2)=(/0,-1,-1/)
-
-    allocate(mewf2_t(nwann*nwann,ntr1,ngvecme))
-    mewf2_t=zzero
-
-    do it1=1,ntr1
-      do i=1,ntr
-        if (itr1l(1,it1).eq.itr(1,i).and.itr1l(2,it1).eq.itr(2,i).and.&
-          itr1l(3,it1).eq.itr(3,i)) then
-          do n1=1,nwann
-            do n2=1,nwann
-              do n3=1,nwf1
-                do n4=1,nwf2
-                  if (iwf1(n3).eq.n1.and.iwf2(n4).eq.n2) then
-                    mewf2_t((n1-1)*nwann+n2,it1,:)=mewf2((n1-1)*nwann+n2,it1,:)
-                  endif
-                enddo
-              enddo
-            enddo
-          enddo
-        endif
-      enddo
-    enddo
-    mewf2=mewf2_t
-  endif
+!  if (root_cart((/1,1,0/))) then
+!    call read_real8_array(mewf2,4,(/2,nwann*nwann,ntr1,ngvecme/), &
+!      trim(fname),'/wann','mewf2')
+!  endif
+!  call d_bcast_cart(comm_cart_110,mewf2,2*nwann*nwann*ntr1*ngvecme)
+!! switch off some channels
+!  if (.false.) then
+!    nwf1=1
+!    allocate(iwf1(nwf1))
+!    iwf1(1)=2
+!
+!    nwf2=1
+!    allocate(iwf2(nwf2))
+!    iwf2(1)=4
+!
+!    ntr=2
+!    allocate(itr(3,ntr))
+!    itr(:,1)=(/-1,0,0/)
+!    itr(:,2)=(/0,-1,-1/)
+!
+!    allocate(mewf2_t(nwann*nwann,ntr1,ngvecme))
+!    mewf2_t=zzero
+!
+!    do it1=1,ntr1
+!      do i=1,ntr
+!        if (itr1l(1,it1).eq.itr(1,i).and.itr1l(2,it1).eq.itr(2,i).and.&
+!          itr1l(3,it1).eq.itr(3,i)) then
+!          do n1=1,nwann
+!            do n2=1,nwann
+!              do n3=1,nwf1
+!                do n4=1,nwf2
+!                  if (iwf1(n3).eq.n1.and.iwf2(n4).eq.n2) then
+!                    mewf2_t((n1-1)*nwann+n2,it1,:)=mewf2((n1-1)*nwann+n2,it1,:)
+!                  endif
+!                enddo
+!              enddo
+!            enddo
+!          enddo
+!        endif
+!      enddo
+!    enddo
+!    mewf2=mewf2_t
+!  endif
 endif !lwannresp
-if (lwannopt) then
-  allocate(mewfx(3,nwann*nwann,ntr1))
-  if (root_cart((/1,1,0/))) then
-    call read_real8_array(mewfx,4,(/2,3,nwann*nwann,ntr1/), &
-      trim(fname),'/wann','mewfx')
-  endif
-  call d_bcast_cart(comm_cart_110,mewfx,2*3*nwann*nwann*ntr1)
-!  allocate(mtrx1(nwann*nwann*ntr1,nwann*nwann*ntr1))
-!  allocate(mtrx2(nwann*nwann*ntr1,nwann*nwann*ntr1)) 
-  allocate(epswf(nepts))
-  epswf=zzero
-endif
+!if (lwannopt) then
+!  allocate(mewfx(3,nwann*nwann,ntr1))
+!  if (root_cart((/1,1,0/))) then
+!    call read_real8_array(mewfx,4,(/2,3,nwann*nwann,ntr1/), &
+!      trim(fname),'/wann','mewfx')
+!  endif
+!  call d_bcast_cart(comm_cart_110,mewfx,2*3*nwann*nwann*ntr1)
+!!  allocate(mtrx1(nwann*nwann*ntr1,nwann*nwann*ntr1))
+!!  allocate(mtrx2(nwann*nwann*ntr1,nwann*nwann*ntr1)) 
+!  allocate(epswf(nepts))
+!  epswf=zzero
+!endif
 
 if (wproc) then
   write(150,'("chi0 was calculated for ")')
@@ -293,9 +294,12 @@ do ie=ie1,ie2
         call read_real8_array(chi0w,3,(/2,ngvecme,ngvecme/), &
           trim(fname),trim(path),'chi0')
         if (lwannresp) then
-          call read_real8_array(mewf4,4,(/2,nwann*nwann,nwann*nwann,ntr2/), &
-            trim(fname),trim(path),'mewf4')
+          call read_real8_array(chi0wf(ie),1,(/2/),trim(fname),trim(path),'chi0wf')
         endif
+!        if (lwannresp) then
+!          call read_real8_array(mewf4,4,(/2,nwann*nwann,nwann*nwann,ntr2/), &
+!            trim(fname),trim(path),'mewf4')
+!        endif
 #ifndef _PIO_      
       endif
       call barrier(comm_cart_101)
@@ -305,9 +309,9 @@ do ie=ie1,ie2
   endif
   call d_bcast_cart(comm_cart_010,lr_w(ie),2)
   call d_bcast_cart(comm_cart_010,chi0w,2*ngvecme*ngvecme)
-  if (lwannresp) then
-    call d_bcast_cart(comm_cart_010,mewf4,2*nwann*nwann*nwann*nwann*ntr2)
-  endif  
+!  if (lwannresp) then
+!    call d_bcast_cart(comm_cart_010,mewf4,2*nwann*nwann*nwann*nwann*ntr2)
+!  endif  
 ! prepare chi0
   ig1=gvecchi1-gvecme1+1
   ig2=ig1+ngvecchi-1
@@ -316,30 +320,30 @@ do ie=ie1,ie2
   call solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_(1,ie), &
     epsilon_(1,ie),lmbd(1,ie))
 ! in Wannier basis
-  if (lwannresp) then
-    do it1=1,ntr1
-      do it2=1,ntr1
-        if (itridx(it1,it2).ne.-1) then
-          do n1=1,nwann*nwann
-            do n2=1,nwann*nwann
-              chi0wf(ie)=chi0wf(ie)+mewf4(n1,n2,itridx(it1,it2))*mewf2(n1,it1,1)*dconjg(mewf2(n2,it2,1))
-            enddo
-          enddo
-        endif
-      enddo
-    enddo
-  endif
-  if (lwannopt) then
-    do it1=1,ntr1
-      do it2=1,ntr1
-        do n1=1,nwann*nwann
-          do n2=1,nwann*nwann
-            epswf(ie)=epswf(ie)+mewf4(n1,n2,itridx(it1,it2))*mewfx(1,n1,it1)*dconjg(mewfx(1,n2,it2))
-          enddo
-        enddo
-      enddo
-    enddo 
-  endif
+!  if (lwannresp) then
+!    do it1=1,ntr1
+!      do it2=1,ntr1
+!        if (itridx(it1,it2).ne.-1) then
+!          do n1=1,nwann*nwann
+!            do n2=1,nwann*nwann
+!              chi0wf(ie)=chi0wf(ie)+mewf4(n1,n2,itridx(it1,it2))*mewf2(n1,it1,1)*dconjg(mewf2(n2,it2,1))
+!            enddo
+!          enddo
+!        endif
+!      enddo
+!    enddo
+!  endif
+!  if (lwannopt) then
+!    do it1=1,ntr1
+!      do it2=1,ntr1
+!        do n1=1,nwann*nwann
+!          do n2=1,nwann*nwann
+!            epswf(ie)=epswf(ie)+mewf4(n1,n2,itridx(it1,it2))*mewfx(1,n1,it1)*dconjg(mewfx(1,n2,it2))
+!          enddo
+!        enddo
+!      enddo
+!    enddo 
+!  endif
 enddo !ie
 
 call d_reduce_cart(comm_cart_100,.false.,lr_w,2*nepts)
@@ -349,9 +353,9 @@ call d_reduce_cart(comm_cart_100,.false.,epsilon_,2*4*nepts)
 if (lwannresp) then
   call d_reduce_cart(comm_cart_100,.false.,chi0wf,2*nepts)
 endif
-if (lwannopt) then
-  call d_reduce_cart(comm_cart_100,.false.,epswf,2*nepts)
-endif
+!if (lwannopt) then
+!  call d_reduce_cart(comm_cart_100,.false.,epswf,2*nepts)
+!endif
 
 if (root_cart((/1,0,0/))) then
   call write_chi(lr_igq0,ivq0m,chi_,epsilon_,lmbd)
@@ -372,19 +376,19 @@ if (root_cart((/1,0,0/))) then
 !      enddo
 !    enddo
 !    close(130)
-    do it1=1,ntr1
-      write(*,*)'itr=',it1
-      do n1=1,nwann
-        write(*,'(10(2F12.6))')(mewf2((n1-1)*nwann+n2,it1,1),n2=1,nwann)
-      enddo
-    enddo
-  endif
-  if (lwannopt) then
-    open(130,file='epswf.dat',form='formatted',status='replace')
-    do ie=1,nepts
-      write(130,'(3G18.10)')dreal(lr_w(ie))*ha2ev,-dreal(epswf(ie)),-dimag(epswf(ie))
-    enddo
-    close(130)
+!    do it1=1,ntr1
+!      write(*,*)'itr=',it1
+!      do n1=1,nwann
+!        write(*,'(10(2F12.6))')(mewf2((n1-1)*nwann+n2,it1,1),n2=1,nwann)
+!      enddo
+!    enddo
+!  endif
+!  if (lwannopt) then
+!    open(130,file='epswf.dat',form='formatted',status='replace')
+!    do ie=1,nepts
+!      write(130,'(3G18.10)')dreal(lr_w(ie))*ha2ev,-dreal(epswf(ie)),-dimag(epswf(ie))
+!    enddo
+!    close(130)
   endif
 endif
 
