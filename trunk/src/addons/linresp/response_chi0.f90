@@ -301,7 +301,7 @@ if (lwannresp) then
   mewf2=mewf2/nkptnr
   call d_bcast_cart(comm_cart_010,mewf2,2*nwann*nwann*ntr1*ngvecme)
   
-  if (.true.) then
+  if (.false.) then
     nwf1=1
     allocate(iwf1(nwf1))
     iwf1(1)=2
@@ -459,13 +459,16 @@ do ie=ie1,nepts
         zt1=exp(dcmplx(0.d0,dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
         call zaxpy(nwann**4,zt1,zm2(1,1,ikloc),1,zm1,1)
       enddo
-      call d_reduce_cart(comm_cart_100,.false.,zm1,2*nwann*nwann*nwann*nwann)
+      call d_reduce_cart(comm_cart_100,.true.,zm1,2*nwann*nwann*nwann*nwann)
       zm1=zm1/nkptnr/omega
+      call idxbos(nwann*nwann,mpi_dims(1),mpi_x(1)+1,idx0,bs)
+      n3=idx0+1
+      n4=idx0+bs
       do i=1,ntr1
         do j=1,ntr1
           if (itridx(i,j).eq.it2) then
             sz2=sz2+nwann**4
-            do n1=1,nwann*nwann
+            do n1=n3,n4
               do n2=1,nwann*nwann
                 zt3=zt3+zm1(n1,n2)*mewf2(n1,i,1)*dconjg(mewf2(n2,j,1))
               enddo
@@ -473,7 +476,8 @@ do ie=ie1,nepts
           endif
         enddo
       enddo
-    enddo
+    enddo !it2
+    call d_reduce_cart(comm_cart_100,.false.,zt3,2)
   endif    
   call timer_stop(3)
 ! write to file
