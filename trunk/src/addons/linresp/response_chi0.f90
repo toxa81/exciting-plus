@@ -54,6 +54,7 @@ integer(hid_t) h5_iw_id
 integer(hid_t) h5_tmp_id
 
 logical, external :: root_cart
+complex(8), external :: zdotu
 
 if (wproc) then
   write(150,*)
@@ -468,11 +469,14 @@ do ie=ie1,nepts
         do j=1,ntr1
           if (itridx(i,j).eq.it2) then
             sz2=sz2+nwann**4
-            do n1=n3,n4
-              do n2=1,nwann*nwann
-                zt3=zt3+zm1(n1,n2)*mewf2(n1,i,1)*dconjg(mewf2(n2,j,1))
-              enddo
+            do n2=n3,n4
+              zt1=zdotu(nwann*nwann,zm1(1,n2),1,mewf2(1,i,1),1)
+              zt3=zt3+zt1*dconjg(mewf2(n2,j,1))
             enddo
+!              do n1=1,nwann*nwann
+!                zt3=zt3+zm1(n1,n2)*mewf2(n1,i,1)*dconjg(mewf2(n2,j,1))
+!              enddo
+!            enddo
           endif
         enddo
       enddo
