@@ -70,6 +70,11 @@ if (task.eq.400) then
   call genurfprod
 endif
 
+if (task.eq.401) then
+  if (iproc.eq.0) call readfermi
+  call dsync(efermi,1,.false.,.true.)
+endif
+
 if (in_cart()) then
   call qname(ivq0m_list(:,mpi_x(3)+1),qnm)
   if (root_cart((/1,1,0/))) call system("mkdir -p "//trim(qnm))
@@ -345,6 +350,7 @@ if (in_cart()) then
       deallocate(wfsvit_t)
       deallocate(wfc_t)
     endif !wannier
+    
     call timer_stop(1)
     if (wproc) then
       write(150,'("Done in ",F8.2," seconds")')timer(1,2)

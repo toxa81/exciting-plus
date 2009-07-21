@@ -19,15 +19,18 @@ character*100 fname,path,qnm
 character*8 c8
 integer ierr
 logical exist
-integer ie1,n1,n2,n3,n4,jk,ist1,ist2,ig,sz2
+integer ie1,n,n1,n2,n3,n4,jk,ist1,ist2,ig,sz1,sz2
 complex(8), allocatable :: wann_c1(:,:,:)
 complex(8), allocatable :: wann_c2(:,:,:)
 complex(8), allocatable :: zv1(:),zm1(:,:),zm2(:,:,:)
 integer, allocatable :: itr1l(:,:)
 integer, allocatable :: itr2l(:,:)
 integer, allocatable :: itridx(:,:)
+integer, allocatable :: iwfme(:,:)
+integer nwfme
 integer ntr1,ntr2
 integer iv(3)
+integer itype
 
 integer it1,it2 !,itr(3)
 real(8) tr1(3),tr2(3)
@@ -229,6 +232,33 @@ if (lwannopt) then
 endif
 
 if (lwannresp) then
+  wann_occ=0.5d0
+  do n=1,nwann
+    itype=iwann(4,n)
+    if (wann_use_eint) then
+      if (wann_eint(2,itype).lt.efermi) wann_occ(n)=1.d0
+      if (wann_eint(1,itype).gt.efermi) wann_occ(n)=0.d0
+    else
+      j=nint(chgval)/2
+      if (wann_nint(2,itype).le.j) wann_occ(n)=1.d0
+      if (wann_nint(1,itype).gt.j) wann_occ(n)=0.d0
+    endif
+  enddo
+  allocate(iwfme(2,nwann*nwann))
+  nwfme=0
+  do n1=1,nwann
+    do n2=1,nwann
+      if (abs(wann_occ(n1)-wann_occ(n2)).gt.1d-5) then
+        nwfme=nwfme+1
+        iwfme(1,nwfme)=n1
+        iwfme(2,nwfme)=n2
+      endif
+    enddo
+  enddo
+  if (wproc) then
+    write(150,'("nwfme : ",I4)')nwfme
+  endif
+
   ntr1=(2*lr_maxtr+1)**3
   allocate(itr1l(3,ntr1))
   i=0
@@ -252,10 +282,9 @@ if (lwannresp) then
       enddo
     enddo
   enddo
-  allocate(zv1(nwann*nwann))
-  allocate(zm1(nwann*nwann,nwann*nwann))
-  allocate(zm2(nwann*nwann,nwann*nwann,nkptnr_loc))
-!  allocate(mewf4(nwann*nwann,nwann*nwann,ntr2))
+  allocate(zv1(nwfme))
+  allocate(zm1(nwfme,nwfme))
+  allocate(zm2(nwfme,nwfme,nkptnr_loc))
   allocate(itridx(ntr1,ntr1))
   itridx=-1
   do n1=1,ntr1
@@ -269,13 +298,10 @@ if (lwannresp) then
     enddo
   enddo
 endif
-if (lwannopt) then
-  allocate(pmat(3,nstsv,nstsv,nkptnr_loc))
-endif
 
 ! if needed, compute matrix elements of plane-waves in WF basis
 if (lwannresp) then
-  allocate(mewf2(nwann*nwann,ntr1,ngvecme))
+  allocate(mewf2(nwfme,ntr1,ngvecme))
   mewf2=zzero
   do it1=1,ntr1
     vtrc(:)=avec(:,1)*itr1l(1,it1)+avec(:,2)*itr1l(2,it1)+avec(:,3)*itr1l(3,it1)
@@ -283,24 +309,24 @@ if (lwannresp) then
       ik=ikptnrloc(mpi_x(1),1)+ikloc-1
       zt1=exp(dcmplx(0.d0,-dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
       do ig=1,ngvecme
-        do n1=1,nwann
-          do n2=1,nwann
-            do i=1,nme(ikloc)
-              ist1=ime(1,i,ikloc)
-              ist2=ime(2,i,ikloc)
-              mewf2((n1-1)*nwann+n2,it1,ig)=mewf2((n1-1)*nwann+n2,it1,ig)+&
-                dconjg(wann_c1(n1,ist1,ikloc))*wann_c2(n2,ist2,ikloc)*me(ig,i,ikloc)*zt1
-            enddo
+        do n=1,nwfme
+          n1=iwfme(1,n)
+          n2=iwfme(2,n)
+          do i=1,nme(ikloc)
+            ist1=ime(1,i,ikloc)
+            ist2=ime(2,i,ikloc)
+            mewf2(n,it1,ig)=mewf2(n,it1,ig)+dconjg(wann_c1(n1,ist1,ikloc))*&
+              wann_c2(n2,ist2,ikloc)*me(ig,i,ikloc)*zt1
           enddo
         enddo
       enddo      
     enddo !ikloc
   enddo !itr1
   if (root_cart((/0,1,0/)).and.mpi_dims(1).gt.1) then
-    call d_reduce_cart(comm_cart_100,.true.,mewf2,2*nwann*nwann*ntr1*ngvecme)
+    call d_reduce_cart(comm_cart_100,.true.,mewf2,2*nwfme*ntr1*ngvecme)
   endif
   mewf2=mewf2/nkptnr
-  call d_bcast_cart(comm_cart_010,mewf2,2*nwann*nwann*ntr1*ngvecme)
+  call d_bcast_cart(comm_cart_010,mewf2,2*nwfme*ntr1*ngvecme)
   
   if (.false.) then
     nwf1=1
@@ -316,7 +342,7 @@ if (lwannresp) then
     itr(:,1)=(/-1,0,0/)
     !itr(:,2)=(/0,-1,-1/)
 
-    allocate(mewf2_t(nwann*nwann,ntr1,ngvecme))
+    allocate(mewf2_t(nwfme,ntr1,ngvecme))
     mewf2_t=zzero
 
     do it1=1,ntr1
@@ -340,6 +366,10 @@ if (lwannresp) then
     mewf2=mewf2_t
   endif
 
+endif
+
+if (lwannopt) then
+  allocate(pmat(3,nstsv,nstsv,nkptnr_loc))
 endif
 
 ie1=0
@@ -394,11 +424,8 @@ do ie=ie1,nepts
   call timer_reset(4)
   call timer_start(1)
   chi0w=zzero
-  if (lwannresp) then
-!    mewf4=zzero
-    zm2=zzero
-  endif
-  j=0
+  if (lwannresp) zm2=zzero
+  sz1=0
   sz2=0
   call timer_start(2)
   do ikloc=1,nkptnr_loc
@@ -407,7 +434,7 @@ do ie=ie1,nepts
       call idxbos(nme(ikloc),mpi_dims(2),mpi_x(2)+1,idx0,bs)
       i1=idx0+1
       i2=idx0+bs
-      j=j+bs
+      sz1=sz1+bs
       do i=i1,i2
         wt=docc(i,ikloc)/(evalsvnr(ime(1,i,ikloc),ik) - &
           evalsvnr(ime(2,i,ikloc),idxkq(1,ikloc))+lr_w(ie))
@@ -416,26 +443,19 @@ do ie=ie1,nepts
       enddo !i
     endif
     if (lwannresp) then
-      sz2=sz2+nme(ikloc)*nwann**4
-!      zm1=zzero
+      sz2=sz2+nme(ikloc)*nwfme**2
       do i=1,nme(ikloc)
         jk=idxkq(1,ikloc)
         ist1=ime(1,i,ikloc)
         ist2=ime(2,i,ikloc)
-        do n1=1,nwann
-          zt1=wann_c1(n1,ist1,ikloc)
-          do n2=1,nwann
-            zv1((n1-1)*nwann+n2)=zt1*dconjg(wann_c2(n2,ist2,ikloc))
-          enddo
+        do n=1,nwfme
+          n1=iwfme(1,n)
+          n2=iwfme(2,n)
+          zv1(n)=wann_c1(n1,ist1,ikloc)*dconjg(wann_c2(n2,ist2,ikloc))
         enddo
         zt1=(docc(i,ikloc)/(evalsvnr(ist1,ik)-evalsvnr(ist2,jk)+lr_w(ie)))
-        call zgerc(nwann*nwann,nwann*nwann,zt1,zv1,1,zv1,1,zm2(1,1,ikloc),nwann*nwann)
+        call zgerc(nwfme,nwfme,zt1,zv1,1,zv1,1,zm2(1,1,ikloc),nwfme)
       enddo !i
-!      do it2=1,ntr2
-!        vtrc(:)=avec(:,1)*itr2l(1,it2)+avec(:,2)*itr2l(2,it2)+avec(:,3)*itr2l(3,it2)
-!        zt1=exp(dcmplx(0.d0,dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
-!        call zaxpy(nwann**4,zt1,zm1,1,mewf4(1,1,it2),1)
-!      enddo
     endif !lwannresp
   enddo !ikloc
   call timer_stop(2)
@@ -449,34 +469,29 @@ do ie=ie1,nepts
     call d_reduce_cart(comm_cart_100,.false.,chi0w,2*ngvecme*ngvecme)
   endif
   if (root_cart((/0,1,0/)).and.lwannresp) then
-    !call d_reduce_cart(comm_cart_100,.false.,mewf4,2*nwann*nwann*nwann*nwann*ntr2)
     zt3=0.d0
     do it2=1,ntr2
-      sz2=sz2+nkptnr_loc*nwann**4
+      sz2=sz2+nkptnr_loc*nwfme**2
       zm1=zzero
       do ikloc=1,nkptnr_loc
         ik=ikptnrloc(mpi_x(1),1)+ikloc-1
         vtrc(:)=avec(:,1)*itr2l(1,it2)+avec(:,2)*itr2l(2,it2)+avec(:,3)*itr2l(3,it2)
         zt1=exp(dcmplx(0.d0,dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
-        call zaxpy(nwann**4,zt1,zm2(1,1,ikloc),1,zm1,1)
+        call zaxpy(nwfme**2,zt1,zm2(1,1,ikloc),1,zm1,1)
       enddo
-      call d_reduce_cart(comm_cart_100,.true.,zm1,2*nwann*nwann*nwann*nwann)
+      call d_reduce_cart(comm_cart_100,.true.,zm1,2*nwfme*nwfme)
       zm1=zm1/nkptnr/omega
-      call idxbos(nwann*nwann,mpi_dims(1),mpi_x(1)+1,idx0,bs)
+      call idxbos(nwfme,mpi_dims(1),mpi_x(1)+1,idx0,bs)
       n3=idx0+1
       n4=idx0+bs
       do i=1,ntr1
         do j=1,ntr1
           if (itridx(i,j).eq.it2) then
-            sz2=sz2+nwann**4
+            sz2=sz2+nwfme**2
             do n2=n3,n4
-              zt1=zdotu(nwann*nwann,zm1(1,n2),1,mewf2(1,i,1),1)
+              zt1=zdotu(nwfme,zm1(1,n2),1,mewf2(1,i,1),1)
               zt3=zt3+zt1*dconjg(mewf2(n2,j,1))
             enddo
-!              do n1=1,nwann*nwann
-!                zt3=zt3+zm1(n1,n2)*mewf2(n1,i,1)*dconjg(mewf2(n2,j,1))
-!              enddo
-!            enddo
           endif
         enddo
       enddo
@@ -506,7 +521,7 @@ do ie=ie1,nepts
   call timer_stop(1)
   if (wproc) then
     write(150,'("energy point ",I4," done in ",3F8.2," seconds, ",F8.2," MB/s")') &
-      ie,timer(2,2),timer(3,2),timer(4,2),(16.d0*(j*ngvecme**2+sz2))/1024/1024/timer(1,2)
+      ie,timer(2,2),timer(3,2),timer(4,2),(16.d0*(sz1*ngvecme**2+sz2))/1024/1024/timer(1,2)
     call flushifc(150)
   endif
   call barrier(comm_cart_110)
