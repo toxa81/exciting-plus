@@ -51,7 +51,8 @@ class datFile:
         self.ngv=int(s1[1])-int(s1[0])+1
       if line.find("label")>-1:
         self.label=s2
-        print s2
+      if line.find("fxc A")>-1:
+        self.fxca=s1[0]
       if line[0]!='#':
         t1=line.split()
         for i in range(len(t1)):
@@ -60,8 +61,6 @@ class datFile:
     return
   
   def plotFile(self,title,qdir):
-    self.title=title.strip()
-    self.qdir=qdir.strip()
     (name,extension)=os.path.splitext(self.name)
     name="plot__"+name
     plotname=name+".gnu"
@@ -82,7 +81,8 @@ class datFile:
     out.write("set bmargin 0\n")
     out.write("set rmargin 1\n")
     out.write("set lmargin 1.5\n")
-    out.write("LW=3\n")
+    out.write("LW=2\n")
+#    self.emax=30
 ### chiKS ###
 #    out.write("set ylabel '[1/eV/nm^3]' offset 2,0\n")
 #    out.write("unset xlabel\n")
@@ -99,7 +99,7 @@ class datFile:
 #    out.write("set size 0.46,0.44\n")
     str="plot [0:"+repr(self.emax)+"] "+"'"+self.name+"'"+\
       " using 1:($5)*1000 with lines title '-Im chi' lw LW, "+"'"+self.name+"'"+\
-      " using 1:($8)*1000 with lines title '-Im chi_scal' lw LW lc rgb \""+"\x23"+"FF0000\""
+      " using 1:($8)*1000 with lines title '-Im chi_scal' lw LW lc rgb \""+"\x23"+"0000FF\""
     out.write(str+"\n")
 ### epsilon_GqGq
 #    out.write("set xlabel 'Energy [eV]'\n")
@@ -118,7 +118,7 @@ class datFile:
     str="plot [0:"+repr(self.emax)+"] "+"'"+self.name+"'"+\
       " using 1:9 with lines title '-Re eps_eff' lw LW, "+"'"+self.name+"'"+\
       " using 1:10 with lines title '-Im eps_eff' lw LW lt 1 lc rgb \""+"\x23"+"228b22\""
-    out.write("set label '"+self.name+"' font 'Times,12' at -74,9.2\n")
+#    out.write("set label '"+self.name+"' font 'Times,12' at -74,9.2\n")
     out.write(str+"\n")
 ##   
     out.write("unset multiplot\n")
@@ -126,6 +126,105 @@ class datFile:
     out.close()
     os.system("gnuplot "+plotname)
     os.system("rm "+plotname)
+    
+def plotFile2(title,qdir,df1,df2):
+  print "Input label1 for file %s : "%df1.name  
+  label1=sys.stdin.readline().strip()
+  print "Input label2 for file %s : "%df2.name
+  label2=sys.stdin.readline().strip()
+  (name1,extension1)=os.path.splitext(df1.name)
+  (name2,extension2)=os.path.splitext(df2.name)
+  name="plot__"+name1+"_vs_"+name2
+  plotname=name+".gnu"
+  out=open(plotname,'w')
+  out.write("set terminal postscript portrait color \"Helvetica\" 11\n")
+  out.write("set output '| ps2pdf - "+name+".pdf'\n")
+# make a title
+  line1=title+", q-dir : "+qdir
+  q=("%6.3f"%df1.q).strip()
+  line2=label1+" : q="+q+" [1/A]"
+  if df1.fxca!="":
+    line2=line2+", fxcA="+df1.fxca
+  q=("%6.3f"%df2.q).strip()
+  line3=label2+" : q="+q+" [1/A]"
+  if df2.fxca!="":
+    line3=line3+", fxcA="+df2.fxca
+  str="set multiplot layout 2,2 title \""+line1+"\\n"+line2+"\\n"+line3
+  str=str+"\\n details : units are [eV], [1/eV/nm^3]\""
+  out.write(str+"\n")
+  out.write("set tmargin 2\n")
+  out.write("set bmargin 0\n")
+  out.write("set rmargin 1\n")
+  out.write("set lmargin 1.5\n")
+  out.write("LW=2\n")
+  print "Input maximum energy : "
+  emax=float(sys.stdin.readline().strip())
+### chiKS ###
+#    out.write("set origin 0,0.44\n")
+#    out.write("set size 0.46,0.44\n")
+  str="plot [0:"+repr(emax)+"] "+\
+    "'"+df1.name+"'"+\
+    " using 1:($2)*1000 with lines title '-Re chiKS("+label1+")' lw LW lt 2 lc rgb \""+"\x23"+"FF0000\","+\
+    "'"+df1.name+"'"+\
+    " using 1:($3)*1000 with lines title '-Im chiKS("+label1+")' lw LW lt 1 lc rgb \""+"\x23"+"FF0000\","+\
+    "'"+df2.name+"'"+\
+    " using 1:($2)*1000 with lines title '-Re chiKS("+label2+")' lw LW lt 2 lc rgb \""+"\x23"+"228b22\","+\
+    "'"+df2.name+"'"+\
+    " using 1:($3)*1000 with lines title '-Im chiKS("+label2+")' lw LW lt 1 lc rgb \""+"\x23"+"228b22\""
+  out.write(str+"\n")
+### chi ###
+#    out.write("set origin 0.48,0.44\n")
+#    out.write("set size 0.46,0.44\n")
+  str="plot [0:"+repr(emax)+"] "+\
+    "'"+df1.name+"'"+\
+    " using 1:($5)*1000 with lines title '-Im chi("+label1+")' lw LW lt 1 lc rgb \""+"\x23"+"FF0000\","+\
+    "'"+df1.name+"'"+\
+    " using 1:($8)*1000 with lines title '-Im chi_scal("+label1+")' lw LW lt 2 lc rgb \""+"\x23"+"FF0000\","+\
+    "'"+df2.name+"'"+\
+    " using 1:($5)*1000 with lines title '-Im chi("+label2+")' lw LW lt 1 lc rgb \""+"\x23"+"0000FF\","+\
+    "'"+df2.name+"'"+\
+    " using 1:($8)*1000 with lines title '-Im chi_scal("+label2+")' lw LW lt 2 lc rgb \""+"\x23"+"0000FF\""
+  out.write(str+"\n")
+### epsilon_GqGq
+#    out.write("set origin 0,0\n")
+#    out.write("set size 0.46,0.44\n") 
+  str="plot [0:"+repr(emax)+"] "+\
+    "'"+df1.name+"'"+\
+    " using 1:11 with lines title '-Re eps_GqGq("+label1+")' lw LW lt 2 lc rgb \""+"\x23"+"FF0000\","+\
+    "'"+df1.name+"'"+\
+    " using 1:12 with lines title '-Im eps_GqGq("+label1+")' lw LW lt 1 lc rgb \""+"\x23"+"FF0000\","+\
+    "'"+df2.name+"'"+\
+    " using 1:11 with lines title '-Re eps_GqGq("+label2+")' lw LW lt 2 lc rgb \""+"\x23"+"228b22\","+\
+    "'"+df2.name+"'"+\
+    " using 1:12 with lines title '-Im eps_GqGq("+label2+")' lw LW lt 1 lc rgb \""+"\x23"+"228b22\""
+  out.write(str+"\n")
+### epsilon_eff
+#    out.write("set origin 0.48,0\n")
+#    out.write("set size 0.46,0.44\n")
+  str="plot [0:"+repr(emax)+"] "+\
+    "'"+df1.name+"'"+\
+    " using 1:9 with lines title '-Re eps_eff("+label1+")' lw LW lt 2 lc rgb \""+"\x23"+"FF0000\","+\
+    "'"+df1.name+"'"+\
+    " using 1:10 with lines title '-Im eps_eff("+label1+")' lw LW lt 1 lc rgb \""+"\x23"+"FF0000\","+\
+    "'"+df2.name+"'"+\
+    " using 1:9 with lines title '-Re eps_eff("+label2+")' lw LW lt 2 lc rgb \""+"\x23"+"228b22\","+\
+    "'"+df2.name+"'"+\
+    " using 1:10 with lines title '-Im eps_eff("+label2+")' lw LW lt 1 lc rgb \""+"\x23"+"228b22\""
+  out.write(str+"\n")
+
+#  str="plot [0:"+repr(emax)+"] "+"'"+self.name+"'"+\
+#    " using 1:9 with lines title '-Re eps_eff' lw LW, "+"'"+self.name+"'"+\
+#    " using 1:10 with lines title '-Im eps_eff' lw LW lt 1 lc rgb \""+"\x23"+"228b22\""
+##    out.write("set label '"+self.name+"' font 'Times,12' at -74,9.2\n")
+#  out.write(str+"\n")
+##   
+  out.write("unset multiplot\n")
+
+  out.close()
+  os.system("gnuplot "+plotname)
+#  os.system("rm "+plotname)
+
+  return
     
 
 
@@ -137,12 +236,32 @@ df=[]
 for fileName in glob.glob("q*.dat"):
     df.append(datFile(fileName))
 print "%i file(s) loaded\n"%len(df)
-
-print("Input title : ")
-title=sys.stdin.readline()
-print("Input q-direction : ")
-qdir=sys.stdin.readline()
-
-
+print "Index of files : "
 for i in range(len(df)):
-  df[i].plotFile(title,qdir)
+  print "%i  :  %s"%(i,df[i].name)
+print " "
+
+print "Available plotting modes : "
+print "  1 : batch plot of all loaded files"
+print "  2 : comparison plot of two files"
+print "Input your choice : "
+str=sys.stdin.readline().strip()
+if not (str=="1" or str=="2"):
+  print "Wrong input!"
+  exit()
+ 
+print("Input title : ")
+title=sys.stdin.readline().strip()
+print("Input q-direction : ")
+qdir=sys.stdin.readline().strip()
+
+if str=="2":
+  print "Input index of file1 : "  
+  i1=int(sys.stdin.readline().strip())
+  print "Input index of file2 : "  
+  i2=int(sys.stdin.readline().strip())
+  plotFile2(title,qdir,df[i1],df[i2])
+
+if str=="1":
+  for i in range(len(df)):
+    df[i].plotFile(title,qdir)
