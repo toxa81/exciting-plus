@@ -43,12 +43,19 @@ integer nwf2
 integer, allocatable :: iwf2(:)
 integer ntr
 integer, allocatable :: itr(:,:)
+integer nwfme
+integer, allocatable :: iwfme(:,:)
+logical exist
+integer ntrans
+integer, allocatable :: itrans(:,:)
+real(8) d1
+integer itrans_m
 
-
-integer ie,ig,i,j,ig1,ig2,ie1,ie2,idx0,bs,n1,n2,it1,it2,n3,n4
+integer ie,ig,i,j,ig1,ig2,ie1,ie2,idx0,bs,n1,n2,it1,it2,n3,n4,n
 integer iv(3)
 character*100 fname,qnm,path
 logical, external :: root_cart
+complex(8), external :: zdotu
 
 ! we need Bcx and magnetization from STATE.OUT
 if (lrtype.eq.1) call readstate
@@ -84,10 +91,11 @@ if (root_cart((/1,1,0/))) then
   call read_real8(vq0rl,3,trim(fname),'/parameters','vq0rl')
   call read_real8(vq0c,3,trim(fname),'/parameters','vq0c')
   call read_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
-!  if (lwannresp) then
-!    call read_integer(ntr1,1,trim(fname),'/wann','ntr1')
-!    call read_integer(ntr2,1,trim(fname),'/wann','ntr2')
-!  endif
+  if (lwannresp) then
+    call read_integer(ntr1,1,trim(fname),'/wann','ntr1')
+    call read_integer(ntr2,1,trim(fname),'/wann','ntr2')
+    call read_integer(nwfme,1,trim(fname),'/wann','nwfme')
+  endif
 endif
 call i_bcast_cart(comm_cart_110,nepts,1)
 call i_bcast_cart(comm_cart_110,lr_igq0,1)
@@ -102,75 +110,88 @@ call d_bcast_cart(comm_cart_110,vq0c,3)
 call d_bcast_cart(comm_cart_110,vq0rc,3)
 
 if (lwannresp) then
-!  call i_bcast_cart(comm_cart_110,ntr1,1)
-!  call i_bcast_cart(comm_cart_110,ntr2,1)
-!  allocate(itr1l(3,ntr1))
-!  allocate(itr2l(3,ntr2))
-!  allocate(itridx(ntr1,ntr1))
-!  if (root_cart((/1,1,0/))) then
-!    call read_integer_array(itr1l,2,(/3,ntr1/),trim(fname),'/wann','itr1')
-!    call read_integer_array(itr2l,2,(/3,ntr2/),trim(fname),'/wann','itr2')
-!  endif
-!  call i_bcast_cart(comm_cart_110,itr1l,3*ntr1)
-!  call i_bcast_cart(comm_cart_110,itr2l,3*ntr2)
-!  itridx=-1
-!  do n1=1,ntr1
-!    do n2=1,ntr1
-!      iv(:)=itr1l(:,n1)-itr1l(:,n2)
-!      do i=1,ntr2
-!        if (itr2l(1,i).eq.iv(1).and.itr2l(2,i).eq.iv(2).and.itr2l(3,i).eq.iv(3)) then
-!          itridx(n1,n2)=i
-!        endif
-!      enddo
-!    enddo
-!  enddo
-!  allocate(mewf2(nwann*nwann,ntr1,ngvecme))
-!  allocate(mewf4(nwann*nwann,nwann*nwann,ntr2))
+  call i_bcast_cart(comm_cart_110,ntr1,1)
+  call i_bcast_cart(comm_cart_110,ntr2,1)
+  call i_bcast_cart(comm_cart_110,nwfme,1)
+  allocate(itr1l(3,ntr1))
+  allocate(itr2l(3,ntr2))
+  allocate(itridx(ntr1,ntr1))
+  allocate(iwfme(2,nwfme))
+  if (root_cart((/1,1,0/))) then
+    call read_integer_array(itr1l,2,(/3,ntr1/),trim(fname),'/wann','itr1')
+    call read_integer_array(itr2l,2,(/3,ntr2/),trim(fname),'/wann','itr2')
+    call read_integer_array(itridx,2,(/ntr1,ntr1/),trim(fname),'/wann','itridx')
+    call read_integer_array(iwfme,2,(/2,nwfme/),trim(fname),'/wann','iwfme')
+  endif
+  call i_bcast_cart(comm_cart_110,itr1l,3*ntr1)
+  call i_bcast_cart(comm_cart_110,itr2l,3*ntr2)
+  call i_bcast_cart(comm_cart_110,itridx,ntr1*ntr1)
+  call i_bcast_cart(comm_cart_110,iwfme,2*nwfme)
+  allocate(mewf2(nwfme,ntr1,ngvecme))
+  allocate(mewf4(nwfme,nwfme,ntr2))
   allocate(chi0wf(nepts))
   chi0wf=zzero
-!  if (root_cart((/1,1,0/))) then
-!    call read_real8_array(mewf2,4,(/2,nwann*nwann,ntr1,ngvecme/), &
-!      trim(fname),'/wann','mewf2')
-!  endif
-!  call d_bcast_cart(comm_cart_110,mewf2,2*nwann*nwann*ntr1*ngvecme)
-!! switch off some channels
-!  if (.false.) then
-!    nwf1=1
-!    allocate(iwf1(nwf1))
-!    iwf1(1)=2
-!
-!    nwf2=1
-!    allocate(iwf2(nwf2))
-!    iwf2(1)=4
-!
-!    ntr=2
-!    allocate(itr(3,ntr))
-!    itr(:,1)=(/-1,0,0/)
-!    itr(:,2)=(/0,-1,-1/)
-!
-!    allocate(mewf2_t(nwann*nwann,ntr1,ngvecme))
-!    mewf2_t=zzero
-!
-!    do it1=1,ntr1
-!      do i=1,ntr
-!        if (itr1l(1,it1).eq.itr(1,i).and.itr1l(2,it1).eq.itr(2,i).and.&
-!          itr1l(3,it1).eq.itr(3,i)) then
-!          do n1=1,nwann
-!            do n2=1,nwann
-!              do n3=1,nwf1
-!                do n4=1,nwf2
-!                  if (iwf1(n3).eq.n1.and.iwf2(n4).eq.n2) then
-!                    mewf2_t((n1-1)*nwann+n2,it1,:)=mewf2((n1-1)*nwann+n2,it1,:)
-!                  endif
-!                enddo
-!              enddo
-!            enddo
-!          enddo
-!        endif
-!      enddo
-!    enddo
-!    mewf2=mewf2_t
-!  endif
+  if (root_cart((/1,1,0/))) then
+    call read_real8_array(mewf2,4,(/2,nwfme,ntr1,ngvecme/), &
+      trim(fname),'/wann','mewf2')
+  endif
+  call d_bcast_cart(comm_cart_110,mewf2,2*nwfme*ntr1*ngvecme)
+  
+  inquire(file='itrans',exist=exist)
+  if (exist) then
+    open(70,file='itrans',form='formatted',status='old')
+    read(70,*)itrans_m
+    if (itrans_m.eq.1) then
+      read(70,*)d1
+      do it1=1,ntr1
+        do n=1,nwfme
+          if (abs(mewf2(n,it1,1)).lt.d1) mewf2(n,it1,1)=zzero
+        enddo
+      enddo
+    endif
+    if (itrans_m.eq.2) then
+      read(70,*)ntrans
+      allocate(itrans(5,ntrans))
+      do i=1,ntrans
+        read(70,*)itrans(1:5,i)
+      enddo
+      allocate(mewf2_t(nwfme,ntr1,ngvecme))
+      do it1=1,ntr1
+        do n=1,nwfme
+          n1=iwfme(1,n)
+          n2=iwfme(2,n)
+          do i=1,ntrans
+            if (n1.eq.itrans(1,i).and.&
+                n2.eq.itrans(2,i).and.&
+                itr1l(1,it1).eq.itrans(3,i).and.&
+                itr1l(2,it1).eq.itrans(4,i).and.&
+                itr1l(3,it1).eq.itrans(5,i)) then
+              mewf2_t(n,it1,:)=mewf2(n,it1,:)
+            endif
+            if (n2.eq.itrans(1,i).and.&
+                n1.eq.itrans(2,i).and.&
+                itr1l(1,it1).eq.-itrans(3,i).and.&
+                itr1l(2,it1).eq.-itrans(4,i).and.&
+                itr1l(3,it1).eq.-itrans(5,i)) then
+              mewf2_t(n,it1,:)=mewf2(n,it1,:)
+            endif
+          enddo
+        enddo
+      enddo
+      mewf2=mewf2_t
+      deallocate(mewf2_t)
+      deallocate(itrans)
+    endif
+  endif
+  if (wproc) then
+    do it1=1,ntr1
+      write(150,'("translation : ",3I4)')itr1l(:,it1)
+      do n=1,nwfme
+        write(150,'("  transition ",I4," between wfs : ",2I4,"   ","(",2F12.6,")")')&
+          n,iwfme(1,n),iwfme(2,n),mewf2(n,it1,1)
+      enddo
+    enddo
+  endif
 endif !lwannresp
 !if (lwannopt) then
 !  allocate(mewfx(3,nwann*nwann,ntr1))
@@ -295,11 +316,9 @@ do ie=ie1,ie2
           trim(fname),trim(path),'chi0')
         if (lwannresp) then
           call read_real8_array(chi0wf(ie),1,(/2/),trim(fname),trim(path),'chi0wf')
+          call read_real8_array(mewf4,4,(/2,nwfme,nwfme,ntr2/), &
+            trim(fname),trim(path),'mewf4')
         endif
-!        if (lwannresp) then
-!          call read_real8_array(mewf4,4,(/2,nwann*nwann,nwann*nwann,ntr2/), &
-!            trim(fname),trim(path),'mewf4')
-!        endif
 #ifndef _PIO_      
       endif
       call barrier(comm_cart_101)
@@ -319,6 +338,21 @@ do ie=ie1,ie2
 ! solve matrix equation  
   call solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_(1,ie), &
     epsilon_(1,ie),lmbd(1,ie))
+  if (lwannresp) then
+    chi0wf(ie)=zzero
+    do it2=1,ntr2
+      do i=1,ntr1
+        do j=1,ntr1
+          if (itridx(i,j).eq.it2) then
+            do n2=1,nwfme
+              zt1=zdotu(nwfme,mewf4(1,n2,it2),1,mewf2(1,i,1),1)
+              chi0wf(ie)=chi0wf(ie)+zt1*dconjg(mewf2(n2,j,1))
+            enddo
+          endif
+        enddo
+      enddo
+    enddo !it2
+  endif
 ! in Wannier basis
 !  if (lwannresp) then
 !    do it1=1,ntr1
