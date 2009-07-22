@@ -385,17 +385,17 @@ if (lwannresp) then
     enddo
     mewf2=mewf2_t
   endif
-  if (.true.) then
+  if (.false.) then
     do it1=1,ntr1
       do n=1,nwfme
-        if (abs(mewf2(n,it1,1)).lt.0.05d0) mewf2(n,it1,1)=zzero
+        n1=iwfme(1,n)
+        n2=iwfme(2,n)
+        if (.not.(n1.gt.10.and.n2.le.10)) mewf2(n,it1,1)=zzero
+        !if (abs(mewf2(n,it1,1)).lt.0.05d0) mewf2(n,it1,1)=zzero
       enddo
     enddo
   endif
 
-      
-
-    
   if (wproc) then
     do it1=1,ntr1
       write(150,'("translation : ",3I4)')itr1l(:,it1)
@@ -405,7 +405,7 @@ if (lwannresp) then
       enddo
     enddo
   endif
-
+  allocate(mewf4(nwfme,nwfme,ntr2))
 endif
 
 if (lwannopt) then
@@ -521,6 +521,7 @@ do ie=ie1,nepts
       enddo
       call d_reduce_cart(comm_cart_100,.true.,zm1,2*nwfme*nwfme)
       zm1=zm1/nkptnr/omega
+      mewf4(:,:,it2)=zm1(:,:)
 !      if (wproc) then
 !        write(150,'("translation : ",3I4)')itr2l(:,it2)
 !        do n1=1,nwfme
@@ -555,6 +556,8 @@ do ie=ie1,nepts
       trim(fname),trim(path),'chi0')
     if (lwannresp) then
       call write_real8_array(zt3,1,(/2/),trim(fname),trim(path),'chi0wf')
+      call write_real8_array(mewf4,4,(/2,nwfme,nwfme,ntr2/), &
+        trim(fname),trim(path),'mewf4')
     endif
 !    if (lwannresp) then
 !      mewf4=mewf4/nkptnr/omega
