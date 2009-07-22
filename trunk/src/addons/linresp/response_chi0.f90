@@ -42,13 +42,8 @@ complex(8), allocatable :: mewfx(:,:,:)
 complex(8), allocatable :: pmat(:,:,:,:)
 complex(8), allocatable :: mewf2_t(:,:,:)
 
-
-integer nwf1
-integer, allocatable :: iwf1(:)
-integer nwf2
-integer, allocatable :: iwf2(:)
-integer ntr
-integer, allocatable :: itr(:,:)
+integer, allocatable :: itrans(:,:)
+integer ntrans
 
 ! HDF5
 integer(hid_t) h5_root_id
@@ -278,7 +273,6 @@ if (lwannresp) then
   enddo
   ntr2=(4*lr_maxtr+1)**3
   allocate(itr2l(3,ntr2))
-!  itr2l=itr1l
   i=0
   do i1=-2*lr_maxtr,2*lr_maxtr
     do i2=-2*lr_maxtr,2*lr_maxtr
@@ -334,57 +328,40 @@ if (lwannresp) then
   mewf2=mewf2/nkptnr
   call d_bcast_cart(comm_cart_010,mewf2,2*nwfme*ntr1*ngvecme)
   
-  if (.false.) then
-    nwf1=1
-    allocate(iwf1(nwf1))
-    iwf1(1)=2
-
-    nwf2=1
-    allocate(iwf2(nwf2))
-    iwf2(1)=4
-
-    ntr=2
-    allocate(itr(3,ntr))
-    itr(:,1)=(/-1,0,0/)
-    itr(:,2)=(/0,-1,-1/)
+  if (.true.) then
+    ntrans=2
+    allocate(itrans(5,ntrans))
+    itrans(1:2,1)=(/2,4/)
+    itrans(3:5,1)=(/-1,0,0/)
+    itrans(1:2,2)=(/2,4/)
+    itrans(3:5,2)=(/0,-1,-1/)
 
     allocate(mewf2_t(nwfme,ntr1,ngvecme))
-    mewf2_t=zzero
-
     do it1=1,ntr1
-      do i=1,ntr
-        if (itr1l(1,it1).eq.itr(1,i).and.itr1l(2,it1).eq.itr(2,i).and.&
-          itr1l(3,it1).eq.itr(3,i)) then
-          do n=1,nwfme
-            n1=iwfme(1,n)
-            n2=iwfme(2,n)
-            do n3=1,nwf1
-              do n4=1,nwf2
-                if (iwf1(n3).eq.n1.and.iwf2(n4).eq.n2) then
-                  mewf2_t(n,it1,:)=mewf2(n,it1,:)
-                endif
-              enddo
-            enddo
-          enddo
-        endif
-        if (itr1l(1,it1).eq.-itr(1,i).and.itr1l(2,it1).eq.-itr(2,i).and.&
-          itr1l(3,it1).eq.-itr(3,i)) then
-          do n=1,nwfme
-            n1=iwfme(1,n)
-            n2=iwfme(2,n)
-            do n3=1,nwf1
-              do n4=1,nwf2
-                if (iwf1(n3).eq.n2.and.iwf2(n4).eq.n1) then
-                  mewf2_t(n,it1,:)=mewf2(n,it1,:)
-                endif
-              enddo
-            enddo
-          enddo
-        endif
+      do n=1,nwfme
+        n1=iwfme(1,n)
+        n2=iwfme(2,n)
+        do i=1,ntrans
+          if (n1.eq.itrans(1,i).and.&
+              n2.eq.itrans(2,i).and.&
+              itr1l(1,it1).eq.itrans(3,i).and.&
+              itr1l(2,it1).eq.itrans(4,i).and.&
+              itr1l(3,it1).eq.itrans(5,i)) then
+            mewf2_t(n,it1,:)=mewf2(n,it1,:)
+          endif
+          if (n2.eq.itrans(1,i).and.&
+              n1.eq.itrans(2,i).and.&
+              itr1l(1,it1).eq.-itrans(3,i).and.&
+              itr1l(2,it1).eq.-itrans(4,i).and.&
+              itr1l(3,it1).eq.-itrans(5,i)) then
+            mewf2_t(n,it1,:)=mewf2(n,it1,:)
+          endif
+        enddo
       enddo
     enddo
     mewf2=mewf2_t
   endif
+
   if (.false.) then
     do it1=1,ntr1
       do n=1,nwfme
@@ -522,12 +499,6 @@ do ie=ie1,nepts
       call d_reduce_cart(comm_cart_100,.true.,zm1,2*nwfme*nwfme)
       zm1=zm1/nkptnr/omega
       mewf4(:,:,it2)=zm1(:,:)
-!      if (wproc) then
-!        write(150,'("translation : ",3I4)')itr2l(:,it2)
-!        do n1=1,nwfme
-!          write(150,'(255(2F12.6))')(zm1(n1,n2),n2=1,nwfme)
-!        enddo
-!      endif
       call idxbos(nwfme,mpi_dims(1),mpi_x(1)+1,idx0,bs)
       n3=idx0+1
       n4=idx0+bs
