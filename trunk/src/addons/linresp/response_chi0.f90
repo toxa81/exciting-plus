@@ -249,15 +249,21 @@ if (lwannresp) then
   do n1=1,nwann
     do n2=1,nwann
       if (abs(wann_occ(n1)-wann_occ(n2)).gt.1d-5) then
+      !if (wann_occ(n1)-wann_occ(n2).lt.-1d-5) then
+      !if (wann_occ(n1)-wann_occ(n2).gt.1d-5) then
         nwfme=nwfme+1
         iwfme(1,nwfme)=n1
         iwfme(2,nwfme)=n2
       endif
     enddo
   enddo
-  if (wproc) then
-    write(150,'("nwfme : ",I4)')nwfme
-  endif
+!  if (wproc) then
+!    write(150,*)
+!    write(150,'("nwfme : ",I4)')nwfme
+!    do n=1,nwfme
+!      write(150,'("  transition ",I4," between wfs : ",2I4)')n,iwfme(1,n),iwfme(2,n)
+!    enddo
+!  endif
 
   ntr1=(2*lr_maxtr+1)**3
   allocate(itr1l(3,ntr1))
@@ -337,10 +343,10 @@ if (lwannresp) then
     allocate(iwf2(nwf2))
     iwf2(1)=4
 
-    ntr=1
+    ntr=2
     allocate(itr(3,ntr))
     itr(:,1)=(/-1,0,0/)
-    !itr(:,2)=(/0,-1,-1/)
+    itr(:,2)=(/0,-1,-1/)
 
     allocate(mewf2_t(nwfme,ntr1,ngvecme))
     mewf2_t=zzero
@@ -349,14 +355,28 @@ if (lwannresp) then
       do i=1,ntr
         if (itr1l(1,it1).eq.itr(1,i).and.itr1l(2,it1).eq.itr(2,i).and.&
           itr1l(3,it1).eq.itr(3,i)) then
-          do n1=1,nwann
-            do n2=1,nwann
-              do n3=1,nwf1
-                do n4=1,nwf2
-                  if (iwf1(n3).eq.n1.and.iwf2(n4).eq.n2) then
-                    mewf2_t((n1-1)*nwann+n2,it1,:)=mewf2((n1-1)*nwann+n2,it1,:)
-                  endif
-                enddo
+          do n=1,nwfme
+            n1=iwfme(1,n)
+            n2=iwfme(2,n)
+            do n3=1,nwf1
+              do n4=1,nwf2
+                if (iwf1(n3).eq.n1.and.iwf2(n4).eq.n2) then
+                  mewf2_t(n,it1,:)=mewf2(n,it1,:)
+                endif
+              enddo
+            enddo
+          enddo
+        endif
+        if (itr1l(1,it1).eq.-itr(1,i).and.itr1l(2,it1).eq.-itr(2,i).and.&
+          itr1l(3,it1).eq.-itr(3,i)) then
+          do n=1,nwfme
+            n1=iwfme(1,n)
+            n2=iwfme(2,n)
+            do n3=1,nwf1
+              do n4=1,nwf2
+                if (iwf1(n3).eq.n2.and.iwf2(n4).eq.n1) then
+                  mewf2_t(n,it1,:)=mewf2(n,it1,:)
+                endif
               enddo
             enddo
           enddo
@@ -364,6 +384,26 @@ if (lwannresp) then
       enddo
     enddo
     mewf2=mewf2_t
+  endif
+  if (.true.) then
+    do it1=1,ntr1
+      do n=1,nwfme
+        if (abs(mewf2(n,it1,1)).lt.0.05d0) mewf2(n,it1,1)=zzero
+      enddo
+    enddo
+  endif
+
+      
+
+    
+  if (wproc) then
+    do it1=1,ntr1
+      write(150,'("translation : ",3I4)')itr1l(:,it1)
+      do n=1,nwfme
+        write(150,'("  transition ",I4," between wfs : ",2I4,"   ","(",2F12.6,")")')&
+          n,iwfme(1,n),iwfme(2,n),mewf2(n,it1,1)
+      enddo
+    enddo
   endif
 
 endif
@@ -481,6 +521,12 @@ do ie=ie1,nepts
       enddo
       call d_reduce_cart(comm_cart_100,.true.,zm1,2*nwfme*nwfme)
       zm1=zm1/nkptnr/omega
+!      if (wproc) then
+!        write(150,'("translation : ",3I4)')itr2l(:,it2)
+!        do n1=1,nwfme
+!          write(150,'(255(2F12.6))')(zm1(n1,n2),n2=1,nwfme)
+!        enddo
+!      endif
       call idxbos(nwfme,mpi_dims(1),mpi_x(1)+1,idx0,bs)
       n3=idx0+1
       n4=idx0+bs
