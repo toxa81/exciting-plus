@@ -185,11 +185,15 @@ if (lwannresp) then
   endif
   if (wproc) then
     do it1=1,ntr1
-      write(150,'("translation : ",3I4)')itr1l(:,it1)
-      do n=1,nwfme
-        write(150,'("  transition ",I4," between wfs : ",2I4,"   ","(",2F12.6,")")')&
-          n,iwfme(1,n),iwfme(2,n),mewf2(n,it1,1)
-      enddo
+      if (sum(abs(mewf2(:,it1,:))).gt.1d-8) then
+        write(150,'("translation : ",3I4)')itr1l(:,it1)
+        do n=1,nwfme
+          if (abs(mewf2(n,it1,1)).gt.1d-8) then
+            write(150,'("  transition ",I4," between wfs : ",2I4,"   "," mewf=(",2F12.6,"), |mewf|=",F12.6)')&
+              n,iwfme(1,n),iwfme(2,n),mewf2(n,it1,1),abs(mewf2(n,it1,1))
+          endif
+        enddo
+      endif
     enddo
   endif
 endif !lwannresp
