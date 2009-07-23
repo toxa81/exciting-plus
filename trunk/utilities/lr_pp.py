@@ -159,6 +159,7 @@ def plotFile2(title,qdir,df1,df2):
   out.write("LW=2\n")
   print "Input maximum energy : "
   emax=float(sys.stdin.readline().strip())
+# nice green color is 228b22
 ### chiKS ###
 #    out.write("set origin 0,0.44\n")
 #    out.write("set size 0.46,0.44\n")
@@ -168,9 +169,9 @@ def plotFile2(title,qdir,df1,df2):
     "'"+df1.name+"'"+\
     " using 1:($3)*1000 with lines title '-Im chiKS("+label1+")' lw LW lt 1 lc rgb \""+"\x23"+"FF0000\","+\
     "'"+df2.name+"'"+\
-    " using 1:($2)*1000 with lines title '-Re chiKS("+label2+")' lw LW lt 2 lc rgb \""+"\x23"+"228b22\","+\
+    " using 1:($2)*1000 with lines title '-Re chiKS("+label2+")' lw LW lt 2 lc rgb \""+"\x23"+"0000FF\","+\
     "'"+df2.name+"'"+\
-    " using 1:($3)*1000 with lines title '-Im chiKS("+label2+")' lw LW lt 1 lc rgb \""+"\x23"+"228b22\""
+    " using 1:($3)*1000 with lines title '-Im chiKS("+label2+")' lw LW lt 1 lc rgb \""+"\x23"+"0000FF\""
   out.write(str+"\n")
 ### chi ###
 #    out.write("set origin 0.48,0.44\n")
@@ -194,9 +195,9 @@ def plotFile2(title,qdir,df1,df2):
     "'"+df1.name+"'"+\
     " using 1:12 with lines title '-Im eps_GqGq("+label1+")' lw LW lt 1 lc rgb \""+"\x23"+"FF0000\","+\
     "'"+df2.name+"'"+\
-    " using 1:11 with lines title '-Re eps_GqGq("+label2+")' lw LW lt 2 lc rgb \""+"\x23"+"228b22\","+\
+    " using 1:11 with lines title '-Re eps_GqGq("+label2+")' lw LW lt 2 lc rgb \""+"\x23"+"0000FF\","+\
     "'"+df2.name+"'"+\
-    " using 1:12 with lines title '-Im eps_GqGq("+label2+")' lw LW lt 1 lc rgb \""+"\x23"+"228b22\""
+    " using 1:12 with lines title '-Im eps_GqGq("+label2+")' lw LW lt 1 lc rgb \""+"\x23"+"0000FF\""
   out.write(str+"\n")
 ### epsilon_eff
 #    out.write("set origin 0.48,0\n")
@@ -207,25 +208,17 @@ def plotFile2(title,qdir,df1,df2):
     "'"+df1.name+"'"+\
     " using 1:10 with lines title '-Im eps_eff("+label1+")' lw LW lt 1 lc rgb \""+"\x23"+"FF0000\","+\
     "'"+df2.name+"'"+\
-    " using 1:9 with lines title '-Re eps_eff("+label2+")' lw LW lt 2 lc rgb \""+"\x23"+"228b22\","+\
+    " using 1:9 with lines title '-Re eps_eff("+label2+")' lw LW lt 2 lc rgb \""+"\x23"+"0000FF\","+\
     "'"+df2.name+"'"+\
-    " using 1:10 with lines title '-Im eps_eff("+label2+")' lw LW lt 1 lc rgb \""+"\x23"+"228b22\""
+    " using 1:10 with lines title '-Im eps_eff("+label2+")' lw LW lt 1 lc rgb \""+"\x23"+"0000FF\""
   out.write(str+"\n")
-
-#  str="plot [0:"+repr(emax)+"] "+"'"+self.name+"'"+\
-#    " using 1:9 with lines title '-Re eps_eff' lw LW, "+"'"+self.name+"'"+\
-#    " using 1:10 with lines title '-Im eps_eff' lw LW lt 1 lc rgb \""+"\x23"+"228b22\""
-##    out.write("set label '"+self.name+"' font 'Times,12' at -74,9.2\n")
-#  out.write(str+"\n")
-##   
   out.write("unset multiplot\n")
 
   out.close()
   os.system("gnuplot "+plotname)
-#  os.system("rm "+plotname)
+  os.system("rm "+plotname)
 
   return
-    
 
 
 print " "
