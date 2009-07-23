@@ -220,6 +220,55 @@ def plotFile2(title,qdir,df1,df2):
 
   return
 
+def plotFile3(df):
+  print "Input column to plot (0 is energy) : "  
+  icol=int(sys.stdin.readline().strip())
+  print "Input scale factor : "
+  scale=float(sys.stdin.readline().strip())
+  print "Scan through : "
+  print "  1 : q-vectors"
+  print "  2 : fxcA parameter"
+  iscan=int(sys.stdin.readline().strip())
+  
+  
+  out=open("plot.dat","w")
+  
+  for j in range(len(df[0].data)):    
+    t1=[]
+    for i in range(len(df)):
+      if iscan==1:
+        a1=float(df[i].q)
+      if iscan==2:
+        a1=float(df[i].fxca)
+      a2=df[i].data[j][icol]*scale
+      t1.append([a1,a2])
+    
+    for i1 in range(len(df)-1):
+      for i2 in range(i1+1,len(df)):
+        if t1[i2][0] < t1[i1][0]:
+          t1[i1],t1[i2]=t1[i2],t1[i1]
+    
+    for i in range(len(df)):
+      out.write("%f %f %f\n"%(df[0].data[j][0],t1[i][0],t1[i][1]))
+    
+    out.write(" \n")
+  
+  out.close()
+  
+  out=open("plot.gnu","w")
+  out.write("set terminal postscript landscape color \"Helvetica\" 11\n")
+#  out.write("set output '| ps2pdf - plot.pdf'\n")
+  out.write("set output 'plot.ps'\n")
+  out.write("set palette rgbformulae 22,13,-31\n")
+  out.write("set view 30,300\n")
+  out.write("splot 'plot.dat' with pm3d\n")
+  out.close()
+  os.system("gnuplot plot.gnu")
+  os.system("rm plot.gnu")
+  os.system("rm plot.dat")
+  
+
+
 
 print " "
 print "linear response post processing"
@@ -237,9 +286,10 @@ print " "
 print "Available plotting modes : "
 print "  1 : batch plot of all loaded files"
 print "  2 : comparison plot of two files"
+print "  3 : scan-plot of all loaded filed"  
 print "Input your choice : "
 str=sys.stdin.readline().strip()
-if not (str=="1" or str=="2"):
+if not (str=="1" or str=="2" or str=="3"):
   print "Wrong input!"
   exit()
  
@@ -248,6 +298,10 @@ title=sys.stdin.readline().strip()
 print("Input q-direction : ")
 qdir=sys.stdin.readline().strip()
 
+if str=="1":
+  for i in range(len(df)):
+    df[i].plotFile(title,qdir)
+
 if str=="2":
   print "Input index of file1 : "  
   i1=int(sys.stdin.readline().strip())
@@ -255,6 +309,6 @@ if str=="2":
   i2=int(sys.stdin.readline().strip())
   plotFile2(title,qdir,df[i1],df[i2])
 
-if str=="1":
-  for i in range(len(df)):
-    df[i].plotFile(title,qdir)
+if str=="3":
+  plotFile3(df)
+  
