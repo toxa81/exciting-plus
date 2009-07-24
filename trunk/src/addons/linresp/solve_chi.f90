@@ -6,7 +6,7 @@ real(8), intent(in) :: fourpiq0
 complex(8), intent(in) :: chi0m(ngvecchi,ngvecchi)
 complex(8), intent(in) :: krnl(ngvecchi,ngvecchi)
 complex(8), intent(out) :: chi_(4)
-complex(8), intent(out) :: epsilon_(4)
+complex(8), intent(out) :: epsilon_(5)
 complex(8), intent(out) :: lmbd(ngvecchi)
 
 complex(8), allocatable :: epsilon(:,:)
@@ -53,6 +53,9 @@ call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
 chi_(4)=mtrx1(igq0,igq0)
 ! save epsilon_eff
 epsilon_(4)=1.d0/(1.d0+fourpiq0*chi_(4))
+! save epsilon_eff_scalar
+epsilon_(5)=1.d0/(1.d0+fourpiq0*chi_(2))
+
 deallocate(epsilon,mtrx1)
 return
 end

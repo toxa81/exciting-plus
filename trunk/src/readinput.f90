@@ -200,6 +200,7 @@ lwannopt=.false.
 lwanndiel=.false.
 lr_maxtr=0
 lwfexpand=.false.
+nwann_h=0
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -992,6 +993,10 @@ case('wannier_lc')
       read(50,*,err=20)(wann_iorb_lc(i,l,n),l=1,4)
     enddo
   enddo
+case ('wannier_h')
+  read(50,*,err=20) nwann_h
+  allocate(iwann_h(nwann_h))
+  read(50,*,err=20)(iwann_h(i),i=1,nwann_h)
 case('bandrange')
   read(50,*,err=20)bndranglow,bndranghi
 case('densmtrx')

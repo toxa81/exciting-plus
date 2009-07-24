@@ -173,11 +173,11 @@ do l=1,noptcomp
     write(fname,'("SIGMA_",2I1,".OUT")') i,j
     open(60,file=trim(fname),action='WRITE',form='FORMATTED')
     do iw=1,nwdos
-      write(60,'(2G18.10)') w(iw),dble(sigma(iw))
+      write(60,'(2G18.10)') w(iw)*ha2ev,dble(sigma(iw))*ha2ev
     end do
     write(60,'("     ")')
     do iw=1,nwdos
-      write(60,'(2G18.10)') w(iw),aimag(sigma(iw))
+      write(60,'(2G18.10)') w(iw)*ha2ev,aimag(sigma(iw))*ha2ev
     end do
     close(60)
 ! write the dielectric function to file
@@ -188,14 +188,14 @@ do l=1,noptcomp
     do iw=1,nwdos
       if (w(iw).gt.1.d-8) then
         t2=t1-fourpi*aimag(sigma(iw)/(w(iw)+eta))
-        write(60,'(2G18.10)') w(iw),t2
+        write(60,'(2G18.10)') w(iw)*ha2ev,t2
       end if
     end do
     write(60,'("     ")')
     do iw=1,nwdos
       if (w(iw).gt.1.d-8) then
         t2=fourpi*dble(sigma(iw)/(w(iw)+eta))
-        write(60,'(2G18.10)') w(iw),t2
+        write(60,'(2G18.10)') w(iw)*ha2ev,t2
       end if
     end do
     close(60)

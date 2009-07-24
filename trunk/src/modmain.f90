@@ -1109,6 +1109,9 @@ logical wannier_lc
 integer nwann_lc
 integer, allocatable :: wann_iorb_lc(:,:,:)
 
+integer nwann_h
+integer, allocatable :: iwann_h(:)
+
 !----------------!
 !      timer     !
 !----------------!

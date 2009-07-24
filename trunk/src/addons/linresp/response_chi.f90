@@ -301,7 +301,7 @@ allocate(chi0w(ngvecme,ngvecme))
 allocate(chi0m(ngvecchi,ngvecchi))
 allocate(lmbd(ngvecchi,nepts))
 allocate(chi_(4,nepts))
-allocate(epsilon_(4,nepts))
+allocate(epsilon_(5,nepts))
 lr_w=zzero
 lmbd=zzero
 chi_=zzero
@@ -387,7 +387,7 @@ enddo !ie
 call d_reduce_cart(comm_cart_100,.false.,lr_w,2*nepts)
 call d_reduce_cart(comm_cart_100,.false.,lmbd,2*ngvecchi*nepts)
 call d_reduce_cart(comm_cart_100,.false.,chi_,2*4*nepts)
-call d_reduce_cart(comm_cart_100,.false.,epsilon_,2*4*nepts)
+call d_reduce_cart(comm_cart_100,.false.,epsilon_,2*5*nepts)
 if (lwannresp) then
   call d_reduce_cart(comm_cart_100,.false.,chi0wf,2*nepts)
 endif

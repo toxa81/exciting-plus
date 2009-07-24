@@ -4,7 +4,7 @@ implicit none
 integer, intent(in) :: igq0
 integer, intent(in) :: ivq0m(3)
 complex(8), intent(in) :: chi_(4,nepts)
-complex(8), intent(in) :: epsilon_(4,nepts)
+complex(8), intent(in) :: epsilon_(5,nepts)
 complex(8), intent(in) :: lmbd(ngvecchi,nepts)
 
 real(8), allocatable :: func(:,:)
@@ -12,6 +12,7 @@ real(8) fxca
 character*100 fname,qnm
 character*10 c1,c2,c3,c4,c5
 integer ie,i
+complex(8) z1
 
 call qname(ivq0m,qnm)
 qnm="./"//trim(qnm)//"/"//trim(qnm)
@@ -57,25 +58,31 @@ endif
 write(160,'("#")')
 write(160,'("# Definition of columns")')
 write(160,'("#   1: energy            [eV]")')
-write(160,'("#   2: -Re chi0(Gq,Gq)   [1/eV/A^3]")')
-write(160,'("#   3: -Im chi0(Gq,Gq)   [1/eV/A^3]")')
-write(160,'("#   4: -Re chi(Gq,Gq)    [1/eV/A^3]")')
-write(160,'("#   5: -Im chi(Gq,Gq)    [1/eV/A^3]")')
-write(160,'("#   6:  S(q,w)           [1/eV/A^3]")')
-write(160,'("#   7: -Re chi_scalar    [1/eV/A^3]")')
-write(160,'("#   8: -Im chi_scalar    [1/eV/A^3]")')
-write(160,'("#   9:  Re epsilon_eff             ")')
-write(160,'("#  10:  Im epsilon_eff             ")')
-write(160,'("#  11:  Re epsilon_scalar_GqGq     ")')
-write(160,'("#  12:  Im epsilon_scalar_GqGq     ")')
-write(160,'("#  13:  Re epsilon_matrix_GqGq     ")')
-write(160,'("#  14:  Im epsilon_matrix_GqGq     ")')
-write(160,'("#  15:  Re 1/(epsilon^-1)_{GqGq}   ")')
-write(160,'("#  16:  Im 1/(epsilon^-1)_{GqGq}   ")')
+write(160,'("#   2: -Re chi0(Gq,Gq)   [1/eV/A^3]    ")')
+write(160,'("#   3: -Im chi0(Gq,Gq)   [1/eV/A^3]    ")')
+write(160,'("#   4: -Re chi(Gq,Gq)    [1/eV/A^3]    ")')
+write(160,'("#   5: -Im chi(Gq,Gq)    [1/eV/A^3]    ")')
+write(160,'("#   6:  S(q,w)           [1/eV/A^3]    ")')
+write(160,'("#   7: -Re chi_scalar    [1/eV/A^3]    ")')
+write(160,'("#   8: -Im chi_scalar    [1/eV/A^3]    ")')
+write(160,'("#   9:  Re epsilon_eff                 ")')
+write(160,'("#  10:  Im epsilon_eff                 ")')
+write(160,'("#  11:  Re epsilon_scalar_GqGq         ")')
+write(160,'("#  12:  Im epsilon_scalar_GqGq         ")')
+write(160,'("#  13:  Re epsilon_matrix_GqGq         ")')
+write(160,'("#  14:  Im epsilon_matrix_GqGq         ")')
+write(160,'("#  15:  Re 1/(epsilon^-1)_{GqGq}       ")')
+write(160,'("#  16:  Im 1/(epsilon^-1)_{GqGq}       ")')
 write(160,'("#  17: -Re chi_pseudo_scalar [1/eV/A^3]")')
 write(160,'("#  18: -Im chi_pseudo_scalar [1/eV/A^3]")')
+write(160,'("#  19:  Re epsilon_eff_scalar          ")')
+write(160,'("#  20:  Im epsilon_eff_scalar          ")')
+write(160,'("#  21:  Re sigma [eV]                  ")')
+write(160,'("#  22:  Im sigma [eV]                  ")')
+write(160,'("#  23:  Re sigma_scalar [eV]           ")')
+write(160,'("#  24:  Im sigma_scalar [eV]           ")')
 write(160,'("#")')
-allocate(func(18,nepts))
+allocate(func(24,nepts))
 do ie=1,nepts
   func(1,ie)=dreal(lr_w(ie))*ha2ev
   func(2,ie)=-dreal(chi_(1,ie))/ha2ev/(au2ang)**3
@@ -95,7 +102,15 @@ do ie=1,nepts
   func(16,ie)=dimag(epsilon_(3,ie))
   func(17,ie)=-dreal(chi_(3,ie))/ha2ev/(au2ang)**3
   func(18,ie)=-dimag(chi_(3,ie))/ha2ev/(au2ang)**3
-  write(160,'(18G18.10)')func(1:18,ie)
+  func(19,ie)=dreal(epsilon_(5,ie))
+  func(20,ie)=dimag(epsilon_(5,ie))
+  z1=zi*dreal(lr_w(ie))*(zone-epsilon_(4,ie))/fourpi
+  func(21,ie)=dreal(z1)*ha2ev
+  func(22,ie)=dimag(z1)*ha2ev
+  z1=zi*dreal(lr_w(ie))*(zone-epsilon_(5,ie))/fourpi
+  func(23,ie)=dreal(z1)*ha2ev
+  func(24,ie)=dimag(z1)*ha2ev
+  write(160,'(24G14.6)')func(1:24,ie)
 enddo
 deallocate(func)
 close(160)
