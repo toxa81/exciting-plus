@@ -226,6 +226,7 @@ if (lwannopt) then
   call d_bcast_cart(comm_cart_010,pmat,2*3*nstsv*nstsv*nkptnr_loc)
 endif
 
+! for response in Wannier bais
 if (lwannresp) then
   wann_occ=0.5d0
   do n=1,nwann
@@ -252,13 +253,6 @@ if (lwannresp) then
       endif
     enddo
   enddo
-!  if (wproc) then
-!    write(150,*)
-!    write(150,'("nwfme : ",I4)')nwfme
-!    do n=1,nwfme
-!      write(150,'("  transition ",I4," between wfs : ",2I4)')n,iwfme(1,n),iwfme(2,n)
-!    enddo
-!  endif
 
   ntr1=(2*lr_maxtr+1)**3
   allocate(itr1l(3,ntr1))
@@ -297,10 +291,7 @@ if (lwannresp) then
       enddo
     enddo
   enddo
-endif
 
-! if needed, compute matrix elements of plane-waves in WF basis
-if (lwannresp) then
   allocate(mewf2(nwfme,ntr1,ngvecme))
   mewf2=zzero
   do it1=1,ntr1
@@ -327,63 +318,8 @@ if (lwannresp) then
   endif
   mewf2=mewf2/nkptnr
   call d_bcast_cart(comm_cart_010,mewf2,2*nwfme*ntr1*ngvecme)
-  
-!  if (.false.) then
-!    ntrans=2
-!    allocate(itrans(5,ntrans))
-!    itrans(1:2,1)=(/2,4/)
-!    itrans(3:5,1)=(/-1,0,0/)
-!    itrans(1:2,2)=(/2,4/)
-!    itrans(3:5,2)=(/0,-1,-1/)
-!
-!    allocate(mewf2_t(nwfme,ntr1,ngvecme))
-!    do it1=1,ntr1
-!      do n=1,nwfme
-!        n1=iwfme(1,n)
-!        n2=iwfme(2,n)
-!        do i=1,ntrans
-!          if (n1.eq.itrans(1,i).and.&
-!              n2.eq.itrans(2,i).and.&
-!              itr1l(1,it1).eq.itrans(3,i).and.&
-!              itr1l(2,it1).eq.itrans(4,i).and.&
-!              itr1l(3,it1).eq.itrans(5,i)) then
-!            mewf2_t(n,it1,:)=mewf2(n,it1,:)
-!          endif
-!          if (n2.eq.itrans(1,i).and.&
-!              n1.eq.itrans(2,i).and.&
-!              itr1l(1,it1).eq.-itrans(3,i).and.&
-!              itr1l(2,it1).eq.-itrans(4,i).and.&
-!              itr1l(3,it1).eq.-itrans(5,i)) then
-!            mewf2_t(n,it1,:)=mewf2(n,it1,:)
-!          endif
-!        enddo
-!      enddo
-!    enddo
-!    mewf2=mewf2_t
-!  endif
-!
-!  if (.false.) then
-!    do it1=1,ntr1
-!      do n=1,nwfme
-!        n1=iwfme(1,n)
-!        n2=iwfme(2,n)
-!        if (.not.(n1.gt.10.and.n2.le.10)) mewf2(n,it1,1)=zzero
-!        !if (abs(mewf2(n,it1,1)).lt.0.05d0) mewf2(n,it1,1)=zzero
-!      enddo
-!    enddo
-!  endif
-
-!  if (wproc) then
-!    do it1=1,ntr1
-!      write(150,'("translation : ",3I4)')itr1l(:,it1)
-!      do n=1,nwfme
-!        write(150,'("  transition ",I4," between wfs : ",2I4,"   ","(",2F12.6,")")')&
-!          n,iwfme(1,n),iwfme(2,n),mewf2(n,it1,1)
-!      enddo
-!    enddo
-!  endif
   allocate(mewf4(nwfme,nwfme,ntr2))
-endif
+endif !lwannresp
 
 if (lwannopt) then
   allocate(pmat(3,nstsv,nstsv,nkptnr_loc))

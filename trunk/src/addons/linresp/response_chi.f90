@@ -18,6 +18,7 @@ complex(8), allocatable :: ixcft(:)
 complex(8), allocatable :: krnl(:,:)
 complex(8), allocatable :: chi0w(:,:)
 complex(8), allocatable :: chi0wf(:)
+complex(8), allocatable :: chiwf(:)
 complex(8), allocatable :: lmbd(:,:)
 real(8) fxca
 complex(8), allocatable :: epsilon_(:,:)
@@ -27,8 +28,7 @@ complex(8), allocatable :: mewf2(:,:,:)
 complex(8), allocatable :: mewf4(:,:,:)
 complex(8), allocatable :: mewf2_t(:,:,:)
 complex(8), allocatable :: mewfx(:,:,:)
-complex(8), allocatable :: mtrx1(:,:)
-complex(8), allocatable :: mtrx2(:,:)
+complex(8), allocatable :: mtrx_v(:,:)
 complex(8), allocatable :: epswf(:)
 
 complex(8) zt1
@@ -52,6 +52,7 @@ real(8) d1
 integer itrans_m
 
 integer ie,ig,i,j,ig1,ig2,ie1,ie2,idx0,bs,n1,n2,it1,it2,n3,n4,n
+integer i1,i2,ndim
 integer iv(3)
 character*100 fname,qnm,path
 logical, external :: root_cart
@@ -109,6 +110,25 @@ call d_bcast_cart(comm_cart_110,vq0rl,3)
 call d_bcast_cart(comm_cart_110,vq0c,3)
 call d_bcast_cart(comm_cart_110,vq0rc,3)
 
+if (wproc) then
+  write(150,'("chi0 was calculated for ")')
+  write(150,'("  G-shells  : ",I4," to ",I4)')gshme1,gshme2
+  write(150,'("  G-vectors : ",I4," to ",I4)')gvecme1,gvecme2
+  call flushifc(150)
+endif
+
+gshchi1=gshme1
+gshchi2=gshme2
+gvecchi1=gvecme1
+gvecchi2=gvecme2
+ngvecchi=gvecchi2-gvecchi1+1  
+if (wproc) then 
+  write(150,*)
+  write(150,'("Minimum and maximum G-vectors for chi : ",2I4)')gvecchi1,gvecchi2
+  write(150,'("Number of G-vectors : ",I4)')ngvecchi
+  call flushifc(150)
+endif
+
 if (lwannresp) then
   call i_bcast_cart(comm_cart_110,ntr1,1)
   call i_bcast_cart(comm_cart_110,ntr2,1)
@@ -129,13 +149,33 @@ if (lwannresp) then
   call i_bcast_cart(comm_cart_110,iwfme,2*nwfme)
   allocate(mewf2(nwfme,ntr1,ngvecme))
   allocate(mewf4(nwfme,nwfme,ntr2))
+  ndim=nwfme*ntr1
+  allocate(mtrx_v(nwfme*ntr1,ndim))
   allocate(chi0wf(nepts))
+  allocate(chiwf(nepts))
   chi0wf=zzero
+  chiwf=zzero
   if (root_cart((/1,1,0/))) then
     call read_real8_array(mewf2,4,(/2,nwfme,ntr1,ngvecme/), &
       trim(fname),'/wann','mewf2')
   endif
   call d_bcast_cart(comm_cart_110,mewf2,2*nwfme*ntr1*ngvecme)
+  mtrx_v=zzero
+  do i1=1,ntr1
+    do i2=1,ntr1
+      do n1=1,nwfme
+        do n2=1,nwfme
+          do ig=1,ngvecchi
+            vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
+            gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
+            mtrx_v((i1-1)*nwfme+n1,(i2-1)*nwfme+n2)=&
+              mtrx_v((i1-1)*nwfme+n1,(i2-1)*nwfme+n2)+&
+              dconjg(mewf2(n1,i1,ig))*mewf2(n2,i2,ig)*fourpi/gq0**2
+          enddo
+        enddo
+      enddo
+    enddo
+  enddo
   
   inquire(file='itrans',exist=exist)
   if (exist) then
@@ -197,6 +237,7 @@ if (lwannresp) then
     enddo
   endif
 endif !lwannresp
+
 !if (lwannopt) then
 !  allocate(mewfx(3,nwann*nwann,ntr1))
 !  if (root_cart((/1,1,0/))) then
@@ -210,25 +251,6 @@ endif !lwannresp
 !  epswf=zzero
 !endif
 
-if (wproc) then
-  write(150,'("chi0 was calculated for ")')
-  write(150,'("  G-shells  : ",I4," to ",I4)')gshme1,gshme2
-  write(150,'("  G-vectors : ",I4," to ",I4)')gvecme1,gvecme2
-  call flushifc(150)
-endif
-
-gshchi1=gshme1
-gshchi2=gshme2
-gvecchi1=gvecme1
-gvecchi2=gvecme2
-
-ngvecchi=gvecchi2-gvecchi1+1  
-if (wproc) then 
-  write(150,*)
-  write(150,'("Minimum and maximum G-vectors for chi : ",2I4)')gvecchi1,gvecchi2
-  write(150,'("Number of G-vectors : ",I4)')ngvecchi
-  call flushifc(150)
-endif
 
 allocate(krnl(ngvecchi,ngvecchi))
 allocate(ixcft(ngvec))
@@ -308,6 +330,7 @@ chi_=zzero
 epsilon_=zzero
 
 do ie=ie1,ie2
+  write(*,*)ie
   if (root_cart((/0,1,0/))) then
 #ifndef _PIO_
     do i=0,mpi_dims(1)-1
@@ -332,9 +355,9 @@ do ie=ie1,ie2
   endif
   call d_bcast_cart(comm_cart_010,lr_w(ie),2)
   call d_bcast_cart(comm_cart_010,chi0w,2*ngvecme*ngvecme)
-!  if (lwannresp) then
-!    call d_bcast_cart(comm_cart_010,mewf4,2*nwann*nwann*nwann*nwann*ntr2)
-!  endif  
+  if (lwannresp) then
+    call d_bcast_cart(comm_cart_010,mewf4,2*nwfme*nwfme*ntr2)
+  endif  
 ! prepare chi0
   ig1=gvecchi1-gvecme1+1
   ig2=ig1+ngvecchi-1
@@ -343,45 +366,8 @@ do ie=ie1,ie2
   call solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_(1,ie), &
     epsilon_(1,ie),lmbd(1,ie))
   if (lwannresp) then
-    chi0wf(ie)=zzero
-    do it2=1,ntr2
-      do i=1,ntr1
-        do j=1,ntr1
-          if (itridx(i,j).eq.it2) then
-            do n2=1,nwfme
-              zt1=zdotu(nwfme,mewf4(1,n2,it2),1,mewf2(1,i,1),1)
-              chi0wf(ie)=chi0wf(ie)+zt1*dconjg(mewf2(n2,j,1))
-            enddo
-          endif
-        enddo
-      enddo
-    enddo !it2
+    call solve_chi_wf(ntr1,ntr2,itridx,nwfme,ndim,mewf2,mewf4,mtrx_v,chi0wf(ie),chiwf(ie))
   endif
-! in Wannier basis
-!  if (lwannresp) then
-!    do it1=1,ntr1
-!      do it2=1,ntr1
-!        if (itridx(it1,it2).ne.-1) then
-!          do n1=1,nwann*nwann
-!            do n2=1,nwann*nwann
-!              chi0wf(ie)=chi0wf(ie)+mewf4(n1,n2,itridx(it1,it2))*mewf2(n1,it1,1)*dconjg(mewf2(n2,it2,1))
-!            enddo
-!          enddo
-!        endif
-!      enddo
-!    enddo
-!  endif
-!  if (lwannopt) then
-!    do it1=1,ntr1
-!      do it2=1,ntr1
-!        do n1=1,nwann*nwann
-!          do n2=1,nwann*nwann
-!            epswf(ie)=epswf(ie)+mewf4(n1,n2,itridx(it1,it2))*mewfx(1,n1,it1)*dconjg(mewfx(1,n2,it2))
-!          enddo
-!        enddo
-!      enddo
-!    enddo 
-!  endif
 enddo !ie
 
 call d_reduce_cart(comm_cart_100,.false.,lr_w,2*nepts)
@@ -390,6 +376,7 @@ call d_reduce_cart(comm_cart_100,.false.,chi_,2*4*nepts)
 call d_reduce_cart(comm_cart_100,.false.,epsilon_,2*5*nepts)
 if (lwannresp) then
   call d_reduce_cart(comm_cart_100,.false.,chi0wf,2*nepts)
+  call d_reduce_cart(comm_cart_100,.false.,chiwf,2*nepts)
 endif
 !if (lwannopt) then
 !  call d_reduce_cart(comm_cart_100,.false.,epswf,2*nepts)
@@ -400,27 +387,11 @@ if (root_cart((/1,0,0/))) then
   if (lwannresp) then
     open(130,file='chi0wann.dat',form='formatted',status='replace')
     do ie=1,nepts
-      write(130,'(3G18.10)')dreal(lr_w(ie))*ha2ev,-dreal(chi0wf(ie))/ha2ev/(au2ang)**3, &
-        -dimag(chi0wf(ie))/ha2ev/(au2ang)**3
+      write(130,'(5G18.10)')dreal(lr_w(ie))*ha2ev,-dreal(chi0wf(ie))/ha2ev/(au2ang)**3, &
+        -dimag(chi0wf(ie))/ha2ev/(au2ang)**3,-dreal(chiwf(ie))/ha2ev/(au2ang)**3, &
+        -dimag(chiwf(ie))/ha2ev/(au2ang)**3
     enddo
     close(130)
-!    open(130,file='chi0int.dat',form='formatted',status='replace')
-!    do it2=1,ntr2
-!      do n1=1,nwann*nwann
-!        do ie=1,nepts
-!          write(130,'(2G18.10)')dreal(lr_w(ie))*ha2ev,abs(mewf4_t(n1,n1,it2,ie))
-!        enddo
-!        write(130,*)
-!      enddo
-!    enddo
-!    close(130)
-!    do it1=1,ntr1
-!      write(*,*)'itr=',it1
-!      do n1=1,nwann
-!        write(*,'(10(2F12.6))')(mewf2((n1-1)*nwann+n2,it1,1),n2=1,nwann)
-!      enddo
-!    enddo
-!  endif
 !  if (lwannopt) then
 !    open(130,file='epswf.dat',form='formatted',status='replace')
 !    do ie=1,nepts
