@@ -42,7 +42,11 @@ do ig=idx_g1,idx_g2
   a=zzero
   do ispn=1,nspinor
     do i=1,nstsv
-      if (spinor_ud(ispn,i,ik).eq.1) then
+      l1=.true.
+      if (spinpol) then
+        if (spinor_ud(ispn,i,ik).eq.0) l1=.false.
+      endif
+      if (l1) then
         call zgemv('N',ngknr1,ngknr2,zone,mit,ngknr1,wfsvit2(1,ispn,i),1,zzero,a(1,i,ispn),1)
       endif
     enddo
