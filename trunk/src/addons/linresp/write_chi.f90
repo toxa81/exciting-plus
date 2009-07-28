@@ -67,22 +67,14 @@ write(160,'("#   7: -Re chi_scalar    [1/eV/A^3]    ")')
 write(160,'("#   8: -Im chi_scalar    [1/eV/A^3]    ")')
 write(160,'("#   9:  Re epsilon_eff                 ")')
 write(160,'("#  10:  Im epsilon_eff                 ")')
-write(160,'("#  11:  Re epsilon_scalar_GqGq         ")')
-write(160,'("#  12:  Im epsilon_scalar_GqGq         ")')
-write(160,'("#  13:  Re epsilon_matrix_GqGq         ")')
-write(160,'("#  14:  Im epsilon_matrix_GqGq         ")')
-write(160,'("#  15:  Re 1/(epsilon^-1)_{GqGq}       ")')
-write(160,'("#  16:  Im 1/(epsilon^-1)_{GqGq}       ")')
-write(160,'("#  17: -Re chi_pseudo_scalar [1/eV/A^3]")')
-write(160,'("#  18: -Im chi_pseudo_scalar [1/eV/A^3]")')
-write(160,'("#  19:  Re epsilon_eff_scalar          ")')
-write(160,'("#  20:  Im epsilon_eff_scalar          ")')
-write(160,'("#  21:  Re sigma [eV]                  ")')
-write(160,'("#  22:  Im sigma [eV]                  ")')
-write(160,'("#  23:  Re sigma_scalar [eV]           ")')
-write(160,'("#  24:  Im sigma_scalar [eV]           ")')
+write(160,'("#  11:  Re epsilon_eff_scalar          ")')
+write(160,'("#  12:  Im epsilon_eff_scalar          ")')
+write(160,'("#  13:  Re sigma [eV]                  ")')
+write(160,'("#  14:  Im sigma [eV]                  ")')
+write(160,'("#  15:  Re sigma_scalar [eV]           ")')
+write(160,'("#  16:  Im sigma_scalar [eV]           ")')
 write(160,'("#")')
-allocate(func(24,nepts))
+allocate(func(16,nepts))
 do ie=1,nepts
   func(1,ie)=dreal(lr_w(ie))*ha2ev
   func(2,ie)=-dreal(chi_(1,ie))/ha2ev/(au2ang)**3
@@ -94,23 +86,15 @@ do ie=1,nepts
   func(8,ie)=-dimag(chi_(2,ie))/ha2ev/(au2ang)**3
   func(9,ie)=dreal(epsilon_(4,ie))
   func(10,ie)=dimag(epsilon_(4,ie))
-  func(11,ie)=dreal(epsilon_(2,ie))
-  func(12,ie)=dimag(epsilon_(2,ie))
-  func(13,ie)=dreal(epsilon_(1,ie))
-  func(14,ie)=dimag(epsilon_(1,ie))
-  func(15,ie)=dreal(epsilon_(3,ie))
-  func(16,ie)=dimag(epsilon_(3,ie))
-  func(17,ie)=-dreal(chi_(3,ie))/ha2ev/(au2ang)**3
-  func(18,ie)=-dimag(chi_(3,ie))/ha2ev/(au2ang)**3
-  func(19,ie)=dreal(epsilon_(5,ie))
-  func(20,ie)=dimag(epsilon_(5,ie))
+  func(11,ie)=dreal(epsilon_(5,ie))
+  func(12,ie)=dimag(epsilon_(5,ie))
   z1=zi*dreal(lr_w(ie))*(zone-epsilon_(4,ie))/fourpi
-  func(21,ie)=dreal(z1)*ha2ev
-  func(22,ie)=dimag(z1)*ha2ev
+  func(13,ie)=dreal(z1)*ha2ev
+  func(14,ie)=dimag(z1)*ha2ev
   z1=zi*dreal(lr_w(ie))*(zone-epsilon_(5,ie))/fourpi
-  func(23,ie)=dreal(z1)*ha2ev
-  func(24,ie)=dimag(z1)*ha2ev
-  write(160,'(24G14.6)')func(1:24,ie)
+  func(15,ie)=dreal(z1)*ha2ev
+  func(16,ie)=dimag(z1)*ha2ev
+  write(160,'(16G14.6)')func(1:16,ie)
 enddo
 deallocate(func)
 close(160)

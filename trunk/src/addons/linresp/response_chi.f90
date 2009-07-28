@@ -332,7 +332,6 @@ chi_=zzero
 epsilon_=zzero
 
 do ie=ie1,ie2
-  write(*,*)ie
   if (root_cart((/0,1,0/))) then
 #ifndef _PIO_
     do i=0,mpi_dims(1)-1
