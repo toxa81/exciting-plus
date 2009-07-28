@@ -249,6 +249,7 @@ if (spinpol) then
     enddo
   enddo
   call i_reduce_cart(comm_cart_100,.true.,spinor_ud,2*nstsv*nkptnr)
+  call i_bcast_cart(comm_cart_010,spinor_ud,2*nstsv*nkptnr)
 endif
 call getmeidx(.true.,occsvnr,evalsvnr)
 #ifdef _MPI_
@@ -264,9 +265,6 @@ if (wproc) then
   write(150,*)
   write(150,'("Maximum number of interband transitions: ",I5)')nmemax
   write(150,'("Done in ",F8.2," seconds")')timer(1,2)
-endif
-if (spinpol) then
-  deallocate(spinor_ud)
 endif
 
 ! generate G+q' vectors, where q' is reduced q-vector
@@ -427,13 +425,13 @@ do ikstep=1,nkptnrloc(0)
       call timer_start(4)
       call zrhoftmt(nme(ikstep),ime(1,1,ikstep),               &
         wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,ngumax,ngu,gu,igu, &
-        me(1,1,ik1))
+        me(1,1,ik1),ik,idxkq(1,ik))
       call timer_stop(4)
 ! calculate interstitial contribution for all combinations of n,n'
       call timer_start(5)
       call zrhoftit(nme(ikstep),ime(1,1,ikstep),ngknr(ikstep), &
         ngknr2,igkignr(1,ikstep),igkignr2,idxkq(2,ik),         &
-        wfsvitloc(1,1,1,ikstep),wfsvit2,me(1,1,ik1),gvit)
+        wfsvitloc(1,1,1,ikstep),wfsvit2,me(1,1,ik1),gvit,ik,idxkq(1,ik))
       call timer_stop(5)
     else
       me(1:ngvecme,1:nme(ikstep),ik1)=zone
@@ -528,6 +526,11 @@ deallocate(ylmgq0)
 deallocate(ngu)
 deallocate(gu)
 deallocate(igu)
+
+if (spinpol) then
+  deallocate(spinor_ud)
+endif
+
 
 call barrier(comm_cart)
 
