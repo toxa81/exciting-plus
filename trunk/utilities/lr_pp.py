@@ -259,8 +259,11 @@ def plotFile3(df):
   out.write("set terminal postscript landscape color \"Helvetica\" 11\n")
 #  out.write("set output '| ps2pdf - plot.pdf'\n")
   out.write("set output 'plot.ps'\n")
-  out.write("set palette rgbformulae 22,13,-31\n")
-  out.write("set view 30,300\n")
+  out.write("set pm3d map \n")
+#  out.write("set palette rgbformulae 22,13,-31\n")
+# grayscale
+#  out.write("set palette defined ( 0 1 1 1, 1 0 0 0 )\n")
+#  out.write("set view 30,300\n")
   out.write("splot 'plot.dat' with pm3d\n")
   out.close()
   os.system("gnuplot plot.gnu")
