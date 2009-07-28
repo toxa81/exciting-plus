@@ -160,26 +160,10 @@ if (lwannresp) then
       trim(fname),'/wann','mewf2')
   endif
   call d_bcast_cart(comm_cart_110,mewf2,2*nwfme*ntr1*ngvecme)
-  mtrx_v=zzero
-  do i1=1,ntr1
-    do i2=1,ntr1
-      do n1=1,nwfme
-        do n2=1,nwfme
-          do ig=1,ngvecchi
-            vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
-            gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
-            mtrx_v((i1-1)*nwfme+n1,(i2-1)*nwfme+n2)=&
-              mtrx_v((i1-1)*nwfme+n1,(i2-1)*nwfme+n2)+&
-              dconjg(mewf2(n1,i1,ig))*mewf2(n2,i2,ig)*fourpi/gq0**2
-          enddo
-        enddo
-      enddo
-    enddo
-  enddo
-  
-  inquire(file='itrans',exist=exist)
+
+  inquire(file='mewf.in',exist=exist)
   if (exist) then
-    open(70,file='itrans',form='formatted',status='old')
+    open(70,file='mewf.in',form='formatted',status='old')
     read(70,*)itrans_m
     if (itrans_m.eq.1) then
       read(70,*)d1
@@ -236,6 +220,24 @@ if (lwannresp) then
       endif
     enddo
   endif
+
+  mtrx_v=zzero
+  do i1=1,ntr1
+    do i2=1,ntr1
+      do n1=1,nwfme
+        do n2=1,nwfme
+          do ig=1,ngvecchi
+            vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
+            gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
+            mtrx_v((i1-1)*nwfme+n1,(i2-1)*nwfme+n2)=&
+              mtrx_v((i1-1)*nwfme+n1,(i2-1)*nwfme+n2)+&
+              dconjg(mewf2(n1,i1,ig))*mewf2(n2,i2,ig)*fourpi/gq0**2
+          enddo
+        enddo
+      enddo
+    enddo
+  enddo
+
 endif !lwannresp
 
 !if (lwannopt) then
