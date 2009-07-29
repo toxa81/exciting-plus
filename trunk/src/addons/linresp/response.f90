@@ -151,7 +151,7 @@ if (in_cart()) then
 !    call d_bcast_cart(comm_cart_011,occsvnr,nstsv*nkptnr)
 !! if not parallel I/O
 !#else
-    if (iproc.eq.0) then
+    if (root_cart((/1,1,1/))) then
 ! read from IBZ
       do ik=1,nkpt
         call getoccsv(vkl(1,ik),occsv(1,ik))

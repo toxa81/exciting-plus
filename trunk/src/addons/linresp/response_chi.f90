@@ -274,6 +274,7 @@ allocate(chi_(7,nepts,nfxca))
 allocate(epsilon_(5,nepts,nfxca))
 chi_=zzero
 epsilon_=zzero
+lr_w=zzero
 
 ! construct RPA kernel of the matrix equation
 krnl_rpa=zzero
