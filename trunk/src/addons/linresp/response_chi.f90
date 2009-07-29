@@ -16,20 +16,20 @@ complex(8), allocatable :: ixcft(:)
 
 ! kernel of matrix equaiton
 complex(8), allocatable :: krnl(:,:)
+complex(8), allocatable :: krnl_rpa(:,:)
 complex(8), allocatable :: chi0w(:,:)
-complex(8), allocatable :: chi0wf(:)
-complex(8), allocatable :: chiwf(:)
-complex(8), allocatable :: lmbd(:,:)
+!complex(8), allocatable :: chi0wf(:)
+!complex(8), allocatable :: chiwf(:)
 real(8) fxca
-complex(8), allocatable :: epsilon_(:,:)
-complex(8), allocatable :: chi_(:,:)
+complex(8), allocatable :: epsilon_(:,:,:)
+complex(8), allocatable :: chi_(:,:,:)
 real(8) fourpiq0
 complex(8), allocatable :: mewf2(:,:,:)
 complex(8), allocatable :: mewf4(:,:,:)
 complex(8), allocatable :: mewf2_t(:,:,:)
 complex(8), allocatable :: mewfx(:,:,:)
 complex(8), allocatable :: mtrx_v(:,:)
-complex(8), allocatable :: epswf(:)
+!complex(8), allocatable :: epswf(:)
 
 complex(8) zt1
 integer ntr1,ntr2
@@ -52,7 +52,7 @@ real(8) d1
 integer itrans_m
 
 integer ie,ig,i,j,ig1,ig2,ie1,ie2,idx0,bs,n1,n2,it1,it2,n3,n4,n
-integer i1,i2,ndim
+integer i1,i2,ndim,ifxc,ifxc1,ifxc2
 integer iv(3)
 character*100 fname,qnm,path
 logical, external :: root_cart
@@ -129,6 +129,7 @@ if (wproc) then
   call flushifc(150)
 endif
 
+! for response in Wannier basis
 if (lwannresp) then
   call i_bcast_cart(comm_cart_110,ntr1,1)
   call i_bcast_cart(comm_cart_110,ntr2,1)
@@ -150,17 +151,13 @@ if (lwannresp) then
   allocate(mewf2(nwfme,ntr1,ngvecme))
   allocate(mewf4(nwfme,nwfme,ntr2))
   ndim=nwfme*ntr1
-  allocate(mtrx_v(nwfme*ntr1,ndim))
-  allocate(chi0wf(nepts))
-  allocate(chiwf(nepts))
-  chi0wf=zzero
-  chiwf=zzero
+  allocate(mtrx_v(ndim,ndim))
   if (root_cart((/1,1,0/))) then
     call read_real8_array(mewf2,4,(/2,nwfme,ntr1,ngvecme/), &
       trim(fname),'/wann','mewf2')
   endif
   call d_bcast_cart(comm_cart_110,mewf2,2*nwfme*ntr1*ngvecme)
-
+! cut off some matrix elements
   inquire(file='mewf.in',exist=exist)
   if (exist) then
     open(70,file='mewf.in',form='formatted',status='old')
@@ -169,7 +166,9 @@ if (lwannresp) then
       read(70,*)d1
       do it1=1,ntr1
         do n=1,nwfme
-          if (abs(mewf2(n,it1,1)).lt.d1) mewf2(n,it1,1)=zzero
+          do ig=1,ngvecme
+            if (abs(mewf2(n,it1,ig)).lt.d1) mewf2(n,it1,ig)=zzero
+          enddo
         enddo
       enddo
     endif
@@ -208,19 +207,26 @@ if (lwannresp) then
     endif
   endif
   if (wproc) then
+    write(150,*)
+    write(150,'("Matrix elements in WF basis : ")')
+    write(150,*)
     do it1=1,ntr1
       if (sum(abs(mewf2(:,it1,:))).gt.1d-8) then
         write(150,'("translation : ",3I4)')itr1l(:,it1)
         do n=1,nwfme
-          if (abs(mewf2(n,it1,1)).gt.1d-8) then
-            write(150,'("  transition ",I4," between wfs : ",2I4,"   "," mewf=(",2F12.6,"), |mewf|=",F12.6)')&
-              n,iwfme(1,n),iwfme(2,n),mewf2(n,it1,1),abs(mewf2(n,it1,1))
+          if (sum(abs(mewf2(n,it1,:))).gt.1d-8) then
+            write(150,'("  transition ",I4," between wfs : ",2I4)')&
+              n,iwfme(1,n),iwfme(2,n)
+            do ig=1,ngvecme
+              write(150,'("    ig : ",I4," mewf=(",2F12.6,"), |mewf|=",F12.6)')&
+                ig,mewf2(n,it1,ig),abs(mewf2(n,it1,ig))
+            enddo
           endif
-        enddo
+        enddo !n
       endif
     enddo
   endif
-
+! Coulomb matrix in local basis
   mtrx_v=zzero
   do i1=1,ntr1
     do i2=1,ntr1
@@ -237,7 +243,6 @@ if (lwannresp) then
       enddo
     enddo
   enddo
-
 endif !lwannresp
 
 !if (lwannopt) then
@@ -253,46 +258,36 @@ endif !lwannresp
 !  epswf=zzero
 !endif
 
+igq0=lr_igq0-gvecchi1+1
+fourpiq0=fourpi/(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)
+ig1=gvecchi1-gvecme1+1
+ig2=ig1+ngvecchi-1
+
 
 allocate(krnl(ngvecchi,ngvecchi))
+allocate(krnl_rpa(ngvecchi,ngvecchi))
 allocate(ixcft(ngvec))
-! construct kernel of the matrix equation
-krnl=dcmplx(0.d0,0.d0)
+allocate(lr_w(nepts))
+allocate(chi0w(ngvecme,ngvecme))  
+allocate(chi0m(ngvecchi,ngvecchi))
+allocate(chi_(7,nepts,nfxca))
+allocate(epsilon_(5,nepts,nfxca))
+chi_=zzero
+epsilon_=zzero
+
+! construct RPA kernel of the matrix equation
+krnl_rpa=zzero
 ! for charge response
 if (lrtype.eq.0) then
-  fxca=fxca0+fxca1*mpi_x(2)
-  if (wproc) then
-    write(150,*)
-    write(150,'("fxc A : ",F8.4)')fxca
-    write(150,*)
-    write(150,'("Coulomb potential matrix elements:")')
-    write(150,'("   ig        |G+q|      |v+fxc|   ")')
-    write(150,'(" -------------------------------- ")')
-  endif
   do ig=1,ngvecchi
 ! generate G+q vectors  
     vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
     gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
-    krnl(ig,ig)=fourpi/gq0**2
-    if (fxctype.eq.1) then
-      krnl(ig,ig)=krnl(ig,ig)-fxca/2.d0
-    endif
-    if (fxctype.eq.2) then
-      krnl(ig,ig)=krnl(ig,ig)-fourpi*fxca/gq0**2
-    endif
-    if (wproc) then
-      write(150,'(1X,I4,2X,2F12.6)')ig,gq0,abs(krnl(ig,ig))
-    endif
-  enddo
-endif
+    krnl_rpa(ig,ig)=fourpi/gq0**2
+  enddo !ig
+endif !lrtype.eq.0
 ! for magnetic response
 if (lrtype.eq.1) then
-  if (wproc) then
-    write(150,*)
-    write(150,'("Ixc matrix elements:")')
-    write(150,'("   ig      |Ixc(G)|   ")')
-    write(150,'(" -------------------- ")')
-  endif
   call genixc(ixcft)
 ! contruct Ixc_{G,G'}=Ixc(G-G')
   do i=1,ngvecchi
@@ -300,38 +295,23 @@ if (lrtype.eq.1) then
       ig1=gvecchi1+i-1
       ig2=gvecchi1+j-1
       iv(:)=-ivg(:,ig1)+ivg(:,ig2)
-      krnl(i,j)=ixcft(ivgig(iv(1),iv(2),iv(3)))
+      krnl_rpa(i,j)=ixcft(ivgig(iv(1),iv(2),iv(3)))
     enddo
   enddo
-  if (wproc) then
-    do ig=1,2*ngvecchi
-      write(150,'(1X,I4,2X,F12.6)')ig,abs(ixcft(ig))
-    enddo
-  endif
-endif
-if (wproc) then
-  call flushifc(150)
-endif
+endif !lrtype.eq.1
 
-igq0=lr_igq0-gvecchi1+1
-fourpiq0=fourpi/(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)
-
+! distribute energy points between 1-st dimension
 call idxbos(nepts,mpi_dims(1),mpi_x(1)+1,idx0,bs)
 ie1=idx0+1
 ie2=idx0+bs
+! distribute nfxca between 2-nd dimension 
+call idxbos(nfxca,mpi_dims(2),mpi_x(2)+1,idx0,bs)
+ifxc1=idx0+1
+ifxc2=idx0+bs
 
-allocate(lr_w(nepts))
-allocate(chi0w(ngvecme,ngvecme))  
-allocate(chi0m(ngvecchi,ngvecchi))
-allocate(lmbd(ngvecchi,nepts))
-allocate(chi_(4,nepts))
-allocate(epsilon_(5,nepts))
-lr_w=zzero
-lmbd=zzero
-chi_=zzero
-epsilon_=zzero
-
+! main loop over energy points 
 do ie=ie1,ie2
+! read chi0(iw) from file
   if (root_cart((/0,1,0/))) then
 #ifndef _PIO_
     do i=0,mpi_dims(1)-1
@@ -343,7 +323,7 @@ do ie=ie1,ie2
         call read_real8_array(chi0w,3,(/2,ngvecme,ngvecme/), &
           trim(fname),trim(path),'chi0')
         if (lwannresp) then
-          call read_real8_array(chi0wf(ie),1,(/2/),trim(fname),trim(path),'chi0wf')
+          call read_real8_array(chi_(5,ie,1),1,(/2/),trim(fname),trim(path),'chi0wf')
           call read_real8_array(mewf4,4,(/2,nwfme,nwfme,ntr2/), &
             trim(fname),trim(path),'mewf4')
         endif
@@ -354,56 +334,48 @@ do ie=ie1,ie2
     enddo
 #endif
   endif
-  call d_bcast_cart(comm_cart_010,lr_w(ie),2)
   call d_bcast_cart(comm_cart_010,chi0w,2*ngvecme*ngvecme)
-  if (lwannresp) then
-    call d_bcast_cart(comm_cart_010,mewf4,2*nwfme*nwfme*ntr2)
-  endif  
 ! prepare chi0
-  ig1=gvecchi1-gvecme1+1
-  ig2=ig1+ngvecchi-1
   chi0m(1:ngvecchi,1:ngvecchi)=chi0w(ig1:ig2,ig1:ig2)
-! solve matrix equation  
-  call solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_(1,ie), &
-    epsilon_(1,ie),lmbd(1,ie))
-  if (lwannresp) then
-    call solve_chi_wf(ntr1,ntr2,itridx,nwfme,ndim,mewf2,mewf4,mtrx_v,chi0wf(ie),chiwf(ie))
-  endif
+! loop over fxc
+  do ifxc=ifxc1,ifxc2
+    fxca=fxca0+(ifxc-1)*fxca1
+! prepare fxc kernel
+    krnl=krnl_rpa
+    if (lrtype.eq.0) then
+      do ig=1,ngvecchi
+        if (fxctype.eq.1) then
+          krnl(ig,ig)=krnl(ig,ig)-fxca/2.d0
+        endif
+        if (fxctype.eq.2) then
+! generate G+q vector  
+          vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
+          gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
+          krnl(ig,ig)=krnl(ig,ig)-fourpi*fxca/gq0**2
+        endif
+      enddo
+    endif
+    call solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_(1,ie,ifxc), &
+      epsilon_(1,ie,ifxc))
+    if (lwannresp.and.ifxc.eq.1) then
+      call solve_chi_wf(ntr1,ntr2,itridx,nwfme,ndim,mewf2,mewf4,mtrx_v,&
+        chi_(6,ie,1),chi_(7,ie,1))
+    endif
+  enddo !ifxc
 enddo !ie
-
 call d_reduce_cart(comm_cart_100,.false.,lr_w,2*nepts)
-call d_reduce_cart(comm_cart_100,.false.,lmbd,2*ngvecchi*nepts)
-call d_reduce_cart(comm_cart_100,.false.,chi_,2*4*nepts)
-call d_reduce_cart(comm_cart_100,.false.,epsilon_,2*5*nepts)
-if (lwannresp) then
-  call d_reduce_cart(comm_cart_100,.false.,chi0wf,2*nepts)
-  call d_reduce_cart(comm_cart_100,.false.,chiwf,2*nepts)
-endif
-!if (lwannopt) then
-!  call d_reduce_cart(comm_cart_100,.false.,epswf,2*nepts)
-!endif
-
-if (root_cart((/1,0,0/))) then
-  call write_chi(lr_igq0,ivq0m,chi_,epsilon_,lmbd)
-  if (lwannresp) then
-    open(130,file='chi0wann.dat',form='formatted',status='replace')
-    do ie=1,nepts
-      write(130,'(5G18.10)')dreal(lr_w(ie))*ha2ev,-dreal(chi0wf(ie))/ha2ev/(au2ang)**3, &
-        -dimag(chi0wf(ie))/ha2ev/(au2ang)**3,-dreal(chiwf(ie))/ha2ev/(au2ang)**3, &
-        -dimag(chiwf(ie))/ha2ev/(au2ang)**3
-    enddo
-    close(130)
-!  if (lwannopt) then
-!    open(130,file='epswf.dat',form='formatted',status='replace')
-!    do ie=1,nepts
-!      write(130,'(3G18.10)')dreal(lr_w(ie))*ha2ev,-dreal(epswf(ie)),-dimag(epswf(ie))
-!    enddo
-!    close(130)
-  endif
+call d_reduce_cart(comm_cart_110,.false.,chi_,2*7*nepts*nfxca)
+call d_reduce_cart(comm_cart_110,.false.,epsilon_,2*5*nepts*nfxca)
+! write response functions to .dat file
+if (root_cart((/1,1,0/))) then
+  do ifxc=1,nfxca
+    fxca=fxca0+(ifxc-1)*fxca1
+    call write_chi(lr_igq0,ivq0m,chi_(1,1,ifxc),epsilon_(1,1,ifxc),fxca)
+  enddo
 endif
 
-deallocate(krnl,ixcft)
-deallocate(lr_w,chi0m,chi0w,chi_,epsilon_,lmbd)
+deallocate(krnl,krnl_rpa,ixcft)
+deallocate(lr_w,chi0m,chi0w,chi_,epsilon_)
 return
 end  
 

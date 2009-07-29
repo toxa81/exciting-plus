@@ -1,4 +1,4 @@
-subroutine solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_,epsilon_,lmbd)
+subroutine solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_,epsilon_)
 implicit none
 integer, intent(in) :: ngvecchi
 integer, intent(in) :: igq0
@@ -7,7 +7,6 @@ complex(8), intent(in) :: chi0m(ngvecchi,ngvecchi)
 complex(8), intent(in) :: krnl(ngvecchi,ngvecchi)
 complex(8), intent(out) :: chi_(4)
 complex(8), intent(out) :: epsilon_(5)
-complex(8), intent(out) :: lmbd(ngvecchi)
 
 complex(8), allocatable :: epsilon(:,:)
 complex(8), allocatable :: mtrx1(:,:)
@@ -32,8 +31,8 @@ enddo
 call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(-1.d0,0.d0), &
   chi0m,ngvecchi,krnl,ngvecchi,dcmplx(1.d0,0.d0),epsilon,ngvecchi)
 ! find eigen-values of "epsilon" matrix
-mtrx1=epsilon
-call diagzge(ngvecchi,mtrx1,lmbd)
+!mtrx1=epsilon
+!call diagzge(ngvecchi,mtrx1,lmbd)
 ! save epsilon_matrix_GqGq
 epsilon_(1)=epsilon(igq0,igq0)
 ! save epsilon_scalar_GqGq

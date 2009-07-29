@@ -28,7 +28,7 @@ complex(8), allocatable :: pmat(:,:,:,:)
 integer j,n,ik,ikloc,istsv,ik1,isym
 integer sz,iint,iw
 character*100 fname,qnm
-character*2 c2
+character*3 c3
 integer, external :: iknrglob2
 logical, external :: root_cart
 logical, external :: in_cart
@@ -96,10 +96,10 @@ if (in_cart()) then
     endif
   endif
   if (task.eq.402) then
-    write(c2,'(I2.2)')mpi_x(2)
+    write(c3,'(I3.3)')mpi_x(2)
     if (root_cart((/1,0,0/))) then
       wproc=.true.
-      fname=trim(qnm)//"_CHI_"//c2//".OUT"
+      fname=trim(qnm)//"_CHI_"//c3//".OUT"
       open(150,file=trim(fname),form='formatted',status='replace')
     endif
   endif
