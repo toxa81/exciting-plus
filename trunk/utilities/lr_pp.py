@@ -221,8 +221,8 @@ def plotFile2(title,qdir,df1,df2):
   return
 
 def plotFile3(df):
-  print "Input column to plot (0 is energy) : "  
-  icol=int(sys.stdin.readline().strip())
+  print "Input column to plot (1 is energy) : "  
+  icol=int(sys.stdin.readline().strip())-1
   print "Input scale factor : "
   scale=float(sys.stdin.readline().strip())
   print "Scan through : "
