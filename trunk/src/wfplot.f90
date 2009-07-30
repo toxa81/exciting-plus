@@ -7,14 +7,14 @@ subroutine wfplot
 use modmain
 implicit none
 ! local variables
-integer ik,ist
+integer ik,ist,ikloc
 real(8) x,t1
 ! allocatable arrays
 complex(8), allocatable :: evecfv(:,:)
 complex(8), allocatable :: evecsv(:,:)
 ! external functions
-real(8) sdelta
-external sdelta
+real(8), external :: sdelta
+integer, external :: ikglob
 ! initialise universal variables
 call init0
 call init1
@@ -76,12 +76,16 @@ end if
 rhomt(:,:,:)=0.d0
 rhoir(:)=0.d0
 ! compute the charge density with the new occupancies
-do ik=1,nkpt
+do ikloc=1,nkptloc(iproc)
+  ik=ikglob(ikloc)
 ! get the eigenvectors from file
-  call getevecfv(vkl(:,ik),vgkl(:,:,:,ik),evecfv)
+  call getevecfv(vkl(:,ik),vgkl(:,:,:,ikloc),evecfv)
   call getevecsv(vkl(:,ik),evecsv)
-  call rhovalk(ik,evecfv,evecsv)
+  call rhomagk(ikloc,evecfv,evecsv)
 end do
+call dsync(rhomt,lmmaxvr*nrmtmax*natmtot,.true.,.true.)
+call dsync(rhoir,ngrtot,.true.,.true.)
+call rhomagsh
 ! symmetrise the density for the STM plot
 if (task.eq.162) then
   call symrf(lradstp,rhomt,rhoir)
@@ -115,15 +119,21 @@ case(162)
   write(*,'("Info(wfplot):")')
   write(*,'(" 2D STM image written to STM2D.OUT")')
 case(63,64)
-  open(50,file='WF3D.OUT',action='WRITE',form='FORMATTED')
+  if (iproc.eq.0)  then
+    open(50,file='WF3D.OUT',action='WRITE',form='FORMATTED')
+  endif
   call plot3d(50,1,lmaxvr,lmmaxvr,rhomt,rhoir)
-  close(50)
-  write(*,*)
-  write(*,'("Info(wfplot):")')
-  write(*,'(" 3D wavefunction modulus squared written to WF3D.OUT")')
+  if (iproc.eq.0) then
+    close(50)
+    write(*,*)
+    write(*,'("Info(wfplot):")')
+    write(*,'(" 3D wavefunction modulus squared written to WF3D.OUT")')
+  endif
 end select
 if (task.ne.162) then
-  write(*,'(" for k-point ",I6," and state ",I6)') kstlist(1,1),kstlist(2,1)
+  if (iproc.eq.0) then
+    write(*,'(" for k-point ",I6," and state ",I6)') kstlist(1,1),kstlist(2,1)
+  endif
 end if
 write(*,*)
 deallocate(evecfv,evecsv)

@@ -36,24 +36,35 @@ real(8), intent(in) :: rfmt(ld,nrmtmax,natmtot,nf)
 real(8), intent(in) :: rfir(ngrtot,nf)
 ! local variables
 integer np,ip,ip1,ip2,ip3,i
-real(8) v1(3),v2(3),v3(3)
+real(8) v1(3),v2(3),v3(3),vc(3)
 real(8) t1,t2,t3
 ! allocatable arrays
 real(8), allocatable :: vpl(:,:)
 real(8), allocatable :: fp(:,:)
-if ((nf.lt.1).or.(nf.gt.4)) then
-  write(*,*)
-  write(*,'("Error(plot3d): invalid number of functions : ",I8)') nf
-  write(*,*)
-  stop
-end if
+if (iproc.eq.0) then
+  if ((nf.lt.1).or.(nf.gt.4)) then
+    write(*,*)
+    write(*,'("Error(plot3d): invalid number of functions : ",I8)') nf
+    write(*,*)
+    call pstop
+  end if
+endif
 ! allocate local arrays
 allocate(vpl(3,np3d(1)*np3d(2)*np3d(3)))
 allocate(fp(np3d(1)*np3d(2)*np3d(3),nf))
 ! generate 3D grid
-v1(:)=vclp3d(:,2)-vclp3d(:,1)
-v2(:)=vclp3d(:,3)-vclp3d(:,1)
-v3(:)=vclp3d(:,4)-vclp3d(:,1)
+v1(:)=vclp3d(:,2) 
+v2(:)=vclp3d(:,3) 
+v3(:)=vclp3d(:,4) 
+if (iproc.eq.0) then
+  write(*,*)
+  write(*,'("Info(plot2d): cartesian vectors of the plane : ")')
+  write(*,'("  v1     : ",3G18.10)')v1
+  write(*,'("  v2     : ",3G18.10)')v2
+  write(*,'("  v3     : ",3G18.10)')v3
+  write(*,'("  center : ",3G18.10)')vclp3d(:,1)
+  write(*,*)
+endif
 ip=0
 do ip3=0,np3d(3)-1
   t3=dble(ip3)/dble(np3d(3))
@@ -62,7 +73,8 @@ do ip3=0,np3d(3)-1
     do ip1=0,np3d(1)-1
       t1=dble(ip1)/dble(np3d(1))
       ip=ip+1
-      vpl(:,ip)=t1*v1(:)+t2*v2(:)+t3*v3(:)+vclp3d(:,1)
+      vc(:)=vclp3d(:,1)-0.5d0*(v1(:)+v2(:)+v3(:))+t1*v1(:)+t2*v2(:)+t3*v3(:)
+      call r3mv(ainv,vc,vpl(:,ip))
     end do
   end do
 end do
@@ -72,11 +84,13 @@ do i=1,nf
   call rfarray(lmax,ld,rfmt(:,:,:,i),rfir(:,i),np,vpl,fp(:,i))
 end do
 ! write functions to file
-write(fnum,'(3I6," : grid size")') np3d(:)
-do ip=1,np
-  call r3mv(avec,vpl(:,ip),v1)
-  write(fnum,'(7G18.10)') v1(:),(fp(ip,i),i=1,nf)
-end do
+if (iproc.eq.0) then
+  write(fnum,'(3I6," : grid size")') np3d(:)
+  do ip=1,np
+    call r3mv(avec,vpl(:,ip),v1)
+    write(fnum,'(7G18.10)') v1(:),(fp(ip,i),i=1,nf)
+  end do
+endif
 deallocate(vpl,fp)
 return
 end subroutine

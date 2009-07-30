@@ -17,7 +17,7 @@ real(8), intent(out) :: fp(np)
 ! local variables
 integer ia,is,ias,ip,iv(3)
 integer i1,i2,i3,ir0,ir,np2
-integer l,m,lm,ig,ifg,i,j
+integer l,m,lm,ig,ifg,i,j,idx0,bs,ip1,ip2
 real(8) rmt2,r,tp(2),sum,t1,t2
 real(8) v1(3),v2(3),v3(3),v4(3),v5(3)
 ! automatic arrays
@@ -34,8 +34,12 @@ np2=nprad/2
 ! Fourier transform rfir to G-space
 zfft(:)=rfir(:)
 call zfftifc(3,ngrid,-1,zfft)
+fp=0.d0
+call idxbos(np,nproc,iproc+1,idx0,bs)
+ip1=idx0+1
+ip2=idx0+bs
 ! begin loop over all points
-do ip=1,np
+do ip=ip1,ip2
   v2(:)=vpl(:,ip)
   call r3frac(epslat,v2,iv)
 ! convert point to Cartesian coordinates
@@ -97,6 +101,7 @@ do ip=1,np
 10 continue
   fp(ip)=sum
 end do
+call dsync(fp,np,.true.,.false.)
 deallocate(rlm,zfft)
 return
 end subroutine

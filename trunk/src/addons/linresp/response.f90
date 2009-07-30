@@ -133,24 +133,6 @@ if (in_cart()) then
       write(150,'("Reading energies and occupancies of states")')
       call flushifc(150)
     endif
-! if parallel I/O
-!#ifdef _PIO_
-!    occsvnr=0.d0
-!    evalsvnr=0.d0
-!! only subset of processors will read from file
-!    if (root_cart((/0,1,1/))) then
-!      do ikloc=1,nkptnr_loc
-!        ik=iknrglob2(ikloc,mpi_x(1))
-!        call getoccsv(vklnr(1,ik),occsvnr(1,ik))
-!        call getevalsv(vklnr(1,ik),evalsvnr(1,ik))
-!      enddo
-!      call d_reduce_cart(comm_cart_100,.true.,evalsvnr,nstsv*nkptnr)
-!      call d_reduce_cart(comm_cart_100,.true.,occsvnr,nstsv*nkptnr)
-!    endif
-!    call d_bcast_cart(comm_cart_011,evalsvnr,nstsv*nkptnr)
-!    call d_bcast_cart(comm_cart_011,occsvnr,nstsv*nkptnr)
-!! if not parallel I/O
-!#else
     if (root_cart((/1,1,1/))) then
 ! read from IBZ
       do ik=1,nkpt
@@ -162,14 +144,9 @@ if (in_cart()) then
         occsvnr(:,ik)=occsv(:,ik1)
         evalsvnr(:,ik)=evalsv(:,ik1)
       enddo
-!      do ik=1,nkptnr
-!        call getoccsv(vklnr(1,ik),occsvnr(1,ik))
-!        call getevalsv(vklnr(1,ik),evalsvnr(1,ik))
-!      enddo
     endif
     call d_bcast_cart(comm_cart,evalsvnr,nstsv*nkptnr)
     call d_bcast_cart(comm_cart,occsvnr,nstsv*nkptnr)
-!#endif
     call timer_stop(3)
     if (wproc) then
       write(150,'("Done in ",F8.2," seconds")')timer(3,2)
@@ -257,24 +234,24 @@ if (in_cart()) then
       nstsv*nstsv*nkptnr_loc*2)
 
 ! remove l content form particular bands      
-    if (.false.) then
-      allocate(wfsvmt_t(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
-      allocate(wfsvit_t(ngkmax,nspinor,nstsv))
-      do ikloc=1,nkptnr_loc
-        ik=iknrglob2(ikloc,mpi_x(1))
-        wfsvmt_t=wfsvmtloc(:,:,:,:,:,ikloc)
-        wfsvit_t=wfsvitloc(:,:,:,ikloc)
-        do j=1,nstsv
-          if (evalsvnr(j,ik).ge.-0.1d0.and.evalsvnr(j,ik).lt.0.1d0) then
-            wfsvmt_t(2:4,:,9:20,:,j)=0.d0
-          endif
-        enddo
-        wfsvmtloc(:,:,:,:,:,ikloc)=wfsvmt_t
-        wfsvitloc(:,:,:,ikloc)=wfsvit_t
-      enddo 
-      deallocate(wfsvmt_t)
-      deallocate(wfsvit_t)
-    endif
+!    if (.false.) then
+!      allocate(wfsvmt_t(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
+!      allocate(wfsvit_t(ngkmax,nspinor,nstsv))
+!      do ikloc=1,nkptnr_loc
+!        ik=iknrglob2(ikloc,mpi_x(1))
+!        wfsvmt_t=wfsvmtloc(:,:,:,:,:,ikloc)
+!        wfsvit_t=wfsvitloc(:,:,:,ikloc)
+!        do j=1,nstsv
+!          if (evalsvnr(j,ik).ge.-0.1d0.and.evalsvnr(j,ik).lt.0.1d0) then
+!            wfsvmt_t(2:4,:,9:20,:,j)=0.d0
+!          endif
+!        enddo
+!        wfsvmtloc(:,:,:,:,:,ikloc)=wfsvmt_t
+!        wfsvitloc(:,:,:,ikloc)=wfsvit_t
+!      enddo 
+!      deallocate(wfsvmt_t)
+!      deallocate(wfsvit_t)
+!    endif
 
     if (wannier) then
       if (allocated(wann_c)) deallocate(wann_c)
