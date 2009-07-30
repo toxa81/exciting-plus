@@ -135,7 +135,6 @@ if (task.ne.162) then
     write(*,'(" for k-point ",I6," and state ",I6)') kstlist(1,1),kstlist(2,1)
   endif
 end if
-write(*,*)
 deallocate(evecfv,evecsv)
 return
 end subroutine
