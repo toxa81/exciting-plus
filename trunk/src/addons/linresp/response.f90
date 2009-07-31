@@ -29,6 +29,7 @@ integer j,n,ik,ikloc,istsv,ik1,isym
 integer sz,iint,iw
 character*100 fname,qnm
 character*3 c3
+real(8) w2
 integer, external :: iknrglob2
 logical, external :: root_cart
 logical, external :: in_cart
@@ -70,7 +71,7 @@ if (task.eq.400) then
   call genurfprod
 endif
 
-if (task.eq.401) then
+if (task.eq.400.or.task.eq.401) then
   if (iproc.eq.0) call readfermi
   call dsync(efermi,1,.false.,.true.)
 endif
@@ -112,6 +113,8 @@ if (in_cart()) then
     endif
 #endif
     write(150,'("MPI grid size : ",3I6)')mpi_dims
+    write(150,'("Wannier functions switch : ",L1)')wannier
+    write(150,'("Response in local basis  : ",L1)')lwannresp
     call flushifc(150)
   endif
   
@@ -252,6 +255,17 @@ if (in_cart()) then
 !      deallocate(wfsvmt_t)
 !      deallocate(wfsvit_t)
 !    endif
+     if (.false.) then
+       do ikloc=1,nkptnr_loc
+         ik=iknrglob2(ikloc,mpi_x(1))
+         do j=1,nstsv
+           if (abs(evalsvnr(j,ik)-efermi).lt.0.01) then
+             wfsvmtloc(:,:,:,:,j,ikloc)=zzero
+             wfsvitloc(:,:,j,ikloc)=zzero
+           endif
+         enddo
+       enddo
+     endif  
 
     if (wannier) then
       if (allocated(wann_c)) deallocate(wann_c)
@@ -260,21 +274,21 @@ if (in_cart()) then
       allocate(wfsvit_t(ngkmax,nspinor,nstsv))
       allocate(wfc_t(nwann,nstsv))
       if (wproc) then
-        write(150,*)
-        write(150,'("Generating Wannier functions")')
+        !write(150,*)
+        write(150,'("  Generating Wannier functions")')
         if (lwfexpand) then
           write(150,*)
           if (laddwf) then
-            write(150,'("Adding Wannier functions content")')
+            write(150,'("    Adding Wannier functions content")')
           else
-            write(150,'("Removing Wannier functions content")')
-            write(150,'("  dumping coefficient : ",F12.6)')alpha1
+            write(150,'("    Removing Wannier functions content")')
+            write(150,'("      dumping coefficient : ",F12.6)')alpha1
           endif
           do iint=1,nintwann      
             write(150,*)
-            write(150,'("  energy interval : ",2F12.6)') &
+            write(150,'("      energy interval : ",2F12.6)') &
               ewannint(1,iint),ewannint(2,iint)
-            write(150,'("  Wannier functions : ",100I4)') &
+            write(150,'("      Wannier functions : ",100I4)') &
               (iwannint(j,iint),j=1,nwannint(iint))
           enddo !iint          
         endif !lwfexpand
@@ -326,6 +340,32 @@ if (in_cart()) then
       deallocate(wfsvmt_t)
       deallocate(wfsvit_t)
       deallocate(wfc_t)
+      wann_occ=0.d0
+      do n=1,nwann
+        do ikloc=1,nkptnr_loc
+          ik=iknrglob2(ikloc,mpi_x(1))
+          do j=1,nstsv
+            w2=dreal(dconjg(wann_c(n,j,ikloc))*wann_c(n,j,ikloc))
+            wann_occ(n)=wann_occ(n)+w2*occsvnr(j,ik)/nkptnr
+          enddo
+        enddo
+      enddo
+      call d_reduce_cart(comm_cart_100,.true.,wann_occ,nwann)
+      wann_occ=wann_occ
+      if (wproc) then
+        write(150,'("    Wannier function occupation numbers : ")')
+        do n=1,nwann
+          write(150,'("      n : ",I4,"  occ : ",F8.6)')n,wann_occ(n)
+        enddo
+      endif
+      lwanndiel=.true.
+      do n=1,nwann
+        if ((abs(wann_occ(n))*abs(wann_occ(n)-occmax)).gt.1d-10) &
+          lwanndiel=.false.
+      enddo
+      if (wproc) then
+        write(150,'("    Dielectric Wannier functions : ",L1)')lwanndiel
+      endif
     endif !wannier
     
     call timer_stop(1)

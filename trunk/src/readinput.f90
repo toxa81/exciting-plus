@@ -193,11 +193,12 @@ nwfplot=1
 firstwf=1
 lr_e1=-100.d0
 lr_e2=100.d0
+lr_n1=0
+lr_n2=10000
 alpha1=1.d0
 wannier_lc=.false.
 lwannresp=.false.
 lwannopt=.false.
-lwanndiel=.false.
 lr_maxtr=0
 lwfexpand=.false.
 nwann_h=0
@@ -943,7 +944,6 @@ case('response_options')
 case('response_wann')
   read(50,*,err=20) lwannresp
   read(50,*,err=20) lwannopt
-  read(50,*,err=20) lwanndiel
   read(50,*,err=20) lr_maxtr
 case('wannier')
   read(50,*,err=20) wannier

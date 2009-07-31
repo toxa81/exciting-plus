@@ -90,6 +90,9 @@ if (root_cart((/1,1,0/))) then
   call read_real8(vq0rl,3,trim(fname),'/parameters','vq0rl')
   call read_real8(vq0c,3,trim(fname),'/parameters','vq0c')
   call read_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
+  if (wannier) then
+    call read_real8(wann_occ,nwann,trim(fname),'/parameters','wann_occ')
+  endif  
   if (nkptnr_.ne.nkptnr) then
     write(*,*)
     write(*,'("Error(response_chi0): k-mesh was changed")')
@@ -114,6 +117,9 @@ call d_bcast_cart(comm_cart_110,vq0l,3)
 call d_bcast_cart(comm_cart_110,vq0rl,3)
 call d_bcast_cart(comm_cart_110,vq0c,3)
 call d_bcast_cart(comm_cart_110,vq0rc,3)
+if (wannier) then
+  call d_bcast_cart(comm_cart_110,wann_occ,nwann)
+endif
 
 allocate(idxkq(1,nkptnr_loc))
 allocate(nme(nkptnr_loc))
@@ -126,8 +132,9 @@ if (wannier) then
 endif  
 
 if (wproc) then
+  write(150,*)
   if (nspinor_.eq.2) then
-    write(150,'("  matrix elements were calculated for spin-polarized case")')
+    write(150,'("matrix elements were calculated for spin-polarized case")')
   endif
   write(150,'("matrix elements were calculated for: ")')
   write(150,'("  G-shells  : ",I4," to ", I4)')gshme1,gshme2
@@ -228,31 +235,26 @@ endif
 
 ! for response in Wannier bais
 if (lwannresp) then
-  wann_occ=0.5d0
+  lwanndiel=.true.
   do n=1,nwann
-    itype=iwann(4,n)
-    if (wann_use_eint) then
-      if (wann_eint(2,itype).lt.efermi) wann_occ(n)=1.d0
-      if (wann_eint(1,itype).gt.efermi) wann_occ(n)=0.d0
-    else
-      j=nint(chgval)/2
-      if (wann_nint(2,itype).le.j) wann_occ(n)=1.d0
-      if (wann_nint(1,itype).gt.j) wann_occ(n)=0.d0
-    endif
+    if ((abs(wann_occ(n))*abs(wann_occ(n)-occmax)).gt.1d-10) &
+      lwanndiel=.false.
   enddo
   allocate(iwfme(2,nwann*nwann))
   nwfme=0
   do n1=1,nwann
     do n2=1,nwann
-      if (abs(wann_occ(n1)-wann_occ(n2)).gt.1d-5) then
-      !if (wann_occ(n1)-wann_occ(n2).lt.-1d-5) then
-      !if (wann_occ(n1)-wann_occ(n2).gt.1d-5) then
+      if ((abs(wann_occ(n1)-wann_occ(n2)).gt.1d-5.and.lwanndiel).or..not.lwanndiel) then
         nwfme=nwfme+1
         iwfme(1,nwfme)=n1
         iwfme(2,nwfme)=n2
       endif
     enddo
   enddo
+  if (wproc) then
+    write(150,*)
+    write(150,'("Number of WF trainstions : ",I4)')nwfme
+  endif
 
   ntr1=(2*lr_maxtr+1)**3
   allocate(itr1l(3,ntr1))

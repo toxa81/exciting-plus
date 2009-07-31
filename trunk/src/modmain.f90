@@ -1016,6 +1016,7 @@ real(8) maxomega
 real(8) domega
 real(8) lr_eta
 real(8) lr_e1,lr_e2
+integer lr_n1,lr_n2
 integer lrtype
 ! array for k and k+q stuff
 !  1-st index: index of k-point in BZ

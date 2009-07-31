@@ -309,6 +309,9 @@ if (root_cart((/1,1,0/))) then
   call write_real8(vq0rl,3,trim(fname),'/parameters','vq0rl')
   call write_real8(vq0c,3,trim(fname),'/parameters','vq0c')
   call write_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
+  if (wannier) then
+    call write_real8(wann_occ,nwann,trim(fname),'/parameters','wann_occ')
+  endif
 endif
 if ((.not.lsfio).and.root_cart((/0,1,0/))) then
   do ikloc=1,nkptnr_loc

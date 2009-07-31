@@ -151,6 +151,10 @@ if (lwannresp) then
   allocate(mewf2(nwfme,ntr1,ngvecme))
   allocate(mewf4(nwfme,nwfme,ntr2))
   ndim=nwfme*ntr1
+  if (wproc) then
+    write(150,*)
+    write(150,'("Matrix size in local basis : ",I6)')ndim
+  endif
   allocate(mtrx_v(ndim,ndim))
   if (root_cart((/1,1,0/))) then
     call read_real8_array(mewf2,4,(/2,nwfme,ntr1,ngvecme/), &
@@ -243,6 +247,7 @@ if (lwannresp) then
       enddo
     enddo
   enddo
+  if (wproc) call flushifc(150)
 endif !lwannresp
 
 !if (lwannopt) then
