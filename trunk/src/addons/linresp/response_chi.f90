@@ -37,12 +37,6 @@ integer, allocatable :: itr1l(:,:)
 integer, allocatable :: itr2l(:,:)
 integer, allocatable :: itridx(:,:)
 
-integer nwf1
-integer, allocatable :: iwf1(:)
-integer nwf2
-integer, allocatable :: iwf2(:)
-integer ntr
-integer, allocatable :: itr(:,:)
 integer nwfme
 integer, allocatable :: iwfme(:,:)
 logical exist
@@ -50,9 +44,11 @@ integer ntrans
 integer, allocatable :: itrans(:,:)
 real(8) d1
 integer itrans_m
+integer nnzme 
+integer, allocatable :: inzme(:,:)
 
 integer ie,ig,i,j,ig1,ig2,ie1,ie2,idx0,bs,n1,n2,it1,it2,n3,n4,n
-integer i1,i2,ndim,ifxc,ifxc1,ifxc2
+integer i1,i2,ifxc,ifxc1,ifxc2
 integer iv(3)
 character*100 fname,qnm,path
 logical, external :: root_cart
@@ -150,12 +146,6 @@ if (lwannresp) then
   call i_bcast_cart(comm_cart_110,iwfme,2*nwfme)
   allocate(mewf2(nwfme,ntr1,ngvecme))
   allocate(mewf4(nwfme,nwfme,ntr2))
-  ndim=nwfme*ntr1
-  if (wproc) then
-    write(150,*)
-    write(150,'("Full matrix size in local basis : ",I6)')ndim
-  endif
-  allocate(mtrx_v(ndim,ndim))
   if (root_cart((/1,1,0/))) then
     call read_real8_array(mewf2,4,(/2,nwfme,ntr1,ngvecme/), &
       trim(fname),'/wann','mewf2')
@@ -230,32 +220,40 @@ if (lwannresp) then
       endif
     enddo
   endif
-  i1=0
+  if (wproc) then
+    write(150,*)
+    write(150,'("Full matrix size in local basis : ",I6)')nwfme*ntr1
+  endif
+  allocate(inzme(2,nwfme*ntr1))
+  inzme=0
+  nnzme=0
   do it1=1,ntr1
     do n=1,nwfme
-      if (sum(abs(mewf2(n,it1,:))).gt.1d-2) i1=i1+1
+      if (sum(abs(mewf2(n,it1,:))).gt.1d-8) then
+        nnzme=nnzme+1
+        inzme(1,nnzme)=it1
+        inzme(2,nnzme)=n
+      endif
     enddo
   enddo
   if (wproc) then
     write(150,*)
-    write(150,'("Reduced matrix size in local basis : ",I6)')i1
+    write(150,'("Reduced matrix size in local basis : ",I6)')nnzme
   endif
-
-  
+  allocate(mtrx_v(nnzme,nnzme))
 ! Coulomb matrix in local basis
   mtrx_v=zzero
-  do i1=1,ntr1
-    do i2=1,ntr1
-      do n1=1,nwfme
-        do n2=1,nwfme
-          do ig=1,ngvecchi
-            vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
-            gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
-            mtrx_v((i1-1)*nwfme+n1,(i2-1)*nwfme+n2)=&
-              mtrx_v((i1-1)*nwfme+n1,(i2-1)*nwfme+n2)+&
-              dconjg(mewf2(n1,i1,ig))*mewf2(n2,i2,ig)*fourpi/gq0**2
-          enddo
-        enddo
+  do i=1,nnzme
+    do j=1,nnzme
+      i1=inzme(1,i)
+      n1=inzme(2,i)
+      i2=inzme(1,j)
+      n2=inzme(2,j)
+      do ig=1,ngvecchi
+        vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
+        gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
+        mtrx_v(i,j)=mtrx_v(i,j)+dconjg(mewf2(n1,i1,ig))*mewf2(n2,i2,ig)*&
+          fourpi/gq0**2
       enddo
     enddo
   enddo
@@ -376,7 +374,7 @@ do ie=ie1,ie2
     call solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_(1,ie,ifxc), &
       epsilon_(1,ie,ifxc))
     if (lwannresp.and.ifxc.eq.1) then
-      call solve_chi_wf(ntr1,ntr2,itridx,nwfme,ndim,mewf2,mewf4,mtrx_v,&
+      call solve_chi_wf(ntr1,ntr2,itridx,nwfme,nnzme,inzme,mewf2,mewf4,mtrx_v,&
         chi_(6,ie,1),chi_(7,ie,1))
     endif
   enddo !ifxc
