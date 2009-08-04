@@ -153,7 +153,7 @@ if (lwannresp) then
   ndim=nwfme*ntr1
   if (wproc) then
     write(150,*)
-    write(150,'("Matrix size in local basis : ",I6)')ndim
+    write(150,'("Full matrix size in local basis : ",I6)')ndim
   endif
   allocate(mtrx_v(ndim,ndim))
   if (root_cart((/1,1,0/))) then
@@ -230,6 +230,18 @@ if (lwannresp) then
       endif
     enddo
   endif
+  i1=0
+  do it1=1,ntr1
+    do n=1,nwfme
+      if (sum(abs(mewf2(n,it1,:))).gt.1d-2) i1=i1+1
+    enddo
+  enddo
+  if (wproc) then
+    write(150,*)
+    write(150,'("Reduced matrix size in local basis : ",I6)')i1
+  endif
+
+  
 ! Coulomb matrix in local basis
   mtrx_v=zzero
   do i1=1,ntr1
