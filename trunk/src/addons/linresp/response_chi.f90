@@ -308,9 +308,7 @@ if (lrtype.eq.1) then
 ! contruct Ixc_{G,G'}=Ixc(G-G')
   do i=1,ngvecchi
     do j=1,ngvecchi
-      ig1=gvecchi1+i-1
-      ig2=gvecchi1+j-1
-      iv(:)=-ivg(:,ig1)+ivg(:,ig2)
+      iv(:)=-ivg(:,gvecchi1+i-1)+ivg(:,gvecchi1+j-1)
       krnl_rpa(i,j)=ixcft(ivgig(iv(1),iv(2),iv(3)))
     enddo
   enddo

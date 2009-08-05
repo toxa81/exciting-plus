@@ -14,6 +14,7 @@ complex(8), allocatable :: chi0w(:,:)
 complex(8), allocatable :: me(:,:,:)
 integer i,j,ik,ie,nkptnr_,i1,i2,i3,ikloc,nspinor_
 integer idx0,bs
+integer igq0
 complex(8) wt
 character*100 fname,path,qnm
 character*8 c8
@@ -337,6 +338,8 @@ if (lwannopt) then
   allocate(pmat(3,nstsv,nstsv,nkptnr_loc))
 endif
 
+igq0=lr_igq0-gvecme1+1
+
 ie1=0
 fname=trim(qnm)//"_chi0.hdf5"
 if (root_cart((/1,1,0/))) then
@@ -456,8 +459,8 @@ do ie=ie1,nepts
           if (itridx(i,j).eq.it2) then
             sz2=sz2+nwfme**2
             do n2=n3,n4
-              zt1=zdotu(nwfme,zm1(1,n2),1,mewf2(1,i,lr_igq0),1)
-              zt3=zt3+zt1*dconjg(mewf2(n2,j,lr_igq0))
+              zt1=zdotu(nwfme,zm1(1,n2),1,mewf2(1,i,igq0),1)
+              zt3=zt3+zt1*dconjg(mewf2(n2,j,igq0))
             enddo
           endif
         enddo
