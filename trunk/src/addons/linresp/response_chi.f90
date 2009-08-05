@@ -376,7 +376,7 @@ do ie=ie1,ie2
       epsilon_(1,ie,ifxc))
     if (lwannresp.and.ifxc.eq.1) then
       call solve_chi_wf(ntr1,ntr2,itridx,nwfme,nnzme,inzme,mewf2,mewf4,mtrx_v,&
-        chi_(6,ie,1),chi_(7,ie,1))
+        chi_(6,ie,1),chi_(7,ie,1),igq0)
     endif
   enddo !ifxc
 enddo !ie

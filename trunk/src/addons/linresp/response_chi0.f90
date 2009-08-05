@@ -45,6 +45,8 @@ complex(8), allocatable :: mewf2_t(:,:,:)
 integer, allocatable :: itrans(:,:)
 integer ntrans
 
+logical lafm
+
 ! HDF5
 integer(hid_t) h5_root_id
 integer(hid_t) h5_w_id
@@ -255,6 +257,14 @@ if (lwannresp) then
     write(150,*)
     write(150,'("Number of WF trainstions : ",I4)')nwfme
   endif
+  lafm=.false.
+  if (all(iwann(3,:).eq.1).or.all(iwann(3,:).eq.2)) then
+    lafm=.true.
+  endif
+  if (wproc) then
+    write(150,*)
+    write(150,'("AFM case : ",L1)')lafm
+  endif
 
   ntr1=(2*lr_maxtr+1)**3
   allocate(itr1l(3,ntr1))
@@ -436,6 +446,7 @@ do ie=ie1,nepts
       enddo
       call d_reduce_cart(comm_cart_100,.true.,zm1,2*nwfme*nwfme)
       zm1=zm1/nkptnr/omega
+      if (lafm) zm1=zm1*2.d0
       mewf4(:,:,it2)=zm1(:,:)
       call idxbos(nwfme,mpi_dims(1),mpi_x(1)+1,idx0,bs)
       n3=idx0+1
@@ -445,8 +456,8 @@ do ie=ie1,nepts
           if (itridx(i,j).eq.it2) then
             sz2=sz2+nwfme**2
             do n2=n3,n4
-              zt1=zdotu(nwfme,zm1(1,n2),1,mewf2(1,i,1),1)
-              zt3=zt3+zt1*dconjg(mewf2(n2,j,1))
+              zt1=zdotu(nwfme,zm1(1,n2),1,mewf2(1,i,lr_igq0),1)
+              zt3=zt3+zt1*dconjg(mewf2(n2,j,lr_igq0))
             enddo
           endif
         enddo

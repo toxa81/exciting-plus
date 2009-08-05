@@ -1,4 +1,5 @@
-subroutine solve_chi_wf(ntr1,ntr2,itridx,nwfme,nnzme,inzme,mewf2,mewf4,mtrx_v,chi0wf,chiwf)
+subroutine solve_chi_wf(ntr1,ntr2,itridx,nwfme,nnzme,inzme,mewf2, &
+  mewf4,mtrx_v,chi0wf,chiwf,igq0)
 use modmain
 implicit none
 integer, intent(in) :: ntr1
@@ -12,7 +13,7 @@ complex(8), intent(in) :: mewf4(nwfme,nwfme,ntr2)
 complex(8), intent(in) :: mtrx_v(nnzme,nnzme)
 complex(8), intent(out) :: chi0wf
 complex(8), intent(out) :: chiwf
-
+integer, intent(in) :: igq0
 
 complex(8), allocatable :: mtrx1(:,:)
 complex(8), allocatable :: mtrx2(:,:)
@@ -60,9 +61,9 @@ do i=1,nnzme
     n2=inzme(2,j)
     i3=itridx(i1,i2)
     if (i3.ne.-1) then
-      chi0wf=chi0wf+mewf2(n1,i1,1)*mewf4(n1,n2,i3)*dconjg(mewf2(n2,i2,1))
+      chi0wf=chi0wf+mewf2(n1,i1,igq0)*mewf4(n1,n2,i3)*dconjg(mewf2(n2,i2,igq0))
     endif
-    chiwf=chiwf+mewf2(n1,i1,1)*mtrx2(i,j)*dconjg(mewf2(n2,i2,1))
+    chiwf=chiwf+mewf2(n1,i1,igq0)*mtrx2(i,j)*dconjg(mewf2(n2,i2,igq0))
   enddo
 enddo
 
