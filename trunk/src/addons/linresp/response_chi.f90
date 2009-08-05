@@ -342,7 +342,6 @@ do ie=ie1,ie2
           call read_real8_array(chi_(5,ie,1),1,(/2/),trim(fname),trim(path),'chi0wf')
           call read_real8_array(mewf4,4,(/2,nwfme,nwfme,ntr2/), &
             trim(fname),trim(path),'mewf4')
-          mewf4=mewf4*2.d0
         endif
 #ifndef _PIO_      
       endif
