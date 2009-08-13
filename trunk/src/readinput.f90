@@ -987,10 +987,11 @@ case('wannier_lc')
   read(50,*,err=20)wannier_lc
   read(50,*,err=20)nwann_lc
   allocate(wann_iorb_lc(0:100,4,nwann_lc))
+  allocate(wann_iorb_lcc(0:100,nwann_lc))
   do n=1,nwann_lc
     read(50,*,err=20)wann_iorb_lc(0,1,n)
     do i=1,wann_iorb_lc(0,1,n)
-      read(50,*,err=20)(wann_iorb_lc(i,l,n),l=1,4)
+      read(50,*,err=20)(wann_iorb_lc(i,l,n),l=1,4),wann_iorb_lcc(i,n)
     enddo
   enddo
 case ('wannier_h')

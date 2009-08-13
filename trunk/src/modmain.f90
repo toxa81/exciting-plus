@@ -1109,6 +1109,7 @@ integer iwfv
 logical wannier_lc
 integer nwann_lc
 integer, allocatable :: wann_iorb_lc(:,:,:)
+real(8), allocatable :: wann_iorb_lcc(:,:)
 
 integer nwann_h
 integer, allocatable :: iwann_h(:)

@@ -1,4 +1,5 @@
 subroutine writeme(ikloc,fname,me,wann_c2,pmat)
+#ifdef _HDF5_
 use modmain
 implicit none
 integer, intent(in) :: ikloc
@@ -33,6 +34,6 @@ if (lwannopt) then
   call write_real8_array(pmat,4,(/2,3,nstsv,nstsv/),&
     trim(fname),trim(path),'pmat')
 endif
-
+#endif
 return
 end
