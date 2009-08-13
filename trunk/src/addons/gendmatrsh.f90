@@ -90,6 +90,8 @@ call symdmat(lmaxlu,lmmaxlu,ematylm)
 
 dmatrlm=dcmplx(0.d0,0.d0)
 dmatrlmlcs=dcmplx(0.d0,0.d0)
+ematrlm=zzero
+ematrlmlcs=zzero
 do ispn=1,nspinor
 do jspn=1,nspinor
 do ias=1,natmtot
@@ -252,9 +254,9 @@ if (iproc.eq.0) then
         write(50,'("  ispn jspn : ",2I2)')ispn,jspn
         do m1=-l,l
           do m2=-l,l
-            i1=dreal(dmatrlm(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias))*1000000
+            i1=dreal(dmatrlm(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias))*1.0d8
 !            mtrx(m1+l+1,m2+l+1)=dreal(dmatrlm(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias))
-            mtrx(m1+l+1,m2+l+1)=i1/1000000.d0
+            mtrx(m1+l+1,m2+l+1)=i1*1.0d-8
           enddo
         enddo
         call diagdsy(2*l+1,mtrx,eval)

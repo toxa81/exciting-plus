@@ -78,7 +78,9 @@ call dsync(evalsv,nstsv*nkpt,.true.,.true.)
 ! generate energy grid
 wdos(1)=minval(evalsv(:,:))-0.1
 wdos(2)=maxval(evalsv(:,:))+0.1
-t1=0.001d0
+wdos(1)=int(wdos(1)*1.0d3)*1.0d-3
+wdos(2)=int(wdos(2)*1.0d3)*1.0d-3
+t1=1.0d-3
 nwdos=1+(wdos(2)-wdos(1))/t1
 allocate(w(nwdos))
 do iw=1,nwdos

@@ -41,17 +41,7 @@ do n=1,nwann
             if (j.ge.wann_nint_tmp(1,itype).and.j.le.wann_nint_tmp(2,itype)) l1=.true.
           endif
         endif
-        if (l1) then
-          call genprjao(ias,lm,ispn,i,wfsvmt,prjao(n,i))
-!          do m1=-l,l
-!            lm1=idxlm(l,m1)
-!            io2=2
-!            do io1=1,nrfmax
-!              prjao(n,i)=prjao(n,i)+dconjg(wfsvmt(lm1,io1,ias,ispn,i))*&
-!                urfprod(l,io1,io2,ias)*rylm_lcs(lm,lm1,ias)
-!            enddo !io1
-!          enddo !m
-        endif
+        if (l1) call genprjao(ias,lm,ispn,i,wfsvmt,prjao(n,i))
       enddo !j
     enddo !jspn
   else
@@ -79,6 +69,7 @@ do n=1,nwann
           endif
           if (l1) then
             call genprjao(ias,lm,ispn,i1,wfsvmt,zt1)
+! <psi_k(r)|g(r-T)>=<psi(r+T)|g(r)>=e^{-ikT}<psi(r)|g(r)>
             prjao(n,i1)=prjao(n,i1)+zt1*d1*exp(-zi*dot_product(vkc(:,ik),tr(:)))
           endif
         enddo
