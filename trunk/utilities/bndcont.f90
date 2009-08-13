@@ -6,7 +6,7 @@ integer lm,ias,ispn,ist,ik,spin
 real(4), allocatable :: bndchr(:,:,:,:,:)
 real(8), allocatable :: dpp1d(:),e(:,:),w(:,:),lines(:,:)
 integer, allocatable :: orb(:,:),tmp(:),wf1(:),wf2(:)
-integer i,j,ist1,n,iin
+integer i,j,ist1,ist2,n,iin
 real(8) scale,emin,emax,wmax,wmax1,efermi
 real(8), parameter :: ha2ev = 27.21138386d0
 logical wannier,l1,unitsev
@@ -41,8 +41,10 @@ if (wannier) then
 endif
 close(50)
 
-write(*,'("Input band number : ")')
-read(*,*)ist
+write(*,'("Input bottom band : ")')
+read(*,*)ist1
+write(*,'("Input top band : ")')
+read(*,*)ist2
 write(*,'("Input spinor component : ")')
 read(*,*)ispn
 
@@ -50,9 +52,11 @@ do ias=1,natmtot
   write(*,'("Atom : ",I4)')ias
   do lm=1,lmmax
     t1=0.d0
-    do ik=1,nkpt
-      t1=t1+bndchr(lm,ias,ispn,ist,ik)
-    enddo    
+    do ist=ist1,ist2
+      do ik=1,nkpt
+        t1=t1+bndchr(lm,ias,ispn,ist,ik)
+      enddo    
+    enddo
     write(*,'(" lm : ",I4,"  weight : ",F12.6)')lm,t1
   enddo
 enddo
