@@ -14,6 +14,7 @@ integer wf_dim
 real(8), allocatable :: wfc(:,:,:,:)
 character*100 st
 real(8) t1
+integer, allocatable :: bndf(:,:)
   
 open(50,file='BNDCHR.OUT',form='formatted',status='old')
 read(50,*)lmmax,natmtot,nspinor,nstfv,nstsv,nkpt,nlines
@@ -48,6 +49,20 @@ read(*,*)ist2
 write(*,'("Input spinor component : ")')
 read(*,*)ispn
 
+allocate(bndf(lmmax,natmtot))
+bndf=1
+do ik=1,nkpt
+  do ias=1,natmtot
+    do lm=1,lmmax
+      t1=0.d0
+      do ist=ist1,ist2
+        t1=t1+bndchr(lm,ias,ispn,ist,ik)
+      enddo
+      if (t1.lt.1d-2) bndf(lm,ias)=0
+    enddo
+  enddo
+enddo
+
 do ias=1,natmtot
   write(*,'("Atom : ",I4)')ias
   do lm=1,lmmax
@@ -57,7 +72,7 @@ do ias=1,natmtot
         t1=t1+bndchr(lm,ias,ispn,ist,ik)
       enddo    
     enddo
-    write(*,'(" lm : ",I4,"  weight : ",F12.6)')lm,t1
+    write(*,'(" lm : ",I4,"  weight : ",F12.6,"  in all k : ",I1)')lm,t1,bndf(lm,ias)
   enddo
 enddo
   
