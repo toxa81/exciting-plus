@@ -9,7 +9,6 @@ logical, intent(in) :: req
 real(8), intent(in) :: occsvnr(nstsv,nkptnr)
 real(8), intent(in) :: evalsvnr(nstsv,nkptnr)
 
-integer band1,band2
 integer i,ik,jk,ist1,ist2,ikloc
 logical laddme,ldocc
 real(8) d1,min_e12
@@ -49,8 +48,8 @@ do ikloc=1,nkptnr_loc
           le1=ist1.ge.lr_n1.and.ist1.le.lr_n2
           le2=ist2.ge.lr_n1.and.ist2.le.lr_n2
         else
-          le1=ist1.ge.mod(lr_n1,nstfv).and.ist1.le.mod(lr_n2,nstfv)
-          le2=ist2.ge.mod(lr_n1,nstfv).and.ist2.le.mod(lr_n2,nstfv)
+          le1=(mod(ist1-1,nstfv)+1).ge.lr_n1.and.(mod(ist1-1,nstfv)+1).le.lr_n2
+          le2=(mod(ist2-1,nstfv)+1).ge.lr_n1.and.(mod(ist2-1,nstfv)+1).le.lr_n2
         endif
       endif
       d1=occsvnr(ist1,ik)-occsvnr(ist2,jk)
