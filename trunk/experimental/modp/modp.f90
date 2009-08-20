@@ -13,6 +13,10 @@ integer, allocatable :: cart_x(:)
 integer cart_ncomm
 integer, allocatable :: cart_comm(:)
 
+interface cart_bcast
+  module procedure d_cart_bcast,z_cart_bcast
+end interface 
+
 contains
 !
 ! timer routines
@@ -117,7 +121,6 @@ subroutine mpi_cart_finalize
 use mpi
 implicit none
 integer i,ierr
-
 if (cart_ingrid()) then
   do i=0,cart_ncomm
     call mpi_comm_free(cart_comm(i),ierr)
@@ -126,6 +129,25 @@ endif
 deallocate(cart_dims)
 deallocate(cart_x)
 deallocate(cart_comm)
+return
+end subroutine
+
+subroutine pstop(ierr_)
+use mpi
+implicit none
+integer, optional, intent(in) :: ierr_
+integer ierr
+write(*,'("STOP parallel execution")')
+write(*,'("  global index of processor : ",I6)')iproc
+if (allocated(cart_x)) &
+  write(*,'("  Cartesian coordinates of processor : ",10I4)')cart_x
+if (present(ierr_)) then
+  ierr=ierr_
+else
+  ierr=-1
+endif
+call mpi_abort(MPI_COMM_WORLD,ierr,ierr)
+call mpi_finalize(ierr)
 return
 end subroutine
 
@@ -217,6 +239,28 @@ if (present(side).and.present(dims)) then
   if (side.and..not.cart_side(dims)) l1=.false.
 endif
 if (l1) call mpi_bcast(val,n,MPI_DOUBLE_PRECISION,root,comm,ierr)
+return
+end subroutine
+
+subroutine z_cart_bcast(val,n,dims,side)
+use mpi
+implicit none
+! arguments
+integer, intent(in) :: n
+complex(8), intent(in) :: val(n)
+integer, optional, dimension(:), intent(in) :: dims
+logical, optional, intent(in) :: side
+! local variables
+integer comm,root_x(cart_ndims),root,ierr
+logical l1
+root_x=0
+comm=get_cart_comm(dims)
+call mpi_cart_rank(comm,root_x,root,ierr)
+l1=.true.
+if (present(side).and.present(dims)) then
+  if (side.and..not.cart_side(dims)) l1=.false.
+endif
+if (l1) call mpi_bcast(val,n,MPI_DOUBLE_COMPLEX,root,comm,ierr)
 return
 end subroutine
 
