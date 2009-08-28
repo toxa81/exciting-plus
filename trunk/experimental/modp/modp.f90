@@ -12,11 +12,15 @@ integer, allocatable :: cart_dims(:)
 integer, allocatable :: cart_x(:)
 integer cart_ncomm
 integer, allocatable :: cart_comm(:)
-integer, allocatable :: cart_map_size(:)
+!integer, allocatable :: cart_map_size(:)
 
 interface cart_bcast
   module procedure d_cart_bcast,z_cart_bcast
-end interface 
+end interface
+
+interface cart_reduce
+  module procedure i_cart_reduce
+end interface
 
 contains
 !
@@ -133,6 +137,15 @@ deallocate(cart_comm)
 return
 end subroutine
 
+subroutine cart_barrier(dims)
+implicit none
+integer, optional, dimension(:), intent(in) :: dims
+integer comm,ierr
+comm=get_cart_comm(dims)
+call mpi_barrier(comm,ierr)
+return
+end subroutine
+
 subroutine pstop(ierr_)
 use mpi
 implicit none
@@ -243,6 +256,9 @@ if (l1) call mpi_bcast(val,n,MPI_DOUBLE_PRECISION,root,comm,ierr)
 return
 end subroutine
 
+!--------------------------------!
+!      complex(8) broadcast      !
+!--------------------------------!
 subroutine z_cart_bcast(val,n,dims,side)
 use mpi
 implicit none
@@ -265,18 +281,72 @@ if (l1) call mpi_bcast(val,n,MPI_DOUBLE_COMPLEX,root,comm,ierr)
 return
 end subroutine
 
-subroutine cart_set_map_size(sz)
+!-----------------------------!
+!      integer reduction      !
+!-----------------------------!
+subroutine i_cart_reduce(val,n,dims,side,all,op)
+use mpi
 implicit none
-integer, intent(in) :: sz(cart_ndims)
-if (allocated(cart_map_size)) deallocate(cart_map_size)
-allocate(cart_map_size(cart_ndims))
-cart_map_size=sz
+! arguments
+integer, intent(in) :: n
+integer, intent(inout) :: val(n)
+integer, optional, dimension(:), intent(in) :: dims
+logical, optional, intent(in) :: side
+logical, optional, intent(in) :: all
+integer, optional, intent(in) :: op
+! local variables
+integer comm,root_x(cart_ndims),root,ierr
+logical all_,l1
+integer op_
+integer, allocatable :: tmp(:)
+
+all_=.false.
+if (present(all)) then
+  if (all) all_=.true.
+endif
+op_=MPI_SUM
+if (present(op)) then
+  op_=op
+endif
+
+comm=get_cart_comm(dims)
+root_x=0
+call mpi_cart_rank(comm,root_x,root,ierr)
+l1=.true.
+if (present(side).and.present(dims)) then
+  if (side.and..not.cart_side(dims)) l1=.false.
+endif
+if (l1) then
+  if (all_) then
+    allocate(tmp(n))
+    call mpi_allreduce(val,tmp,n,MPI_INTEGER,op_,comm,ierr)
+    val=tmp
+    deallocate(tmp)
+  else
+    if (cart_root(dims)) allocate(tmp(n))
+    call mpi_reduce(val,tmp,n,MPI_INTEGER,op_,root,comm,ierr)
+    if (cart_root(dims)) then
+      val=tmp
+      deallocate(tmp)
+    endif
+  endif
+endif
 return
 end subroutine
 
-integer function cart_map(idim,x,loc,glob,offs)
+!subroutine cart_set_map_size(sz)
+!implicit none
+!integer, intent(in) :: sz(cart_ndims)
+!if (allocated(cart_map_size)) deallocate(cart_map_size)
+!allocate(cart_map_size(cart_ndims))
+!cart_map_size=sz
+!return
+!end subroutine
+
+integer function cart_map(length,idim,x,loc,glob,offs)
 implicit none
 ! arguments
+integer, intent(in) :: length
 integer, intent(in) :: idim
 integer, optional, intent(inout) :: x
 integer, optional, intent(inout) :: loc
@@ -285,6 +355,11 @@ integer, optional, intent(out) :: offs
 ! local variables
 integer idx0_,size_,x_
 integer i
+
+!if (.not.cart_ingrid()) then
+!  cart_map=0
+!  return
+!endif
 
 i=0
 if (present(loc)) i=i+1
@@ -297,7 +372,7 @@ if (i.gt.1) then
 endif
 
 if (present(glob)) then
-  call idxloc(cart_map_size(idim),cart_dims(idim),glob,x_,idx0_)
+  call idxloc(length,cart_dims(idim),glob,x_,idx0_)
   if (present(x)) x=x_
   cart_map=idx0_
   return
@@ -310,12 +385,12 @@ else
 endif
 
 if (present(loc)) then
-  call idxglob(cart_map_size(idim),cart_dims(idim),x_+1,loc,idx0_)
+  call idxglob(length,cart_dims(idim),x_+1,loc,idx0_)
   cart_map=idx0_
   return
 endif
 
-call idxofs(cart_map_size(idim),cart_dims(idim),x_+1,idx0_,size_)
+call idxofs(length,cart_dims(idim),x_+1,idx0_,size_)
 if (present(offs)) offs=idx0_
 cart_map=size_
 return

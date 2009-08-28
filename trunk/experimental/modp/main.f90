@@ -10,12 +10,9 @@ integer ik
 call mpi_world_initialize
 call mpi_cart_initialize((/2,4/))
 
-call cart_set_map_size((/17,2/))
-x=4
-size=cart_map(2,x=x,offs=offs)
-ik=14
-loc=cart_map(1,glob=ik)
-write(*,*)'x=',cart_x,'offs=',offs,'size=',size,'loc=',loc,'x=',x
+loc=1
+glob=cart_map(17,1,loc=loc)
+write(*,*)'cart_x=',cart_x,'glob=',glob
 
 call mpi_cart_finalize
 call mpi_world_finalize
