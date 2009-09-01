@@ -158,6 +158,9 @@ if (lwannresp) then
     read(70,*)itrans_m
     if (itrans_m.eq.1) then
       read(70,*)d1
+      if (wproc) then
+        write(150,'("minimal matrix element : ",F12.6)')d1
+      endif
       do it1=1,ntr1
         do n=1,nwfme
           do ig=1,ngvecme

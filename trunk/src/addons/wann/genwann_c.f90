@@ -9,8 +9,8 @@ complex(8), intent(out) :: wann_c_(nwann,nstsv)
 ! local variables
 complex(8), allocatable :: prjao(:,:)
 complex(8), allocatable :: s(:,:),sdiag(:)
-integer ispn,j,n,m1,m2,ias,lm,ierr,itype,jspn,i1
-logical l1
+integer ispn,j,n,m1,m2,ias,lm,ierr,itype,jspn,i1,j1,j2
+logical l1,leint
 integer itr(3),i,iw
 real(8) tr(3),d1
 integer, allocatable :: wann_nint_tmp(:,:)
@@ -32,13 +32,19 @@ do n=1,nwann
       do j=1,nstfv
         i=(jspn-1)*nstfv+j
         l1=.false.
-        if (wann_use_eint) then
+        leint=.true.
+        j1=int(wann_eint(1,itype))
+	j2=int(wann_eint(2,itype))
+        if (abs(j1-wann_eint(1,itype)).lt.1d-8.and.abs(j2-wann_eint(2,itype)).lt.1d-8) then
+          leint=.false.
+        endif
+        if (leint) then
           if (e(i).ge.wann_eint(1,itype).and.e(i).le.wann_eint(2,itype)) l1=.true.
         else
           if (ncmag) then
-            if (i.ge.wann_nint_tmp(1,itype).and.i.le.wann_nint_tmp(2,itype)) l1=.true.
+            if (i.ge.j1.and.i.le.j2) l1=.true.
           else
-            if (j.ge.wann_nint_tmp(1,itype).and.j.le.wann_nint_tmp(2,itype)) l1=.true.
+            if (j.ge.j1.and.j.le.j2) l1=.true.
           endif
         endif
         if (l1) call genprjao(ias,lm,ispn,i,wfsvmt,prjao(n,i))
