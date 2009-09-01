@@ -3,16 +3,22 @@ use modp
 implicit none
 integer comm
 
-complex(8) dat(4)
+real(8) dat(4),tt
 integer idx0,size,x,offs,loc,glob
 integer ik
+integer idat(4),iidat(1)
 
 call mpi_world_initialize
-call mpi_cart_initialize((/2,4/))
+call mpi_cart_initialize((/4,2/))
 
-loc=1
-glob=cart_map(17,1,loc=loc)
-write(*,*)'cart_x=',cart_x,'glob=',glob
+dat=0.d0
+dat(cart_x(1)+1)=1.0*cart_x(1)+1.0
+write(*,*)'cart_x=',cart_x,'dat=',dat
+call cart_barrier()
+
+call cart_reduce(dat(1),4,dims=(/1/),all=.true.,side=.true.)
+write(*,*)'cart_x=',cart_x,'idat=',dat
+call cart_barrier()
 
 call mpi_cart_finalize
 call mpi_world_finalize

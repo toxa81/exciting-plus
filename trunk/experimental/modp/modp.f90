@@ -19,7 +19,7 @@ interface cart_bcast
 end interface
 
 interface cart_reduce
-  module procedure i_cart_reduce
+  module procedure i_cart_reduce,d_cart_reduce
 end interface
 
 contains
@@ -289,16 +289,18 @@ use mpi
 implicit none
 ! arguments
 integer, intent(in) :: n
-integer, intent(inout) :: val(n)
+integer, intent(inout) :: val
 integer, optional, dimension(:), intent(in) :: dims
 logical, optional, intent(in) :: side
 logical, optional, intent(in) :: all
 integer, optional, intent(in) :: op
 ! local variables
-integer comm,root_x(cart_ndims),root,ierr
+integer comm,root_x(cart_ndims),root,ierr,sz
 logical all_,l1
 integer op_
 integer, allocatable :: tmp(:)
+
+sz=sizeof(val)
 
 all_=.false.
 if (present(all)) then
@@ -320,13 +322,13 @@ if (l1) then
   if (all_) then
     allocate(tmp(n))
     call mpi_allreduce(val,tmp,n,MPI_INTEGER,op_,comm,ierr)
-    val=tmp
+    call memcopy(tmp,val,n*sz)
     deallocate(tmp)
   else
     if (cart_root(dims)) allocate(tmp(n))
     call mpi_reduce(val,tmp,n,MPI_INTEGER,op_,root,comm,ierr)
     if (cart_root(dims)) then
-      val=tmp
+      call memcopy(tmp,val,n*sz)
       deallocate(tmp)
     endif
   endif
@@ -334,14 +336,61 @@ endif
 return
 end subroutine
 
-!subroutine cart_set_map_size(sz)
-!implicit none
-!integer, intent(in) :: sz(cart_ndims)
-!if (allocated(cart_map_size)) deallocate(cart_map_size)
-!allocate(cart_map_size(cart_ndims))
-!cart_map_size=sz
-!return
-!end subroutine
+!-----------------------------!
+!      real(8) reduction      !
+!-----------------------------!
+subroutine d_cart_reduce(val,n,dims,side,all,op)
+use mpi
+implicit none
+! arguments
+integer, intent(in) :: n
+real(8), intent(inout) :: val
+integer, optional, dimension(:), intent(in) :: dims
+logical, optional, intent(in) :: side
+logical, optional, intent(in) :: all
+integer, optional, intent(in) :: op
+! local variables
+integer comm,root_x(cart_ndims),root,ierr,sz
+logical all_,l1
+integer op_
+real(8), allocatable :: tmp(:)
+
+sz=sizeof(val)
+
+all_=.false.
+if (present(all)) then
+  if (all) all_=.true.
+endif
+op_=MPI_SUM
+if (present(op)) then
+  op_=op
+endif
+
+comm=get_cart_comm(dims)
+root_x=0
+call mpi_cart_rank(comm,root_x,root,ierr)
+l1=.true.
+if (present(side).and.present(dims)) then
+  if (side.and..not.cart_side(dims)) l1=.false.
+endif
+if (l1) then
+  if (all_) then
+    allocate(tmp(n))
+    call mpi_allreduce(val,tmp,n,MPI_DOUBLE_PRECISION,op_,comm,ierr)
+    call memcopy(tmp,val,n*sz)
+    deallocate(tmp)
+  else
+    if (cart_root(dims)) allocate(tmp(n))
+    call mpi_reduce(val,tmp,n,MPI_DOUBLE_PRECISION,op_,root,comm,ierr)
+    if (cart_root(dims)) then
+      call memcopy(tmp,val,n*sz)
+      deallocate(tmp)
+    endif
+  endif
+endif
+return
+end subroutine
+
 
 integer function cart_map(length,idim,x,loc,glob,offs)
 implicit none
