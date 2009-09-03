@@ -35,6 +35,7 @@ allocate(dm2(lmmaxlu,lmmaxlu))
 
 dmatylm=dcmplx(0.d0,0.d0)
 ematylm=dcmplx(0.d0,0.d0)
+! compute matrix in Ylm
 ! begin loop over k-points
 do ikloc=1,nkptloc(iproc)
   call match(ngk(1,ikglob(ikloc)),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc), &
@@ -44,42 +45,40 @@ do ikloc=1,nkptloc(iproc)
 ! begin loop over atoms and species
   do is=1,nspecies
     l=llu(is)
-    if (l.lt.0) goto 10
-    do ia=1,natoms(is)
-      ias=idxas(ia,is)
-      do j=1,nstsv
-        do ispn=1,nspinor
-        do jspn=1,nspinor
-        do io1=1,nrfmax
-        do io2=1,nrfmax
-        do m1=-l,l
-        do m2=-l,l
-
-          lm1=idxlm(l,m1)
-          lm2=idxlm(l,m2)
-          z1=wfsvmt(lm1,io1,ias,ispn,j)*dconjg(wfsvmt(lm2,io2,ias,jspn,j))*&
-            urfprod(l,io1,io2,ias)*wkpt(ikglob(ikloc))
-            
-          if (ldensmtrx) then
-            if (evalsv(j,ikglob(ikloc)).ge.dm_e1.and. &
-                evalsv(j,ikglob(ikloc)).le.dm_e2) then
-              dmatylm(lm1,lm2,ispn,jspn,ias)=dmatylm(lm1,lm2,ispn,jspn,ias)+z1
-            endif                 
-          else
-            dmatylm(lm1,lm2,ispn,jspn,ias)=dmatylm(lm1,lm2,ispn,jspn,ias)+&
-              z1*occsv(j,ikglob(ikloc))
-          endif
-          ematylm(lm1,lm2,ispn,jspn,ias)=ematylm(lm1,lm2,ispn,jspn,ias)+&
-              z1*evalsv(j,ikglob(ikloc))
-        enddo
-        enddo
-        enddo
-        enddo
-        enddo
-        enddo
-      enddo !j
-    enddo !ia
-10 continue
+    if (l.gt.0) then
+      do ia=1,natoms(is)
+        ias=idxas(ia,is)
+        do j=1,nstsv
+          do ispn=1,nspinor
+          do jspn=1,nspinor
+            do io1=1,nrfmax
+            do io2=1,nrfmax
+              do m1=-l,l
+              do m2=-l,l
+                lm1=idxlm(l,m1)
+                lm2=idxlm(l,m2)
+                z1=wfsvmt(lm1,io1,ias,ispn,j)*dconjg(wfsvmt(lm2,io2,ias,jspn,j))*&
+                  urfprod(l,io1,io2,ias)*wkpt(ikglob(ikloc))
+                if (ldensmtrx) then
+                  if (evalsv(j,ikglob(ikloc)).ge.dm_e1.and. &
+                      evalsv(j,ikglob(ikloc)).le.dm_e2) then
+                    dmatylm(lm1,lm2,ispn,jspn,ias)=dmatylm(lm1,lm2,ispn,jspn,ias)+z1
+                  endif                 
+                else
+                  dmatylm(lm1,lm2,ispn,jspn,ias)=dmatylm(lm1,lm2,ispn,jspn,ias)+&
+                    z1*occsv(j,ikglob(ikloc))
+                endif
+                ematylm(lm1,lm2,ispn,jspn,ias)=ematylm(lm1,lm2,ispn,jspn,ias)+&
+                    z1*evalsv(j,ikglob(ikloc))
+              enddo
+              enddo
+            enddo
+            enddo
+          enddo !ispn
+          enddo !jspn
+        enddo !j
+      enddo !ia
+    endif
   enddo !is
 enddo !ikloc
 
@@ -88,6 +87,7 @@ call zsync(ematylm,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,.true.,.true.)
 call symdmat(lmaxlu,lmmaxlu,dmatylm)
 call symdmat(lmaxlu,lmmaxlu,ematylm)
 
+! compute matrix in Rlm
 dmatrlm=dcmplx(0.d0,0.d0)
 dmatrlmlcs=dcmplx(0.d0,0.d0)
 ematrlm=zzero
@@ -167,6 +167,21 @@ enddo
 enddo
 enddo
 
+! cut numerical noise
+do ias=1,natmtot
+  do ispn=1,nspinor
+    do jspn=1,nspinor
+      do lm1=1,lmmaxlu
+        do lm2=1,lmmaxlu
+          i1=int(dreal(dmatrlm(lm1,lm2,ispn,jspn,ias))*1.0d8)
+          dmatrlm(lm1,lm2,ispn,jspn,ias)=dcmplx(i1*1.0d-8,0.d0)
+        enddo
+      enddo
+    enddo
+  enddo
+enddo
+    
+
 if (iproc.eq.0) then
   open(50,file='DMATRSH.OUT',form='formatted',status='replace')
   if (ldensmtrx) then
@@ -191,25 +206,25 @@ if (iproc.eq.0) then
         endif  
         fmt="("//trim(fmt)//")"
         write(50,'("ias : ",I2)')ias
-        write(50,'("  in complex harmonics (global basis) ")')
-        write(50,'("  real part : ")')
-        do ispn=1,nspinor
-          do m1=-l,l
-          write(50,trim(fmt)) &
-            ((dreal(dmatylm(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
-              m2=-l,l),jspn=1,nspinor)
-          enddo
-          write(50,*)
-        enddo
-        write(50,'("  imag part : ")')
-        do ispn=1,nspinor
-          do m1=-l,l
-          write(50,trim(fmt)) &
-            ((dimag(dmatylm(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
-              m2=-l,l),jspn=1,nspinor)
-          enddo
-          write(50,*)
-        enddo
+!        write(50,'("  in complex harmonics (global basis) ")')
+!        write(50,'("  real part : ")')
+!        do ispn=1,nspinor
+!          do m1=-l,l
+!          write(50,trim(fmt)) &
+!            ((dreal(dmatylm(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
+!              m2=-l,l),jspn=1,nspinor)
+!          enddo
+!          write(50,*)
+!        enddo
+!        write(50,'("  imag part : ")')
+!        do ispn=1,nspinor
+!          do m1=-l,l
+!          write(50,trim(fmt)) &
+!            ((dimag(dmatylm(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
+!              m2=-l,l),jspn=1,nspinor)
+!          enddo
+!          write(50,*)
+!        enddo
         write(50,'("  in real harmonics (global basis) ")')
         write(50,'("  real part : ")')
         do ispn=1,nspinor
@@ -220,15 +235,15 @@ if (iproc.eq.0) then
           enddo
           write(50,*)
         enddo
-        write(50,'("  imag part : ")')
-        do ispn=1,nspinor
-          do m1=-l,l
-          write(50,trim(fmt)) &
-            ((dimag(dmatrlm(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
-              m2=-l,l),jspn=1,nspinor)
-          enddo
-          write(50,*)
-        enddo
+!        write(50,'("  imag part : ")')
+!        do ispn=1,nspinor
+!          do m1=-l,l
+!          write(50,trim(fmt)) &
+!            ((dimag(dmatrlm(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
+!              m2=-l,l),jspn=1,nspinor)
+!          enddo
+!          write(50,*)
+!        enddo
         write(50,'("  in real harmonics (local basis) ")')
         write(50,'("  real part : ")')
         do ispn=1,nspinor
@@ -239,24 +254,22 @@ if (iproc.eq.0) then
           enddo
           write(50,*)
         enddo
-        write(50,'("  imag part : ")')
-        do ispn=1,nspinor
-          do m1=-l,l
-          write(50,trim(fmt)) &
-            ((dimag(dmatrlmlcs(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
-              m2=-l,l),jspn=1,nspinor)
-          enddo
-          write(50,*)
-        enddo
+!        write(50,'("  imag part : ")')
+!        do ispn=1,nspinor
+!          do m1=-l,l
+!          write(50,trim(fmt)) &
+!            ((dimag(dmatrlmlcs(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
+!              m2=-l,l),jspn=1,nspinor)
+!          enddo
+!          write(50,*)
+!        enddo
         write(50,'("  eigen vectors and values : ")')
         do ispn=1,nspinor
         do jspn=1,nspinor
         write(50,'("  ispn jspn : ",2I2)')ispn,jspn
         do m1=-l,l
           do m2=-l,l
-            i1=dreal(dmatrlm(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias))*1.0d8
-!            mtrx(m1+l+1,m2+l+1)=dreal(dmatrlm(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias))
-            mtrx(m1+l+1,m2+l+1)=i1*1.0d-8
+            mtrx(m1+l+1,m2+l+1)=dreal(dmatrlm(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias))
           enddo
         enddo
         call diagdsy(2*l+1,mtrx,eval)
@@ -281,33 +294,33 @@ if (iproc.eq.0) then
           write(50,*)
         endif
 
-        write(50,'("Energy matrix in real harmonics (local basis) ")')
-        write(50,'("  real part : ")')
-        do ispn=1,nspinor
-          do m1=-l,l
-          write(50,trim(fmt)) &
-            ((dreal(ematrlmlcs(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
-              m2=-l,l),jspn=1,nspinor)
-          enddo
-          write(50,*)
-        enddo
-        write(50,'("  imag part : ")')
-        do ispn=1,nspinor
-          do m1=-l,l
-          write(50,trim(fmt)) &
-            ((dimag(ematrlmlcs(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
-              m2=-l,l),jspn=1,nspinor)
-          enddo
-          write(50,*)
-        enddo
-	d1=0.d0
-        do ispn=1,nspinor
-          do m1=-l,l
-            d1(ispn)=d1(ispn)+dreal(ematrlmlcs(idxlm(l,m1),idxlm(l,m1),ispn,ispn,ias))
-          enddo
-          write(50,'("  spin : ",I1,"  E_l: ",F12.6)')ispn,d1(ispn)/(2*l+1)
-        enddo
-	
+!        write(50,'("Energy matrix in real harmonics (local basis) ")')
+!        write(50,'("  real part : ")')
+!        do ispn=1,nspinor
+!          do m1=-l,l
+!          write(50,trim(fmt)) &
+!            ((dreal(ematrlmlcs(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
+!              m2=-l,l),jspn=1,nspinor)
+!          enddo
+!          write(50,*)
+!        enddo
+!        write(50,'("  imag part : ")')
+!        do ispn=1,nspinor
+!          do m1=-l,l
+!          write(50,trim(fmt)) &
+!            ((dimag(ematrlmlcs(idxlm(l,m1),idxlm(l,m2),ispn,jspn,ias)), &
+!              m2=-l,l),jspn=1,nspinor)
+!          enddo
+!          write(50,*)
+!        enddo
+!       d1=0.d0
+!        do ispn=1,nspinor
+!          do m1=-l,l
+!            d1(ispn)=d1(ispn)+dreal(ematrlmlcs(idxlm(l,m1),idxlm(l,m1),ispn,ispn,ias))
+!          enddo
+!          write(50,'("  spin : ",I1,"  E_l: ",F12.6)')ispn,d1(ispn)/(2*l+1)
+!        enddo
+        write(50,*)
       enddo !ia
       deallocate(mtrx,eval)
     endif
@@ -363,6 +376,98 @@ if (iproc.eq.0) then
         deallocate(mtrx,eval)
       endif
     enddo !is
+  else
+    write(50,*)
+    write(50,'("spin-polarized case : ")')
+    do is=1,nspecies
+      l=llu(is)
+      if (l.gt.0) then
+        allocate(mtrx(2*l+1,2*l+1))
+        allocate(eval(2*l+1))
+        do ia=1,natoms(is)
+          ias=idxas(ia,is)
+          write(50,'("ias : ",I4,"     l : ",I1)')ias,l
+! uu
+          do m1=-l,l
+            do m2=-l,l
+              mtrx(m1+l+1,m2+l+1)=dreal(dmatrlm(idxlm(l,m1),idxlm(l,m2),1,1,ias))
+            enddo
+          enddo
+          call diagdsy(2*l+1,mtrx,eval)
+          write(50,'("eigen vectors and values of uu matrix : ")')
+          do m1=1,2*l+1
+            write(50,'(7G18.10)')(mtrx(m1,m2),m2=1,2*l+1)
+          enddo
+          write(50,*)
+          write(50,'(2X,7G18.10)')(eval(m1),m1=1,2*l+1)
+          write(50,*)
+          write(50,'("transponse eigen vectors of uu matrix : ")')
+          do m1=1,2*l+1
+            write(50,'(7G18.10)')(mtrx(m2,m1),m2=1,2*l+1)
+          enddo
+          write(50,*)
+! dd
+          do m1=-l,l
+            do m2=-l,l
+              mtrx(m1+l+1,m2+l+1)=dreal(dmatrlm(idxlm(l,m1),idxlm(l,m2),2,2,ias))
+            enddo
+          enddo
+          call diagdsy(2*l+1,mtrx,eval)
+          write(50,'("eigen vectors and values of dd matrix : ")')
+          do m1=1,2*l+1
+            write(50,'(7G18.10)')(mtrx(m1,m2),m2=1,2*l+1)
+          enddo
+          write(50,*)
+          write(50,'(2X,7G18.10)')(eval(m1),m1=1,2*l+1)
+          write(50,*)
+          write(50,'("transponse eigen vectors of dd matrix : ")')
+          do m1=1,2*l+1
+            write(50,'(7G18.10)')(mtrx(m2,m1),m2=1,2*l+1)
+          enddo
+          write(50,*)
+! uu+dd
+          do m1=-l,l
+            do m2=-l,l
+              mtrx(m1+l+1,m2+l+1)=dreal(dmatrlm(idxlm(l,m1),idxlm(l,m2),1,1,ias))+&
+                dreal(dmatrlm(idxlm(l,m1),idxlm(l,m2),2,2,ias))
+            enddo
+          enddo
+          call diagdsy(2*l+1,mtrx,eval)
+          write(50,'("eigen vectors and values of uu+dd matrix : ")')
+          do m1=1,2*l+1
+            write(50,'(7G18.10)')(mtrx(m1,m2),m2=1,2*l+1)
+          enddo
+          write(50,*)
+          write(50,'(2X,7G18.10)')(eval(m1),m1=1,2*l+1)
+          write(50,*)
+          write(50,'("transponse eigen vectors of uu+dd matrix : ")')
+          do m1=1,2*l+1
+            write(50,'(7G18.10)')(mtrx(m2,m1),m2=1,2*l+1)
+          enddo
+          write(50,*)
+! dd-uu
+          do m1=-l,l
+            do m2=-l,l
+              mtrx(m1+l+1,m2+l+1)=dreal(dmatrlm(idxlm(l,m1),idxlm(l,m2),2,2,ias))-&
+                dreal(dmatrlm(idxlm(l,m1),idxlm(l,m2),1,1,ias))
+            enddo
+          enddo
+          call diagdsy(2*l+1,mtrx,eval)
+          write(50,'("eigen vectors and values of dd-uu matrix : ")')
+          do m1=1,2*l+1
+            write(50,'(7G18.10)')(mtrx(m1,m2),m2=1,2*l+1)
+          enddo
+          write(50,*)
+          write(50,'(2X,7G18.10)')(eval(m1),m1=1,2*l+1)
+          write(50,*)
+          write(50,'("transponse eigen vectors of dd-uu matrix : ")')
+          do m1=1,2*l+1
+            write(50,'(7G18.10)')(mtrx(m2,m1),m2=1,2*l+1)
+          enddo
+          write(50,*)
+        enddo
+      endif
+    enddo
   endif
   close(50)
 endif  

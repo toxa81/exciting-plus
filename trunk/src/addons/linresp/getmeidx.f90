@@ -13,22 +13,12 @@ integer i,ik,jk,ist1,ist2,ikloc
 logical laddme,ldocc
 real(8) d1,min_e12
 logical l11,l12,l21,l22,le1,le2
-logical leint
 integer, external :: iknrglob2
+logical, external :: bndint
 
-leint=.true.
-lr_n1=int(lr_e1)
-lr_n2=int(lr_e2)
-if (abs(lr_n1-lr_e1).lt.1d-8.and.abs(lr_n2-lr_e2).lt.1d-8) then
-  leint=.false.
-endif
 if (req.and.wproc) then
   write(150,*)
-  if (leint) then
-    write(150,'("Band interval (Ha) : ",2F8.3)')lr_e1,lr_e2
-  else
-    write(150,'("Band interval : ",2I4)')lr_n1,lr_n2
-  endif
+  write(150,'("Band interval (N1,N2 or E1,E2) : ",2F8.3)')lr_e1,lr_e2
 endif
 if (req) then
   nmemax=0
@@ -40,18 +30,8 @@ do ikloc=1,nkptnr_loc
   i=0
   do ist1=1,nstsv
     do ist2=1,nstsv
-      if (leint) then
-        le1=evalsvnr(ist1,ik).ge.lr_e1.and.evalsvnr(ist1,ik).le.lr_e2
-        le2=evalsvnr(ist2,jk).ge.lr_e1.and.evalsvnr(ist2,jk).le.lr_e2
-      else
-        if (ncmag) then
-          le1=ist1.ge.lr_n1.and.ist1.le.lr_n2
-          le2=ist2.ge.lr_n1.and.ist2.le.lr_n2
-        else
-          le1=(mod(ist1-1,nstfv)+1).ge.lr_n1.and.(mod(ist1-1,nstfv)+1).le.lr_n2
-          le2=(mod(ist2-1,nstfv)+1).ge.lr_n1.and.(mod(ist2-1,nstfv)+1).le.lr_n2
-        endif
-      endif
+      le1=bndint(ist1,evalsvnr(ist1,ik),lr_e1,lr_e2)
+      le2=bndint(ist2,evalsvnr(ist2,jk),lr_e1,lr_e2)
       d1=occsvnr(ist1,ik)-occsvnr(ist2,jk)
       ldocc=abs(d1).gt.1d-5
       laddme=.false.

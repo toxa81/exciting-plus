@@ -85,8 +85,8 @@ do n=1,nwann
   write(100,'("      atom : ",I4)')iatom
   write(100,'("      l,m  : ",2I4)')lm2l(lm),lm-lm2l(lm)**2
   write(100,'("      ispn : ",I4)')ispn
-  write(100,'("    energy interval : [",F8.4,",",F8.4,"]")')wann_eint(:,itype)
-  write(100,'("    band interval : from ",I4," to ",I4)')wann_nint(:,itype)
+  write(100,'("  interval : [",F8.4,",",F8.4,"]")')wann_eint(:,itype)
+!  write(100,'("    band interval : from ",I4," to ",I4)')wann_nint(:,itype)
   write(100,'("    potential : ",F8.4)')wann_v(itype)
   write(100,*)
 enddo

@@ -9,16 +9,16 @@ complex(8), intent(out) :: wann_c_(nwann,nstsv)
 ! local variables
 complex(8), allocatable :: prjao(:,:)
 complex(8), allocatable :: s(:,:),sdiag(:)
-integer ispn,j,n,m1,m2,ias,lm,ierr,itype,jspn,i1,j1,j2
-logical l1,leint
+integer ispn,j,n,m1,m2,ias,lm,ierr,itype
 integer itr(3),i,iw
 real(8) tr(3),d1
-integer, allocatable :: wann_nint_tmp(:,:)
+!integer, allocatable :: wann_nint_tmp(:,:)
 complex(8) zt1
+logical, external :: bndint
 
-allocate(wann_nint_tmp(2,wann_ntype))
-wann_nint_tmp=wann_nint
-10 continue
+!allocate(wann_nint_tmp(2,wann_ntype))
+!wann_nint_tmp=wann_nint
+!10 continue
 ! compute <\psi|g_n>
 allocate(prjao(nwann,nstsv))
 prjao=zzero
@@ -28,28 +28,11 @@ do n=1,nwann
     lm=iwann(2,n)
     ispn=iwann(3,n)
     itype=iwann(4,n)
-    do jspn=1,nspinor
-      do j=1,nstfv
-        i=(jspn-1)*nstfv+j
-        l1=.false.
-        leint=.true.
-        j1=int(wann_eint(1,itype))
-	j2=int(wann_eint(2,itype))
-        if (abs(j1-wann_eint(1,itype)).lt.1d-8.and.abs(j2-wann_eint(2,itype)).lt.1d-8) then
-          leint=.false.
-        endif
-        if (leint) then
-          if (e(i).ge.wann_eint(1,itype).and.e(i).le.wann_eint(2,itype)) l1=.true.
-        else
-          if (ncmag) then
-            if (i.ge.j1.and.i.le.j2) l1=.true.
-          else
-            if (j.ge.j1.and.j.le.j2) l1=.true.
-          endif
-        endif
-        if (l1) call genprjao(ias,lm,ispn,i,wfsvmt,prjao(n,i))
-      enddo !j
-    enddo !jspn
+    do j=1,nstsv
+      if (bndint(j,e(j),wann_eint(1,itype),wann_eint(2,itype))) then
+        call genprjao(ias,lm,ispn,j,wfsvmt,prjao(n,j))
+      endif
+    enddo
   else
     do i=1,wann_iorb_lc(0,1,n)
       d1=wann_iorb_lcc(i,n)
@@ -60,25 +43,12 @@ do n=1,nwann
       lm=iwann(2,iw)
       ispn=iwann(3,iw)
       itype=iwann(4,iw)
-      do jspn=1,nspinor
-        do j=1,nstfv
-          i1=(jspn-1)*nstfv+j
-          l1=.false.
-          if (wann_use_eint) then
-            if (e(i1).ge.wann_eint(1,itype).and.e(i1).le.wann_eint(2,itype)) l1=.true.
-          else
-            if (ncmag) then
-              if (i1.ge.wann_nint_tmp(1,itype).and.i1.le.wann_nint_tmp(2,itype)) l1=.true.
-            else
-              if (j.ge.wann_nint_tmp(1,itype).and.j.le.wann_nint_tmp(2,itype)) l1=.true.
-            endif
-          endif
-          if (l1) then
-            call genprjao(ias,lm,ispn,i1,wfsvmt,zt1)
+      do j=1,nstsv
+        if (bndint(j,e(j),wann_eint(1,itype),wann_eint(2,itype))) then
+          call genprjao(ias,lm,ispn,j,wfsvmt,zt1)
 ! <psi_k(r)|g(r-T)>=<psi(r+T)|g(r)>=e^{-ikT}<psi(r)|g(r)>
-            prjao(n,i1)=prjao(n,i1)+zt1*d1*exp(-zi*dot_product(vkc(:,ik),tr(:)))
-          endif
-        enddo
+          prjao(n,j)=prjao(n,j)+zt1*d1*exp(-zi*dot_product(vkc(:,ik),tr(:)))
+        endif
       enddo
     enddo !i
   endif
@@ -129,7 +99,7 @@ deallocate(prjao)
 !  wann_nint_tmp(2,1)=wann_nint_tmp(2,1)+1
 !  goto 10
 !else
-  deallocate(wann_nint_tmp)
+!  deallocate(wann_nint_tmp)
 !endif
 return
 end

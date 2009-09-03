@@ -1016,7 +1016,6 @@ real(8) maxomega
 real(8) domega
 real(8) lr_eta
 real(8) lr_e1,lr_e2
-integer lr_n1,lr_n2
 integer lrtype
 ! array for k and k+q stuff
 !  1-st index: index of k-point in BZ
@@ -1070,13 +1069,13 @@ logical wannier
 integer wann_natom
 integer wann_norbgrp
 integer wann_ntype
-logical wann_use_eint
+!logical wann_use_eint
 logical wann_add_poco
 integer, allocatable :: wann_norb(:)
 integer, allocatable :: wann_iorb(:,:,:)
 integer, allocatable :: wann_iprj(:,:)
 real(8), allocatable :: wann_eint(:,:)
-integer, allocatable :: wann_nint(:,:)
+!integer, allocatable :: wann_nint(:,:)
 real(8), allocatable :: wann_v(:)
 
 integer nwann
