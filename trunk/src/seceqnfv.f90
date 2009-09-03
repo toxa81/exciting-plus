@@ -6,7 +6,7 @@
 !BOP
 ! !ROUTINE: seceqnfv
 ! !INTERFACE:
-subroutine seceqnfv(nmatp,ngp,igpig,vgpc,apwalm,evalfv,evecfv)
+subroutine seceqnfv(nmatp,ngp,igpig,vgpc,apwalm,evalfv,evecfv,ik)
 ! !USES:
 use modmain
 ! !INPUT/OUTPUT PARAMETERS:
@@ -36,6 +36,7 @@ real(8), intent(in) :: vgpc(3,ngkmax)
 complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 real(8), intent(out) :: evalfv(nstfv)
 complex(8), intent(out) :: evecfv(nmatmax,nstfv)
+integer, intent(in) :: ik
 ! local variables
 integer is,ia,i,m,np,info,nb,lwork
 real(8) vl,vu
@@ -51,6 +52,7 @@ complex(8), allocatable :: o(:)
 complex(8), allocatable :: work(:)
 logical, parameter :: packed = .false.
 integer, external :: ilaenv
+logical, parameter :: lwrho = .false.
 
 if (packed) then
   np=(nmatp*(nmatp+1))/2
@@ -99,6 +101,13 @@ else
   call setovl(ngp,nmatp,igpig,apwalm,o)
   h=dconjg(h)
   o=dconjg(o)
+  if (lwrho) then
+    if (ik.eq.2) then
+      open(200,file='ho.dat',form='unformatted',status='replace')
+      write(200)h,o
+      close(200)
+    endif
+  endif
 endif
 call timesec(ts1)
 call timer_stop(t_seceqnfv_setup)

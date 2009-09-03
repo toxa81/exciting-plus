@@ -48,7 +48,7 @@ do ispn=1,nspnfv
 ! directly
     call seceqnfv(nmat(ispn,ikglob(ik)),ngk(ispn,ikglob(ik)), &
      igkig(:,ispn,ik),vgkc(:,:,ispn,ik),apwalm(:,:,:,:,ispn), &
-     evalfv(:,ispn),evecfv(:,:,ispn))
+     evalfv(:,ispn),evecfv(:,:,ispn),ikglob(ik))
   end if
 end do
 if (spinsprl) then
