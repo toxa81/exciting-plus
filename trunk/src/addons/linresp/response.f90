@@ -360,7 +360,7 @@ if (in_cart()) then
       endif
       lwanndiel=.true.
       do n=1,nwann
-        if ((abs(wann_occ(n))*abs(wann_occ(n)-occmax)).gt.1d-10) &
+        if ((abs(wann_occ(n))*abs(wann_occ(n)-occmax)).gt.1d-8) &
           lwanndiel=.false.
       enddo
       if (wproc) then
