@@ -1,4 +1,4 @@
-subroutine solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_,epsilon_)
+subroutine solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_,epsilon_,crpa,vsc)
 implicit none
 integer, intent(in) :: ngvecchi
 integer, intent(in) :: igq0
@@ -7,6 +7,8 @@ complex(8), intent(in) :: chi0m(ngvecchi,ngvecchi)
 complex(8), intent(in) :: krnl(ngvecchi,ngvecchi)
 complex(8), intent(out) :: chi_(4)
 complex(8), intent(out) :: epsilon_(5)
+logical, intent(in) :: crpa
+complex(8), intent(out) :: vsc(ngvecchi,ngvecchi)
 
 complex(8), allocatable :: epsilon(:,:)
 complex(8), allocatable :: mtrx1(:,:)
@@ -54,7 +56,12 @@ chi_(4)=mtrx1(igq0,igq0)
 epsilon_(4)=1.d0/(1.d0+fourpiq0*chi_(4))
 ! save epsilon_eff_scalar
 epsilon_(5)=1.d0/(1.d0+fourpiq0*chi_(2))
-
+! compute screened Coulomb+fxc potential
+if (crpa) then
+  vsc=dcmplx(0.d0,0.d0)
+  call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
+    epsilon,ngvecchi,krnl,ngvecchi,dcmplx(0.d0,0.d0),vsc,ngvecchi)
+endif
 deallocate(epsilon,mtrx1)
 return
 end

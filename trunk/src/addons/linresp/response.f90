@@ -25,26 +25,17 @@ complex(8), allocatable :: wfsvit_t(:,:,:)
 complex(8), allocatable :: wfc_t(:,:)
 complex(8), allocatable :: pmat(:,:,:,:)
 
-integer j,n,ik,ikloc,istsv,ik1,isym
+integer j,n,ik,ikloc,istsv,ik1,isym,idx0,bs,ivq1,ivq2,iq
 integer sz,iint,iw
+integer i1,i2,i3
 character*100 fname,qnm
 character*3 c3
 real(8) w2
+logical wproc
 integer, external :: iknrglob2
 logical, external :: root_cart
 logical, external :: in_cart
-
-lmaxvr=4
-
-! initialise universal variables
-call init0
-call init1
-call pinit_cart
-
-! MPI grid for tasks:
-!  400 (matrix elements) : (1) k-points x (2) G-vectors x (3) q-points 
-!  401 (chi0) : (1) k-points x (2) interband transition x (3) q-points 
-!  402 (chi) : (1) energy mesh x (2) number of fxc kernels x (3) q-points
+logical, external :: wann_diel
 
 if (lrtype.eq.1.and..not.spinpol) then
   write(*,*)
@@ -52,12 +43,39 @@ if (lrtype.eq.1.and..not.spinpol) then
   write(*,*)
   call pstop
 endif
-
 if (.not.wannier) then
   lwannresp=.false.
   lwannopt=.false.
 endif
-
+! this is enough for matrix elements
+lmaxvr=4
+! initialise universal variables
+call init0
+call init1
+! for constrained RPA all q-vectors in BZ are required; 
+!   for numerical reasons q=0 is dropped
+if (crpa) then
+  deallocate(ivq0m_list)
+  nvq0=nkptnr-1
+  allocate(ivq0m_list(3,nvq0))
+  j=0
+  do i1=0,ngridk(1)-1
+    do i2=0,ngridk(2)-1
+      do i3=0,ngridk(3)-1
+        if (.not.(i1.eq.0.and.i2.eq.0.and.i3.eq.0)) then
+          j=j+1
+          ivq0m_list(:,j)=(/i1,i2,i3/)
+        endif
+      enddo
+    enddo
+  enddo    
+endif
+! parallel init; MPI grid for tasks:
+!   400 (matrix elements) : (1) k-points x (2) G-vectors x (3) q-points 
+!   401 (chi0) : (1) k-points x (2) interband transition x (3) q-points 
+!   402 (chi) : (1) energy mesh x (2) number of fxc kernels x (3) q-points
+call pinit_cart
+! necessary calls before generating Bloch wave-functions 
 if (task.eq.400) then
 ! read the density and potentials from file
   call readstate
@@ -69,53 +87,43 @@ if (task.eq.400) then
   call genlofr
   call geturf
   call genurfprod
-endif
-
-if (task.eq.400.or.task.eq.401) then
+! read Fermi energy
   if (iproc.eq.0) call readfermi
   call dsync(efermi,1,.false.,.true.)
 endif
-
+! create q-directories
+if (iproc.eq.0) then
+  do iq=1,nvq0
+    call qname(ivq0m_list(:,iq),qnm)
+    call system("mkdir -p "//trim(qnm))
+  enddo
+endif
+call barrier(comm_world)
+! work only with processors in the grid
 if (in_cart()) then
-  call qname(ivq0m_list(:,mpi_x(3)+1),qnm)
-  if (root_cart((/1,1,0/))) call system("mkdir -p "//trim(qnm))
-  call barrier(comm_cart)
-  qnm="./"//trim(qnm)//"/"//trim(qnm)
+  !call qname(ivq0m_list(:,iq),qnm)
+  !qnm="./"//trim(qnm)//"/"//trim(qnm)
+  
   wproc=.false.
-  if (task.eq.400) then
-    if (root_cart((/1,1,0/))) then
-      wproc=.true.
-      fname=trim(qnm)//"_ME.OUT"
-      open(150,file=trim(fname),form='formatted',status='replace')
-    endif
-  endif
-  if (task.eq.401) then
-    if (root_cart((/1,1,0/))) then
-      wproc=.true.
-      fname=trim(qnm)//"_CHI0.OUT"
-      open(150,file=trim(fname),form='formatted',status='replace')
-    endif
-  endif
-  if (task.eq.402) then
-    write(c3,'(I3.3)')mpi_x(2)
-    if (root_cart((/1,0,0/))) then
-      wproc=.true.
-      fname=trim(qnm)//"_CHI_"//c3//".OUT"
-      open(150,file=trim(fname),form='formatted',status='replace')
-    endif
+  if (root_cart((/1,1,1/))) then
+    wproc=.true.
+    if (task.eq.400) open(151,file='RESPONSE_ME.OUT',form='formatted',status='replace')
+    if (task.eq.401) open(151,file='RESPONSE_CHI0.OUT',form='formatted',status='replace')
+    if (task.eq.402) open(151,file='RESPONSE_CHI.OUT',form='formatted',status='replace')
+    if (task.eq.403) open(151,file='RESPONSE_U.OUT',form='formatted',status='replace')
   endif
   
   if (wproc) then
-    write(150,'("Running on ",I8," proc.")')nproc
+    write(151,'("Running on ",I8," proc.")')nproc
 #ifdef _PIO_
     if (nproc.gt.1) then
-      write(150,'("Using parallel I/O")')
+      write(151,'("Using parallel I/O")')
     endif
 #endif
-    write(150,'("MPI grid size : ",3I6)')mpi_dims
-    write(150,'("Wannier functions switch : ",L1)')wannier
-    write(150,'("Response in local basis  : ",L1)')lwannresp
-    call flushifc(150)
+    write(151,'("MPI grid size : ",3I6)')mpi_dims
+    write(151,'("Wannier functions switch : ",L1)')wannier
+    write(151,'("Response in local basis  : ",L1)')lwannresp
+    call flushifc(151)
   endif
   
 ! distribute k-points over 1-st dimension of the grid
@@ -126,15 +134,15 @@ if (in_cart()) then
   call splitk(nkptnr,mpi_dims(1),nkptnrloc,ikptnrloc)
   nkptnr_loc=nkptnrloc(mpi_x(1))
   
-   if (task.eq.400.or.task.eq.401.or.task.eq.404) then
+  if (task.eq.400.or.task.eq.401.or.task.eq.404) then
 ! get occupancies and energies of states
     allocate(occsvnr(nstsv,nkptnr))
     allocate(evalsvnr(nstsv,nkptnr))
     call timer_start(3)
     if (wproc) then
-      write(150,*)
-      write(150,'("Reading energies and occupancies of states")')
-      call flushifc(150)
+      write(151,*)
+      write(151,'("Reading energies and occupancies of states")')
+      call flushifc(151)
     endif
     if (root_cart((/1,1,1/))) then
 ! read from IBZ
@@ -152,8 +160,8 @@ if (in_cart()) then
     call d_bcast_cart(comm_cart,occsvnr,nstsv*nkptnr)
     call timer_stop(3)
     if (wproc) then
-      write(150,'("Done in ",F8.2," seconds")')timer(3,2)
-      call flushifc(150)
+      write(151,'("Done in ",F8.2," seconds")')timer(3,2)
+      call flushifc(151)
     endif
   endif
   
@@ -187,11 +195,11 @@ if (in_cart()) then
       sz=sz+nmatmax*nstfv*nspnfv
       sz=sz+nstsv*nstsv
       sz=16*sz*nkptnr_loc/1024/1024
-      write(150,*)
-      write(150,'("Size of wave-function arrays (MB) : ",I6)')sz
-      write(150,*)
-      write(150,'("Reading eigen-vectors")')
-      call flushifc(150)
+      write(151,*)
+      write(151,'("Size of wave-function arrays (MB) : ",I6)')sz
+      write(151,*)
+      write(151,'("Reading eigen-vectors")')
+      call flushifc(151)
     endif
     call timer_start(1)
 ! read and transform eigen-vectors
@@ -226,7 +234,7 @@ if (in_cart()) then
       enddo
 #endif
     endif !root_cart
-    call barrier(comm_cart)
+    call barrier(comm_cart_110)
     call d_bcast_cart(comm_cart_011,wfsvmtloc, &
       lmmaxvr*nrfmax*natmtot*nspinor*nstsv*nkptnr_loc*2)
     call d_bcast_cart(comm_cart_011,wfsvitloc, &
@@ -235,111 +243,26 @@ if (in_cart()) then
       nmatmax*nstfv*nspnfv*nkptnr_loc*2)
     call d_bcast_cart(comm_cart_011,evecsvloc, &
       nstsv*nstsv*nkptnr_loc*2)
-
-! remove l content form particular bands      
-!    if (.false.) then
-!      allocate(wfsvmt_t(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
-!      allocate(wfsvit_t(ngkmax,nspinor,nstsv))
-!      do ikloc=1,nkptnr_loc
-!        ik=iknrglob2(ikloc,mpi_x(1))
-!        wfsvmt_t=wfsvmtloc(:,:,:,:,:,ikloc)
-!        wfsvit_t=wfsvitloc(:,:,:,ikloc)
-!        do j=1,nstsv
-!          if (evalsvnr(j,ik).ge.-0.1d0.and.evalsvnr(j,ik).lt.0.1d0) then
-!            wfsvmt_t(2:4,:,9:20,:,j)=0.d0
-!          endif
-!        enddo
-!        wfsvmtloc(:,:,:,:,:,ikloc)=wfsvmt_t
-!        wfsvitloc(:,:,:,ikloc)=wfsvit_t
-!      enddo 
-!      deallocate(wfsvmt_t)
-!      deallocate(wfsvit_t)
-!    endif
-     if (.false.) then
-       do ikloc=1,nkptnr_loc
-         ik=iknrglob2(ikloc,mpi_x(1))
-         do j=1,nstsv
-           if (abs(evalsvnr(j,ik)-efermi).lt.0.01) then
-             wfsvmtloc(:,:,:,:,j,ikloc)=zzero
-             wfsvitloc(:,:,j,ikloc)=zzero
-           endif
-         enddo
-       enddo
-     endif  
-
+    call timer_stop(1)
+    if (wproc) then
+      write(151,'("Done in ",F8.2," seconds")')timer(1,2)
+      call flushifc(151)
+    endif
+    call timer_reset(1)
+    call timer_start(1)
+! generate wannier function expansion coefficients
     if (wannier) then
       if (allocated(wann_c)) deallocate(wann_c)
       allocate(wann_c(nwann,nstsv,nkptnr_loc))
-      allocate(wfsvmt_t(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
-      allocate(wfsvit_t(ngkmax,nspinor,nstsv))
-      allocate(wfc_t(nwann,nstsv))
       if (wproc) then
-        !write(150,*)
-        write(150,'("  Generating Wannier functions")')
-        if (lwfexpand) then
-          write(150,*)
-          if (laddwf) then
-            write(150,'("    Adding Wannier functions content")')
-          else
-            write(150,'("    Removing Wannier functions content")')
-            write(150,'("      dumping coefficient : ",F12.6)')alpha1
-          endif
-          do iint=1,nintwann      
-            write(150,*)
-            write(150,'("      energy interval : ",2F12.6)') &
-              ewannint(1,iint),ewannint(2,iint)
-            write(150,'("      Wannier functions : ",100I4)') &
-              (iwannint(j,iint),j=1,nwannint(iint))
-          enddo !iint          
-        endif !lwfexpand
-        call flushifc(150)
+        write(151,*)
+        write(151,'("Generating Wannier functions")')
+        call flushifc(151)
       endif !wproc
       do ikloc=1,nkptnr_loc
         ik=iknrglob2(ikloc,mpi_x(1))
-        call genwann_c(ik,evalsvnr(1,ik),wfsvmtloc(1,1,1,1,1,ikloc),wfc_t)
-        wann_c(:,:,ikloc)=wfc_t(:,:)
-        if (lwfexpand) then
-          if (laddwf) then
-            wfsvmt_t=dcmplx(0.d0,0.d0)
-            wfsvit_t=dcmplx(0.d0,0.d0)
-          else
-            wfsvmt_t=wfsvmtloc(:,:,:,:,:,ikloc)
-            wfsvit_t=wfsvitloc(:,:,:,ikloc)
-          endif
-          do iint=1,nintwann      
-            do j=1,nstsv
-              if (evalsvnr(j,ik).ge.ewannint(1,iint).and.&
-                  evalsvnr(j,ik).lt.ewannint(2,iint)) then
-                do istsv=1,nstsv
-                  do n=1,nwannint(iint)
-                    iw=iwannint(n,iint)
-                    if (laddwf) then
-                      wfsvmt_t(:,:,:,:,j)=wfsvmt_t(:,:,:,:,j)+&
-                        wfsvmtloc(:,:,:,:,istsv,ikloc)* &
-                        wfc_t(iw,istsv)*dconjg(wfc_t(iw,j))
-                      wfsvit_t(:,:,j)=wfsvit_t(:,:,j)+&
-                        wfsvitloc(:,:,istsv,ikloc)*&
-                        wfc_t(iw,istsv)*dconjg(wfc_t(iw,j))
-                    else
-                      wfsvmt_t(:,:,:,:,j)=wfsvmt_t(:,:,:,:,j)-&
-                        wfsvmtloc(:,:,:,:,istsv,ikloc)* &
-                        wfc_t(iw,istsv)*dconjg(wfc_t(iw,j))*alpha1
-                      wfsvit_t(:,:,j)=wfsvit_t(:,:,j)-&
-                        wfsvitloc(:,:,istsv,ikloc)*&
-                        wfc_t(iw,istsv)*dconjg(wfc_t(iw,j))*alpha1
-                    endif                       
-                  enddo
-                enddo
-              endif
-              enddo !j
-          enddo !iint
-          wfsvmtloc(:,:,:,:,:,ikloc)=wfsvmt_t
-          wfsvitloc(:,:,:,ikloc)=wfsvit_t
-        endif !lwfexpand
+        call genwann_c(ik,evalsvnr(1,ik),wfsvmtloc(1,1,1,1,1,ikloc),wann_c(1,1,ikloc))
       enddo !ikloc
-      deallocate(wfsvmt_t)
-      deallocate(wfsvit_t)
-      deallocate(wfc_t)
       wann_occ=0.d0
       do n=1,nwann
         do ikloc=1,nkptnr_loc
@@ -351,27 +274,25 @@ if (in_cart()) then
         enddo
       enddo
       call d_reduce_cart(comm_cart_100,.true.,wann_occ,nwann)
-      wann_occ=wann_occ
       if (wproc) then
-        write(150,'("    Wannier function occupation numbers : ")')
+        write(151,'("  Wannier function occupation numbers : ")')
         do n=1,nwann
-          write(150,'("      n : ",I4,"  occ : ",F8.6)')n,wann_occ(n)
+          write(151,'("    n : ",I4,"  occ : ",F8.6)')n,wann_occ(n)
         enddo
       endif
-      lwanndiel=.true.
-      do n=1,nwann
-        if ((abs(wann_occ(n))*abs(wann_occ(n)-occmax)).gt.1d-8) &
-          lwanndiel=.false.
-      enddo
+!      lwanndiel=.true.
+!      do n=1,nwann
+!        if ((abs(wann_occ(n))*abs(wann_occ(n)-occmax)).gt.1d-8) &
+!          lwanndiel=.false.
+!      enddo
       if (wproc) then
-        write(150,'("    Dielectric Wannier functions : ",L1)')lwanndiel
+        write(151,'("  Dielectric Wannier functions : ",L1)')wann_diel()
       endif
     endif !wannier
-    
     call timer_stop(1)
     if (wproc) then
-      write(150,'("Done in ",F8.2," seconds")')timer(1,2)
-      call flushifc(150)
+      write(151,'("Done in ",F8.2," seconds")')timer(1,2)
+      call flushifc(151)
     endif
     deallocate(apwalm)
     deallocate(vgklnr)
@@ -379,56 +300,76 @@ if (in_cart()) then
     deallocate(gknr)
     deallocate(tpgknr)
     deallocate(sfacgknr)
-  endif
+  endif !task.eq.400
+
+! distribute q-vectors along 3-rd dimention 
+  call idxbos(nvq0,mpi_dims(3),mpi_x(3)+1,idx0,bs)
+  ivq1=idx0+1
+  ivq2=idx0+bs
   
   if (task.eq.400) then
 ! calculate matrix elements
     call timer_start(10)
-    call response_me(ivq0m_list(1,mpi_x(3)+1),wfsvmtloc,wfsvitloc,ngknr, &
-      igkignr,occsvnr,evalsvnr,pmat)
+    do iq=ivq1,ivq2
+      call response_me(ivq0m_list(1,iq),wfsvmtloc,wfsvitloc,ngknr, &
+        igkignr,occsvnr,evalsvnr,pmat)
+    enddo
     call timer_stop(10)
     if (wproc) then
-      write(150,'("Total time : ",F8.2," seconds")')timer(10,2)
-      call flushifc(150)
+      write(151,*)
+      write(151,'("Total time for matrix elements : ",F8.2," seconds")')timer(10,2)
+      call flushifc(151)
     endif
   endif
   
   if (task.eq.401) then
 ! calculate chi0
     call timer_start(11)
-    call response_chi0(ivq0m_list(1,mpi_x(3)+1),evalsvnr)
+    do iq=ivq1,ivq2
+      call response_chi0(ivq0m_list(1,iq),evalsvnr)
+    enddo
     call timer_stop(11)
     if (wproc) then
-      write(150,'("Total time : ",F8.2," seconds")')timer(11,2)
-      call flushifc(150)
+      write(151,*)
+      write(151,'("Total time for chi0 : ",F8.2," seconds")')timer(11,2)
+      call flushifc(151)
     endif
   endif
   
   if (task.eq.402) then
 ! calculate chi
     call timer_start(12)
-    call response_chi(ivq0m_list(1,mpi_x(3)+1))
+    do iq=ivq1,ivq2
+      call response_chi(ivq0m_list(1,iq))
+    enddo
     call timer_stop(12)
     if (wproc) then
-      write(150,'("Total time : ",F8.2," seconds")')timer(12,2)
-      call flushifc(150)
+      write(151,*)    
+      write(151,'("Total time for chi : ",F8.2," seconds")')timer(12,2)
+      call flushifc(151)
     endif
   endif
   
-  if (task.eq.404) call response_jdos(occsvnr,evalsvnr)
-  
-  if (wproc) close(150)
+  if (task.eq.403.and.crpa.and.root_cart((/1,1,1/))) then
+    call response_u
+  endif
+    
+  if (wproc) close(151)
   
   if (task.eq.400.and.lwannopt) deallocate(pmat)
   
-  if (task.eq.400.or.task.eq.403) then
+  if (task.eq.400) then
     deallocate(wfsvmtloc)
     deallocate(wfsvitloc)
+    deallocate(evecfvloc)
+    deallocate(evecsvloc)
     deallocate(ngknr)
     deallocate(igkignr)
-    deallocate(occsvnr)
   endif
-
+  if (task.eq.400.or.task.eq.401) then
+    deallocate(occsvnr)
+    deallocate(evalsvnr)
+  endif
 endif !in_cart()
 
 return

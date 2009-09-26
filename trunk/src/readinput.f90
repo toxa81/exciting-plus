@@ -200,6 +200,7 @@ lwannopt=.false.
 lr_maxtr=0
 lwfexpand=.false.
 nwann_h=0
+crpa=.false.
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -1025,6 +1026,9 @@ case('clda')
   read(50,*,err=20)(clda_vorb(1,i),i=1,clda_norb)
   read(50,*,err=20)(clda_iorb(2,i),i=1,clda_norb)
   read(50,*,err=20)(clda_vorb(2,i),i=1,clda_norb)
+case('crpa')
+  read(50,*,err=20)crpa
+  read(50,*,err=20)crpa_e1,crpa_e2
 case('')
   goto 10
 case default

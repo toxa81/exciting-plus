@@ -939,7 +939,7 @@ integer mpi_ndims
 integer, allocatable :: mpi_dims(:)
 integer, allocatable :: mpi_x(:)
 integer nkptnr_loc
-logical wproc
+!logical wproc
 
 !------------------!
 !      addons      !
@@ -1048,7 +1048,7 @@ logical lsfio
 logical lscalar
 logical lwannresp
 logical lwannopt
-logical lwanndiel
+!logical lwanndiel
 logical lwfexpand
 integer lr_maxtr
 
@@ -1135,6 +1135,9 @@ integer clda_iat(2)
 integer clda_ispn(2)
 integer, allocatable :: clda_iorb(:,:)
 real(8), allocatable :: clda_vorb(:,:)
+
+logical crpa
+real(8) crpa_e1,crpa_e2
 
 end module
 

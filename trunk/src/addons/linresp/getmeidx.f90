@@ -15,11 +15,11 @@ real(8) d1,min_e12
 logical l11,l12,l21,l22,le1,le2
 integer, external :: iknrglob2
 logical, external :: bndint
-
-if (req.and.wproc) then
-  write(150,*)
-  write(150,'("Band interval (N1,N2 or E1,E2) : ",2F8.3)')lr_e1,lr_e2
-endif
+logical, external :: wann_diel
+!if (req.and.wproc) then
+!  write(150,*)
+!  write(150,'("Band interval (N1,N2 or E1,E2) : ",2F8.3)')lr_e1,lr_e2
+!endif
 if (req) then
   nmemax=0
   min_e12=100.d0
@@ -35,7 +35,18 @@ do ikloc=1,nkptnr_loc
       d1=occsvnr(ist1,ik)-occsvnr(ist2,jk)
       ldocc=abs(d1).gt.1d-5
       laddme=.false.
-      if ((ldocc.or.(lwannresp.and..not.lwanndiel)).and.(le1.and.le2)) then
+! comment:
+!   include transition between bands ist1 and ist2 when:
+!     1a. we are doing response in Bloch basis and difference of band 
+!         occupation numbers in not zero     OR
+!     1b. we are doing response in Wannier basis and occupancies of 
+!         Wannier functions are not 0 or 1   OR
+!     1c. we are doing constrained RPA
+!     2.  both bands ist1 and ist2 fall into energy interval
+! TODO:
+!  condiitons 1b and 1c are not 100% efficient (they pick all interband 
+!    transitions) and should be revisited
+      if ((ldocc.or.(lwannresp.and..not.wann_diel()).or.crpa).and.(le1.and.le2)) then
         if (.not.spinpol) then
           laddme=.true.
         else
@@ -69,10 +80,10 @@ if (req) then
 #ifdef _MPI_
   call d_reduce_cart2(comm_cart_100,.false.,min_e12,1,MPI_MIN)
 #endif
-  if (wproc) then
-    write(150,*)
-    write(150,'("Minimal energy transition (eV) : ",F12.6)')min_e12*ha2ev
-  endif
+!  if (wproc) then
+!    write(150,*)
+!    write(150,'("Minimal energy transition (eV) : ",F12.6)')min_e12*ha2ev
+!  endif
 endif
 
 return

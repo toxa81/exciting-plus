@@ -30,6 +30,9 @@ complex(8), allocatable :: mewf2_t(:,:,:)
 complex(8), allocatable :: mewfx(:,:,:)
 complex(8), allocatable :: mtrx_v(:,:)
 !complex(8), allocatable :: epswf(:)
+complex(8), allocatable :: vsc(:,:)
+complex(8), allocatable :: uscrn(:,:)
+complex(8), allocatable :: ubare(:,:)
 
 complex(8) zt1
 integer ntr1,ntr2
@@ -51,11 +54,23 @@ integer ie,ig,i,j,ig1,ig2,ie1,ie2,idx0,bs,n1,n2,it1,it2,n3,n4,n
 integer i1,i2,ifxc,ifxc1,ifxc2
 integer iv(3)
 character*100 fname,qnm,path
+character*3 c3
+logical wproc
 logical, external :: root_cart
 complex(8), external :: zdotu
 
 ! we need Bcx and magnetization from STATE.OUT
 if (lrtype.eq.1) call readstate
+
+call qname(ivq0m,qnm)
+qnm="./"//trim(qnm)//"/"//trim(qnm)
+wproc=.false.
+if (root_cart((/1,0,0/))) then
+  wproc=.true.
+  write(c3,'(I3.3)')mpi_x(2)
+  fname=trim(qnm)//"_CHI_"//c3//".OUT"
+  open(150,file=trim(fname),form='formatted',status='replace')
+endif
 
 if (wproc) then
   write(150,*)
@@ -73,8 +88,6 @@ if (wproc) then
   call flushifc(150)
 endif
 
-call qname(ivq0m,qnm)
-qnm="./"//trim(qnm)//"/"//trim(qnm)
 fname=trim(qnm)//"_chi0.hdf5"
 if (root_cart((/1,1,0/))) then
   call read_integer(nepts,1,trim(fname),'/parameters','nepts')
@@ -290,9 +303,13 @@ allocate(chi0w(ngvecme,ngvecme))
 allocate(chi0m(ngvecchi,ngvecchi))
 allocate(chi_(7,nepts,nfxca))
 allocate(epsilon_(5,nepts,nfxca))
+if (crpa) then
+  allocate(vsc(ngvecchi,ngvecchi))
+endif
 chi_=zzero
 epsilon_=zzero
 lr_w=zzero
+vsc=zzero
 
 ! construct RPA kernel of the matrix equation
 krnl_rpa=zzero
@@ -373,10 +390,32 @@ do ie=ie1,ie2
       enddo
     endif
     call solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_(1,ie,ifxc), &
-      epsilon_(1,ie,ifxc))
+      epsilon_(1,ie,ifxc),crpa,vsc)
     if (lwannresp.and.ifxc.eq.1) then
       call solve_chi_wf(ntr1,ntr2,itridx,nwfme,nnzme,inzme,mewf2,mewf4,mtrx_v,&
         chi_(6,ie,1),chi_(7,ie,1),igq0)
+    endif
+    if (crpa) then
+      allocate(uscrn(nwann,nwann))
+      allocate(ubare(nwann,nwann))
+      uscrn=zzero
+      ubare=zzero
+      do i1=1,ngvecchi
+        do i2=1,ngvecchi
+          do n1=1,nwann
+            do n2=1,nwann
+              uscrn(n1,n2)=uscrn(n1,n2)+mewf2((n1-1)*nwann+n1,1,i1)*vsc(i1,i2)*dconjg(mewf2((n2-1)*nwann+n2,1,i2))
+              ubare(n1,n2)=ubare(n1,n2)+mewf2((n1-1)*nwann+n1,1,i1)*krnl(i1,i2)*dconjg(mewf2((n2-1)*nwann+n2,1,i2))
+            enddo
+          enddo
+        enddo
+      enddo
+      uscrn=ha2ev*uscrn/omega
+      ubare=ha2ev*ubare/omega
+      fname=trim(qnm)//"_U"
+      open(170,file=trim(fname),status='replace',form='unformatted')
+      write(170)uscrn,ubare
+      deallocate(uscrn,ubare)
     endif
   enddo !ifxc
 enddo !ie
@@ -393,6 +432,9 @@ endif
 
 deallocate(krnl,krnl_rpa,ixcft)
 deallocate(lr_w,chi0m,chi0w,chi_,epsilon_)
+if (crpa) then
+  deallocate(vsc)
+endif
 return
 end  
 

@@ -10,7 +10,7 @@ integer, allocatable :: ranks(:)
 logical, allocatable :: mpi_periods(:)
 logical, external :: in_cart
 mpi_ndims=1
-if (task.eq.400.or.task.eq.401.or.task.eq.402) then
+if (task.eq.400.or.task.eq.401.or.task.eq.402.or.task.eq.403) then
   mpi_ndims=3
 endif
 if (allocated(mpi_dims)) deallocate(mpi_dims)
@@ -42,6 +42,9 @@ if (task.eq.402) then
       mpi_dims=(/nproc/(nvq0*nfxca),nfxca,nvq0/)
     endif
   endif
+endif
+if (task.eq.403) then
+  mpi_dims=(/1,1,1/)
 endif
 allocate(mpi_periods(mpi_ndims))
 mpi_periods=.false.

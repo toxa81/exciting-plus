@@ -54,6 +54,7 @@ integer lmaxexp
 integer lmmaxexp
 
 character*100 :: qnm,fname
+logical wproc
 
 integer, allocatable :: igishell(:)
 integer, allocatable :: ishellng(:,:)
@@ -74,12 +75,24 @@ real(8), external :: r3taxi
 logical, external :: root_cart
 integer, external :: iknrglob2
 
+! comment:
+! the subroutine computes <psi_{j,k}|e^{-i(G+q)x}|psi_{j',k+q}> 
+!
+call qname(ivq0m,qnm)
+qnm="./"//trim(qnm)//"/"//trim(qnm)
+wproc=.false.
+if (root_cart((/1,1,0/))) then
+  wproc=.true.
+  fname=trim(qnm)//"_ME.OUT"
+  open(150,file=trim(fname),form='formatted',status='replace')
+endif
+
 lmaxexp=lmaxvr
 lmmaxexp=(lmaxexp+1)**2
 
 ! q-vector in lattice coordinates
 do i=1,3
-  vq0l(i)=1.d0*ivq0m(i)/ngridk(i)+1d-12
+  vq0l(i)=1.d0*(ivq0m(i))/ngridk(i)+1d-12
 enddo
 ! find G-vector which brings q0 to first BZ
 vgq0l(:)=floor(vq0l(:))
@@ -281,8 +294,6 @@ enddo
 ! generate structure factor for G+q' vectors
 call gensfacgp(ngvecme,vgq0c,ngvecme,sfacgq0)
 
-call qname(ivq0m,qnm)
-qnm="./"//trim(qnm)//"/"//trim(qnm)
 fname=trim(qnm)//"_me.hdf5"
 if (root_cart((/1,1,0/))) then
   call h5fcreate_f(trim(fname),H5F_ACC_TRUNC_F,h5_root_id,ierr)
@@ -406,7 +417,7 @@ do ikstep=1,nkptnrloc(0)
   call timer_start(1)
   call wfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
     wfsvit2,ngknr2,igkignr2,wann_c2)
-  call barrier(comm_cart)
+  call barrier(comm_cart_110)
   if (wproc) then
     write(150,'("  wave-functions are distributed")')
     call flushifc(150)
@@ -535,7 +546,7 @@ if (spinpol) then
 endif
 
 
-call barrier(comm_cart)
+call barrier(comm_cart_110)
 
 if (wproc) then
   write(150,*)

@@ -31,22 +31,20 @@ integer, allocatable :: iwfme(:,:)
 integer nwfme
 integer ntr1,ntr2
 integer iv(3)
-integer itype
 
-integer it1,it2 !,itr(3)
-real(8) tr1(3),tr2(3)
+integer it1,it2
 real(8) vtrc(3)
 complex(8) zt1,zt2,zt3
 complex(8), allocatable :: mewf2(:,:,:)
 complex(8), allocatable :: mewf4(:,:,:)
-complex(8), allocatable :: mewfx(:,:,:)
+!complex(8), allocatable :: mewfx(:,:,:)
 complex(8), allocatable :: pmat(:,:,:,:)
-complex(8), allocatable :: mewf2_t(:,:,:)
 
-integer, allocatable :: itrans(:,:)
-integer ntrans
+logical wproc
 
 logical lafm
+logical, external :: bndint
+logical, external :: wann_diel
 
 ! HDF5
 integer(hid_t) h5_root_id
@@ -56,6 +54,15 @@ integer(hid_t) h5_tmp_id
 
 logical, external :: root_cart
 complex(8), external :: zdotu
+
+call qname(ivq0m,qnm)
+qnm="./"//trim(qnm)//"/"//trim(qnm)
+wproc=.false.
+if (root_cart((/1,1,0/))) then
+  wproc=.true.
+  fname=trim(qnm)//"_CHI0.OUT"
+  open(150,file=trim(fname),form='formatted',status='replace')
+endif
 
 if (wproc) then
   write(150,*)
@@ -75,10 +82,7 @@ do i=1,nepts
   lr_w(i)=dcmplx(domega*(i-1),lr_eta)/ha2ev
 enddo
 
-call qname(ivq0m,qnm)
-qnm="./"//trim(qnm)//"/"//trim(qnm)
 fname=trim(qnm)//"_me.hdf5"
-
 if (root_cart((/1,1,0/))) then
   call read_integer(nkptnr_,1,trim(fname),'/parameters','nkptnr')
   call read_integer(nmemax,1,trim(fname),'/parameters','nmemax')
@@ -217,7 +221,7 @@ else
     enddo
   endif
 endif
-call barrier(comm_cart)
+call barrier(comm_cart_110)
 call timer_stop(1)
 if (wproc) then
    write(150,'("Done in ",F8.2," seconds")')timer(1,2)
@@ -238,16 +242,16 @@ endif
 
 ! for response in Wannier bais
 if (lwannresp) then
-  lwanndiel=.true.
-  do n=1,nwann
-    if ((abs(wann_occ(n))*abs(wann_occ(n)-occmax)).gt.1d-10) &
-      lwanndiel=.false.
-  enddo
+!  lwanndiel=.true.
+!  do n=1,nwann
+!    if ((abs(wann_occ(n))*abs(wann_occ(n)-occmax)).gt.1d-10) &
+!      lwanndiel=.false.
+!  enddo
   allocate(iwfme(2,nwann*nwann))
   nwfme=0
   do n1=1,nwann
     do n2=1,nwann
-      if ((abs(wann_occ(n1)-wann_occ(n2)).gt.1d-5.and.lwanndiel).or..not.lwanndiel) then
+      if ((abs(wann_occ(n1)-wann_occ(n2)).gt.1d-5.and.wann_diel()).or..not.wann_diel().or.crpa) then
         nwfme=nwfme+1
         iwfme(1,nwfme)=n1
         iwfme(2,nwfme)=n2
@@ -259,7 +263,7 @@ if (lwannresp) then
     write(150,'("Number of WF trainstions : ",I4)')nwfme
   endif
   lafm=.false.
-  if (all(iwann(3,:).eq.1).or.all(iwann(3,:).eq.2)) then
+  if ((all(iwann(3,:).eq.1).or.all(iwann(3,:).eq.2)).and.spinpol) then
     lafm=.true.
   endif
   if (wproc) then
@@ -404,10 +408,15 @@ do ie=ie1,nepts
       i2=idx0+bs
       sz1=sz1+bs
       do i=i1,i2
-        wt=docc(i,ikloc)/(evalsvnr(ime(1,i,ikloc),ik) - &
-          evalsvnr(ime(2,i,ikloc),idxkq(1,ikloc))+lr_w(ie))
-        call zgerc(ngvecme,ngvecme,wt,me(1,i,ikloc),1,me(1,i,ikloc),1, &
-          chi0w,ngvecme)
+        ist1=ime(1,i,ikloc)
+        ist2=ime(2,i,ikloc)
+        if (.not.(crpa.and.bndint(ist1,evalsvnr(ist1,ik),crpa_e1,crpa_e2).and. &
+            bndint(ist2,evalsvnr(ist2,idxkq(1,ikloc)),crpa_e1,crpa_e2))) then
+          wt=docc(i,ikloc)/(evalsvnr(ime(1,i,ikloc),ik) - &
+            evalsvnr(ime(2,i,ikloc),idxkq(1,ikloc))+lr_w(ie))
+          call zgerc(ngvecme,ngvecme,wt,me(1,i,ikloc),1,me(1,i,ikloc),1, &
+            chi0w,ngvecme)
+        endif
       enddo !i
     endif
     if (lwannresp) then
@@ -540,7 +549,7 @@ endif
 !  deallocate(mewfx)
 !endif
 
-call barrier(comm_cart)
+call barrier(comm_cart_110)
 
 deallocate(lr_w)
 deallocate(idxkq)
