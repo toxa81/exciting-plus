@@ -1,18 +1,18 @@
 tasks
-  400
-  401
-  402
-  403
+  0  ! ground state
+  11 ! dos
+  22 ! bands
+  
 
 ! for WF plot
 !tasks
 !  1
 !  363
 !
-maxscl
-  1
-nosym
- .true.
+!maxscl
+!  1
+!nosym
+! .true.
 
   
     
@@ -37,22 +37,11 @@ atoms
     0.50000000    0.50000000    0.50000000    0.00000000  0.00000000  0.00000000
 
 ngridk
-  2 2 2
+  4 4 4
 
 autormt
  .true.
  
-!wannier
-! .true.
-! .false.
-! 1 1 1
-! 5
-! 5 6 7 8 9
-! 1 1 1 1 1
-! 1 1 1 1 1
-! 8 12 0.0
-! 1 1
-
 wannier
  .true.
  .false.
@@ -89,18 +78,3 @@ plot1d
   0.5   0.25 -0.25
   0.5   0.0   0.0
  
-response
-  1 4 0
-  1 1 1
-  0 1 0.05
-
-response_wann
-  .true.
-  .false.
-  0
-  
-crpa
-  .true.
-  5 12
-  
-  
