@@ -395,7 +395,7 @@ do ie=ie1,ie2
       call solve_chi_wf(ntr1,ntr2,itridx,nwfme,nnzme,inzme,mewf2,mewf4,mtrx_v,&
         chi_(6,ie,1),chi_(7,ie,1),igq0)
     endif
-    if (crpa) then
+    if (crpa.and.ie.eq.1.and.ifxc.eq.1) then
       allocate(uscrn(nwann,nwann))
       allocate(ubare(nwann,nwann))
       uscrn=zzero
@@ -415,6 +415,7 @@ do ie=ie1,ie2
       fname=trim(qnm)//"_U"
       open(170,file=trim(fname),status='replace',form='unformatted')
       write(170)uscrn,ubare
+      close(170)
       deallocate(uscrn,ubare)
     endif
   enddo !ifxc
