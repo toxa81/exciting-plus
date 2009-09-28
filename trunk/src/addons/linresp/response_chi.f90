@@ -404,7 +404,7 @@ do ie=ie1,ie2
     endif
     call solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_(1,ie,ifxc), &
       epsilon_(1,ie,ifxc),crpa,vscrn)
-    if (lwannresp.and.ifxc.eq.1) then
+    if (wannier.and.lwannresp.and.ifxc.eq.1) then
       call solve_chi_wf(ntrmegqwan,ntrchi0wan,itridxwan,nmegqwan,nnzme,inzme,megqwan,chi0wan,mtrx_v,&
         chi_(6,ie,1),chi_(7,ie,1),igq0)
     endif
