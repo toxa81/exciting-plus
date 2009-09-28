@@ -571,11 +571,11 @@ if (wannier) then
   megqwan=megqwan/nkptnr
   if (root_cart((/1,1,0/))) then
     fname=trim(qnm)//"_me.hdf5"
+    call write_integer(ntrmegqwan,1,trim(fname),'/wannier','ntrmegqwan')
+    call write_integer(nmegqwan,1,trim(fname),'/wannier','nmegqwan')
     call write_real8_array(megqwan,4,(/2,nmegqwan,ntrmegqwan,ngvecme/), &
       trim(fname),'/wannier','megqwan')
-    call write_integer(ntrmegqwan,1,trim(fname),'/wannier','ntrmegqwan')
     call write_integer_array(itrmegqwan,2,(/3,ntrmegqwan/),trim(fname),'/wannier','itrmegqwan')
-    call write_integer(nmegqwan,1,trim(fname),'/wannier','nmegqwan')
     call write_integer_array(bmegqwan,2,(/2,nmegqwan/),trim(fname),'/wannier','bmegqwan')
   endif
 endif

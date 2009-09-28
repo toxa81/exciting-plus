@@ -101,9 +101,6 @@ endif
 call barrier(comm_world)
 ! work only with processors in the grid
 if (in_cart()) then
-  !call qname(ivq0m_list(:,iq),qnm)
-  !qnm="./"//trim(qnm)//"/"//trim(qnm)
-  
   wproc=.false.
   if (root_cart((/1,1,1/))) then
     wproc=.true.
@@ -112,7 +109,6 @@ if (in_cart()) then
     if (task.eq.402) open(151,file='RESPONSE_CHI.OUT',form='formatted',status='replace')
     if (task.eq.403) open(151,file='RESPONSE_U.OUT',form='formatted',status='replace')
   endif
-  
   if (wproc) then
     write(151,'("Running on ",I8," proc.")')nproc
 #ifdef _PIO_
@@ -281,11 +277,6 @@ if (in_cart()) then
           write(151,'("    n : ",I4,"  occ : ",F8.6)')n,wann_occ(n)
         enddo
       endif
-!      lwanndiel=.true.
-!      do n=1,nwann
-!        if ((abs(wann_occ(n))*abs(wann_occ(n)-occmax)).gt.1d-8) &
-!          lwanndiel=.false.
-!      enddo
       if (wproc) then
         write(151,'("  Dielectric Wannier functions : ",L1)')wann_diel()
       endif

@@ -1022,7 +1022,7 @@ real(8) lr_e1,lr_e2
 integer lrtype
 
 ! number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> in the Bloch basis
-!   1-st index : k-point
+!   one index : k-point
 integer, allocatable :: nmegqblh(:)
 ! maximum number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> over all k-points
 integer nmegqblhmax
@@ -1037,12 +1037,6 @@ complex(8), allocatable :: megqblh(:,:,:)
 !   2-nd index : global index of pair of bands (n,n')
 !   3-rd index : k-point
 integer, allocatable :: bmegqblh(:,:,:)
-! global index of pair of bands (n,n') for matrix elements <nk|e^{-i(G+q)x}|n'k+q>
-!  by band indexes n and n'
-!   1-st index : n
-!   2-nd index : n'
-!   3-rd index : k-point
-!integer, allocatable :: imegqblh(:,:,:)
 
 integer nmegqwan
 integer, allocatable :: bmegqwan(:,:)
@@ -1051,6 +1045,14 @@ complex(8), allocatable :: megqwan(:,:,:)
 integer ntrmegqwan
 integer, allocatable :: itrmegqwan(:,:)
 
+integer ntrchi0wan
+integer, allocatable :: itrchi0wan(:,:)
+
+integer, allocatable :: itridxwan(:,:)
+
+complex(8), allocatable :: chi0wan(:,:,:)
+
+
 
 ! array for k and k+q stuff
 !  1-st index: index of k-point in BZ
@@ -1058,17 +1060,6 @@ integer, allocatable :: itrmegqwan(:,:)
 !              2: index of K-vector which brings k+q to first BZ
 integer, allocatable :: idxkq(:,:)
 
-! number of n,n' combinations of band indexes for each k-point
-!integer, allocatable :: num_nnp(:)
-!integer, allocatable :: nme(:)
-! maximum num_nnp over all k-points 
-!integer max_num_nnp
-!integer nmemax
-! pair of n,n' band indexes for each k-point
-!integer, allocatable :: nnp(:,:,:)
-!integer, allocatable :: ime(:,:,:)
-! difference of occupation numbers for |nk> and |n'k+q> states
-!real(8), allocatable :: docc(:,:)
 ! Kohn-Sham polarizability
 complex(8), allocatable :: chi0(:,:,:,:)
 ! number of energy-mesh points

@@ -12,7 +12,6 @@ real(8), intent(in) :: evalsvnr(nstsv,nkptnr)
 real(8), intent(in) :: occsvnr(nstsv,nkptnr)
 ! local variables
 complex(8), allocatable :: chi0w(:,:)
-!complex(8), allocatable :: me(:,:,:)
 integer i,j,ik,ie,nkptnr_,i1,i2,i3,ikloc,nspinor_
 integer idx0,bs
 integer igq0
@@ -25,19 +24,11 @@ integer ie1,n,n1,n2,n3,n4,jk,ist1,ist2,ig,sz1,sz2
 complex(8), allocatable :: wann_c1(:,:,:)
 complex(8), allocatable :: wann_c2(:,:,:)
 complex(8), allocatable :: zv1(:),zm1(:,:),zm2(:,:,:)
-integer, allocatable :: itr1l(:,:)
-integer, allocatable :: itr2l(:,:)
-integer, allocatable :: itridx(:,:)
-integer, allocatable :: iwfme(:,:)
-integer nwfme
-integer ntr1,ntr2
 integer iv(3)
 
 integer it1,it2
 real(8) vtrc(3)
 complex(8) zt1,zt2,zt3
-complex(8), allocatable :: mewf2(:,:,:)
-complex(8), allocatable :: mewf4(:,:,:)
 !complex(8), allocatable :: mewfx(:,:,:)
 complex(8), allocatable :: pmat(:,:,:,:)
 
@@ -101,6 +92,8 @@ if (root_cart((/1,1,0/))) then
   call read_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
   if (wannier) then
     call read_real8(wann_occ,nwann,trim(fname),'/wannier','wann_occ')
+    call read_integer(ntrmegqwan,1,trim(fname),'/wannier','ntrmegqwan')
+    call read_integer(nmegqwan,1,trim(fname),'/wannier','nmegqwan')
   endif  
   if (nkptnr_.ne.nkptnr) then
     write(*,*)
@@ -128,12 +121,27 @@ call d_bcast_cart(comm_cart_110,vq0c,3)
 call d_bcast_cart(comm_cart_110,vq0rc,3)
 if (wannier) then
   call d_bcast_cart(comm_cart_110,wann_occ,nwann)
+  call i_bcast_cart(comm_cart_110,ntrmegqwan,1)
+  call i_bcast_cart(comm_cart_110,nmegqwan,1)
+endif
+if (wannier) then
+  allocate(itrmegqwan(3,ntrmegqwan))
+  allocate(megqwan(nmegqwan,ntrmegqwan,ngvecme))
+  allocate(bmegqwan(2,nwann*nwann))
+  if (root_cart((/1,1,0/))) then
+    call read_integer_array(itrmegqwan,2,(/3,ntrmegqwan/),trim(fname),'/wannier','itrmegqwan')
+    call read_real8_array(megqwan,4,(/2,nmegqwan,ntrmegqwan,ngvecme/), &
+      trim(fname),'/wannier','megqwan')
+    call read_integer_array(bmegqwan,2,(/2,nmegqwan/),trim(fname),'/wannier','bmegqwan')
+  endif
+  call i_bcast_cart(comm_cart_110,itrmegqwan,3*ntrmegqwan)
+  call i_bcast_cart(comm_cart_110,bmegqwan,2*nmegqwan)
+  call d_bcast_cart(comm_cart_110,megqwan,2*nmegqwan*ntrmegqwan*ngvecme)
 endif
 
 allocate(idxkq(1,nkptnr_loc))
 allocate(nmegqblh(nkptnr_loc))
 allocate(bmegqblh(2,nmegqblhmax,nkptnr_loc))
-!allocate(docc(nmegqblhmax,nkptnr_loc))
 allocate(megqblh(ngvecme,nmegqblhmax,nkptnr_loc))
 if (wannier) then
   allocate(wann_c1(nwann,nstsv,nkptnr_loc))
@@ -170,8 +178,6 @@ if (lsfio) then
           if (nmegqblh(ikloc).gt.0) then
             call read_integer_array(bmegqblh(1,1,ikloc),2,(/2,nmegqblh(ikloc)/), &
               trim(fname),trim(path),'bmegqblh')
-!            call read_real8(docc(1,ikloc),nmegqblh(ikloc),trim(fname), &
-!              trim(path),'docc')
             call read_real8_array(megqblh(1,1,ikloc),3,(/2,ngvecme,nmegqblh(ikloc)/), &
               trim(fname),trim(path),'megqblh')
           endif
@@ -205,8 +211,6 @@ else
       if (nmegqblh(ikloc).gt.0) then
         call read_integer_array(bmegqblh(1,1,ikloc),2,(/2,nmegqblh(ikloc)/), &
           trim(fname),trim(path),'bmegqblh')
-!        call read_real8(docc(1,ikloc),nmegqblh(ikloc),trim(fname), &
-!          trim(path),'docc')
         call read_real8_array(megqblh(1,1,ikloc),3,(/2,ngvecme,nmegqblh(ikloc)/), &
           trim(fname),trim(path),'megqblh')
       endif
@@ -243,95 +247,43 @@ endif
 
 ! for response in Wannier bais
 if (lwannresp) then
-  allocate(iwfme(2,nwann*nwann))
-  nwfme=0
-  do n1=1,nwann
-    do n2=1,nwann
-      if ((abs(wann_occ(n1)-wann_occ(n2)).gt.1d-5.and.wann_diel()).or..not.wann_diel().or.crpa) then
-        nwfme=nwfme+1
-        iwfme(1,nwfme)=n1
-        iwfme(2,nwfme)=n2
-      endif
-    enddo
-  enddo
-  if (wproc) then
-    write(150,*)
-    write(150,'("Number of WF trainstions : ",I4)')nwfme
-  endif
   lafm=.false.
-  if ((all(iwann(3,:).eq.1).or.all(iwann(3,:).eq.2)).and.spinpol) then
-    lafm=.true.
-  endif
+!  if ((all(iwann(3,:).eq.1).or.all(iwann(3,:).eq.2)).and.spinpol) then
+!    lafm=.true.
+!  endif
   if (wproc) then
     write(150,*)
     write(150,'("AFM case : ",L1)')lafm
   endif
-
-  ntr1=(2*lr_maxtr+1)**3
-  allocate(itr1l(3,ntr1))
-  i=0
-  do i1=-lr_maxtr,lr_maxtr
-    do i2=-lr_maxtr,lr_maxtr
-      do i3=-lr_maxtr,lr_maxtr
-        i=i+1
-        itr1l(:,i)=(/i1,i2,i3/)
-      enddo
-    enddo
-  enddo
-  ntr2=(4*lr_maxtr+1)**3
-  allocate(itr2l(3,ntr2))
+  ntrchi0wan=(4*lr_maxtr+1)**3
+  allocate(itrchi0wan(3,ntrchi0wan))
   i=0
   do i1=-2*lr_maxtr,2*lr_maxtr
     do i2=-2*lr_maxtr,2*lr_maxtr
       do i3=-2*lr_maxtr,2*lr_maxtr
         i=i+1
-        itr2l(:,i)=(/i1,i2,i3/)
+        itrchi0wan(:,i)=(/i1,i2,i3/)
       enddo
     enddo
   enddo
-  allocate(zv1(nwfme))
-  allocate(zm1(nwfme,nwfme))
-  allocate(zm2(nwfme,nwfme,nkptnr_loc))
-  allocate(itridx(ntr1,ntr1))
-  itridx=-1
-  do n1=1,ntr1
-    do n2=1,ntr1
-      iv(:)=itr1l(:,n1)-itr1l(:,n2)
-      do i=1,ntr2
-        if (itr2l(1,i).eq.iv(1).and.itr2l(2,i).eq.iv(2).and.itr2l(3,i).eq.iv(3)) then
-          itridx(n1,n2)=i
+  allocate(itridxwan(ntrmegqwan,ntrmegqwan))
+  itridxwan=-1
+  do n1=1,ntrmegqwan
+    do n2=1,ntrmegqwan
+      iv(:)=itrmegqwan(:,n1)-itrmegqwan(:,n2)
+      do i=1,ntrchi0wan
+        if (itrchi0wan(1,i).eq.iv(1).and.&
+            itrchi0wan(2,i).eq.iv(2).and.&
+            itrchi0wan(3,i).eq.iv(3)) then
+          itridxwan(n1,n2)=i
         endif
       enddo
     enddo
   enddo
-
-  allocate(mewf2(nwfme,ntr1,ngvecme))
-  mewf2=zzero
-  do it1=1,ntr1
-    vtrc(:)=avec(:,1)*itr1l(1,it1)+avec(:,2)*itr1l(2,it1)+avec(:,3)*itr1l(3,it1)
-    do ikloc=1,nkptnr_loc
-      ik=ikptnrloc(mpi_x(1),1)+ikloc-1
-      zt1=exp(dcmplx(0.d0,-dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
-      do ig=1,ngvecme
-        do n=1,nwfme
-          n1=iwfme(1,n)
-          n2=iwfme(2,n)
-          do i=1,nmegqblh(ikloc)
-            ist1=bmegqblh(1,i,ikloc)
-            ist2=bmegqblh(2,i,ikloc)
-            mewf2(n,it1,ig)=mewf2(n,it1,ig)+dconjg(wann_c1(n1,ist1,ikloc))*&
-              wann_c2(n2,ist2,ikloc)*megqblh(ig,i,ikloc)*zt1
-          enddo
-        enddo
-      enddo      
-    enddo !ikloc
-  enddo !itr1
-  if (root_cart((/0,1,0/)).and.mpi_dims(1).gt.1) then
-    call d_reduce_cart(comm_cart_100,.true.,mewf2,2*nwfme*ntr1*ngvecme)
-  endif
-  mewf2=mewf2/nkptnr
-  call d_bcast_cart(comm_cart_010,mewf2,2*nwfme*ntr1*ngvecme)
-  allocate(mewf4(nwfme,nwfme,ntr2))
+  allocate(chi0wan(nmegqwan,nmegqwan,ntrchi0wan))
+  allocate(zv1(nmegqwan))
+  allocate(zm1(nmegqwan,nmegqwan))
+  allocate(zm2(nmegqwan,nmegqwan,nkptnr_loc))
 endif !lwannresp
 
 if (lwannopt) then
@@ -348,8 +300,10 @@ if (root_cart((/1,1,0/))) then
     call h5fcreate_f(trim(fname),H5F_ACC_TRUNC_F,h5_root_id,ierr)
     call h5gcreate_f(h5_root_id,'parameters',h5_tmp_id,ierr)
     call h5gclose_f(h5_tmp_id,ierr)
-    call h5gcreate_f(h5_root_id,'wann',h5_tmp_id,ierr)
-    call h5gclose_f(h5_tmp_id,ierr)
+    if (lwannresp) then
+      call h5gcreate_f(h5_root_id,'wannier',h5_tmp_id,ierr)
+      call h5gclose_f(h5_tmp_id,ierr)
+    endif
     call h5gcreate_f(h5_root_id,'iw',h5_w_id,ierr)
     do i=1,nepts
       write(c8,'(I8.8)')i
@@ -425,20 +379,20 @@ do ie=ie1,nepts
         endif
       enddo !i
     endif
+! for response in Wannier basis
     if (lwannresp) then
-      sz2=sz2+nmegqblh(ikloc)*nwfme**2
+      sz2=sz2+nmegqblh(ikloc)*nmegqwan**2
       do i=1,nmegqblh(ikloc)
-        jk=idxkq(1,ikloc)
         ist1=bmegqblh(1,i,ikloc)
         ist2=bmegqblh(2,i,ikloc)
-        do n=1,nwfme
-          n1=iwfme(1,n)
-          n2=iwfme(2,n)
+        do n=1,nmegqwan
+          n1=bmegqwan(1,n)
+          n2=bmegqwan(2,n)
           zv1(n)=wann_c1(n1,ist1,ikloc)*dconjg(wann_c2(n2,ist2,ikloc))
         enddo
         wt=(occsvnr(ist1,ik)-occsvnr(ist2,jk))/(evalsvnr(ist1,ik) - &
             evalsvnr(ist2,jk)+lr_w(ie))
-        call zgerc(nwfme,nwfme,wt,zv1,1,zv1,1,zm2(1,1,ikloc),nwfme)
+        call zgerc(nmegqwan,nmegqwan,wt,zv1,1,zv1,1,zm2(1,1,ikloc),nmegqwan)
       enddo !i
     endif !lwannresp
   enddo !ikloc
@@ -452,51 +406,70 @@ do ie=ie1,nepts
   if (root_cart((/0,1,0/)).and.mpi_dims(1).gt.1) then
     call d_reduce_cart(comm_cart_100,.false.,chi0w,2*ngvecme*ngvecme)
   endif
+  chi0w=chi0w/nkptnr/omega
+! for response in Wannier basis
   if (root_cart((/0,1,0/)).and.lwannresp) then
-    zt3=0.d0
-    do it2=1,ntr2
-      sz2=sz2+nkptnr_loc*nwfme**2
+! split matrix elements along 1-st dimention      
+    call idxbos(nmegqwan,mpi_dims(1),mpi_x(1)+1,idx0,bs)
+    n3=idx0+1
+    n4=idx0+bs
+! zt3 is chi0, calculated using Wannier functions expansion    
+    zt3=zzero
+! loop over translations
+    do it2=1,ntrchi0wan
+      sz2=sz2+nkptnr_loc*nmegqwan**2
       zm1=zzero
       do ikloc=1,nkptnr_loc
         ik=ikptnrloc(mpi_x(1),1)+ikloc-1
-        vtrc(:)=avec(:,1)*itr2l(1,it2)+avec(:,2)*itr2l(2,it2)+avec(:,3)*itr2l(3,it2)
+! translation vector
+        vtrc(:)=avec(:,1)*itrchi0wan(1,it2)+&
+                avec(:,2)*itrchi0wan(2,it2)+&
+                avec(:,3)*itrchi0wan(3,it2)
+! phase e^{ikT}
         zt1=exp(dcmplx(0.d0,dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
-        call zaxpy(nwfme**2,zt1,zm2(1,1,ikloc),1,zm1,1)
-      enddo
-      call d_reduce_cart(comm_cart_100,.true.,zm1,2*nwfme*nwfme)
+! zm1=zm1+e^{ikT}*zm2(k)
+        call zaxpy(nmegqwan*nmegqwan,zt1,zm2(1,1,ikloc),1,zm1,1)
+      enddo !ikloc
+! sum zm1 over all k-points
+      call d_reduce_cart(comm_cart_100,.true.,zm1,2*nmegqwan*nmegqwan)
       zm1=zm1/nkptnr/omega
       if (lafm) zm1=zm1*2.d0
-      mewf4(:,:,it2)=zm1(:,:)
-      call idxbos(nwfme,mpi_dims(1),mpi_x(1)+1,idx0,bs)
-      n3=idx0+1
-      n4=idx0+bs
-      do i=1,ntr1
-        do j=1,ntr1
-          if (itridx(i,j).eq.it2) then
-            sz2=sz2+nwfme**2
+      chi0wan(:,:,it2)=zm1(:,:)
+! compute chi0 using the Wannier functions expansion
+!  chi0=\sum_{T,T'}\sum_{n,m,n',m'} A^{*}_{nmT}(q,Gq)*chi0wan(n,m,n',m',T-T')*A_{n'm'T'}(q,Gq)
+!  where A_{nmT}(q,G)=<n,0|e^{-i(G+q)x}|m,T>
+      do i=1,ntrmegqwan
+        do j=1,ntrmegqwan
+          if (itridxwan(i,j).eq.it2) then
+            sz2=sz2+ntrmegqwan*ntrmegqwan
+! loop over fraction of rows
             do n2=n3,n4
-              zt1=zdotu(nwfme,zm1(1,n2),1,mewf2(1,i,igq0),1)
-              zt3=zt3+zt1*dconjg(mewf2(n2,j,igq0))
-            enddo
+! perform column times vector multiplication
+!  zt1_{n,m,T,T'}=\sum_{n',m'}chi0wan(n,m,n',m',T-T')*A_{n'm'T'}(q,Gq)
+              zt1=zdotu(nmegqwan,zm1(1,n2),1,megqwan(1,i,igq0),1)
+! perform vector times vector multiplication
+!  zt3=zt3+\sum_{T,T'}\sum_{n,m}A^{*}_{nmT}(q,Gq)*zt1_{n,m,T,T'}
+              zt3=zt3+zt1*dconjg(megqwan(n2,j,igq0))
+            enddo !n2
           endif
-        enddo
-      enddo
+        enddo !j
+      enddo !i
     enddo !it2
+! sum all the rows
     call d_reduce_cart(comm_cart_100,.false.,zt3,2)
-  endif    
+  endif !(root_cart((/0,1,0/)).and.lwannresp)    
   call timer_stop(3)
 ! write to file
   call timer_start(4)
   if (root_cart((/1,1,0/))) then
-    chi0w=chi0w/nkptnr/omega
     write(path,'("/iw/",I8.8)')ie
     call write_real8(lr_w(ie),2,trim(fname),trim(path),'w')
     call write_real8_array(chi0w,3,(/2,ngvecme,ngvecme/), &
       trim(fname),trim(path),'chi0')
     if (lwannresp) then
       call write_real8_array(zt3,1,(/2/),trim(fname),trim(path),'chi0wf')
-      call write_real8_array(mewf4,4,(/2,nwfme,nwfme,ntr2/), &
-        trim(fname),trim(path),'mewf4')
+      call write_real8_array(chi0wan,4,(/2,nmegqwan,nmegqwan,ntrchi0wan/), &
+        trim(fname),trim(path),'chi0wan')
     endif
     call rewrite_integer(ie,1,trim(fname),'/parameters','ie1')
   endif
@@ -512,15 +485,9 @@ enddo !ie
 
 if (lwannresp) then
   if (root_cart((/1,1,0/))) then
-    call write_real8_array(mewf2,4,(/2,nwfme,ntr1,ngvecme/), &
-      trim(fname),'/wann','mewf2')
-    call write_integer(ntr1,1,trim(fname),'/wann','ntr1')
-    call write_integer(ntr2,1,trim(fname),'/wann','ntr2')
-    call write_integer_array(itr1l,2,(/3,ntr1/),trim(fname),'/wann','itr1')
-    call write_integer_array(itr2l,2,(/3,ntr2/),trim(fname),'/wann','itr2')
-    call write_integer(nwfme,1,trim(fname),'/wann','nwfme')
-    call write_integer_array(iwfme,2,(/2,nwfme/),trim(fname),'/wann','iwfme')
-    call write_integer_array(itridx,2,(/ntr1,ntr1/),trim(fname),'/wann','itridx')
+    call write_integer(ntrchi0wan,1,trim(fname),'/wannier','ntrchi0wan')
+    call write_integer_array(itrchi0wan,2,(/3,ntrchi0wan/),trim(fname),'/wannier','itrchi0wan')
+    call write_integer_array(itridxwan,2,(/ntrmegqwan,ntrmegqwan/),trim(fname),'/wannier','itridxwan')
   endif
 endif
 !
@@ -562,21 +529,27 @@ deallocate(lr_w)
 deallocate(idxkq)
 deallocate(nmegqblh)
 deallocate(bmegqblh)
-!deallocate(docc)
 deallocate(megqblh)
 deallocate(chi0w)
 if (wannier) then
   deallocate(wann_c1)
   deallocate(wann_c2)
+  deallocate(itrmegqwan)
+  deallocate(megqwan)
+  deallocate(bmegqwan)
 endif
 if (lwannresp) then
-!  deallocate(mewf4)
+  deallocate(itrchi0wan)
+  deallocate(itridxwan)
+  deallocate(chi0wan)
   deallocate(zv1)
   deallocate(zm1)
-  deallocate(itr1l)
-  deallocate(itr2l)  
+  deallocate(zm2)
 endif
-  
+if (lwannopt) then
+  deallocate(pmat)
+endif
+ 
 return
 end
 #endif
