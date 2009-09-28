@@ -1,4 +1,4 @@
-subroutine getmeidx(req,occsvnr,evalsvnr)
+subroutine getmeidx(req,occsvnr,evalsvnr,wproc)
 use modmain
 #ifdef _MPI_
 use mpi
@@ -8,20 +8,29 @@ implicit none
 logical, intent(in) :: req
 real(8), intent(in) :: occsvnr(nstsv,nkptnr)
 real(8), intent(in) :: evalsvnr(nstsv,nkptnr)
+logical, intent(in) :: wproc
 
 integer i,ik,jk,ist1,ist2,ikloc
 logical laddme,ldocc
-real(8) d1,min_e12
-logical l11,l12,l21,l22,le1,le2
+real(8) d1,min_e12,min_e1_wann,max_e2_wann
+logical l11,l12,l21,l22,le1,le2,lwann,le1w,le2w
 integer, external :: iknrglob2
 logical, external :: bndint
 logical, external :: wann_diel
-!if (req.and.wproc) then
-!  write(150,*)
-!  write(150,'("Band interval (N1,N2 or E1,E2) : ",2F8.3)')lr_e1,lr_e2
-!endif
+
+if (wannier) then
+  min_e1_wann=minval(wann_eint(1,:))
+  max_e2_wann=maxval(wann_eint(2,:))
+endif
+if (req.and.wproc) then
+  write(150,*)
+  write(150,'("Bloch functions band interval (N1,N2 or E1,E2) : ",2F8.3)')lr_e1,lr_e2
+  if (wannier) then
+    write(150,'("Wannier functions band interval (N1,N2 or E1,E2) : ",2F8.3)')min_e1_wann,max_e2_wann
+  endif
+endif
 if (req) then
-  nmemax=0
+  nmegqblhmax=0
   min_e12=100.d0
 endif
 do ikloc=1,nkptnr_loc
@@ -39,14 +48,16 @@ do ikloc=1,nkptnr_loc
 !   include transition between bands ist1 and ist2 when:
 !     1a. we are doing response in Bloch basis and difference of band 
 !         occupation numbers in not zero     OR
-!     1b. we are doing response in Wannier basis and occupancies of 
-!         Wannier functions are not 0 or 1   OR
-!     1c. we are doing constrained RPA
+!     1b. we are doing response in Wannier basis or constrained RPA
 !     2.  both bands ist1 and ist2 fall into energy interval
-! TODO:
-!  condiitons 1b and 1c are not 100% efficient (they pick all interband 
-!    transitions) and should be revisited
-      if ((ldocc.or.(lwannresp.and..not.wann_diel()).or.crpa).and.(le1.and.le2)) then
+      lwann=.false.
+      if (wannier) then
+        le1w=bndint(ist1,evalsvnr(ist1,ik),min_e1_wann,max_e2_wann)
+        le2w=bndint(ist2,evalsvnr(ist2,jk),min_e1_wann,max_e2_wann)
+        if ((lwannresp.and..not.wann_diel()).and.(le1w.and.le2w)) lwann=.true.
+        if (crpa.and.(le1w.and.le2w)) lwann=.true.
+      endif
+      if ((ldocc.or.lwann).and.(le1.and.le2)) then
         if (.not.spinpol) then
           laddme=.true.
         else
@@ -61,10 +72,10 @@ do ikloc=1,nkptnr_loc
       if (laddme) then
         i=i+1
         if (.not.req) then
-          ime(1,i,ikloc)=ist1
-          ime(2,i,ikloc)=ist2
-          ime(3,i,ikloc)=1 
-          docc(i,ikloc)=d1
+          bmegqblh(1,i,ikloc)=ist1
+          bmegqblh(2,i,ikloc)=ist2
+          !ime(3,i,ikloc)=1 
+          !docc(i,ikloc)=d1
         endif
         if (req) then
           min_e12=min(min_e12,abs(evalsvnr(ist1,ik)-evalsvnr(ist2,jk)))
@@ -72,18 +83,18 @@ do ikloc=1,nkptnr_loc
       endif
     enddo
   enddo
-  if (.not.req) nme(ikloc)=i
-  if (req) nmemax=max(nmemax,i)
+  if (.not.req) nmegqblh(ikloc)=i
+  if (req) nmegqblhmax=max(nmegqblhmax,i)
 enddo !ikloc
 
 if (req) then
 #ifdef _MPI_
   call d_reduce_cart2(comm_cart_100,.false.,min_e12,1,MPI_MIN)
 #endif
-!  if (wproc) then
-!    write(150,*)
-!    write(150,'("Minimal energy transition (eV) : ",F12.6)')min_e12*ha2ev
-!  endif
+  if (wproc) then
+    write(150,*)
+    write(150,'("Minimal energy transition (eV) : ",F12.6)')min_e12*ha2ev
+  endif
 endif
 
 return

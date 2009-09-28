@@ -48,7 +48,7 @@ if (.not.wannier) then
   lwannopt=.false.
 endif
 ! this is enough for matrix elements
-lmaxvr=4
+!lmaxvr=4
 ! initialise universal variables
 call init0
 call init1
@@ -134,7 +134,7 @@ if (in_cart()) then
   call splitk(nkptnr,mpi_dims(1),nkptnrloc,ikptnrloc)
   nkptnr_loc=nkptnrloc(mpi_x(1))
   
-  if (task.eq.400.or.task.eq.401.or.task.eq.404) then
+  if (task.eq.400.or.task.eq.401) then
 ! get occupancies and energies of states
     allocate(occsvnr(nstsv,nkptnr))
     allocate(evalsvnr(nstsv,nkptnr))
@@ -250,7 +250,7 @@ if (in_cart()) then
     endif
     call timer_reset(1)
     call timer_start(1)
-! generate wannier function expansion coefficients
+! generate Wannier function expansion coefficients
     if (wannier) then
       if (allocated(wann_c)) deallocate(wann_c)
       allocate(wann_c(nwann,nstsv,nkptnr_loc))
@@ -263,6 +263,7 @@ if (in_cart()) then
         ik=iknrglob2(ikloc,mpi_x(1))
         call genwann_c(ik,evalsvnr(1,ik),wfsvmtloc(1,1,1,1,1,ikloc),wann_c(1,1,ikloc))
       enddo !ikloc
+! calculate Wannier function occupancies 
       wann_occ=0.d0
       do n=1,nwann
         do ikloc=1,nkptnr_loc
@@ -326,7 +327,7 @@ if (in_cart()) then
 ! calculate chi0
     call timer_start(11)
     do iq=ivq1,ivq2
-      call response_chi0(ivq0m_list(1,iq),evalsvnr)
+      call response_chi0(ivq0m_list(1,iq),evalsvnr,occsvnr)
     enddo
     call timer_stop(11)
     if (wproc) then

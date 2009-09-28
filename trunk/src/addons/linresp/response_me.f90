@@ -35,7 +35,10 @@ integer, allocatable :: igkignr2(:)
 complex(8), allocatable :: wfsvmt2(:,:,:,:,:)
 complex(8), allocatable :: wfsvit2(:,:,:)
 complex(8), allocatable :: wann_c2(:,:)
-complex(8), allocatable :: me(:,:,:)
+
+
+integer n1,n2,i1,i2,i3,itr,n,ist1,ist2
+real(8) vtrc(3)
 
 complex(8), allocatable :: gvit(:,:,:)
 
@@ -54,7 +57,7 @@ integer lmaxexp
 integer lmmaxexp
 
 character*100 :: qnm,fname
-logical wproc
+logical wproc,l1
 
 integer, allocatable :: igishell(:)
 integer, allocatable :: ishellng(:,:)
@@ -74,9 +77,10 @@ character*8 c8
 real(8), external :: r3taxi
 logical, external :: root_cart
 integer, external :: iknrglob2
+logical, external :: wann_diel
 
 ! comment:
-! the subroutine computes <psi_{j,k}|e^{-i(G+q)x}|psi_{j',k+q}> 
+! the subroutine computes <psi_{n,k}|e^{-i(G+q)x}|psi_{n',k+q}> 
 !
 call qname(ivq0m,qnm)
 qnm="./"//trim(qnm)//"/"//trim(qnm)
@@ -195,7 +199,8 @@ call pstop
 ! get Cartesian coordinates of q-vector and reduced q-vector
 call r3mv(bvec,vq0l,vq0c)
 call r3mv(bvec,vq0rl,vq0rc)
-  
+
+! write some info  
 if (wproc) then
   write(150,*)
   write(150,'("q-vector (lat.coord.)                        : ",&
@@ -264,20 +269,65 @@ if (spinpol) then
   call i_reduce_cart(comm_cart_100,.true.,spinor_ud,2*nstsv*nkptnr)
   call i_bcast_cart(comm_cart_010,spinor_ud,2*nstsv*nkptnr)
 endif
-call getmeidx(.true.,occsvnr,evalsvnr)
+call getmeidx(.true.,occsvnr,evalsvnr,wproc)
 #ifdef _MPI_
-call mpi_allreduce(nmemax,i,1,MPI_INTEGER,MPI_MAX,comm_cart_100,ierr)
-nmemax=i
+call mpi_allreduce(nmegqblhmax,i,1,MPI_INTEGER,MPI_MAX,comm_cart_100,ierr)
+nmegqblhmax=i
 #endif
-allocate(nme(nkptnr_loc))
-allocate(ime(3,nmemax,nkptnr_loc))
-allocate(docc(nmemax,nkptnr_loc))
-call getmeidx(.false.,occsvnr,evalsvnr)
+allocate(nmegqblh(nkptnr_loc))
+allocate(bmegqblh(2,nmegqblhmax,nkptnr_loc))
+!allocate(imegqblh(nstsv,nstsv,nkptnr_loc))
+call getmeidx(.false.,occsvnr,evalsvnr,wproc)
+!imegqblh=-1
+!do ikloc=1,nkptnr_loc
+!  do i=1,nmegqblh(ikloc)
+!    ist1=bmegqblh(1,i,ikloc)
+!    ist2=bmegqblh(2,i,ikloc)
+!    imegqblh(ist1,ist2,ikloc)=i
+!  enddo
+!enddo
 call timer_stop(1)
 if (wproc) then
   write(150,*)
-  write(150,'("Maximum number of interband transitions: ",I5)')nmemax
+  write(150,'("Maximum number of interband transitions: ",I5)')nmegqblhmax
   write(150,'("Done in ",F8.2," seconds")')timer(1,2)
+endif
+
+if (wannier) then
+  allocate(bmegqwan(2,nwann*nwann))
+  nmegqwan=0
+  do n1=1,nwann
+    do n2=1,nwann
+      l1=.false.
+! for integer occupancy numbers take only transitions between occupied and empty bands
+      if (wann_diel().and.(abs(wann_occ(n1)-wann_occ(n2)).gt.1d-8)) l1=.true.
+! for fractional occupancies or cRPA calculation take all transitions
+      if (.not.wann_diel().or.crpa) l1=.true.
+      if (l1) then
+        nmegqwan=nmegqwan+1
+        bmegqwan(1,nmegqwan)=n1
+        bmegqwan(2,nmegqwan)=n2
+      endif
+    enddo
+  enddo
+  if (wproc) then
+    write(150,*)
+    write(150,'("Number of WF trainstions : ",I4)')nmegqwan
+  endif
+! list of translations
+  ntrmegqwan=(2*lr_maxtr+1)**3
+  allocate(itrmegqwan(3,ntrmegqwan))
+  i=0
+  do i1=-lr_maxtr,lr_maxtr
+    do i2=-lr_maxtr,lr_maxtr
+      do i3=-lr_maxtr,lr_maxtr
+        i=i+1
+        itrmegqwan(:,i)=(/i1,i2,i3/)
+      enddo
+    enddo
+  enddo
+  allocate(megqwan(nmegqwan,ntrmegqwan,ngvecme))
+  megqwan=zzero
 endif
 
 ! generate G+q' vectors, where q' is reduced q-vector
@@ -299,6 +349,10 @@ if (root_cart((/1,1,0/))) then
   call h5fcreate_f(trim(fname),H5F_ACC_TRUNC_F,h5_root_id,ierr)
   call h5gcreate_f(h5_root_id,'parameters',h5_tmp_id,ierr)
   call h5gclose_f(h5_tmp_id,ierr)
+  if (wannier) then
+    call h5gcreate_f(h5_root_id,'wannier',h5_tmp_id,ierr)
+    call h5gclose_f(h5_tmp_id,ierr)
+  endif
   call h5gcreate_f(h5_root_id,'kpoints',h5_kpoints_id,ierr)
   do ik=1,nkptnr
     write(c8,'(I8.8)')ik
@@ -308,7 +362,7 @@ if (root_cart((/1,1,0/))) then
   call h5gclose_f(h5_kpoints_id,ierr)
   call h5fclose_f(h5_root_id,ierr)
   call write_integer(nkptnr,1,trim(fname),'/parameters','nkptnr')
-  call write_integer(nmemax,1,trim(fname),'/parameters','nmemax')
+  call write_integer(nmegqblhmax,1,trim(fname),'/parameters','nmegqblhmax')
   call write_integer(lr_igq0,1,trim(fname),'/parameters','lr_igq0')
   call write_integer(gshme1,1,trim(fname),'/parameters','gshme1')
   call write_integer(gshme2,1,trim(fname),'/parameters','gshme2')
@@ -321,7 +375,7 @@ if (root_cart((/1,1,0/))) then
   call write_real8(vq0c,3,trim(fname),'/parameters','vq0c')
   call write_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
   if (wannier) then
-    call write_real8(wann_occ,nwann,trim(fname),'/parameters','wann_occ')
+    call write_real8(wann_occ,nwann,trim(fname),'/wannier','wann_occ')
   endif
 endif
 if ((.not.lsfio).and.root_cart((/0,1,0/))) then
@@ -375,7 +429,7 @@ deallocate(uuj)
 allocate(gvit(intgv(1,1):intgv(1,2),intgv(2,1):intgv(2,2),intgv(3,1):intgv(3,2)))
 call gengvit(gvit)
 
-sz=16*ngvecme*nmemax*nkptnrloc(0)/1024/1024
+sz=16*ngvecme*nmegqblhmax*nkptnrloc(0)/1024/1024
 if (sz.lt.150) then
   if (wproc) then
     write(150,*)
@@ -388,9 +442,9 @@ else
 endif
 if (wannier) lwritemek=.true.
 if (lwritemek) then
-  allocate(me(ngvecme,nmemax,1))
+  allocate(megqblh(ngvecme,nmegqblhmax,1))
 else
-  allocate(me(ngvecme,nmemax,nkptnr_loc))
+  allocate(megqblh(ngvecme,nmegqblhmax,nkptnr_loc))
 endif
 allocate(wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
 allocate(wfsvit2(ngkmax,nspinor,nstsv))
@@ -429,27 +483,48 @@ do ikstep=1,nkptnrloc(0)
     call idxglob(nkptnr,mpi_dims(1),mpi_x(1)+1,ikstep,ik)
     if (lwritemek) then
       ik1=1
-      me=zzero
     else
       ik1=ikstep
     endif
-    me(:,:,ik1)=zzero
+    megqblh(:,:,ik1)=zzero
     if (.not.lmeoff) then
 ! calculate muffin-tin contribution for all combinations of n,n'    
       call timer_start(4)
-      call zrhoftmt(nme(ikstep),ime(1,1,ikstep),               &
+      call megqblhmt(nmegqblh(ikstep),bmegqblh(1,1,ikstep),               &
         wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,ngumax,ngu,gu,igu, &
-        me(1,1,ik1),ik,idxkq(1,ik))
+        megqblh(1,1,ik1),ik,idxkq(1,ik))
       call timer_stop(4)
 ! calculate interstitial contribution for all combinations of n,n'
       call timer_start(5)
-      call zrhoftit(nme(ikstep),ime(1,1,ikstep),ngknr(ikstep), &
+      call megqblhit(nmegqblh(ikstep),bmegqblh(1,1,ikstep),ngknr(ikstep), &
         ngknr2,igkignr(1,ikstep),igkignr2,idxkq(2,ik),         &
-        wfsvitloc(1,1,1,ikstep),wfsvit2,me(1,1,ik1),gvit,ik,idxkq(1,ik))
+        wfsvitloc(1,1,1,ikstep),wfsvit2,megqblh(1,1,ik1),gvit,ik,idxkq(1,ik))
       call timer_stop(5)
     else
-      me(1:ngvecme,1:nme(ikstep),ik1)=zone
+      megqblh(1:ngvecme,1:nmegqblh(ikstep),ik1)=zone
     endif
+! add contribution from k-point to the matrix elements of e^{-i(G+q)x} in 
+!  the basis of Wannier functions
+    if (wannier) then
+      do itr=1,ntrmegqwan
+        vtrc(:)=avec(:,1)*itrmegqwan(1,itr)+&
+                avec(:,2)*itrmegqwan(2,itr)+&
+                avec(:,3)*itrmegqwan(3,itr)
+        zt1=exp(dcmplx(0.d0,-dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
+        do ig=1,ngvecme
+          do n=1,nmegqwan
+            n1=bmegqwan(1,n)
+            n2=bmegqwan(2,n)
+            do i=1,nmegqblh(ikstep)
+              ist1=bmegqblh(1,i,ikstep)
+              ist2=bmegqblh(2,i,ikstep)
+              megqwan(n,itr,ig)=megqwan(n,itr,ig)+dconjg(wann_c(n1,ist1,ikstep))*&
+                  wann_c2(n2,ist2)*megqblh(ig,i,ik1)*zt1
+            enddo !i
+          enddo !n
+        enddo !ig      
+      enddo !itr
+    endif !wannier
   endif ! ikstep.le.nkptnrloc(mpi_x(1))
   call timer_stop(2)
 ! write matrix elements
@@ -461,7 +536,7 @@ do ikstep=1,nkptnrloc(0)
       if (lsfio) then
         do i=0,mpi_dims(1)-1
           if (mpi_x(1).eq.i.and.ikstep.le.nkptnr_loc) then
-            call writeme(ikstep,fname,me,wann_c2,pmat(1,1,1,ikstep))
+            call writeme(ikstep,fname,megqblh,wann_c2,pmat(1,1,1,ikstep))
           endif
           call barrier(comm_cart_100)
         enddo   
@@ -469,7 +544,7 @@ do ikstep=1,nkptnrloc(0)
         if (ikstep.le.nkptnr_loc) then
           write(fname,'("_me_k_",I8.8)')ik
           fname=trim(qnm)//trim(fname)//".hdf5"
-          call writeme(ikstep,fname,me,wann_c2,pmat(1,1,1,ikstep))
+          call writeme(ikstep,fname,megqblh,wann_c2,pmat(1,1,1,ikstep))
         endif
       endif !lsfio
     endif !root_cart
@@ -483,10 +558,27 @@ do ikstep=1,nkptnrloc(0)
     write(150,'("    interstitial : ",F8.2)')timer(5,2)
     write(150,'("      total      : ",F8.2)')timer(2,2)
     write(150,'("    writing      : ",F8.2)')timer(3,2)
-    write(150,'("  speed (me/sec) : ",F10.2)')ngvecme*nme(ikstep)/timer(2,2)
+    write(150,'("  speed (me/sec) : ",F10.2)')ngvecme*nmegqblh(ikstep)/timer(2,2)
     call flushifc(150)
   endif
 enddo !ikstep
+
+if (wannier) then
+! sum over all points to get <n,T=0|e^{-i(G+q)x|n',T'>
+  if (root_cart((/0,1,0/)).and.mpi_dims(1).gt.1) then
+    call d_reduce_cart(comm_cart_100,.false.,megqwan,2*nmegqwan*ntrmegqwan*ngvecme)
+  endif
+  megqwan=megqwan/nkptnr
+  if (root_cart((/1,1,0/))) then
+    fname=trim(qnm)//"_me.hdf5"
+    call write_real8_array(megqwan,4,(/2,nmegqwan,ntrmegqwan,ngvecme/), &
+      trim(fname),'/wannier','megqwan')
+    call write_integer(ntrmegqwan,1,trim(fname),'/wannier','ntrmegqwan')
+    call write_integer_array(itrmegqwan,2,(/3,ntrmegqwan/),trim(fname),'/wannier','itrmegqwan')
+    call write_integer(nmegqwan,1,trim(fname),'/wannier','nmegqwan')
+    call write_integer_array(bmegqwan,2,(/2,nmegqwan/),trim(fname),'/wannier','bmegqwan')
+  endif
+endif
 
 if (.not.lwritemek) then
   if (wproc) then
@@ -499,7 +591,7 @@ if (.not.lwritemek) then
       do i=0,mpi_dims(1)-1
         if (mpi_x(1).eq.i) then
           do ikstep=1,nkptnr_loc
-            call writeme(ikstep,fname,me(1,1,ikstep),wann_c2,pmat(1,1,1,ikstep))
+            call writeme(ikstep,fname,megqblh(1,1,ikstep),wann_c2,pmat(1,1,1,ikstep))
           enddo
         endif
         call barrier(comm_cart_100)
@@ -509,7 +601,7 @@ if (.not.lwritemek) then
         call idxglob(nkptnr,mpi_dims(1),mpi_x(1)+1,ikstep,ik)
         write(fname,'("_me_k_",I8.8)')ik
         fname=trim(qnm)//trim(fname)//".hdf5"
-        call writeme(ikstep,fname,me(1,1,ikstep),wann_c2,pmat(1,1,1,ikstep))
+        call writeme(ikstep,fname,megqblh(1,1,ikstep),wann_c2,pmat(1,1,1,ikstep))
       enddo
     endif !lsfio
   endif !root_cart
@@ -518,33 +610,30 @@ if (.not.lwritemek) then
 endif
 
 deallocate(gvit)
-deallocate(me)
 deallocate(wfsvmt2)
 deallocate(wfsvit2)
 deallocate(igkignr2)
-if (wannier) then
-  deallocate(wann_c2)
-endif
-
-deallocate(nme)
-deallocate(ime)
-deallocate(docc)
-
+deallocate(megqblh)
+deallocate(nmegqblh)
+deallocate(bmegqblh)
 deallocate(idxkq)
 deallocate(vgq0c)
 deallocate(gq0)
 deallocate(tpgq0)
 deallocate(sfacgq0)
 deallocate(ylmgq0) 
-
 deallocate(ngu)
 deallocate(gu)
 deallocate(igu)
-
 if (spinpol) then
   deallocate(spinor_ud)
 endif
-
+if (wannier) then
+  deallocate(wann_c2)
+  deallocate(bmegqwan)
+  deallocate(itrmegqwan)
+  deallocate(megqwan)
+endif
 
 call barrier(comm_cart_110)
 

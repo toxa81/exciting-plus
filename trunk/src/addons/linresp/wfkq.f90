@@ -23,7 +23,7 @@ integer rank,tag,ierr,req
 integer, allocatable :: stat(:)
 
 #ifdef _MPI_
-! each proc in k-group knows that it needs wave-function at jk=idxkq(1,ik) point
+! each proc knows that it needs wave-functions at jk=idxkq(1,ik) (k'=k+q)
 !
 ! the distribution of k-points could look like this
 !                p0          p1          p2

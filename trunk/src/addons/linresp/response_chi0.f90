@@ -1,5 +1,5 @@
 #ifdef _HDF5_
-subroutine response_chi0(ivq0m,evalsvnr)
+subroutine response_chi0(ivq0m,evalsvnr,occsvnr)
 use modmain
 use hdf5
 #ifdef _MPI_
@@ -9,9 +9,10 @@ implicit none
 ! arguments
 integer, intent(in) :: ivq0m(3)
 real(8), intent(in) :: evalsvnr(nstsv,nkptnr)
+real(8), intent(in) :: occsvnr(nstsv,nkptnr)
 ! local variables
 complex(8), allocatable :: chi0w(:,:)
-complex(8), allocatable :: me(:,:,:)
+!complex(8), allocatable :: me(:,:,:)
 integer i,j,ik,ie,nkptnr_,i1,i2,i3,ikloc,nspinor_
 integer idx0,bs
 integer igq0
@@ -41,6 +42,7 @@ complex(8), allocatable :: mewf4(:,:,:)
 complex(8), allocatable :: pmat(:,:,:,:)
 
 logical wproc
+logical l1
 
 logical lafm
 logical, external :: bndint
@@ -85,7 +87,7 @@ enddo
 fname=trim(qnm)//"_me.hdf5"
 if (root_cart((/1,1,0/))) then
   call read_integer(nkptnr_,1,trim(fname),'/parameters','nkptnr')
-  call read_integer(nmemax,1,trim(fname),'/parameters','nmemax')
+  call read_integer(nmegqblhmax,1,trim(fname),'/parameters','nmegqblhmax')
   call read_integer(lr_igq0,1,trim(fname),'/parameters','lr_igq0')
   call read_integer(gshme1,1,trim(fname),'/parameters','gshme1')
   call read_integer(gshme2,1,trim(fname),'/parameters','gshme2')
@@ -98,7 +100,7 @@ if (root_cart((/1,1,0/))) then
   call read_real8(vq0c,3,trim(fname),'/parameters','vq0c')
   call read_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
   if (wannier) then
-    call read_real8(wann_occ,nwann,trim(fname),'/parameters','wann_occ')
+    call read_real8(wann_occ,nwann,trim(fname),'/wannier','wann_occ')
   endif  
   if (nkptnr_.ne.nkptnr) then
     write(*,*)
@@ -118,7 +120,7 @@ call i_bcast_cart(comm_cart_110,gshme2,1)
 call i_bcast_cart(comm_cart_110,gvecme1,1)
 call i_bcast_cart(comm_cart_110,gvecme2,1)
 call i_bcast_cart(comm_cart_110,ngvecme,1)
-call i_bcast_cart(comm_cart_110,nmemax,1)
+call i_bcast_cart(comm_cart_110,nmegqblhmax,1)
 call i_bcast_cart(comm_cart_110,lr_igq0,1)
 call d_bcast_cart(comm_cart_110,vq0l,3)
 call d_bcast_cart(comm_cart_110,vq0rl,3)
@@ -129,10 +131,10 @@ if (wannier) then
 endif
 
 allocate(idxkq(1,nkptnr_loc))
-allocate(nme(nkptnr_loc))
-allocate(ime(3,nmemax,nkptnr_loc))
-allocate(docc(nmemax,nkptnr_loc))
-allocate(me(ngvecme,nmemax,nkptnr_loc))
+allocate(nmegqblh(nkptnr_loc))
+allocate(bmegqblh(2,nmegqblhmax,nkptnr_loc))
+!allocate(docc(nmegqblhmax,nkptnr_loc))
+allocate(megqblh(ngvecme,nmegqblhmax,nkptnr_loc))
 if (wannier) then
   allocate(wann_c1(nwann,nstsv,nkptnr_loc))
   allocate(wann_c2(nwann,nstsv,nkptnr_loc))
@@ -164,14 +166,14 @@ if (lsfio) then
           ik=ikptnrloc(mpi_x(1),1)+ikloc-1
           write(path,'("/kpoints/",I8.8)')ik
           call read_integer(idxkq(1,ikloc),1,trim(fname),trim(path),'kq')
-          call read_integer(nme(ikloc),1,trim(fname),trim(path),'nme')
-          if (nme(ikloc).gt.0) then
-            call read_integer_array(ime(1,1,ikloc),2,(/3,nme(ikloc)/), &
-              trim(fname),trim(path),'ime')
-            call read_real8(docc(1,ikloc),nme(ikloc),trim(fname), &
-              trim(path),'docc')
-            call read_real8_array(me(1,1,ikloc),3,(/2,ngvecme,nme(ikloc)/), &
-              trim(fname),trim(path),'me')
+          call read_integer(nmegqblh(ikloc),1,trim(fname),trim(path),'nmegqblh')
+          if (nmegqblh(ikloc).gt.0) then
+            call read_integer_array(bmegqblh(1,1,ikloc),2,(/2,nmegqblh(ikloc)/), &
+              trim(fname),trim(path),'bmegqblh')
+!            call read_real8(docc(1,ikloc),nmegqblh(ikloc),trim(fname), &
+!              trim(path),'docc')
+            call read_real8_array(megqblh(1,1,ikloc),3,(/2,ngvecme,nmegqblh(ikloc)/), &
+              trim(fname),trim(path),'megqblh')
           endif
           if (wannier) then
             call read_real8_array(wann_c1(1,1,ikloc),3,(/2,nwann,nstsv/), &
@@ -199,14 +201,14 @@ else
       fname=trim(qnm)//trim(fname)//".hdf5"
       write(path,'("/kpoints/",I8.8)')ik
       call read_integer(idxkq(1,ikloc),1,trim(fname),trim(path),'kq')
-      call read_integer(nme(ikloc),1,trim(fname),trim(path),'nme')
-      if (nme(ikloc).gt.0) then
-        call read_integer_array(ime(1,1,ikloc),2,(/3,nme(ikloc)/), &
-          trim(fname),trim(path),'ime')
-        call read_real8(docc(1,ikloc),nme(ikloc),trim(fname), &
-          trim(path),'docc')
-        call read_real8_array(me(1,1,ikloc),3,(/2,ngvecme,nme(ikloc)/), &
-          trim(fname),trim(path),'me')
+      call read_integer(nmegqblh(ikloc),1,trim(fname),trim(path),'nmegqblh')
+      if (nmegqblh(ikloc).gt.0) then
+        call read_integer_array(bmegqblh(1,1,ikloc),2,(/2,nmegqblh(ikloc)/), &
+          trim(fname),trim(path),'bmegqblh')
+!        call read_real8(docc(1,ikloc),nmegqblh(ikloc),trim(fname), &
+!          trim(path),'docc')
+        call read_real8_array(megqblh(1,1,ikloc),3,(/2,ngvecme,nmegqblh(ikloc)/), &
+          trim(fname),trim(path),'megqblh')
       endif
       if (wannier) then
         call read_real8_array(wann_c1(1,1,ikloc),3,(/2,nwann,nstsv/), &
@@ -228,10 +230,9 @@ if (wproc) then
   call flushifc(150)
 endif
 call i_bcast_cart(comm_cart_010,idxkq,nkptnr_loc)
-call i_bcast_cart(comm_cart_010,nme,nkptnr_loc)
-call i_bcast_cart(comm_cart_010,ime,3*nmemax*nkptnr_loc)
-call d_bcast_cart(comm_cart_010,docc,nmemax*nkptnr_loc)
-call d_bcast_cart(comm_cart_010,me,2*ngvecme*nmemax*nkptnr_loc)
+call i_bcast_cart(comm_cart_010,nmegqblh,nkptnr_loc)
+call i_bcast_cart(comm_cart_010,bmegqblh,2*nmegqblhmax*nkptnr_loc)
+call d_bcast_cart(comm_cart_010,megqblh,2*ngvecme*nmegqblhmax*nkptnr_loc)
 if (wannier) then
   call d_bcast_cart(comm_cart_010,wann_c1,2*nwann*nstsv*nkptnr_loc)
   call d_bcast_cart(comm_cart_010,wann_c2,2*nwann*nstsv*nkptnr_loc)
@@ -242,11 +243,6 @@ endif
 
 ! for response in Wannier bais
 if (lwannresp) then
-!  lwanndiel=.true.
-!  do n=1,nwann
-!    if ((abs(wann_occ(n))*abs(wann_occ(n)-occmax)).gt.1d-10) &
-!      lwanndiel=.false.
-!  enddo
   allocate(iwfme(2,nwann*nwann))
   nwfme=0
   do n1=1,nwann
@@ -320,11 +316,11 @@ if (lwannresp) then
         do n=1,nwfme
           n1=iwfme(1,n)
           n2=iwfme(2,n)
-          do i=1,nme(ikloc)
-            ist1=ime(1,i,ikloc)
-            ist2=ime(2,i,ikloc)
+          do i=1,nmegqblh(ikloc)
+            ist1=bmegqblh(1,i,ikloc)
+            ist2=bmegqblh(2,i,ikloc)
             mewf2(n,it1,ig)=mewf2(n,it1,ig)+dconjg(wann_c1(n1,ist1,ikloc))*&
-              wann_c2(n2,ist2,ikloc)*me(ig,i,ikloc)*zt1
+              wann_c2(n2,ist2,ikloc)*megqblh(ig,i,ikloc)*zt1
           enddo
         enddo
       enddo      
@@ -389,6 +385,7 @@ if (wproc) then
   write(150,'("  first energy point : ",I4)')ie1
   call flushifc(150)
 endif
+! loop over energy points
 do ie=ie1,nepts
   call timer_reset(1)
   call timer_reset(2)
@@ -400,38 +397,48 @@ do ie=ie1,nepts
   sz1=0
   sz2=0
   call timer_start(2)
+! sum over k-points
   do ikloc=1,nkptnr_loc
     ik=ikptnrloc(mpi_x(1),1)+ikloc-1
-    if (nme(ikloc).gt.0) then
-      call idxbos(nme(ikloc),mpi_dims(2),mpi_x(2)+1,idx0,bs)
+    jk=idxkq(1,ikloc)
+    if (nmegqblh(ikloc).gt.0) then
+      call idxbos(nmegqblh(ikloc),mpi_dims(2),mpi_x(2)+1,idx0,bs)
       i1=idx0+1
       i2=idx0+bs
       sz1=sz1+bs
+! for each k-point : sum over interband transitions 
       do i=i1,i2
-        ist1=ime(1,i,ikloc)
-        ist2=ime(2,i,ikloc)
-        if (.not.(crpa.and.bndint(ist1,evalsvnr(ist1,ik),crpa_e1,crpa_e2).and. &
-            bndint(ist2,evalsvnr(ist2,idxkq(1,ikloc)),crpa_e1,crpa_e2))) then
-          wt=docc(i,ikloc)/(evalsvnr(ime(1,i,ikloc),ik) - &
-            evalsvnr(ime(2,i,ikloc),idxkq(1,ikloc))+lr_w(ie))
-          call zgerc(ngvecme,ngvecme,wt,me(1,i,ikloc),1,me(1,i,ikloc),1, &
+        ist1=bmegqblh(1,i,ikloc)
+        ist2=bmegqblh(2,i,ikloc)
+! default : include all interband transitions         
+        l1=.true.
+! for cRPA : don't include bands in energy window [crpa_e1,crpa_e2]
+        if (crpa) then
+          if (bndint(ist1,evalsvnr(ist1,ik),crpa_e1,crpa_e2).and. &
+              bndint(ist2,evalsvnr(ist2,jk),crpa_e1,crpa_e2)) l1=.false.
+        endif
+        if (l1) then
+          wt=(occsvnr(ist1,ik)-occsvnr(ist2,jk))/(evalsvnr(ist1,ik) - &
+            evalsvnr(ist2,jk)+lr_w(ie))
+          call zgerc(ngvecme,ngvecme,wt,megqblh(1,i,ikloc),1,megqblh(1,i,ikloc),1, &
             chi0w,ngvecme)
         endif
       enddo !i
     endif
     if (lwannresp) then
-      sz2=sz2+nme(ikloc)*nwfme**2
-      do i=1,nme(ikloc)
+      sz2=sz2+nmegqblh(ikloc)*nwfme**2
+      do i=1,nmegqblh(ikloc)
         jk=idxkq(1,ikloc)
-        ist1=ime(1,i,ikloc)
-        ist2=ime(2,i,ikloc)
+        ist1=bmegqblh(1,i,ikloc)
+        ist2=bmegqblh(2,i,ikloc)
         do n=1,nwfme
           n1=iwfme(1,n)
           n2=iwfme(2,n)
           zv1(n)=wann_c1(n1,ist1,ikloc)*dconjg(wann_c2(n2,ist2,ikloc))
         enddo
-        zt1=(docc(i,ikloc)/(evalsvnr(ist1,ik)-evalsvnr(ist2,jk)+lr_w(ie)))
-        call zgerc(nwfme,nwfme,zt1,zv1,1,zv1,1,zm2(1,1,ikloc),nwfme)
+        wt=(occsvnr(ist1,ik)-occsvnr(ist2,jk))/(evalsvnr(ist1,ik) - &
+            evalsvnr(ist2,jk)+lr_w(ie))
+        call zgerc(nwfme,nwfme,wt,zv1,1,zv1,1,zm2(1,1,ikloc),nwfme)
       enddo !i
     endif !lwannresp
   enddo !ikloc
@@ -553,10 +560,10 @@ call barrier(comm_cart_110)
 
 deallocate(lr_w)
 deallocate(idxkq)
-deallocate(nme)
-deallocate(ime)
-deallocate(docc)
-deallocate(me)
+deallocate(nmegqblh)
+deallocate(bmegqblh)
+!deallocate(docc)
+deallocate(megqblh)
 deallocate(chi0w)
 if (wannier) then
   deallocate(wann_c1)
