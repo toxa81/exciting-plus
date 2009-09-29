@@ -48,7 +48,7 @@ if (.not.wannier) then
   lwannopt=.false.
 endif
 ! this is enough for matrix elements
-!lmaxvr=4
+lmaxvr=4
 ! initialise universal variables
 call init0
 call init1

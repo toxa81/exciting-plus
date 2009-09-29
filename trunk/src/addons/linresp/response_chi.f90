@@ -35,13 +35,7 @@ complex(8), allocatable :: uscrn(:,:)
 complex(8), allocatable :: ubare(:,:)
 
 complex(8) zt1
-!integer ntrmegqwan,ntrchi0wan
-!integer, allocatable :: itr1l(:,:)
-!integer, allocatable :: itr2l(:,:)
-!integer, allocatable :: itridx(:,:)
 
-!integer nmegqwan
-!integer, allocatable :: bmegqwan(:,:)
 logical exist
 integer ntrans
 integer, allocatable :: itrans(:,:)
@@ -53,7 +47,7 @@ integer, allocatable :: inzme(:,:)
 integer ie,ig,i,j,ig1,ig2,ie1,ie2,idx0,bs,n1,n2,it1,it2,n3,n4,n
 integer i1,i2,ifxc,ifxc1,ifxc2
 integer iv(3)
-character*100 fname,qnm,path
+character*100 fname,fname_chi0,fname_me,qnm,path
 character*3 c3
 logical wproc
 logical, external :: root_cart
@@ -88,22 +82,24 @@ if (wproc) then
   call flushifc(150)
 endif
 
-! read chi0 file
-fname=trim(qnm)//"_chi0.hdf5"
+fname_chi0=trim(qnm)//"_chi0.hdf5"
+fname_me=trim(qnm)//"_me.hdf5"
+
+! read from chi0 file
 if (root_cart((/1,1,0/))) then
-  call read_integer(nepts,1,trim(fname),'/parameters','nepts')
-  call read_integer(lr_igq0,1,trim(fname),'/parameters','lr_igq0')
-  call read_integer(gshme1,1,trim(fname),'/parameters','gshme1')
-  call read_integer(gshme2,1,trim(fname),'/parameters','gshme2')
-  call read_integer(gvecme1,1,trim(fname),'/parameters','gvecme1')
-  call read_integer(gvecme2,1,trim(fname),'/parameters','gvecme2')
-  call read_integer(ngvecme,1,trim(fname),'/parameters','ngvecme')
-  call read_real8(vq0l,3,trim(fname),'/parameters','vq0l')
-  call read_real8(vq0rl,3,trim(fname),'/parameters','vq0rl')
-  call read_real8(vq0c,3,trim(fname),'/parameters','vq0c')
-  call read_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
+  call read_integer(nepts,1,trim(fname_chi0),'/parameters','nepts')
+  call read_integer(lr_igq0,1,trim(fname_chi0),'/parameters','lr_igq0')
+  call read_integer(gshme1,1,trim(fname_chi0),'/parameters','gshme1')
+  call read_integer(gshme2,1,trim(fname_chi0),'/parameters','gshme2')
+  call read_integer(gvecme1,1,trim(fname_chi0),'/parameters','gvecme1')
+  call read_integer(gvecme2,1,trim(fname_chi0),'/parameters','gvecme2')
+  call read_integer(ngvecme,1,trim(fname_chi0),'/parameters','ngvecme')
+  call read_real8(vq0l,3,trim(fname_chi0),'/parameters','vq0l')
+  call read_real8(vq0rl,3,trim(fname_chi0),'/parameters','vq0rl')
+  call read_real8(vq0c,3,trim(fname_chi0),'/parameters','vq0c')
+  call read_real8(vq0rc,3,trim(fname_chi0),'/parameters','vq0rc')
   if (lwannresp) then
-    call read_integer(ntrchi0wan,1,trim(fname),'/wannier','ntrchi0wan')
+    call read_integer(ntrchi0wan,1,trim(fname_chi0),'/wannier','ntrchi0wan')
   endif
 endif
 call i_bcast_cart(comm_cart_110,nepts,1)
@@ -119,39 +115,52 @@ call d_bcast_cart(comm_cart_110,vq0c,3)
 call d_bcast_cart(comm_cart_110,vq0rc,3)
 if (lwannresp) then
   call i_bcast_cart(comm_cart_110,ntrchi0wan,1)
-  allocate(itrchi0wan(3,ntrchi0wan))
-  allocate(itridxwan(ntrmegqwan,ntrmegqwan))
-  if (root_cart((/1,1,0/))) then
-    call read_integer_array(itrchi0wan,2,(/3,ntrchi0wan/),trim(fname),'/wannier','itrchi0wan')
-    call read_integer_array(itridxwan,2,(/ntrmegqwan,ntrmegqwan/),trim(fname),'/wannier','itridxwan')
-  endif
-  call i_bcast_cart(comm_cart_110,itrchi0wan,3*ntrchi0wan)
-  call i_bcast_cart(comm_cart_110,itridxwan,ntrmegqwan*ntrmegqwan)
 endif
-
-! read matrix elements in WF basis 
-fname=trim(qnm)//"_me.hdf5"
+! read from me file 
 if (root_cart((/1,1,0/))) then
   if (wannier) then
-    call read_integer(ntrmegqwan,1,trim(fname),'/wannier','ntrmegqwan')
-    call read_integer(nmegqwan,1,trim(fname),'/wannier','nmegqwan')
+    call read_integer(ntrmegqwan,1,trim(fname_me),'/wannier','ntrmegqwan')
+    call read_integer(nmegqwan,1,trim(fname_me),'/wannier','nmegqwan')
   endif 
 endif
 if (wannier) then
   call i_bcast_cart(comm_cart_110,ntrmegqwan,1)
   call i_bcast_cart(comm_cart_110,nmegqwan,1)
+endif
+! read arrays from chi0 file
+if (lwannresp) then
+  allocate(itrchi0wan(3,ntrchi0wan))
+  allocate(itridxwan(ntrmegqwan,ntrmegqwan))
+  if (root_cart((/1,1,0/))) then
+    call read_integer_array(itrchi0wan,2,(/3,ntrchi0wan/),trim(fname_chi0),'/wannier','itrchi0wan')
+    call read_integer_array(itridxwan,2,(/ntrmegqwan,ntrmegqwan/),trim(fname_chi0),'/wannier','itridxwan')
+  endif
+  call i_bcast_cart(comm_cart_110,itrchi0wan,3*ntrchi0wan)
+  call i_bcast_cart(comm_cart_110,itridxwan,ntrmegqwan*ntrmegqwan)
+endif
+! read arrays from me file 
+if (wannier) then
   allocate(itrmegqwan(3,ntrmegqwan))
   allocate(megqwan(nmegqwan,ntrmegqwan,ngvecme))
   allocate(bmegqwan(2,nwann*nwann))
   if (root_cart((/1,1,0/))) then
-    call read_integer_array(itrmegqwan,2,(/3,ntrmegqwan/),trim(fname),'/wannier','itrmegqwan')
+    call read_integer_array(itrmegqwan,2,(/3,ntrmegqwan/),trim(fname_me),'/wannier','itrmegqwan')
     call read_real8_array(megqwan,4,(/2,nmegqwan,ntrmegqwan,ngvecme/), &
-      trim(fname),'/wannier','megqwan')
-    call read_integer_array(bmegqwan,2,(/2,nmegqwan/),trim(fname),'/wannier','bmegqwan')
+      trim(fname_me),'/wannier','megqwan')
+    call read_integer_array(bmegqwan,2,(/2,nmegqwan/),trim(fname_me),'/wannier','bmegqwan')
   endif
   call i_bcast_cart(comm_cart_110,itrmegqwan,3*ntrmegqwan)
   call i_bcast_cart(comm_cart_110,bmegqwan,2*nmegqwan)
   call d_bcast_cart(comm_cart_110,megqwan,2*nmegqwan*ntrmegqwan*ngvecme)
+endif
+if (crpa) then
+  allocate(imegqwan(nwann,nwann))
+  imegqwan=-1
+  do i=1,nmegqwan
+    n1=bmegqwan(1,i)
+    n2=bmegqwan(2,i)
+    imegqwan(n1,n2)=i
+  enddo
 endif
 
 if (wproc) then
@@ -354,8 +363,6 @@ ie2=idx0+bs
 call idxbos(nfxca,mpi_dims(2),mpi_x(2)+1,idx0,bs)
 ifxc1=idx0+1
 ifxc2=idx0+bs
-
-fname=trim(qnm)//"_chi0.hdf5"
 ! main loop over energy points 
 do ie=ie1,ie2
 ! read chi0(iw) from file
@@ -366,13 +373,13 @@ do ie=ie1,ie2
       if (mpi_x(1).eq.i.and.mpi_x(3).eq.j) then
 #endif
         write(path,'("/iw/",I8.8)')ie
-        call read_real8(lr_w(ie),2,trim(fname),trim(path),'w')
+        call read_real8(lr_w(ie),2,trim(fname_chi0),trim(path),'w')
         call read_real8_array(chi0w,3,(/2,ngvecme,ngvecme/), &
-          trim(fname),trim(path),'chi0')
+          trim(fname_chi0),trim(path),'chi0')
         if (lwannresp) then
-          call read_real8_array(chi_(5,ie,1),1,(/2/),trim(fname),trim(path),'chi0wf')
+          call read_real8_array(chi_(5,ie,1),1,(/2/),trim(fname_chi0),trim(path),'chi0wf')
           call read_real8_array(chi0wan,4,(/2,nmegqwan,nmegqwan,ntrchi0wan/), &
-            trim(fname),trim(path),'chi0wan')
+            trim(fname_chi0),trim(path),'chi0wan')
         endif
 #ifndef _PIO_      
       endif
@@ -417,8 +424,10 @@ do ie=ie1,ie2
         do i2=1,ngvecchi
           do n1=1,nwann
             do n2=1,nwann
-              uscrn(n1,n2)=uscrn(n1,n2)+megqwan((n1-1)*nwann+n1,1,i1)*vscrn(i1,i2)*dconjg(megqwan((n2-1)*nwann+n2,1,i2))
-              ubare(n1,n2)=ubare(n1,n2)+megqwan((n1-1)*nwann+n1,1,i1)*krnl(i1,i2)*dconjg(megqwan((n2-1)*nwann+n2,1,i2))
+              uscrn(n1,n2)=uscrn(n1,n2)+megqwan(imegqwan(n1,n1),1,i1)*&
+                vscrn(i1,i2)*dconjg(megqwan(imegqwan(n2,n2),1,i2))
+              ubare(n1,n2)=ubare(n1,n2)+megqwan(imegqwan(n1,n1),1,i1)*&
+                krnl(i1,i2)*dconjg(megqwan(imegqwan(n2,n2),1,i2))
             enddo
           enddo
         enddo
@@ -458,6 +467,9 @@ if (lwannresp) then
   deallocate(itrchi0wan)
   deallocate(itridxwan)
   deallocate(chi0wan)
+endif
+if (crpa) then
+  deallocate(imegqwan)
 endif
 return
 end  

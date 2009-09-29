@@ -1040,6 +1040,7 @@ integer, allocatable :: bmegqblh(:,:,:)
 
 integer nmegqwan
 integer, allocatable :: bmegqwan(:,:)
+integer, allocatable :: imegqwan(:,:)
 complex(8), allocatable :: megqwan(:,:,:)
 
 integer ntrmegqwan
