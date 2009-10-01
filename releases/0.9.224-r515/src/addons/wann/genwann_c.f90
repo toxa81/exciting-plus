@@ -53,8 +53,10 @@ do n=1,nwann
     enddo !i
   endif
 enddo !n
-do j=1,nstsv
-  if (abs(prjao(n,j)).lt.1d-2) prjao(n,j)=zzero
+do n=1,nwann
+  do j=1,nstsv
+    if (abs(prjao(n,j)).lt.1d-2) prjao(n,j)=zzero
+  enddo
 enddo
 
 ! compute ovelap matrix
