@@ -20,12 +20,12 @@ allocate(mpi_x(mpi_ndims))
 #ifdef _MPI_
 mpi_dims=nproc
 if (task.eq.400.or.task.eq.401) then
-  if (nproc.le.nvq0) then
-    mpi_dims=(/1,1,nproc/)
+  if (nproc.le.nkptnr) then
+    mpi_dims=(/nproc,1,1/)
   else
-    i=nproc/nvq0
-    if (i.le.nkptnr) then
-      mpi_dims=(/i,1,nvq0/)
+    i=nproc/nkptnr
+    if (i.le.nvq0) then
+      mpi_dims=(/nkptnr,1,i/)
     else
       mpi_dims=(/nkptnr,nproc/(nkptnr*nvq0),nvq0/)
     endif

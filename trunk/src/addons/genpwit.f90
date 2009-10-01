@@ -111,6 +111,16 @@ do ig1=1,ngp1
   do ig2=1,ngp2
 ! -G1+G2+G3 vector in lattice coordinates
     vecgl(:)=-ivg(:,igpig1(ig1))+ivg(:,igpig2(ig2))+vgl3(:)
+    if (vecgl(1).lt.intgv(1,1).or.vecgl(1).gt.intgv(1,2).or.&
+        vecgl(2).lt.intgv(2,1).or.vecgl(1).gt.intgv(2,2).or.&
+        vecgl(3).lt.intgv(3,1).or.vecgl(1).gt.intgv(3,2)) then
+      write(*,*)
+      write(*,'("Error(genpwit2): G-vector is outside of boundaries")')
+      write(*,'("  -G1+G2+G3 : ",3I5)')vecgl
+      write(*,'("  boundaries : ",2I5,",",2I5,",",2I5)')intgv(1,:),intgv(2,:),intgv(3,:)
+      write(*,*)
+      call pstop
+    endif
     pwit(ig1,ig2)=gvit(vecgl(1),vecgl(2),vecgl(3))
   enddo
 enddo

@@ -42,7 +42,7 @@ real(8) vtrc(3)
 
 complex(8), allocatable :: gvit(:,:,:)
 
-integer i,j,ik,jk,ig,ikstep,ierr,sz,ikloc
+integer i,j,ik,jk,ig,ikstep,ierr,sz,ikloc,complete
 integer ngknr2
 real(8) vkq0l(3)
 integer ivg1(3)
@@ -65,6 +65,7 @@ integer ngsh,gshq0
 
 logical lwritemek
 integer ik1
+logical exist
 
 ! HDF5
 integer(hid_t) h5_root_id
@@ -90,6 +91,18 @@ if (root_cart((/1,1,0/))) then
   fname=trim(qnm)//"_ME.OUT"
   open(150,file=trim(fname),form='formatted',status='replace')
 endif
+
+complete=0
+fname=trim(qnm)//"_me.hdf5"
+if (root_cart((/1,1,0/))) then
+  inquire(file=trim(fname),exist=exist)
+  if (exist) then
+    call read_integer(complete,1,trim(fname),'/parameters','complete')
+  endif
+endif
+call i_bcast_cart(comm_cart_110,complete,1)
+if (complete.eq.1) goto 30
+
 
 lmaxexp=lmaxvr
 lmmaxexp=(lmaxexp+1)**2
@@ -344,7 +357,6 @@ enddo
 ! generate structure factor for G+q' vectors
 call gensfacgp(ngvecme,vgq0c,ngvecme,sfacgq0)
 
-fname=trim(qnm)//"_me.hdf5"
 if (root_cart((/1,1,0/))) then
   call h5fcreate_f(trim(fname),H5F_ACC_TRUNC_F,h5_root_id,ierr)
   call h5gcreate_f(h5_root_id,'parameters',h5_tmp_id,ierr)
@@ -374,6 +386,8 @@ if (root_cart((/1,1,0/))) then
   call write_real8(vq0rl,3,trim(fname),'/parameters','vq0rl')
   call write_real8(vq0c,3,trim(fname),'/parameters','vq0c')
   call write_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
+  complete=0
+  call write_integer(complete,1,trim(fname),'/parameters','complete')
   if (wannier) then
     call write_real8(wann_occ,nwann,trim(fname),'/wannier','wann_occ')
   endif
@@ -635,8 +649,14 @@ if (wannier) then
   deallocate(megqwan)
 endif
 
+if (root_cart((/1,1,0/))) then
+  complete=1
+  call rewrite_integer(complete,1,trim(fname),'/parameters','complete')
+endif
+
 call barrier(comm_cart_110)
 
+30 continue
 if (wproc) then
   write(150,*)
   write(150,'("Done.")')
