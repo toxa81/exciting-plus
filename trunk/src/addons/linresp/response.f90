@@ -31,7 +31,7 @@ integer i1,i2,i3
 character*100 fname,qnm
 character*3 c3
 real(8) w2
-logical wproc
+logical wproc,lgamma
 integer, external :: iknrglob2
 logical, external :: root_cart
 logical, external :: in_cart
@@ -52,17 +52,21 @@ lmaxvr=4
 ! initialise universal variables
 call init0
 call init1
-! for constrained RPA all q-vectors in BZ are required; 
-!   for numerical reasons q=0 is dropped
+! for constrained RPA all q-vectors in BZ are required 
+lgamma=.false.
 if (crpa) then
   deallocate(ivq0m_list)
-  nvq0=nkptnr-1
+  if (lgamma) then
+    nvq0=nkptnr
+  else
+    nvq0=nkptnr-1 
+  endif
   allocate(ivq0m_list(3,nvq0))
   j=0
   do i1=0,ngridk(1)-1
     do i2=0,ngridk(2)-1
       do i3=0,ngridk(3)-1
-        if (.not.(i1.eq.0.and.i2.eq.0.and.i3.eq.0)) then
+        if (.not.(i1.eq.0.and.i2.eq.0.and.i3.eq.0.and..not.lgamma)) then
           j=j+1
           ivq0m_list(:,j)=(/i1,i2,i3/)
         endif

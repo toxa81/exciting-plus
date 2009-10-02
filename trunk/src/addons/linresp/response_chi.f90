@@ -44,6 +44,8 @@ integer itrans_m
 integer nnzme 
 integer, allocatable :: inzme(:,:)
 
+real(8), parameter :: lmbd=0.00
+
 integer ie,ig,i,j,ig1,ig2,ie1,ie2,idx0,bs,n1,n2,it1,it2,n3,n4,n
 integer i1,i2,ifxc,ifxc1,ifxc2
 integer iv(3)
@@ -311,7 +313,7 @@ endif !lwannresp
 !endif
 
 igq0=lr_igq0-gvecchi1+1
-fourpiq0=fourpi/(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)
+fourpiq0=fourpi/(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2+lmbd)
 ig1=gvecchi1-gvecme1+1
 ig2=ig1+ngvecchi-1
 
@@ -340,7 +342,7 @@ if (lrtype.eq.0) then
 ! generate G+q vectors  
     vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
     gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
-    krnl_rpa(ig,ig)=fourpi/gq0**2
+    krnl_rpa(ig,ig)=fourpi/(gq0**2+lmbd)
   enddo !ig
 endif !lrtype.eq.0
 ! for magnetic response
@@ -424,10 +426,10 @@ do ie=ie1,ie2
         do i2=1,ngvecchi
           do n1=1,nwann
             do n2=1,nwann
-              uscrn(n1,n2)=uscrn(n1,n2)+megqwan(imegqwan(n1,n1),1,i1)*&
-                vscrn(i1,i2)*dconjg(megqwan(imegqwan(n2,n2),1,i2))
-              ubare(n1,n2)=ubare(n1,n2)+megqwan(imegqwan(n1,n1),1,i1)*&
-                krnl(i1,i2)*dconjg(megqwan(imegqwan(n2,n2),1,i2))
+              uscrn(n1,n2)=uscrn(n1,n2)+dconjg(megqwan(imegqwan(n1,n1),1,i1))*&
+                vscrn(i2,i2)*megqwan(imegqwan(n2,n2),1,i2)
+              ubare(n1,n2)=ubare(n1,n2)+dconjg(megqwan(imegqwan(n1,n1),1,i1))*&
+                krnl(i2,i2)*megqwan(imegqwan(n2,n2),1,i2)
             enddo
           enddo
         enddo
@@ -437,6 +439,28 @@ do ie=ie1,ie2
       fname=trim(qnm)//"_U"
       open(170,file=trim(fname),status='replace',form='unformatted')
       write(170)uscrn,ubare
+      close(170)
+      fname=trim(qnm)//"_U.txt"
+      open(170,file=trim(fname),status='replace',form='formatted')
+      write(170,'("Screened U matrix")')
+      write(170,'("real part")')
+      do i=1,nwann
+        write(170,'(100F12.6)')(dreal(uscrn(i,j)),j=1,nwann)
+      enddo
+      write(170,'("imag part")')
+      do i=1,nwann
+        write(170,'(100F12.6)')(dimag(uscrn(i,j)),j=1,nwann)
+      enddo
+      write(170,*)
+      write(170,'("Bare U matrix")')
+      write(170,'("real part")')
+      do i=1,nwann
+        write(170,'(100F12.6)')(dreal(ubare(i,j)),j=1,nwann)
+      enddo
+      write(170,'("imag part")')
+      do i=1,nwann
+        write(170,'(100F12.6)')(dimag(ubare(i,j)),j=1,nwann)
+      enddo  
       close(170)
       deallocate(uscrn,ubare)
     endif
