@@ -264,6 +264,13 @@ do ik=1,nkptnr
   idxkq(2,ik)=ivgig(ivg1(1),ivg1(2),ivg1(3))
 enddo
 
+! hack for q=0
+if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
+  !vq0c=(/0.0112d0,0.0223d0,0.0331d0/)
+  vq0c=(/-0.05685621179E-01,  0.05685621179E-01,  0.05685621179E-01/)
+  vq0rc=vq0c
+endif
+
 ! setup n,n' stuff
 call timer_reset(1)
 call timer_start(1)
@@ -289,16 +296,7 @@ nmegqblhmax=i
 #endif
 allocate(nmegqblh(nkptnr_loc))
 allocate(bmegqblh(2,nmegqblhmax,nkptnr_loc))
-!allocate(imegqblh(nstsv,nstsv,nkptnr_loc))
 call getmeidx(.false.,occsvnr,evalsvnr,wproc)
-!imegqblh=-1
-!do ikloc=1,nkptnr_loc
-!  do i=1,nmegqblh(ikloc)
-!    ist1=bmegqblh(1,i,ikloc)
-!    ist2=bmegqblh(2,i,ikloc)
-!    imegqblh(ist1,ist2,ikloc)=i
-!  enddo
-!enddo
 call timer_stop(1)
 if (wproc) then
   write(150,*)
@@ -517,6 +515,18 @@ do ikstep=1,nkptnrloc(0)
     else
       megqblh(1:ngvecme,1:nmegqblh(ikstep),ik1)=zone
     endif
+! hack for q=0
+    if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
+      megqblh(1,:,ik1)=zzero
+      do i=1,nmegqblh(ikstep)
+        ist1=bmegqblh(1,i,ikstep)
+        ist2=bmegqblh(2,i,ikstep)
+        if (ist1.eq.ist2) megqblh(1,i,ik1)=zone
+        megqblh(1,i,ik1)=megqblh(1,i,ik1)-&
+          dot_product(vq0rc(:),pmat(:,ist1,ist2,ikstep))/&
+          (evalsvnr(ist1,ik)-evalsvnr(ist2,ik)+swidth)          
+      enddo
+    endif
 ! add contribution from k-point to the matrix elements of e^{-i(G+q)x} in 
 !  the basis of Wannier functions
     if (wannier) then
@@ -578,7 +588,7 @@ do ikstep=1,nkptnrloc(0)
 enddo !ikstep
 
 if (wannier) then
-! sum over all points to get <n,T=0|e^{-i(G+q)x|n',T'>
+! sum over all k-points to get <n,T=0|e^{-i(G+q)x|n',T'>
   if (root_cart((/0,1,0/)).and.mpi_dims(1).gt.1) then
     call d_reduce_cart(comm_cart_100,.false.,megqwan,2*nmegqwan*ntrmegqwan*ngvecme)
   endif
@@ -591,6 +601,10 @@ if (wannier) then
       trim(fname),'/wannier','megqwan')
     call write_integer_array(itrmegqwan,2,(/3,ntrmegqwan/),trim(fname),'/wannier','itrmegqwan')
     call write_integer_array(bmegqwan,2,(/2,nmegqwan/),trim(fname),'/wannier','bmegqwan')
+!    open(170,file=trim(trim(qnm)//"_megqwan.txt"),status='replace',form='formatted')
+!    write(170,*)sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2),&
+!      abs(1.d0-megqwan(1,1,1))/sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2),abs(megqwan(1,1,1))
+!    close(170)
   endif
 endif
 
