@@ -17,20 +17,15 @@ complex(8), allocatable :: ixcft(:)
 ! kernel of matrix equaiton
 complex(8), allocatable :: krnl(:,:)
 complex(8), allocatable :: krnl_rpa(:,:)
+complex(8), allocatable :: krnl_scr(:,:)
 complex(8), allocatable :: chi0w(:,:)
-!complex(8), allocatable :: chi0wf(:)
-!complex(8), allocatable :: chiwf(:)
 real(8) fxca
 complex(8), allocatable :: epsilon_(:,:,:)
 complex(8), allocatable :: chi_(:,:,:)
 real(8) fourpiq0
-!complex(8), allocatable :: megqwan(:,:,:)
-!complex(8), allocatable :: mewf4(:,:,:)
 complex(8), allocatable :: megqwan_t(:,:,:)
 !complex(8), allocatable :: mewfx(:,:,:)
 complex(8), allocatable :: mtrx_v(:,:)
-!complex(8), allocatable :: epswf(:)
-complex(8), allocatable :: vscrn(:,:)
 complex(8), allocatable :: uscrn(:,:)
 complex(8), allocatable :: ubare(:,:)
 
@@ -320,19 +315,16 @@ ig2=ig1+ngvecchi-1
 
 allocate(krnl(ngvecchi,ngvecchi))
 allocate(krnl_rpa(ngvecchi,ngvecchi))
+allocate(krnl_scr(ngvecchi,ngvecchi))
 allocate(ixcft(ngvec))
 allocate(lr_w(nepts))
 allocate(chi0w(ngvecme,ngvecme))  
 allocate(chi0m(ngvecchi,ngvecchi))
 allocate(chi_(7,nepts,nfxca))
 allocate(epsilon_(5,nepts,nfxca))
-if (crpa) then
-  allocate(vscrn(ngvecchi,ngvecchi))
-endif
 chi_=zzero
 epsilon_=zzero
 lr_w=zzero
-vscrn=zzero
 
 ! construct RPA kernel of the matrix equation
 krnl_rpa=zzero
@@ -412,10 +404,23 @@ do ie=ie1,ie2
       enddo
     endif
     call solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_(1,ie,ifxc), &
-      epsilon_(1,ie,ifxc),crpa,vscrn)
+      epsilon_(1,ie,ifxc),krnl_scr)
     if (wannier.and.lwannresp.and.ifxc.eq.1) then
       call solve_chi_wf(ntrmegqwan,ntrchi0wan,itridxwan,nmegqwan,nnzme,inzme,megqwan,chi0wan,mtrx_v,&
         chi_(6,ie,1),chi_(7,ie,1),igq0)
+    endif
+    if (.true.) then
+      fname=trim(qnm)//"_krnl.txt"
+      open(170,file=trim(fname),status='replace',form='formatted')
+      write(170,'("Screened W matrix")')
+      write(170,'("real part")')
+      do i=1,ngvecchi
+        write(170,'(100F12.6)')(dreal(krnl_scr(i,j)),j=1,ngvecchi)
+      enddo
+      write(170,'("imag part")')
+      do i=1,ngvecchi
+        write(170,'(100F12.6)')(dimag(krnl_scr(i,j)),j=1,ngvecchi)
+      enddo
     endif
     if (crpa.and.ie.eq.1.and.ifxc.eq.1) then
       allocate(uscrn(nwann,nwann))
@@ -427,9 +432,9 @@ do ie=ie1,ie2
           do n1=1,nwann
             do n2=1,nwann
               uscrn(n1,n2)=uscrn(n1,n2)+dconjg(megqwan(imegqwan(n1,n1),1,i1))*&
-                vscrn(i2,i2)*megqwan(imegqwan(n2,n2),1,i2)
+                krnl_scr(i1,i2)*megqwan(imegqwan(n2,n2),1,i2)
               ubare(n1,n2)=ubare(n1,n2)+dconjg(megqwan(imegqwan(n1,n1),1,i1))*&
-                krnl(i2,i2)*megqwan(imegqwan(n2,n2),1,i2)
+                krnl(i1,i2)*megqwan(imegqwan(n2,n2),1,i2)
             enddo
           enddo
         enddo
@@ -442,6 +447,16 @@ do ie=ie1,ie2
       close(170)
       fname=trim(qnm)//"_U.txt"
       open(170,file=trim(fname),status='replace',form='formatted')
+!      write(170,'("Screened W matrix")')
+!      write(170,'("real part")')
+!      do i=1,nwann
+!        write(170,'(100F12.6)')(dreal(krnl_scr(i,j)),j=1,nwann)
+!      enddo
+!      write(170,'("imag part")')
+!      do i=1,nwann
+!        write(170,'(100F12.6)')(dimag(krnl_scr(i,j)),j=1,nwann)
+!      enddo
+!      write(170,*)
       write(170,'("Screened U matrix")')
       write(170,'("real part")')
       do i=1,nwann
@@ -451,7 +466,17 @@ do ie=ie1,ie2
       do i=1,nwann
         write(170,'(100F12.6)')(dimag(uscrn(i,j)),j=1,nwann)
       enddo
-      write(170,*)
+!      write(170,*)
+!      write(170,'("Bare V matrix")')
+!      write(170,'("real part")')
+!      do i=1,nwann
+!        write(170,'(100F12.6)')(dreal(krnl(i,j)),j=1,nwann)
+!      enddo
+!      write(170,'("imag part")')
+!      do i=1,nwann
+!        write(170,'(100F12.6)')(dimag(krnl(i,j)),j=1,nwann)
+!      enddo
+      write(170,*)      
       write(170,'("Bare U matrix")')
       write(170,'("real part")')
       do i=1,nwann
@@ -478,10 +503,8 @@ if (root_cart((/1,1,0/))) then
 endif
 
 deallocate(krnl,krnl_rpa,ixcft)
+deallocate(krnl_scr)
 deallocate(lr_w,chi0m,chi0w,chi_,epsilon_)
-if (crpa) then
-  deallocate(vscrn)
-endif
 if (wannier) then
   deallocate(itrmegqwan)
   deallocate(megqwan)
