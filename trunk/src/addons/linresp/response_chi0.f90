@@ -372,10 +372,12 @@ do ie=ie1,nepts
               bndint(ist2,evalsvnr(ist2,jk),crpa_e1,crpa_e2)) l1=.false.
         endif
         if (l1) then
-          wt=(occsvnr(ist1,ik)-occsvnr(ist2,jk))/(evalsvnr(ist1,ik) - &
-            evalsvnr(ist2,jk)+lr_w(ie))
-          call zgerc(ngvecme,ngvecme,wt,megqblh(1,i,ikloc),1,megqblh(1,i,ikloc),1, &
-            chi0w,ngvecme)
+          if (abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-5) then
+            wt=(occsvnr(ist1,ik)-occsvnr(ist2,jk))/(evalsvnr(ist1,ik) - &
+              evalsvnr(ist2,jk)+lr_w(ie))
+            call zgerc(ngvecme,ngvecme,wt,megqblh(1,i,ikloc),1,megqblh(1,i,ikloc),1, &
+              chi0w,ngvecme)
+          endif
         endif
       enddo !i
     endif
