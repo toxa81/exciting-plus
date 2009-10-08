@@ -31,7 +31,7 @@ integer i1,i2,i3
 character*100 fname,qnm
 character*3 c3
 real(8) w2
-logical wproc,lgamma
+logical wproc,lgamma,lpmat
 integer, external :: iknrglob2
 logical, external :: root_cart
 logical, external :: in_cart
@@ -47,6 +47,11 @@ if (.not.wannier) then
   lwannresp=.false.
   lwannopt=.false.
 endif
+lpmat=.false.
+if (lwannopt.or.crpa) lpmat=.true.
+do j=1,nvq0
+  if (ivq0m_list(1,j).eq.0.and.ivq0m_list(2,j).eq.0.and.ivq0m_list(3,j).eq.0) lpmat=.true.
+enddo
 ! this is enough for matrix elements
 lmaxvr=4
 ! initialise universal variables
@@ -186,7 +191,7 @@ if (in_cart()) then
     allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptnr_loc))
     allocate(evecsvloc(nstsv,nstsv,nkptnr_loc))
     allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-    if (lwannopt) then
+    if (lpmat) then
       allocate(pmat(3,nstsv,nstsv,nkptnr_loc))
     endif
     if (wproc) then
@@ -223,7 +228,7 @@ if (in_cart()) then
 ! generate wave functions in interstitial
             call genwfsvit(ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
               evecsvloc(1,1,ikloc),wfsvitloc(1,1,1,ikloc))
-            if (lwannopt) then
+            if (lpmat) then
               call genpmat(ngknr(ikloc),igkignr(1,ikloc),vgkcnr(1,1,ikloc),&
                 apwalm,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),pmat(1,1,1,ikloc))
             endif
@@ -352,7 +357,7 @@ if (in_cart()) then
     
   if (wproc) close(151)
   
-  if (task.eq.400.and.lwannopt) deallocate(pmat)
+  if (task.eq.400.and.lpmat) deallocate(pmat)
   
   if (task.eq.400) then
     deallocate(wfsvmtloc)
