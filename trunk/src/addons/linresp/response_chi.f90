@@ -421,6 +421,7 @@ do ie=ie1,ie2
       do i=1,ngvecchi
         write(170,'(100F12.6)')(dimag(krnl_scr(i,j)),j=1,ngvecchi)
       enddo
+      close(170)
     endif
     if (crpa.and.ie.eq.1.and.ifxc.eq.1) then
       allocate(uscrn(nwann,nwann))
