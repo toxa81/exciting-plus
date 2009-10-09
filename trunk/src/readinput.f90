@@ -1029,6 +1029,9 @@ case('clda')
 case('crpa')
   read(50,*,err=20)crpa
   read(50,*,err=20)crpa_e1,crpa_e2
+case('mpi_grid')
+  lmpi_grid=.true.
+  read(50,*,err=20)mpi_grid(1),mpi_grid(2),mpi_grid(3)
 case('')
   goto 10
 case default
