@@ -115,12 +115,14 @@ else
     do ig=1,ngvecme
       call csync2(tmp_comm,gu(1,1,ig),ngumax*natmtot,.true.,.false.)
       call isync2(tmp_comm,igu(1,1,1,ig),4*ngumax*natmtot,.true.,.false.)
+      call barrier(tmp_comm)
     enddo
     call isync2(tmp_comm,ngu,natmtot*ngvecme,.true.,.false.)
   endif
   do ig=1,ngvecme
     call csync2(comm_cart_110,gu(1,1,ig),ngumax*natmtot,.false.,.true.)
     call isync2(comm_cart_110,igu(1,1,1,ig),4*ngumax*natmtot,.false.,.true.)
+    call barrier(comm_cart_110)
   enddo
   call isync2(comm_cart_110,ngu,natmtot*ngvecme,.false.,.true.)
 endif
