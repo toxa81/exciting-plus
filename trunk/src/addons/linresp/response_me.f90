@@ -302,6 +302,7 @@ if (wproc) then
   write(150,*)
   write(150,'("Maximum number of interband transitions: ",I5)')nmegqblhmax
   write(150,'("Done in ",F8.2," seconds")')timer(1,2)
+  call flushifc(150)
 endif
 
 if (wannier) then
@@ -468,6 +469,7 @@ endif
 if (wproc) then
   write(150,*)
   write(150,'("Starting k-point loop")')
+  call flushifc(150)
 endif
 do ikstep=1,nkptnrloc(0)
   call timer_reset(1)
