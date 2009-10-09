@@ -414,12 +414,12 @@ do ie=ie1,ie2
       open(170,file=trim(fname),status='replace',form='formatted')
       write(170,'("Screened W matrix")')
       write(170,'("real part")')
-      do i=1,ngvecchi
-        write(170,'(100F12.6)')(dreal(krnl_scr(i,j)),j=1,ngvecchi)
+      do i=1,1 !ngvecchi
+        write(170,'(100F12.6)')(dreal(krnl_scr(i,j)),j=1,1) !ngvecchi)
       enddo
       write(170,'("imag part")')
-      do i=1,ngvecchi
-        write(170,'(100F12.6)')(dimag(krnl_scr(i,j)),j=1,ngvecchi)
+      do i=1,1 !ngvecchi
+        write(170,'(100F12.6)')(dimag(krnl_scr(i,j)),j=1,1) !ngvecchi)
       enddo
       close(170)
     endif
