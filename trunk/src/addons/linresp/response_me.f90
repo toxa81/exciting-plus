@@ -104,7 +104,7 @@ call i_bcast_cart(comm_cart_110,complete,1)
 if (complete.eq.1) goto 30
 
 
-lmaxexp=lmaxvr
+lmaxexp=10 !lmaxvr
 lmmaxexp=(lmaxexp+1)**2
 
 ! q-vector in lattice coordinates
