@@ -939,7 +939,9 @@ integer mpi_ndims
 integer, allocatable :: mpi_dims(:)
 integer, allocatable :: mpi_x(:)
 integer nkptnr_loc
-!logical wproc
+integer mpi_grid(3)
+logical lmpi_grid
+data lmpi_grid /.false./
 
 !------------------!
 !      addons      !
