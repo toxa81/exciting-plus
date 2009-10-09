@@ -86,8 +86,8 @@ if (cart_rank.lt.tmp_size) then
   do ig=1,ngvecme
     call dsync2(tmp_comm,uuj(0,0,0,1,1,1,ig), &
       (lmaxvr+1)*(lmaxvr+1)*(lmaxexp+1)*nrfmax*nrfmax*natmtot,.true.,.false.)
+    call barrier(tmp_comm)
   enddo
-  call barrier(tmp_comm)
 endif
 do ig=1,ngvecme
   call dsync2(comm_cart_110,uuj(0,0,0,1,1,1,ig), &
