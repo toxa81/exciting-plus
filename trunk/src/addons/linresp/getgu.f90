@@ -16,12 +16,12 @@ complex(4), intent(out) :: gu(ngumax,natmtot,ngvecme)
 integer, intent(out) :: igu(4,ngumax,natmtot,ngvecme)
 
 integer ig,ias,i,io1,io2,l1,m1,lm1,l2,m2,lm2,l3,m3,lm3
-real(8) t1
 ! for parallel
 integer cart_size,cart_rank,cart_group,ierr
 integer tmp_comm,tmp_group,tmp_size
 integer, allocatable :: ranks(:)
 integer idx0,bs
+complex(8) zt1
 
 real(8), external :: gaunt
 
@@ -64,13 +64,6 @@ do ig=idx0+1,idx0+bs
           do l2=0,lmaxvr
           do m2=-l2,l2
             lm2=idxlm(l2,m2)
-            do l3=0,lmaxexp
-            do m3=-l3,l3
-              lm3=idxlm(l3,m3)
-              t1=gaunt(l2,l1,l3,m2,m1,m3)*uuj(l1,l2,l3,io1,io2,ias,ig)
-              if (abs(t1).gt.1d-10) then
-                i=i+1
-                if (.not.req) then
 !  1) sfacgq0 and ylmgq0 are generated for exp^{+i(G+q)x}
 !     expansion of a plane-wave: 
 !       exp^{+igx}=4\pi \sum_{l_3 m_3} i^{l_3} j_{l_3}(gr)Y_{l_3 m_3}^{*}(\hat g)Y_{l_3 m_3}(\hat r)
@@ -80,15 +73,25 @@ do ig=idx0+1,idx0+bs
 !       = \int d \Omega Y_{l_1 m_1}^{*}Y_{l_3 m_3}^{*} Y_{l_2 m_2} = gaunt coeff, which is real
 !     so we can conjugate the integral:
 !     \int d \Omega Y_{l_1 m_1} Y_{l_3 m_3} Y_{l_2 m_2}^{*} = gaunt(lm2,lm1,lm3)
-                  gu(i,ias,ig)=t1*ylmgq0(lm3,ig)*dconjg(zi**l3)*fourpi*dconjg(sfacgq0(ig,ias))
-                  igu(1,i,ias,ig)=lm1
-                  igu(2,i,ias,ig)=lm2
-                  igu(3,i,ias,ig)=io1
-                  igu(4,i,ias,ig)=io2
-                endif
+!  3) we can sum over lm3 index of a plane-wave expansion           
+            zt1=zzero
+            do l3=0,lmaxexp
+            do m3=-l3,l3
+              lm3=idxlm(l3,m3)
+              zt1=zt1+gaunt(l2,l1,l3,m2,m1,m3)*uuj(l1,l2,l3,io1,io2,ias,ig)*&
+                ylmgq0(lm3,ig)*dconjg(zi**l3)*fourpi*dconjg(sfacgq0(ig,ias))
+            enddo
+            enddo
+            if (abs(zt1).gt.1d-10) then
+              i=i+1
+              if (.not.req) then
+                gu(i,ias,ig)=zt1
+                igu(1,i,ias,ig)=lm1
+                igu(2,i,ias,ig)=lm2
+                igu(3,i,ias,ig)=io1
+                igu(4,i,ias,ig)=io2
               endif
-            enddo
-            enddo
+            endif
           enddo
           enddo
         enddo
