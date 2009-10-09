@@ -21,7 +21,6 @@ complex(8) a1(lmmaxvr,nrfmax),a2(lmmaxvr,nrfmax)
 complex(8), allocatable :: megq_tmp(:,:)
 logical l1
 
-
 allocate(megq_tmp(ngvecme,nmegqblhmax))
 megq_tmp=zzero
 
@@ -52,7 +51,7 @@ do ig=idx_g1,idx_g2
             io1=igu(3,j,ias,ig)
             io2=igu(4,j,ias,ig)
             megq_tmp(ig,i)=megq_tmp(ig,i)+a1(lm1,io1)*a2(lm2,io2)*gu(j,ias,ig)
-          enddo
+          enddo  
         enddo !ias
       endif
     enddo !i
