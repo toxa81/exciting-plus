@@ -1,4 +1,4 @@
-subroutine solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_,epsilon_,krnl_scr)
+subroutine solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_,epsilon_,krnl_scr,vcgq)
 implicit none
 integer, intent(in) :: ngvecchi
 integer, intent(in) :: igq0
@@ -8,6 +8,7 @@ complex(8), intent(in) :: krnl(ngvecchi,ngvecchi)
 complex(8), intent(out) :: chi_(4)
 complex(8), intent(out) :: epsilon_(5)
 complex(8), intent(out) :: krnl_scr(ngvecchi,ngvecchi)
+real(8), intent(in) :: vcgq(ngvecchi)
 
 complex(8), allocatable :: epsilon(:,:)
 complex(8), allocatable :: mtrx1(:,:)
@@ -65,7 +66,27 @@ call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
   mtrx1,ngvecchi,krnl,ngvecchi,dcmplx(0.d0,0.d0),zm2,ngvecchi)
 call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
   krnl,ngvecchi,zm2,ngvecchi,dcmplx(1.d0,0.d0),krnl_scr,ngvecchi)
-!if (.true.) then
+
+if (.true.) then
+  call wrmtrx('W1.txt',ngvecchi,krnl_scr)
+
+  do ig1=1,ngvecchi
+    do ig2=1,ngvecchi
+      epsilon(ig1,ig2)=-chi0m(ig1,ig2)*vcgq(ig1)*vcgq(ig2)
+    enddo
+    epsilon(ig1,ig1)=dcmplx(1.d0,0.d0)+epsilon(ig1,ig1)
+  enddo
+  call invzge(epsilon,ngvecchi)
+  do ig1=1,ngvecchi
+    do ig2=1,ngvecchi
+      krnl_scr(ig1,ig2)=epsilon(ig1,ig2)*vcgq(ig1)*vcgq(ig2)
+    enddo
+  enddo
+  call wrmtrx('W2.txt',ngvecchi,krnl_scr)
+      
+
+
+endif
 !  zm1=dcmplx(0.d0,0.d0)
 !  call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
 !    epsilon,ngvecchi,krnl,ngvecchi,dcmplx(0.d0,0.d0),zm1,ngvecchi)
