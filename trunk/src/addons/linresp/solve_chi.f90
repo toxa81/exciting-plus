@@ -59,30 +59,31 @@ chi_(4)=mtrx1(igq0,igq0)
 epsilon_(4)=1.d0/(1.d0+fourpiq0*chi_(4))
 ! save epsilon_eff_scalar
 epsilon_(5)=1.d0/(1.d0+fourpiq0*chi_(2))
-! compute screened Coulomb+fxc potential : vscr=vbare+vbare*chi*vbare
-krnl_scr=krnl
-zm2=dcmplx(0.d0,0.d0)
-call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
-  mtrx1,ngvecchi,krnl,ngvecchi,dcmplx(0.d0,0.d0),zm2,ngvecchi)
-call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
-  krnl,ngvecchi,zm2,ngvecchi,dcmplx(1.d0,0.d0),krnl_scr,ngvecchi)
+
+!! compute screened Coulomb+fxc potential : vscr=vbare+vbare*chi*vbare
+!krnl_scr=krnl
+!zm2=dcmplx(0.d0,0.d0)
+!call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
+!  mtrx1,ngvecchi,krnl,ngvecchi,dcmplx(0.d0,0.d0),zm2,ngvecchi)
+!call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
+!  krnl,ngvecchi,zm2,ngvecchi,dcmplx(1.d0,0.d0),krnl_scr,ngvecchi)
 
 if (.true.) then
-  call wrmtrx('W1.txt',ngvecchi,krnl_scr)
+!  call wrmtrx('W1.txt',ngvecchi,krnl_scr)
 
   do ig1=1,ngvecchi
     do ig2=1,ngvecchi
-      epsilon(ig1,ig2)=-chi0m(ig1,ig2)*vcgq(ig1)*vcgq(ig2)
+      epsilon(ig1,ig2)=-vcgq(ig1)*chi0m(ig1,ig2)*vcgq(ig2)
     enddo
     epsilon(ig1,ig1)=dcmplx(1.d0,0.d0)+epsilon(ig1,ig1)
   enddo
   call invzge(epsilon,ngvecchi)
   do ig1=1,ngvecchi
     do ig2=1,ngvecchi
-      krnl_scr(ig1,ig2)=epsilon(ig1,ig2)*vcgq(ig1)*vcgq(ig2)
+      krnl_scr(ig1,ig2)=vcgq(ig1)*epsilon(ig1,ig2)*vcgq(ig2)
     enddo
   enddo
-  call wrmtrx('W2.txt',ngvecchi,krnl_scr)
+!  call wrmtrx('W2.txt',ngvecchi,krnl_scr)
       
 
 
@@ -127,5 +128,25 @@ endif
 !
 !endif
 deallocate(epsilon,mtrx1,zm1,zm2)
+return
+end
+
+!  call wrmtrx('W2.txt',ngvecchi,krnl_scr)
+subroutine wrmtrx(name,size,mtrx)
+implicit none
+character*(*), intent(in) :: name
+integer, intent(in) :: size
+complex(8), intent(in) :: mtrx(size,size)
+integer i,j
+open(153,file=trim(adjustl(name)),form='formatted',status='replace')
+write(153,'("real part : ")')
+do i=1,size
+  write(153,'(255F8.3)')(dreal(mtrx(i,j)),j=1,size)
+enddo
+write(153,'("imag part : ")')
+do i=1,size
+  write(153,'(255F8.3)')(dimag(mtrx(i,j)),j=1,size)
+enddo
+close(153)
 return
 end
