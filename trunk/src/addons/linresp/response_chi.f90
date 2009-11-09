@@ -28,6 +28,7 @@ complex(8), allocatable :: megqwan_t(:,:,:)
 complex(8), allocatable :: mtrx_v(:,:)
 complex(8), allocatable :: uscrn(:,:)
 complex(8), allocatable :: ubare(:,:)
+real(8), allocatable :: vcgq(:)
 
 complex(8) zt1
 
@@ -316,6 +317,7 @@ ig2=ig1+ngvecchi-1
 allocate(krnl(ngvecchi,ngvecchi))
 allocate(krnl_rpa(ngvecchi,ngvecchi))
 allocate(krnl_scr(ngvecchi,ngvecchi))
+allocate(vcgq(ngvecchi))
 allocate(ixcft(ngvec))
 allocate(lr_w(nepts))
 allocate(chi0w(ngvecme,ngvecme))  
@@ -335,6 +337,7 @@ if (lrtype.eq.0) then
     vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
     gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
     krnl_rpa(ig,ig)=fourpi/(gq0**2+lmbd)
+    vcgq(ig)=2*sqrt(pi)/gq0
   enddo !ig
 endif !lrtype.eq.0
 ! for magnetic response
@@ -404,7 +407,7 @@ do ie=ie1,ie2
       enddo
     endif
     call solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_(1,ie,ifxc), &
-      epsilon_(1,ie,ifxc),krnl_scr)
+      epsilon_(1,ie,ifxc),krnl_scr,vcgq)
     if (wannier.and.lwannresp.and.ifxc.eq.1) then
       call solve_chi_wf(ntrmegqwan,ntrchi0wan,itridxwan,nmegqwan,nnzme,inzme,megqwan,chi0wan,mtrx_v,&
         chi_(6,ie,1),chi_(7,ie,1),igq0)
@@ -506,6 +509,7 @@ endif
 deallocate(krnl,krnl_rpa,ixcft)
 deallocate(krnl_scr)
 deallocate(lr_w,chi0m,chi0w,chi_,epsilon_)
+deallocate(vcgq)
 if (wannier) then
   deallocate(itrmegqwan)
   deallocate(megqwan)
