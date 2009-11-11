@@ -17,7 +17,7 @@ integer, intent(in) :: jk
 ! local variables
 integer ig,i,j,ist1,ist2,ias,io1,io2,lm1,lm2,ispn,ispn2
 integer idx_g1,idx_g2,idx0,bs
-complex(8) a1(lmmaxvr,nrfmax),a2(lmmaxvr,nrfmax),a1t(lmmaxvr,nrfmax,natmtot)
+complex(8) a1(lmmaxvr,nrfmax,natmtot)
 complex(8), allocatable :: megq_tmp(:,:)
 logical l1
 integer ist1_prev
@@ -41,36 +41,35 @@ do ig=idx_g1,idx_g2
       ist2=bmegqblh_(2,i)
 ! precompute
       if (ist1.ne.ist1_prev) then
-        a1t=zzero
+        a1=zzero
         l1=.true.
         if (spinpol) then
           if (spinor_ud(ispn,ist1,ik).eq.0) l1=.false.
         endif
         if (l1) then
 		  do ias=1,natmtot
-			a1=dconjg(wfsvmt1(:,:,ias,ispn,ist1))
 			do j=1,ngu(ias,ig)
 			  lm1=igu(1,j,ias,ig)
 			  lm2=igu(2,j,ias,ig)
 			  io1=igu(3,j,ias,ig)
 			  io2=igu(4,j,ias,ig)
-			  a1t(lm2,io2,ias)=a1t(lm2,io2,ias)+&
+			  a1(lm2,io2,ias)=a1(lm2,io2,ias)+&
 			    dconjg(wfsvmt1(lm1,io1,ias,ispn,ist1))*gu(j,ias,ig)
 			enddo !j
 		  enddo !ias
-		  ist1_prev=ist1
 		endif
-      endif
+		ist1_prev=ist1
+      endif !ist1.ne.ist1_prev
       l1=.true.
       if (spinpol) then
         if (spinor_ud(ispn2,ist2,jk).eq.0) l1=.false.
       endif
       if (l1) then
         do ias=1,natmtot
-          megq_tmp(ig,i)=megq_tmp(ig,i)+zdotu(lmmaxvr,a1t(1,1,ias),1,&
+          megq_tmp(ig,i)=megq_tmp(ig,i)+zdotu(lmmaxvr,a1(1,1,ias),1,&
             wfsvmt2(1,1,ias,ispn2,ist2),1)
           do io2=2,nrfmax
-            megq_tmp(ig,i)=megq_tmp(ig,i)+zdotu(16,a1t(1,io2,ias),1,&
+            megq_tmp(ig,i)=megq_tmp(ig,i)+zdotu(16,a1(1,io2,ias),1,&
               wfsvmt2(1,io2,ias,ispn2,ist2),1)    
           enddo
         enddo !ias
