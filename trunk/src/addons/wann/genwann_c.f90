@@ -55,7 +55,7 @@ do n=1,nwann
 enddo !n
 do n=1,nwann
   do j=1,nstsv
-    if (abs(prjao(n,j)).lt.1d-2) prjao(n,j)=zzero
+    if (abs(prjao(n,j)).lt.0.16) prjao(n,j)=zzero
   enddo
 enddo
 

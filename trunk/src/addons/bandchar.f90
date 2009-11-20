@@ -107,11 +107,11 @@ do j=1,nstfv
               enddo
             enddo
 ! not tested: partial contribution from APW (io2=1) or lo (io2=2)
-!            zt3=zzero
-!            do io1=1,nrfmax
-!	      zt3=zt3+dconjg(zt1(lm,io1))*urfprod(l,io1,2,ias)/nsym1
-!	    enddo
-!	    bndchr(lm,ias,ispn,j+(ispn-1)*nstfv)=abs(zt3)**2
+            zt3=zzero
+            do io1=1,nrfmax
+              zt3=zt3+dconjg(zt1(lm,io1))*urfprod(l,io1,2,ias)/nsym1
+	        enddo
+	        bndchr(lm,ias,ispn,j+(ispn-1)*nstfv)=abs(zt3)**2
           enddo !m
         enddo !l
       enddo !isym    
