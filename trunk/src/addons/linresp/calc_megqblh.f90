@@ -46,11 +46,17 @@ idx_g2=idx0+bs
 allocate(a1it(ngknr2))
 allocate(mit(ngknr1,ngknr2))
 
+call timer_reset(7)
+call timer_reset(8)
+call timer_reset(9)
+
 do ig=idx_g1,idx_g2
   call timer_start(5)
+  call timer_start(7)
   call genpwit2(ngknr1,ngknr2,igkignr1,igkignr2, &
     -(ivg(:,ig+gvecme1-1)+ivg(:,igkq)),gvit,mit)
   call timer_stop(5)
+  call timer_stop(7)
   do ispn=1,nspinor
     ispn2=ispn
     if (lrtype.eq.1) ispn2=3-ispn
@@ -80,10 +86,12 @@ do ig=idx_g1,idx_g2
           enddo !ias
           call timer_stop(4)
           call timer_start(5)
+	  call timer_start(8)
 ! interstitial part
           call zgemv('T',ngknr1,ngknr2,zone,mit,ngknr1,&
             dconjg(wfsvit1(:,ispn,ist1)),1,zzero,a1it,1)
           call timer_stop(5)
+	  call timer_stop(8)
         endif
         ist1_prev=ist1
       endif !ist1.ne.ist1_prev
@@ -105,9 +113,11 @@ do ig=idx_g1,idx_g2
         call timer_stop(4)
 ! interstitial part
         call timer_start(5) 
+	call timer_start(9)
         megqblh_(ig,i)=megqblh_(ig,i)+zdotu(ngknr2,wfsvit2(1,ispn2,ist2),1, &
           a1it,1)
         call timer_stop(5)
+	call timer_stop(9)
       endif
     enddo !i
   enddo !ispn
@@ -115,6 +125,11 @@ enddo !ig
 
 if (mpi_dims(2).gt.1) then
   call d_reduce_cart(comm_cart_010,.false.,megqblh_,2*ngvecme*nmegqblhmax)
+endif
+
+if (iproc.eq.0) then
+  write(*,*)
+  write(*,*)timer(7,2),timer(8,2),timer(9,2)
 endif
 
 deallocate(a1it,mit)
