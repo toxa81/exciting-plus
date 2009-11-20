@@ -641,7 +641,6 @@ if (sz1.ne.0) then
   enddo !i
 endif
 
-
 return
 end
 #endif

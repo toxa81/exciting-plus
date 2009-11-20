@@ -47,8 +47,10 @@ allocate(a1it(ngknr2))
 allocate(mit(ngknr1,ngknr2))
 
 do ig=idx_g1,idx_g2
+  call timer_start(5)
   call genpwit2(ngknr1,ngknr2,igkignr1,igkignr2, &
     -(ivg(:,ig+gvecme1-1)+ivg(:,igkq)),gvit,mit)
+  call timer_stop(5)
   do ispn=1,nspinor
     ispn2=ispn
     if (lrtype.eq.1) ispn2=3-ispn
@@ -65,27 +67,32 @@ do ig=idx_g1,idx_g2
         endif
         if (l1) then
 ! muffin-tin part
-		  do ias=1,natmtot
-			do j=1,ngu(ias,ig)
-			  lm1=igu(1,j,ias,ig)
-			  lm2=igu(2,j,ias,ig)
-			  io1=igu(3,j,ias,ig)
-			  io2=igu(4,j,ias,ig)
-			  a1mt(lm2,io2,ias)=a1mt(lm2,io2,ias)+&
-			    dconjg(wfsvmt1(lm1,io1,ias,ispn,ist1))*gu(j,ias,ig)
-			enddo !j
-		  enddo !ias
+          call timer_start(4)
+          do ias=1,natmtot
+            do j=1,ngu(ias,ig)
+              lm1=igu(1,j,ias,ig)
+              lm2=igu(2,j,ias,ig)
+              io1=igu(3,j,ias,ig)
+              io2=igu(4,j,ias,ig)
+              a1mt(lm2,io2,ias)=a1mt(lm2,io2,ias)+&
+                dconjg(wfsvmt1(lm1,io1,ias,ispn,ist1))*gu(j,ias,ig)
+            enddo !j
+          enddo !ias
+          call timer_stop(4)
+          call timer_start(5)
 ! interstitial part
           call zgemv('T',ngknr1,ngknr2,zone,mit,ngknr1,&
             dconjg(wfsvit1(:,ispn,ist1)),1,zzero,a1it,1)
-		endif
-		ist1_prev=ist1
+          call timer_stop(5)
+        endif
+        ist1_prev=ist1
       endif !ist1.ne.ist1_prev
       l1=.true.
       if (spinpol) then
         if (spinor_ud(ispn2,ist2,jk).eq.0) l1=.false.
       endif
       if (l1) then
+        call timer_start(4)
 ! muffin-tin part
         do ias=1,natmtot
           megqblh_(ig,i)=megqblh_(ig,i)+zdotu(lmmaxvr,a1mt(1,1,ias),1,&
@@ -95,9 +102,12 @@ do ig=idx_g1,idx_g2
               wfsvmt2(1,io2,ias,ispn2,ist2),1)    
           enddo
         enddo !ias
+        call timer_stop(4)
 ! interstitial part
+        call timer_start(5) 
         megqblh_(ig,i)=megqblh_(ig,i)+zdotu(ngknr2,wfsvit2(1,ispn2,ist2),1, &
           a1it,1)
+        call timer_stop(5)
       endif
     enddo !i
   enddo !ispn
