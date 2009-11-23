@@ -480,8 +480,12 @@ do ie=ie1,nepts
   call timer_stop(4)
   call timer_stop(1)
   if (wproc) then
-    write(150,'("energy point ",I4," done in ",3F8.2," seconds, ",F8.2," MB/s")') &
-      ie,timer(2,2),timer(3,2),timer(4,2),(16.d0*(sz1*ngvecme**2+sz2))/1024/1024/timer(1,2)
+    write(150,'("energy point ",I4," was done in ",F8.2," seconds")')ie,timer(1,2)
+    write(150,'("  zgerc time         : ",F8.2," seconds")')timer(2,2)
+    write(150,'("  zgerc call speed   : ",F8.2," calls/sec.")')sz1/timer(2,2)
+    write(150,'("  zgerc memory speed : ",F8.2," Mb/sec.")')16.d0*sz1*ngvecme*ngvecme/1048576.d0/timer(2,2)
+    write(150,'("  sync time          : ",F8.2," seconds")')timer(3,2)
+    write(150,'("  write time         : ",F8.2," seconds")')timer(4,2)
     call flushifc(150)
   endif
   call barrier(comm_cart_110)
@@ -601,7 +605,7 @@ do i=i1,i2
   endif
 enddo !i
 
-if (.true.) then
+if (.false.) then
   do i=i1,i2
     if (l2(i)) then
       call zgerc(ngvecme,ngvecme,wt(i),megqblh(1,i,ikloc),1,megqblh(1,i,ikloc),1, &
