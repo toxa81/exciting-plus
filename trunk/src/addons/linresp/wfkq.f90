@@ -1,5 +1,5 @@
 subroutine wfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
-  wfsvit2,ngknr2,igkignr2,wann_c2)
+  wfsvit2,ngknr2,igkignr2,wann_c2) !,evecfv2,evecsv2)
 use modmain
 #ifdef _MPI_
 use mpi
@@ -15,6 +15,8 @@ complex(8), intent(out) :: wfsvit2(ngkmax,nspinor,nstsv)
 integer, intent(out) :: ngknr2
 integer, intent(out) :: igkignr2(ngkmax)
 complex(8), intent(out) :: wann_c2(nwann,nstsv)
+!complex(8), intent(out) :: evecfv2(nmatmax,nstfv,nspnfv)
+!complex(8), intent(out) :: evecsv2(nstsv,nstsv)
 
 integer idx0,bs,ip
 logical lsend,lrecv
@@ -68,6 +70,14 @@ do i=1,mpi_dims(1)
         call mpi_isend(wann_c(1,1,ikloc),nwann*nstsv,                   &
           MPI_DOUBLE_COMPLEX,rank,tag,comm_cart_100,req,ierr)      
       endif
+!! send evecfv      
+!      tag=tag+1
+!      call mpi_isend(evecfvloc(1,1,1,ikloc),nmatmax*nstfv*nspnfv,    &
+!        MPI_DOUBLE_COMPLEX,rank,tag,comm_cart_100,req,ierr)
+!! send evecsv      
+!      tag=tag+1
+!      call mpi_isend(evecsvloc(1,1,ikloc),nstsv*nstsv,    &
+!        MPI_DOUBLE_COMPLEX,rank,tag,comm_cart_100,req,ierr)
     endif
     if (mpi_x(1).eq.i-1.and.ip.ne.i) then
 ! source proc is ip-1
@@ -88,7 +98,13 @@ do i=1,mpi_dims(1)
         tag=tag+1
         call mpi_recv(wann_c2,nwann*nstsv,MPI_DOUBLE_COMPLEX,rank,tag,  &
           comm_cart_100,stat,ierr)
-      endif        
+      endif
+!      tag=tag+1
+!      call mpi_recv(evecfv2,nmatmax*nstfv*nspnfv,MPI_DOUBLE_COMPLEX, &
+!        rank,tag,comm_cart_100,stat,ierr)
+!      tag=tag+1
+!      call mpi_recv(evecsv2,nstsv*nstsv,MPI_DOUBLE_COMPLEX, &
+!        rank,tag,comm_cart_100,stat,ierr)      
     endif
     if (mpi_x(1).eq.i-1.and.ip.eq.i) then
       wfsvmt2(:,:,:,:,:)=wfsvmtloc(:,:,:,:,:,ikloc)
@@ -96,6 +112,8 @@ do i=1,mpi_dims(1)
       ngknr2=ngknr(ikloc)
       igkignr2(:)=igkignr(:,ikloc)
       if (wannier) wann_c2(:,:)=wann_c(:,:,ikloc)
+!      evecfv2(:,:,:)=evecfvloc(:,:,:,ikloc)
+!      evecsv2(:,:)=evecsvloc(:,:,ikloc)      
     endif
   endif
 enddo
