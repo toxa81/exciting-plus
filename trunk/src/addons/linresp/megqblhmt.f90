@@ -23,6 +23,8 @@ logical l1
 integer ist1_prev
 complex(8), external :: zdotu,zdotc
 
+! TODO: add explanation about how it all works
+
 
 allocate(megq_tmp(ngvecme,nmegqblhmax))
 megq_tmp=zzero
@@ -47,18 +49,18 @@ do ig=idx_g1,idx_g2
           if (spinor_ud(ispn,ist1,ik).eq.0) l1=.false.
         endif
         if (l1) then
-		  do ias=1,natmtot
-			do j=1,ngu(ias,ig)
-			  lm1=igu(1,j,ias,ig)
-			  lm2=igu(2,j,ias,ig)
-			  io1=igu(3,j,ias,ig)
-			  io2=igu(4,j,ias,ig)
-			  a1(lm2,io2,ias)=a1(lm2,io2,ias)+&
-			    dconjg(wfsvmt1(lm1,io1,ias,ispn,ist1))*gu(j,ias,ig)
-			enddo !j
-		  enddo !ias
-		endif
-		ist1_prev=ist1
+          do ias=1,natmtot
+            do j=1,ngu(ias,ig)
+              lm1=igu(1,j,ias,ig)
+              lm2=igu(2,j,ias,ig)
+              io1=igu(3,j,ias,ig)
+              io2=igu(4,j,ias,ig)
+              a1(lm2,io2,ias)=a1(lm2,io2,ias)+&
+                dconjg(wfsvmt1(lm1,io1,ias,ispn,ist1))*gu(j,ias,ig)
+            enddo !j
+          enddo !ias
+        endif
+        ist1_prev=ist1
       endif !ist1.ne.ist1_prev
       l1=.true.
       if (spinpol) then
