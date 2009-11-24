@@ -35,6 +35,7 @@ integer, allocatable :: igkignr2(:)
 complex(8), allocatable :: wfsvmt2(:,:,:,:,:)
 complex(8), allocatable :: wfsvit2(:,:,:)
 complex(8), allocatable :: wann_c2(:,:)
+integer, allocatable :: igfft1(:,:)
 
 
 integer n1,n2,i1,i2,i3,itr,n,ist1,ist2
@@ -45,7 +46,7 @@ complex(8), allocatable :: gvit(:,:,:)
 integer i,j,ik,jk,ig,ikstep,ierr,sz,ikloc,complete
 integer ngknr2
 real(8) vkq0l(3)
-integer ivg1(3)
+integer ivg1(3),ivg2(3)
 real(8), allocatable :: uuj(:,:,:,:,:,:,:)
 complex(4), allocatable :: gu(:,:,:)
 integer, allocatable :: igu(:,:,:,:)
@@ -235,6 +236,7 @@ if (wproc) then
   call flushifc(150)
 endif
 
+allocate(igfft1(ngvecme,nkptnr))
 ! find k+q and reduce them to first BZ (this is required to utilize the 
 !   periodical property of Bloch-states: |k>=|k+K>, where K is any vector 
 !   of the reciprocal lattice)
@@ -262,6 +264,11 @@ do ik=1,nkptnr
   call pstop
 10 continue
   idxkq(2,ik)=ivgig(ivg1(1),ivg1(2),ivg1(3))
+! search for new fft indexes
+  do ig=1,ngvecme
+    ivg2(:)=ivg(:,ig)+ivg1(:)
+    igfft1(ig,ik)=igfft(ivgig(ivg2(1),ivg2(2),ivg2(3)))
+  enddo
 enddo
 
 ! hack for q=0
@@ -503,28 +510,25 @@ do ikstep=1,nkptnrloc(0)
     endif
     megqblh(:,:,ik1)=zzero
     if (.not.lmeoff) then
+!      call timer_start(6)
+!      call calc_megqblh(ik,idxkq(1,ik),ngumax,ngu,gu,igu,ngknr(ikstep),      &
+!        ngknr2,igkignr(1,ikstep),igkignr2,idxkq(2,ik),gvit,                  &
+!        wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,wfsvitloc(1,1,1,ikstep),wfsvit2, &
+!        nmegqblh(ikstep),bmegqblh(1,1,ikstep),megqblh(1,1,ik1))
+!      call timer_stop(6)
+
 ! calculate muffin-tin contribution for all combinations of n,n'
-      call timer_start(6)
-      call calc_megqblh(ik,idxkq(1,ik),ngumax,ngu,gu,igu,ngknr(ikstep),      &
-        ngknr2,igkignr(1,ikstep),igkignr2,idxkq(2,ik),gvit,                  &
-        wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,wfsvitloc(1,1,1,ikstep),wfsvit2, &
-        nmegqblh(ikstep),bmegqblh(1,1,ikstep),megqblh(1,1,ik1))
-      call timer_stop(6)
-        
-!
-!      call timer_start(4)
-!      call megqblhmt(nmegqblh(ikstep),bmegqblh(1,1,ikstep),               &
-!        wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,ngumax,ngu,gu,igu, &
-!        megqblh(1,1,ik1),ik,idxkq(1,ik))
-!      call timer_stop(4)
-!! calculate interstitial contribution for all combinations of n,n'
-!      call timer_start(5)
-!      call megqblhit(nmegqblh(ikstep),bmegqblh(1,1,ikstep),ngknr(ikstep), &
-!        ngknr2,igkignr(1,ikstep),igkignr2,idxkq(2,ik),         &
-!        wfsvitloc(1,1,1,ikstep),wfsvit2,megqblh(1,1,ik1),gvit,ik,idxkq(1,ik))
-!      call timer_stop(5)
-
-
+      call timer_start(4)
+      call megqblhmt(nmegqblh(ikstep),bmegqblh(1,1,ikstep),               &
+        wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,ngumax,ngu,gu,igu, &
+        megqblh(1,1,ik1),ik,idxkq(1,ik))
+      call timer_stop(4)
+! calculate interstitial contribution for all combinations of n,n'
+      call timer_start(5)
+      call megqblhit(nmegqblh(ikstep),bmegqblh(1,1,ikstep),ngknr(ikstep), &
+        ngknr2,igkignr(1,ikstep),igkignr2,idxkq(2,ik),         &
+        wfsvitloc(1,1,1,ikstep),wfsvit2,megqblh(1,1,ik1),gvit,ik,idxkq(1,ik))
+      call timer_stop(5)
     else
       megqblh(1:ngvecme,1:nmegqblh(ikstep),ik1)=zone
     endif
@@ -676,6 +680,7 @@ if (wannier) then
   deallocate(itrmegqwan)
   deallocate(megqwan)
 endif
+deallocate(igfft1)
 
 if (root_cart((/1,1,0/))) then
   complete=1
