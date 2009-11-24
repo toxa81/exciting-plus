@@ -54,10 +54,10 @@ allocate(wfir1(ngrtot))
 allocate(wfir2(ngrtot))
 
 do ig=idx_g1,idx_g2
-  call timer_start(5)
-  call genpwit2(ngknr1,ngknr2,igkignr1,igkignr2, &
-    -(ivg(:,ig+gvecme1-1)+ivg(:,igkq)),gvit,mit)
-  call timer_stop(5)
+!  call timer_start(5)
+!  call genpwit2(ngknr1,ngknr2,igkignr1,igkignr2, &
+!    -(ivg(:,ig+gvecme1-1)+ivg(:,igkq)),gvit,mit)
+!  call timer_stop(5)
   do ispn=1,nspinor
     ispn2=ispn
     if (lrtype.eq.1) ispn2=3-ispn
@@ -86,11 +86,11 @@ do ig=idx_g1,idx_g2
             enddo !j
           enddo !ias
           call timer_stop(4)
-          call timer_start(5)
-! interstitial part
-          call zgemv('T',ngknr1,ngknr2,zone,mit,ngknr1,&
-            dconjg(wfsvit1(:,ispn,ist1)),1,zzero,a1it,1)
-          call timer_stop(5)
+!          call timer_start(5)
+!! interstitial part
+!          call zgemv('T',ngknr1,ngknr2,zone,mit,ngknr1,&
+!            dconjg(wfsvit1(:,ispn,ist1)),1,zzero,a1it,1)
+!          call timer_stop(5)
         endif
         ist1_prev=ist1
       endif !ist1.ne.ist1_prev
@@ -110,11 +110,11 @@ do ig=idx_g1,idx_g2
           enddo
         enddo !ias
         call timer_stop(4)
-! interstitial part
-        call timer_start(5) 
+!! interstitial part
+!        call timer_start(5) 
 !        megqblh_(ig,i)=megqblh_(ig,i)+zdotu(ngknr2,wfsvit2(1,ispn2,ist2),1, &
 !          a1it,1)
-        call timer_stop(5)
+!        call timer_stop(5)
       endif
     enddo !i
   enddo !ispn
@@ -156,7 +156,7 @@ do ispn=1,nspinor
 	endif
 	if (l1) then
 ! interstitial part
-	  call timer_start(5) 
+!	  call timer_start(5) 
       do ig=1,ngvecme
         zt1=zzero
         do ig2=1,ngknr2
@@ -166,7 +166,7 @@ do ispn=1,nspinor
 	    enddo !ig2
 	    megqblh_(ig,i)=megqblh_(ig,i)+zt1
 	  enddo !ig
-	  call timer_stop(5)
+!	  call timer_stop(5)
 	endif
   enddo !i
 enddo !ispn
