@@ -156,7 +156,7 @@ do ispn=1,nspinor
 	endif
 	if (l1) then
 ! interstitial part
-!	  call timer_start(5) 
+	  call timer_start(5) 
       do ig=1,ngvecme
         zt1=zzero
         do ig2=1,ngknr2
@@ -166,7 +166,7 @@ do ispn=1,nspinor
 	    enddo !ig2
 	    megqblh_(ig,i)=megqblh_(ig,i)+zt1
 	  enddo !ig
-!	  call timer_stop(5)
+	  call timer_stop(5)
 	endif
   enddo !i
 enddo !ispn
