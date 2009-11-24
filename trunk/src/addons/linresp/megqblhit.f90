@@ -29,6 +29,7 @@ complex(8) zt1
 logical l1
 complex(8), external :: zdotu,zdotc
 integer ist1_prev
+logical, allocatable :: lig1(:)
 
 ! TODO: add explanation about how it all works
 
@@ -86,6 +87,7 @@ if (.not.lfftit) then
 !   overhead
 else
   allocate(wfir1(ngrtot))
+  allocate(lig1(ngrtot))
 ! split interband transitions between processors
   call idxbos(nmegqblh_,mpi_dims(2),mpi_x(2)+1,idx0,bs)
   idx_i1=idx0+1
@@ -101,23 +103,49 @@ else
 ! precompute
 	  if (ist1.ne.ist1_prev) then
 		wfir1=zzero
+		lig1=.false.
 		l1=.true.
 		if (spinpol) then
 		  if (spinor_ud(ispn,ist1,ik).eq.0) l1=.false.
 		endif
 		if (l1) then
-! compute u_{nk}(r)
-          do ig1=1,ngknr1
-			ifg=igfft(igkignr1(ig1))
-			wfir1(ifg)=wfsvit1(ig1,ispn,ist1)
+		  do ig=1,ngvecme
+  		    do ig2=1,ngknr2
+! assumption: G_1=G_2-G-G_q is inside the grid; should be fixed
+			  ivg1(:)=ivg(:,igkignr2(ig2))-ivg(:,ig)-ivg(:,igkq)
+			  lig1(ivgig(ivg1(1),ivg1(2),ivg1(3)))=.true.
+			enddo
+	      enddo !ig 
+		
+		  ! f(G)=\int dr u_1(r)*\theta(r)*exp^{-iGr}
+		  ! u_1(r)=\sum_{G_1} u_1(G_1)*exp^{iG_1r}
+		  ! \theta(r)=\sum_{G_t} \theta(G_t)*exp^{iG_tr}
+		  ! f(G)=\sum_{G_1=1}^{N_1} \sum_{G_t} u_1(G_1) \theta(G_t) 
+		  !   \int dr exp^{iG_1r}*exp^{iG_tr}*exp^{-iGr}
+		  ! G_1+G_t-G=0 G_t=G-G_1
+		  do ig=1,ngrtot
+		    if (lig1(ig)) then
+		      zt1=zzero
+		      do ig1=1,ngknr1
+		        ivg1(:)=ivg(:,ig)-ivg(:,igkignr1(ig1))
+		        zt1=zt1+wfsvit1(ig1,ispn,ist1)*cfunig(ivgig(ivg1(1),ivg1(2),ivg1(3)))
+		      enddo
+		      wfir1(ig)=zt1
+		    endif
 		  enddo
-		  call zfftifc(3,ngrid,1,wfir1)
-! compute f_{nk}(r)=u_{nk}(r)*\theta(r)
-		  do ir=1,ngrtot
-			wfir1(ir)=wfir1(ir)*cfunir(ir)
-		  enddo
-! compute f_{nk}(G)
-		  call zfftifc(3,ngrid,-1,wfir1)
+!
+!! compute u_{nk}(r)
+!          do ig1=1,ngknr1
+!			ifg=igfft(igkignr1(ig1))
+!			wfir1(ifg)=wfsvit1(ig1,ispn,ist1)
+!		  enddo
+!		  call zfftifc(3,ngrid,1,wfir1)
+!! compute f_{nk}(r)=u_{nk}(r)*\theta(r)
+!		  do ir=1,ngrtot
+!			wfir1(ir)=wfir1(ir)*cfunir(ir)
+!		  enddo
+!! compute f_{nk}(G)
+!		  call zfftifc(3,ngrid,-1,wfir1)
 		endif
 		ist1_prev=ist1
 	  endif !ist1.ne.ist1_prev
@@ -130,7 +158,7 @@ else
 		  zt1=zzero
 		  do ig2=1,ngknr2
 			ivg1(:)=ivg(:,igkignr2(ig2))-ivg(:,ig)-ivg(:,igkq)
-			ifg=igfft(ivgig(ivg1(1),ivg1(2),ivg1(3)))
+			ifg=ivgig(ivg1(1),ivg1(2),ivg1(3))
 			zt1=zt1+dconjg(wfir1(ifg))*wfsvit2(ig2,ispn2,ist2)
 		  enddo !ig2
 		  megq_tmp(ig,i)=megq_tmp(ig,i)+zt1
@@ -138,7 +166,7 @@ else
 	  endif
 	enddo !i
   enddo !ispn
-  deallocate(wfir1)
+  deallocate(wfir1,lig1)
 endif
 
 if (mpi_dims(2).gt.1) then
