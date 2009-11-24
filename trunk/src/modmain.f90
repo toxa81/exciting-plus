@@ -1076,6 +1076,7 @@ integer fxctype
 logical lmeoff
 logical lsfio
 logical lscalar
+logical lfftit
 logical lwannresp
 logical lwannopt
 !logical lwanndiel
