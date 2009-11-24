@@ -412,7 +412,7 @@ do ie=ie1,ie2
       call solve_chi_wf(ntrmegqwan,ntrchi0wan,itridxwan,nmegqwan,nnzme,inzme,megqwan,chi0wan,mtrx_v,&
         chi_(6,ie,1),chi_(7,ie,1),igq0)
     endif
-    if (.true.) then
+    if (.true..and.ie.eq.1.and.ifxc.eq.1) then
       fname=trim(qnm)//"_krnl.txt"
       open(170,file=trim(fname),status='replace',form='formatted')
       write(170,'("Screened W matrix")')
