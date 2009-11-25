@@ -510,13 +510,6 @@ do ikstep=1,nkptnrloc(0)
     endif
     megqblh(:,:,ik1)=zzero
     if (.not.lmeoff) then
-!      call timer_start(6)
-!      call calc_megqblh(ik,idxkq(1,ik),ngumax,ngu,gu,igu,ngknr(ikstep),      &
-!        ngknr2,igkignr(1,ikstep),igkignr2,idxkq(2,ik),gvit,                  &
-!        wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,wfsvitloc(1,1,1,ikstep),wfsvit2, &
-!        nmegqblh(ikstep),bmegqblh(1,1,ikstep),megqblh(1,1,ik1))
-!      call timer_stop(6)
-
 ! calculate muffin-tin contribution for all combinations of n,n'
       call timer_start(4)
       call megqblhmt(nmegqblh(ikstep),bmegqblh(1,1,ikstep),               &
@@ -592,15 +585,15 @@ do ikstep=1,nkptnrloc(0)
     call timer_stop(3)
   endif !lwritemek
   if (wproc) then
-    write(150,'("Time (seconds)")')
-    write(150,'("  send/recv      : ",F8.2)')timer(1,2)
-    write(150,'("  matrix elements")')
-    write(150,'("    muffin-tins  : ",F8.2)')timer(4,2)
-    write(150,'("    interstitial : ",F8.2)')timer(5,2)
-    write(150,'("    total for ME : ",F8.2)')timer(6,2)
-    write(150,'("    writing      : ",F8.2)')timer(3,2)
-    write(150,'("  total for kpt  : ",F8.2)')timer(2,2)
-    write(150,'("  speed (me/sec) : ",F10.2)')ngvecme*nmegqblh(ikstep)/timer(2,2)
+    write(150,'("  time (seconds)")')
+    write(150,'("    send/recv      : ",F8.2)')timer(1,2)
+    write(150,'("    matrix elements")')
+    write(150,'("      muffin-tins  (Bloch basis) : ",F8.2)')timer(4,2)
+    write(150,'("      interstitial (Bloch basis) : ",F8.2)')timer(5,2)
+    write(150,'("      writing      : ",F8.2)')timer(3,2)
+    write(150,'("    total for kpt  : ",F8.2)')timer(2,2)+timer(3,2)
+    write(150,'("  speed (me/sec)   : ",F10.2)') &
+      ngvecme*nmegqblh(ikstep)/(timer(2,2)+timer(3,2))
     call flushifc(150)
   endif
 enddo !ikstep
