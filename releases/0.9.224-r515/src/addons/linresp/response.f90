@@ -25,7 +25,7 @@ complex(8), allocatable :: wfsvit_t(:,:,:)
 complex(8), allocatable :: wfc_t(:,:)
 complex(8), allocatable :: pmat(:,:,:,:)
 
-integer j,n,ik,ikloc,istsv,ik1,isym
+integer i,j,n,ik,ikloc,istsv,ik1,isym
 integer sz,iint,iw
 character*100 fname,qnm
 character*3 c3
