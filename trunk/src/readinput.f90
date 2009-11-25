@@ -183,7 +183,6 @@ lsfio=.true.
 fxca0=0.d0
 fxca1=0.d0
 lscalar=.false.
-lfftit=.false.
 zero3d=(/0.d0,0.d0,0.d0/)
 bound3d=0.d0
 bound3d(1,1)=10.d0
@@ -941,7 +940,6 @@ case('response_options')
   read(50,*,err=20) lscalar
   read(50,*,err=20) lmeoff
   read(50,*,err=20) lsfio
-  read(50,*,err=20) lfftit
 case('response_wann')
   read(50,*,err=20) lwannresp
   read(50,*,err=20) lwannopt
