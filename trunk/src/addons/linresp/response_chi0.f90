@@ -617,7 +617,6 @@ else
   nb=ngvecme/bs
 ! remaining size
   sz1=mod(ngvecme,bs)
-  
   ib1=1
   do j1=1,nb
     ib2=1
