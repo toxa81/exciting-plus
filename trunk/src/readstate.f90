@@ -153,6 +153,10 @@ if ((ldapu.ne.0).and.(ldapu_.ne.0)) then
   end if
   deallocate(vmatlu_)
 end if
+if (spinpol.and.spinpol_) then
+  read(50)bfsmc
+  read(50)bfsmcmt
+endif
 close(50)
 !---------------------------!
 !     muffin-tin arrays     !
@@ -255,24 +259,28 @@ deallocate(vxcmt_,vxcir_,veffmt_,veffir_,veffig_)
 if (spinpol_) deallocate(magmt_,magir_,bxcmt_,bxcir_)
 endif !iproc.eq.0
 #ifdef _MPI_
-  call mpi_bcast(rhomt,lmmaxvr*nrmtmax*natmtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
-  call mpi_bcast(rhoir,ngrtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
-  call mpi_bcast(vclmt,lmmaxvr*nrmtmax*natmtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
-  call mpi_bcast(vclir,ngrtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
-  call mpi_bcast(vxcmt,lmmaxvr*nrmtmax*natmtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
-  call mpi_bcast(vxcir,ngrtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
-  call mpi_bcast(veffmt,lmmaxvr*nrmtmax*natmtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
-  call mpi_bcast(veffir,ngrtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
-  call mpi_bcast(veffig,ngvec,MPI_DOUBLE_COMPLEX,0,MPI_COMM_WORLD,ierr)
-  if (spinpol) then
-    call mpi_bcast(magmt,lmmaxvr*nrmtmax*natmtot*ndmag,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
-    call mpi_bcast(magir,ngrtot*ndmag,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
-    call mpi_bcast(bxcmt,lmmaxvr*nrmtmax*natmtot*ndmag,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
-    call mpi_bcast(bxcir,ngrtot*ndmag,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
-  endif
-  if (ldapu.ne.0) then
-    call mpi_bcast(vmatlu,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,MPI_DOUBLE_COMPLEX,0,MPI_COMM_WORLD,ierr)
-  endif
+call mpi_bcast(rhomt,lmmaxvr*nrmtmax*natmtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(rhoir,ngrtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(vclmt,lmmaxvr*nrmtmax*natmtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(vclir,ngrtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(vxcmt,lmmaxvr*nrmtmax*natmtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(vxcir,ngrtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(veffmt,lmmaxvr*nrmtmax*natmtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(veffir,ngrtot,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+call mpi_bcast(veffig,ngvec,MPI_DOUBLE_COMPLEX,0,MPI_COMM_WORLD,ierr)
+if (spinpol) then
+  call mpi_bcast(magmt,lmmaxvr*nrmtmax*natmtot*ndmag,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+  call mpi_bcast(magir,ngrtot*ndmag,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+  call mpi_bcast(bxcmt,lmmaxvr*nrmtmax*natmtot*ndmag,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+  call mpi_bcast(bxcir,ngrtot*ndmag,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+endif
+if (ldapu.ne.0) then
+  call mpi_bcast(vmatlu,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,MPI_DOUBLE_COMPLEX,0,MPI_COMM_WORLD,ierr)
+endif
+if (spinpol) then
+  call mpi_bcast(bfsmc,3,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+  call mpi_bcast(bfsmcmt,3*maxatoms*maxspecies,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+endif
 #endif    
 return
 end subroutine
