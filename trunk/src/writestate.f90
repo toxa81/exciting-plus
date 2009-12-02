@@ -55,6 +55,10 @@ end if
 if (ldapu.ne.0) then
   write(50) vmatlu
 end if
+if (spinpol) then
+  write(50)bfsmc
+  write(50)bfsmcmt
+endif
 close(50)
 return
 end subroutine
