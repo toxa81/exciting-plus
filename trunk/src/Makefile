@@ -114,8 +114,10 @@ SRC_LIB = $(SRC_modules) $(SRC_routines) $(SRC_routines_flux) \
 
 OBJ_LIB = $(SRC_LIB:.f90=.o)
 
+REV=$$(svn info|grep Revision | awk '{split($$0,a,": "); print a[2]}')$
+
 exciting:	$(OBJ)
-	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) $(LIB_LPK) $(LIB_FFT) $(LIB_SYS)
+	$(F90) $(F90_OPTS) -o $(EXE).r$(REV) $(OBJ) $(LIB_LPK) $(LIB_FFT) $(LIB_SYS)
 
 lib:
 	$(AR) -rc exciting.a $(OBJ_LIB)
