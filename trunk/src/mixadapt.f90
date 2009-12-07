@@ -68,7 +68,7 @@ do i=1,n
     beta(i)=beta(i)*betainc
     if (beta(i).gt.1.d0) beta(i)=1.d0
   else
-    beta(i)=beta(i)*betadec
+    beta(i)=beta0 !beta(i)*betadec
   end if
   f(i)=t1
 end do
