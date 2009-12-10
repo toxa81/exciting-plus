@@ -9,16 +9,20 @@ complex(8), intent(out) :: wann_c_(nwann,nstsv)
 ! local variables
 complex(8), allocatable :: prjao(:,:)
 complex(8), allocatable :: s(:,:),sdiag(:)
-integer ispn,j,n,m1,m2,ias,lm,ierr,itype
-integer itr(3),i,iw
+integer ispn,j,n,m1,m2,ias,lm,ierr,itype,n1
+integer itr(3),i,iw,i1
 real(8) tr(3),d1
-!integer, allocatable :: wann_nint_tmp(:,:)
 complex(8) zt1
 logical, external :: bndint
+integer, parameter :: maxiter=100
+logical l1
+real(8), external :: orbwt
+complex(8), allocatable :: mtrx1(:,:)
+real(8), allocatable :: mtrx1ev(:)
+complex(8), allocatable :: mtrx2(:,:)
+complex(8), allocatable :: zv1(:)
 
-!allocate(wann_nint_tmp(2,wann_ntype))
-!wann_nint_tmp=wann_nint
-!10 continue
+
 ! compute <\psi|g_n>
 allocate(prjao(nwann,nstsv))
 prjao=zzero
@@ -31,6 +35,8 @@ do n=1,nwann
     do j=1,nstsv
       if (bndint(j,e(j),wann_eint(1,itype),wann_eint(2,itype))) then
         call genprjao(ias,lm,ispn,j,wfsvmt,prjao(n,j))
+        prjao(n,j)=prjao(n,j)*orbwt(e(j),wannier_soft_eint_e1, &
+          wannier_soft_eint_e2,wannier_soft_eint_width)
       endif
     enddo
   else
@@ -53,20 +59,41 @@ do n=1,nwann
     enddo !i
   endif
 enddo !n
+
+! remove small contribution
 do n=1,nwann
   do j=1,nstsv
-    if (abs(prjao(n,j)).lt.0.01) prjao(n,j)=zzero
+    if (abs(prjao(n,j)).lt.wannier_min_prjao) prjao(n,j)=zzero
   enddo
 enddo
 
-! compute ovelap matrix
+call wann_ort(ik,prjao)
+wann_c_=prjao
+deallocate(prjao)
+return
+end
+
+subroutine wann_ort(ik,wann_u_mtrx)
+use modmain
+implicit none
+integer, intent(in) :: ik
+complex(8), intent(inout) :: wann_u_mtrx(nwann,nstsv)
+
+complex(8), allocatable :: s(:,:)
+complex(8), allocatable :: sdiag(:)
+complex(8), allocatable :: wann_u_mtrx_ort(:,:)
+integer ierr,m1,m2,j,n
+
 allocate(s(nwann,nwann))
 allocate(sdiag(nwann))
+allocate(wann_u_mtrx_ort(nwann,nstsv))
+
+! compute ovelap matrix
 s=zzero
 do m1=1,nwann
   do m2=1,nwann
     do j=1,nstsv
-      s(m1,m2)=s(m1,m2)+prjao(m1,j)*dconjg(prjao(m2,j))
+      s(m1,m2)=s(m1,m2)+wann_u_mtrx(m1,j)*dconjg(wann_u_mtrx(m2,j))
     enddo
   enddo
   sdiag(m1)=s(m1,m1)
@@ -75,33 +102,36 @@ enddo
 call isqrtzhe(nwann,s,ierr)
 if (ierr.ne.0) then
   write(*,*)
-  write(*,'("Warning(genwann_c): failed to calculate S^{-1/2}")')
+  write(*,'("Warning(wann_ort): failed to calculate S^{-1/2}")')
   write(*,'("  k-point : ",I4)')ik
   write(*,'("  iteration : ",I4)')iscl
   write(*,'("  number of linear dependent WFs : ",I4)')ierr
   write(*,'("  diagonal elements of overlap matrix : ")')
   write(*,'(6X,5G18.10)')abs(sdiag)
-  write(*,'("Non-orthogonal WFs will be used")')
   write(*,*)
 endif
 ! compute Wannier function expansion coefficients
-wann_c_=zzero
+wann_u_mtrx_ort=zzero
 if (ierr.eq.0) then
   do m1=1,nwann
     do m2=1,nwann
-      wann_c_(m1,:)=wann_c_(m1,:)+prjao(m2,:)*dconjg(s(m2,m1))
+      wann_u_mtrx_ort(m1,:)=wann_u_mtrx_ort(m1,:)+wann_u_mtrx(m2,:)*&
+        dconjg(s(m2,m1))
     enddo
   enddo
-else
-  wann_c_=prjao
+  wann_u_mtrx=wann_u_mtrx_ort
 endif
-deallocate(s,sdiag)
-deallocate(prjao)
-!if (ierr.ne.0) then
-!  wann_nint_tmp(2,1)=wann_nint_tmp(2,1)+1
-!  goto 10
-!else
-!  deallocate(wann_nint_tmp)
-!endif
+deallocate(s,sdiag,wann_u_mtrx_ort)
+return
+end
+
+real(8) function orbwt(e,e1,e2,de)
+implicit none
+real(8), intent(in) :: e
+real(8), intent(in) :: e1
+real(8), intent(in) :: e2
+real(8), intent(in) :: de
+orbwt=1.d0/(exp((e-e2)/de)+1.d0)+1.d0/(exp((-e+e1)/de)+1.d0)-1.d0
+if (orbwt.lt.1d-16) orbwt=0.d0 
 return
 end
