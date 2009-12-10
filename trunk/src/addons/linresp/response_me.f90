@@ -392,6 +392,10 @@ if (root_cart((/1,1,0/))) then
   call write_real8(vq0rl,3,trim(fname),'/parameters','vq0rl')
   call write_real8(vq0c,3,trim(fname),'/parameters','vq0c')
   call write_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
+  call write_real8_array(evalsvnr,2,(/nstsv,nkptnr/), &
+      trim(fname),'/parameters','evalsvnr')
+  call write_real8_array(occsvnr,2,(/nstsv,nkptnr/), &
+      trim(fname),'/parameters','occsvnr')  
   complete=0
   call write_integer(complete,1,trim(fname),'/parameters','complete')
   if (wannier) then
