@@ -20,9 +20,6 @@ real(8), allocatable :: evalsvnr(:,:)
 complex(8), allocatable :: wfsvitloc(:,:,:,:)
 complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
-complex(8), allocatable :: wfsvmt_t(:,:,:,:,:)
-complex(8), allocatable :: wfsvit_t(:,:,:)
-complex(8), allocatable :: wfc_t(:,:)
 complex(8), allocatable :: pmat(:,:,:,:)
 
 integer i,j,n,ik,ikloc,istsv,ik1,isym,idx0,bs,ivq1,ivq2,iq
@@ -46,6 +43,7 @@ endif
 if (.not.wannier) then
   lwannresp=.false.
   lwannopt=.false.
+  crpa=.false.
 endif
 lpmat=.false.
 if (lwannopt.or.crpa) lpmat=.true.
@@ -77,7 +75,10 @@ if (crpa) then
         endif
       enddo
     enddo
-  enddo    
+  enddo 
+  ldisentangle=.true.
+  maxomega=0.d0
+  domega=1.d0
 endif
 ! parallel init; MPI grid for tasks:
 !   400 (matrix elements) : (1) k-points x (2) G-vectors x (3) q-points 
@@ -139,30 +140,29 @@ if (in_cart()) then
   call splitk(nkptnr,mpi_dims(1),nkptnrloc,ikptnrloc)
   nkptnr_loc=nkptnrloc(mpi_x(1))
   
-  if (task.eq.400.or.task.eq.401) then
-! get occupancies and energies of states
-    allocate(occsvnr(nstsv,nkptnr))
-    allocate(evalsvnr(nstsv,nkptnr))
+  if (task.eq.400) then
+! get energies of states in reduced part of BZ
+!    allocate(occsvnr(nstsv,nkptnr))
     call timer_start(3)
     if (wproc) then
       write(151,*)
-      write(151,'("Reading energies and occupancies of states")')
+      write(151,'("Reading energies of states")')
       call flushifc(151)
     endif
     if (root_cart((/1,1,1/))) then
 ! read from IBZ
       do ik=1,nkpt
-        call getoccsv(vkl(1,ik),occsv(1,ik))
         call getevalsv(vkl(1,ik),evalsv(1,ik))
       enddo
-      do ik=1,nkptnr
-        call findkpt(vklnr(1,ik),isym,ik1) 
-        occsvnr(:,ik)=occsv(:,ik1)
-        evalsvnr(:,ik)=evalsv(:,ik1)
-      enddo
     endif
-    call d_bcast_cart(comm_cart,evalsvnr,nstsv*nkptnr)
-    call d_bcast_cart(comm_cart,occsvnr,nstsv*nkptnr)
+    call d_bcast_cart(comm_cart,evalsv,nstsv*nkpt)
+    allocate(evalsvnr(nstsv,nkptnr))
+    evalsvnr=0.d0
+    do ikloc=1,nkptnr_loc
+      ik=iknrglob2(ikloc,mpi_x(1))
+      call findkpt(vklnr(1,ik),isym,ik1) 
+      evalsvnr(:,ik)=evalsv(:,ik1)
+    enddo
     call timer_stop(3)
     if (wproc) then
       write(151,'("Done in ",F8.2," seconds")')timer(3,2)
@@ -267,7 +267,33 @@ if (in_cart()) then
       do ikloc=1,nkptnr_loc
         ik=iknrglob2(ikloc,mpi_x(1))
         call genwann_c(ik,evalsvnr(1,ik),wfsvmtloc(1,1,1,1,1,ikloc),wann_c(1,1,ikloc))
+        if (ldisentangle) then
+! disentangle bands
+          call disentangle(evalsvnr(1,ik),wann_c(1,1,ikloc),evecsvloc(1,1,ikloc))
+! recompute wave functions
+! get apw coeffs 
+          call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),        &
+            sfacgknr(1,1,ikloc),apwalm)
+! generate wave functions in muffin-tins
+          call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
+            evecsvloc(1,1,ikloc),apwalm,wfsvmtloc(1,1,1,1,1,ikloc))
+! generate wave functions in interstitial
+          call genwfsvit(ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
+            evecsvloc(1,1,ikloc),wfsvitloc(1,1,1,ikloc))       
+        endif
       enddo !ikloc
+    endif !wannier
+    call timer_stop(1)
+    if (wproc) then
+      write(151,'("Done in ",F8.2," seconds")')timer(1,2)
+      call flushifc(151)
+    endif
+! after optinal band disentanglement we can finally synchronize all eigen-values
+!   and compute band occupation numbers 
+    call d_reduce_cart(comm_cart_100,.true.,evalsvnr,nstsv*nkptnr)
+    allocate(occsvnr(nstsv,nkptnr))
+    call occupy2(nkptnr,wkptnr,evalsvnr,occsvnr)
+    if (wannier) then
 ! calculate Wannier function occupancies 
       wann_occ=0.d0
       do n=1,nwann
@@ -302,7 +328,7 @@ if (in_cart()) then
     deallocate(tpgknr)
     deallocate(sfacgknr)
   endif !task.eq.400
-
+  
 ! distribute q-vectors along 3-rd dimention 
   call idxbos(nvq0,mpi_dims(3),mpi_x(3)+1,idx0,bs)
   ivq1=idx0+1
@@ -327,7 +353,7 @@ if (in_cart()) then
 ! calculate chi0
     call timer_start(11)
     do iq=ivq1,ivq2
-      call response_chi0(ivq0m_list(1,iq),evalsvnr,occsvnr)
+      call response_chi0(ivq0m_list(1,iq))
     enddo
     call timer_stop(11)
     if (wproc) then
@@ -366,10 +392,9 @@ if (in_cart()) then
     deallocate(evecsvloc)
     deallocate(ngknr)
     deallocate(igkignr)
-  endif
-  if (task.eq.400.or.task.eq.401) then
     deallocate(occsvnr)
-    deallocate(evalsvnr)
+    deallocate(evalsvnr)   
+    if (wannier) deallocate(wann_c)
   endif
 endif !in_cart()
 
