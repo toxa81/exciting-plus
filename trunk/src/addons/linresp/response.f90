@@ -76,7 +76,6 @@ if (crpa) then
       enddo
     enddo
   enddo 
-  ldisentangle=.true.
   maxomega=0.d0
   domega=1.d0
 endif

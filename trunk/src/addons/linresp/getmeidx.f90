@@ -10,17 +10,48 @@ real(8), intent(in) :: occsvnr(nstsv,nkptnr)
 real(8), intent(in) :: evalsvnr(nstsv,nkptnr)
 logical, intent(in) :: wproc
 
-integer i,ik,jk,ist1,ist2,ikloc
+integer i,ik,jk,ist1,ist2,ikloc,n
 logical laddme,ldocc
 real(8) d1,min_e12,min_e1_wann,max_e2_wann
 logical l11,l12,l21,l22,le1,le2,lwann,le1w,le2w
 integer, external :: iknrglob2
 logical, external :: bndint
 logical, external :: wann_diel
+integer, allocatable :: wann_bnd(:,:)
 
 if (wannier) then
-  min_e1_wann=1 !minval(wann_eint(1,:))
-  max_e2_wann=nstsv !maxval(wann_eint(2,:))
+  allocate(wann_bnd(nstsv,nkptnr))
+  wann_bnd=0
+! mark all bands that contribute to WF expansion
+  do ikloc=1,nkptnr_loc
+    ik=iknrglob2(ikloc,mpi_x(1))
+    do i=1,nstsv
+      do n=1,nwann
+        if (abs(wann_c(n,i,ikloc)).gt.1d-10) wann_bnd(i,ik)=1
+      enddo
+    enddo
+  enddo
+  call i_reduce_cart(comm_cart_100,.true.,wann_bnd,nstsv*nkptnr)
+  do i=1,nstsv
+    do ik=1,nkptnr
+      wann_bnd(i,1)=wann_bnd(i,1)+wann_bnd(i,ik)
+    enddo
+  enddo
+! find lowest band
+  do i=1,nstsv
+    if (wann_bnd(i,1).ne.0) then
+      min_e1_wann=i 
+      exit
+    endif
+  enddo
+! find highest band
+  do i=nstsv,1,-1
+    if (wann_bnd(i,1).ne.0) then
+      max_e2_wann=i 
+      exit
+    endif
+  enddo
+  deallocate(wann_bnd)
 endif
 if (req.and.wproc) then
   write(150,*)
