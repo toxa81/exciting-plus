@@ -46,7 +46,7 @@ if (.not.wannier) then
   crpa=.false.
 endif
 lpmat=.false.
-if (lwannopt.or.crpa) lpmat=.true.
+!if (lwannopt.or.crpa) lpmat=.true.
 do j=1,nvq0
   if (ivq0m_list(1,j).eq.0.and.ivq0m_list(2,j).eq.0.and.ivq0m_list(3,j).eq.0) lpmat=.true.
 enddo
@@ -58,7 +58,7 @@ call init1
 ! for constrained RPA all q-vectors in BZ are required 
 lgamma=.false.
 if (crpa) then
-  deallocate(ivq0m_list)
+  if (allocated(ivq0m_list)) deallocate(ivq0m_list)
   if (lgamma) then
     nvq0=nkptnr
   else

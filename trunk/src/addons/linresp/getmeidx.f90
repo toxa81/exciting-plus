@@ -19,8 +19,8 @@ logical, external :: bndint
 logical, external :: wann_diel
 
 if (wannier) then
-  min_e1_wann=minval(wann_eint(1,:))
-  max_e2_wann=maxval(wann_eint(2,:))
+  min_e1_wann=1 !minval(wann_eint(1,:))
+  max_e2_wann=nstsv !maxval(wann_eint(2,:))
 endif
 if (req.and.wproc) then
   write(150,*)
