@@ -1,5 +1,5 @@
 #ifdef _HDF5_
-subroutine response_chi0(ivq0m,evalsvnr,occsvnr)
+subroutine response_chi0(ivq0m)
 use modmain
 use hdf5
 #ifdef _MPI_
@@ -8,8 +8,6 @@ use mpi
 implicit none
 ! arguments
 integer, intent(in) :: ivq0m(3)
-real(8), intent(in) :: evalsvnr(nstsv,nkptnr)
-real(8), intent(in) :: occsvnr(nstsv,nkptnr)
 ! local variables
 complex(8), allocatable :: chi0w(:,:)
 integer i,j,ik,ie,nkptnr_,i1,i2,i3,ikloc,nspinor_
@@ -24,6 +22,8 @@ integer ie1,n,n1,n2,n3,n4,jk,ist1,ist2,ig,sz1,sz2
 complex(8), allocatable :: wann_c1(:,:,:)
 complex(8), allocatable :: wann_c2(:,:,:)
 complex(8), allocatable :: zv1(:),zm1(:,:),zm2(:,:,:)
+real(8), allocatable :: evalsvnr(:,:)
+real(8), allocatable :: occsvnr(:,:)
 integer iv(3)
 
 integer it1,it2
@@ -75,6 +75,9 @@ do i=1,nepts
   lr_w(i)=dcmplx(domega*(i-1),lr_eta)/ha2ev
 enddo
 
+allocate(evalsvnr(nstsv,nkptnr))
+allocate(occsvnr(nstsv,nkptnr))
+
 fname=trim(qnm)//"_me.hdf5"
 if (root_cart((/1,1,0/))) then
   call read_integer(nkptnr_,1,trim(fname),'/parameters','nkptnr')
@@ -94,7 +97,11 @@ if (root_cart((/1,1,0/))) then
     call read_real8(wann_occ,nwann,trim(fname),'/wannier','wann_occ')
     call read_integer(ntrmegqwan,1,trim(fname),'/wannier','ntrmegqwan')
     call read_integer(nmegqwan,1,trim(fname),'/wannier','nmegqwan')
-  endif  
+  endif 
+  call read_real8_array(evalsvnr,2,(/nstsv,nkptnr/), &
+      trim(fname),'/parameters','evalsvnr')
+  call read_real8_array(occsvnr,2,(/nstsv,nkptnr/), &
+      trim(fname),'/parameters','occsvnr')  
   if (nkptnr_.ne.nkptnr) then
     write(*,*)
     write(*,'("Error(response_chi0): k-mesh was changed")')
@@ -124,6 +131,9 @@ if (wannier) then
   call i_bcast_cart(comm_cart_110,ntrmegqwan,1)
   call i_bcast_cart(comm_cart_110,nmegqwan,1)
 endif
+call d_bcast_cart(comm_cart_110,evalsvnr,nstsv*nkptnr)
+call d_bcast_cart(comm_cart_110,occsvnr,nstsv*nkptnr)
+
 if (wannier) then
   allocate(itrmegqwan(3,ntrmegqwan))
   allocate(megqwan(nmegqwan,ntrmegqwan,ngvecme))
@@ -533,6 +543,8 @@ endif
 
 call barrier(comm_cart_110)
 
+deallocate(evalsvnr)
+deallocate(occsvnr)
 deallocate(lr_w)
 deallocate(idxkq)
 deallocate(nmegqblh)
