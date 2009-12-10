@@ -58,7 +58,10 @@ else
 ! solve the second-variational secular equation
   call seceqnsv(ik,apwalm,evalfv,evecfv,evecsv)
 end if
-if (wannier) call genwann(ik,evecfv,evecsv)
+if (wannier) then
+  call genwann(ik,evecfv,evecsv)
+  if (ldisentangle) call disentangle(evalsv(1,ikglob(ik)),wann_c(1,1,ik),evecsv)
+endif
 if (wannier.and.wann_add_poco) then
   call wann_seceqn(ik,evecsv)
   call genwann(ik,evecfv,evecsv)

@@ -1143,6 +1143,14 @@ real(8), allocatable :: wann_iorb_lcc(:,:)
 integer nwann_h
 integer, allocatable :: iwann_h(:)
 
+logical wannier_soft_eint
+real(8) wannier_soft_eint_width
+real(8) wannier_soft_eint_e1
+real(8) wannier_soft_eint_e2
+real(8) wannier_min_prjao
+
+logical ldisentangle
+
 !----------------!
 !      timer     !
 !----------------!

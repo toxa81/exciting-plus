@@ -90,7 +90,7 @@ SRC_lib = \
  connect.f90 flushifc.f90 spline.f90 writewiq2.f90 rfinterp.f90 rfmtctof.f90 \
  fderiv.f90 fsmooth.f90 rotaxang.f90 i3minv.f90 axangsu2.f90 z2mm.f90 \
  z2mctm.f90 z2mmct.f90 potnucl.f90 timesec.f90 rfirvec.f90 vecfbz.f90 \
- mixadapt.f90 mixpulay.f90
+ mixadapt.f90 mixpulay.f90 occupy2.f90
 
 
 SRC_lib_flux =
