@@ -758,6 +758,25 @@ if (crpa) then
 	  write(170,'(100F12.6)')(dimag(ubare(i,j)),j=1,nwann)
 	enddo  
 	close(170)
+
+	if (ngvecme.gt.10) then
+	  n1=10
+	else
+	  n1=ngvecme
+	endif
+	fname=trim(qnm)//"_krnl.txt"
+	open(170,file=trim(fname),status='replace',form='formatted')
+	write(170,'("Screened W matrix")')
+	write(170,'("real part")')
+	do i=1,n1
+	  write(170,'(100F12.6)')(dreal(krnl_scr(i,j)),j=1,n1)
+	enddo
+	write(170,'("imag part")')
+	do i=1,n1
+	  write(170,'(100F12.6)')(dimag(krnl_scr(i,j)),j=1,n1)
+	enddo
+	close(170)
+	
 	deallocate(uscrn,ubare)
 	deallocate(krnl)
 	deallocate(krnl_scr)
