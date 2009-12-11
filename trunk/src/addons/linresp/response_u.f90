@@ -7,6 +7,7 @@ complex(8), allocatable :: ubare(:,:)
 complex(8), allocatable :: z1(:,:),z2(:,:)
 integer iq,i,j
 character*100 fname,qnm
+real(8) uavg
 
 allocate(uscrn(nwann,nwann))
 allocate(ubare(nwann,nwann))
@@ -40,6 +41,21 @@ write(150,'("imag part")')
 do i=1,nwann
   write(150,'(100F12.6)')(dimag(uscrn(i,j)),j=1,nwann)
 enddo
+uavg=0.d0
+do i=1,nwann
+  uavg=uavg+dreal(uscrn(i,i))
+enddo
+uavg=uavg/nwann
+write(150,'("Average diagonal screened U : ",F12.6)')uavg
+uavg=0.d0
+do i=1,nwann
+  do j=1,nwann
+    uavg=uavg+dreal(uscrn(i,j))
+  enddo
+enddo
+uavg=uavg/nwann/nwann
+write(150,'("Average total screened U : ",F12.6)')uavg
+
 write(150,*)
 write(150,'("Bare U matrix")')
 write(150,'("real part")')
@@ -50,6 +66,21 @@ write(150,'("imag part")')
 do i=1,nwann
   write(150,'(100F12.6)')(dimag(ubare(i,j)),j=1,nwann)
 enddo
+uavg=0.d0
+do i=1,nwann
+  uavg=uavg+dreal(ubare(i,i))
+enddo
+uavg=uavg/nwann
+write(150,'("Average diagonal bare U : ",F12.6)')uavg
+uavg=0.d0
+do i=1,nwann
+  do j=1,nwann
+    uavg=uavg+dreal(ubare(i,j))
+  enddo
+enddo
+uavg=uavg/nwann/nwann
+write(150,'("Average total bare U : ",F12.6)')uavg
+
 close(150)
 deallocate(uscrn,ubare,z1,z2)
 
