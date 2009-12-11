@@ -57,7 +57,7 @@ call init0
 call init1
 ! for constrained RPA all q-vectors in BZ are required 
 lgamma=.false.
-if (crpa) then
+if (crpa.and..true.) then
   if (allocated(ivq0m_list)) deallocate(ivq0m_list)
   if (lgamma) then
     nvq0=nkptnr
@@ -75,7 +75,9 @@ if (crpa) then
         endif
       enddo
     enddo
-  enddo 
+  enddo
+endif
+if (crpa) then
   maxomega=0.d0
   domega=1.d0
 endif

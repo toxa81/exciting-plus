@@ -373,25 +373,6 @@ do ie=ie1,nepts
 ! for each k-point : sum over interband transitions
       call sum_chi0(ikloc,ik,jk,nmegqblh(ikloc),i1,i2,evalsvnr,occsvnr,&
         lr_w(ie),chi0w)
-!      do i=i1,i2
-!        ist1=bmegqblh(1,i,ikloc)
-!        ist2=bmegqblh(2,i,ikloc)
-!! default : include all interband transitions         
-!        l1=.true.
-!! for cRPA : don't include bands in energy window [crpa_e1,crpa_e2]
-!        if (crpa) then
-!          if (bndint(ist1,evalsvnr(ist1,ik),crpa_e1,crpa_e2).and. &
-!              bndint(ist2,evalsvnr(ist2,jk),crpa_e1,crpa_e2)) l1=.false.
-!        endif
-!        if (l1) then
-!          if (abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-5) then
-!            wt=(occsvnr(ist1,ik)-occsvnr(ist2,jk))/(evalsvnr(ist1,ik) - &
-!              evalsvnr(ist2,jk)+lr_w(ie))
-!            call zgerc(ngvecme,ngvecme,wt,megqblh(1,i,ikloc),1,megqblh(1,i,ikloc),1, &
-!              chi0w,ngvecme)
-!          endif
-!        endif
-!      enddo !i
     endif
 ! for response in Wannier basis
     if (lwannresp) then

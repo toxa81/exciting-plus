@@ -331,7 +331,7 @@ if (wannier) then
   enddo
   if (wproc) then
     write(150,*)
-    write(150,'("Number of WF trainstions : ",I4)')nmegqwan
+    write(150,'("Number of WF transitions : ",I4)')nmegqwan
   endif
 ! list of translations
   ntrmegqwan=(2*lr_maxtr+1)**3
