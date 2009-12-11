@@ -34,6 +34,11 @@ logical, external :: root_cart
 logical, external :: in_cart
 logical, external :: wann_diel
 
+! comment: after all new implementations (response in WF, cRPA,
+!   band disentanglement) the code has become ugly and unreadable;
+!   it should be refactored; new hdf5 and mpi_grid interfaces are
+!   "a must"
+
 if (lrtype.eq.1.and..not.spinpol) then
   write(*,*)
   write(*,'("Error(response): can''t do magnetic response for unpolarized ground state")')

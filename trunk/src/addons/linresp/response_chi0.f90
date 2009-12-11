@@ -371,7 +371,7 @@ do ie=ie1,nepts
       i2=idx0+bs
       sz1=sz1+bs
 ! for each k-point : sum over interband transitions
-      call sum_chi0(ikloc,ik,jk,nmegqblh(ikloc),i1,i2,evalsvnr,occsvnr,&
+      call sum_chi0(ikloc,ikloc,ik,jk,nmegqblh(ikloc),i1,i2,evalsvnr,occsvnr,&
         lr_w(ie),chi0w)
     endif
 ! for response in Wannier basis
@@ -554,10 +554,11 @@ endif
 return
 end
 
-subroutine sum_chi0(ikloc,ik,jk,nmegqblh_,i1,i2,evalsvnr,occsvnr,w,chi0w)
+subroutine sum_chi0(ikloc,ikloc1,ik,jk,nmegqblh_,i1,i2,evalsvnr,occsvnr,w,chi0w)
 use modmain
 implicit none
 integer, intent(in) :: ikloc
+integer, intent(in) :: ikloc1
 integer, intent(in) :: ik
 integer, intent(in) :: jk
 integer, intent(in) :: nmegqblh_
@@ -601,7 +602,7 @@ enddo !i
 if (.false.) then
   do i=i1,i2
     if (l2(i)) then
-      call zgerc(ngvecme,ngvecme,wt(i),megqblh(1,i,ikloc),1,megqblh(1,i,ikloc),1, &
+      call zgerc(ngvecme,ngvecme,wt(i),megqblh(1,i,ikloc1),1,megqblh(1,i,ikloc1),1, &
         chi0w(1,1),ngvecme)
     endif
   enddo
@@ -616,7 +617,7 @@ else
     do j2=1,nb
       do i=i1,i2
         if (l2(i)) then
-          call zgerc(bs,bs,wt(i),megqblh(ib1,i,ikloc),1,megqblh(ib2,i,ikloc),1, &
+          call zgerc(bs,bs,wt(i),megqblh(ib1,i,ikloc1),1,megqblh(ib2,i,ikloc1),1, &
             chi0w(ib1,ib2),ngvecme)
         endif
       enddo !i
@@ -630,9 +631,9 @@ else
     do j1=1,nb
       do i=i1,i2
         if (l2(i)) then
-          call zgerc(bs,sz1,wt(i),megqblh(ib1,i,ikloc),1,megqblh(nb*bs+1,i,ikloc),1, &
+          call zgerc(bs,sz1,wt(i),megqblh(ib1,i,ikloc1),1,megqblh(nb*bs+1,i,ikloc1),1, &
             chi0w(ib1,nb*bs+1),ngvecme)
-          call zgerc(sz1,bs,wt(i),megqblh(nb*bs+1,i,ikloc),1,megqblh(ib1,i,ikloc),1, &
+          call zgerc(sz1,bs,wt(i),megqblh(nb*bs+1,i,ikloc1),1,megqblh(ib1,i,ikloc1),1, &
             chi0w(nb*bs+1,ib1),ngvecme)
         endif
       enddo !i
@@ -640,7 +641,7 @@ else
     enddo !j1
     do i=i1,i2
       if (l2(i)) then
-        call zgerc(sz1,sz1,wt(i),megqblh(nb*bs+1,i,ikloc),1,megqblh(nb*bs+1,i,ikloc),1, &
+        call zgerc(sz1,sz1,wt(i),megqblh(nb*bs+1,i,ikloc1),1,megqblh(nb*bs+1,i,ikloc1),1, &
           chi0w(nb*bs+1,nb*bs+1),ngvecme)
       endif
     enddo !i

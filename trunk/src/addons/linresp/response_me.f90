@@ -38,7 +38,7 @@ complex(8), allocatable :: wann_c2(:,:)
 integer, allocatable :: igfft1(:,:)
 
 
-integer n1,n2,i1,i2,i3,itr,n,ist1,ist2
+integer n1,n2,i1,i2,i3,itr,n,ist1,ist2,ig1,ig2
 real(8) vtrc(3)
 
 complex(8), allocatable :: gvit(:,:,:)
@@ -54,6 +54,8 @@ integer, allocatable :: ngu(:,:)
 integer ngumax
 complex(8) zt1
 
+complex(8), allocatable :: chi0w(:,:)
+
 integer lmaxexp
 integer lmmaxexp
 
@@ -67,6 +69,16 @@ integer ngsh,gshq0
 logical lwritemek
 integer ik1
 logical exist
+logical lwriteme
+
+complex(8), allocatable :: krnl(:,:)
+complex(8), allocatable :: krnl_scr(:,:)
+real(8), allocatable :: vcgq(:)
+complex(8), allocatable :: epsilon(:,:)
+complex(8), allocatable :: uscrn(:,:)
+complex(8), allocatable :: ubare(:,:)
+
+
 
 ! HDF5
 integer(hid_t) h5_root_id
@@ -84,6 +96,11 @@ logical, external :: wann_diel
 ! comment:
 ! the subroutine computes <psi_{n,k}|e^{-i(G+q)x}|psi_{n',k+q}> 
 !
+! quck turnaround for cRPA: compute chi0 and chi here; no writing 
+! 
+if (crpa) lwriteme=.false.
+
+
 call qname(ivq0m,qnm)
 qnm="./"//trim(qnm)//"/"//trim(qnm)
 wproc=.false.
@@ -363,7 +380,7 @@ enddo
 ! generate structure factor for G+q' vectors
 call gensfacgp(ngvecme,vgq0c,ngvecme,sfacgq0)
 
-if (root_cart((/1,1,0/))) then
+if (root_cart((/1,1,0/)).and.lwriteme) then
   call h5fcreate_f(trim(fname),H5F_ACC_TRUNC_F,h5_root_id,ierr)
   call h5gcreate_f(h5_root_id,'parameters',h5_tmp_id,ierr)
   call h5gclose_f(h5_tmp_id,ierr)
@@ -450,8 +467,8 @@ if (wproc) then
 endif
 deallocate(uuj)
 
-allocate(gvit(intgv(1,1):intgv(1,2),intgv(2,1):intgv(2,2),intgv(3,1):intgv(3,2)))
-call gengvit(gvit)
+!allocate(gvit(intgv(1,1):intgv(1,2),intgv(2,1):intgv(2,2),intgv(3,1):intgv(3,2)))
+!call gengvit(gvit)
 
 sz=16*ngvecme*nmegqblhmax*nkptnrloc(0)/1024/1024
 if (sz.lt.150) then
@@ -475,6 +492,11 @@ allocate(wfsvit2(ngkmax,nspinor,nstsv))
 allocate(igkignr2(ngkmax))
 if (wannier) then
   allocate(wann_c2(nwann,nstsv))
+endif
+
+if (crpa) then
+  allocate(chi0w(ngvecme,ngvecme))
+  chi0w=zzero
 endif
 
 if (wproc) then
@@ -563,10 +585,15 @@ do ikstep=1,nkptnrloc(0)
         enddo !ig      
       enddo !itr
     endif !wannier
+    if (crpa) then
+! for each k-point : sum over interband transitions
+      call sum_chi0(ikstep,ik1,ik,idxkq(1,ik),nmegqblh(ikstep),1,nmegqblh(ikstep),&
+        evalsvnr,occsvnr,zi*lr_eta/ha2ev,chi0w)
+    endif
   endif ! ikstep.le.nkptnrloc(mpi_x(1))
   call timer_stop(2)
 ! write matrix elements
-  if (lwritemek) then
+  if (lwritemek.and.lwriteme) then
     call timer_start(3)
 ! only the plane of (k,q) processors will write
     if (root_cart((/0,1,0/))) then
@@ -608,7 +635,7 @@ if (wannier) then
     call d_reduce_cart(comm_cart_100,.false.,megqwan,2*nmegqwan*ntrmegqwan*ngvecme)
   endif
   megqwan=megqwan/nkptnr
-  if (root_cart((/1,1,0/))) then
+  if (root_cart((/1,1,0/)).and.lwriteme) then
     fname=trim(qnm)//"_me.hdf5"
     call write_integer(ntrmegqwan,1,trim(fname),'/wannier','ntrmegqwan')
     call write_integer(nmegqwan,1,trim(fname),'/wannier','nmegqwan')
@@ -616,14 +643,10 @@ if (wannier) then
       trim(fname),'/wannier','megqwan')
     call write_integer_array(itrmegqwan,2,(/3,ntrmegqwan/),trim(fname),'/wannier','itrmegqwan')
     call write_integer_array(bmegqwan,2,(/2,nmegqwan/),trim(fname),'/wannier','bmegqwan')
-!    open(170,file=trim(trim(qnm)//"_megqwan.txt"),status='replace',form='formatted')
-!    write(170,*)sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2),&
-!      abs(1.d0-megqwan(1,1,1))/sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2),abs(megqwan(1,1,1))
-!    close(170)
   endif
 endif
 
-if (.not.lwritemek) then
+if (.not.lwritemek.and.lwriteme) then
   if (wproc) then
     write(150,*)
     write(150,'("Writing matrix elements")')
@@ -652,7 +675,99 @@ if (.not.lwritemek) then
   if (wproc) write(150,'(" Done in : ",F8.2)')timer(3,2)
 endif
 
-deallocate(gvit)
+if (crpa) then
+  allocate(krnl(ngvecme,ngvecme))
+  allocate(krnl_scr(ngvecme,ngvecme))
+  allocate(vcgq(ngvecme))
+  allocate(epsilon(ngvecme,ngvecme))
+  krnl=zzero
+  krnl_scr=zzero
+  vcgq=0.d0
+  do ig=1,ngvecme
+    vcgq(ig)=2*sqrt(pi)/gq0(ig)
+    krnl(ig,ig)=vcgq(ig)**2
+  enddo !ig
+! sum chi0 over k-points
+  if (root_cart((/0,1,0/)).and.mpi_dims(1).gt.1) then
+    call d_reduce_cart(comm_cart_100,.false.,chi0w,2*ngvecme*ngvecme)
+  endif
+  chi0w=chi0w/nkptnr/omega
+  do ig1=1,ngvecme
+    do ig2=1,ngvecme
+      epsilon(ig1,ig2)=-vcgq(ig1)*chi0w(ig1,ig2)*vcgq(ig2)
+    enddo
+    epsilon(ig1,ig1)=dcmplx(1.d0,0.d0)+epsilon(ig1,ig1)
+  enddo
+  call invzge(epsilon,ngvecme)
+  do ig1=1,ngvecme
+    do ig2=1,ngvecme
+      krnl_scr(ig1,ig2)=vcgq(ig1)*epsilon(ig1,ig2)*vcgq(ig2)
+    enddo
+  enddo
+
+  allocate(imegqwan(nwann,nwann))
+  imegqwan=-1
+  do i=1,nmegqwan
+    n1=bmegqwan(1,i)
+    n2=bmegqwan(2,i)
+    imegqwan(n1,n2)=i
+  enddo
+
+  
+  allocate(uscrn(nwann,nwann))
+  allocate(ubare(nwann,nwann))
+  uscrn=zzero
+  ubare=zzero
+  do i1=1,ngvecme
+	do i2=1,ngvecme
+	  do n1=1,nwann
+		do n2=1,nwann
+		  uscrn(n1,n2)=uscrn(n1,n2)+dconjg(megqwan(imegqwan(n1,n1),1,i1))*&
+			krnl_scr(i1,i2)*megqwan(imegqwan(n2,n2),1,i2)
+		  ubare(n1,n2)=ubare(n1,n2)+dconjg(megqwan(imegqwan(n1,n1),1,i1))*&
+			krnl(i1,i2)*megqwan(imegqwan(n2,n2),1,i2)
+		enddo
+	  enddo
+	enddo
+  enddo
+  uscrn=ha2ev*uscrn/omega
+  ubare=ha2ev*ubare/omega
+  fname=trim(qnm)//"_U"
+  open(170,file=trim(fname),status='replace',form='unformatted')
+  write(170)uscrn,ubare
+  close(170)
+  fname=trim(qnm)//"_U.txt"
+  open(170,file=trim(fname),status='replace',form='formatted')
+  write(170,'("Screened U matrix")')
+  write(170,'("real part")')
+  do i=1,nwann
+	write(170,'(100F12.6)')(dreal(uscrn(i,j)),j=1,nwann)
+  enddo
+  write(170,'("imag part")')
+  do i=1,nwann
+	write(170,'(100F12.6)')(dimag(uscrn(i,j)),j=1,nwann)
+  enddo
+  write(170,*)      
+  write(170,'("Bare U matrix")')
+  write(170,'("real part")')
+  do i=1,nwann
+	write(170,'(100F12.6)')(dreal(ubare(i,j)),j=1,nwann)
+  enddo
+  write(170,'("imag part")')
+  do i=1,nwann
+	write(170,'(100F12.6)')(dimag(ubare(i,j)),j=1,nwann)
+  enddo  
+  close(170)
+  deallocate(uscrn,ubare)
+  deallocate(krnl)
+  deallocate(krnl_scr)
+  deallocate(vcgq)
+  deallocate(epsilon)
+  deallocate(imegqwan)
+
+endif !crpa
+
+!deallocate(gvit)
 deallocate(wfsvmt2)
 deallocate(wfsvit2)
 deallocate(igkignr2)
@@ -678,9 +793,13 @@ if (wannier) then
   deallocate(megqwan)
 endif
 deallocate(igfft1)
+if (crpa) then
+  deallocate(chi0w)
+endif
 
-if (root_cart((/1,1,0/))) then
+if (root_cart((/1,1,0/)).and.lwriteme) then
   complete=1
+  fname=trim(qnm)//"_me.hdf5"
   call rewrite_integer(complete,1,trim(fname),'/parameters','complete')
 endif
 
