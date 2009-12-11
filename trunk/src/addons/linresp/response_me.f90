@@ -676,95 +676,95 @@ if (.not.lwritemek.and.lwriteme) then
 endif
 
 if (crpa) then
-  allocate(krnl(ngvecme,ngvecme))
-  allocate(krnl_scr(ngvecme,ngvecme))
-  allocate(vcgq(ngvecme))
-  allocate(epsilon(ngvecme,ngvecme))
-  krnl=zzero
-  krnl_scr=zzero
-  vcgq=0.d0
-  do ig=1,ngvecme
-    vcgq(ig)=2*sqrt(pi)/gq0(ig)
-    krnl(ig,ig)=vcgq(ig)**2
-  enddo !ig
 ! sum chi0 over k-points
   if (root_cart((/0,1,0/)).and.mpi_dims(1).gt.1) then
     call d_reduce_cart(comm_cart_100,.false.,chi0w,2*ngvecme*ngvecme)
   endif
-  chi0w=chi0w/nkptnr/omega
-  do ig1=1,ngvecme
-    do ig2=1,ngvecme
-      epsilon(ig1,ig2)=-vcgq(ig1)*chi0w(ig1,ig2)*vcgq(ig2)
-    enddo
-    epsilon(ig1,ig1)=dcmplx(1.d0,0.d0)+epsilon(ig1,ig1)
-  enddo
-  call invzge(epsilon,ngvecme)
-  do ig1=1,ngvecme
-    do ig2=1,ngvecme
-      krnl_scr(ig1,ig2)=vcgq(ig1)*epsilon(ig1,ig2)*vcgq(ig2)
-    enddo
-  enddo
-
-  allocate(imegqwan(nwann,nwann))
-  imegqwan=-1
-  do i=1,nmegqwan
-    n1=bmegqwan(1,i)
-    n2=bmegqwan(2,i)
-    imegqwan(n1,n2)=i
-  enddo
-
+  if (root_cart((/1,1,0/))) then
+	allocate(krnl(ngvecme,ngvecme))
+	allocate(krnl_scr(ngvecme,ngvecme))
+	allocate(vcgq(ngvecme))
+	allocate(epsilon(ngvecme,ngvecme))
+	krnl=zzero
+	krnl_scr=zzero
+	vcgq=0.d0
+	do ig=1,ngvecme
+	  vcgq(ig)=2*sqrt(pi)/gq0(ig)
+	  krnl(ig,ig)=vcgq(ig)**2
+	enddo !ig
+    chi0w=chi0w/nkptnr/omega
+	do ig1=1,ngvecme
+	  do ig2=1,ngvecme
+		epsilon(ig1,ig2)=-vcgq(ig1)*chi0w(ig1,ig2)*vcgq(ig2)
+	  enddo
+	  epsilon(ig1,ig1)=dcmplx(1.d0,0.d0)+epsilon(ig1,ig1)
+	enddo
+	call invzge(epsilon,ngvecme)
+	do ig1=1,ngvecme
+	  do ig2=1,ngvecme
+		krnl_scr(ig1,ig2)=vcgq(ig1)*epsilon(ig1,ig2)*vcgq(ig2)
+	  enddo
+	enddo
   
-  allocate(uscrn(nwann,nwann))
-  allocate(ubare(nwann,nwann))
-  uscrn=zzero
-  ubare=zzero
-  do i1=1,ngvecme
-	do i2=1,ngvecme
-	  do n1=1,nwann
-		do n2=1,nwann
-		  uscrn(n1,n2)=uscrn(n1,n2)+dconjg(megqwan(imegqwan(n1,n1),1,i1))*&
-			krnl_scr(i1,i2)*megqwan(imegqwan(n2,n2),1,i2)
-		  ubare(n1,n2)=ubare(n1,n2)+dconjg(megqwan(imegqwan(n1,n1),1,i1))*&
-			krnl(i1,i2)*megqwan(imegqwan(n2,n2),1,i2)
+	allocate(imegqwan(nwann,nwann))
+	imegqwan=-1
+	do i=1,nmegqwan
+	  n1=bmegqwan(1,i)
+	  n2=bmegqwan(2,i)
+	  imegqwan(n1,n2)=i
+	enddo
+	
+	allocate(uscrn(nwann,nwann))
+	allocate(ubare(nwann,nwann))
+	uscrn=zzero
+	ubare=zzero
+	do i1=1,ngvecme
+	  do i2=1,ngvecme
+		do n1=1,nwann
+		  do n2=1,nwann
+			uscrn(n1,n2)=uscrn(n1,n2)+dconjg(megqwan(imegqwan(n1,n1),1,i1))*&
+			  krnl_scr(i1,i2)*megqwan(imegqwan(n2,n2),1,i2)
+			ubare(n1,n2)=ubare(n1,n2)+dconjg(megqwan(imegqwan(n1,n1),1,i1))*&
+			  krnl(i1,i2)*megqwan(imegqwan(n2,n2),1,i2)
+		  enddo
 		enddo
 	  enddo
 	enddo
-  enddo
-  uscrn=ha2ev*uscrn/omega
-  ubare=ha2ev*ubare/omega
-  fname=trim(qnm)//"_U"
-  open(170,file=trim(fname),status='replace',form='unformatted')
-  write(170)uscrn,ubare
-  close(170)
-  fname=trim(qnm)//"_U.txt"
-  open(170,file=trim(fname),status='replace',form='formatted')
-  write(170,'("Screened U matrix")')
-  write(170,'("real part")')
-  do i=1,nwann
-	write(170,'(100F12.6)')(dreal(uscrn(i,j)),j=1,nwann)
-  enddo
-  write(170,'("imag part")')
-  do i=1,nwann
-	write(170,'(100F12.6)')(dimag(uscrn(i,j)),j=1,nwann)
-  enddo
-  write(170,*)      
-  write(170,'("Bare U matrix")')
-  write(170,'("real part")')
-  do i=1,nwann
-	write(170,'(100F12.6)')(dreal(ubare(i,j)),j=1,nwann)
-  enddo
-  write(170,'("imag part")')
-  do i=1,nwann
-	write(170,'(100F12.6)')(dimag(ubare(i,j)),j=1,nwann)
-  enddo  
-  close(170)
-  deallocate(uscrn,ubare)
-  deallocate(krnl)
-  deallocate(krnl_scr)
-  deallocate(vcgq)
-  deallocate(epsilon)
-  deallocate(imegqwan)
-
+	uscrn=ha2ev*uscrn/omega
+	ubare=ha2ev*ubare/omega
+	fname=trim(qnm)//"_U"
+	open(170,file=trim(fname),status='replace',form='unformatted')
+	write(170)uscrn,ubare
+	close(170)
+	fname=trim(qnm)//"_U.txt"
+	open(170,file=trim(fname),status='replace',form='formatted')
+	write(170,'("Screened U matrix")')
+	write(170,'("real part")')
+	do i=1,nwann
+	  write(170,'(100F12.6)')(dreal(uscrn(i,j)),j=1,nwann)
+	enddo
+	write(170,'("imag part")')
+	do i=1,nwann
+	  write(170,'(100F12.6)')(dimag(uscrn(i,j)),j=1,nwann)
+	enddo
+	write(170,*)      
+	write(170,'("Bare U matrix")')
+	write(170,'("real part")')
+	do i=1,nwann
+	  write(170,'(100F12.6)')(dreal(ubare(i,j)),j=1,nwann)
+	enddo
+	write(170,'("imag part")')
+	do i=1,nwann
+	  write(170,'(100F12.6)')(dimag(ubare(i,j)),j=1,nwann)
+	enddo  
+	close(170)
+	deallocate(uscrn,ubare)
+	deallocate(krnl)
+	deallocate(krnl_scr)
+	deallocate(vcgq)
+	deallocate(epsilon)
+	deallocate(imegqwan)
+  endif
 endif !crpa
 
 !deallocate(gvit)
