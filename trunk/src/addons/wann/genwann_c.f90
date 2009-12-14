@@ -66,12 +66,20 @@ enddo !n
 !    if (abs(prjao(n,j)).lt.wannier_min_prjao) prjao(n,j)=zzero
 !  enddo
 !enddo
+!do j=1,nstsv
+!  zt1=zzero
+!  do n=1,nwann
+!    zt1=zt1+abs(prjao(n,j))**2
+!  enddo
+!  write(*,*)'j=',j,'sum=',abs(zt1)
+!enddo
+!  
 do j=1,nstsv
-  zt1=zzero
+  d1=0.d0
   do n=1,nwann
-    zt1=zt1+abs(prjao(n,j))
+    d1=d1+abs(prjao(n,j))**2
   enddo
-  if (abs(zt1).lt.wannier_min_prjao) prjao(:,j)=zzero
+  if (d1.lt.wannier_min_prjao) prjao(:,j)=zzero
 enddo
 
 call wann_ort(ik,prjao)
