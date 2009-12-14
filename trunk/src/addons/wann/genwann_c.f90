@@ -61,10 +61,17 @@ do n=1,nwann
 enddo !n
 
 ! remove small contribution
-do n=1,nwann
-  do j=1,nstsv
-    if (abs(prjao(n,j)).lt.wannier_min_prjao) prjao(n,j)=zzero
+!do n=1,nwann
+!  do j=1,nstsv
+!    if (abs(prjao(n,j)).lt.wannier_min_prjao) prjao(n,j)=zzero
+!  enddo
+!enddo
+do j=1,nstsv
+  zt1=zzero
+  do n=1,nwann
+    zt1=zt1+abs(prjao(n,j))
   enddo
+  if (abs(zt1).lt.wannier_min_prjao) prjao(:,j)=zzero
 enddo
 
 call wann_ort(ik,prjao)
