@@ -44,7 +44,10 @@ close(50)
 write(*,'("Put Fermi level to zero? (1-Yes,2-No)")')
 read(*,*)iin
 if (.not.(iin.eq.1.or.iin.eq.2)) goto 35
-if (iin.eq.1) e=e-efermi
+if (iin.eq.1) then
+  e=e-efermi
+  efermi=0.d0
+endif
 
 40 continue
 write(*,'("Energy units? (1-Ha,2-eV)")')
@@ -229,8 +232,8 @@ endif
         write(50,*)lines(3,i),emax-1.d-4
         write(50,*)
       enddo
-      write(50,*)0.d0,0.d0
-      write(50,*)dpp1d(nkpt),0.d0
+      write(50,*)0.d0,efermi
+      write(50,*)dpp1d(nkpt),efermi
       close(50)
      
       
