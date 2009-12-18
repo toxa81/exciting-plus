@@ -34,7 +34,7 @@ if (vrinmt(r,is,ia,ntr,vr0,ir0,r0)) then
       ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
     enddo !l
   enddo !io
-  do ikloc=1,nkptloc(iproc)
+  do ikloc=1,nkptloc
     zt3=exp(zi*dot_product(vkc(:,ikglob(ikloc)),tr(:)))
     do n=1,nwfplot
       do ispn=1,nspinor
@@ -51,7 +51,7 @@ if (vrinmt(r,is,ia,ntr,vr0,ir0,r0)) then
   call timer_stop(1)
 else
   call timer_start(2)
-  do ikloc=1,nkptloc(iproc)
+  do ikloc=1,nkptloc
     do ispn=1,nspinor
       do ig=1,ngk(1,ikglob(ikloc))
         zt3=exp(zi*dot_product(vgkc(:,ig,1,ikloc),r(:)))/sqrt(omega)

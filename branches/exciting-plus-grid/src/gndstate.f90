@@ -9,6 +9,7 @@
 subroutine gndstate
 ! !USES:
 use modmain
+use mod_mpi_grid
 ! !DESCRIPTION:
 !   Computes the self-consistent Kohn-Sham ground-state. General information is
 !   written to the file {\tt INFO.OUT}. First- and second-variational
@@ -40,13 +41,13 @@ call init0
 call init1
 
 ! allocate arrays for eigevvalues/vectors
-allocate(evalfv(nstfv,nspnfv,nkptloc(iproc)))
-allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc(iproc)))
-allocate(evecsvloc(nstsv,nstsv,nkptloc(iproc)))
+allocate(evalfv(nstfv,nspnfv,nkptloc))
+allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
+allocate(evecsvloc(nstsv,nstsv,nkptloc))
 
 ! initialise OEP variables if required
 if (xctype.lt.0) call init2
-if (iproc.eq.0) then
+if (mpi_grid_root()) then
 ! write the real and reciprocal lattice vectors to file
   call writelat
 ! write interatomic distances to file
@@ -74,7 +75,8 @@ if (iproc.eq.0) then
 ! open RMSDVEFF.OUT
   open(65,file='RMSDVEFF'//trim(filext),action='WRITE',form='FORMATTED')
 ! write out general information to INFO.OUT
-  write(60,'("Running on ",I5," proc")')nproc
+  write(60,'("Total number of processors : ",I8)')nproc1
+  write(60,'("Grid dimensions : ",10I8)')mpi_grid_size  
   call writeinfo(60)
   write(60,*)
 end if
@@ -82,28 +84,18 @@ end if
 iscl=0
 if ((task.eq.1).or.(task.eq.3)) then
   call readstate
-  if (iproc.eq.0) write(60,'("Potential read in from STATE.OUT")')
+  if (mpi_grid_root()) write(60,'("Potential read in from STATE.OUT")')
 else if (task.eq.200) then
   call phveff
-  if (iproc.eq.0) write(60,'("Supercell potential constructed from STATE.OUT")')
+  if (mpi_grid_root()) write(60,'("Supercell potential constructed from STATE.OUT")')
 else
   call rhoinit
   call poteff
   call genveffig
-  if (iproc.eq.0) write(60,'("Density and potential initialised from &
+  if (mpi_grid_root()) write(60,'("Density and potential initialised from &
     &atomic data")')
 end if
-if (iproc.eq.0) call flushifc(60)
-!if (wannier.and.task.eq.1.and.maxscl.gt.1) then
-!  do i=0,nproc-1
-!    if (iproc.eq.i) then
-!      do ik=1,nkptloc(iproc)
-!        call getwann(ik)
-!      end do
-!    end if
-!    call barrier(comm_world)
-!  end do
-!endif
+if (mpi_grid_root()) call flushifc(60)
 ! size of mixing vector
 n=lmmaxvr*nrmtmax*natmtot+ngrtot
 if (spinpol) n=n*(1+ndmag)
@@ -120,9 +112,10 @@ tstop=.false.
 ! set last iteration flag
 tlast=.false.
 ! delete any existing eigenvector files
-if (iproc.eq.0.and.((task.eq.0).or.(task.eq.2))) call delevec
+if (mpi_grid_root().and.((task.eq.0).or.(task.eq.2))) call delevec
+call pstop
 ! begin the self-consistent loop
-if (iproc.eq.0) then
+if (mpi_grid_root()) then
   write(60,*)
   write(60,'("+------------------------------+")')
   write(60,'("| Self-consistent loop started |")')
@@ -166,7 +159,7 @@ do iscl=1,maxscl
   call timer_reset(t_seceqnfv_diag)
   call timer_reset(t_seceqnsv_setup)
   call timer_reset(t_seceqnsv_diag)
-  do ik=1,nkptloc(iproc)
+  do ik=1,nkptloc
 ! solve the first- and second-variational secular equations
     call seceqn(ik,evalfv(1,1,ik),evecfvloc(1,1,1,ik),evecsvloc(1,1,ik))
   end do
@@ -190,7 +183,7 @@ do iscl=1,maxscl
     magmt(:,:,:,:)=0.d0
     magir(:,:)=0.d0
   end if
-  do ik=1,nkptloc(iproc)
+  do ik=1,nkptloc
 ! add to the density and magnetisation
     call rhomagk(ik,evecfvloc(1,1,1,ik),evecsvloc(1,1,ik))
   end do
@@ -347,7 +340,7 @@ end if !iproc.eq.0
 ! write eigenvalues/vectors and occupancies to file
 do i=0,nproc-1
   if (iproc.eq.i) then
-    do ik=1,nkptloc(iproc)
+    do ik=1,nkptloc
       call putevalfv(ikglob(ik),evalfv(1,1,ik))
       call putevalsv(ikglob(ik),evalsv(1,ikglob(ik)))
       call putevecfv(ikglob(ik),evecfvloc(1,1,1,ik))

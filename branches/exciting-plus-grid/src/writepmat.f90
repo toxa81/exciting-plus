@@ -32,7 +32,7 @@ allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 allocate(evecfv(nmatmax,nstfv))
 allocate(evecsv(nstsv,nstsv))
 ! allocate the momentum matrix elements array
-allocate(pmat(3,nstsv,nstsv,nkptloc(iproc)))
+allocate(pmat(3,nstsv,nstsv,nkptloc))
 ! read in the density and potentials from file
 call readstate
 ! find the new linearisation energies
@@ -47,7 +47,7 @@ if (iproc.eq.0) then
 endif
 ! find the record length
 inquire(iolength=recl) pmat(:,:,:,1)
-do ikloc=1,nkptloc(iproc)
+do ikloc=1,nkptloc
 ! get the eigenvectors from file
   call getevecfv(vkl(:,ikglob(ikloc)),vgkl(:,:,:,ikloc),evecfv)
   call getevecsv(vkl(:,ikglob(ikloc)),evecsv)
@@ -63,7 +63,7 @@ do i=0,nproc-1
   if (i.eq.iproc) then
     open(50,file='PMAT.OUT',action='WRITE',form='UNFORMATTED',access='DIRECT', &
       recl=recl)
-    do ikloc=1,nkptloc(iproc)
+    do ikloc=1,nkptloc
       write(50,rec=ikglob(ikloc)) pmat(:,:,:,ikloc)
     enddo
     close(50)

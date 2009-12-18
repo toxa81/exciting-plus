@@ -70,7 +70,7 @@ call genurfprod
 ! begin parallel loop over k-points
 e=0.d0
 bc=0.d0
-do ik=1,nkptloc(iproc)
+do ik=1,nkptloc
   write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ikglob(ik),nkpt
 ! solve the first- and second-variational secular equations
   call seceqn(ik,evalfv,evecfv,evecsv)
@@ -134,7 +134,7 @@ if (wannier) then
   do i=0,nproc-1
     if (i.eq.iproc) then
       open(50,file='BNDCHR.OUT',form='FORMATTED',status='OLD',position='APPEND')
-      do ik=1,nkptloc(iproc)
+      do ik=1,nkptloc
         write(50,*)((abs(wann_c(n,j,ik)),n=1,nwann),j=1,nstfv)
       enddo
       close(50)

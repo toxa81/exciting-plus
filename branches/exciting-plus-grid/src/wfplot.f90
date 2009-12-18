@@ -76,7 +76,7 @@ end if
 rhomt(:,:,:)=0.d0
 rhoir(:)=0.d0
 ! compute the charge density with the new occupancies
-do ikloc=1,nkptloc(iproc)
+do ikloc=1,nkptloc
   ik=ikglob(ikloc)
 ! get the eigenvectors from file
   call getevecfv(vkl(:,ik),vgkl(:,:,:,ikloc),evecfv)

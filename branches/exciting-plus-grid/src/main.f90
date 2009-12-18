@@ -6,22 +6,14 @@
 ! main routine for the EXCITING code
 program main
 use modmain
-#ifdef _MPI_
-use mpi
-#endif
+use mod_mpi_grid
 #ifdef _HDF5_
 use hdf5
 #endif
 implicit none
 ! local variables
 integer itask,ierr
-#ifdef _MPI_
-call mpi_init(ierr)
-comm_world=MPI_COMM_WORLD
-comm_null=MPI_COMM_NULL
-call mpi_comm_size(comm_world,nproc,ierr)
-call mpi_comm_rank(comm_world,iproc,ierr)
-#endif
+call mpi_world_initialize
 #ifdef _HDF5_
 call h5open_f(ierr)
 #endif
@@ -124,10 +116,8 @@ end do
 #ifdef _HDF5_
 call h5close_f(ierr)
 #endif
-#ifdef _MPI_
-call mpi_barrier(MPI_COMM_WORLD,ierr)
-call mpi_finalize(ierr)
-#endif
+call mpi_grid_finalize
+call mpi_world_finalize
 stop
 end program
 

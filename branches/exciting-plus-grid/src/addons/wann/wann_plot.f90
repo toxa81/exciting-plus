@@ -39,7 +39,7 @@ call geturf
 
 do i=0,nproc-1
   if (iproc.eq.i) then
-    do ikloc=1,nkptloc(iproc)
+    do ikloc=1,nkptloc
       call getwann(ikloc)
     end do
   end if

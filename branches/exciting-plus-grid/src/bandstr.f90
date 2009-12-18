@@ -76,7 +76,7 @@ emax=-1.d5
 ! begin parallel loop over k-points
 e=0.d0
 if (task.eq.21) bc=0.d0
-do ik=1,nkptloc(iproc)
+do ik=1,nkptloc
   write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ikglob(ik),nkpt
 ! solve the first- and second-variational secular equations
   call seceqn(ik,evalfv,evecfv,evecsv)

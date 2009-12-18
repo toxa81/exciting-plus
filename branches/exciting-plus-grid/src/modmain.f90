@@ -920,7 +920,8 @@ integer iproc
 data iproc /0/
 integer nproc
 data nproc /1/
-integer, allocatable :: nkptloc(:)
+integer nkptloc
+!integer, allocatable :: nkptloc(:)
 integer, allocatable :: ikptloc(:,:)
 integer, allocatable :: nkptnrloc(:)
 integer, allocatable :: ikptnrloc(:,:)
@@ -1176,6 +1177,9 @@ real(8), allocatable :: clda_vorb(:,:)
 
 logical crpa
 real(8) crpa_e1,crpa_e2
+
+integer dim_k
+data dim_k/1/
 
 end module
 

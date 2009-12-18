@@ -30,8 +30,8 @@ call genurfprod
 
 
 if (task.eq.601) then
-  allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc(iproc)))
-  allocate(evecsvloc(nstsv,nstsv,nkptloc(iproc)))
+  allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
+  allocate(evecsvloc(nstsv,nstsv,nkptloc))
 endif
 if (task.eq.602) then
   allocate(wann_rf(lmmaxvr,nrmtmax,nspinor,nwann))
@@ -40,7 +40,7 @@ endif
 evalsv=0.d0
 do i=0,nproc-1
   if (iproc.eq.i) then
-    do ikloc=1,nkptloc(iproc)
+    do ikloc=1,nkptloc
       call getwann(ikloc)
       if (task.eq.600) then
         call getevalsv(vkl(1,ikglob(ikloc)),evalsv(1,ikglob(ikloc)))
@@ -53,7 +53,7 @@ do i=0,nproc-1
   end if
   call barrier(comm_world)
 end do
-do ikloc=1,nkptloc(iproc)
+do ikloc=1,nkptloc
   if (task.eq.600) call genwann_h(ikloc)
   if (task.eq.601) call genwann_p(ikloc,evecfvloc(1,1,1,ikloc), &
     evecsvloc(1,1,ikloc))

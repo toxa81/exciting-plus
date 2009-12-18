@@ -14,7 +14,7 @@ include ../make.inc
 #-------------------------------------------------------------------------------
 # Source files
 #-------------------------------------------------------------------------------
-SRC_modules = modmain.f90 modxcifc.f90
+SRC_modules = modmain.f90 modxcifc.f90 mod_mpi_grid.f90
 
 SRC_main = main.f90
 

@@ -9,6 +9,7 @@
 subroutine init1
 ! !USES:
 use modmain
+use mod_mpi_grid
 ! !DESCRIPTION:
 !   Generates the $k$-point set and then allocates and initialises global
 !   variables which depend on the $k$-point set.
@@ -19,7 +20,7 @@ use modmain
 !BOC
 implicit none
 ! local variables
-integer ik,is,ia,ias,io,ilo
+integer ik,is,ia,ias,io,ilo,ikloc
 integer i1,i2,i3,ispn,iv(3)
 integer l1,l2,l3,m1,m2,m3,lm1,lm2,lm3
 real(8) vl(3),vc(3),boxl(3,4)
@@ -27,7 +28,6 @@ real(8) ts0,ts1
 ! external functions
 complex(8) gauntyry
 external gauntyry
-integer, external :: ikglob
 
 call timesec(ts0)
 
@@ -123,11 +123,12 @@ else
    wkptnr)
 end if
 
-if (allocated(nkptloc)) deallocate(nkptloc)
-allocate(nkptloc(0:nproc-1))
-if (allocated(ikptloc)) deallocate(ikptloc)
-allocate(ikptloc(0:nproc-1,2))
-call splitk(nkpt,nproc,nkptloc,ikptloc)
+if (nproc1.eq.1) then
+  call mpi_grid_initialize((/nproc1/))
+else
+  call mpi_grid_initialize((/nproc1/2,2/))
+endif
+nkptloc=mpi_grid_map(nkpt,dim_k)
 
 !---------------------!
 !     G+k vectors     !
@@ -150,41 +151,42 @@ call getngkmax
 if (allocated(ngk)) deallocate(ngk)
 allocate(ngk(nspnfv,nkpt))
 if (allocated(igkig)) deallocate(igkig)
-allocate(igkig(ngkmax,nspnfv,nkptloc(iproc)))
+allocate(igkig(ngkmax,nspnfv,nkptloc))
 if (allocated(vgkl)) deallocate(vgkl)
-allocate(vgkl(3,ngkmax,nspnfv,nkptloc(iproc)))
+allocate(vgkl(3,ngkmax,nspnfv,nkptloc))
 if (allocated(vgkc)) deallocate(vgkc)
-allocate(vgkc(3,ngkmax,nspnfv,nkptloc(iproc)))
+allocate(vgkc(3,ngkmax,nspnfv,nkptloc))
 if (allocated(gkc)) deallocate(gkc)
-allocate(gkc(ngkmax,nspnfv,nkptloc(iproc)))
+allocate(gkc(ngkmax,nspnfv,nkptloc))
 if (allocated(tpgkc)) deallocate(tpgkc)
-allocate(tpgkc(2,ngkmax,nspnfv,nkptloc(iproc)))
+allocate(tpgkc(2,ngkmax,nspnfv,nkptloc))
 if (allocated(sfacgk)) deallocate(sfacgk)
-allocate(sfacgk(ngkmax,natmtot,nspnfv,nkptloc(iproc)))
+allocate(sfacgk(ngkmax,natmtot,nspnfv,nkptloc))
 ngk=0
-do ik=1,nkptloc(iproc)
+do ikloc=1,nkptloc
+  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
   do ispn=1,nspnfv
     if (spinsprl) then
 ! spin-spiral case
       if (ispn.eq.1) then
-        vl(:)=vkl(:,ikglob(ik))+0.5d0*vqlss(:)
-        vc(:)=vkc(:,ikglob(ik))+0.5d0*vqcss(:)
+        vl(:)=vkl(:,ik)+0.5d0*vqlss(:)
+        vc(:)=vkc(:,ik)+0.5d0*vqcss(:)
       else
-        vl(:)=vkl(:,ikglob(ik))-0.5d0*vqlss(:)
-        vc(:)=vkc(:,ikglob(ik))-0.5d0*vqcss(:)
+        vl(:)=vkl(:,ik)-0.5d0*vqlss(:)
+        vc(:)=vkc(:,ik)-0.5d0*vqcss(:)
       end if
     else
-      vl(:)=vkl(:,ikglob(ik))
-      vc(:)=vkc(:,ikglob(ik))
+      vl(:)=vkl(:,ik)
+      vc(:)=vkc(:,ik)
     end if
 ! generate the G+k-vectors
-    call gengpvec(vl,vc,ngk(ispn,ikglob(ik)),igkig(:,ispn,ik),vgkl(:,:,ispn,ik), &
-     vgkc(:,:,ispn,ik),gkc(:,ispn,ik),tpgkc(:,:,ispn,ik))
+    call gengpvec(vl,vc,ngk(ispn,ik),igkig(:,ispn,ikloc),vgkl(:,:,ispn,ikloc), &
+     vgkc(:,:,ispn,ikloc),gkc(:,ispn,ikloc),tpgkc(:,:,ispn,ikloc))
 ! generate structure factors for G+k-vectors
-    call gensfacgp(ngk(ispn,ikglob(ik)),vgkc(:,:,ispn,ik),ngkmax,sfacgk(:,:,ispn,ik))
+    call gensfacgp(ngk(ispn,ik),vgkc(:,:,ispn,ikloc),ngkmax,sfacgk(:,:,ispn,ikloc))
   end do
 end do
-call isync(ngk,nspnfv*nkpt,.true.,.true.)
+call mpi_grid_reduce(ngk(1,1),nspnfv*nkpt,dims=(/dim_k/),all=.true.)
 
 !---------------------------------!
 !     APWs and local-orbitals     !
@@ -247,15 +249,16 @@ if (allocated(npmat)) deallocate(npmat)
 allocate(npmat(nspnfv,nkpt))
 nmat=0
 npmat=0
-do ik=1,nkptloc(iproc)
+do ikloc=1,nkptloc
+  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
   do ispn=1,nspnfv
-    nmat(ispn,ikglob(ik))=ngk(ispn,ikglob(ik))+nlotot
+    nmat(ispn,ik)=ngk(ispn,ik)+nlotot
 ! packed matrix sizes
-    npmat(ispn,ikglob(ik))=(nmat(ispn,ikglob(ik))*(nmat(ispn,ikglob(ik))+1))/2
+    npmat(ispn,ik)=nmat(ispn,ik)*(nmat(ispn,ik)+1)/2
   end do
 end do
-call isync(nmat,nspnfv*nkpt,.true.,.true.)
-call isync(npmat,nspnfv*nkpt,.true.,.true.)
+call mpi_grid_reduce(nmat(1,1),nspnfv*nkpt,dims=(/dim_k/),all=.true.)
+call mpi_grid_reduce(npmat(1,1),nspnfv*nkpt,dims=(/dim_k/),all=.true.)
 nmatmax=0
 do ik=1,nkpt
   do ispn=1,nspnfv

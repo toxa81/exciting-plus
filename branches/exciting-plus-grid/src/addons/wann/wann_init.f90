@@ -104,14 +104,14 @@ close(100)
 if (wannier_lc) nwann=nwann_lc
 
 if (allocated(wann_c)) deallocate(wann_c)
-allocate(wann_c(nwann,nstsv,nkptloc(iproc)))
+allocate(wann_c(nwann,nstsv,nkptloc))
 wann_c=zzero
 
 if (allocated(wann_unkmt)) deallocate(wann_unkmt)
-allocate(wann_unkmt(lmmaxvr,nrfmax,natmtot,nspinor,nwann,nkptloc(iproc)))
+allocate(wann_unkmt(lmmaxvr,nrfmax,natmtot,nspinor,nwann,nkptloc))
 wann_unkmt=zzero
 if (allocated(wann_unkit)) deallocate(wann_unkit)
-allocate(wann_unkit(ngkmax,nspinor,nwann,nkptloc(iproc)))
+allocate(wann_unkit(ngkmax,nspinor,nwann,nkptloc))
 wann_unkit=zzero
 
 if (allocated(wann_h)) deallocate(wann_h)
@@ -135,9 +135,9 @@ if (allocated(wf_v_mtrx)) deallocate(wf_v_mtrx)
 allocate(wf_v_mtrx(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
 
 !if (allocated(wannmt)) deallocate(wannmt)
-!allocate(wannmt(lmmaxvr,nrcmtmax,natmtot,nspinor,wann_nmax,nkptloc(iproc)))
+!allocate(wannmt(lmmaxvr,nrcmtmax,natmtot,nspinor,wann_nmax,nkptloc))
 !if (allocated(wannit)) deallocate(wannit)
-!allocate(wannit(ngrtot,nspinor,wann_nmax,nkptloc(iproc)))
+!allocate(wannit(ngrtot,nspinor,wann_nmax,nkptloc))
 
 !if (allocated(wf_p)) deallocate(wf_p)
 !allocate(wf_p(3,wf_dim,wf_dim,wann_nspin,nkpt))

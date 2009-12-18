@@ -12,7 +12,7 @@ complex(8) z2
 wf_ene=0.d0
 wf_occ=0.d0
 do n=1,nwann
-  do ik=1,nkptloc(iproc)
+  do ik=1,nkptloc
     do i=1,nstsv
       w2=dreal(dconjg(wann_c(n,i,ik))*wann_c(n,i,ik))
       wf_ene(n)=wf_ene(n)+w2*evalsv(i,ikglob(ik))*wkpt(ikglob(ik))
@@ -46,7 +46,7 @@ do n1=1,nwann
       lm2=iwann(2,n2)
       ispn1=iwann(3,n1)
       ispn2=iwann(3,n2)
-      do ik=1,nkptloc(iproc)
+      do ik=1,nkptloc
         do j=1,nstsv
           z2=dconjg(wann_c(n1,j,ik))*wann_c(n2,j,ik)
           wf_occ_mtrx(lm1,lm2,ispn1,ispn2,ias)=&

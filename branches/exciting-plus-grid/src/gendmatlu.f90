@@ -24,7 +24,7 @@ allocate(dmat(lmmaxlu,lmmaxlu,nspinor,nspinor,nstsv))
 ! zero the LDA+U density matrix
 dmatlu(:,:,:,:,:)=0.d0
 ! begin loop over k-points
-do ik=1,nkptloc(iproc)
+do ik=1,nkptloc
 ! get the eigenvectors and occupancies from file
 !  call getevecfv(vkl(:,ik),vgkl(:,:,:,ik),evecfv)
 !  call getevecsv(vkl(:,ik),evecsv)

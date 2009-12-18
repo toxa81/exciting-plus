@@ -37,7 +37,7 @@ dmatylm=dcmplx(0.d0,0.d0)
 ematylm=dcmplx(0.d0,0.d0)
 ! compute matrix in Ylm
 ! begin loop over k-points
-do ikloc=1,nkptloc(iproc)
+do ikloc=1,nkptloc
   call match(ngk(1,ikglob(ikloc)),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc), &
     sfacgk(1,1,1,ikloc),apwalm)
   call genwfsvmt(lmaxvr,lmmaxvr,ngk(1,ikglob(ikloc)),evecfvloc(1,1,1,ikloc), &

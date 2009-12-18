@@ -48,7 +48,7 @@ bndchr=0.0
 sdmat=dcmplx(0.d0,0.d0)
 do i=0,nproc-1
   if (iproc.eq.i) then
-    do ikloc=1,nkptloc(iproc)
+    do ikloc=1,nkptloc
       ik=ikglob(ikloc)
       call getevecfv(vkl(1,ik),vgkl(1,1,1,ikloc),evecfv)
       call getevecsv(vkl(1,ik),evecsv)
