@@ -31,6 +31,9 @@ integer, allocatable :: mpi_grid_comm(:)
 
 contains
 
+!--------------------------------!
+!      mpi_world_initialize      !
+!--------------------------------!
 subroutine mpi_world_initialize
 #ifdef _MPI_
 use mpi
@@ -45,6 +48,9 @@ call mpi_comm_rank(MPI_COMM_WORLD,iproc,ierr)
 return
 end subroutine
 
+!------------------------------!
+!      mpi_world_finalize      !
+!------------------------------!
 subroutine mpi_world_finalize
 #ifdef _MPI_
 use mpi
@@ -58,6 +64,9 @@ call mpi_finalize(ierr)
 return
 end subroutine
 
+!-----------------!
+!      pstop      !
+!-----------------!
 subroutine pstop(ierr_)
 #ifdef _MPI_
 use mpi
@@ -85,8 +94,9 @@ stop
 return
 end subroutine
 
-
-
+!-------------------------------!
+!      mpi_grid_initialize      !
+!-------------------------------!
 subroutine mpi_grid_initialize(mpi_grid_size_,debug_)
 #ifdef _MPI_
 use mpi
@@ -129,8 +139,8 @@ if (mpi_grid_in()) then
     mpi_grid_x,ierr)
   if (debug.and.mpi_grid_root()) then
     write(*,*)
-    write(*,'("[mod_mpi_grid] number of grid dimensions : ",I2)')mpi_grid_nd
-    write(*,'("[mod_mpi_grid] dimension sizes : ",10I8)')mpi_grid_size   
+    write(*,'("[mpi_grid_initialize] number of grid dimensions : ",I2)')mpi_grid_nd
+    write(*,'("[mpi_grid_initialize] dimension sizes : ",10I8)')mpi_grid_size   
   endif
 ! get all possible communicators
 !   for example, for 3D grid we have 7 possibilities:
@@ -147,7 +157,7 @@ if (mpi_grid_in()) then
     enddo
     call mpi_cart_sub(mpi_grid_comm(0),l1,mpi_grid_comm(i),ierr)
     if (debug.and.mpi_grid_root()) then
-      write(*,'("[mod_mpi_grid] index of communicator : ",I3,&
+      write(*,'("[mpi_grid_initialize] index of communicator : ",I3,&
         &", communicator directions : ",10L2)')i,l1
     endif
   enddo
@@ -163,12 +173,15 @@ allocate(mpi_grid_x(mpi_grid_nd))
 mpi_grid_x=0
 if (debug) then
   write(*,*)
-  write(*,'("[mod_mpi_grid] in serial mode")')
+  write(*,'("[mpi_grid_initialize] serial mode")')
 endif
 #endif
 return
 end subroutine
 
+!-----------------------------!
+!      mpi_grid_finalize      !
+!-----------------------------!
 subroutine mpi_grid_finalize
 #ifdef _MPI_
 use mpi
@@ -188,16 +201,49 @@ deallocate(mpi_grid_x)
 return
 end subroutine
 
-!subroutine cart_barrier(dims)
-!implicit none
-!integer, optional, dimension(:), intent(in) :: dims
-!integer comm,ierr
-!comm=get_cart_comm(dims)
-!call mpi_barrier(comm,ierr)
-!return
-!end subroutine
-!
+!-----------------------------!
+!      mpi_grid_get_comm      !
+!-----------------------------!
+integer function mpi_grid_get_comm(dims)
+implicit none
+! arguments
+integer, optional, dimension(:), intent(in) :: dims
+! local variables
+integer i,j
 
+j=0
+if (present(dims)) then
+  do i=1,size(dims)
+    j=j+2**(dims(i)-1)
+  enddo
+endif
+if (debug.and.mpi_grid_root(dims).and.mpi_grid_side(dims)) then
+  write(*,*)
+  if (present(dims)) then
+    write(*,'("[mpi_grid_get_comm] communication dimensions : ",10I3)')dims
+  endif
+  write(*,'("[mpi_grid_get_comm] index of communicator : ",I3)')j
+endif
+mpi_grid_get_comm=mpi_grid_comm(j)
+return
+end function
+
+
+!----------------------------!
+!      mpi_grid_barrier      !
+!----------------------------!
+subroutine mpi_grid_barrier(dims)
+implicit none
+integer, optional, dimension(:), intent(in) :: dims
+integer comm,ierr
+comm=mpi_grid_get_comm(dims)
+call mpi_barrier(comm,ierr)
+return
+end subroutine
+
+!-----------------------!
+!      mpi_grid_in      !
+!-----------------------!
 logical function mpi_grid_in()
 #ifdef _MPI_
 use mpi
@@ -211,6 +257,9 @@ mpi_grid_in=.true.
 return
 end function
 
+!-------------------------!
+!      mpi_grid_root      !
+!-------------------------!
 logical function mpi_grid_root(dims)
 implicit none
 ! arguments
@@ -237,45 +286,43 @@ mpi_grid_root=.true.
 #endif
 return
 end function
-!
-!logical function cart_side(dims)
-!implicit none
-!! arguments
-!integer, dimension(:), intent(in) :: dims
-!! local variables
-!integer dims1(cart_ndims)
-!integer i
-!logical l1
-!dims1=1
-!do i=1,size(dims)
-!  dims1(dims(i))=0
-!enddo
-!l1=.true.
-!do i=1,cart_ndims
-!  if (dims1(i).eq.1.and.cart_x(i).ne.0) l1=.false.
-!enddo
-!cart_side=l1
-!return
-!end function
-!
-!integer function get_cart_comm(dims)
-!implicit none
-!! arguments
-!integer, optional, dimension(:), intent(in) :: dims
-!! local variables
-!integer i,j
-!
-!if (.not.present(dims)) then
-!  get_cart_comm=cart_comm(0)
-!else
-!  j=1
-!  do i=1,size(dims)
-!    j=j+2**(dims(i)-1)
-!  enddo
-!  get_cart_comm=cart_comm(j)
-!endif
-!return
-!end function
+
+!-------------------------!
+!      mpi_grid_side      !
+!-------------------------!
+! Example for 2D grid 3x4:
+! side processors for dim=1 (dimension of size 3)
+!  x o o o
+!  x o o o
+!  x o o o  processors with second zero coordinate
+! side processors for dim=2 (dimension of size 4)
+!  x x x x  
+!  o o o o
+!  o o o o  processors with first zero coordinate
+logical function mpi_grid_side(dims)
+implicit none
+! arguments
+integer, optional, dimension(:), intent(in) :: dims
+! local variables
+integer dims1(mpi_grid_nd)
+integer i
+logical l1
+dims1=1
+if (present(dims)) then
+  do i=1,size(dims)
+    dims1(dims(i))=0
+  enddo
+endif
+l1=.true.
+do i=1,mpi_grid_nd
+  if (dims1(i).eq.1.and.mpi_grid_x(i).ne.0) l1=.false.
+enddo
+mpi_grid_side=l1
+return
+end function
+
+
+
 !
 !subroutine d_cart_bcast(val,n,dims,side)
 !use mpi
