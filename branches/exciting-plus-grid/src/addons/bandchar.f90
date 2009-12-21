@@ -6,9 +6,10 @@
 !BOP
 ! !ROUTINE: bandchar
 ! !INTERFACE:
-subroutine bandchar(dosym,lmax,ik,evecfv,evecsv,ld,bndchr)
+subroutine bandchar(dosym,lmax,ikloc,evecfv,evecsv,ld,bndchr)
 ! !USES:
 use modmain
+use mod_mpi_grid
 ! !INPUT/OUTPUT PARAMETERS:
 !   lmax   : maximum angular momentum (in,integer)
 !   ik     : k-point number (in,integer)
@@ -50,7 +51,7 @@ implicit none
 ! arguments
 logical, intent(in) :: dosym
 integer, intent(in) :: lmax
-integer, intent(in) :: ik
+integer, intent(in) :: ikloc
 complex(8), intent(in) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
 integer, intent(in) :: ld
@@ -63,13 +64,14 @@ complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 ! automatic arrays
 complex(8) zt1(ld,nrfmax),zt2(ld),zt3
-integer, external :: ikglob
+integer ik
 
+ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 allocate(wfsvmt(ld,nrfmax,natmtot,nspinor,nstsv))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 
-call match(ngk(1,ikglob(ik)),gkc(1,1,ik),tpgkc(1,1,1,ik),sfacgk(1,1,1,ik),apwalm)
-call genwfsvmt(lmax,ld,ngk(1,ikglob(ik)),evecfv(:,:,1),evecsv,apwalm,wfsvmt)
+call match(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),sfacgk(1,1,1,ikloc),apwalm)
+call genwfsvmt(lmax,ld,ngk(1,ik),evecfv(:,:,1),evecsv,apwalm,wfsvmt)
 
 if (dosym) then
   nsym1=nsymcrys

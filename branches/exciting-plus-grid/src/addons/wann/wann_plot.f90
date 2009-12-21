@@ -100,8 +100,8 @@ do ir=1,nrtot
 enddo
 
 if (iproc.eq.0) then
-  write(*,*)'MT part:',timer(1,2)
-  write(*,*)'IT part:',timer(2,2)
+  !write(*,*)'MT part:',timer(1,2)
+  !write(*,*)'IT part:',timer(2,2)
 
   if (task.eq.362) then
     x(1)=sqrt(bound3d(1,1)**2+bound3d(2,1)**2+bound3d(3,1)**2)

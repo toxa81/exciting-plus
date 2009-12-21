@@ -1155,13 +1155,37 @@ logical ldisentangle
 !----------------!
 !      timer     !
 !----------------!
-integer, parameter :: ntimers=20
-real(8), allocatable :: timer(:,:)
+!integer, parameter :: ntimers=20
+!real(8), allocatable :: timer(:,:)
 integer, parameter :: t_seceqnfv_setup=1
 integer, parameter :: t_seceqnfv_diag=2
 integer, parameter :: t_seceqnsv_setup=3
 integer, parameter :: t_seceqnsv_diag=4
 integer, parameter :: t_rho=5
+
+integer, parameter :: t_iter_tot=2
+integer, parameter :: t_init=10
+integer, parameter :: t_fvhmlt_setup_mt=20
+integer, parameter :: t_fvhmlt_setup_it=21
+integer, parameter :: t_fvhmlt_setup_tot=22
+integer, parameter :: t_fvhmlt_diag=23
+integer, parameter :: t_fvhmlt_tot=24
+integer, parameter :: t_svhmlt_setup=25
+integer, parameter :: t_svhmlt_diag=26
+integer, parameter :: t_svhmlt_tot=27
+integer, parameter :: t_seceqn_tot=28
+integer, parameter :: t_apw_rad=30
+integer, parameter :: t_rho_mag_sum=31
+integer, parameter :: t_rho_mag_sym=32
+integer, parameter :: t_rho_mag_tot=33
+integer, parameter :: t_pot=34
+
+
+
+
+logical wproc
+
+
 
 
 !-----------------------!
@@ -1180,6 +1204,9 @@ real(8) crpa_e1,crpa_e2
 
 integer dim_k
 data dim_k/1/
+
+integer dim2
+data dim2/2/
 
 end module
 

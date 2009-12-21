@@ -60,7 +60,7 @@ integer lmaxexp
 integer lmmaxexp
 
 character*100 :: qnm,fname
-logical wproc,l1
+logical l1
 
 integer, allocatable :: igishell(:)
 integer, allocatable :: ishellng(:,:)
@@ -313,14 +313,14 @@ if (spinpol) then
   call i_reduce_cart(comm_cart_100,.true.,spinor_ud,2*nstsv*nkptnr)
   call i_bcast_cart(comm_cart_010,spinor_ud,2*nstsv*nkptnr)
 endif
-call getmeidx(.true.,occsvnr,evalsvnr,wproc)
+call getmeidx(.true.,occsvnr,evalsvnr)
 #ifdef _MPI_
 call mpi_allreduce(nmegqblhmax,i,1,MPI_INTEGER,MPI_MAX,comm_cart_100,ierr)
 nmegqblhmax=i
 #endif
 allocate(nmegqblh(nkptnr_loc))
 allocate(bmegqblh(2,nmegqblhmax,nkptnr_loc))
-call getmeidx(.false.,occsvnr,evalsvnr,wproc)
+call getmeidx(.false.,occsvnr,evalsvnr)
 call timer_stop(1)
 if (wproc) then
   write(150,*)

@@ -9,6 +9,7 @@
 subroutine bandrlm
 ! !USES:
 use modmain
+use mod_mpi_grid
 ! !DESCRIPTION:
 !   Produces a band structure along the path in reciprocal-space which connects
 !   the vertices in the array {\tt vvlp1d}. The band structure is obtained from
@@ -26,7 +27,7 @@ use modmain
 implicit none
 ! local variables
 integer lmax,lmmax,l,m,lm,i,j,n
-integer ik,ispn,is,ia,ias,iv,ist
+integer ik,ikloc,ispn,is,ia,ias,iv,ist
 real(8) emin,emax,sum
 character(256) fname
 ! allocatable arrays
@@ -38,7 +39,6 @@ complex(8), allocatable :: dmat(:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:,:)
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
-integer, external :: ikglob
 ! initialise universal variables
 call init0
 call init1
@@ -70,25 +70,26 @@ call genurfprod
 ! begin parallel loop over k-points
 e=0.d0
 bc=0.d0
-do ik=1,nkptloc
-  write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ikglob(ik),nkpt
+do ikloc=1,nkptloc
+  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+  write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ik,nkpt
 ! solve the first- and second-variational secular equations
-  call seceqn(ik,evalfv,evecfv,evecsv)
-  if (wannier) call genwann_h(ik)
+  call seceqn(ikloc,evalfv,evecfv,evecsv)
+  if (wannier) call genwann_h(ikloc)
   do ist=1,nstsv
 ! subtract the Fermi energy
-    e(ist,ikglob(ik))=evalsv(ist,ikglob(ik)) !-efermi
+    e(ist,ik)=evalsv(ist,ik) !-efermi
   end do
 ! compute the band characters if required
-  call bandchar(.false.,lmax,ik,evecfv,evecsv,lmmax,bc(1,1,1,1,ikglob(ik)))
+  call bandchar(.false.,lmax,ikloc,evecfv,evecsv,lmmax,bc(1,1,1,1,ik))
 ! end loop over k-points
 end do
-deallocate(evalfv,evecfv,evecsv) 
-call dsync(e,nstsv*nkpt,.true.,.false.)
-if (wannier) call dsync(wann_e,nwann*nkpt,.true.,.false.)
+deallocate(evalfv,evecfv,evecsv)
+call mpi_grid_reduce(e(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.)
+if (wannier) call mpi_grid_reduce(wann_e(1,1),nwann*nkpt,dims=(/dim_k/),side=.true.)
 do ik=1,nkpt
-  call rsync(bc(1,1,1,1,ik),lmmax*natmtot*nspinor*nstsv,.true.,.false.)
-  call barrier(comm_world)
+  call mpi_grid_reduce(bc(1,1,1,1,ik),lmmax*natmtot*nspinor*nstsv,dims=(/dim_k/),side=.true.)
+  call mpi_grid_barrier(dims=(/dim_k/))
 enddo
 emin=minval(e)
 emax=maxval(e)

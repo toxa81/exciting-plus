@@ -1,4 +1,4 @@
-subroutine getmeidx(req,occsvnr,evalsvnr,wproc)
+subroutine getmeidx(req,occsvnr,evalsvnr)
 use modmain
 #ifdef _MPI_
 use mpi
@@ -8,7 +8,6 @@ implicit none
 logical, intent(in) :: req
 real(8), intent(in) :: occsvnr(nstsv,nkptnr)
 real(8), intent(in) :: evalsvnr(nstsv,nkptnr)
-logical, intent(in) :: wproc
 
 integer i,ik,jk,ist1,ist2,ikloc,n
 logical laddme,ldocc

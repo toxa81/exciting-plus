@@ -1,22 +1,24 @@
 subroutine writewann
 use modmain
+use mod_mpi_grid
 implicit none
 integer i,j,ik,ikloc,idm,lm,ir,ispn,n,ias,io
 complex(8), allocatable :: wann_rf(:,:,:,:)
 character*20 fname
 integer, external :: ikglob
 
+call init0
+call init1
+
+wproc=mpi_grid_root()
 if (.not.wannier) then
-  if (iproc.eq.0) then
+  if (wproc) then
     write(*,*)
     write(*,'("Error(writewann_h) : WF generation is switched off")')
     write(*,*)
     call pstop
   endif
 endif
-
-call init0
-call init1
 ! read the density and potentials from file
 call readstate
 ! find the new linearisation energies
@@ -28,7 +30,6 @@ call genlofr
 call geturf
 call genurfprod
 
-
 if (task.eq.601) then
   allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
   allocate(evecsvloc(nstsv,nstsv,nkptloc))
@@ -38,21 +39,25 @@ if (task.eq.602) then
   wann_rf=zzero
 endif
 evalsv=0.d0
-do i=0,nproc-1
-  if (iproc.eq.i) then
-    do ikloc=1,nkptloc
-      call getwann(ikloc)
-      if (task.eq.600) then
-        call getevalsv(vkl(1,ikglob(ikloc)),evalsv(1,ikglob(ikloc)))
-      endif
-      if (task.eq.601) then
-        call getevecfv(vkl(1,ikglob(ikloc)),vgkl(1,1,1,ikloc),evecfvloc(1,1,1,ikloc))
-        call getevecsv(vkl(1,ikglob(ikloc)),evecsvloc(1,1,ikloc))
-      endif
-   end do
-  end if
-  call barrier(comm_world)
-end do
+if (mpi_grid_side(dims=(/dim_k/))) then
+  do i=0,mpi_grid_size(dim_k)-1
+    if (mpi_grid_x(dim_k).eq.i) then
+      do ikloc=1,nkptloc
+        ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+        call getwann(ikloc)
+        if (task.eq.600) then
+          call getevalsv(vkl(1,ik),evalsv(1,ik))
+        endif
+        if (task.eq.601) then
+          call getevecfv(vkl(1,ik),vgkl(1,1,1,ikloc),evecfvloc(1,1,1,ikloc))
+          call getevecsv(vkl(1,ik),evecsvloc(1,1,ikloc))
+        endif
+      enddo
+    endif
+    call mpi_grid_barrier(dims=(/dim_k/))
+  enddo
+endif
+
 do ikloc=1,nkptloc
   if (task.eq.600) call genwann_h(ikloc)
   if (task.eq.601) call genwann_p(ikloc,evecfvloc(1,1,1,ikloc), &
@@ -73,14 +78,56 @@ do ikloc=1,nkptloc
     enddo !n
   endif
 enddo
-call zsync(wann_h,nwann*nwann*nkpt,.true.,.false.)
-call zsync(wann_p,3*nwann*nwann*nkpt,.true.,.false.)
+call mpi_grid_reduce(wann_h(1,1,1),nwann*nwann*nkpt,dims=(/dim_k/),side=.true.)
+call mpi_grid_reduce(wann_p(1,1,1,1),3*nwann*nwann*nkpt,dims=(/dim_k/),side=.true.)
 if (task.eq.602) then
   do n=1,nwann
-    call zsync(wann_rf(1,1,1,n),lmmaxvr*nrmtmax*nspinor,.true.,.false.)
+    call mpi_grid_reduce(wann_rf(1,1,1,n),lmmaxvr*nrmtmax*nspinor,dims=(/dim_k/),side=.true.)
   enddo
 endif
-if (iproc.eq.0.and.task.eq.600) then
+if (wproc.and.task.eq.600) then
+  call readfermi
+  open(200,file='WANN_H.OUT',form='formatted',status='replace')
+  write(200,'("# units of energy are Hartree, 1 Ha=",F18.10," eV")')ha2ev
+  write(200,'("# fermi energy")')
+  write(200,'(G18.10)')efermi
+  write(200,'("# lattice vectors (3 rows)")')
+  do i=1,3
+    write(200,'(3G18.10)')avec(:,i)
+  enddo
+  write(200,'("# reciprocal lattice vectors (3 rows)")')
+  do i=1,3
+    write(200,'(3G18.10)')bvec(:,i)
+  enddo
+  write(200,'("# k-grid size")')
+  write(200,'(3I6)')ngridk
+  write(200,'("# number of k-points")')
+  write(200,'(I8)')nkpt
+  write(200,'("# number of Wannier functions")')
+  write(200,'(I8)')nwann
+  do ik=1,nkpt
+    write(200,'("# k-point : ",I8)')ik
+    write(200,'("# weight")')
+    write(200,'(G18.10)')wkpt(ik)
+    write(200,'("# lattice coordinates")')
+    write(200,'(3G18.10)')vkl(:,ik)
+    write(200,'("# Cartesian coordinates")')
+    write(200,'(3G18.10)')vkc(:,ik)
+    write(200,'("# real part of H")')
+    do i=1,nwann
+      write(200,'(255G18.10)')(dreal(wann_h(i,j,ik)),j=1,nwann)
+    enddo
+    write(200,'("# imaginary part of H")')
+    do i=1,nwann
+      write(200,'(255G18.10)')(dimag(wann_h(i,j,ik)),j=1,nwann)
+    enddo
+  enddo	
+  close(200)
+
+
+
+
+
   open(200,file='WANN_H0.OUT',form='formatted',status='replace')
   do i=1,nwann
     write(200,'(6X,255G18.10)')(dreal(sum(wann_h(i,j,:))/nkpt),j=1,nwann)
@@ -94,7 +141,7 @@ if (iproc.eq.0.and.task.eq.600) then
     wann_h(i,i,:)=wann_h(i,i,:)-efermi
   enddo
   wann_h=wann_h*ha2ev
-  open(200,file='WANN_Hk.OUT',form='formatted',status='replace')
+  open(200,file='WANN_H_OLD.OUT',form='formatted',status='replace')
   write(200,*)nkpt,nwann
   do ik=1,nkpt
     write(200,*)1.d0 !wtkp(ikp)
@@ -106,7 +153,7 @@ if (iproc.eq.0.and.task.eq.600) then
   enddo	
   close(200)
 endif
-if (iproc.eq.0.and.task.eq.601) then
+if (wproc.and.task.eq.601) then
   open(200,file='WANN_P.OUT',form='formatted',status='replace')
   do ik=1,nkpt
     write(200,'("ik : ",I4)')ik
@@ -134,7 +181,7 @@ if (iproc.eq.0.and.task.eq.601) then
   enddo
   close(200)
 endif
-if (iproc.eq.0.and.task.eq.602) then
+if (wproc.and.task.eq.602) then
   do n=1,nwann
     write(fname,'("WANN_",I3.3,"_rfmt.OUT")')n
     open(200,file=trim(fname),form='formatted',status='replace')

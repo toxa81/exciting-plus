@@ -1,10 +1,11 @@
 subroutine wann_ene_occ
 use modmain
+use mod_mpi_grid
 implicit none
 ! local variables
 real(8) wf_ene(nwann),wf_occ(nwann),t(2),w2
-integer n,i,ik,ispn,ias,lm1,lm2,l,j,n1,n2,m1,m2,ispn1,ispn2
-integer, external :: ikglob
+integer n,i,ik,ispn,ias,lm1,lm2,l,j,n1,n2,m1,m2,ispn1,ispn2,ikloc
+!integer, external :: ikglob
 complex(8), allocatable :: wf_ene_mtrx(:,:,:,:,:)
 complex(8), allocatable :: wf_occ_mtrx(:,:,:,:,:)
 complex(8) z2
@@ -12,17 +13,18 @@ complex(8) z2
 wf_ene=0.d0
 wf_occ=0.d0
 do n=1,nwann
-  do ik=1,nkptloc
+  do ikloc=1,nkptloc
+    ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
     do i=1,nstsv
-      w2=dreal(dconjg(wann_c(n,i,ik))*wann_c(n,i,ik))
-      wf_ene(n)=wf_ene(n)+w2*evalsv(i,ikglob(ik))*wkpt(ikglob(ik))
-      wf_occ(n)=wf_occ(n)+w2*occsv(i,ikglob(ik))*wkpt(ikglob(ik))
+      w2=dreal(dconjg(wann_c(n,i,ikloc))*wann_c(n,i,ikloc))
+      wf_ene(n)=wf_ene(n)+w2*evalsv(i,ik)*wkpt(ik)
+      wf_occ(n)=wf_occ(n)+w2*occsv(i,ik)*wkpt(ik)
     enddo
   enddo
 enddo
-call dsync(wf_ene,nwann,.true.,.false.)
-call dsync(wf_occ,nwann,.true.,.false.)
-if (iproc.eq.0.and.nosym) then
+call mpi_grid_reduce(wf_ene(1),nwann,dims=(/dim_k/),side=.true.)
+call mpi_grid_reduce(wf_occ(1),nwann,dims=(/dim_k/),side=.true.)
+if (wproc.and.nosym) then
   write(60,*)
   write(60,'(" WF  energy (Ha)  energy (eV)    occupancy ")')
   write(60,'("-------------------------------------------")')
@@ -46,22 +48,25 @@ do n1=1,nwann
       lm2=iwann(2,n2)
       ispn1=iwann(3,n1)
       ispn2=iwann(3,n2)
-      do ik=1,nkptloc
+      do ikloc=1,nkptloc
+        ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)        
         do j=1,nstsv
-          z2=dconjg(wann_c(n1,j,ik))*wann_c(n2,j,ik)
+          z2=dconjg(wann_c(n1,j,ikloc))*wann_c(n2,j,ikloc)
           wf_occ_mtrx(lm1,lm2,ispn1,ispn2,ias)=&
             wf_occ_mtrx(lm1,lm2,ispn1,ispn2,ias)+&
-            z2*occsv(j,ikglob(ik))*wkpt(ikglob(ik))
+            z2*occsv(j,ik)*wkpt(ik)
           wf_ene_mtrx(lm1,lm2,ispn1,ispn2,ias)=&
             wf_ene_mtrx(lm1,lm2,ispn1,ispn2,ias)+&
-            z2*evalsv(j,ikglob(ik))*wkpt(ikglob(ik))
+            z2*evalsv(j,ik)*wkpt(ik)
         enddo !j
-      enddo !ik
+      enddo !ikloc
     endif
   enddo
 enddo 
-call zsync(wf_occ_mtrx,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,.true.,.true.)
-call zsync(wf_ene_mtrx,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,.true.,.true.)
+call mpi_grid_reduce(wf_occ_mtrx(1,1,1,1,1),&
+  lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,dims=(/dim_k/),side=.true.,all=.true.)
+call mpi_grid_reduce(wf_ene_mtrx(1,1,1,1,1),&
+  lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,dims=(/dim_k/),side=.true.,all=.true.)
 ! convert from Rlm to Ylm basis
 do ias=1,natmtot
   call mtrxbas(lmmaxlu,yrlm_lcs(1,1,ias),wf_occ_mtrx(1,1,1,1,ias))

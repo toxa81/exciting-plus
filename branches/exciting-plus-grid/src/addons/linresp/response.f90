@@ -28,7 +28,7 @@ integer i1,i2,i3
 character*100 fname,qnm
 character*3 c3
 real(8) w2
-logical wproc,lgamma,lpmat
+logical lgamma,lpmat
 integer, external :: iknrglob2
 logical, external :: root_cart
 logical, external :: in_cart

@@ -123,11 +123,11 @@ else
    wkptnr)
 end if
 
-if (nproc1.eq.1) then
+!if (nproc1.eq.1) then
   call mpi_grid_initialize((/nproc1/))
-else
-  call mpi_grid_initialize((/nproc1/2,2/))
-endif
+!else
+!  call mpi_grid_initialize((/nproc1/2,2/))
+!endif
 nkptloc=mpi_grid_map(nkpt,dim_k)
 
 !---------------------!

@@ -1,5 +1,6 @@
 subroutine sethml(ngp,nmatp,vgpc,igpig,apwalm,h)
 use modmain
+use mod_timer
 implicit none
 integer, intent(in) :: ngp
 integer, intent(in) :: nmatp
@@ -16,6 +17,7 @@ integer l1,m1,lm1,l2,m2,lm2,l3,m3,lm3,io1,io2
 integer i,j,ilo1,ilo2
 integer iv(3)
 
+call timer_start(t_fvhmlt_setup_mt)
 allocate(zv(ngp,lmmaxmat,apwordmax,natmtot))
 zv=dcmplx(0.d0,0.d0)
 do is=1,nspecies
@@ -135,12 +137,11 @@ do is=1,nspecies
     end do
   end do !ia
 end do !is
-
+call timer_stop(t_fvhmlt_setup_mt)
 !---------------------!
 !     interstitial    !
 !---------------------!
-!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(j,i,iv,ig,t1)
-!$OMP DO
+call timer_start(t_fvhmlt_setup_it)
 do j=1,ngp
   do i=1,j
     iv(:)=ivg(:,igpig(i))-ivg(:,igpig(j))
@@ -149,8 +150,7 @@ do j=1,ngp
     h(i,j)=h(i,j)+dconjg(veffig(ig)+t1*cfunig(ig))
   end do
 end do
-!$OMP END DO
-!$OMP END PARALLEL
+call timer_stop(t_fvhmlt_setup_it)
 deallocate(zv)
 
 return

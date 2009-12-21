@@ -10,6 +10,7 @@ subroutine gndstate
 ! !USES:
 use modmain
 use mod_mpi_grid
+use mod_timer
 ! !DESCRIPTION:
 !   Computes the self-consistent Kohn-Sham ground-state. General information is
 !   written to the file {\tt INFO.OUT}. First- and second-variational
@@ -24,7 +25,7 @@ use mod_mpi_grid
 implicit none
 ! local variables
 logical exist
-integer ik,is,ia,idm,i,j
+integer ik,is,ia,idm,i,j,ikloc
 integer n,nwork
 real(8) dv,timetot
 ! allocatable arrays
@@ -32,22 +33,21 @@ real(8), allocatable :: v(:)
 real(8), allocatable :: work(:)
 real(8), allocatable :: evalfv(:,:,:)
 
-integer, external :: ikglob
-
 ! require forces for structural optimisation
 if ((task.eq.2).or.(task.eq.3)) tforce=.true.
 ! initialise global variables
+call timer_start(t_init,reset=.true.)
 call init0
 call init1
-
-! allocate arrays for eigevvalues/vectors
+! only root processor writes
+wproc=mpi_grid_root()
+! allocate arrays for eigen-values/-vectors
 allocate(evalfv(nstfv,nspnfv,nkptloc))
 allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
 allocate(evecsvloc(nstsv,nstsv,nkptloc))
-
 ! initialise OEP variables if required
 if (xctype.lt.0) call init2
-if (mpi_grid_root()) then
+if (wproc) then
 ! write the real and reciprocal lattice vectors to file
   call writelat
 ! write interatomic distances to file
@@ -84,18 +84,18 @@ end if
 iscl=0
 if ((task.eq.1).or.(task.eq.3)) then
   call readstate
-  if (mpi_grid_root()) write(60,'("Potential read in from STATE.OUT")')
+  if (wproc) write(60,'("Potential read in from STATE.OUT")')
 else if (task.eq.200) then
   call phveff
-  if (mpi_grid_root()) write(60,'("Supercell potential constructed from STATE.OUT")')
+  if (wproc) write(60,'("Supercell potential constructed from STATE.OUT")')
 else
   call rhoinit
   call poteff
   call genveffig
-  if (mpi_grid_root()) write(60,'("Density and potential initialised from &
+  if (wproc) write(60,'("Density and potential initialised from &
     &atomic data")')
 end if
-if (mpi_grid_root()) call flushifc(60)
+if (wproc) call flushifc(60)
 ! size of mixing vector
 n=lmmaxvr*nrmtmax*natmtot+ngrtot
 if (spinpol) n=n*(1+ndmag)
@@ -112,17 +112,31 @@ tstop=.false.
 ! set last iteration flag
 tlast=.false.
 ! delete any existing eigenvector files
-if (mpi_grid_root().and.((task.eq.0).or.(task.eq.2))) call delevec
-call pstop
+if (wproc.and.((task.eq.0).or.(task.eq.2))) call delevec
+call timer_stop(t_init)
 ! begin the self-consistent loop
-if (mpi_grid_root()) then
+if (wproc) then
   write(60,*)
   write(60,'("+------------------------------+")')
   write(60,'("| Self-consistent loop started |")')
   write(60,'("+------------------------------+")')
 end if
 do iscl=1,maxscl
-  if (iproc.eq.0) then
+ call timer_start(t_iter_tot,reset=.true.)
+! reset all timers
+  call timer_reset(t_apw_rad)
+  call timer_reset(t_fvhmlt_setup_mt)
+  call timer_reset(t_fvhmlt_setup_it)  
+  call timer_reset(t_fvhmlt_setup_tot)
+  call timer_reset(t_fvhmlt_diag)
+  call timer_reset(t_svhmlt_setup)
+  call timer_reset(t_svhmlt_diag)
+  call timer_reset(t_seceqn_tot)
+  call timer_reset(t_rho_mag_sum)
+  call timer_reset(t_rho_mag_sym)
+  call timer_reset(t_rho_mag_tot)
+  call timer_reset(t_pot)  
+  if (wproc) then
     write(60,*)
     write(60,'("+-------------------------+")')
     write(60,'("| Iteration number : ",I4," |")') iscl
@@ -130,19 +144,20 @@ do iscl=1,maxscl
     call flushifc(60)
   end if
   if (iscl.ge.maxscl) then
-    if (iproc.eq.0) then
+    if (wproc) then
       write(60,*)
       write(60,'("Reached self-consistent loops maximum")')
     end if
     tlast=.true.
   end if
-  if (iproc.eq.0) call flushifc(60)
+  if (wproc) call flushifc(60)
+  call timer_start(t_apw_rad)
 ! generate the core wavefunctions and densities
   call gencore
 ! find the new linearisation energies
   call linengy
 ! write out the linearisation energies
-  if (iproc.eq.0) call writelinen
+  if (wproc) call writelinen
 ! generate the APW radial functions
   call genapwfr
 ! generate the local-orbital radial functions
@@ -153,18 +168,19 @@ do iscl=1,maxscl
   call hmlrad
   call geturf
   call genurfprod
+  call timer_stop(t_apw_rad)
 ! begin parallel loop over k-points
   evalsv=0.d0
-  call timer_reset(t_seceqnfv_setup)
-  call timer_reset(t_seceqnfv_diag)
-  call timer_reset(t_seceqnsv_setup)
-  call timer_reset(t_seceqnsv_diag)
-  do ik=1,nkptloc
+  call timer_start(t_seceqn_tot)
+  do ikloc=1,nkptloc
 ! solve the first- and second-variational secular equations
-    call seceqn(ik,evalfv(1,1,ik),evecfvloc(1,1,1,ik),evecsvloc(1,1,ik))
+    call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
+      evecsvloc(1,1,ikloc))
   end do
-  call dsync(evalsv,nstsv*nkpt,.true.,.false.)
-  if (iproc.eq.0) then
+  call timer_stop(t_seceqn_tot)
+  call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),&
+    side=.true.,all=.true.)
+  if (wproc) then
 ! find the occupation numbers and Fermi energy
     call occupy
 ! write out the eigenvalues and occupation numbers
@@ -172,33 +188,38 @@ do iscl=1,maxscl
 ! write the Fermi energy to file
     call writefermi
   endif
-  call dsync(occsv,nstsv*nkpt,.false.,.true.)
+  call mpi_grid_bcast(occsv(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.)
   if (wannier) call wann_ene_occ
 ! set the charge density and magnetisation to zero
-  call timer_reset(t_rho)
-  call timer_start(t_rho)
+  call timer_start(t_rho_mag_tot)
+  call timer_start(t_rho_mag_sum)
   rhomt(:,:,:)=0.d0
   rhoir(:)=0.d0
   if (spinpol) then
     magmt(:,:,:,:)=0.d0
     magir(:,:)=0.d0
   end if
-  do ik=1,nkptloc
+  do ikloc=1,nkptloc
 ! add to the density and magnetisation
-    call rhomagk(ik,evecfvloc(1,1,1,ik),evecsvloc(1,1,ik))
+    call rhomagk(ikloc,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
   end do
-  call dsync(rhomt,lmmaxvr*nrmtmax*natmtot,.true.,.true.)
-  call dsync(rhoir,ngrtot,.true.,.true.)
+  call mpi_grid_reduce(rhomt(1,1,1),lmmaxvr*nrmtmax*natmtot,dims=(/dim_k/),&
+    side=.true.,all=.true.)
+  call mpi_grid_reduce(rhoir(1),ngrtot,dims=(/dim_k/),side=.true.,all=.true.)
   if (spinpol) then
-    call dsync(magmt,lmmaxvr*nrmtmax*natmtot*ndmag,.true.,.true.)
-    call dsync(magir,ngrtot*ndmag,.true.,.true.)
+    call mpi_grid_reduce(magmt(1,1,1,1),lmmaxvr*nrmtmax*natmtot*ndmag,&
+      dims=(/dim_k/),side=.true.,all=.true.)
+    call mpi_grid_reduce(magir(1,1),ngrtot*ndmag,dims=(/dim_k/),&
+      side=.true.,all=.true.)
   endif
   call rhomagsh
-  call timer_stop(t_rho)
+  call timer_stop(t_rho_mag_sum)
+  call timer_start(t_rho_mag_sym)
 ! symmetrise the density
   call symrf(lradstp,rhomt,rhoir)
 ! symmetrise the magnetisation
   if (spinpol) call symrvf(lradstp,magmt,magir)
+  call timer_stop(t_rho_mag_sym)
 ! convert the density from a coarse to a fine radial mesh
   call rfmtctof(rhomt)
 ! convert the magnetisation from a coarse to a fine radial mesh
@@ -213,6 +234,7 @@ do iscl=1,maxscl
   if (spinpol) call moment
 ! normalise the density
   call rhonorm
+  call timer_stop(t_rho_mag_tot)
 ! LDA+U
   if (ldapu.ne.0) then
 ! generate the LDA+U density matrix
@@ -220,11 +242,13 @@ do iscl=1,maxscl
 ! generate the LDA+U potential matrix
     call genvmatlu
 ! write the LDA+U matrices to file
-    if (iproc.eq.0) call writeldapu
+    if (wproc) call writeldapu
     call gendmatrsh
   end if
 ! compute the effective potential
+  call timer_start(t_pot)
   call poteff
+  call timer_stop(t_pot)
 ! pack interstitial and muffin-tin effective potential and field into one array
   call packeff(.true.,n,v)
 ! mix in the old potential and field with the new
@@ -234,7 +258,9 @@ do iscl=1,maxscl
 ! add the fixed spin moment effect field
   if (fixspin.ne.0) call fsmfield
 ! Fourier transform effective potential to G-space
+  call timer_start(t_pot)
   call genveffig
+  call timer_stop(t_pot)
 ! reduce the external magnetic fields if required
   if (reducebf.lt.1.d0) then
     bfieldc(:)=bfieldc(:)*reducebf
@@ -242,7 +268,7 @@ do iscl=1,maxscl
   end if
 ! compute the energy components
   call energy
-  if (iproc.eq.0) then
+  if (wproc) then
 ! output energy components
     call writeengy(60)
     write(60,*)
@@ -280,12 +306,12 @@ do iscl=1,maxscl
         write(60,'("Wrote STATE.OUT")')
       end if
     end if
-  end if !iproc.eq.0
-  call lsync(tlast,1,.true.)
+  end if !wproc
+  call mpi_grid_bcast(tlast)
 ! exit self-consistent loop if last iteration is complete
   if (tlast) goto 20
 ! check for convergence
-  if (iproc.eq.0) then
+  if (wproc) then
     if (iscl.ge.2) then
       write(60,*)
       write(60,'("RMS change in effective potential (target) : ",G18.10,&
@@ -312,20 +338,39 @@ do iscl=1,maxscl
       open(50,file='STOP')
       close(50,status='DELETE')
     end if
+    call timer_stop(t_iter_tot)
 ! output the current total CPU time
     timetot=timeinit+timemat+timefv+timesv+timerho+timepot+timefor
     write(60,*)
-    write(60,'("Time (CPU seconds) : ",F12.2)') timetot
-    write(60,'("  first variational matrix setup            : ",F12.2)')timer(t_seceqnfv_setup,2)
-    write(60,'("  first variational matrix diagonalization  : ",F12.2)')timer(t_seceqnfv_diag,2)
-    write(60,'("  second variational matrix setup           : ",F12.2)')timer(t_seceqnsv_setup,2)
-    write(60,'("  second variational matrix diagonalization : ",F12.2)')timer(t_seceqnsv_diag,2)
-    write(60,'("  charge and magnetisation density setup    : ",F12.2)')timer(t_rho,2)
-  end if !iproc.eq.0
+    write(60,'("Iteration time (seconds)                    : ",F12.2)')&
+      timer_get_value(t_iter_tot)
+    write(60,'("  Radial APW setup                          : ",F12.2)')&
+      timer_get_value(t_apw_rad)
+    write(60,'("  Total for secular equation                : ",F12.2)')&
+      timer_get_value(t_seceqn_tot)
+    write(60,'("    first-variation setup (total, MT, IT)   : ",3F12.2)')&
+      timer_get_value(t_fvhmlt_setup_tot),timer_get_value(t_fvhmlt_setup_mt),&
+      timer_get_value(t_fvhmlt_setup_it)
+    write(60,'("    first-variation diagonalization         : ",F12.2)')&
+      timer_get_value(t_fvhmlt_diag)
+    write(60,'("    second-variation setup                  : ",F12.2)')&
+      timer_get_value(t_svhmlt_setup)
+    write(60,'("    second-variation diagonalization        : ",F12.2)')&
+      timer_get_value(t_svhmlt_diag)
+    write(60,'("  Total for charge and magnetization        : ",F12.2)')&
+      timer_get_value(t_rho_mag_tot)
+    write(60,'("    k-point summation                       : ",F12.2)')&
+      timer_get_value(t_rho_mag_sum)
+    write(60,'("    symmetrization                          : ",F12.2)')&
+      timer_get_value(t_rho_mag_sym)
+    write(60,'("  Total for potential                       : ",F12.2)')&
+      timer_get_value(t_pot)
+  end if !wproc
 ! end the self-consistent loop
+
 end do !iscl
 20 continue
-if (iproc.eq.0) then
+if (wproc) then
   write(60,*)
   write(60,'("+------------------------------+")')
   write(60,'("| Self-consistent loop stopped |")')
@@ -336,22 +381,25 @@ if (iproc.eq.0) then
     write(60,*)
     write(60,'("Wrote STATE.OUT")')
   end if
-end if !iproc.eq.0
+end if !wproc
 ! write eigenvalues/vectors and occupancies to file
-do i=0,nproc-1
-  if (iproc.eq.i) then
-    do ik=1,nkptloc
-      call putevalfv(ikglob(ik),evalfv(1,1,ik))
-      call putevalsv(ikglob(ik),evalsv(1,ikglob(ik)))
-      call putevecfv(ikglob(ik),evecfvloc(1,1,1,ik))
-      call putevecsv(ikglob(ik),evecsvloc(1,1,ik))
-      call putoccsv(ikglob(ik),occsv(1,ikglob(ik)))
-      if (wannier) call putwann(ik)
-    end do
-  end if
-  call barrier(comm_world)
-end do
-call lsync(tstop,1,.true.)
+if (mpi_grid_side(dims=(/dim_k/))) then
+  do i=0,mpi_grid_size(dim_k)-1
+    if (mpi_grid_x(dim_k).eq.i) then
+      do ikloc=1,nkptloc
+        ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+        call putevalfv(ik,evalfv(1,1,ikloc))
+        call putevalsv(ik,evalsv(1,ik))
+        call putevecfv(ik,evecfvloc(1,1,1,ikloc))
+        call putevecsv(ik,evecsvloc(1,1,ikloc))
+        call putoccsv(ik,occsv(1,ik))
+        if (wannier) call putwann(ikloc)
+      end do
+    end if
+    call mpi_grid_barrier(dims=(/dim_k/))
+  end do
+endif
+call mpi_grid_bcast(tstop)
 !-----------------------!
 !     compute forces    !
 !-----------------------!
@@ -401,7 +449,7 @@ if ((.not.tstop).and.((task.eq.2).or.(task.eq.3))) then
 end if
 30 continue
 ! output timing information
-if (iproc.eq.0) then
+if (wproc) then
   write(60,*)
   write(60,'("Timings (CPU seconds) :")')
   write(60,'(" initialisation",T40,": ",F12.2)') timeinit

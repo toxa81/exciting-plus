@@ -441,9 +441,9 @@ if (allocated(yrlm_lcs)) deallocate(yrlm_lcs)
 allocate(yrlm_lcs(16,16,natmtot))
 call genshmat
 
-if (allocated(timer)) deallocate(timer)
-allocate(timer(ntimers,2))
-timer=0.d0
+!if (allocated(timer)) deallocate(timer)
+!allocate(timer(ntimers,2))
+!timer=0.d0
 
 if (allocated(ias2is)) deallocate(ias2is)
 allocate(ias2is(natmtot))

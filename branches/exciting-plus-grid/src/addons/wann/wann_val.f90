@@ -1,5 +1,6 @@
 subroutine wann_val(r,val)
 use modmain
+use mod_timer
 implicit none
 ! arguments
 real(8), intent(in) :: r(3)

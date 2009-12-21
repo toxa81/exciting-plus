@@ -6,9 +6,10 @@
 !BOP
 ! !ROUTINE: rhomagk
 ! !INTERFACE:
-subroutine rhomagk(ik,evecfv,evecsv)
+subroutine rhomagk(ikloc,evecfv,evecsv)
 ! !USES:
 use modmain
+use mod_mpi_grid
 ! !INPUT/OUTPUT PARAMETERS:
 !   ik     : k-point number (in,integer)
 !   evecfv : first-variational eigenvectors (in,complex(nmatmax,nstfv,nspnfv))
@@ -34,7 +35,7 @@ use modmain
 !BOC
 implicit none
 ! arguments
-integer, intent(in) :: ik
+integer, intent(in) :: ikloc
 complex(8), intent(in) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
 ! local variables
@@ -51,7 +52,9 @@ complex(8), allocatable :: wfmt1(:,:)
 complex(8), allocatable :: wfmt2(:,:,:,:)
 complex(8), allocatable :: wfmt3(:,:,:)
 complex(8), allocatable :: zfft(:,:)
-integer, external :: ikglob
+!integer, external :: ikglob
+integer ik
+ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 call timesec(ts0)
 if (spinpol) then
   if (ncmag) then
@@ -71,8 +74,8 @@ allocate(wfmt3(lmmaxvr,nrcmtmax,nspinor))
 allocate(zfft(ngrtot,nspinor))
 ! find the matching coefficients
 do ispn=1,nspnfv
-  call match(ngk(ispn,ikglob(ik)),gkc(:,ispn,ik),tpgkc(:,:,ispn,ik), &
-   sfacgk(:,:,ispn,ik),apwalm(:,:,:,:,ispn))
+  call match(ngk(ispn,ik),gkc(:,ispn,ikloc),tpgkc(:,:,ispn,ikloc), &
+   sfacgk(:,:,ispn,ikloc),apwalm(:,:,:,:,ispn))
 end do
 !----------------------------!
 !     muffin-tin density     !
@@ -90,7 +93,7 @@ do is=1,nspecies
     done(:,:)=.false.
     rfmt(:,:,:)=0.d0
     do j=1,nstsv
-      wo=wkpt(ikglob(ik))*occsv(j,ikglob(ik))
+      wo=wkpt(ik)*occsv(j,ik)
       if (abs(wo).gt.epsocc) then
         if (tevecsv) then
 ! generate spinor wavefunction from second-variational eigenvectors
@@ -108,7 +111,7 @@ do is=1,nspecies
               if (spinsprl) zt1=zt1*zq(ispn)
               if (abs(dble(zt1))+abs(aimag(zt1)).gt.epsocc) then
                 if (.not.done(ist,jspn)) then
-                  call wavefmt(lradstp,lmaxvr,is,ia,ngk(jspn,ikglob(ik)), &
+                  call wavefmt(lradstp,lmaxvr,is,ia,ngk(jspn,ik), &
                    apwalm(:,:,:,:,jspn),evecfv(:,ist,jspn),lmmaxvr,wfmt1)
 ! convert from spherical harmonics to spherical coordinates
                   call zgemm('N','N',lmmaxvr,nrcmt(is),lmmaxvr,zone,zbshtvr, &
@@ -122,7 +125,7 @@ do is=1,nspecies
           end do
         else
 ! spin-unpolarised wavefunction
-          call wavefmt(lradstp,lmaxvr,is,ia,ngk(1,ikglob(ik)),apwalm,evecfv(:,j,1), &
+          call wavefmt(lradstp,lmaxvr,is,ia,ngk(1,ik),apwalm,evecfv(:,j,1), &
            lmmaxvr,wfmt1)
 ! convert from spherical harmonics to spherical coordinates
           call zgemm('N','N',lmmaxvr,nrcmt(is),lmmaxvr,zone,zbshtvr,lmmaxvr, &
@@ -180,7 +183,7 @@ end do
 !     interstitial density     !
 !------------------------------!
 do j=1,nstsv
-  wo=wkpt(ikglob(ik))*occsv(j,ikglob(ik))
+  wo=wkpt(ik)*occsv(j,ik)
   if (abs(wo).gt.epsocc) then
     t1=wo/omega
     zfft(:,:)=0.d0
@@ -197,8 +200,8 @@ do j=1,nstsv
           i=i+1
           zt1=evecsv(i,j)
           if (abs(dble(zt1))+abs(aimag(zt1)).gt.epsocc) then
-            do igk=1,ngk(jspn,ikglob(ik))
-              ifg=igfft(igkig(igk,jspn,ik))
+            do igk=1,ngk(jspn,ik)
+              ifg=igfft(igkig(igk,jspn,ikloc))
               zfft(ifg,ispn)=zfft(ifg,ispn)+zt1*evecfv(igk,ist,jspn)
             end do
           end if
@@ -206,8 +209,8 @@ do j=1,nstsv
       end do
     else
 ! spin-unpolarised wavefunction
-      do igk=1,ngk(1,ikglob(ik))
-        ifg=igfft(igkig(igk,1,ik))
+      do igk=1,ngk(1,ik)
+        ifg=igfft(igkig(igk,1,ikloc))
         zfft(ifg,1)=evecfv(igk,j,1)
       end do
     end if

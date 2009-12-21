@@ -14,7 +14,7 @@ include ../make.inc
 #-------------------------------------------------------------------------------
 # Source files
 #-------------------------------------------------------------------------------
-SRC_modules = modmain.f90 modxcifc.f90 mod_mpi_grid.f90
+SRC_modules = modmain.f90 modxcifc.f90 mod_mpi_grid.f90 mod_timer.f90
 
 SRC_main = main.f90
 
@@ -117,7 +117,7 @@ OBJ_LIB = $(SRC_LIB:.f90=.o)
 REV=$$(svn info|grep Revision | awk '{split($$0,a,": "); print a[2]}')$
 
 exciting:	$(OBJ)
-	$(F90) $(F90_OPTS) -o $(EXE).r$(REV) $(OBJ) $(LIB_LPK) $(LIB_FFT) $(LIB_SYS)
+	$(F90) $(F90_LINK_OPTS) -o $(EXE).r$(REV) $(OBJ) $(LIB_LPK) $(LIB_FFT) $(LIB_SYS)
 
 lib:
 	$(AR) -rc exciting.a $(OBJ_LIB)
