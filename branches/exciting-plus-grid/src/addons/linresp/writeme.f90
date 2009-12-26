@@ -11,7 +11,7 @@ complex(8), intent(in) :: pmat(3,nstsv,nstsv)
 character*100 path
 integer ik
 
-call idxglob(nkptnr,mpi_dims(1),mpi_x(1)+1,ikloc,ik)
+!call idxglob(nkptnr,mpi_dims(1),mpi_x(1)+1,ikloc,ik)
 
 write(path,'("/kpoints/",I8.8)')ik
 call write_integer(idxkq(1,ik),1,trim(fname),trim(path),'kq')

@@ -1,8 +1,5 @@
 subroutine getmeidx(req,occsvnr,evalsvnr)
 use modmain
-#ifdef _MPI_
-use mpi
-#endif
 implicit none
 ! arguments
 logical, intent(in) :: req
@@ -13,7 +10,6 @@ integer i,ik,jk,ist1,ist2,ikloc,n
 logical laddme,ldocc
 real(8) d1,min_e12,min_e1_wann,max_e2_wann
 logical l11,l12,l21,l22,le1,le2,lwann,le1w,le2w
-integer, external :: iknrglob2
 logical, external :: bndint
 logical, external :: wann_diel
 integer, allocatable :: wann_bnd(:,:)
@@ -22,15 +18,15 @@ if (wannier) then
   allocate(wann_bnd(nstsv,nkptnr))
   wann_bnd=0
 ! mark all bands that contribute to WF expansion
-  do ikloc=1,nkptnr_loc
-    ik=iknrglob2(ikloc,mpi_x(1))
+  do ikloc=1,nkptnrloc
+    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
     do i=1,nstsv
       do n=1,nwann
         if (abs(wann_c(n,i,ikloc)).gt.1d-10) wann_bnd(i,ik)=1
       enddo
     enddo
   enddo
-  call i_reduce_cart(comm_cart_100,.true.,wann_bnd,nstsv*nkptnr)
+  call mpi_grid_reduce(wann_bnd(1,1),nstsv*nkptnr,dims=(/dim_k/),all=.true.)
   do i=1,nstsv
     do ik=1,nkptnr
       wann_bnd(i,1)=wann_bnd(i,1)+wann_bnd(i,ik)
@@ -51,7 +47,7 @@ if (wannier) then
     endif
   enddo
   deallocate(wann_bnd)
-endif
+endif !wannier
 if (req.and.wproc) then
   write(150,*)
   write(150,'("Bloch functions band interval (N1,N2 or E1,E2) : ",2F8.3)')lr_e1,lr_e2
@@ -63,8 +59,8 @@ if (req) then
   nmegqblhmax=0
   min_e12=100.d0
 endif
-do ikloc=1,nkptnr_loc
-  ik=iknrglob2(ikloc,mpi_x(1))
+do ikloc=1,nkptnrloc
+  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
   jk=idxkq(1,ik)
   i=0
   do ist1=1,nstsv
@@ -118,9 +114,7 @@ do ikloc=1,nkptnr_loc
 enddo !ikloc
 
 if (req) then
-#ifdef _MPI_
-  call d_reduce_cart2(comm_cart_100,.false.,min_e12,1,MPI_MIN)
-#endif
+  call mpi_grid_reduce(min_e12,dims=(/dim_k/),op=op_min)
   if (wproc) then
     write(150,*)
     write(150,'("Minimal energy transition (eV) : ",F12.6)')min_e12*ha2ev

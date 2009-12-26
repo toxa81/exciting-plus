@@ -35,55 +35,57 @@ logical, allocatable :: lig1(:)
 allocate(megq_tmp(ngvecme,nmegqblhmax))
 megq_tmp=zzero
 
-! analytical expression for interstitial contributuion : slow algorithm
-if (.false.) then
-  allocate(a1(ngknr2))
-  allocate(mit(ngknr1,ngknr2))
-! split G-vectors between processors
-  call idxbos(ngvecme,mpi_dims(2),mpi_x(2)+1,idx0,bs)
-  idx_g1=idx0+1
-  idx_g2=idx0+bs
-! no previos state was computed  
-  ist1_prev=-1
-  do ig=idx_g1,idx_g2
-    call genpwit2(ngknr1,ngknr2,igkignr1,igkignr2,-(ivg(:,ig+gvecme1-1)+&
-      ivg(:,igkq)),gvit,mit)
-    do ispn=1,nspinor
-      ispn2=ispn
-      if (lrtype.eq.1) ispn2=3-ispn
-      do i=1,nmegqblh_
-        ist1=bmegqblh_(1,i)
-        ist2=bmegqblh_(2,i)
-! precompute
-        if (ist1.ne.ist1_prev) then
-          a1=zzero
-          l1=.true.
-          if (spinpol) then
-            if (spinor_ud(ispn,ist1,ik).eq.0) l1=.false.
-          endif
-          if (l1) then
-            call zgemv('T',ngknr1,ngknr2,zone,mit,ngknr1,&
-              dconjg(wfsvit1(:,ispn,ist1)),1,zzero,a1,1)
-          endif
-          ist1_prev=ist1
-        endif
-        l1=.true.
-        if (spinpol) then
-          if (spinor_ud(ispn2,ist2,jk).eq.0) l1=.false.
-        endif
-        if (l1) then
-          megq_tmp(ig,i)=megq_tmp(ig,i)+zdotu(ngknr2,wfsvit2(1,ispn2,ist2),1,a1,1)
-        endif
-      enddo !i  
-    enddo !ispn
-  enddo !ig
-  deallocate(mit,a1)
-! analytical expression for interstitial contributuion : fast algorithm
-else
+!
+!! analytical expression for interstitial contributuion : slow algorithm
+!if (.false.) then
+!  allocate(a1(ngknr2))
+!  allocate(mit(ngknr1,ngknr2))
+!! split G-vectors between processors
+!  call idxbos(ngvecme,mpi_dims(2),mpi_x(2)+1,idx0,bs)
+!  idx_g1=idx0+1
+!  idx_g2=idx0+bs
+!! no previos state was computed  
+!  ist1_prev=-1
+!  do ig=idx_g1,idx_g2
+!    call genpwit2(ngknr1,ngknr2,igkignr1,igkignr2,-(ivg(:,ig+gvecme1-1)+&
+!      ivg(:,igkq)),gvit,mit)
+!    do ispn=1,nspinor
+!      ispn2=ispn
+!      if (lrtype.eq.1) ispn2=3-ispn
+!      do i=1,nmegqblh_
+!        ist1=bmegqblh_(1,i)
+!        ist2=bmegqblh_(2,i)
+!! precompute
+!        if (ist1.ne.ist1_prev) then
+!          a1=zzero
+!          l1=.true.
+!          if (spinpol) then
+!            if (spinor_ud(ispn,ist1,ik).eq.0) l1=.false.
+!          endif
+!          if (l1) then
+!            call zgemv('T',ngknr1,ngknr2,zone,mit,ngknr1,&
+!              dconjg(wfsvit1(:,ispn,ist1)),1,zzero,a1,1)
+!          endif
+!          ist1_prev=ist1
+!        endif
+!        l1=.true.
+!        if (spinpol) then
+!          if (spinor_ud(ispn2,ist2,jk).eq.0) l1=.false.
+!        endif
+!        if (l1) then
+!          megq_tmp(ig,i)=megq_tmp(ig,i)+zdotu(ngknr2,wfsvit2(1,ispn2,ist2),1,a1,1)
+!        endif
+!      enddo !i  
+!    enddo !ispn
+!  enddo !ig
+!  deallocate(mit,a1)
+!! analytical expression for interstitial contributuion : fast algorithm
+!else
   allocate(a1(ngrtot))
   allocate(lig1(ngrtot))
 ! split interband transitions between processors
-  call idxbos(nmegqblh_,mpi_dims(2),mpi_x(2)+1,idx0,bs)
+  !call idxbos(nmegqblh_,mpi_dims(2),mpi_x(2)+1,idx0,bs)
+  bs=mpi_grid_map(nmegqblh_,dim2,offs=idx0)
   idx_i1=idx0+1
   idx_i2=idx0+bs
 ! no previos state was computed  
@@ -154,11 +156,8 @@ else
     enddo !i
   enddo !ispn
   deallocate(a1,lig1)
-endif
-
-if (mpi_dims(2).gt.1) then
-  call d_reduce_cart(comm_cart_010,.false.,megq_tmp,2*ngvecme*nmegqblhmax)
-endif
+!endif
+call mpi_grid_reduce(megq_tmp(1,1),ngvecme*nmegqblhmax,dims=(/dim2/))
 megqblh_=megqblh_+megq_tmp
 deallocate(megq_tmp)
 

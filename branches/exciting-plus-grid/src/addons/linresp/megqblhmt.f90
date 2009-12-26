@@ -15,7 +15,7 @@ complex(8), intent(inout) :: megqblh_(ngvecme,nmegqblhmax)
 integer, intent(in) :: ik
 integer, intent(in) :: jk
 ! local variables
-integer ig,i,j,ist1,ist2,ias,io1,io2,lm1,lm2,ispn,ispn2
+integer ig,i,j,ist1,ist2,ias,io1,io2,lm1,lm2,ispn,ispn2,igloc
 integer idx_g1,idx_g2,idx0,bs
 complex(8) a1(lmmaxvr,nrfmax,natmtot)
 complex(8), allocatable :: megq_tmp(:,:)
@@ -29,12 +29,13 @@ complex(8), external :: zdotu,zdotc
 allocate(megq_tmp(ngvecme,nmegqblhmax))
 megq_tmp=zzero
 
-call idxbos(ngvecme,mpi_dims(2),mpi_x(2)+1,idx0,bs)
-idx_g1=idx0+1
-idx_g2=idx0+bs
+!call idxbos(ngvecme,mpi_dims(2),mpi_x(2)+1,idx0,bs)
+!idx_g1=idx0+1
+!idx_g2=idx0+bs
 
 ist1_prev=-1
-do ig=idx_g1,idx_g2
+do igloc=1,ngvecmeloc
+  ig=mpi_grid_map(ngvecme,dim_g,loc=igloc)
   do ispn=1,nspinor
     ispn2=ispn
     if (lrtype.eq.1) ispn2=3-ispn
@@ -50,13 +51,13 @@ do ig=idx_g1,idx_g2
         endif
         if (l1) then
           do ias=1,natmtot
-            do j=1,ngu(ias,ig)
-              lm1=igu(1,j,ias,ig)
-              lm2=igu(2,j,ias,ig)
-              io1=igu(3,j,ias,ig)
-              io2=igu(4,j,ias,ig)
+            do j=1,ngu(ias,igloc)
+              lm1=igu(1,j,ias,igloc)
+              lm2=igu(2,j,ias,igloc)
+              io1=igu(3,j,ias,igloc)
+              io2=igu(4,j,ias,igloc)
               a1(lm2,io2,ias)=a1(lm2,io2,ias)+&
-                dconjg(wfsvmt1(lm1,io1,ias,ispn,ist1))*gu(j,ias,ig)
+                dconjg(wfsvmt1(lm1,io1,ias,ispn,ist1))*gu(j,ias,igloc)
             enddo !j
           enddo !ias
         endif
@@ -78,11 +79,9 @@ do ig=idx_g1,idx_g2
       endif
     enddo !i
   enddo !ispn
-enddo !ig    
+enddo !igloc
 
-if (mpi_dims(2).gt.1) then
-  call d_reduce_cart(comm_cart_010,.false.,megq_tmp,2*ngvecme*nmegqblhmax)
-endif
+call mpi_grid_reduce(megq_tmp(1,1),ngvecme*nmegqblhmax,dims=(/dim_g/))
 megqblh_=megqblh_+megq_tmp
 
 deallocate(megq_tmp)
