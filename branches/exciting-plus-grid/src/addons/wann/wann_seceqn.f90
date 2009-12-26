@@ -9,7 +9,6 @@ complex(8), allocatable :: z1(:,:),z2(:,:)
 complex(8), allocatable :: work(:)
 real(8), allocatable :: rwork(:)
 integer i,j,i1,i2,info,lwork,itype,n
-integer, external :: ikglob
 
 lwork=2*nstsv
 allocate(z1(nstsv,nstsv))
@@ -19,7 +18,7 @@ allocate(work(lwork))
 
 z1=zzero
 do i=1,nstsv
-  z1(i,i)=evalsv(i,ikglob(ik))
+  z1(i,i)=evalsv(i,ik)
 enddo
 
 do n=1,nwann
@@ -33,10 +32,10 @@ enddo
 
 if (ndmag.eq.1) then
 ! collinear: block diagonalise H
-  call zheev('V','U',nstfv,z1(1,1),nstsv,evalsv(1,ikglob(ik)),work,lwork,rwork,info)
+  call zheev('V','U',nstfv,z1(1,1),nstsv,evalsv(1,ik),work,lwork,rwork,info)
   if (info.ne.0) goto 20
   i=nstfv+1
-  call zheev('V','U',nstfv,z1(i,i),nstsv,evalsv(i,ikglob(ik)),work,lwork,rwork,info)
+  call zheev('V','U',nstfv,z1(i,i),nstsv,evalsv(i,ik),work,lwork,rwork,info)
   if (info.ne.0) goto 20
   do i=1,nstfv
     do j=1,nstfv
@@ -46,7 +45,7 @@ if (ndmag.eq.1) then
   end do
 else
 ! non-collinear or spin-unpolarised: full diagonalisation
-  call zheev('V','U',nstsv,z1,nstsv,evalsv(1,ikglob(ik)),work,lwork,rwork,info)
+  call zheev('V','U',nstsv,z1,nstsv,evalsv(1,ik),work,lwork,rwork,info)
   if (info.ne.0) goto 20
 endif
 z2=zzero
@@ -68,7 +67,7 @@ return
 write(*,*)
 write(*,'("Error(wann_seceqn): diagonalisation of the second-variational &
  &Hamiltonian failed")')
-write(*,'(" for k-point ",I8)') ikglob(ik)
+write(*,'(" for k-point ",I8)') ik
 write(*,'(" ZHEEV returned INFO = ",I8)') info
 write(*,*)
 call pstop

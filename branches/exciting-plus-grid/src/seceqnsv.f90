@@ -72,7 +72,6 @@ else
   nsc=1
 end if
 call timesec(ts0)
-call timer_start(t_seceqnsv_setup)
 allocate(bmt(lmmaxvr,nrcmtmax,3))
 allocate(bir(ngrtot,3))
 allocate(vr(nrmtmax))

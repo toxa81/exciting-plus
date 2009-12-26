@@ -132,32 +132,34 @@ if (iproc.eq.0) then
 endif
 
 if (wannier) then
-  do i=0,nproc-1
-    if (i.eq.iproc) then
-      open(50,file='BNDCHR.OUT',form='FORMATTED',status='OLD',position='APPEND')
-      do ik=1,nkptloc
-        write(50,*)((abs(wann_c(n,j,ik)),n=1,nwann),j=1,nstfv)
-      enddo
-      close(50)
-    endif
-    call barrier(comm_world)
-  enddo
+  if (mpi_grid_side(dims=(/dim_k/))) then
+    do i=0,mpi_grid_size(dim_k)-1
+      if (mpi_grid_x(dim_k).eq.i) then
+        open(50,file='BNDCHR.OUT',form='FORMATTED',status='OLD',position='APPEND')
+        do ikloc=1,nkptloc
+          write(50,*)((abs(wann_c(n,j,ikloc)),n=1,nwann),j=1,nstfv)
+        enddo
+        close(50)
+      endif
+      call mpi_grid_barrier(dims=(/dim_k/))
+    enddo
+  endif
 endif
 
-if (iproc.eq.0) then
-write(*,*)
-write(*,'(" Fermi energy is at zero in plot")')
+if (mpi_grid_root()) then
+  write(*,*)
+  write(*,'(" Fermi energy is at zero in plot")')
 ! output the vertex location lines
-open(50,file='BANDLINES.OUT',action='WRITE',form='FORMATTED')
-do iv=1,nvp1d
-  write(50,'(2G18.10)') dvp1d(iv),emin
-  write(50,'(2G18.10)') dvp1d(iv),emax
-  write(50,'("     ")')
-end do
-close(50)
-write(*,*)
-write(*,'(" vertex location lines written to BANDLINES.OUT")')
-write(*,*)
+  open(50,file='BANDLINES.OUT',action='WRITE',form='FORMATTED')
+  do iv=1,nvp1d
+    write(50,'(2G18.10)') dvp1d(iv),emin
+    write(50,'(2G18.10)') dvp1d(iv),emax
+    write(50,'("     ")')
+  end do
+  close(50)
+  write(*,*)
+  write(*,'(" vertex location lines written to BANDLINES.OUT")')
+  write(*,*)
 endif
 deallocate(e)
 if (task.eq.21) deallocate(bc)

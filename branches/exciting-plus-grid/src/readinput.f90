@@ -178,11 +178,8 @@ ldensmtrx=.false.
 fxctype=0
 nfxca=1
 gshme1=1
-lmeoff=.false.
-lsfio=.true.
 fxca0=0.d0
 fxca1=0.d0
-lscalar=.false.
 zero3d=(/0.d0,0.d0,0.d0/)
 bound3d=0.d0
 bound3d(1,1)=10.d0
@@ -942,9 +939,8 @@ case('response_wann_expand')
   enddo
   read(50,*,err=20) alpha1
 case('response_options')
-  read(50,*,err=20) lscalar
-  read(50,*,err=20) lmeoff
-  read(50,*,err=20) lsfio
+  read(50,*,err=20) scalar_chi
+  read(50,*,err=20) split_megq_file
 case('response_wann')
   read(50,*,err=20) lwannresp
   read(50,*,err=20) lwannopt

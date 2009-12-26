@@ -9,13 +9,12 @@ complex(8), allocatable :: zt2(:,:,:)
 complex(8), allocatable :: pmat(:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 integer m1,m2,j1,j2
-integer, external :: ikglob
 
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 allocate(pmat(3,nstsv,nstsv))
-call match(ngk(1,ikglob(ikloc)),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),&
+call match(ngk(1,ikloc),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),&
   sfacgk(1,1,1,ikloc),apwalm)
-call genpmat(ngk(1,ikglob(ikloc)),igkig(1,1,ikloc),vgkc(1,1,1,ikloc),&
+call genpmat(ngk(1,ikloc),igkig(1,1,ikloc),vgkc(1,1,1,ikloc),&
   apwalm,evecfv,evecsv,pmat)
 ! compute p_nn'(k)=<W_n|\grad|W_n'> 
 allocate(zt2(3,nwann,nwann))
@@ -30,7 +29,7 @@ do m1=1,nwann
     enddo
   enddo
 enddo
-wann_p(:,:,:,ikglob(ikloc))=zt2(:,:,:)
+wann_p(:,:,:,ikloc)=zt2(:,:,:)
 deallocate(zt2,apwalm,pmat)
 return
 end

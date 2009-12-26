@@ -38,7 +38,7 @@ complex(8), allocatable :: dmat(:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:,:)
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
-integer, external :: ikglob
+integer ikloc
 ! initialise universal variables
 call init0
 call init1
@@ -76,30 +76,31 @@ emax=-1.d5
 ! begin parallel loop over k-points
 e=0.d0
 if (task.eq.21) bc=0.d0
-do ik=1,nkptloc
-  write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ikglob(ik),nkpt
+do ikloc=1,nkptloc
+  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+  write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ik,nkpt
 ! solve the first- and second-variational secular equations
-  call seceqn(ik,evalfv,evecfv,evecsv)
-  if (wannier) call genwann_h(ik)
+  call seceqn(ikloc,evalfv,evecfv,evecsv)
+  if (wannier) call genwann_h(ikloc)
   do ist=1,nstsv
 ! subtract the Fermi energy
-    e(ist,ikglob(ik))=evalsv(ist,ikglob(ik)) !-efermi
+    e(ist,ik)=evalsv(ist,ik) !-efermi
 ! add scissors correction
-    if (e(ist,ikglob(ik)).gt.0.d0) e(ist,ikglob(ik))=e(ist,ikglob(ik))+scissor
+    if (e(ist,ik).gt.0.d0) e(ist,ik)=e(ist,ik)+scissor
   end do
 ! compute the band characters if required
   if (task.eq.21) then
 ! find the matching coefficients
     do ispn=1,nspnfv
-      call match(ngk(ispn,ikglob(ik)),gkc(:,ispn,ik),tpgkc(:,:,ispn,ik), &
-       sfacgk(:,:,ispn,ik),apwalm(:,:,:,:,ispn))
+      call match(ngk(ispn,ik),gkc(:,ispn,ikloc),tpgkc(:,:,ispn,ikloc), &
+       sfacgk(:,:,ispn,ikloc),apwalm(:,:,:,:,ispn))
     end do
 ! average band character over spin and m for all atoms
     do is=1,nspecies
       do ia=1,natoms(is)
         ias=idxas(ia,is)
 ! generate the diagonal of the density matrix
-        call gendmat(.true.,.true.,0,lmax,is,ia,ngk(:,ikglob(ik)),apwalm,evecfv, &
+        call gendmat(.true.,.true.,0,lmax,is,ia,ngk(:,ik),apwalm,evecfv, &
          evecsv,lmmax,dmat)
         do ist=1,nstsv
           do l=0,lmax
@@ -110,7 +111,7 @@ do ik=1,nkptloc
                 sum=sum+dble(dmat(lm,lm,ispn,ispn,ist))
               end do
             end do
-            bc(l,ias,ist,ikglob(ik))=real(sum)
+            bc(l,ias,ist,ik)=real(sum)
           end do
         end do
       end do
@@ -122,14 +123,12 @@ deallocate(evalfv,evecfv,evecsv)
 if (task.eq.21) then
   deallocate(dmat,apwalm)
 endif
-call dsync(e,nstsv*nkpt,.true.,.false.)
-if (wannier) call dsync(wann_e,nwann*nkpt,.true.,.false.)
-if (task.eq.21) then
-  do ik=1,nkpt
-    call rsync(bc(1,1,1,ik),(lmax+1)*natmtot*nstsv,.true.,.false.)
-    call barrier(comm_world)
-  enddo
-endif 
+call mpi_grid_reduce(e(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.)
+if (wannier) call mpi_grid_reduce(wann_e(1,1),nwann*nkpt,dims=(/dim_k/),side=.true.)
+do ik=1,nkpt
+  call mpi_grid_reduce(bc(1,1,1,ik),(lmax+1)*natmtot*nstsv,dims=(/dim_k/),side=.true.)
+  call mpi_grid_barrier(dims=(/dim_k/))
+enddo
 emin=minval(e)
 emax=maxval(e)
 emax=emax+(emax-emin)*0.5d0

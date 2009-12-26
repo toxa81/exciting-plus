@@ -30,6 +30,7 @@ subroutine rdirac(n,l,k,np,nr,r,vr,eval,g0,f0)
 !   Created September 2002 (JKD)
 !EOP
 !BOC
+use mod_mpi_grid
 implicit none
 ! arguments
 integer, intent(in) :: n

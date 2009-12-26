@@ -42,7 +42,6 @@ complex(8), allocatable :: evecfvt(:,:)
 complex(8), allocatable :: zflm1(:,:),zflm2(:,:)
 real(8), allocatable :: vgkl_(:,:)
 integer, allocatable :: igkig_(:,:)
-integer, external :: ikloc
 allocate(vgkl_(3,ngkmax))
 allocate(igkig_(ngkmax,nspnfv))
 ! find the equivalent k-point number and crystal symmetry element

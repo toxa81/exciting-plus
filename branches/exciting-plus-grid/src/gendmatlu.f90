@@ -15,7 +15,6 @@ complex(8), allocatable :: apwalm(:,:,:,:,:)
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
 complex(8), allocatable :: dmat(:,:,:,:,:)
-integer, external :: ikglob
 ! allocate local arrays
 allocate(evecsv(nstsv,nstsv))
 allocate(evecfv(nmatmax,nstfv,nspnfv))
@@ -31,23 +30,23 @@ do ik=1,nkptloc
 !  call getoccsv(vkl(:,ik),occsv(:,ik))
 ! find the matching coefficients
   do ispn=1,nspnfv
-    call match(ngk(ispn,ikglob(ik)),gkc(:,ispn,ik),tpgkc(:,:,ispn,ik), &
+    call match(ngk(ispn,ik),gkc(:,ispn,ik),tpgkc(:,:,ispn,ik), &
      sfacgk(:,:,ispn,ik),apwalm(:,:,:,:,ispn))
   end do
 ! begin loop over atoms and species
   do is=1,nspecies
     do ia=1,natoms(is)
       ias=idxas(ia,is)
-      call gendmat(.false.,.false.,0,lmaxlu,is,ia,ngk(:,ikglob(ik)),apwalm, &
+      call gendmat(.false.,.false.,0,lmaxlu,is,ia,ngk(:,ik),apwalm, &
        evecfvloc(1,1,1,ik),evecsvloc(1,1,ik),lmmaxlu,dmat)
       do ist=1,nstsv
-        t1=wkpt(ikglob(ik))*occsv(ist,ikglob(ik))
+        t1=wkpt(ik)*occsv(ist,ik)
         dmatlu(:,:,:,:,ias)=dmatlu(:,:,:,:,ias)+t1*dmat(:,:,:,:,ist)
       end do
     end do
   end do
 end do
-call zsync(dmatlu,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,.true.,.true.)
+!call zsync(dmatlu,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,.true.,.true.)
 ! symmetrise the density matrix
 call symdmat(lmaxlu,lmmaxlu,dmatlu)
 deallocate(evecfv,evecsv,apwalm,dmat)

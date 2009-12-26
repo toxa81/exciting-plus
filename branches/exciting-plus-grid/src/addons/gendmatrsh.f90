@@ -20,7 +20,6 @@ real(8) d1(nspinor)
 integer ikloc
 character*2 :: c2
 character*20 :: fmt
-integer, external :: ikglob
 
 allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
@@ -38,9 +37,9 @@ ematylm=dcmplx(0.d0,0.d0)
 ! compute matrix in Ylm
 ! begin loop over k-points
 do ikloc=1,nkptloc
-  call match(ngk(1,ikglob(ikloc)),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc), &
+  call match(ngk(1,ikloc),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc), &
     sfacgk(1,1,1,ikloc),apwalm)
-  call genwfsvmt(lmaxvr,lmmaxvr,ngk(1,ikglob(ikloc)),evecfvloc(1,1,1,ikloc), &
+  call genwfsvmt(lmaxvr,lmmaxvr,ngk(1,ikloc),evecfvloc(1,1,1,ikloc), &
     evecsvloc(1,1,ikloc),apwalm,wfsvmt)
 ! begin loop over atoms and species
   do is=1,nspecies
@@ -58,18 +57,18 @@ do ikloc=1,nkptloc
                 lm1=idxlm(l,m1)
                 lm2=idxlm(l,m2)
                 z1=wfsvmt(lm1,io1,ias,ispn,j)*dconjg(wfsvmt(lm2,io2,ias,jspn,j))*&
-                  urfprod(l,io1,io2,ias)*wkpt(ikglob(ikloc))
+                  urfprod(l,io1,io2,ias)*wkpt(ikloc)
                 if (ldensmtrx) then
-                  if (evalsv(j,ikglob(ikloc)).ge.dm_e1.and. &
-                      evalsv(j,ikglob(ikloc)).le.dm_e2) then
+                  if (evalsv(j,ikloc).ge.dm_e1.and. &
+                      evalsv(j,ikloc).le.dm_e2) then
                     dmatylm(lm1,lm2,ispn,jspn,ias)=dmatylm(lm1,lm2,ispn,jspn,ias)+z1
                   endif                 
                 else
                   dmatylm(lm1,lm2,ispn,jspn,ias)=dmatylm(lm1,lm2,ispn,jspn,ias)+&
-                    z1*occsv(j,ikglob(ikloc))
+                    z1*occsv(j,ikloc)
                 endif
                 ematylm(lm1,lm2,ispn,jspn,ias)=ematylm(lm1,lm2,ispn,jspn,ias)+&
-                    z1*evalsv(j,ikglob(ikloc))
+                    z1*evalsv(j,ikloc)
               enddo
               enddo
             enddo
@@ -82,8 +81,8 @@ do ikloc=1,nkptloc
   enddo !is
 enddo !ikloc
 
-call zsync(dmatylm,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,.true.,.true.)
-call zsync(ematylm,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,.true.,.true.)
+!call zsync(dmatylm,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,.true.,.true.)
+!call zsync(ematylm,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,.true.,.true.)
 call symdmat(lmaxlu,lmmaxlu,dmatylm)
 call symdmat(lmaxlu,lmmaxlu,ematylm)
 

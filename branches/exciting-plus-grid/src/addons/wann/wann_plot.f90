@@ -17,7 +17,6 @@ character*40 fname
 real(8) x(2),alph
 logical, parameter :: wfprod=.false.
 integer ikloc
-integer, external :: ikglob
 
 call init0
 call init1
@@ -43,7 +42,7 @@ do i=0,nproc-1
       call getwann(ikloc)
     end do
   end if
-  call barrier(comm_world)
+  !call barrier(comm_world)
 end do
 
 if (task.eq.361) then

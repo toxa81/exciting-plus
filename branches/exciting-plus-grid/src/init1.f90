@@ -9,7 +9,6 @@
 subroutine init1
 ! !USES:
 use modmain
-use mod_mpi_grid
 ! !DESCRIPTION:
 !   Generates the $k$-point set and then allocates and initialises global
 !   variables which depend on the $k$-point set.
@@ -28,6 +27,7 @@ real(8) ts0,ts1
 ! external functions
 complex(8) gauntyry
 external gauntyry
+integer, allocatable :: grid_dim(:)
 
 call timesec(ts0)
 
@@ -123,12 +123,36 @@ else
    wkptnr)
 end if
 
-!if (nproc1.eq.1) then
-  call mpi_grid_initialize((/nproc1/))
-!else
-!  call mpi_grid_initialize((/nproc1/2,2/))
-!endif
+!---------------------!
+!     parallel        !
+!---------------------!
+dim_k=dim1
+dim_g=dim2
+dim_q=dim3
+if (task.eq.0.or.task.eq.1.or.task.eq.22) then
+  allocate(grid_dim(1))
+  grid_dim=(/nproc/)
+else if (task.eq.400.or.task.eq.401.or.task.eq.402) then
+  allocate(grid_dim(3))
+  if (nproc.le.nkptnr) then
+    grid_dim=(/nproc,1,1/)
+  else
+    i1=nproc/nkptnr
+    if (i1.le.nvq0) then
+      grid_dim=(/nkptnr,1,i1/)
+    else
+      grid_dim=(/nkptnr,nproc/(nkptnr*nvq0),nvq0/)
+    endif
+  endif
+! overwrite default grid layout
+  if (lmpi_grid) grid_dim=mpi_grid 
+else
+  allocate(grid_dim(1))
+  grid_dim=(/nproc/)
+endif  
+call mpi_grid_initialize(grid_dim)
 nkptloc=mpi_grid_map(nkpt,dim_k)
+nkptnrloc=mpi_grid_map(nkptnr,dim_k)
 
 !---------------------!
 !     G+k vectors     !
@@ -310,6 +334,8 @@ end do
 !-----------------!
 !      addons     !
 !-----------------!
+if (allocated(nrfl)) deallocate(nrfl)
+allocate(nrfl(0:lmaxvr,nspecies))
 call getnrfmax(lmaxvr)
 if (allocated(urf)) deallocate(urf)
 allocate(urf(nrmtmax,0:lmaxvr,nrfmax,natmtot))

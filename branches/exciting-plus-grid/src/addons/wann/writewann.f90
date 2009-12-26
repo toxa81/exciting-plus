@@ -5,7 +5,6 @@ implicit none
 integer i,j,ik,ikloc,idm,lm,ir,ispn,n,ias,io
 complex(8), allocatable :: wann_rf(:,:,:,:)
 character*20 fname
-integer, external :: ikglob
 
 call init0
 call init1

@@ -15,7 +15,6 @@ complex(8) ylm(lmmaxvr)
 complex(8) zt1(nspinor,nwfplot),zt2(nspinor,nwfplot),zt3
 integer ikloc
 real(8), external :: polynom 
-integer, external :: ikglob
 logical, external :: vrinmt
 
 zt1=zzero
@@ -36,7 +35,7 @@ if (vrinmt(r,is,ia,ntr,vr0,ir0,r0)) then
     enddo !l
   enddo !io
   do ikloc=1,nkptloc
-    zt3=exp(zi*dot_product(vkc(:,ikglob(ikloc)),tr(:)))
+    zt3=exp(zi*dot_product(vkc(:,ikloc),tr(:)))
     do n=1,nwfplot
       do ispn=1,nspinor
         do io=1,nrfmax
@@ -48,13 +47,13 @@ if (vrinmt(r,is,ia,ntr,vr0,ir0,r0)) then
       enddo
     enddo
   enddo
-  call zsync(zt1,nspinor*nwfplot,.true.,.false.)
+  !call zsync(zt1,nspinor*nwfplot,.true.,.false.)
   call timer_stop(1)
 else
   call timer_start(2)
   do ikloc=1,nkptloc
     do ispn=1,nspinor
-      do ig=1,ngk(1,ikglob(ikloc))
+      do ig=1,ngk(1,ikloc)
         zt3=exp(zi*dot_product(vgkc(:,ig,1,ikloc),r(:)))/sqrt(omega)
         do n=1,nwfplot
           zt2(ispn,n)=zt2(ispn,n)+zt3*wann_unkit(ig,ispn,n+firstwf-1,ikloc)
@@ -62,12 +61,12 @@ else
       end do
     enddo
   end do
-  call zsync(zt2,nspinor*nwfplot,.true.,.false.)
+  !call zsync(zt2,nspinor*nwfplot,.true.,.false.)
   call timer_stop(2)
 endif
 if (iproc.eq.0) then
   val(:,:)=(zt1(:,:)+zt2(:,:))/nkpt
 endif
-call barrier(comm_world)
+!call barrier(comm_world)
 return
 end

@@ -111,19 +111,19 @@ if (l1) then
     enddo
   endif
 else
-  call idxbos(ngvec,nproc,iproc+1,idx0,bs)
+  !call idxbos(ngvec,nproc,iproc+1,idx0,bs)
 ! otherwise use interstitial function
   do ig=idx0+1,idx0+bs
     ifg=igfft(ig)
     t1=vgc(1,ig)*vrc(1)+vgc(2,ig)*vrc(2)+vgc(3,ig)*vrc(3)
     sum2=sum2+dble(zfft(ifg)*cmplx(cos(t1),sin(t1),8))
   end do
-  call dsync(sum2,1,.true.,.false.)
+  !call dsync(sum2,1,.true.,.false.)
 endif
 if (iproc.eq.0) then
   fp=sum+sum2
 endif
-call barrier(comm_world)
+call mpi_grid_barrier
 deallocate(rlm)
 return
 end subroutine

@@ -9,8 +9,6 @@
 subroutine gndstate
 ! !USES:
 use modmain
-use mod_mpi_grid
-use mod_timer
 ! !DESCRIPTION:
 !   Computes the self-consistent Kohn-Sham ground-state. General information is
 !   written to the file {\tt INFO.OUT}. First- and second-variational
@@ -75,7 +73,7 @@ if (wproc) then
 ! open RMSDVEFF.OUT
   open(65,file='RMSDVEFF'//trim(filext),action='WRITE',form='FORMATTED')
 ! write out general information to INFO.OUT
-  write(60,'("Total number of processors : ",I8)')nproc1
+  write(60,'("Total number of processors : ",I8)')nproc
   write(60,'("Grid dimensions : ",10I8)')mpi_grid_size  
   call writeinfo(60)
   write(60,*)

@@ -35,7 +35,7 @@ np2=nprad/2
 zfft(:)=rfir(:)
 call zfftifc(3,ngrid,-1,zfft)
 fp=0.d0
-call idxbos(np,nproc,iproc+1,idx0,bs)
+!call idxbos(np,nproc,iproc+1,idx0,bs)
 ip1=idx0+1
 ip2=idx0+bs
 ! begin loop over all points
@@ -101,7 +101,7 @@ do ip=ip1,ip2
 10 continue
   fp(ip)=sum
 end do
-call dsync(fp,np,.true.,.false.)
+!call dsync(fp,np,.true.,.false.)
 deallocate(rlm,zfft)
 return
 end subroutine

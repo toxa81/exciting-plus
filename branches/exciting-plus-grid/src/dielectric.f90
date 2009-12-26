@@ -21,21 +21,15 @@ real(8), allocatable :: w(:)
 real(8), allocatable :: delta(:,:,:)
 complex(8), allocatable :: pmat(:,:,:,:)
 complex(8), allocatable :: sigma(:)
+integer ikloc
 ! external functions
 real(8) sdelta
 external sdelta
-integer, external :: iknrglob
 ! initialise universal variables
 call init0
 call init1
-!  non reduced k-points
-if (allocated(nkptnrloc)) deallocate(nkptnrloc)
-allocate(nkptnrloc(0:nproc-1))
-if (allocated(ikptnrloc)) deallocate(ikptnrloc)
-allocate(ikptnrloc(0:nproc-1,2))
-call splitk(nkptnr,nproc,nkptnrloc,ikptnrloc)
 ! read Fermi energy from file
-if (iproc.eq.0) then
+if (mpi_grid_root()) then
   call readfermi
   do ik=1,nkpt
 ! get the eigenvalues and occupancies from file
@@ -43,14 +37,14 @@ if (iproc.eq.0) then
     call getoccsv(vkl(:,ik),occsv(:,ik))
   end do
 endif
-call dsync(efermi,1,.false.,.true.)
-call dsync(evalsv,nstsv*nkpt,.false.,.true.)
-call dsync(occsv,nstsv*nkpt,.false.,.true.)
+call mpi_grid_bcast(efermi)
+call mpi_grid_bcast(evalsv(1,1),nstsv*nkpt)
+call mpi_grid_bcast(occsv(1,1),nstsv*nkpt)
 ! allocate local arrays
 allocate(lspl(nkptnr))
 allocate(w(nwdos))
 if (usegdft) allocate(delta(nstsv,nstsv,nkpt))
-allocate(pmat(3,nstsv,nstsv,nkptnrloc(iproc)))
+allocate(pmat(3,nstsv,nstsv,nkptnrloc))
 allocate(sigma(nwdos))
 ! compute generalised DFT correction
 if (usegdft) then
@@ -73,11 +67,11 @@ do ik=1,nkptnr
   call findkpt(vklnr(:,ik),isym,jk)
   lspl(ik)=lsplsymc(isym)
 end do
-if (iproc.eq.0) then
+if (mpi_grid_root()) then
 ! find the record length for momentum matrix element file
   inquire(iolength=recl) pmat(:,:,:,1)
 endif
-call isync(recl,1,.false.,.true.)
+call mpi_grid_bcast(recl)
 open(50,file='PMAT.OUT',action='READ',form='UNFORMATTED',access='DIRECT', &
  recl=recl,iostat=iostat)
 if (iostat.ne.0) then
@@ -89,17 +83,20 @@ end if
 ! i divided by the complex relaxation time
 eta=cmplx(0.d0,swidth)
 ! read pmat
-do i=0,nproc-1
-  if (i.eq.iproc) then
-    do ik=1,nkptnrloc(iproc)
+if (mpi_grid_side(dims=(/dim_k/))) then
+  do i=0,mpi_grid_size(dim_k)-1
+    if (mpi_grid_x(dim_k).eq.i) then
+      do ikloc=1,nkptnrloc
+        ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 ! equivalent reduced k-point
-      jk=ikmap(ivknr(1,iknrglob(ik)),ivknr(2,iknrglob(ik)),ivknr(3,iknrglob(ik)))
+        jk=ikmap(ivknr(1,ik),ivknr(2,ik),ivknr(3,ik))
 ! read momentum matrix elements from direct-access file
-      read(50,rec=jk) pmat(:,:,:,ik)
-    enddo
-  endif
-  call barrier(comm_world)
-enddo
+        read(50,rec=jk) pmat(:,:,:,ikloc)
+      enddo
+    endif
+    call mpi_grid_barrier(dims=(/dim_k/))
+  enddo
+endif
 ! loop over dielectric tensor components
 do l=1,noptcomp
   i=optcomp(1,l)
@@ -107,19 +104,20 @@ do l=1,noptcomp
   wplas=0.d0
   sigma(:)=0.d0
 ! loop over non-reduced k-points
-  do ik=1,nkptnrloc(iproc)
+  do ikloc=1,nkptnrloc
+    ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 ! equivalent reduced k-point
-    jk=ikmap(ivknr(1,iknrglob(ik)),ivknr(2,iknrglob(ik)),ivknr(3,iknrglob(ik)))
+    jk=ikmap(ivknr(1,ik),ivknr(2,ik),ivknr(3,ik))
 ! valance states
     do ist=1,nstsv
 ! conduction states
       do jst=1,nstsv
 ! rotate the matrix elements from the reduced to non-reduced k-point
 ! (note that the inverse operation is used)
-        v1(:)=dble(pmat(:,ist,jst,ik))
-        call r3mv(symlatc(:,:,lspl(iknrglob(ik))),v1,v2)
-        v1(:)=aimag(pmat(:,ist,jst,ik))
-        call r3mv(symlatc(:,:,lspl(iknrglob(ik))),v1,v3)
+        v1(:)=dble(pmat(:,ist,jst,ikloc))
+        call r3mv(symlatc(:,:,lspl(ik)),v1,v2)
+        v1(:)=aimag(pmat(:,ist,jst,ikloc))
+        call r3mv(symlatc(:,:,lspl(ik)),v1,v3)
         zv(:)=cmplx(v2(:),v3(:),8)
         zt1=zv(i)*conjg(zv(j))
         eji=evalsv(jst,jk)-evalsv(ist,jk)
@@ -142,15 +140,15 @@ do l=1,noptcomp
           if (i.eq.j) then
             if (abs(eji).gt.1.d-8) then
               t2=occsv(jst,jk)-occsv(ist,jk)
-              wplas=wplas+wkptnr(iknrglob(ik))*dble(zt1)*t2/eji
+              wplas=wplas+wkptnr(ik)*dble(zt1)*t2/eji
             end if
           end if
         end if
       end do
     end do
   end do
-  call zsync(sigma,nwdos,.true.,.false.)
-  if (iproc.eq.0) then
+  call mpi_grid_reduce(sigma(1),nwdos,dims=(/dim_k/),side=.true.)
+  if (mpi_grid_root()) then
     zt1=zi/(omega*dble(nkptnr))
     sigma(:)=zt1*sigma(:)
 ! intraband contribution
@@ -201,7 +199,7 @@ do l=1,noptcomp
     close(60)
   endif
 end do
-if (iproc.eq.0) then
+if (mpi_grid_root()) then
   write(*,*)
   write(*,'("Info(dielectric):")')
   write(*,'(" dielectric tensor written to EPSILON_ij.OUT")')

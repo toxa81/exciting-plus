@@ -4,6 +4,8 @@
 ! See the file COPYING for license details.
 
 module modmain
+use mod_mpi_grid
+use mod_timer
 
 !----------------------------!
 !     lattice parameters     !
@@ -916,33 +918,22 @@ character(80) notes(maxnlns)
 !-----------------------!
 !      MPI parallel     !
 !-----------------------!
-integer iproc
-data iproc /0/
-integer nproc
-data nproc /1/
+integer, parameter :: dim1=1
+integer, parameter :: dim2=2
+integer, parameter :: dim3=3
+
 integer nkptloc
-!integer, allocatable :: nkptloc(:)
-integer, allocatable :: ikptloc(:,:)
-integer, allocatable :: nkptnrloc(:)
-integer, allocatable :: ikptnrloc(:,:)
+integer nkptnrloc
+logical lmpi_grid
+data lmpi_grid/.false./
+integer mpi_grid(3)
 complex(8), allocatable :: evecfvloc(:,:,:,:)
 complex(8), allocatable :: evecsvloc(:,:,:)
-integer comm_world
-integer comm_null
-integer comm_cart
-integer comm_cart_100
-integer comm_cart_010
-integer comm_cart_001
-integer comm_cart_101
-integer comm_cart_011
-integer comm_cart_110
-integer mpi_ndims
-integer, allocatable :: mpi_dims(:)
-integer, allocatable :: mpi_x(:)
-integer nkptnr_loc
-integer mpi_grid(3)
-logical lmpi_grid
-data lmpi_grid /.false./
+
+integer dim_k
+integer dim_g
+integer dim_q
+
 
 !------------------!
 !      addons      !
@@ -951,6 +942,8 @@ data lmpi_grid /.false./
 integer nrfmax
 real(8), allocatable :: urf(:,:,:,:)
 real(8), allocatable :: urfprod(:,:,:,:)
+! number of radial functions for a given l
+integer, allocatable :: nrfl(:,:)
 integer, allocatable :: lm2l(:)
 integer, allocatable :: ias2is(:)
 integer, allocatable :: ias2ia(:)
@@ -1005,6 +998,7 @@ integer gvecme1
 integer gvecme2
 ! number of G-vectors for matrix elements
 integer ngvecme
+integer ngvecmeloc
 ! first G-shell for chi
 integer gshchi1
 ! last G-shell for chi
@@ -1074,14 +1068,31 @@ real(8) fxca0
 real(8) fxca1
 integer nfxca
 integer fxctype
-logical lmeoff
-logical lsfio
-logical lscalar
+
+! high-level switch: solve scalar equation for chi
+logical scalar_chi
+data scalar_chi/.false./
+! high-level switch: split file with matrix elements over k-points
+logical split_megq_file
+data split_megq_file/.false./
+! high-level switch: compute chi0 and chi in Wannier functions basis
 logical lwannresp
+data lwannresp/.false./
+! low-level switch: write or not file with matrix elements; depends on task 
+logical write_megq_file
+! low level switch: compute screened W matrix and screened U; depends on crpa
+logical screen_w_u
+
+
+
 logical lwannopt
 !logical lwanndiel
 logical lwfexpand
 integer lr_maxtr
+
+logical crpa
+real(8) crpa_e1,crpa_e2
+
 
 integer nintwann
 integer, parameter :: maxiwann=500
@@ -1155,13 +1166,6 @@ logical ldisentangle
 !----------------!
 !      timer     !
 !----------------!
-!integer, parameter :: ntimers=20
-!real(8), allocatable :: timer(:,:)
-integer, parameter :: t_seceqnfv_setup=1
-integer, parameter :: t_seceqnfv_diag=2
-integer, parameter :: t_seceqnsv_setup=3
-integer, parameter :: t_seceqnsv_diag=4
-integer, parameter :: t_rho=5
 
 integer, parameter :: t_iter_tot=2
 integer, parameter :: t_init=10
@@ -1198,15 +1202,6 @@ integer clda_iat(2)
 integer clda_ispn(2)
 integer, allocatable :: clda_iorb(:,:)
 real(8), allocatable :: clda_vorb(:,:)
-
-logical crpa
-real(8) crpa_e1,crpa_e2
-
-integer dim_k
-data dim_k/1/
-
-integer dim2
-data dim2/2/
 
 end module
 

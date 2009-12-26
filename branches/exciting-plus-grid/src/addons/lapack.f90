@@ -116,6 +116,7 @@ return
 end
 
 subroutine isqrtzhe(ndim,mtrx,ierr)
+use mod_mpi_grid
 implicit   none
 ! arguments
 integer, intent(in) :: ndim

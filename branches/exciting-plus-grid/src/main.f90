@@ -110,8 +110,9 @@ do itask=1,ntasks
     write(*,*)
     write(*,'("Error(main): task not defined : ",I8)') task
     write(*,*)
-    stop
+    call pstop
   end select
+  call mpi_world_barrier
 end do
 #ifdef _HDF5_
 call h5close_f(ierr)

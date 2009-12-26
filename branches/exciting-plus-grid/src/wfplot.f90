@@ -14,7 +14,6 @@ complex(8), allocatable :: evecfv(:,:)
 complex(8), allocatable :: evecsv(:,:)
 ! external functions
 real(8), external :: sdelta
-integer, external :: ikglob
 ! initialise universal variables
 call init0
 call init1
@@ -77,14 +76,14 @@ rhomt(:,:,:)=0.d0
 rhoir(:)=0.d0
 ! compute the charge density with the new occupancies
 do ikloc=1,nkptloc
-  ik=ikglob(ikloc)
+  !ik=ikglob(ikloc)
 ! get the eigenvectors from file
   call getevecfv(vkl(:,ik),vgkl(:,:,:,ikloc),evecfv)
   call getevecsv(vkl(:,ik),evecsv)
   call rhomagk(ikloc,evecfv,evecsv)
 end do
-call dsync(rhomt,lmmaxvr*nrmtmax*natmtot,.true.,.true.)
-call dsync(rhoir,ngrtot,.true.,.true.)
+!call dsync(rhomt,lmmaxvr*nrmtmax*natmtot,.true.,.true.)
+!call dsync(rhoir,ngrtot,.true.,.true.)
 call rhomagsh
 ! symmetrise the density for the STM plot
 if (task.eq.162) then

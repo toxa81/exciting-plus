@@ -16,7 +16,7 @@ real(8), allocatable :: pdos(:,:,:,:)
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
 complex(8), allocatable :: sdmat(:,:,:,:)
-integer, external :: ikglob
+integer iasloc,natmtotloc
 
 ! initialise universal variables
 call init0
@@ -46,34 +46,39 @@ allocate(sdmat(nspinor,nspinor,nstsv,nkpt))
 evalsv=0.d0
 bndchr=0.0
 sdmat=dcmplx(0.d0,0.d0)
-do i=0,nproc-1
-  if (iproc.eq.i) then
-    do ikloc=1,nkptloc
-      ik=ikglob(ikloc)
-      call getevecfv(vkl(1,ik),vgkl(1,1,1,ikloc),evecfv)
-      call getevecsv(vkl(1,ik),evecsv)
-      call getevalsv(vkl(1,ik),evalsv(1,ik))
+if (mpi_grid_side(dims=(/dim_k/))) then
+  do i=0,mpi_grid_size(dim_k)-1
+    if (mpi_grid_x(dim_k).eq.i) then
+      do ikloc=1,nkptloc
+        ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+        call getevecfv(vkl(1,ik),vgkl(1,1,1,ikloc),evecfv)
+        call getevecsv(vkl(1,ik),evecsv)
+        call getevalsv(vkl(1,ik),evalsv(1,ik))
 ! substract Fermi energy
-      evalsv(:,ik)=evalsv(:,ik)-efermi
+        evalsv(:,ik)=evalsv(:,ik)-efermi
 ! correction for scissors operator
-      do ist=1,nstsv
-        if (evalsv(ist,ik).gt.0.d0) evalsv(ist,ik)=evalsv(ist,ik)+scissor
-      enddo
+        do ist=1,nstsv
+          if (evalsv(ist,ik).gt.0.d0) evalsv(ist,ik)=evalsv(ist,ik)+scissor
+        enddo
 ! compute the band character
-      call bandchar(.true.,lmax,ikloc,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik))
-!      if (wannier) then
-!        call getwfc(ik,wann_c(1,1,1,ik)) 
-!      endif
-      call gensdmat(evecsv,sdmat(:,:,:,ik))
-    end do
-  endif
-  call barrier(comm_world)
-enddo
+        call bandchar(.true.,lmax,ikloc,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik))
+!        if (wannier) then
+!          call getwfc(ik,wann_c(1,1,1,ik)) 
+!        endif
+        call gensdmat(evecsv,sdmat(:,:,:,ik))
+      end do
+    endif
+    call mpi_grid_barrier(dims=(/dim_k/))
+  enddo
+endif
 do ik=1,nkpt
-  call rsync(bndchr(1,1,1,1,ik),lmmax*natmtot*nspinor*nstsv,.true.,.true.)
-  call zsync(sdmat(1,1,1,ik),nspinor*nspinor*nstsv,.true.,.true.)
+  call mpi_grid_reduce(bndchr(1,1,1,1,ik),lmmax*natmtot*nspinor*nstsv,&
+    dims=(/dim_k/),side=.true.,all=.true.)
+  call mpi_grid_reduce(sdmat(1,1,1,ik),nspinor*nspinor*nstsv,&
+    dims=(/dim_k/),side=.true.,all=.true.)
 enddo
-call dsync(evalsv,nstsv*nkpt,.true.,.true.)
+call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.,&
+  all=.true.)
   
 ! generate energy grid
 wdos(1)=minval(evalsv(:,:))-0.1
@@ -99,7 +104,7 @@ do i=1,3
   nsk(i)=max(ngrdos/ngridk(i),1)
 end do
 ! compute total DOS
-if (iproc.eq.0) then
+if (mpi_grid_root()) then
   do ispn=1,nspinor
     do ik=1,nkpt
       do ist=1,nstsv
@@ -113,9 +118,11 @@ if (iproc.eq.0) then
   tdos=tdos*occmax
 endif
 ! compute partial DOS in parallel
-pdos=0.d0
-call idxbos(natmtot,nproc,iproc+1,idx0,bs)
-do ias=idx0+1,idx0+bs
+!pdos=0.d0
+!call idxbos(natmtot,nproc,iproc+1,idx0,bs)
+natmtotloc=mpi_grid_map(natmtot,dim1)
+do iasloc=1,natmtotloc
+  ias=mpi_grid_map(natmtot,dim1,loc=iasloc)
   do ispn=1,nspinor
     do l=0,lmax
       do m=-l,l
@@ -133,10 +140,11 @@ do ias=idx0+1,idx0+bs
 enddo !ias
 pdos=pdos*occmax
 do ias=1,natmtot
-  call dsync(pdos(1,1,1,ias),nwdos*lmmax*nspinor,.true.,.false.)
+  call mpi_grid_reduce(pdos(1,1,1,ias),nwdos*lmmax*nspinor,dims=(/dim1/),&
+    side=.true.)
 enddo
 
-if (iproc.eq.0) then
+if (mpi_grid_root()) then
 ! write total DOS
   open(50,file='TDOS_EV.OUT',action='WRITE',form='FORMATTED')
   do ispn=1,nspinor
