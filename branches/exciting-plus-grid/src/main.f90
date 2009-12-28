@@ -95,7 +95,7 @@ do itask=1,ntasks
   case(300)
     call rdmft
 #ifdef _HDF5_
-  case(400,401,402,403)
+  case(400,401,402,403,404)
     call response
 #endif
   case(500)

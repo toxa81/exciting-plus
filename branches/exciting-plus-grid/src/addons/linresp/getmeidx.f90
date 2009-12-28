@@ -1,10 +1,8 @@
-subroutine getmeidx(req,occsvnr,evalsvnr)
+subroutine getmeidx(req)
 use modmain
 implicit none
 ! arguments
 logical, intent(in) :: req
-real(8), intent(in) :: occsvnr(nstsv,nkptnr)
-real(8), intent(in) :: evalsvnr(nstsv,nkptnr)
 
 integer i,ik,jk,ist1,ist2,ikloc,n
 logical laddme,ldocc
@@ -65,9 +63,9 @@ do ikloc=1,nkptnrloc
   i=0
   do ist1=1,nstsv
     do ist2=1,nstsv
-      le1=bndint(ist1,evalsvnr(ist1,ik),lr_e1,lr_e2)
-      le2=bndint(ist2,evalsvnr(ist2,jk),lr_e1,lr_e2)
-      d1=occsvnr(ist1,ik)-occsvnr(ist2,jk)
+      le1=bndint(ist1,lr_evalsvnr(ist1,ik),lr_e1,lr_e2)
+      le2=bndint(ist2,lr_evalsvnr(ist2,jk),lr_e1,lr_e2)
+      d1=lr_occsvnr(ist1,ik)-lr_occsvnr(ist2,jk)
       ldocc=abs(d1).gt.1d-5
       laddme=.false.
 ! comment:
@@ -78,8 +76,8 @@ do ikloc=1,nkptnrloc
 !     2.  both bands ist1 and ist2 fall into energy interval
       lwann=.false.
       if (wannier) then
-        le1w=bndint(ist1,evalsvnr(ist1,ik),min_e1_wann,max_e2_wann)
-        le2w=bndint(ist2,evalsvnr(ist2,jk),min_e1_wann,max_e2_wann)
+        le1w=bndint(ist1,lr_evalsvnr(ist1,ik),min_e1_wann,max_e2_wann)
+        le2w=bndint(ist2,lr_evalsvnr(ist2,jk),min_e1_wann,max_e2_wann)
         if ((lwannresp.and..not.wann_diel()).and.(le1w.and.le2w)) lwann=.true.
         if (crpa.and.(le1w.and.le2w)) lwann=.true.
       endif
@@ -104,7 +102,7 @@ do ikloc=1,nkptnrloc
           !docc(i,ikloc)=d1
         endif
         if (req) then
-          min_e12=min(min_e12,abs(evalsvnr(ist1,ik)-evalsvnr(ist2,jk)))
+          min_e12=min(min_e12,abs(lr_evalsvnr(ist1,ik)-lr_evalsvnr(ist2,jk)))
         endif
       endif
     enddo

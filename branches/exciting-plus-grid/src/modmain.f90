@@ -1118,6 +1118,10 @@ real(8) alpha1
 
 integer, allocatable :: spinor_ud(:,:,:)
 
+real(8), allocatable :: lr_occsvnr(:,:)
+real(8), allocatable :: lr_evalsvnr(:,:)
+
+
 !------------------!
 !     Wannier      !
 !------------------!

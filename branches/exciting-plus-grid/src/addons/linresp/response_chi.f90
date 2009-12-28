@@ -505,24 +505,24 @@ if (mpi_grid_root(dims=(/dim_q/))) then
     call write_chi(lr_igq0,ivq0m,chi_(1,1,ifxc),epsilon_(1,1,ifxc),fxca)
   enddo
 endif
-!
-!deallocate(krnl,krnl_rpa,ixcft)
-!deallocate(krnl_scr)
-!deallocate(lr_w,chi0m,chi0w,chi_,epsilon_)
-!deallocate(vcgq)
-!if (wannier) then
-!  deallocate(itrmegqwan)
-!  deallocate(megqwan)
-!  deallocate(bmegqwan)
-!endif
-!if (lwannresp) then
-!  deallocate(itrchi0wan)
-!  deallocate(itridxwan)
-!  deallocate(chi0wan)
-!endif
-!if (crpa) then
-!  deallocate(imegqwan)
-!endif
+
+deallocate(krnl,krnl_rpa,ixcft)
+deallocate(krnl_scr)
+deallocate(lr_w,chi0m,chi0w,chi_,epsilon_)
+deallocate(vcgq)
+if (wannier) then
+  deallocate(itrmegqwan)
+  deallocate(megqwan)
+  deallocate(bmegqwan)
+endif
+if (lwannresp) then
+  deallocate(itrchi0wan)
+  deallocate(itridxwan)
+  deallocate(chi0wan)
+endif
+if (crpa) then
+  deallocate(imegqwan)
+endif
 return
 end  
 #endif

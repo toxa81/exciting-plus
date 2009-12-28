@@ -19,8 +19,6 @@ integer ie1,n,n1,n2,n3,n4,jk,ist1,ist2,ig,sz1,sz2
 complex(8), allocatable :: wann_c1(:,:,:)
 complex(8), allocatable :: wann_c2(:,:,:)
 complex(8), allocatable :: zv1(:),zm1(:,:),zm2(:,:,:)
-real(8), allocatable :: evalsvnr(:,:)
-real(8), allocatable :: occsvnr(:,:)
 integer iv(3)
 
 integer it1,it2
@@ -70,65 +68,67 @@ do i=1,nepts
   lr_w(i)=dcmplx(domega*(i-1),lr_eta)/ha2ev
 enddo
 
-allocate(evalsvnr(nstsv,nkptnr))
-allocate(occsvnr(nstsv,nkptnr))
-
-fme=trim(qnm)//"_me.hdf5"
-if (mpi_grid_root((/dim_k,dim2/))) then
-  call read_integer(nkptnr_,1,trim(fme),'/parameters','nkptnr')
-  call read_integer(nmegqblhmax,1,trim(fme),'/parameters','nmegqblhmax')
-  call read_integer(lr_igq0,1,trim(fme),'/parameters','lr_igq0')
-  call read_integer(gshme1,1,trim(fme),'/parameters','gshme1')
-  call read_integer(gshme2,1,trim(fme),'/parameters','gshme2')
-  call read_integer(gvecme1,1,trim(fme),'/parameters','gvecme1')
-  call read_integer(gvecme2,1,trim(fme),'/parameters','gvecme2')
-  call read_integer(ngvecme,1,trim(fme),'/parameters','ngvecme')
-  call read_integer(nspinor_,1,trim(fme),'/parameters','nspinor')
-  call read_real8(vq0l,3,trim(fme),'/parameters','vq0l')
-  call read_real8(vq0rl,3,trim(fme),'/parameters','vq0rl')
-  call read_real8(vq0c,3,trim(fme),'/parameters','vq0c')
-  call read_real8(vq0rc,3,trim(fme),'/parameters','vq0rc')
-  if (wannier) then
-    call read_real8(wann_occ,nwann,trim(fme),'/wannier','wann_occ')
-    call read_integer(ntrmegqwan,1,trim(fme),'/wannier','ntrmegqwan')
-    call read_integer(nmegqwan,1,trim(fme),'/wannier','nmegqwan')
-  endif 
-  call read_real8_array(evalsvnr,2,(/nstsv,nkptnr/), &
-      trim(fme),'/parameters','evalsvnr')
-  call read_real8_array(occsvnr,2,(/nstsv,nkptnr/), &
-      trim(fme),'/parameters','occsvnr')  
-  if (nkptnr_.ne.nkptnr) then
-    write(*,*)
-    write(*,'("Error(response_chi0): k-mesh was changed")')
-    write(*,*)
-    call pstop
+if (write_megq_file) then
+  if (allocated(lr_evalsvnr)) deallocate(lr_evalsvnr)
+  allocate(lr_evalsvnr(nstsv,nkptnr))
+  if (allocated(lr_occsvnr)) deallocate(lr_occsvnr)
+  allocate(lr_occsvnr(nstsv,nkptnr))
+  fme=trim(qnm)//"_me.hdf5"
+  if (mpi_grid_root((/dim_k,dim2/))) then
+    call read_integer(nkptnr_,1,trim(fme),'/parameters','nkptnr')
+    call read_integer(nmegqblhmax,1,trim(fme),'/parameters','nmegqblhmax')
+    call read_integer(lr_igq0,1,trim(fme),'/parameters','lr_igq0')
+    call read_integer(gshme1,1,trim(fme),'/parameters','gshme1')
+    call read_integer(gshme2,1,trim(fme),'/parameters','gshme2')
+    call read_integer(gvecme1,1,trim(fme),'/parameters','gvecme1')
+    call read_integer(gvecme2,1,trim(fme),'/parameters','gvecme2')
+    call read_integer(ngvecme,1,trim(fme),'/parameters','ngvecme')
+    call read_integer(nspinor_,1,trim(fme),'/parameters','nspinor')
+    call read_real8(vq0l,3,trim(fme),'/parameters','vq0l')
+    call read_real8(vq0rl,3,trim(fme),'/parameters','vq0rl')
+    call read_real8(vq0c,3,trim(fme),'/parameters','vq0c')
+    call read_real8(vq0rc,3,trim(fme),'/parameters','vq0rc')
+    if (wannier) then
+      call read_real8(wann_occ,nwann,trim(fme),'/wannier','wann_occ')
+      call read_integer(ntrmegqwan,1,trim(fme),'/wannier','ntrmegqwan')
+      call read_integer(nmegqwan,1,trim(fme),'/wannier','nmegqwan')
+    endif 
+    call read_real8_array(lr_evalsvnr,2,(/nstsv,nkptnr/), &
+        trim(fme),'/parameters','evalsvnr')
+    call read_real8_array(lr_occsvnr,2,(/nstsv,nkptnr/), &
+        trim(fme),'/parameters','occsvnr')  
+    if (nkptnr_.ne.nkptnr) then
+      write(*,*)
+      write(*,'("Error(response_chi0): k-mesh was changed")')
+      write(*,*)
+      call pstop
+    endif
+    if (nspinor_.ne.nspinor) then
+      write(*,*)
+      write(*,'("Error(response_chi0): number of spin components was changed")')
+      write(*,*)
+      call pstop
+    endif    
   endif
-  if (nspinor_.ne.nspinor) then
-    write(*,*)
-    write(*,'("Error(response_chi0): number of spin components was changed")')
-    write(*,*)
-    call pstop
-  endif    
+  call mpi_grid_bcast(gshme1,dims=(/dim_k,dim2/))
+  call mpi_grid_bcast(gshme2,dims=(/dim_k,dim2/))
+  call mpi_grid_bcast(gvecme1,dims=(/dim_k,dim2/))
+  call mpi_grid_bcast(gvecme2,dims=(/dim_k,dim2/))
+  call mpi_grid_bcast(ngvecme,dims=(/dim_k,dim2/))
+  call mpi_grid_bcast(nmegqblhmax,dims=(/dim_k,dim2/))
+  call mpi_grid_bcast(lr_igq0,dims=(/dim_k,dim2/))
+  call mpi_grid_bcast(vq0l(1),3,dims=(/dim_k,dim2/))
+  call mpi_grid_bcast(vq0rl(1),3,dims=(/dim_k,dim2/))
+  call mpi_grid_bcast(vq0c(1),3,dims=(/dim_k,dim2/))
+  call mpi_grid_bcast(vq0rc(1),3,dims=(/dim_k,dim2/))
+  if (wannier) then
+    call mpi_grid_bcast(wann_occ(1),nwann,dims=(/dim_k,dim2/))
+    call mpi_grid_bcast(ntrmegqwan,dims=(/dim_k,dim2/))
+    call mpi_grid_bcast(nmegqwan,dims=(/dim_k,dim2/))
+  endif  
+  call mpi_grid_bcast(lr_evalsvnr(1,1),nstsv*nkptnr,dims=(/dim_k,dim2/))
+  call mpi_grid_bcast(lr_occsvnr(1,1),nstsv*nkptnr,dims=(/dim_k,dim2/))
 endif
-call mpi_grid_bcast(gshme1,dims=(/dim_k,dim2/))
-call mpi_grid_bcast(gshme2,dims=(/dim_k,dim2/))
-call mpi_grid_bcast(gvecme1,dims=(/dim_k,dim2/))
-call mpi_grid_bcast(gvecme2,dims=(/dim_k,dim2/))
-call mpi_grid_bcast(ngvecme,dims=(/dim_k,dim2/))
-call mpi_grid_bcast(nmegqblhmax,dims=(/dim_k,dim2/))
-call mpi_grid_bcast(lr_igq0,dims=(/dim_k,dim2/))
-call mpi_grid_bcast(vq0l(1),3,dims=(/dim_k,dim2/))
-call mpi_grid_bcast(vq0rl(1),3,dims=(/dim_k,dim2/))
-call mpi_grid_bcast(vq0c(1),3,dims=(/dim_k,dim2/))
-call mpi_grid_bcast(vq0rc(1),3,dims=(/dim_k,dim2/))
-if (wannier) then
-  call mpi_grid_bcast(wann_occ(1),nwann,dims=(/dim_k,dim2/))
-  call mpi_grid_bcast(ntrmegqwan,dims=(/dim_k,dim2/))
-  call mpi_grid_bcast(nmegqwan,dims=(/dim_k,dim2/))
-endif  
-call mpi_grid_bcast(evalsvnr(1,1),nstsv*nkptnr,dims=(/dim_k,dim2/))
-call mpi_grid_bcast(occsvnr(1,1),nstsv*nkptnr,dims=(/dim_k,dim2/))
-
 !if (wannier) then
 !  allocate(itrmegqwan(3,ntrmegqwan))
 !  allocate(megqwan(nmegqwan,ntrmegqwan,ngvecme))
@@ -363,8 +363,7 @@ do ie=ie1,nepts
       i2=idx0+bs
       sz1=sz1+bs
 ! for each k-point : sum over interband transitions
-      call sum_chi0(ikloc,ikloc,ik,jk,nmegqblh(ikloc),i1,i2,evalsvnr,occsvnr,&
-        lr_w(ie),chi0w)
+      call sumchi0(ikloc,ik,jk,i1,i2,lr_w(ie),chi0w)
     endif
 ! for response in Wannier basis
     if (lwannresp) then
@@ -377,8 +376,8 @@ do ie=ie1,nepts
           n2=bmegqwan(2,n)
           zv1(n)=wann_c1(n1,ist1,ikloc)*dconjg(wann_c2(n2,ist2,ikloc))
         enddo
-        wt=(occsvnr(ist1,ik)-occsvnr(ist2,jk))/(evalsvnr(ist1,ik) - &
-            evalsvnr(ist2,jk)+lr_w(ie))
+        wt=(lr_occsvnr(ist1,ik)-lr_occsvnr(ist2,jk))/(lr_evalsvnr(ist1,ik) - &
+            lr_evalsvnr(ist2,jk)+lr_w(ie))
         call zgerc(nmegqwan,nmegqwan,wt,zv1,1,zv1,1,zm2(1,1,ikloc),nmegqwan)
       enddo !i
     endif !lwannresp
@@ -512,8 +511,8 @@ enddo !ie
 !!endif
 !
 call mpi_grid_barrier(dims=(/dim_k,dim2/))!
-deallocate(evalsvnr)
-deallocate(occsvnr)
+deallocate(lr_evalsvnr)
+deallocate(lr_occsvnr)
 deallocate(lr_w)
 deallocate(idxkq)
 deallocate(nmegqblh)
@@ -542,100 +541,4 @@ deallocate(chi0w)
 return
 end
 
-subroutine sum_chi0(ikloc,ikloc1,ik,jk,nmegqblh_,i1,i2,evalsvnr,occsvnr,w,chi0w)
-use modmain
-implicit none
-integer, intent(in) :: ikloc
-integer, intent(in) :: ikloc1
-integer, intent(in) :: ik
-integer, intent(in) :: jk
-integer, intent(in) :: nmegqblh_
-integer, intent(in) :: i1
-integer, intent(in) :: i2
-real(8), intent(in) :: evalsvnr(nstsv,nkptnr)
-real(8), intent(in) :: occsvnr(nstsv,nkptnr)
-complex(8), intent(in) :: w
-complex(8), intent(out) :: chi0w(ngvecme,ngvecme)
-
-logical l1,l2(nmegqblh_)
-complex(8) wt(nmegqblh_)
-integer i,ist1,ist2
-integer, parameter :: bs=128
-integer nb,sz1
-integer ib1,ib2,j1,j2
-logical, external :: bndint
-
-
-
-l2=.false.
-do i=i1,i2
-  ist1=bmegqblh(1,i,ikloc)
-  ist2=bmegqblh(2,i,ikloc)
-! default : include all interband transitions         
-  l1=.true.
-! for cRPA : don't include bands in energy window [crpa_e1,crpa_e2]
-  if (crpa) then
-    if (bndint(ist1,evalsvnr(ist1,ik),crpa_e1,crpa_e2).and. &
-        bndint(ist2,evalsvnr(ist2,jk),crpa_e1,crpa_e2)) l1=.false.
-  endif
-  if (l1) then
-    if (abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-5) then
-      wt(i)=(occsvnr(ist1,ik)-occsvnr(ist2,jk))/(evalsvnr(ist1,ik) - &
-        evalsvnr(ist2,jk)+w)
-      l2(i)=.true.
-    endif
-  endif
-enddo !i
-
-if (.false.) then
-  do i=i1,i2
-    if (l2(i)) then
-      call zgerc(ngvecme,ngvecme,wt(i),megqblh(1,i,ikloc1),1,megqblh(1,i,ikloc1),1, &
-        chi0w(1,1),ngvecme)
-    endif
-  enddo
-else
-! number of blocks
-  nb=ngvecme/bs
-! remaining size
-  sz1=mod(ngvecme,bs)
-  ib1=1
-  do j1=1,nb
-    ib2=1
-    do j2=1,nb
-      do i=i1,i2
-        if (l2(i)) then
-          call zgerc(bs,bs,wt(i),megqblh(ib1,i,ikloc1),1,megqblh(ib2,i,ikloc1),1, &
-            chi0w(ib1,ib2),ngvecme)
-        endif
-      enddo !i
-      ib2=ib2+bs
-    enddo !j2
-    ib1=ib1+bs
-  enddo !j1
-! remaining part
-  if (sz1.ne.0) then
-    ib1=1
-    do j1=1,nb
-      do i=i1,i2
-        if (l2(i)) then
-          call zgerc(bs,sz1,wt(i),megqblh(ib1,i,ikloc1),1,megqblh(nb*bs+1,i,ikloc1),1, &
-            chi0w(ib1,nb*bs+1),ngvecme)
-          call zgerc(sz1,bs,wt(i),megqblh(nb*bs+1,i,ikloc1),1,megqblh(ib1,i,ikloc1),1, &
-            chi0w(nb*bs+1,ib1),ngvecme)
-        endif
-      enddo !i
-      ib1=ib1+bs
-    enddo !j1
-    do i=i1,i2
-      if (l2(i)) then
-        call zgerc(sz1,sz1,wt(i),megqblh(nb*bs+1,i,ikloc1),1,megqblh(nb*bs+1,i,ikloc1),1, &
-          chi0w(nb*bs+1,nb*bs+1),ngvecme)
-      endif
-    enddo !i
-  endif
-endif
-
-return
-end
 #endif

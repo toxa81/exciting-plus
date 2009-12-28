@@ -1,6 +1,5 @@
 #ifdef _HDF5_
-subroutine genmegq(ivq0m,wfsvmtloc,wfsvitloc,ngknr,igkignr,occsvnr,&
-  evalsvnr,pmat)
+subroutine genmegq(ivq0m,wfsvmtloc,wfsvitloc,ngknr,igkignr,pmat)
 use modmain
 use hdf5
 implicit none
@@ -11,8 +10,6 @@ complex(8), intent(in) :: wfsvmtloc(lmmaxvr,nrfmax,natmtot,nspinor,nstsv,nkptnrl
 complex(8), intent(in) :: wfsvitloc(ngkmax,nspinor,nstsv,nkptnrloc)
 integer, intent(in) :: ngknr(nkptnrloc)
 integer, intent(in) :: igkignr(ngkmax,nkptnrloc)
-real(8), intent(in) :: occsvnr(nstsv,nkptnr)
-real(8), intent(in) :: evalsvnr(nstsv,nkptnr)
 complex(8), intent(in) :: pmat(3,nstsv,nstsv,nkptnrloc)
 
 ! allocatable arrays
@@ -163,11 +160,11 @@ if (spinpol) then
   enddo
   call mpi_grid_reduce(spinor_ud(1,1,1),2*nstsv*nkptnr,dims=(/dim_k/),all=.true.)
 endif
-call getmeidx(.true.,occsvnr,evalsvnr)
+call getmeidx(.true.)
 call mpi_grid_reduce(nmegqblhmax,dims=(/dim_k/),all=.true.,op=op_max)
 allocate(nmegqblh(nkptnrloc))
 allocate(bmegqblh(2,nmegqblhmax,nkptnrloc))
-call getmeidx(.false.,occsvnr,evalsvnr)
+call getmeidx(.false.)
 call timer_stop(1)
 if (wproc) then
   write(150,*)
@@ -242,9 +239,9 @@ if (mpi_grid_root(dims=(/dim_k,dim_g/)).and.write_megq_file) then
   call write_real8(vq0rl,3,trim(fme),'/parameters','vq0rl')
   call write_real8(vq0c,3,trim(fme),'/parameters','vq0c')
   call write_real8(vq0rc,3,trim(fme),'/parameters','vq0rc')
-  call write_real8_array(evalsvnr,2,(/nstsv,nkptnr/), &
+  call write_real8_array(lr_evalsvnr,2,(/nstsv,nkptnr/), &
       trim(fme),'/parameters','evalsvnr')
-  call write_real8_array(occsvnr,2,(/nstsv,nkptnr/), &
+  call write_real8_array(lr_occsvnr,2,(/nstsv,nkptnr/), &
       trim(fme),'/parameters','occsvnr')  
   complete=0
   call write_integer(complete,1,trim(fme),'/parameters','complete')
@@ -377,11 +374,11 @@ do ikstep=1,nkstep
         enddo !ig      
       enddo !itr
     endif !wannier
-    if (crpa) then
+!    if (crpa) then
 ! for each k-point : sum over interband transitions
-      call sum_chi0(ikstep,ikstep,ik,idxkq(1,ik),nmegqblh(ikstep),1,nmegqblh(ikstep),&
-        evalsvnr,occsvnr,zi*lr_eta/ha2ev,chi0w)
-    endif
+!      call sum_chi0(ikstep,ikstep,ik,idxkq(1,ik),nmegqblh(ikstep),1,nmegqblh(ikstep),&
+!        lr_evalsvnr,lr_occsvnr,zi*lr_eta/ha2ev,chi0w)
+!    endif
   endif ! ikstep.le.nkptnrloc(mpi_x(1))
   call timer_stop(2)
   if (wproc) then

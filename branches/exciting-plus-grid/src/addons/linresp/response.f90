@@ -12,8 +12,6 @@ real(8), allocatable :: gknr(:,:)
 real(8), allocatable :: tpgknr(:,:,:)
 complex(8), allocatable :: sfacgknr(:,:,:)
 
-real(8), allocatable :: occsvnr(:,:)
-real(8), allocatable :: evalsvnr(:,:)
 complex(8), allocatable :: wfsvitloc(:,:,:,:)
 complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
@@ -118,7 +116,7 @@ if (crpa) then
   domega=1.d0
 endif
 ! necessary calls before generating Bloch wave-functions 
-if (task.eq.400) then
+if (task.eq.400.or.task.eq.403) then
 ! read the density and potentials from file
   call readstate
 ! find the new linearisation energies
@@ -148,22 +146,21 @@ if (mpi_grid_root()) then
   if (task.eq.400) open(151,file='RESPONSE_ME.OUT',form='formatted',status='replace')
   if (task.eq.401) open(151,file='RESPONSE_CHI0.OUT',form='formatted',status='replace')
   if (task.eq.402) open(151,file='RESPONSE_CHI.OUT',form='formatted',status='replace')
-  if (task.eq.403) open(151,file='RESPONSE_U.OUT',form='formatted',status='replace')
+  if (task.eq.403) open(151,file='RESPONSE.OUT',form='formatted',status='replace')  
+  if (task.eq.404) open(151,file='RESPONSE_U.OUT',form='formatted',status='replace')
 endif
 if (wproc) then
   write(151,'("Running on ",I8," proc.")')nproc
-#ifdef _PIO_
-  if (nproc.gt.1) then
-    write(151,'("Using parallel I/O")')
+  if (parallel_read.and.nproc.gt.1) then
+    write(151,'("Reading files in parallel")')
   endif
-#endif
   write(151,'("MPI grid size : ",3I6)')mpi_grid_size
   write(151,'("Wannier functions : ",L1)')wannier
   write(151,'("Response in local basis  : ",L1)')lwannresp
   call flushifc(151)
 endif
 
-if (task.eq.400) then
+if (task.eq.400.or.task.eq.403) then
 ! get energies of states in reduced part of BZ
   call timer_start(3,reset=.true.)
   if (wproc) then
@@ -176,12 +173,12 @@ if (task.eq.400) then
     enddo
   endif
   call mpi_grid_bcast(evalsv(1,1),nstsv*nkpt)
-  allocate(evalsvnr(nstsv,nkptnr))
-  evalsvnr=0.d0
+  allocate(lr_evalsvnr(nstsv,nkptnr))
+  lr_evalsvnr=0.d0
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
     call findkpt(vklnr(1,ik),isym,ik1) 
-    evalsvnr(:,ik)=evalsv(:,ik1)
+    lr_evalsvnr(:,ik)=evalsv(:,ik1)
   enddo
   call timer_stop(3)
   if (wproc) then
@@ -190,7 +187,7 @@ if (task.eq.400) then
   endif
 endif
 
-if (task.eq.400) then
+if (task.eq.400.or.task.eq.403) then
 ! generate G+k vectors for entire BZ (this is required to compute 
 !   wave-functions at each k-point)
   allocate(vgklnr(3,ngkmax,nkptnrloc))
@@ -231,10 +228,8 @@ if (task.eq.400) then
   wfsvmtloc=zzero
   wfsvitloc=zzero
   if (mpi_grid_side(dims=(/dim_k/))) then
-#ifndef _PIO_
     do i=0,mpi_grid_size(dim_k)-1
       if (i.eq.mpi_grid_x(dim_k)) then
-#endif
         do ikloc=1,nkptnrloc
           ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
           call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfvloc(1,1,1,ikloc))
@@ -253,11 +248,9 @@ if (task.eq.400) then
               apwalm,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),pmat(1,1,1,ikloc))
           endif
         enddo !ikloc
-#ifndef _PIO_
       endif
-      call mpi_grid_barrier(dims=(/dim_k/))
+      if (.not.parallel_read) call mpi_grid_barrier(dims=(/dim_k/))
     enddo
-#endif
   endif !mpi_grid_side(dims=(/dim_k/)
   call mpi_grid_barrier
   call mpi_grid_bcast(wfsvmtloc(1,1,1,1,1,1),&
@@ -285,11 +278,11 @@ if (task.eq.400) then
     endif !wproc
     do ikloc=1,nkptnrloc
       ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-      call genwann_c(ik,evalsvnr(1,ik),wfsvmtloc(1,1,1,1,1,ikloc),&
+      call genwann_c(ik,lr_evalsvnr(1,ik),wfsvmtloc(1,1,1,1,1,ikloc),&
         wann_c(1,1,ikloc))
       if (ldisentangle) then
 ! disentangle bands
-        call disentangle(evalsvnr(1,ik),wann_c(1,1,ikloc),evecsvloc(1,1,ikloc))
+        call disentangle(lr_evalsvnr(1,ik),wann_c(1,1,ikloc),evecsvloc(1,1,ikloc))
 ! recompute wave functions
 ! get apw coeffs 
         call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),        &
@@ -305,9 +298,9 @@ if (task.eq.400) then
   endif !wannier
 ! after optinal band disentanglement we can finally synchronize all eigen-values
 !   and compute band occupation numbers 
-  call mpi_grid_reduce(evalsvnr(1,1),nstsv*nkptnr,dims=(/dim_k/),all=.true.)
-  allocate(occsvnr(nstsv,nkptnr))
-  call occupy2(nkptnr,wkptnr,evalsvnr,occsvnr)
+  call mpi_grid_reduce(lr_evalsvnr(1,1),nstsv*nkptnr,dims=(/dim_k/),all=.true.)
+  allocate(lr_occsvnr(nstsv,nkptnr))
+  call occupy2(nkptnr,wkptnr,lr_evalsvnr,lr_occsvnr)
   if (wannier) then
 ! calculate Wannier function occupancies 
     wann_occ=0.d0
@@ -316,7 +309,7 @@ if (task.eq.400) then
         ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
         do j=1,nstsv
           w2=dreal(dconjg(wann_c(n,j,ikloc))*wann_c(n,j,ikloc))
-          wann_occ(n)=wann_occ(n)+w2*occsvnr(j,ik)/nkptnr
+          wann_occ(n)=wann_occ(n)+w2*lr_occsvnr(j,ik)/nkptnr
         enddo
       enddo
     enddo
@@ -354,7 +347,7 @@ if (task.eq.400) then
   call timer_start(10,reset=.true.)
   do iq=ivq1,ivq2
     call genmegq(ivq0m_list(1,iq),wfsvmtloc,wfsvitloc,ngknr, &
-      igkignr,occsvnr,evalsvnr,pmat)
+      igkignr,pmat)
   enddo
   call timer_stop(10)
   if (wproc) then
@@ -392,7 +385,16 @@ if (task.eq.402) then
   endif
 endif
 
-if (task.eq.403.and.crpa.and.mpi_grid_root()) then
+if (task.eq.403) then
+  do iq=ivq1,ivq2
+    call genmegq(ivq0m_list(1,iq),wfsvmtloc,wfsvitloc,ngknr, &
+      igkignr,pmat)
+    call response_chi0(ivq0m_list(1,iq))
+    call response_chi(ivq0m_list(1,iq))
+  enddo
+endif
+
+if (task.eq.404.and.crpa.and.mpi_grid_root()) then
   call response_u
 endif
   
@@ -400,15 +402,15 @@ if (wproc) close(151)
 
 if (task.eq.400.and.lpmat) deallocate(pmat)
 
-if (task.eq.400) then
+if (task.eq.400.or.task.eq.403) then
   deallocate(wfsvmtloc)
   deallocate(wfsvitloc)
   deallocate(evecfvloc)
   deallocate(evecsvloc)
   deallocate(ngknr)
   deallocate(igkignr)
-  deallocate(occsvnr)
-  deallocate(evalsvnr)   
+!  deallocate(lr_occsvnr)
+!  deallocate(lr_evalsvnr)   
   if (wannier) deallocate(wann_c)
 endif
 
