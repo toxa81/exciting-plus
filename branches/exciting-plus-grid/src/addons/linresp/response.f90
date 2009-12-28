@@ -78,7 +78,7 @@ if (task.eq.403) write_megq_file=.false.
 screen_w_u=crpa
 
 ! this is enough for matrix elements
-lmaxvr=4
+lmaxvr=5
 
 ! initialise universal variables
 ! MPI grid for tasks:
@@ -353,7 +353,7 @@ if (task.eq.400) then
 ! calculate matrix elements
   call timer_start(10,reset=.true.)
   do iq=ivq1,ivq2
-    call response_me(ivq0m_list(1,iq),wfsvmtloc,wfsvitloc,ngknr, &
+    call genmegq(ivq0m_list(1,iq),wfsvmtloc,wfsvitloc,ngknr, &
       igkignr,occsvnr,evalsvnr,pmat)
   enddo
   call timer_stop(10)

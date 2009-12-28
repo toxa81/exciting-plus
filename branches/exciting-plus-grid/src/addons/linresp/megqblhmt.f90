@@ -1,19 +1,19 @@
-subroutine megqblhmt(nmegqblh_,bmegqblh_,wfsvmt1,wfsvmt2,ngumax,ngu,gu,igu, &
-  megqblh_,ik,jk)
+subroutine megqblhmt(nmegqblh_,bmegqblh_,wfsvmt1,wfsvmt2,ngntujumax,ngntuju,&
+  igntuju,gntuju,ik,jk,megqblh_)
 use modmain
 implicit none
 ! arguments
 integer, intent(in) :: nmegqblh_
 integer, intent(in) :: bmegqblh_(2,nmegqblhmax)
-integer, intent(in) :: ngumax
-integer, intent(in) :: ngu(natmtot,ngvecme)
-integer, intent(in) :: igu(4,ngumax,natmtot,ngvecme)
-complex(4), intent(in) :: gu(ngumax,natmtot,ngvecme)
 complex(8), intent(in) :: wfsvmt1(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
 complex(8), intent(in) :: wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
-complex(8), intent(inout) :: megqblh_(ngvecme,nmegqblhmax)
+integer, intent(in) :: ngntujumax
+integer, intent(in) :: ngntuju(natmtot,ngvecmeloc)
+integer, intent(in) :: igntuju(4,ngntujumax,natmtot,ngvecmeloc)
+complex(8), intent(in) :: gntuju(ngntujumax,natmtot,ngvecmeloc)
 integer, intent(in) :: ik
 integer, intent(in) :: jk
+complex(8), intent(inout) :: megqblh_(ngvecme,nmegqblhmax)
 ! local variables
 integer ig,i,j,ist1,ist2,ias,io1,io2,lm1,lm2,ispn,ispn2,igloc
 integer idx_g1,idx_g2,idx0,bs
@@ -24,7 +24,6 @@ integer ist1_prev
 complex(8), external :: zdotu,zdotc
 
 ! TODO: add explanation about how it all works
-
 
 allocate(megq_tmp(ngvecme,nmegqblhmax))
 megq_tmp=zzero
@@ -51,13 +50,13 @@ do igloc=1,ngvecmeloc
         endif
         if (l1) then
           do ias=1,natmtot
-            do j=1,ngu(ias,igloc)
-              lm1=igu(1,j,ias,igloc)
-              lm2=igu(2,j,ias,igloc)
-              io1=igu(3,j,ias,igloc)
-              io2=igu(4,j,ias,igloc)
+            do j=1,ngntuju(ias,igloc)
+              lm1=igntuju(1,j,ias,igloc)
+              lm2=igntuju(2,j,ias,igloc)
+              io1=igntuju(3,j,ias,igloc)
+              io2=igntuju(4,j,ias,igloc)
               a1(lm2,io2,ias)=a1(lm2,io2,ias)+&
-                dconjg(wfsvmt1(lm1,io1,ias,ispn,ist1))*gu(j,ias,igloc)
+                dconjg(wfsvmt1(lm1,io1,ias,ispn,ist1))*gntuju(j,ias,igloc)
             enddo !j
           enddo !ias
         endif

@@ -1018,8 +1018,19 @@ real(8) lr_e1,lr_e2
 !   1 : magnetic response
 integer lrtype
 
+! G+q vectors in Cart.coord.
+real(8), allocatable :: lr_vgq0c(:,:)
+! length of G+q vectors
+real(8), allocatable :: lr_gq0(:)
+! theta and phi angles of G+q vectors
+real(8), allocatable :: lr_tpgq0(:,:)
+! sperical harmonics of G+q vectors
+complex(8), allocatable :: lr_ylmgq0(:,:)
+! structure factor for G+q vectors
+complex(8), allocatable :: lr_sfacgq0(:,:)
+
 ! number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> in the Bloch basis
-!   one index : k-point
+!  for a given k-point
 integer, allocatable :: nmegqblh(:)
 ! maximum number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> over all k-points
 integer nmegqblhmax
@@ -1075,6 +1086,9 @@ data scalar_chi/.false./
 ! high-level switch: split file with matrix elements over k-points
 logical split_megq_file
 data split_megq_file/.false./
+! high-level switch:: read files in parallel
+logical parallel_read
+data parallel_read/.false./
 ! high-level switch: compute chi0 and chi in Wannier functions basis
 logical lwannresp
 data lwannresp/.false./

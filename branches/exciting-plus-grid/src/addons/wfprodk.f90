@@ -27,7 +27,8 @@ do ist1=1,nstsv
     enddo
     t1=0.d0
     if (ist1.eq.ist2) t1=1.d0
-    wfnrmdev(j)=abs(norm-t1)
+    !wfnrmdev(j)=abs(norm-t1)
+    write(*,*)ist1,ist2,abs(norm-t1)
   enddo !ist1 
 enddo !ist2
 

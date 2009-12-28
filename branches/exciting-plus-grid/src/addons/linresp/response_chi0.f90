@@ -2,9 +2,6 @@
 subroutine response_chi0(ivq0m)
 use modmain
 use hdf5
-#ifdef _MPI_
-use mpi
-#endif
 implicit none
 ! arguments
 integer, intent(in) :: ivq0m(3)
@@ -14,7 +11,7 @@ integer i,j,ik,ie,nkptnr_,i1,i2,i3,ikloc,nspinor_
 integer idx0,bs
 integer igq0
 complex(8) wt
-character*100 fname,path,qnm
+character*100 path,qnm,fout,fchi0,fme,fmek
 character*8 c8
 integer ierr
 logical exist
@@ -46,92 +43,92 @@ integer(hid_t) h5_tmp_id
 
 complex(8), external :: zdotu
 
-!call qname(ivq0m,qnm)
-!qnm="./"//trim(qnm)//"/"//trim(qnm)
-!wproc=.false.
-!if (root_cart((/1,1,0/))) then
-!  wproc=.true.
-!  fname=trim(qnm)//"_CHI0.OUT"
-!  open(150,file=trim(fname),form='formatted',status='replace')
-!endif
-!
-!if (wproc) then
-!  write(150,*)
-!  write(150,'("Calculation of KS polarisability chi0")')
-!  write(150,*)
-!  write(150,'("Energy mesh parameters:")')
-!  write(150,'("  maximum energy [eV] : ", F9.4)')maxomega
-!  write(150,'("  energy step    [eV] : ", F9.4)')domega
-!  write(150,'("  eta            [eV] : ", F9.4)')lr_eta
-!  call flushifc(150)
-!endif
-!  
-!! setup energy mesh
-!nepts=1+maxomega/domega
-!allocate(lr_w(nepts))
-!do i=1,nepts
-!  lr_w(i)=dcmplx(domega*(i-1),lr_eta)/ha2ev
-!enddo
-!
-!allocate(evalsvnr(nstsv,nkptnr))
-!allocate(occsvnr(nstsv,nkptnr))
-!
-!fname=trim(qnm)//"_me.hdf5"
-!if (root_cart((/1,1,0/))) then
-!  call read_integer(nkptnr_,1,trim(fname),'/parameters','nkptnr')
-!  call read_integer(nmegqblhmax,1,trim(fname),'/parameters','nmegqblhmax')
-!  call read_integer(lr_igq0,1,trim(fname),'/parameters','lr_igq0')
-!  call read_integer(gshme1,1,trim(fname),'/parameters','gshme1')
-!  call read_integer(gshme2,1,trim(fname),'/parameters','gshme2')
-!  call read_integer(gvecme1,1,trim(fname),'/parameters','gvecme1')
-!  call read_integer(gvecme2,1,trim(fname),'/parameters','gvecme2')
-!  call read_integer(ngvecme,1,trim(fname),'/parameters','ngvecme')
-!  call read_integer(nspinor_,1,trim(fname),'/parameters','nspinor')
-!  call read_real8(vq0l,3,trim(fname),'/parameters','vq0l')
-!  call read_real8(vq0rl,3,trim(fname),'/parameters','vq0rl')
-!  call read_real8(vq0c,3,trim(fname),'/parameters','vq0c')
-!  call read_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
-!  if (wannier) then
-!    call read_real8(wann_occ,nwann,trim(fname),'/wannier','wann_occ')
-!    call read_integer(ntrmegqwan,1,trim(fname),'/wannier','ntrmegqwan')
-!    call read_integer(nmegqwan,1,trim(fname),'/wannier','nmegqwan')
-!  endif 
-!  call read_real8_array(evalsvnr,2,(/nstsv,nkptnr/), &
-!      trim(fname),'/parameters','evalsvnr')
-!  call read_real8_array(occsvnr,2,(/nstsv,nkptnr/), &
-!      trim(fname),'/parameters','occsvnr')  
-!  if (nkptnr_.ne.nkptnr) then
-!    write(*,*)
-!    write(*,'("Error(response_chi0): k-mesh was changed")')
-!    write(*,*)
-!    call pstop
-!  endif
-!  if (nspinor_.ne.nspinor) then
-!    write(*,*)
-!    write(*,'("Error(response_chi0): number of spin components was changed")')
-!    write(*,*)
-!    call pstop
-!  endif    
-!endif
-!call i_bcast_cart(comm_cart_110,gshme1,1)
-!call i_bcast_cart(comm_cart_110,gshme2,1)
-!call i_bcast_cart(comm_cart_110,gvecme1,1)
-!call i_bcast_cart(comm_cart_110,gvecme2,1)
-!call i_bcast_cart(comm_cart_110,ngvecme,1)
-!call i_bcast_cart(comm_cart_110,nmegqblhmax,1)
-!call i_bcast_cart(comm_cart_110,lr_igq0,1)
-!call d_bcast_cart(comm_cart_110,vq0l,3)
-!call d_bcast_cart(comm_cart_110,vq0rl,3)
-!call d_bcast_cart(comm_cart_110,vq0c,3)
-!call d_bcast_cart(comm_cart_110,vq0rc,3)
-!if (wannier) then
-!  call d_bcast_cart(comm_cart_110,wann_occ,nwann)
-!  call i_bcast_cart(comm_cart_110,ntrmegqwan,1)
-!  call i_bcast_cart(comm_cart_110,nmegqwan,1)
-!endif
-!call d_bcast_cart(comm_cart_110,evalsvnr,nstsv*nkptnr)
-!call d_bcast_cart(comm_cart_110,occsvnr,nstsv*nkptnr)
-!
+call qname(ivq0m,qnm)
+qnm="./"//trim(qnm)//"/"//trim(qnm)
+wproc=.false.
+if (mpi_grid_root((/dim_k,dim2/))) then
+  wproc=.true.
+  fout=trim(qnm)//"_CHI0.OUT"
+  open(150,file=trim(fout),form='formatted',status='replace')
+endif
+
+if (wproc) then
+  write(150,*)
+  write(150,'("Calculation of KS polarisability chi0")')
+  write(150,*)
+  write(150,'("Energy mesh parameters:")')
+  write(150,'("  maximum energy [eV] : ", F9.4)')maxomega
+  write(150,'("  energy step    [eV] : ", F9.4)')domega
+  write(150,'("  eta            [eV] : ", F9.4)')lr_eta
+  call flushifc(150)
+endif
+  
+! setup energy mesh
+nepts=1+maxomega/domega
+allocate(lr_w(nepts))
+do i=1,nepts
+  lr_w(i)=dcmplx(domega*(i-1),lr_eta)/ha2ev
+enddo
+
+allocate(evalsvnr(nstsv,nkptnr))
+allocate(occsvnr(nstsv,nkptnr))
+
+fme=trim(qnm)//"_me.hdf5"
+if (mpi_grid_root((/dim_k,dim2/))) then
+  call read_integer(nkptnr_,1,trim(fme),'/parameters','nkptnr')
+  call read_integer(nmegqblhmax,1,trim(fme),'/parameters','nmegqblhmax')
+  call read_integer(lr_igq0,1,trim(fme),'/parameters','lr_igq0')
+  call read_integer(gshme1,1,trim(fme),'/parameters','gshme1')
+  call read_integer(gshme2,1,trim(fme),'/parameters','gshme2')
+  call read_integer(gvecme1,1,trim(fme),'/parameters','gvecme1')
+  call read_integer(gvecme2,1,trim(fme),'/parameters','gvecme2')
+  call read_integer(ngvecme,1,trim(fme),'/parameters','ngvecme')
+  call read_integer(nspinor_,1,trim(fme),'/parameters','nspinor')
+  call read_real8(vq0l,3,trim(fme),'/parameters','vq0l')
+  call read_real8(vq0rl,3,trim(fme),'/parameters','vq0rl')
+  call read_real8(vq0c,3,trim(fme),'/parameters','vq0c')
+  call read_real8(vq0rc,3,trim(fme),'/parameters','vq0rc')
+  if (wannier) then
+    call read_real8(wann_occ,nwann,trim(fme),'/wannier','wann_occ')
+    call read_integer(ntrmegqwan,1,trim(fme),'/wannier','ntrmegqwan')
+    call read_integer(nmegqwan,1,trim(fme),'/wannier','nmegqwan')
+  endif 
+  call read_real8_array(evalsvnr,2,(/nstsv,nkptnr/), &
+      trim(fme),'/parameters','evalsvnr')
+  call read_real8_array(occsvnr,2,(/nstsv,nkptnr/), &
+      trim(fme),'/parameters','occsvnr')  
+  if (nkptnr_.ne.nkptnr) then
+    write(*,*)
+    write(*,'("Error(response_chi0): k-mesh was changed")')
+    write(*,*)
+    call pstop
+  endif
+  if (nspinor_.ne.nspinor) then
+    write(*,*)
+    write(*,'("Error(response_chi0): number of spin components was changed")')
+    write(*,*)
+    call pstop
+  endif    
+endif
+call mpi_grid_bcast(gshme1,dims=(/dim_k,dim2/))
+call mpi_grid_bcast(gshme2,dims=(/dim_k,dim2/))
+call mpi_grid_bcast(gvecme1,dims=(/dim_k,dim2/))
+call mpi_grid_bcast(gvecme2,dims=(/dim_k,dim2/))
+call mpi_grid_bcast(ngvecme,dims=(/dim_k,dim2/))
+call mpi_grid_bcast(nmegqblhmax,dims=(/dim_k,dim2/))
+call mpi_grid_bcast(lr_igq0,dims=(/dim_k,dim2/))
+call mpi_grid_bcast(vq0l(1),3,dims=(/dim_k,dim2/))
+call mpi_grid_bcast(vq0rl(1),3,dims=(/dim_k,dim2/))
+call mpi_grid_bcast(vq0c(1),3,dims=(/dim_k,dim2/))
+call mpi_grid_bcast(vq0rc(1),3,dims=(/dim_k,dim2/))
+if (wannier) then
+  call mpi_grid_bcast(wann_occ(1),nwann,dims=(/dim_k,dim2/))
+  call mpi_grid_bcast(ntrmegqwan,dims=(/dim_k,dim2/))
+  call mpi_grid_bcast(nmegqwan,dims=(/dim_k,dim2/))
+endif  
+call mpi_grid_bcast(evalsvnr(1,1),nstsv*nkptnr,dims=(/dim_k,dim2/))
+call mpi_grid_bcast(occsvnr(1,1),nstsv*nkptnr,dims=(/dim_k,dim2/))
+
 !if (wannier) then
 !  allocate(itrmegqwan(3,ntrmegqwan))
 !  allocate(megqwan(nmegqwan,ntrmegqwan,ngvecme))
@@ -147,111 +144,112 @@ complex(8), external :: zdotu
 !  call d_bcast_cart(comm_cart_110,megqwan,2*nmegqwan*ntrmegqwan*ngvecme)
 !endif
 !
-!allocate(idxkq(1,nkptnr_loc))
-!allocate(nmegqblh(nkptnr_loc))
-!allocate(bmegqblh(2,nmegqblhmax,nkptnr_loc))
-!allocate(megqblh(ngvecme,nmegqblhmax,nkptnr_loc))
+if (write_megq_file) then
+  allocate(idxkq(1,nkptnr))
+  idxkq=0
+  allocate(nmegqblh(nkptnrloc))
+  allocate(bmegqblh(2,nmegqblhmax,nkptnrloc))
+  allocate(megqblh(ngvecme,nmegqblhmax,nkptnrloc))
+endif
 !if (wannier) then
 !  allocate(wann_c1(nwann,nstsv,nkptnr_loc))
 !  allocate(wann_c2(nwann,nstsv,nkptnr_loc))
 !endif  
 !
-!if (wproc) then
-!  write(150,*)
-!  if (nspinor_.eq.2) then
-!    write(150,'("matrix elements were calculated for spin-polarized case")')
-!  endif
-!  write(150,'("matrix elements were calculated for: ")')
-!  write(150,'("  G-shells  : ",I4," to ", I4)')gshme1,gshme2
-!  write(150,'("  G-vectors : ",I4," to ", I4)')gvecme1,gvecme2
-!  write(150,'("Reading matrix elements")')
-!  call flushifc(150)
-!endif
-!
-!! read matrix elements
-!call timer_reset(1)
-!call timer_start(1)
-!if (lsfio) then
-!  if (root_cart((/0,1,0/))) then
-!#ifndef _PIO_
-!    do i=0,mpi_dims(1)-1
-!    do j=0,mpi_dims(3)-1
-!      if (mpi_x(1).eq.i.and.mpi_x(3).eq.j) then
-!#endif
-!        do ikloc=1,nkptnr_loc
-!          ik=ikptnrloc(mpi_x(1),1)+ikloc-1
-!          write(path,'("/kpoints/",I8.8)')ik
-!          call read_integer(idxkq(1,ikloc),1,trim(fname),trim(path),'kq')
-!          call read_integer(nmegqblh(ikloc),1,trim(fname),trim(path),'nmegqblh')
-!          if (nmegqblh(ikloc).gt.0) then
-!            call read_integer_array(bmegqblh(1,1,ikloc),2,(/2,nmegqblh(ikloc)/), &
-!              trim(fname),trim(path),'bmegqblh')
-!            call read_real8_array(megqblh(1,1,ikloc),3,(/2,ngvecme,nmegqblh(ikloc)/), &
-!              trim(fname),trim(path),'megqblh')
-!          endif
-!          if (wannier) then
-!            call read_real8_array(wann_c1(1,1,ikloc),3,(/2,nwann,nstsv/), &
-!              trim(fname),trim(path),'wann_c_k')
-!            call read_real8_array(wann_c2(1,1,ikloc),3,(/2,nwann,nstsv/), &
-!              trim(fname),trim(path),'wann_c_kq')
-!          endif 
-!          if (lwannopt) then
-!            call read_real8_array(pmat(1,1,1,ikloc),4,(/2,3,nstsv,nstsv/), &
-!              trim(fname),trim(path),'pmat')          
-!          endif
-!        enddo
-!#ifndef _PIO_      
-!      endif
-!      call barrier(comm_cart_101)
-!    enddo
-!    enddo
-!#endif
-!  endif
-!else
-!  if (root_cart((/0,1,0/))) then
-!    do ikloc=1,nkptnr_loc
-!      ik=ikptnrloc(mpi_x(1),1)+ikloc-1
-!      write(fname,'("_me_k_",I8.8)')ik
-!      fname=trim(qnm)//trim(fname)//".hdf5"
-!      write(path,'("/kpoints/",I8.8)')ik
-!      call read_integer(idxkq(1,ikloc),1,trim(fname),trim(path),'kq')
-!      call read_integer(nmegqblh(ikloc),1,trim(fname),trim(path),'nmegqblh')
-!      if (nmegqblh(ikloc).gt.0) then
-!        call read_integer_array(bmegqblh(1,1,ikloc),2,(/2,nmegqblh(ikloc)/), &
-!          trim(fname),trim(path),'bmegqblh')
-!        call read_real8_array(megqblh(1,1,ikloc),3,(/2,ngvecme,nmegqblh(ikloc)/), &
-!          trim(fname),trim(path),'megqblh')
-!      endif
-!      if (wannier) then
-!        call read_real8_array(wann_c1(1,1,ikloc),3,(/2,nwann,nstsv/), &
-!          trim(fname),trim(path),'wann_c_k')
-!        call read_real8_array(wann_c2(1,1,ikloc),3,(/2,nwann,nstsv/), &
-!          trim(fname),trim(path),'wann_c_kq')
-!      endif    
-!      if (lwannopt) then
-!        call read_real8_array(pmat(1,1,1,ikloc),4,(/2,3,nstsv,nstsv/), &
-!          trim(fname),trim(path),'pmat')          
-!      endif
-!    enddo
-!  endif
-!endif
-!call barrier(comm_cart_110)
-!call timer_stop(1)
-!if (wproc) then
-!   write(150,'("Done in ",F8.2," seconds")')timer(1,2)
-!  call flushifc(150)
-!endif
-!call i_bcast_cart(comm_cart_010,idxkq,nkptnr_loc)
-!call i_bcast_cart(comm_cart_010,nmegqblh,nkptnr_loc)
-!call i_bcast_cart(comm_cart_010,bmegqblh,2*nmegqblhmax*nkptnr_loc)
-!call d_bcast_cart(comm_cart_010,megqblh,2*ngvecme*nmegqblhmax*nkptnr_loc)
-!if (wannier) then
-!  call d_bcast_cart(comm_cart_010,wann_c1,2*nwann*nstsv*nkptnr_loc)
-!  call d_bcast_cart(comm_cart_010,wann_c2,2*nwann*nstsv*nkptnr_loc)
-!endif
-!if (lwannopt) then
-!  call d_bcast_cart(comm_cart_010,pmat,2*3*nstsv*nstsv*nkptnr_loc)
-!endif
+if (wproc) then
+  write(150,*)
+  if (nspinor_.eq.2) then
+    write(150,'("matrix elements were calculated for spin-polarized case")')
+  endif
+  write(150,'("matrix elements were calculated for: ")')
+  write(150,'("  G-shells  : ",I4," to ", I4)')gshme1,gshme2
+  write(150,'("  G-vectors : ",I4," to ", I4)')gvecme1,gvecme2
+  write(150,'("Reading matrix elements")')
+  call flushifc(150)
+endif
+
+! read matrix elements
+if (write_megq_file) then
+  call timer_start(1,reset=.true.)
+  if (.not.split_megq_file) then
+    if (mpi_grid_side(dims=(/dim_k,dim_q/))) then
+      do i=0,mpi_grid_size(1)-1
+      do j=0,mpi_grid_size(3)-1
+        if (mpi_grid_x(1).eq.i.and.mpi_grid_x(3).eq.j) then
+          do ikloc=1,nkptnrloc
+            ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+            write(path,'("/kpoints/",I8.8)')ik         
+            call read_integer(idxkq(1,ik),1,trim(fme),trim(path),'kq')
+            call read_integer(nmegqblh(ikloc),1,trim(fme),trim(path),'nmegqblh')
+            if (nmegqblh(ikloc).gt.0) then
+              call read_integer_array(bmegqblh(1,1,ikloc),2,(/2,nmegqblh(ikloc)/), &
+                trim(fme),trim(path),'bmegqblh')
+              call read_real8_array(megqblh(1,1,ikloc),3,(/2,ngvecme,nmegqblh(ikloc)/), &
+                trim(fme),trim(path),'megqblh')
+            endif
+            if (wannier) then
+              call read_real8_array(wann_c1(1,1,ikloc),3,(/2,nwann,nstsv/), &
+                trim(fme),trim(path),'wann_c_k')
+              call read_real8_array(wann_c2(1,1,ikloc),3,(/2,nwann,nstsv/), &
+                trim(fme),trim(path),'wann_c_kq')
+            endif 
+            if (lwannopt) then
+              call read_real8_array(pmat(1,1,1,ikloc),4,(/2,3,nstsv,nstsv/), &
+                trim(fme),trim(path),'pmat')          
+            endif
+          enddo
+        endif
+        if (.not.parallel_read) call mpi_grid_barrier(dims=(/dim_k,dim_q/))
+      enddo !j
+      enddo !i
+    endif
+  else
+    if (mpi_grid_root((/dim2/))) then
+      do ikloc=1,nkptnrloc
+        ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+        write(fmek,'("_me_k_",I8.8)')ik
+        fmek=trim(qnm)//trim(fmek)//".hdf5"
+        write(path,'("/kpoints/",I8.8)')ik
+        call read_integer(idxkq(1,ik),1,trim(fmek),trim(path),'kq')
+        call read_integer(nmegqblh(ikloc),1,trim(fmek),trim(path),'nmegqblh')
+        if (nmegqblh(ikloc).gt.0) then
+          call read_integer_array(bmegqblh(1,1,ikloc),2,(/2,nmegqblh(ikloc)/), &
+            trim(fmek),trim(path),'bmegqblh')
+          call read_real8_array(megqblh(1,1,ikloc),3,(/2,ngvecme,nmegqblh(ikloc)/), &
+            trim(fmek),trim(path),'megqblh')
+        endif
+        if (wannier) then
+          call read_real8_array(wann_c1(1,1,ikloc),3,(/2,nwann,nstsv/), &
+            trim(fmek),trim(path),'wann_c_k')
+          call read_real8_array(wann_c2(1,1,ikloc),3,(/2,nwann,nstsv/), &
+            trim(fmek),trim(path),'wann_c_kq')
+        endif    
+        if (lwannopt) then
+          call read_real8_array(pmat(1,1,1,ikloc),4,(/2,3,nstsv,nstsv/), &
+            trim(fmek),trim(path),'pmat')          
+        endif
+      enddo
+    endif
+  endif
+  call mpi_grid_barrier(dims=(/dim_k,dim2/))
+  call timer_stop(1)
+  if (wproc) then
+     write(150,'("Done in ",F8.2," seconds")')timer_get_value(1)
+    call flushifc(150)
+  endif
+  call mpi_grid_reduce(idxkq(1,1),nkptnr,dims=(/dim_k/),all=.true.)
+  call mpi_grid_bcast(idxkq(1,1),nkptnr,dims=(/dim2/))
+  call mpi_grid_bcast(nmegqblh(1),nkptnrloc,dims=(/dim2/))
+  call mpi_grid_bcast(bmegqblh(1,1,1),2*nmegqblhmax*nkptnrloc,dims=(/dim2/))
+  call mpi_grid_bcast(megqblh(1,1,1),ngvecme*nmegqblhmax*nkptnrloc,dims=(/dim2/))
+  !if (wannier) then
+  !  call d_bcast_cart(comm_cart_010,wann_c1,2*nwann*nstsv*nkptnr_loc)
+  !  call d_bcast_cart(comm_cart_010,wann_c2,2*nwann*nstsv*nkptnr_loc)
+  !endif
+  !if (lwannopt) then
+  !  call d_bcast_cart(comm_cart_010,pmat,2*3*nstsv*nstsv*nkptnr_loc)
+  !endif
+endif
 !
 !! for response in Wannier bais
 !if (lwannresp) then
@@ -298,108 +296,101 @@ complex(8), external :: zdotu
 !  allocate(pmat(3,nstsv,nstsv,nkptnr_loc))
 !endif
 !
-!igq0=lr_igq0-gvecme1+1
+igq0=lr_igq0-gvecme1+1
+
+ie1=0
+fchi0=trim(qnm)//"_chi0.hdf5"
+if (mpi_grid_root((/dim_k,dim2/))) then
+  inquire(file=trim(fchi0),exist=exist)
+  if (.not.exist) then
+    call h5fcreate_f(trim(fchi0),H5F_ACC_TRUNC_F,h5_root_id,ierr)
+    call h5gcreate_f(h5_root_id,'parameters',h5_tmp_id,ierr)
+    call h5gclose_f(h5_tmp_id,ierr)
+    if (lwannresp) then
+      call h5gcreate_f(h5_root_id,'wannier',h5_tmp_id,ierr)
+      call h5gclose_f(h5_tmp_id,ierr)
+    endif
+    call h5gcreate_f(h5_root_id,'iw',h5_w_id,ierr)
+    do i=1,nepts
+      write(c8,'(I8.8)')i
+      call h5gcreate_f(h5_w_id,c8,h5_iw_id,ierr)
+      call h5gclose_f(h5_iw_id,ierr)
+    enddo
+    call h5gclose_f(h5_w_id,ierr)
+    call h5fclose_f(h5_root_id,ierr)
+    call write_integer(nepts,1,trim(fchi0),'/parameters','nepts')
+    call write_integer(lr_igq0,1,trim(fchi0),'/parameters','lr_igq0')
+    call write_integer(gshme1,1,trim(fchi0),'/parameters','gshme1')
+    call write_integer(gshme2,1,trim(fchi0),'/parameters','gshme2')
+    call write_integer(gvecme1,1,trim(fchi0),'/parameters','gvecme1')
+    call write_integer(gvecme2,1,trim(fchi0),'/parameters','gvecme2')
+    call write_integer(ngvecme,1,trim(fchi0),'/parameters','ngvecme')
+    call write_real8(vq0l,3,trim(fchi0),'/parameters','vq0l')
+    call write_real8(vq0rl,3,trim(fchi0),'/parameters','vq0rl')
+    call write_real8(vq0c,3,trim(fchi0),'/parameters','vq0c')
+    call write_real8(vq0rc,3,trim(fchi0),'/parameters','vq0rc')
+    call write_integer(0,1,trim(fchi0),'/parameters','ie1')
+  else
+    call read_integer(ie1,1,trim(fchi0),'/parameters','ie1')
+  endif
+endif
+call mpi_grid_bcast(ie1,dims=(/dim_k,dim2/))
+ie1=ie1+1
+
+allocate(chi0w(ngvecme,ngvecme))
+
+if (wproc) then
+  write(150,*)
+  write(150,'("Starting chi0 summation")')
+  write(150,'("  first energy point : ",I4)')ie1
+  call flushifc(150)
+endif
+! loop over energy points
+do ie=ie1,nepts
+  chi0w=zzero
+  if (lwannresp) zm2=zzero
+  sz1=0
+  sz2=0
+  call timer_start(1,reset=.true.)
+  call timer_start(2,reset=.true.)
+! sum over k-points
+  do ikloc=1,nkptnrloc
+    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+    jk=idxkq(1,ik)
+    if (nmegqblh(ikloc).gt.0) then
+      bs=mpi_grid_map(nmegqblh(ikloc),dim2,offs=idx0)
+      i1=idx0+1
+      i2=idx0+bs
+      sz1=sz1+bs
+! for each k-point : sum over interband transitions
+      call sum_chi0(ikloc,ikloc,ik,jk,nmegqblh(ikloc),i1,i2,evalsvnr,occsvnr,&
+        lr_w(ie),chi0w)
+    endif
+! for response in Wannier basis
+    if (lwannresp) then
+      sz2=sz2+nmegqblh(ikloc)*nmegqwan**2
+      do i=1,nmegqblh(ikloc)
+        ist1=bmegqblh(1,i,ikloc)
+        ist2=bmegqblh(2,i,ikloc)
+        do n=1,nmegqwan
+          n1=bmegqwan(1,n)
+          n2=bmegqwan(2,n)
+          zv1(n)=wann_c1(n1,ist1,ikloc)*dconjg(wann_c2(n2,ist2,ikloc))
+        enddo
+        wt=(occsvnr(ist1,ik)-occsvnr(ist2,jk))/(evalsvnr(ist1,ik) - &
+            evalsvnr(ist2,jk)+lr_w(ie))
+        call zgerc(nmegqwan,nmegqwan,wt,zv1,1,zv1,1,zm2(1,1,ikloc),nmegqwan)
+      enddo !i
+    endif !lwannresp
+  enddo !ikloc
+  call timer_stop(2)
+  call timer_start(3,reset=.true.)
+! sum over k-points and band transitions
+  if (mpi_grid_size(dim_k).gt.1.or.mpi_grid_size(dim2).gt.1) then
+    call mpi_grid_reduce(chi0w(1,1),ngvecme*ngvecme,dims=(/dim_k,dim2/))
+  endif
+  chi0w=chi0w/nkptnr/omega
 !
-!ie1=0
-!fname=trim(qnm)//"_chi0.hdf5"
-!if (root_cart((/1,1,0/))) then
-!  inquire(file=trim(fname),exist=exist)
-!  if (.not.exist) then
-!    call h5fcreate_f(trim(fname),H5F_ACC_TRUNC_F,h5_root_id,ierr)
-!    call h5gcreate_f(h5_root_id,'parameters',h5_tmp_id,ierr)
-!    call h5gclose_f(h5_tmp_id,ierr)
-!    if (lwannresp) then
-!      call h5gcreate_f(h5_root_id,'wannier',h5_tmp_id,ierr)
-!      call h5gclose_f(h5_tmp_id,ierr)
-!    endif
-!    call h5gcreate_f(h5_root_id,'iw',h5_w_id,ierr)
-!    do i=1,nepts
-!      write(c8,'(I8.8)')i
-!      call h5gcreate_f(h5_w_id,c8,h5_iw_id,ierr)
-!      call h5gclose_f(h5_iw_id,ierr)
-!    enddo
-!    call h5gclose_f(h5_w_id,ierr)
-!    call h5fclose_f(h5_root_id,ierr)
-!    call write_integer(nepts,1,trim(fname),'/parameters','nepts')
-!    call write_integer(lr_igq0,1,trim(fname),'/parameters','lr_igq0')
-!    call write_integer(gshme1,1,trim(fname),'/parameters','gshme1')
-!    call write_integer(gshme2,1,trim(fname),'/parameters','gshme2')
-!    call write_integer(gvecme1,1,trim(fname),'/parameters','gvecme1')
-!    call write_integer(gvecme2,1,trim(fname),'/parameters','gvecme2')
-!    call write_integer(ngvecme,1,trim(fname),'/parameters','ngvecme')
-!    call write_real8(vq0l,3,trim(fname),'/parameters','vq0l')
-!    call write_real8(vq0rl,3,trim(fname),'/parameters','vq0rl')
-!    call write_real8(vq0c,3,trim(fname),'/parameters','vq0c')
-!    call write_real8(vq0rc,3,trim(fname),'/parameters','vq0rc')
-!    call write_integer(0,1,trim(fname),'/parameters','ie1')
-!  else
-!    call read_integer(ie1,1,trim(fname),'/parameters','ie1')
-!  endif
-!endif
-!call i_bcast_cart(comm_cart_110,ie1,1)
-!ie1=ie1+1
-!
-!allocate(chi0w(ngvecme,ngvecme))
-!
-!if (wproc) then
-!  write(150,*)
-!  write(150,'("Starting chi0 summation")')
-!  write(150,'("  first energy point : ",I4)')ie1
-!  call flushifc(150)
-!endif
-!! loop over energy points
-!do ie=ie1,nepts
-!  call timer_reset(1)
-!  call timer_reset(2)
-!  call timer_reset(3)
-!  call timer_reset(4)
-!  call timer_start(1)
-!  chi0w=zzero
-!  if (lwannresp) zm2=zzero
-!  sz1=0
-!  sz2=0
-!  call timer_start(2)
-!! sum over k-points
-!  do ikloc=1,nkptnr_loc
-!    ik=ikptnrloc(mpi_x(1),1)+ikloc-1
-!    jk=idxkq(1,ikloc)
-!    if (nmegqblh(ikloc).gt.0) then
-!      call idxbos(nmegqblh(ikloc),mpi_dims(2),mpi_x(2)+1,idx0,bs)
-!      i1=idx0+1
-!      i2=idx0+bs
-!      sz1=sz1+bs
-!! for each k-point : sum over interband transitions
-!      call sum_chi0(ikloc,ikloc,ik,jk,nmegqblh(ikloc),i1,i2,evalsvnr,occsvnr,&
-!        lr_w(ie),chi0w)
-!    endif
-!! for response in Wannier basis
-!    if (lwannresp) then
-!      sz2=sz2+nmegqblh(ikloc)*nmegqwan**2
-!      do i=1,nmegqblh(ikloc)
-!        ist1=bmegqblh(1,i,ikloc)
-!        ist2=bmegqblh(2,i,ikloc)
-!        do n=1,nmegqwan
-!          n1=bmegqwan(1,n)
-!          n2=bmegqwan(2,n)
-!          zv1(n)=wann_c1(n1,ist1,ikloc)*dconjg(wann_c2(n2,ist2,ikloc))
-!        enddo
-!        wt=(occsvnr(ist1,ik)-occsvnr(ist2,jk))/(evalsvnr(ist1,ik) - &
-!            evalsvnr(ist2,jk)+lr_w(ie))
-!        call zgerc(nmegqwan,nmegqwan,wt,zv1,1,zv1,1,zm2(1,1,ikloc),nmegqwan)
-!      enddo !i
-!    endif !lwannresp
-!  enddo !ikloc
-!  call timer_stop(2)
-!  call timer_start(3)
-!! sum over band transitions
-!  if (mpi_dims(2).gt.1) then
-!    call d_reduce_cart(comm_cart_010,.false.,chi0w,2*ngvecme*ngvecme)
-!  endif
-!! sum over k-points
-!  if (root_cart((/0,1,0/)).and.mpi_dims(1).gt.1) then
-!    call d_reduce_cart(comm_cart_100,.false.,chi0w,2*ngvecme*ngvecme)
-!  endif
-!  chi0w=chi0w/nkptnr/omega
 !! for response in Wannier basis
 !  if (root_cart((/0,1,0/)).and.lwannresp) then
 !! split matrix elements along 1-st dimention      
@@ -451,34 +442,34 @@ complex(8), external :: zdotu
 !! sum all the rows
 !    call d_reduce_cart(comm_cart_100,.false.,zt3,2)
 !  endif !(root_cart((/0,1,0/)).and.lwannresp)    
-!  call timer_stop(3)
-!! write to file
-!  call timer_start(4)
-!  if (root_cart((/1,1,0/))) then
-!    write(path,'("/iw/",I8.8)')ie
-!    call write_real8(lr_w(ie),2,trim(fname),trim(path),'w')
-!    call write_real8_array(chi0w,3,(/2,ngvecme,ngvecme/), &
-!      trim(fname),trim(path),'chi0')
-!    if (lwannresp) then
-!      call write_real8_array(zt3,1,(/2/),trim(fname),trim(path),'chi0wf')
-!      call write_real8_array(chi0wan,4,(/2,nmegqwan,nmegqwan,ntrchi0wan/), &
-!        trim(fname),trim(path),'chi0wan')
-!    endif
-!    call rewrite_integer(ie,1,trim(fname),'/parameters','ie1')
-!  endif
-!  call timer_stop(4)
-!  call timer_stop(1)
-!  if (wproc) then
-!    write(150,'("energy point ",I4," was done in ",F8.2," seconds")')ie,timer(1,2)
-!    write(150,'("  zgerc time         : ",F8.2," seconds")')timer(2,2)
-!    write(150,'("  zgerc call speed   : ",F8.2," calls/sec.")')sz1/timer(2,2)
-!    write(150,'("  zgerc memory speed : ",F8.2," Mb/sec.")')16.d0*sz1*ngvecme*ngvecme/1048576.d0/timer(2,2)
-!    write(150,'("  sync time          : ",F8.2," seconds")')timer(3,2)
-!    write(150,'("  write time         : ",F8.2," seconds")')timer(4,2)
-!    call flushifc(150)
-!  endif
-!  call barrier(comm_cart_110)
-!enddo !ie
+  call timer_stop(3)
+! write to file
+  call timer_start(4,reset=.true.)
+  if (mpi_grid_root((/dim_k,dim2/))) then
+    write(path,'("/iw/",I8.8)')ie
+    call write_real8(lr_w(ie),2,trim(fchi0),trim(path),'w')
+    call write_real8_array(chi0w,3,(/2,ngvecme,ngvecme/), &
+      trim(fchi0),trim(path),'chi0')
+    if (lwannresp) then
+      call write_real8_array(zt3,1,(/2/),trim(fchi0),trim(path),'chi0wf')
+      call write_real8_array(chi0wan,4,(/2,nmegqwan,nmegqwan,ntrchi0wan/), &
+        trim(fchi0),trim(path),'chi0wan')
+    endif
+    call rewrite_integer(ie,1,trim(fchi0),'/parameters','ie1')
+  endif
+  call timer_stop(4)
+  call timer_stop(1)
+  if (wproc) then
+    write(150,'("energy point ",I4," was done in ",F8.2," seconds")')ie,timer_get_value(1)
+    write(150,'("  zgerc time         : ",F8.2," seconds")')timer_get_value(2)
+    write(150,'("  zgerc call speed   : ",F8.2," calls/sec.")')sz1/timer_get_value(2)
+    write(150,'("  zgerc memory speed : ",F8.2," Mb/sec.")')16.d0*sz1*ngvecme*ngvecme/1048576.d0/timer_get_value(2)
+    write(150,'("  sync time          : ",F8.2," seconds")')timer_get_value(3)
+    write(150,'("  write time         : ",F8.2," seconds")')timer_get_value(4)
+    call flushifc(150)
+  endif
+  call mpi_grid_barrier(dims=(/dim_k,dim2/))
+enddo !ie
 !
 !if (lwannresp) then
 !  if (root_cart((/1,1,0/))) then
@@ -520,16 +511,15 @@ complex(8), external :: zdotu
 !!  deallocate(mewfx)
 !!endif
 !
-!call barrier(comm_cart_110)
-!
-!deallocate(evalsvnr)
-!deallocate(occsvnr)
-!deallocate(lr_w)
-!deallocate(idxkq)
-!deallocate(nmegqblh)
-!deallocate(bmegqblh)
-!deallocate(megqblh)
-!deallocate(chi0w)
+call mpi_grid_barrier(dims=(/dim_k,dim2/))!
+deallocate(evalsvnr)
+deallocate(occsvnr)
+deallocate(lr_w)
+deallocate(idxkq)
+deallocate(nmegqblh)
+deallocate(bmegqblh)
+deallocate(megqblh)
+deallocate(chi0w)
 !if (wannier) then
 !  deallocate(wann_c1)
 !  deallocate(wann_c2)

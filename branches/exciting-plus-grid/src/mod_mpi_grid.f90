@@ -761,6 +761,13 @@ integer, dimension(:), intent(in) :: dest
 integer, intent(in) :: tag
 ! local variables
 integer comm,dest_rank,req,ierr
+if (debug) then
+  write(*,*)'[mpi_grid_send_z] mpi_grid_x:',mpi_grid_x
+  write(*,*)'[mpi_grid_send_z] n=',n
+  write(*,*)'[mpi_grid_send_z] dims=',dims
+  write(*,*)'[mpi_grid_send_z] dest=',dest
+  write(*,*)'[mpi_grid_send_z] tag=',tag
+endif
 comm=mpi_grid_get_comm(dims)
 call mpi_cart_rank(comm,dest,dest_rank,ierr) 
 call mpi_isend(val,n,MPI_DOUBLE_COMPLEX,dest_rank,tag,comm,req,ierr)
@@ -773,7 +780,7 @@ end subroutine
 subroutine mpi_grid_send_i(val,n,dims,dest,tag)
 use mpi
 implicit none
-integer(8), intent(in) :: val
+integer, intent(in) :: val
 integer, intent(in) :: n
 integer, dimension(:), intent(in) :: dims
 integer, dimension(:), intent(in) :: dest
@@ -800,6 +807,13 @@ integer, intent(in) :: tag
 ! local variables
 integer comm,src_rank,req,ierr
 integer stat(MPI_STATUS_SIZE)
+if (debug) then
+  write(*,*)'[mpi_grid_recieve_z] mpi_grid_x:',mpi_grid_x
+  write(*,*)'[mpi_grid_recieve_z] n=',n
+  write(*,*)'[mpi_grid_recieve_z] dims=',dims
+  write(*,*)'[mpi_grid_recieve_z] src=',src
+  write(*,*)'[mpi_grid_recieve_z] tag=',tag
+endif
 comm=mpi_grid_get_comm(dims)
 call mpi_cart_rank(comm,src,src_rank,ierr)
 !call mpi_recv(val,n,MPI_DOUBLE_COMPLEX,src_rank,tag,comm,stat,ierr)

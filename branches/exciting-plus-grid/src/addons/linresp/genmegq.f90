@@ -1,34 +1,19 @@
 #ifdef _HDF5_
-subroutine response_me(ivq0m,wfsvmtloc,wfsvitloc,ngknr,igkignr,occsvnr,&
+subroutine genmegq(ivq0m,wfsvmtloc,wfsvitloc,ngknr,igkignr,occsvnr,&
   evalsvnr,pmat)
 use modmain
 use hdf5
-#ifdef _MPI_
-use mpi
-#endif
 implicit none
 ! arguments
 ! q-vector in k-mesh coordinates
 integer, intent(in) :: ivq0m(3)
-complex(8), intent(in) :: wfsvmtloc(lmmaxvr,nrfmax,natmtot,nspinor,nstsv,*)
-complex(8), intent(in) :: wfsvitloc(ngkmax,nspinor,nstsv,*)
-integer, intent(in) :: ngknr(*)
-integer, intent(in) :: igkignr(ngkmax,*)
+complex(8), intent(in) :: wfsvmtloc(lmmaxvr,nrfmax,natmtot,nspinor,nstsv,nkptnrloc)
+complex(8), intent(in) :: wfsvitloc(ngkmax,nspinor,nstsv,nkptnrloc)
+integer, intent(in) :: ngknr(nkptnrloc)
+integer, intent(in) :: igkignr(ngkmax,nkptnrloc)
 real(8), intent(in) :: occsvnr(nstsv,nkptnr)
 real(8), intent(in) :: evalsvnr(nstsv,nkptnr)
-complex(8), intent(in) :: pmat(3,nstsv,nstsv,*)
-! G-vector which brings q to first BZ
-integer vgq0l(3)
-! G+q vectors in Cart.coord.
-real(8), allocatable :: vgq0c(:,:)
-! length of G+q vectors
-real(8), allocatable :: gq0(:)
-! theta and phi angles of G+q vectors
-real(8), allocatable :: tpgq0(:,:)
-! sperical harmonics of G+q vectors
-complex(8), allocatable :: ylmgq0(:,:)
-! structure factor for G+q vectors
-complex(8), allocatable :: sfacgq0(:,:)
+complex(8), intent(in) :: pmat(3,nstsv,nstsv,nkptnrloc)
 
 ! allocatable arrays
 integer, allocatable :: igkignr2(:)
@@ -43,7 +28,6 @@ integer i,j,ik,jk,ig,ikstep,ierr,sz,ikloc,complete
 integer ngknr2
 real(8) vkq0l(3)
 integer ivg1(3),ivg2(3)
-!real(8), allocatable :: uuj(:,:,:,:,:,:,:)
 complex(8), allocatable :: gntuju(:,:,:)
 integer, allocatable :: igntuju(:,:,:,:)
 integer, allocatable :: ngntuju(:,:)
@@ -56,17 +40,14 @@ complex(8), allocatable :: chi0w(:,:)
 integer lmaxexp
 integer lmmaxexp
 
-character*100 :: qnm,fout,fme,fme_k,fname
+character*100 :: qnm,fout,fme,fmek
 logical l1
 
 integer, allocatable :: igishell(:)
 integer, allocatable :: ishellng(:,:)
 integer ngsh,gshq0
 
-logical lwritemek
-integer ik1
 logical exist
-logical lwriteme
 
 complex(8), allocatable :: krnl(:,:)
 complex(8), allocatable :: krnl_scr(:,:)
@@ -93,10 +74,12 @@ logical, external :: wann_diel
 !
 ! quck turnaround for cRPA: compute chi0 and chi here; no writing 
 ! 
-if (crpa) lwriteme=.false.
+! switch write_megq_file controls the reading and writing of ME file
+! when we write ME we have two choices: write to single file or write
+!  to multiple files
 
 ! maximum l for exponent expansion
-lmaxexp=10
+lmaxexp=lmaxvr+2
 lmmaxexp=(lmaxexp+1)**2
 
 call qname(ivq0m,qnm)
@@ -119,133 +102,15 @@ endif
 call mpi_grid_bcast(complete,dims=(/dim_k,dim2/))
 if (complete.eq.1) goto 30
 
-! q-vector in lattice coordinates
-do i=1,3
-  vq0l(i)=1.d0*(ivq0m(i))/ngridk(i)+1d-12
-enddo
-! find G-vector which brings q0 to first BZ
-vgq0l(:)=floor(vq0l(:))
-! reduce q0 vector to first BZ
-vq0rl(:)=vq0l(:)-vgq0l(:)
-! get Cartesian coordinates of q-vector and reduced q-vector
-call r3mv(bvec,vq0l,vq0c)
-call r3mv(bvec,vq0rl,vq0rc)
-! find G-shell for a given q-vector
-allocate(igishell(ngvec))
-allocate(ishellng(ngvec,2))
-call getgshells(ngsh,igishell,ishellng)
-gshq0=igishell(ivgig(vgq0l(1),vgq0l(2),vgq0l(3)))
-
-if (wproc) then
-  write(150,*)
-  write(150,'("G-shell of a given q-vector : ",I4)')gshq0
-endif
-
-if (gshq0.lt.gshme1) then
-  if (wproc) then
-    write(150,*)
-    write(150,'("Warning: minimum number of G-shells was changed from ",&
-      &I4," to ",I4)')gshme1,gshq0
-  endif
-  gshme1=gshq0
-endif
-if (gshq0.gt.gshme2) then
-  if (wproc) then
-    write(150,*)
-    write(150,'("Warning: maximum number of G-shells was changed from ",&
-      &I4," to ",I4)')gshme2,gshq0
-  endif
-  gshme2=gshq0
-endif
-! test if G-shells are closed
-i=ishellng(gshme1,2)
-j=ishellng(gshme2,2)
-if (abs(gc(i)-gc(i+1)).lt.epslat.or.abs(gc(j)-gc(j+1)).lt.epslat) then
-  write(*,*)
-  write(*,'("Bug(response_me): G-shells are not closed")')
-  write(*,*)
-  call pstop
-endif
-if (gshme1.eq.1) then
-  gvecme1=1
-else
-  gvecme1=ishellng(gshme1-1,2)+1
-endif
-gvecme2=ishellng(gshme2,2)
-ngvecme=gvecme2-gvecme1+1
-
-if (scalar_chi) then
-  if (wproc) then
-    write(150,*)
-    write(150,'("Scalar calculation")')
-  endif
-  gvecme1=ivgig(vgq0l(1),vgq0l(2),vgq0l(3))
-  gvecme2=gvecme1
-  ngvecme=1
-endif
-
-if (wproc) then
-  write(150,*)
-  write(150,'("G-shell limits      : ",2I4)')gshme1,gshme2
-  write(150,'("G-vector limits     : ",2I4)')gvecme1,gvecme2
-  write(150,'("number of G-vectors : ",I4)')ngvecme   
-  call flushifc(150)
-endif
-deallocate(igishell)
-deallocate(ishellng)
-
 if (wproc) then
   write(150,*)
   write(150,'("Calculation of matrix elements:")')
   write(150,'("  <n,k|e^{-i(G+q)x}|n'',k+q>")')
 endif
 
+call init_g_q_gq(ivq0m,lmaxexp,lmmaxexp)
+
 allocate(idxkq(2,nkptnr))
-allocate(vgq0c(3,ngvecme))
-allocate(gq0(ngvecme))
-allocate(tpgq0(2,ngvecme))
-allocate(sfacgq0(ngvecme,natmtot))
-allocate(ylmgq0(lmmaxexp,ngvecme))
-
-
-! check if we have enough G-shells to bring q-vector back to first BZ
-do ig=1,ngvecme
-  if (sum(abs(vgq0l(:)-ivg(:,ig+gvecme1-1))).eq.0) then
-    lr_igq0=ig+gvecme1-1
-    goto 20
-  endif
-enddo
-write(*,*)
-write(*,'("Bug(response_me): no G-vector to reduce q-vector to first BZ")')
-write(*,'("  ngvecme : ",I4)')ngvecme
-write(*,'("  vq0l : ",3G18.10)')vq0l
-write(*,'("  vgq0l : ",3G18.10)')vgq0l
-write(*,*)
-call pstop
-20 continue
-
-! write some info  
-if (wproc) then
-  write(150,*)
-  write(150,'("q-vector (lat.coord.)                        : ",&
-    & 3G18.10)')vq0l
-  write(150,'("q-vector (Cart.coord.) [a.u.]                : ",&
-    & 3G18.10)')vq0c
-  write(150,'("q-vector length [a.u.]                       : ",&
-    & G18.10)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)
-  write(150,'("q-vector length [1/A]                        : ",&
-    & G18.10)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)/au2ang
-  write(150,'("G-vector to reduce q to first BZ (lat.coord.): ",&
-    & 3I4)')vgq0l
-  write(150,'("index of G-vector                            : ",&
-    & I4)')lr_igq0
-  write(150,'("reduced q-vector (lat.coord.)                : ",&
-    & 3G18.10)')vq0rl
-  write(150,'("reduced q-vector (Cart.coord.) [a.u.]        : ",&
-    & 3G18.10)')vq0rc
-  call flushifc(150)
-endif
-
 ! find k+q and reduce them to first BZ (this is required to utilize the 
 !   periodical property of Bloch-states: |k>=|k+K>, where K is any vector 
 !   of the reciprocal lattice)
@@ -348,22 +213,7 @@ if (wannier) then
   megqwan=zzero
 endif
 
-! generate G+q' vectors, where q' is reduced q-vector
-i=0
-do ig=gvecme1,gvecme2
-  i=i+1
-  vgq0c(:,i)=vgc(:,ig)+vq0rc(:)
-! get spherical coordinates and length of G+q'
-  call sphcrd(vgq0c(:,i),gq0(i),tpgq0(:,i))
-! generate spherical harmonics for G+q'
-  call genylm(lmaxexp,tpgq0(:,i),ylmgq0(:,i))
-enddo
-
-! generate structure factor for G+q' vectors
-call gensfacgp(ngvecme,vgq0c,ngvecme,sfacgq0)
-
 if (mpi_grid_root(dims=(/dim_k,dim_g/)).and.write_megq_file) then
-  write(*,*)'x=',mpi_grid_x
   call h5fcreate_f(trim(fme),H5F_ACC_TRUNC_F,h5_root_id,ierr)
   call h5gcreate_f(h5_root_id,'parameters',h5_tmp_id,ierr)
   call h5gclose_f(h5_tmp_id,ierr)
@@ -406,8 +256,8 @@ if (mpi_grid_root(dims=(/dim_k,dim_g/)).and.write_megq_file.and.split_megq_file)
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
     write(c8,'(I8.8)')ik
-    fme_k=trim(qnm)//"_me_k_"//c8//".hdf5"
-    call h5fcreate_f(trim(fme_k),H5F_ACC_TRUNC_F,h5_root_id,ierr)
+    fmek=trim(qnm)//"_me_k_"//c8//".hdf5"
+    call h5fcreate_f(trim(fmek),H5F_ACC_TRUNC_F,h5_root_id,ierr)
     call h5gcreate_f(h5_root_id,'kpoints',h5_kpoints_id,ierr)
     call h5gcreate_f(h5_kpoints_id,c8,h5_kpoint_id,ierr)
     call h5gclose_f(h5_kpoint_id,ierr)
@@ -423,11 +273,9 @@ call timer_start(1,reset=.true.)
 allocate(ngntuju(natmtot,ngvecmeloc))
 allocate(igntuju(4,ngntujumax,natmtot,ngvecmeloc))
 allocate(gntuju(ngntujumax,natmtot,ngvecmeloc))
-call gengntuju(lmaxexp,gq0,ylmgq0,sfacgq0,ngntujumax,ngntuju,&
-  igntuju,gntuju)
+call gengntuju(lmaxexp,ngntujumax,ngntuju,igntuju,gntuju)
 call timer_stop(1)
-sz=natmtot*ngvecmeloc+2*ngntujumax*natmtot*ngvecmeloc+4*ngntujumax*natmtot*ngvecmeloc
-sz=8.d0*sz/1024/1024
+sz=4.d0*natmtot*ngvecmeloc*(1+8*ngntujumax)/1024/1024
 if (wproc) then
   write(150,*)
   write(150,'("Maximum number of Gaunt-like coefficients : ",I8)')ngntujumax
@@ -437,22 +285,12 @@ if (wproc) then
 endif
 
 sz=16.d0*ngvecme*nmegqblhmax*nkptnrloc/1024/1024
-if (sz.lt.150) then
-  if (wproc) then
-    write(150,*)
-    write(150,'("Size of matrix elements (Mb): ",I6)')sz
-    call flushifc(150)
-  endif
-  lwritemek=.false.
-else
-  lwritemek=.true.
+if (wproc) then
+  write(150,*)
+  write(150,'("Size of matrix elements (MB): ",I6)')sz
+  call flushifc(150)
 endif
-if (wannier) lwritemek=.true.
-if (lwritemek) then
-  allocate(megqblh(ngvecme,nmegqblhmax,1))
-else
-  allocate(megqblh(ngvecme,nmegqblhmax,nkptnrloc))
-endif
+allocate(megqblh(ngvecme,nmegqblhmax,nkptnrloc))
 allocate(wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
 allocate(wfsvit2(ngkmax,nspinor,nstsv))
 allocate(igkignr2(ngkmax))
@@ -473,62 +311,50 @@ if (wproc) then
   call flushifc(150)
 endif
 do ikstep=1,nkstep
-  call timer_reset(1)
-  call timer_reset(2)
-  call timer_reset(3)
-  call timer_reset(4)
-  call timer_reset(5)
-  call timer_reset(6)
   if (wproc) then
     write(150,'("k-step ",I4," out of ",I4)')ikstep,nkstep
     call flushifc(150)
   endif
 ! transmit wave-functions
-  call timer_start(1)
+  call timer_start(1,reset=.true.)
   call getwfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
     wfsvit2,ngknr2,igkignr2,wann_c2)
-  !call barrier(comm_cart_110)
   if (wproc) then
     write(150,'("  wave-functions are distributed")')
     call flushifc(150)
   endif
   call timer_stop(1)
-  call pstop
 
 ! compute matrix elements  
-  call timer_start(2)
+  call timer_start(2,reset=.true.)
   if (ikstep.le.nkptnrloc) then
-    !call idxglob(nkptnr,mpi_dims(1),mpi_x(1)+1,ikstep,ik)
-    if (lwritemek) then
-      ik1=1
-    else
-      ik1=ikstep
-    endif
-    megqblh(:,:,ik1)=zzero
+    ik=mpi_grid_map(nkptnr,dim_k,loc=ikstep)
+    jk=idxkq(1,ik)
+    megqblh(:,:,ikstep)=zzero
 ! calculate muffin-tin contribution for all combinations of n,n'
-    call timer_start(4)
-    call megqblhmt(nmegqblh(ikstep),bmegqblh(1,1,ikstep),               &
-      wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,ngntujumax,ngntuju,gntuju,igntuju, &
-      megqblh(1,1,ik1),ik,idxkq(1,ik))
+    call timer_start(4,reset=.true.)
+    call megqblhmt(nmegqblh(ikstep),bmegqblh(1,1,ikstep),&
+      wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,ngntujumax,ngntuju,igntuju,gntuju,&
+      ik,jk,megqblh(1,1,ikstep))
     call timer_stop(4)
 ! calculate interstitial contribution for all combinations of n,n'
-    call timer_start(5)
+    call timer_start(5,reset=.true.)
     call megqblhit(nmegqblh(ikstep),bmegqblh(1,1,ikstep),ngknr(ikstep), &
       ngknr2,igkignr(1,ikstep),igkignr2,idxkq(2,ik),         &
-      wfsvitloc(1,1,1,ikstep),wfsvit2,megqblh(1,1,ik1),ik,idxkq(1,ik))
+      wfsvitloc(1,1,1,ikstep),wfsvit2,ik,jk,megqblh(1,1,ikstep))
     call timer_stop(5)
 ! hack for q=0
-    if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
-      megqblh(1,:,ik1)=zzero
-      do i=1,nmegqblh(ikstep)
-        ist1=bmegqblh(1,i,ikstep)
-        ist2=bmegqblh(2,i,ikstep)
-        if (ist1.eq.ist2) megqblh(1,i,ik1)=zone
-        megqblh(1,i,ik1)=megqblh(1,i,ik1)-&
-          dot_product(vq0rc(:),pmat(:,ist1,ist2,ikstep))/&
-          (evalsvnr(ist1,ik)-evalsvnr(ist2,ik)+swidth)          
-      enddo
-    endif
+!    if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
+!      megqblh(1,:,ik1)=zzero
+!      do i=1,nmegqblh(ikstep)
+!        ist1=bmegqblh(1,i,ikstep)
+!        ist2=bmegqblh(2,i,ikstep)
+!        if (ist1.eq.ist2) megqblh(1,i,ik1)=zone
+!        megqblh(1,i,ik1)=megqblh(1,i,ik1)-&
+!          dot_product(vq0rc(:),pmat(:,ist1,ist2,ikstep))/&
+!          (evalsvnr(ist1,ik)-evalsvnr(ist2,ik)+swidth)          
+!      enddo
+!    endif
 ! add contribution from k-point to the matrix elements of e^{-i(G+q)x} in 
 !  the basis of Wannier functions
     if (wannier) then
@@ -545,7 +371,7 @@ do ikstep=1,nkstep
               ist1=bmegqblh(1,i,ikstep)
               ist2=bmegqblh(2,i,ikstep)
               megqwan(n,itr,ig)=megqwan(n,itr,ig)+dconjg(wann_c(n1,ist1,ikstep))*&
-                  wann_c2(n2,ist2)*megqblh(ig,i,ik1)*zt1
+                  wann_c2(n2,ist2)*megqblh(ig,i,ikstep)*zt1
             enddo !i
           enddo !n
         enddo !ig      
@@ -553,44 +379,20 @@ do ikstep=1,nkstep
     endif !wannier
     if (crpa) then
 ! for each k-point : sum over interband transitions
-      call sum_chi0(ikstep,ik1,ik,idxkq(1,ik),nmegqblh(ikstep),1,nmegqblh(ikstep),&
+      call sum_chi0(ikstep,ikstep,ik,idxkq(1,ik),nmegqblh(ikstep),1,nmegqblh(ikstep),&
         evalsvnr,occsvnr,zi*lr_eta/ha2ev,chi0w)
     endif
   endif ! ikstep.le.nkptnrloc(mpi_x(1))
   call timer_stop(2)
-! write matrix elements
-  if (lwritemek.and.lwriteme) then
-    call timer_start(3)
-! only the plane of (k,q) processors will write
-    if (mpi_grid_side(dims=(/dim_k,dim_q/))) then
-! if writing to one file
-      if (split_megq_file) then
-        do i=0,mpi_grid_size(1)-1
-          if (mpi_grid_x(1).eq.i.and.ikstep.le.nkptnrloc) then
-            call writeme(ikstep,fname,megqblh,wann_c2,pmat(1,1,1,ikstep))
-          endif
-          call mpi_grid_barrier(dims=(/dim_k/))
-        enddo   
-      else
-        if (ikstep.le.nkptnrloc) then
-          write(fname,'("_me_k_",I8.8)')ik
-          fname=trim(qnm)//trim(fname)//".hdf5"
-          call writeme(ikstep,fname,megqblh,wann_c2,pmat(1,1,1,ikstep))
-        endif
-      endif !lsfio
-    endif 
-    call timer_stop(3)
-  endif !lwritemek
   if (wproc) then
     write(150,'("  time (seconds)")')
     write(150,'("    send/recv      : ",F8.2)')timer_get_value(1)
     write(150,'("    matrix elements")')
     write(150,'("      muffin-tins  (Bloch basis) : ",F8.2)')timer_get_value(4)
     write(150,'("      interstitial (Bloch basis) : ",F8.2)')timer_get_value(5)
-    write(150,'("      writing      : ",F8.2)')timer_get_value(3)
-    write(150,'("    total for kpt  : ",F8.2)')timer_get_value(2)+timer_get_value(3)
-    write(150,'("  speed (me/sec)   : ",F10.2)') &
-      ngvecme*nmegqblh(ikstep)/(timer_get_value(2)+timer_get_value(3))
+    write(150,'("    total for kpt  : ",F8.2)')timer_get_value(2)
+    write(150,'("  speed (me/sec)   : ",F10.2)')&
+      ngvecme*nmegqblh(ikstep)/timer_get_value(2)
     call flushifc(150)
   endif
 enddo !ikstep
@@ -612,34 +414,34 @@ enddo !ikstep
 !  endif
 !endif
 
-!if (.not.lwritemek.and.lwriteme) then
-!  if (wproc) then
-!    write(150,*)
-!    write(150,'("Writing matrix elements")')
-!  endif
-!  call timer_start(3)
-!  if (root_cart((/0,1,0/))) then
-!    if (lsfio) then
-!      do i=0,mpi_dims(1)-1
-!        if (mpi_x(1).eq.i) then
-!          do ikstep=1,nkptnrloc
-!            call writeme(ikstep,fname,megqblh(1,1,ikstep),wann_c2,pmat(1,1,1,ikstep))
-!          enddo
-!        endif
-!        call barrier(comm_cart_100)
-!      enddo !i
-!    else
-!      do ikstep=1,nkptnrloc
-!        call idxglob(nkptnr,mpi_dims(1),mpi_x(1)+1,ikstep,ik)
-!        write(fname,'("_me_k_",I8.8)')ik
-!        fname=trim(qnm)//trim(fname)//".hdf5"
-!        call writeme(ikstep,fname,megqblh(1,1,ikstep),wann_c2,pmat(1,1,1,ikstep))
-!      enddo
-!    endif !lsfio
-!  endif !root_cart
-!  call timer_stop(3)
-!  if (wproc) write(150,'(" Done in : ",F8.2)')timer(3,2)
-!endif
+if (write_megq_file) then
+  if (wproc) then
+    write(150,*)
+    write(150,'("Writing matrix elements")')
+  endif
+  call timer_start(3,reset=.true.)
+  if (mpi_grid_root(dims=(/dim2/))) then
+    if (.not.split_megq_file) then
+      do i=0,mpi_grid_size(1)-1
+        if (mpi_grid_x(1).eq.i) then
+          do ikloc=1,nkptnrloc
+            call writeme(ikloc,fme,megqblh(1,1,ikloc),wann_c2,pmat(1,1,1,ikloc))
+          enddo
+        endif
+        call mpi_grid_barrier(dims=(/dim_k/))
+      enddo !i
+    else
+      do ikloc=1,nkptnrloc
+        ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+        write(fmek,'("_me_k_",I8.8)')ik
+        fmek=trim(qnm)//trim(fmek)//".hdf5"
+        call writeme(ikloc,fmek,megqblh(1,1,ikloc),wann_c2,pmat(1,1,1,ikloc))
+      enddo
+    endif !.not.spit_megq_file
+  endif !mpi_grid_root
+  call timer_stop(3)
+  if (wproc) write(150,'(" Done in : ",F8.2)')timer_get_value(3)
+endif
 
 !if (crpa) then
 !! sum chi0 over k-points
@@ -752,18 +554,17 @@ enddo !ikstep
 !  endif
 !endif !crpa
 
+! deallocate arrays if we saved the ME file
+if (write_megq_file) then
+  deallocate(megqblh)
+  deallocate(nmegqblh)
+  deallocate(bmegqblh)
+  deallocate(idxkq)
+endif
+
 deallocate(wfsvmt2)
 deallocate(wfsvit2)
 deallocate(igkignr2)
-deallocate(megqblh)
-deallocate(nmegqblh)
-deallocate(bmegqblh)
-deallocate(idxkq)
-deallocate(vgq0c)
-deallocate(gq0)
-deallocate(tpgq0)
-deallocate(sfacgq0)
-deallocate(ylmgq0) 
 deallocate(ngntuju)
 deallocate(gntuju)
 deallocate(igntuju)
