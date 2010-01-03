@@ -81,6 +81,18 @@ do ispn=1,nspinor
             do ig1=1,ngknr1
 ! Gt=G1+G
               ivg1(:)=ivg(:,ig)+ivg(:,igkignr1(ig1))
+              if (ivg1(1).lt.intgv(1,1).or.ivg1(1).gt.intgv(1,2).or.&
+                  ivg1(2).lt.intgv(2,1).or.ivg1(1).gt.intgv(2,2).or.&
+                  ivg1(3).lt.intgv(3,1).or.ivg1(1).gt.intgv(3,2)) then
+                write(*,*)
+                write(*,'("Error(megqblhit): G-vector is outside of boundaries")')
+                write(*,'("  G1+G : ",3I5)')ivg1
+                write(*,'("  boundaries : ",2I5,",",2I5,",",2I5)')&
+                  intgv(1,:),intgv(2,:),intgv(3,:)
+                write(*,*)
+                call pstop
+              endif
+
               zt1=zt1+dconjg(wfsvit1(ig1,ispn,ist1))* &
                       cfunig(ivgig(ivg1(1),ivg1(2),ivg1(3)))
             enddo

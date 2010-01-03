@@ -4,21 +4,24 @@ implicit none
 integer, intent(in) :: ikloc
 integer, intent(in) :: ik
 integer, intent(in) :: jk
-!integer, intent(in) :: nmegqblh_
 integer, intent(in) :: i1
 integer, intent(in) :: i2
 complex(8), intent(in) :: w
 complex(8), intent(out) :: chi0w(ngvecme,ngvecme)
 
-logical l1,l2(nmegqblh(ikloc))
-complex(8) wt(nmegqblh(ikloc))
+logical l1
+complex(8) zt1
 integer i,ist1,ist2
 integer, parameter :: bs=128
+integer, parameter :: chi0summation=3
 integer nb,sz1
 integer ib1,ib2,j1,j2
+logical, allocatable :: l2(:)
+complex(8), allocatable :: wt(:)
 logical, external :: bndint
 
-
+allocate(l2(nmegqblh(ikloc)))
+allocate(wt(nmegqblh(ikloc)))
 l2=.false.
 do i=i1,i2
   ist1=bmegqblh(1,i,ikloc)
@@ -39,14 +42,15 @@ do i=i1,i2
   endif
 enddo !i
 
-if (.false.) then
+if (chi0summation.eq.1) then
   do i=i1,i2
     if (l2(i)) then
       call zgerc(ngvecme,ngvecme,wt(i),megqblh(1,i,ikloc),1,megqblh(1,i,ikloc),1, &
         chi0w(1,1),ngvecme)
     endif
   enddo
-else
+endif
+if (chi0summation.eq.2) then
 ! number of blocks
   nb=ngvecme/bs
 ! remaining size
@@ -87,6 +91,19 @@ else
     enddo !i
   endif
 endif
-
+if (chi0summation.eq.3) then
+  do j2=1,ngvecme
+    do i=1,nmegqblh(ikloc)
+      if (l2(i).and.abs(megqblh(j2,i,ikloc)).gt.1d-1) then
+        zt1=wt(i)*dconjg(megqblh(j2,i,ikloc))
+        do j1=1,ngvecme
+          chi0w(j1,j2)=chi0w(j1,j2)+zt1*megqblh(j1,i,ikloc) 
+        enddo
+      endif
+    enddo !i
+  enddo
+endif
+deallocate(l2)
+deallocate(wt)
 return
 end

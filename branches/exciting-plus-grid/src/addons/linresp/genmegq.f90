@@ -76,7 +76,7 @@ logical, external :: wann_diel
 !  to multiple files
 
 ! maximum l for exponent expansion
-lmaxexp=lmaxvr+2
+lmaxexp=lmaxvr
 lmmaxexp=(lmaxexp+1)**2
 
 call qname(ivq0m,qnm)

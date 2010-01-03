@@ -1,5 +1,5 @@
 #ifdef _HDF5_
-subroutine response_chi0(ivq0m)
+subroutine genchi0(ivq0m)
 use modmain
 use hdf5
 implicit none

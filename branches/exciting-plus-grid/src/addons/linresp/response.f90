@@ -17,16 +17,11 @@ complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: pmat(:,:,:,:)
 
-integer i,j,n,ik,ikloc,istsv,ik1,isym,idx0,bs,ivq1,ivq2,iq
-integer sz,iint,iw
-integer i1,i2,i3
-character*100 fname,qnm
-character*3 c3
+integer i,j,n,ik,ikloc,ik1,isym,idx0,ivq1,ivq2,iq
+integer sz,nvq0loc,i1,i2,i3
+character*100 qnm
 real(8) w2
 logical lgamma,lpmat
-!integer, external :: iknrglob2
-!logical, external :: root_cart
-!logical, external :: in_cart
 logical, external :: wann_diel
 
 ! comment: after all new implementations (response in WF, cRPA,
@@ -76,7 +71,7 @@ if (task.eq.403) write_megq_file=.false.
 screen_w_u=crpa
 
 ! this is enough for matrix elements
-lmaxvr=5
+lmaxvr=4
 
 ! initialise universal variables
 ! MPI grid for tasks:
@@ -187,6 +182,7 @@ if (task.eq.400.or.task.eq.403) then
   endif
 endif
 
+! generate wave-functions
 if (task.eq.400.or.task.eq.403) then
 ! generate G+k vectors for entire BZ (this is required to compute 
 !   wave-functions at each k-point)
@@ -335,13 +331,16 @@ if (task.eq.400.or.task.eq.403) then
   deallocate(gknr)
   deallocate(tpgknr)
   deallocate(sfacgknr)
-endif !task.eq.400
+endif !task.eq.400.or.task.eq.403
 
 ! distribute q-vectors along 3-rd dimention
-bs=mpi_grid_map(nvq0,dim3,offs=idx0)
+nvq0loc=mpi_grid_map(nvq0,dim3,offs=idx0)
 ivq1=idx0+1
-ivq2=idx0+bs
+ivq2=idx0+nvq0loc
 
+!-----------------------------------------!
+!    task 400: compute matrix elements    !
+!-----------------------------------------!
 if (task.eq.400) then
 ! calculate matrix elements
   call timer_start(10,reset=.true.)
@@ -357,11 +356,14 @@ if (task.eq.400) then
   endif
 endif
 
+!------------------------------!
+!    task 401: compute chi0    !
+!------------------------------!
 if (task.eq.401) then
 ! calculate chi0
   call timer_start(11,reset=.true.)
   do iq=ivq1,ivq2
-    call response_chi0(ivq0m_list(1,iq))
+    call genchi0(ivq0m_list(1,iq))
   enddo
   call timer_stop(11)
   if (wproc) then
@@ -371,6 +373,9 @@ if (task.eq.401) then
   endif
 endif
 
+!-----------------------------!
+!    task 402: compute chi    !
+!-----------------------------!
 if (task.eq.402) then
 ! calculate chi
   call timer_start(12,reset=.true.)
@@ -389,7 +394,7 @@ if (task.eq.403) then
   do iq=ivq1,ivq2
     call genmegq(ivq0m_list(1,iq),wfsvmtloc,wfsvitloc,ngknr, &
       igkignr,pmat)
-    call response_chi0(ivq0m_list(1,iq))
+    call genchi0(ivq0m_list(1,iq))
     call response_chi(ivq0m_list(1,iq))
   enddo
 endif
