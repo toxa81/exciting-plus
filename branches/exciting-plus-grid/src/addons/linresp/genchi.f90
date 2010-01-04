@@ -1,5 +1,5 @@
 #ifdef _HDF5_
-subroutine response_chi(ivq0m)
+subroutine genchi(ivq0m)
 use modmain
 implicit none
 integer, intent(in) :: ivq0m(3)
@@ -40,8 +40,6 @@ integer itrans_m
 integer nnzme 
 integer, allocatable :: inzme(:,:)
 
-real(8), parameter :: lmbd=0.00
-
 integer ie,ig,i,j,ig1,ig2,ie1,ie2,idx0,bs,n1,n2,it1,it2,n3,n4,n
 integer i1,i2,ifxc,ifxc1,ifxc2
 integer iv(3)
@@ -55,9 +53,9 @@ if (lrtype.eq.1) call readstate
 call qname(ivq0m,qnm)
 qnm="./"//trim(qnm)//"/"//trim(qnm)
 wproc=.false.
-if (mpi_grid_root((/dim1/))) then
+if (mpi_grid_root((/dim_w/))) then
   wproc=.true.
-  write(c3,'(I3.3)')mpi_grid_x(dim2)
+  write(c3,'(I3.3)')mpi_grid_x(dim_f)
   fchi=trim(qnm)//"_CHI_"//c3//".OUT"
   open(150,file=trim(fchi),form='formatted',status='replace')
 endif
@@ -82,7 +80,7 @@ fchi0=trim(qnm)//"_chi0.hdf5"
 fme=trim(qnm)//"_me.hdf5"
 
 ! read from chi0 file
-if (mpi_grid_root(dims=(/dim1,dim2/))) then
+if (mpi_grid_root(dims=(/dim_w,dim_f/))) then
   call read_integer(nepts,1,trim(fchi0),'/parameters','nepts')
   call read_integer(lr_igq0,1,trim(fchi0),'/parameters','lr_igq0')
   call read_integer(gshme1,1,trim(fchi0),'/parameters','gshme1')
@@ -98,17 +96,17 @@ if (mpi_grid_root(dims=(/dim1,dim2/))) then
     call read_integer(ntrchi0wan,1,trim(fchi0),'/wannier','ntrchi0wan')
   endif
 endif
-call mpi_grid_bcast(nepts,dims=(/dim1,dim2/))
-call mpi_grid_bcast(lr_igq0,dims=(/dim1,dim2/))
-call mpi_grid_bcast(gshme1,dims=(/dim1,dim2/))
-call mpi_grid_bcast(gshme2,dims=(/dim1,dim2/))
-call mpi_grid_bcast(gvecme1,dims=(/dim1,dim2/))
-call mpi_grid_bcast(gvecme2,dims=(/dim1,dim2/))
-call mpi_grid_bcast(ngvecme,dims=(/dim1,dim2/))
-call mpi_grid_bcast(vq0l(1),3,dims=(/dim1,dim2/))
-call mpi_grid_bcast(vq0rl(1),3,dims=(/dim1,dim2/))
-call mpi_grid_bcast(vq0c(1),3,dims=(/dim1,dim2/))
-call mpi_grid_bcast(vq0rc(1),3,dims=(/dim1,dim2/))
+call mpi_grid_bcast(nepts,dims=(/dim_w,dim_f/))
+call mpi_grid_bcast(lr_igq0,dims=(/dim_w,dim_f/))
+call mpi_grid_bcast(gshme1,dims=(/dim_w,dim_f/))
+call mpi_grid_bcast(gshme2,dims=(/dim_w,dim_f/))
+call mpi_grid_bcast(gvecme1,dims=(/dim_w,dim_f/))
+call mpi_grid_bcast(gvecme2,dims=(/dim_w,dim_f/))
+call mpi_grid_bcast(ngvecme,dims=(/dim_w,dim_f/))
+call mpi_grid_bcast(vq0l(1),3,dims=(/dim_w,dim_f/))
+call mpi_grid_bcast(vq0rl(1),3,dims=(/dim_w,dim_f/))
+call mpi_grid_bcast(vq0c(1),3,dims=(/dim_w,dim_f/))
+call mpi_grid_bcast(vq0rc(1),3,dims=(/dim_w,dim_f/))
 
 !if (lwannresp) then
 !  call i_bcast_cart(comm_cart_110,ntrchi0wan,1)
@@ -307,15 +305,15 @@ endif
 !!  epswf=zzero
 !!endif
 !
+
 igq0=lr_igq0-gvecchi1+1
-fourpiq0=fourpi/(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2+lmbd)
+!fourpiq0=fourpi/(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)
 ig1=gvecchi1-gvecme1+1
 ig2=ig1+ngvecchi-1
 
-
 allocate(krnl(ngvecchi,ngvecchi))
 allocate(krnl_rpa(ngvecchi,ngvecchi))
-allocate(krnl_scr(ngvecchi,ngvecchi))
+if (screened_w) allocate(krnl_scr(ngvecchi,ngvecchi))
 allocate(vcgq(ngvecchi))
 allocate(ixcft(ngvec))
 allocate(lr_w(nepts))
@@ -335,8 +333,8 @@ if (lrtype.eq.0) then
 ! generate G+q vectors  
     vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
     gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
-    krnl_rpa(ig,ig)=fourpi/(gq0**2+lmbd)
-    vcgq(ig)=2*sqrt(pi)/gq0
+    krnl_rpa(ig,ig)=fourpi/(gq0**2)
+    vcgq(ig)=sqrt(fourpi)/gq0
   enddo !ig
 endif !lrtype.eq.0
 ! for magnetic response
@@ -352,20 +350,20 @@ if (lrtype.eq.1) then
 endif !lrtype.eq.1
 
 ! distribute energy points between 1-st dimension
-bs=mpi_grid_map(nepts,dim1,offs=idx0)
+bs=mpi_grid_map(nepts,dim_w,offs=idx0)
 ie1=idx0+1
 ie2=idx0+bs
 ! distribute nfxca between 2-nd dimension 
-bs=mpi_grid_map(nfxca,dim2,offs=idx0)
+bs=mpi_grid_map(nfxca,dim_f,offs=idx0)
 ifxc1=idx0+1
 ifxc2=idx0+bs
 ! main loop over energy points 
 do ie=ie1,ie2
 ! read chi0(iw) from file
-  if (mpi_grid_root(dims=(/dim1,dim_q/))) then
-    do i=0,mpi_grid_size(1)-1
-    do j=0,mpi_grid_size(3)-1
-      if (mpi_grid_x(1).eq.i.and.mpi_grid_x(3).eq.j) then
+  if (mpi_grid_root(dims=(/dim_f/))) then
+    do i=0,mpi_grid_size(dim_w)-1
+    do j=0,mpi_grid_size(dim_q)-1
+      if (mpi_grid_x(dim_w).eq.i.and.mpi_grid_x(dim_q).eq.j) then
         write(path,'("/iw/",I8.8)')ie
         call read_real8(lr_w(ie),2,trim(fchi0),trim(path),'w')
         call read_real8_array(chi0w,3,(/2,ngvecme,ngvecme/), &
@@ -376,11 +374,11 @@ do ie=ie1,ie2
             trim(fchi0),trim(path),'chi0wan')
         endif
       endif
-      if (.not.parallel_read) call mpi_grid_barrier(dims=(/dim1,dim_q/))
+      if (.not.parallel_read) call mpi_grid_barrier(dims=(/dim_w,dim_q/))
     enddo
     enddo
   endif
-  call mpi_grid_bcast(chi0w(1,1),ngvecme*ngvecme,dims=(/dim2/))
+  call mpi_grid_bcast(chi0w(1,1),ngvecme*ngvecme,dims=(/dim_f/))
 ! prepare chi0
   chi0m(1:ngvecchi,1:ngvecchi)=chi0w(ig1:ig2,ig1:ig2)
 ! loop over fxc
@@ -397,12 +395,12 @@ do ie=ie1,ie2
 ! generate G+q vector  
           vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
           gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
-          krnl(ig,ig)=krnl(ig,ig)-fourpi*fxca/gq0**2
+          krnl(ig,ig)=krnl(ig,ig)-fxca*krnl_rpa(ig,ig)
         endif
       enddo
     endif
-    call solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_(1,ie,ifxc), &
-      epsilon_(1,ie,ifxc),krnl_scr,vcgq)
+    call solve_chi(igq0,vcgq,chi0m,krnl,chi_(1,ie,ifxc),epsilon_(1,ie,ifxc),&
+      krnl_scr)
 !    if (wannier.and.lwannresp.and.ifxc.eq.1) then
 !      call solve_chi_wf(ntrmegqwan,ntrchi0wan,itridxwan,nmegqwan,nnzme,inzme,megqwan,chi0wan,mtrx_v,&
 !        chi_(6,ie,1),chi_(7,ie,1),igq0)
@@ -495,9 +493,9 @@ do ie=ie1,ie2
 !    endif
    enddo !ifxc
 enddo !ie
-call mpi_grid_reduce(lr_w(1),nepts,dims=(/dim1/))
-call mpi_grid_reduce(chi_(1,1,1),7*nepts*nfxca,dims=(/dim1,dim2/))
-call mpi_grid_reduce(epsilon_(1,1,1),5*nepts*nfxca,dims=(/dim1,dim2/))
+call mpi_grid_reduce(lr_w(1),nepts,dims=(/dim_w/))
+call mpi_grid_reduce(chi_(1,1,1),7*nepts*nfxca,dims=(/dim_w,dim_f/))
+call mpi_grid_reduce(epsilon_(1,1,1),5*nepts*nfxca,dims=(/dim_w,dim_f/))
 ! write response functions to .dat file
 if (mpi_grid_root(dims=(/dim_q/))) then
   do ifxc=1,nfxca
@@ -507,7 +505,7 @@ if (mpi_grid_root(dims=(/dim_q/))) then
 endif
 
 deallocate(krnl,krnl_rpa,ixcft)
-deallocate(krnl_scr)
+if (screened_w) deallocate(krnl_scr)
 deallocate(lr_w,chi0m,chi0w,chi_,epsilon_)
 deallocate(vcgq)
 if (wannier) then

@@ -930,9 +930,18 @@ integer mpi_grid(3)
 complex(8), allocatable :: evecfvloc(:,:,:,:)
 complex(8), allocatable :: evecsvloc(:,:,:)
 
+! dimension for k-points 
 integer dim_k
+! dimension for g-vectors
 integer dim_g
+! dimension for q-vectors
 integer dim_q
+! dimension for frequency
+integer dim_w
+! dimension for interband transitions
+integer dim_b
+! dimension for fxc kernels
+integer dim_f
 
 
 !------------------!
@@ -1070,7 +1079,7 @@ complex(8), allocatable :: chi0wan(:,:,:)
 integer, allocatable :: idxkq(:,:)
 
 ! Kohn-Sham polarizability
-complex(8), allocatable :: chi0(:,:,:,:)
+!complex(8), allocatable :: chi0(:,:,:,:)
 ! number of energy-mesh points
 integer nepts
 ! energy mesh
@@ -1096,6 +1105,10 @@ data lwannresp/.false./
 logical write_megq_file
 ! low level switch: compute screened W matrix and screened U; depends on crpa
 logical screen_w_u
+logical screened_w
+data screened_w/.false./
+logical screened_u
+data screened_u/.false./
 
 
 

@@ -32,7 +32,7 @@ logical, external :: wann_diel
 ! typical execution patterns
 !  I) compute and save ME (task 400), read ME, compute and save chi0 (task 401),
 !     read chi0 and compute chi (task 402)
-!  II) 
+!  II) the same + Wannier channels decomposition 
 !
 ! New task list:
 !   400 - compute and write ME
@@ -40,6 +40,13 @@ logical, external :: wann_diel
 !   402 - compute and write chi
 !   403 - compute ME, compute chi0, compute and write chi
 !   404 - sum over all q to get screened U
+!
+! MPI grid for tasks:
+!   400 (matrix elements) : (1) k-points x (2) G-vectors or interband 
+!                                           transitions x (3) q-points 
+!   401 (chi0) : (1) k-points x (2) interband transition x (3) q-points 
+!   402 (chi) : (1) energy mesh x (2) number of fxc kernels x (3) q-points
+
 
 if (lrtype.eq.1.and..not.spinpol) then
   write(*,*)
@@ -69,16 +76,12 @@ write_megq_file=.true.
 if (task.eq.403) write_megq_file=.false.
 ! set the switch to compute screened matrices
 screen_w_u=crpa
+screened_w=.true.
 
 ! this is enough for matrix elements
-lmaxvr=4
+lmaxvr=5
 
 ! initialise universal variables
-! MPI grid for tasks:
-!   400 (matrix elements) : (1) k-points x (2) G-vectors or interband 
-!                                           transitions x (3) q-points 
-!   401 (chi0) : (1) k-points x (2) interband transition x (3) q-points 
-!   402 (chi) : (1) energy mesh x (2) number of fxc kernels x (3) q-points
 call init0
 call init1
 
@@ -106,10 +109,15 @@ if (crpa.and..false.) then
     enddo
   enddo
 endif
+! todo: put warnings to output
 if (crpa) then
   maxomega=0.d0
   domega=1.d0
+  nfxca=1
+  fxca0=0.d0
+  fxca1=0.d0
 endif
+
 ! necessary calls before generating Bloch wave-functions 
 if (task.eq.400.or.task.eq.403) then
 ! read the density and potentials from file
@@ -380,7 +388,7 @@ if (task.eq.402) then
 ! calculate chi
   call timer_start(12,reset=.true.)
   do iq=ivq1,ivq2
-    call response_chi(ivq0m_list(1,iq))
+    call genchi(ivq0m_list(1,iq))
   enddo
   call timer_stop(12)
   if (wproc) then
@@ -395,7 +403,7 @@ if (task.eq.403) then
     call genmegq(ivq0m_list(1,iq),wfsvmtloc,wfsvitloc,ngknr, &
       igkignr,pmat)
     call genchi0(ivq0m_list(1,iq))
-    call response_chi(ivq0m_list(1,iq))
+    call genchi(ivq0m_list(1,iq))
   enddo
 endif
 

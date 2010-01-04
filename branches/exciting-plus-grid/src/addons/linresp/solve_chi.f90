@@ -1,18 +1,18 @@
-subroutine solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_,epsilon_,krnl_scr,vcgq)
+subroutine solve_chi(igq0,vcgq,chi0m,krnl,chi_,epsilon_,krnl_scr)
+use modmain
 implicit none
-integer, intent(in) :: ngvecchi
 integer, intent(in) :: igq0
-real(8), intent(in) :: fourpiq0
+real(8), intent(in) :: vcgq(ngvecchi)
 complex(8), intent(in) :: chi0m(ngvecchi,ngvecchi)
 complex(8), intent(in) :: krnl(ngvecchi,ngvecchi)
 complex(8), intent(out) :: chi_(4)
 complex(8), intent(out) :: epsilon_(5)
 complex(8), intent(out) :: krnl_scr(ngvecchi,ngvecchi)
-real(8), intent(in) :: vcgq(ngvecchi)
-
+! local variables
 complex(8), allocatable :: epsilon(:,:)
 complex(8), allocatable :: mtrx1(:,:)
 complex(8), allocatable :: zm1(:,:),zm2(:,:)
+real(8) d1
 integer i,ig1,ig2
 
 ! Note: different epsilons and chis are introdued only to go inside the 
@@ -56,21 +56,20 @@ call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
 ! save chi
 chi_(4)=mtrx1(igq0,igq0)
 ! save epsilon_eff
-epsilon_(4)=1.d0/(1.d0+fourpiq0*chi_(4))
+epsilon_(4)=1.d0/(1.d0+(vcgq(igq0)**2)*chi_(4))
 ! save epsilon_eff_scalar
-epsilon_(5)=1.d0/(1.d0+fourpiq0*chi_(2))
+epsilon_(5)=1.d0/(1.d0+(vcgq(igq0)**2)*chi_(2))
 
-!! compute screened Coulomb+fxc potential : vscr=vbare+vbare*chi*vbare
-!krnl_scr=krnl
-!zm2=dcmplx(0.d0,0.d0)
-!call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
-!  mtrx1,ngvecchi,krnl,ngvecchi,dcmplx(0.d0,0.d0),zm2,ngvecchi)
-!call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
-!  krnl,ngvecchi,zm2,ngvecchi,dcmplx(1.d0,0.d0),krnl_scr,ngvecchi)
-
-if (.true.) then
-!  call wrmtrx('W1.txt',ngvecchi,krnl_scr)
-
+if (screened_w) then
+! compute screened Coulomb potential: vscr=vbare+vbare*chi*vbare
+  krnl_scr=krnl
+! compute zm2=chi*v
+  call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
+    mtrx1,ngvecchi,krnl,ngvecchi,dcmplx(0.d0,0.d0),zm2,ngvecchi)
+! compute krnl_scr=v*zm2
+  call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
+    krnl,ngvecchi,zm2,ngvecchi,dcmplx(1.d0,0.d0),krnl_scr,ngvecchi)
+! compute screened Coulomb potential using "symmetrized" dielectric function
   do ig1=1,ngvecchi
     do ig2=1,ngvecchi
       epsilon(ig1,ig2)=-vcgq(ig1)*chi0m(ig1,ig2)*vcgq(ig2)
@@ -80,58 +79,27 @@ if (.true.) then
   call invzge(epsilon,ngvecchi)
   do ig1=1,ngvecchi
     do ig2=1,ngvecchi
-      krnl_scr(ig1,ig2)=vcgq(ig1)*epsilon(ig1,ig2)*vcgq(ig2)
+      zm1(ig1,ig2)=vcgq(ig1)*epsilon(ig1,ig2)*vcgq(ig2)
     enddo
   enddo
-!  call wrmtrx('W2.txt',ngvecchi,krnl_scr)
-      
-
-
+! compute difference
+  d1=0.d0
+  do ig1=1,ngvecchi
+    do ig2=1,ngvecchi
+      d1=d1+abs(krnl_scr(ig1,ig2)-zm1(ig1,ig2))
+    enddo
+  enddo
+  if (d1.gt.1d-6) then
+    write(*,*)
+    write(*,'("Error(solve_chi): screened kernels must be identical")')
+    write(*,'("  difference : ",G18.10)')d1
+    call pstop
+  endif
 endif
-!  zm1=dcmplx(0.d0,0.d0)
-!  call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
-!    epsilon,ngvecchi,krnl,ngvecchi,dcmplx(0.d0,0.d0),zm1,ngvecchi)
-!  call wrmtrx('vscr.txt',ngvecchi,zm1)
-  
-!  zm1=krnl
-!  zm2=dcmplx(0.d0,0.d0)
-! vscr=vbare+vbare*chi*vbare
-!  call wrmtrx('chi.txt',ngvecchi,mtrx1)
-!  call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
-!    mtrx1,ngvecchi,krnl,ngvecchi,dcmplx(0.d0,0.d0),zm2,ngvecchi)
-!  call wrmtrx('chi_v.txt',ngvecchi,zm2)
-!  call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
-!    krnl,ngvecchi,zm2,ngvecchi,dcmplx(0.d0,0.d0),zm1,ngvecchi)
-!  call wrmtrx('v_chi_v.txt',ngvecchi,zm1)
-!  zm1=zm1+krnl
-
-!
-!   zm2=dcmplx(0.d0,0.d0)
-!  do ig1=1,ngvecchi
-!    do ig2=1,ngvecchi
-!      zm2(ig1,ig2)=krnl(ig1,ig2)+mtrx1(ig1,ig2)*krnl(ig1,ig1)*krnl(ig2,ig2)
-!    enddo
-!  enddo
-!  call wrmtrx('vscr.txt',ngvecchi,zm1)
-
-!  epsilon=dcmplx(0.d0,0.d0)
-!  do i=1,ngvecchi
-!    epsilon(i,i)=dcmplx(1.d0,0.d0)
-!  enddo
-!  call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(-1.d0,0.d0), &
-!    chi0m,ngvecchi,krnl,ngvecchi,dcmplx(1.d0,0.d0),epsilon,ngvecchi)
-!
-!  zm2=dcmplx(0.d0,0.d0)
-!  call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
-!    epsilon,ngvecchi,zm1,ngvecchi,dcmplx(0.d0,0.d0),zm2,ngvecchi)
-!  call wrmtrx('1.txt',ngvecchi,zm2)
-!
-!endif
 deallocate(epsilon,mtrx1,zm1,zm2)
 return
 end
 
-!  call wrmtrx('W2.txt',ngvecchi,krnl_scr)
 subroutine wrmtrx(name,size,mtrx)
 implicit none
 character*(*), intent(in) :: name
