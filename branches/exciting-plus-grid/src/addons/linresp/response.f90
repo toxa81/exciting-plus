@@ -62,7 +62,7 @@ if (nvq0.eq.0) then
 endif
   
 if (.not.wannier) then
-  lwannresp=.false.
+  wannier_chi0_chi=.false.
   lwannopt=.false.
   crpa=.false.
 endif
@@ -76,7 +76,7 @@ write_megq_file=.true.
 if (task.eq.403) write_megq_file=.false.
 ! set the switch to compute screened matrices
 screen_w_u=crpa
-screened_w=.true.
+screened_w=.false.
 
 ! this is enough for matrix elements
 lmaxvr=5
@@ -159,7 +159,7 @@ if (wproc) then
   endif
   write(151,'("MPI grid size : ",3I6)')mpi_grid_size
   write(151,'("Wannier functions : ",L1)')wannier
-  write(151,'("Response in local basis  : ",L1)')lwannresp
+  write(151,'("Response in local basis  : ",L1)')wannier_chi0_chi
   call flushifc(151)
 endif
 

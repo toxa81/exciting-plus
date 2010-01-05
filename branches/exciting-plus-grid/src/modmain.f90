@@ -1099,8 +1099,8 @@ data split_megq_file/.false./
 logical parallel_read
 data parallel_read/.false./
 ! high-level switch: compute chi0 and chi in Wannier functions basis
-logical lwannresp
-data lwannresp/.false./
+logical wannier_chi0_chi 
+data wannier_chi0_chi/.false./
 ! low-level switch: write or not file with matrix elements; depends on task 
 logical write_megq_file
 ! low level switch: compute screened W matrix and screened U; depends on crpa

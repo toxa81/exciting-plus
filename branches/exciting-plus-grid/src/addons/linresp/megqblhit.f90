@@ -92,7 +92,6 @@ do ispn=1,nspinor
                 write(*,*)
                 call pstop
               endif
-
               zt1=zt1+dconjg(wfsvit1(ig1,ispn,ist1))* &
                       cfunig(ivgig(ivg1(1),ivg1(2),ivg1(3)))
             enddo
@@ -113,15 +112,15 @@ do ispn=1,nspinor
           ivg1(:)=ivg(:,ig+gvecme1-1)+ivg(:,igkq)-ivg(:,igkignr2(ig2))
           zt1=zt1+a1(ivgig(ivg1(1),ivg1(2),ivg1(3)))*wfsvit2(ig2,ispn2,ist2)
         enddo !ig2
-        megq_tmp(ig,i)=megq_tmp(ig,i)+zt1
+        megq_tmp(ig,i)=zt1
       enddo !ig
     endif
   enddo !i
 enddo !ispn
 deallocate(a1,lig1)
-if (mpi_grid_size(dim2).gt.1.) then
+!if (mpi_grid_size(dim2).gt.1.) then
   call mpi_grid_reduce(megq_tmp(1,1),ngvecme*nmegqblhmax,dims=(/dim2/))
-endif
+!endif
 megqblh_=megqblh_+megq_tmp
 deallocate(megq_tmp)
 

@@ -82,7 +82,7 @@ lmmaxexp=(lmaxexp+1)**2
 call qname(ivq0m,qnm)
 qnm="./"//trim(qnm)//"/"//trim(qnm)
 wproc=.false.
-if (mpi_grid_root((/dim_k,dim_g/))) then
+if (mpi_grid_root((/dim_k,dim2/))) then
   wproc=.true.
   fout=trim(qnm)//"_ME.OUT"
   open(150,file=trim(fout),form='formatted',status='replace')
@@ -90,7 +90,7 @@ endif
 
 complete=0
 fme=trim(qnm)//"_me.hdf5"
-if (mpi_grid_root((/dim_k,dim_g/))) then
+if (mpi_grid_root((/dim_k,dim2/))) then
   inquire(file=trim(fme),exist=exist)
   if (exist) then
     call read_integer(complete,1,trim(fme),'/parameters','complete')
@@ -210,7 +210,7 @@ if (wannier) then
   megqwan=zzero
 endif
 
-if (mpi_grid_root(dims=(/dim_k,dim_g/)).and.write_megq_file) then
+if (mpi_grid_root(dims=(/dim_k,dim2/)).and.write_megq_file) then
   call h5fcreate_f(trim(fme),H5F_ACC_TRUNC_F,h5_root_id,ierr)
   call h5gcreate_f(h5_root_id,'parameters',h5_tmp_id,ierr)
   call h5gclose_f(h5_tmp_id,ierr)
@@ -249,7 +249,7 @@ if (mpi_grid_root(dims=(/dim_k,dim_g/)).and.write_megq_file) then
     call write_real8(wann_occ,nwann,trim(fme),'/wannier','wann_occ')
   endif
 endif
-if (mpi_grid_root(dims=(/dim_k,dim_g/)).and.write_megq_file.and.split_megq_file) then
+if (mpi_grid_root(dims=(/dim_k,dim2/)).and.write_megq_file.and.split_megq_file) then
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
     write(c8,'(I8.8)')ik
@@ -321,7 +321,6 @@ do ikstep=1,nkstep
     call flushifc(150)
   endif
   call timer_stop(1)
-
 ! compute matrix elements  
   call timer_start(2,reset=.true.)
   if (ikstep.le.nkptnrloc) then

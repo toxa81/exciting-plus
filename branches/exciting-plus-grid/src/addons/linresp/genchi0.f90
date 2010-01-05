@@ -44,7 +44,7 @@ complex(8), external :: zdotu
 call qname(ivq0m,qnm)
 qnm="./"//trim(qnm)//"/"//trim(qnm)
 wproc=.false.
-if (mpi_grid_root((/dim_k,dim2/))) then
+if (mpi_grid_root((/dim_k,dim_b/))) then
   wproc=.true.
   fout=trim(qnm)//"_CHI0.OUT"
   open(150,file=trim(fout),form='formatted',status='replace')
@@ -74,7 +74,7 @@ if (write_megq_file) then
   if (allocated(lr_occsvnr)) deallocate(lr_occsvnr)
   allocate(lr_occsvnr(nstsv,nkptnr))
   fme=trim(qnm)//"_me.hdf5"
-  if (mpi_grid_root((/dim_k,dim2/))) then
+  if (mpi_grid_root((/dim_k,dim_b/))) then
     call read_integer(nkptnr_,1,trim(fme),'/parameters','nkptnr')
     call read_integer(nmegqblhmax,1,trim(fme),'/parameters','nmegqblhmax')
     call read_integer(lr_igq0,1,trim(fme),'/parameters','lr_igq0')
@@ -110,24 +110,24 @@ if (write_megq_file) then
       call pstop
     endif    
   endif
-  call mpi_grid_bcast(gshme1,dims=(/dim_k,dim2/))
-  call mpi_grid_bcast(gshme2,dims=(/dim_k,dim2/))
-  call mpi_grid_bcast(gvecme1,dims=(/dim_k,dim2/))
-  call mpi_grid_bcast(gvecme2,dims=(/dim_k,dim2/))
-  call mpi_grid_bcast(ngvecme,dims=(/dim_k,dim2/))
-  call mpi_grid_bcast(nmegqblhmax,dims=(/dim_k,dim2/))
-  call mpi_grid_bcast(lr_igq0,dims=(/dim_k,dim2/))
-  call mpi_grid_bcast(vq0l(1),3,dims=(/dim_k,dim2/))
-  call mpi_grid_bcast(vq0rl(1),3,dims=(/dim_k,dim2/))
-  call mpi_grid_bcast(vq0c(1),3,dims=(/dim_k,dim2/))
-  call mpi_grid_bcast(vq0rc(1),3,dims=(/dim_k,dim2/))
+  call mpi_grid_bcast(gshme1,dims=(/dim_k,dim_b/))
+  call mpi_grid_bcast(gshme2,dims=(/dim_k,dim_b/))
+  call mpi_grid_bcast(gvecme1,dims=(/dim_k,dim_b/))
+  call mpi_grid_bcast(gvecme2,dims=(/dim_k,dim_b/))
+  call mpi_grid_bcast(ngvecme,dims=(/dim_k,dim_b/))
+  call mpi_grid_bcast(nmegqblhmax,dims=(/dim_k,dim_b/))
+  call mpi_grid_bcast(lr_igq0,dims=(/dim_k,dim_b/))
+  call mpi_grid_bcast(vq0l(1),3,dims=(/dim_k,dim_b/))
+  call mpi_grid_bcast(vq0rl(1),3,dims=(/dim_k,dim_b/))
+  call mpi_grid_bcast(vq0c(1),3,dims=(/dim_k,dim_b/))
+  call mpi_grid_bcast(vq0rc(1),3,dims=(/dim_k,dim_b/))
   if (wannier) then
-    call mpi_grid_bcast(wann_occ(1),nwann,dims=(/dim_k,dim2/))
-    call mpi_grid_bcast(ntrmegqwan,dims=(/dim_k,dim2/))
-    call mpi_grid_bcast(nmegqwan,dims=(/dim_k,dim2/))
+    call mpi_grid_bcast(wann_occ(1),nwann,dims=(/dim_k,dim_b/))
+    call mpi_grid_bcast(ntrmegqwan,dims=(/dim_k,dim_b/))
+    call mpi_grid_bcast(nmegqwan,dims=(/dim_k,dim_b/))
   endif  
-  call mpi_grid_bcast(lr_evalsvnr(1,1),nstsv*nkptnr,dims=(/dim_k,dim2/))
-  call mpi_grid_bcast(lr_occsvnr(1,1),nstsv*nkptnr,dims=(/dim_k,dim2/))
+  call mpi_grid_bcast(lr_evalsvnr(1,1),nstsv*nkptnr,dims=(/dim_k,dim_b/))
+  call mpi_grid_bcast(lr_occsvnr(1,1),nstsv*nkptnr,dims=(/dim_k,dim_b/))
 endif
 !if (wannier) then
 !  allocate(itrmegqwan(3,ntrmegqwan))
@@ -204,7 +204,7 @@ if (write_megq_file) then
       enddo !i
     endif
   else
-    if (mpi_grid_root((/dim2/))) then
+    if (mpi_grid_root((/dim_b/))) then
       do ikloc=1,nkptnrloc
         ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
         write(fmek,'("_me_k_",I8.8)')ik
@@ -231,17 +231,17 @@ if (write_megq_file) then
       enddo
     endif
   endif
-  call mpi_grid_barrier(dims=(/dim_k,dim2/))
+  call mpi_grid_barrier(dims=(/dim_k,dim_b/))
   call timer_stop(1)
   if (wproc) then
      write(150,'("Done in ",F8.2," seconds")')timer_get_value(1)
     call flushifc(150)
   endif
   call mpi_grid_reduce(idxkq(1,1),nkptnr,dims=(/dim_k/),all=.true.)
-  call mpi_grid_bcast(idxkq(1,1),nkptnr,dims=(/dim2/))
-  call mpi_grid_bcast(nmegqblh(1),nkptnrloc,dims=(/dim2/))
-  call mpi_grid_bcast(bmegqblh(1,1,1),2*nmegqblhmax*nkptnrloc,dims=(/dim2/))
-  call mpi_grid_bcast(megqblh(1,1,1),ngvecme*nmegqblhmax*nkptnrloc,dims=(/dim2/))
+  call mpi_grid_bcast(idxkq(1,1),nkptnr,dims=(/dim_b/))
+  call mpi_grid_bcast(nmegqblh(1),nkptnrloc,dims=(/dim_b/))
+  call mpi_grid_bcast(bmegqblh(1,1,1),2*nmegqblhmax*nkptnrloc,dims=(/dim_b/))
+  call mpi_grid_bcast(megqblh(1,1,1),ngvecme*nmegqblhmax*nkptnrloc,dims=(/dim_b/))
   !if (wannier) then
   !  call d_bcast_cart(comm_cart_010,wann_c1,2*nwann*nstsv*nkptnr_loc)
   !  call d_bcast_cart(comm_cart_010,wann_c2,2*nwann*nstsv*nkptnr_loc)
@@ -252,7 +252,7 @@ if (write_megq_file) then
 endif
 !
 !! for response in Wannier bais
-!if (lwannresp) then
+!if (wannier_chi0_chi) then
 !  lafm=.false.
 !!  if ((all(iwann(3,:).eq.1).or.all(iwann(3,:).eq.2)).and.spinpol) then
 !!    lafm=.true.
@@ -290,7 +290,7 @@ endif
 !  allocate(zv1(nmegqwan))
 !  allocate(zm1(nmegqwan,nmegqwan))
 !  allocate(zm2(nmegqwan,nmegqwan,nkptnr_loc))
-!endif !lwannresp
+!endif !wannier_chi0_chi
 !
 !if (lwannopt) then
 !  allocate(pmat(3,nstsv,nstsv,nkptnr_loc))
@@ -298,15 +298,18 @@ endif
 !
 igq0=lr_igq0-gvecme1+1
 
+
+
 ie1=0
 fchi0=trim(qnm)//"_chi0.hdf5"
-if (mpi_grid_root((/dim_k,dim2/))) then
+if (mpi_grid_root((/dim_k,dim_b/))) then
   inquire(file=trim(fchi0),exist=exist)
+  exist=.false.
   if (.not.exist) then
     call h5fcreate_f(trim(fchi0),H5F_ACC_TRUNC_F,h5_root_id,ierr)
     call h5gcreate_f(h5_root_id,'parameters',h5_tmp_id,ierr)
     call h5gclose_f(h5_tmp_id,ierr)
-    if (lwannresp) then
+    if (wannier_chi0_chi) then
       call h5gcreate_f(h5_root_id,'wannier',h5_tmp_id,ierr)
       call h5gclose_f(h5_tmp_id,ierr)
     endif
@@ -329,12 +332,12 @@ if (mpi_grid_root((/dim_k,dim2/))) then
     call write_real8(vq0rl,3,trim(fchi0),'/parameters','vq0rl')
     call write_real8(vq0c,3,trim(fchi0),'/parameters','vq0c')
     call write_real8(vq0rc,3,trim(fchi0),'/parameters','vq0rc')
-    call write_integer(0,1,trim(fchi0),'/parameters','ie1')
+    call write_integer(ie1,1,trim(fchi0),'/parameters','ie1')
   else
     call read_integer(ie1,1,trim(fchi0),'/parameters','ie1')
   endif
 endif
-call mpi_grid_bcast(ie1,dims=(/dim_k,dim2/))
+call mpi_grid_bcast(ie1,dims=(/dim_k,dim_b/))
 ie1=ie1+1
 
 allocate(chi0w(ngvecme,ngvecme))
@@ -348,7 +351,7 @@ endif
 ! loop over energy points
 do ie=ie1,nepts
   chi0w=zzero
-  if (lwannresp) zm2=zzero
+  if (wannier_chi0_chi) zm2=zzero
   sz1=0
   sz2=0
   call timer_start(1,reset=.true.)
@@ -358,7 +361,7 @@ do ie=ie1,nepts
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
     jk=idxkq(1,ik)
     if (nmegqblh(ikloc).gt.0) then
-      bs=mpi_grid_map(nmegqblh(ikloc),dim2,offs=idx0)
+      bs=mpi_grid_map(nmegqblh(ikloc),dim_b,offs=idx0)
       i1=idx0+1
       i2=idx0+bs
       sz1=sz1+bs
@@ -366,7 +369,7 @@ do ie=ie1,nepts
       call sumchi0(ikloc,ik,jk,i1,i2,lr_w(ie),chi0w)
     endif
 ! for response in Wannier basis
-    if (lwannresp) then
+    if (wannier_chi0_chi) then
       sz2=sz2+nmegqblh(ikloc)*nmegqwan**2
       do i=1,nmegqblh(ikloc)
         ist1=bmegqblh(1,i,ikloc)
@@ -380,18 +383,18 @@ do ie=ie1,nepts
             lr_evalsvnr(ist2,jk)+lr_w(ie))
         call zgerc(nmegqwan,nmegqwan,wt,zv1,1,zv1,1,zm2(1,1,ikloc),nmegqwan)
       enddo !i
-    endif !lwannresp
+    endif !wannier_chi0_chi
   enddo !ikloc
   call timer_stop(2)
   call timer_start(3,reset=.true.)
 ! sum over k-points and band transitions
-  if (mpi_grid_size(dim_k).gt.1.or.mpi_grid_size(dim2).gt.1) then
-    call mpi_grid_reduce(chi0w(1,1),ngvecme*ngvecme,dims=(/dim_k,dim2/))
+  if (mpi_grid_size(dim_k).gt.1.or.mpi_grid_size(dim_b).gt.1) then
+    call mpi_grid_reduce(chi0w(1,1),ngvecme*ngvecme,dims=(/dim_k,dim_b/))
   endif
   chi0w=chi0w/nkptnr/omega
 !
 !! for response in Wannier basis
-!  if (root_cart((/0,1,0/)).and.lwannresp) then
+!  if (root_cart((/0,1,0/)).and.wannier_chi0_chi) then
 !! split matrix elements along 1-st dimention      
 !    call idxbos(nmegqwan,mpi_dims(1),mpi_x(1)+1,idx0,bs)
 !    n3=idx0+1
@@ -440,16 +443,16 @@ do ie=ie1,nepts
 !    enddo !it2
 !! sum all the rows
 !    call d_reduce_cart(comm_cart_100,.false.,zt3,2)
-!  endif !(root_cart((/0,1,0/)).and.lwannresp)    
+!  endif !(root_cart((/0,1,0/)).and.wannier_chi0_chi)    
   call timer_stop(3)
 ! write to file
   call timer_start(4,reset=.true.)
-  if (mpi_grid_root((/dim_k,dim2/))) then
+  if (mpi_grid_root((/dim_k,dim_b/))) then
     write(path,'("/iw/",I8.8)')ie
     call write_real8(lr_w(ie),2,trim(fchi0),trim(path),'w')
     call write_real8_array(chi0w,3,(/2,ngvecme,ngvecme/), &
       trim(fchi0),trim(path),'chi0')
-    if (lwannresp) then
+    if (wannier_chi0_chi) then
       call write_real8_array(zt3,1,(/2/),trim(fchi0),trim(path),'chi0wf')
       call write_real8_array(chi0wan,4,(/2,nmegqwan,nmegqwan,ntrchi0wan/), &
         trim(fchi0),trim(path),'chi0wan')
@@ -467,10 +470,10 @@ do ie=ie1,nepts
     write(150,'("  write time         : ",F8.2," seconds")')timer_get_value(4)
     call flushifc(150)
   endif
-  call mpi_grid_barrier(dims=(/dim_k,dim2/))
+  call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 enddo !ie
 !
-!if (lwannresp) then
+!if (wannier_chi0_chi) then
 !  if (root_cart((/1,1,0/))) then
 !    call write_integer(ntrchi0wan,1,trim(fname),'/wannier','ntrchi0wan')
 !    call write_integer_array(itrchi0wan,2,(/3,ntrchi0wan/),trim(fname),'/wannier','itrchi0wan')
@@ -510,7 +513,8 @@ enddo !ie
 !!  deallocate(mewfx)
 !!endif
 !
-call mpi_grid_barrier(dims=(/dim_k,dim2/))!
+call mpi_grid_barrier(dims=(/dim_k,dim_b/))
+
 deallocate(lr_evalsvnr)
 deallocate(lr_occsvnr)
 deallocate(lr_w)
@@ -519,6 +523,7 @@ deallocate(nmegqblh)
 deallocate(bmegqblh)
 deallocate(megqblh)
 deallocate(chi0w)
+
 !if (wannier) then
 !  deallocate(wann_c1)
 !  deallocate(wann_c2)
@@ -526,7 +531,7 @@ deallocate(chi0w)
 !  deallocate(megqwan)
 !  deallocate(bmegqwan)
 !endif
-!if (lwannresp) then
+!if (wannier_chi0_chi) then
 !  deallocate(itrchi0wan)
 !  deallocate(itridxwan)
 !  deallocate(chi0wan)

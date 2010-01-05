@@ -39,19 +39,24 @@ integer, allocatable :: stat(:)
 !    processors require its part of k-points; during this phase it
 !    executes non-blocking 'send'
 ! 2) each processor must know the index of other processor, from which 
-!    it gets jk-point; during this phase it executes non-blocking 'recieve'
+!    it gets jk-point; during this phase it executes blocking 'recieve'
 
 do i=0,mpi_grid_size(dim_k)-1
+! number of k-points on the processor i
   nkptnrloc1=mpi_grid_map(nkptnr,dim_k,x=i)
   if (ikstep.le.nkptnrloc1) then
+! for the step ikstep processor i computes matrix elements between k-point ik 
     ik=mpi_grid_map(nkptnr,dim_k,x=i,loc=ikstep)
+! and k-point jk
     jk=idxkq(1,ik)
+! find the processor j and local index of k-point jkloc for the k-point jk
     jkloc=mpi_grid_map(nkptnr,dim_k,glob=jk,x=j)
     if (mpi_grid_x(dim_k).eq.j.and.mpi_grid_x(dim_k).ne.i) then
 ! send to i
       tag=(ikstep*mpi_grid_size(dim_k)+i)*10
       call mpi_grid_send(wfsvmtloc(1,1,1,1,1,jkloc),&
         lmmaxvr*nrfmax*natmtot*nspinor*nstsv,(/dim_k/),(/i/),tag)
+!      write(*,*)mpi_grid_x(dim_k), ' --> ',i,sum(wfsvmtloc(:,:,:,:,:,jkloc))
       call mpi_grid_send(wfsvitloc(1,1,1,jkloc),ngkmax*nspinor*nstsv,&
         (/dim_k/),(/i/),tag+1)
       call mpi_grid_send(ngknr(jkloc),1,(/dim_k/),(/i/),tag+2)
@@ -66,6 +71,7 @@ do i=0,mpi_grid_size(dim_k)-1
         tag=(ikstep*mpi_grid_size(dim_k)+i)*10
         call mpi_grid_recieve(wfsvmt2(1,1,1,1,1),&
           lmmaxvr*nrfmax*natmtot*nspinor*nstsv,(/dim_k/),(/j/),tag)
+!        write(*,*)mpi_grid_x(dim_k), ' <-- ',j,sum(wfsvmt2(:,:,:,:,:))
         call mpi_grid_recieve(wfsvit2(1,1,1),ngkmax*nspinor*nstsv,&
           (/dim_k/),(/j/),tag+1)
         call mpi_grid_recieve(ngknr2,1,(/dim_k/),(/j/),tag+2)

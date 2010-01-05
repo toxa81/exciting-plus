@@ -78,7 +78,7 @@ do ikloc=1,nkptnrloc
       if (wannier) then
         le1w=bndint(ist1,lr_evalsvnr(ist1,ik),min_e1_wann,max_e2_wann)
         le2w=bndint(ist2,lr_evalsvnr(ist2,jk),min_e1_wann,max_e2_wann)
-        if ((lwannresp.and..not.wann_diel()).and.(le1w.and.le2w)) lwann=.true.
+        if ((wannier_chi0_chi.and..not.wann_diel()).and.(le1w.and.le2w)) lwann=.true.
         if (crpa.and.(le1w.and.le2w)) lwann=.true.
       endif
       if ((ldocc.or.lwann).and.(le1.and.le2)) then

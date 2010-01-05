@@ -71,14 +71,10 @@ write(160,'("#  13:  Re sigma [eV]                  ")')
 write(160,'("#  14:  Im sigma [eV]                  ")')
 write(160,'("#  15:  Re sigma_scalar [eV]           ")')
 write(160,'("#  16:  Im sigma_scalar [eV]           ")')
-write(160,'("#  17: -Re chi0_wf_full(Gq,Gq)   [1/eV/A^3]    ")')
-write(160,'("#  18: -Im chi0_wf_full(Gq,Gq)   [1/eV/A^3]    ")')
-write(160,'("#  19: -Re chi0_wf(Gq,Gq)        [1/eV/A^3]    ")')
-write(160,'("#  20: -Im chi0_wf(Gq,Gq)        [1/eV/A^3]    ")')
-write(160,'("#  21: -Re chi_wf(Gq,Gq)         [1/eV/A^3]    ")')
-write(160,'("#  22: -Im chi_wf(Gq,Gq)         [1/eV/A^3]    ")')
+write(160,'("#  17:  loss_function                  ")')
+write(160,'("#  18:  loss_function_scalar           ")')
 write(160,'("#")')
-allocate(func(22,nepts))
+allocate(func(18,nepts))
 do ie=1,nepts
   func(1,ie)=dreal(lr_w(ie))*ha2ev
   func(2,ie)=-dreal(chi_(1,ie))/ha2ev/(au2ang)**3
@@ -98,26 +94,11 @@ do ie=1,nepts
   z1=zi*dreal(lr_w(ie))*(zone-epsilon_(5,ie))/fourpi
   func(15,ie)=dreal(z1)*ha2ev
   func(16,ie)=dimag(z1)*ha2ev
-  func(17,ie)=-dreal(chi_(5,ie))/ha2ev/(au2ang)**3
-  func(18,ie)=-dimag(chi_(5,ie))/ha2ev/(au2ang)**3
-  func(19,ie)=-dreal(chi_(6,ie))/ha2ev/(au2ang)**3
-  func(20,ie)=-dimag(chi_(6,ie))/ha2ev/(au2ang)**3
-  func(21,ie)=-dreal(chi_(7,ie))/ha2ev/(au2ang)**3
-  func(22,ie)=-dimag(chi_(7,ie))/ha2ev/(au2ang)**3
-  write(160,'(22G14.6)')func(1:22,ie)
+  func(17,ie)=-dimag(1.d0/epsilon_(4,ie))
+  func(18,ie)=-dimag(1.d0/epsilon_(5,ie))
+  write(160,'(18G14.6)')func(1:18,ie)
 enddo
 deallocate(func)
 close(160)
-! eigen-values of denominator matrix
-!fname=trim(qnm)//"__"//trim(adjustl(c4))//"__G_"//trim(adjustl(c3))//&
-!  "__A_"//trim(adjustl(c2))//"_epseval__.dat"
-!open(160,file=trim(fname),form='formatted',status='replace')
-!do i=1,ngvecchi
-!  do ie=1,nepts
-!    write(160,'(4G18.10)')dreal(lr_w(ie))*ha2ev,abs(1.d0/lmbd(i,ie)),dreal(lmbd(i,ie)),dimag(lmbd(i,ie))  
-!  enddo
-!  write(160,'(" ")')
-!enddo
-!close(160)
 return
 end

@@ -25,7 +25,6 @@ real(8), external :: gaunt
 ! use first direction in the grid (direction of k-points) to compute
 !   MT integrals in parallel
 ngvecmeloc1=mpi_grid_map(ngvecmeloc,dim_k)
-
 allocate(jl(nrmtmax,0:lmaxexp))
 allocate(uju(0:lmaxexp,0:lmaxvr,0:lmaxvr,nrfmax,nrfmax))
 
@@ -108,6 +107,9 @@ enddo !igloc1
 do igloc=1,ngvecmeloc
   call mpi_grid_reduce(gntuju(1,1,igloc),ngntujumax*natmtot,dims=(/dim_k/),&
     all=.true.)
+  call mpi_grid_reduce(igntuju(1,1,1,igloc),4*ngntujumax*natmtot,dims=(/dim_k/),&
+    all=.true.)
+  call mpi_grid_reduce(ngntuju(1,igloc),natmtot,dims=(/dim_k/),all=.true.)    
   call mpi_grid_barrier(dims=(/dim_k/))
 enddo
 deallocate(jl)

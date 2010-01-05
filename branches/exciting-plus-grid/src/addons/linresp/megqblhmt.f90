@@ -24,14 +24,19 @@ integer ist1_prev
 complex(8), external :: zdotu,zdotc
 
 ! TODO: add explanation about how it all works
+!write(*,*)'ik=',ik
+!write(*,*)'nmegqblh_=',nmegqblh_
+!write(*,*)'bmegqblh_=',sum(bmegqblh_)
+!write(*,*)'wfsvmt1=',sum(wfsvmt1)
+!write(*,*)'wfsvmt2=',sum(wfsvmt2)
+!write(*,*)'ngntujumax=',ngntujumax
+!write(*,*)'ngntuju=',sum(ngntuju)
+!write(*,*)'igntuju=',sum(igntuju)
+!write(*,*)'gntuju=',sum(gntuju)
+!write(*,*)
 
 allocate(megq_tmp(ngvecme,nmegqblhmax))
 megq_tmp=zzero
-
-!call idxbos(ngvecme,mpi_dims(2),mpi_x(2)+1,idx0,bs)
-!idx_g1=idx0+1
-!idx_g2=idx0+bs
-
 ist1_prev=-1
 do igloc=1,ngvecmeloc
   ig=mpi_grid_map(ngvecme,dim_g,loc=igloc)

@@ -132,7 +132,7 @@ dim_g=dim2
 dim_b=dim2
 dim_f=dim2
 dim_q=dim3
-if (task.eq.0.or.task.eq.1.or.task.eq.22) then
+if (task.eq.0.or.task.eq.1) then
   allocate(grid_dim(1))
   grid_dim=(/nproc/)
 else if (task.eq.400.or.task.eq.401.or.task.eq.402.or.task.eq.403) then

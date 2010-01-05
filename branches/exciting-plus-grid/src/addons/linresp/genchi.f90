@@ -45,6 +45,7 @@ integer i1,i2,ifxc,ifxc1,ifxc2
 integer iv(3)
 character*100 fchi,fchi0,fme,qnm,path
 character*3 c3
+integer nwstep,iwstep,iw,nwloc
 complex(8), external :: zdotu
 
 ! we need Bcx and magnetization from STATE.OUT
@@ -92,7 +93,7 @@ if (mpi_grid_root(dims=(/dim_w,dim_f/))) then
   call read_real8(vq0rl,3,trim(fchi0),'/parameters','vq0rl')
   call read_real8(vq0c,3,trim(fchi0),'/parameters','vq0c')
   call read_real8(vq0rc,3,trim(fchi0),'/parameters','vq0rc')
-  if (lwannresp) then
+  if (wannier_chi0_chi) then
     call read_integer(ntrchi0wan,1,trim(fchi0),'/wannier','ntrchi0wan')
   endif
 endif
@@ -107,8 +108,7 @@ call mpi_grid_bcast(vq0l(1),3,dims=(/dim_w,dim_f/))
 call mpi_grid_bcast(vq0rl(1),3,dims=(/dim_w,dim_f/))
 call mpi_grid_bcast(vq0c(1),3,dims=(/dim_w,dim_f/))
 call mpi_grid_bcast(vq0rc(1),3,dims=(/dim_w,dim_f/))
-
-!if (lwannresp) then
+!if (wannier_chi0_chi) then
 !  call i_bcast_cart(comm_cart_110,ntrchi0wan,1)
 !endif
 !! read from me file 
@@ -176,6 +176,7 @@ if (wproc) then
   write(150,'("Number of G-vectors : ",I4)')ngvecchi
   call flushifc(150)
 endif
+
 !
 !! for response in Wannier basis
 !if (lwannresp) then
@@ -350,57 +351,65 @@ if (lrtype.eq.1) then
 endif !lrtype.eq.1
 
 ! distribute energy points between 1-st dimension
-bs=mpi_grid_map(nepts,dim_w,offs=idx0)
-ie1=idx0+1
-ie2=idx0+bs
+i=0
+nwstep=mpi_grid_map(nepts,dim_w,x=i)
+nwloc=mpi_grid_map(nepts,dim_w)
+!bs=mpi_grid_map(nepts,dim_w,offs=idx0)
+!ie1=idx0+1
+!ie2=idx0+bs
 ! distribute nfxca between 2-nd dimension 
 bs=mpi_grid_map(nfxca,dim_f,offs=idx0)
 ifxc1=idx0+1
 ifxc2=idx0+bs
 ! main loop over energy points 
-do ie=ie1,ie2
+do iwstep=1,nwstep
 ! read chi0(iw) from file
   if (mpi_grid_root(dims=(/dim_f/))) then
     do i=0,mpi_grid_size(dim_w)-1
     do j=0,mpi_grid_size(dim_q)-1
       if (mpi_grid_x(dim_w).eq.i.and.mpi_grid_x(dim_q).eq.j) then
-        write(path,'("/iw/",I8.8)')ie
-        call read_real8(lr_w(ie),2,trim(fchi0),trim(path),'w')
-        call read_real8_array(chi0w,3,(/2,ngvecme,ngvecme/), &
-          trim(fchi0),trim(path),'chi0')
-        if (lwannresp) then
-          call read_real8_array(chi_(5,ie,1),1,(/2/),trim(fchi0),trim(path),'chi0wf')
-          call read_real8_array(chi0wan,4,(/2,nmegqwan,nmegqwan,ntrchi0wan/), &
-            trim(fchi0),trim(path),'chi0wan')
+        if (iwstep.le.nwloc) then
+          iw=mpi_grid_map(nepts,dim_w,loc=iwstep)
+          write(path,'("/iw/",I8.8)')iw
+          call read_real8(lr_w(iw),2,trim(fchi0),trim(path),'w')
+          call read_real8_array(chi0w,3,(/2,ngvecme,ngvecme/), &
+            trim(fchi0),trim(path),'chi0')
+          if (wannier_chi0_chi) then
+            call read_real8_array(chi_(5,iw,1),1,(/2/),trim(fchi0),trim(path),'chi0wf')
+            call read_real8_array(chi0wan,4,(/2,nmegqwan,nmegqwan,ntrchi0wan/), &
+              trim(fchi0),trim(path),'chi0wan')
+          endif
         endif
       endif
       if (.not.parallel_read) call mpi_grid_barrier(dims=(/dim_w,dim_q/))
-    enddo
-    enddo
+    enddo !j
+    enddo !i
   endif
-  call mpi_grid_bcast(chi0w(1,1),ngvecme*ngvecme,dims=(/dim_f/))
+  if (iwstep.le.nwloc) then
+    iw=mpi_grid_map(nepts,dim_w,loc=iwstep)
+    call mpi_grid_bcast(chi0w(1,1),ngvecme*ngvecme,dims=(/dim_f/))
 ! prepare chi0
-  chi0m(1:ngvecchi,1:ngvecchi)=chi0w(ig1:ig2,ig1:ig2)
+    chi0m(1:ngvecchi,1:ngvecchi)=chi0w(ig1:ig2,ig1:ig2)
 ! loop over fxc
-  do ifxc=ifxc1,ifxc2
-    fxca=fxca0+(ifxc-1)*fxca1
+    do ifxc=ifxc1,ifxc2
+      fxca=fxca0+(ifxc-1)*fxca1
 ! prepare fxc kernel
-    krnl=krnl_rpa
-    if (lrtype.eq.0) then
-      do ig=1,ngvecchi
-        if (fxctype.eq.1) then
-          krnl(ig,ig)=krnl(ig,ig)-fxca/2.d0
-        endif
-        if (fxctype.eq.2) then
+      krnl=krnl_rpa
+      if (lrtype.eq.0) then
+        do ig=1,ngvecchi
+          if (fxctype.eq.1) then
+            krnl(ig,ig)=krnl(ig,ig)-fxca/2.d0
+          endif
+          if (fxctype.eq.2) then
 ! generate G+q vector  
-          vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
-          gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
-          krnl(ig,ig)=krnl(ig,ig)-fxca*krnl_rpa(ig,ig)
-        endif
-      enddo
-    endif
-    call solve_chi(igq0,vcgq,chi0m,krnl,chi_(1,ie,ifxc),epsilon_(1,ie,ifxc),&
-      krnl_scr)
+            vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
+            gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
+            krnl(ig,ig)=krnl(ig,ig)-fxca*krnl_rpa(ig,ig)
+          endif
+        enddo
+      endif
+      call solve_chi(igq0,vcgq,chi0m,krnl,chi_(1,iw,ifxc),epsilon_(1,iw,ifxc),&
+        krnl_scr)
 !    if (wannier.and.lwannresp.and.ifxc.eq.1) then
 !      call solve_chi_wf(ntrmegqwan,ntrchi0wan,itridxwan,nmegqwan,nnzme,inzme,megqwan,chi0wan,mtrx_v,&
 !        chi_(6,ie,1),chi_(7,ie,1),igq0)
@@ -491,7 +500,8 @@ do ie=ie1,ie2
 !      close(170)
 !      deallocate(uscrn,ubare)
 !    endif
-   enddo !ifxc
+     enddo !ifxc
+   endif
 enddo !ie
 call mpi_grid_reduce(lr_w(1),nepts,dims=(/dim_w/))
 call mpi_grid_reduce(chi_(1,1,1),7*nepts*nfxca,dims=(/dim_w,dim_f/))
@@ -513,7 +523,7 @@ if (wannier) then
   deallocate(megqwan)
   deallocate(bmegqwan)
 endif
-if (lwannresp) then
+if (wannier_chi0_chi) then
   deallocate(itrchi0wan)
   deallocate(itridxwan)
   deallocate(chi0wan)
