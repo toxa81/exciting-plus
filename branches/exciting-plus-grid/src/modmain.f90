@@ -1054,7 +1054,6 @@ complex(8), allocatable :: megqblh(:,:,:)
 !   2-nd index : global index of pair of bands (n,n')
 !   3-rd index : k-point
 integer, allocatable :: bmegqblh(:,:,:)
-
 integer nmegqwan
 integer, allocatable :: bmegqwan(:,:)
 integer, allocatable :: imegqwan(:,:)
@@ -1065,7 +1064,6 @@ integer, allocatable :: itrmegqwan(:,:)
 
 integer ntrchi0wan
 integer, allocatable :: itrchi0wan(:,:)
-
 integer, allocatable :: itridxwan(:,:)
 
 complex(8), allocatable :: chi0wan(:,:,:)
@@ -1101,6 +1099,9 @@ data parallel_read/.false./
 ! high-level switch: compute chi0 and chi in Wannier functions basis
 logical wannier_chi0_chi 
 data wannier_chi0_chi/.false./
+! low level switch: compute matrix elements of e^{i(G+q)x} in the basis of
+!   Wannier functions; depends on crpa and wannier_chi0_chi
+logical wannier_megq
 ! low-level switch: write or not file with matrix elements; depends on task 
 logical write_megq_file
 ! low level switch: compute screened W matrix and screened U; depends on crpa

@@ -859,7 +859,7 @@ integer n1,n2
 logical lerr
 
 lerr=.false.
-if (length.lt.1) lerr=.true.
+if (length.lt.0) lerr=.true.
 if (nblocks.lt.1) lerr=.true.
 if (iblock.lt.1.or.iblock.gt.nblocks) lerr=.true.
 if (lerr) then
@@ -871,6 +871,12 @@ if (lerr) then
   write(*,*)
   call pstop
 endif
+if (length.eq.0) then
+  idx0=-1
+  blocksize=0
+  return
+endif
+  
 n1=length/nblocks
 n2=mod(length,nblocks)
 if (n1.eq.0) then

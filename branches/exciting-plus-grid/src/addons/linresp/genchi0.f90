@@ -70,7 +70,23 @@ enddo
 
 !read matrix elements
 if (write_megq_file) then
-  call readmegq(qnm)
+  call timer_start(1,reset=.true.)
+  if (wproc) then
+    write(150,*)
+    write(150,'("Reading matrix elements")')
+    call flushifc(150)
+  endif
+  call readmegqblh(qnm)
+  if (wannier_megq) call readmegqwan(qnm)
+  call timer_stop(1)
+  if (wproc) then
+    write(150,'("Done in ",F8.2," seconds")')timer_get_value(1)
+    write(150,*)
+    write(150,'("matrix elements were calculated for: ")')
+    write(150,'("  G-shells  : ",I4," to ", I4)')gshme1,gshme2
+    write(150,'("  G-vectors : ",I4," to ", I4)')gvecme1,gvecme2
+    call flushifc(150)
+  endif
 endif
 
 
@@ -296,7 +312,7 @@ do ie=ie1,nepts
 enddo !ie
 
 if (wannier_chi0_chi) then
-  if (mpi_grid_root((/dim_k,dim2,0/))) then
+  if (mpi_grid_root((/dim_k,dim2/))) then
     call write_integer(ntrchi0wan,1,trim(fchi0),'/wannier','ntrchi0wan')
     call write_integer_array(itrchi0wan,2,(/3,ntrchi0wan/),trim(fchi0),'/wannier','itrchi0wan')
     call write_integer_array(itridxwan,2,(/ntrmegqwan,ntrmegqwan/),trim(fchi0),'/wannier','itridxwan')
