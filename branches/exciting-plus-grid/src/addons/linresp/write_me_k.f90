@@ -1,4 +1,4 @@
-subroutine writeme(ikloc,fname,me,pmat)
+subroutine write_me_k(ikloc,fname,me,pmat)
 #ifdef _HDF5_
 use modmain
 implicit none
