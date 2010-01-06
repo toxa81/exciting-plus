@@ -16,15 +16,14 @@ complex(8), intent(in) :: pmat(3,nstsv,nstsv,nkptnrloc)
 integer, allocatable :: igkignr2(:)
 complex(8), allocatable :: wfsvmt2(:,:,:,:,:)
 complex(8), allocatable :: wfsvit2(:,:,:)
-complex(8), allocatable :: wann_c2(:,:)
 
-integer n1,n2,i1,i2,i3,itr,n,ist1,ist2,ig1,ig2
+integer n1,n2,i1,i2,i3,itr,n,ist1,ist2
 real(8) vtrc(3)
 
 integer i,j,ik,jk,ig,ikstep,ierr,sz,ikloc,complete
 integer ngknr2
 real(8) vkq0l(3)
-integer ivg1(3),ivg2(3)
+integer ivg1(3)
 complex(8), allocatable :: gntuju(:,:,:)
 integer, allocatable :: igntuju(:,:,:,:)
 integer, allocatable :: ngntuju(:,:)
@@ -32,28 +31,13 @@ integer ngntujumax
 complex(8) zt1
 integer nkstep
 
-complex(8), allocatable :: chi0w(:,:)
-
 integer lmaxexp
 integer lmmaxexp
 
 character*100 :: qnm,fout,fme,fmek
 logical l1
 
-integer, allocatable :: igishell(:)
-integer, allocatable :: ishellng(:,:)
-integer ngsh,gshq0
-
 logical exist
-
-complex(8), allocatable :: krnl(:,:)
-complex(8), allocatable :: krnl_scr(:,:)
-real(8), allocatable :: vcgq(:)
-complex(8), allocatable :: epsilon(:,:)
-complex(8), allocatable :: uscrn(:,:)
-complex(8), allocatable :: ubare(:,:)
-
-
 
 ! HDF5
 integer(hid_t) h5_root_id
@@ -68,8 +52,6 @@ logical, external :: wann_diel
 
 ! comment:
 ! the subroutine computes <psi_{n,k}|e^{-i(G+q)x}|psi_{n',k+q}> 
-!
-! quck turnaround for cRPA: compute chi0 and chi here; no writing 
 ! 
 ! switch write_megq_file controls the reading and writing of ME file
 ! when we write ME we have two choices: write to single file or write
@@ -105,12 +87,13 @@ if (wproc) then
   write(150,'("  <n,k|e^{-i(G+q)x}|n'',k+q>")')
 endif
 
+! initialize G, q and G+q vectors
 call init_g_q_gq(ivq0m,lmaxexp,lmmaxexp)
 
-allocate(idxkq(2,nkptnr))
 ! find k+q and reduce them to first BZ (this is required to utilize the 
 !   periodical property of Bloch-states: |k>=|k+K>, where K is any vector 
 !   of the reciprocal lattice)
+allocate(idxkq(2,nkptnr))
 do ik=1,nkptnr
 ! k+q vector
   vkq0l(:)=vklnr(:,ik)+vq0rl(:)+1d-12
@@ -173,7 +156,7 @@ if (wproc) then
   call flushifc(150)
 endif
 
-if (wannier) then
+if (wannier_megq) then
   allocate(bmegqwan(2,nwann*nwann))
   nmegqwan=0
   do n1=1,nwann
@@ -214,7 +197,7 @@ if (mpi_grid_root(dims=(/dim_k,dim2/)).and.write_megq_file) then
   call h5fcreate_f(trim(fme),H5F_ACC_TRUNC_F,h5_root_id,ierr)
   call h5gcreate_f(h5_root_id,'parameters',h5_tmp_id,ierr)
   call h5gclose_f(h5_tmp_id,ierr)
-  if (wannier) then
+  if (wannier_megq) then
     call h5gcreate_f(h5_root_id,'wannier',h5_tmp_id,ierr)
     call h5gclose_f(h5_tmp_id,ierr)
   endif
@@ -245,7 +228,7 @@ if (mpi_grid_root(dims=(/dim_k,dim2/)).and.write_megq_file) then
       trim(fme),'/parameters','occsvnr')  
   complete=0
   call write_integer(complete,1,trim(fme),'/parameters','complete')
-  if (wannier) then
+  if (wannier_megq) then
     call write_real8(wann_occ,nwann,trim(fme),'/wannier','wann_occ')
   endif
 endif
@@ -291,14 +274,6 @@ allocate(megqblh(ngvecme,nmegqblhmax,nkptnrloc))
 allocate(wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
 allocate(wfsvit2(ngkmax,nspinor,nstsv))
 allocate(igkignr2(ngkmax))
-if (wannier) then
-  allocate(wann_c2(nwann,nstsv))
-endif
-
-if (crpa) then
-  allocate(chi0w(ngvecme,ngvecme))
-  chi0w=zzero
-endif
 
 i=0
 nkstep=mpi_grid_map(nkptnr,dim_k,x=i)
@@ -315,7 +290,7 @@ do ikstep=1,nkstep
 ! transmit wave-functions
   call timer_start(1,reset=.true.)
   call getwfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
-    wfsvit2,ngknr2,igkignr2,wann_c2)
+    wfsvit2,ngknr2,igkignr2)
   if (wproc) then
     write(150,'("  wave-functions are distributed")')
     call flushifc(150)
@@ -353,7 +328,8 @@ do ikstep=1,nkstep
 !    endif
 ! add contribution from k-point to the matrix elements of e^{-i(G+q)x} in 
 !  the basis of Wannier functions
-    if (wannier) then
+    if (wannier_megq) then
+! todo: use dim2 of mpi grid for something (tranlations or G-vectors) 
       do itr=1,ntrmegqwan
         vtrc(:)=avec(:,1)*itrmegqwan(1,itr)+&
                 avec(:,2)*itrmegqwan(2,itr)+&
@@ -367,18 +343,13 @@ do ikstep=1,nkstep
               ist1=bmegqblh(1,i,ikstep)
               ist2=bmegqblh(2,i,ikstep)
               megqwan(n,itr,ig)=megqwan(n,itr,ig)+dconjg(wann_c(n1,ist1,ikstep))*&
-                  wann_c2(n2,ist2)*megqblh(ig,i,ikstep)*zt1
+                  wann_c(n2,ist2,ikstep+nkptnrloc)*megqblh(ig,i,ikstep)*zt1
             enddo !i
           enddo !n
         enddo !ig      
       enddo !itr
     endif !wannier
-!    if (crpa) then
-! for each k-point : sum over interband transitions
-!      call sum_chi0(ikstep,ikstep,ik,idxkq(1,ik),nmegqblh(ikstep),1,nmegqblh(ikstep),&
-!        lr_evalsvnr,lr_occsvnr,zi*lr_eta/ha2ev,chi0w)
-!    endif
-  endif ! ikstep.le.nkptnrloc(mpi_x(1))
+  endif !ikstep.le.nkptnrloc
   call timer_stop(2)
   if (wproc) then
     write(150,'("  time (seconds)")')
@@ -393,23 +364,6 @@ do ikstep=1,nkstep
   endif
 enddo !ikstep
 
-!if (wannier) then
-!! sum over all k-points to get <n,T=0|e^{-i(G+q)x|n',T'>
-!  if (root_cart((/0,1,0/)).and.mpi_dims(1).gt.1) then
-!    call d_reduce_cart(comm_cart_100,.false.,megqwan,2*nmegqwan*ntrmegqwan*ngvecme)
-!  endif
-!  megqwan=megqwan/nkptnr
-!  if (root_cart((/1,1,0/)).and.lwriteme) then
-!    fname=trim(qnm)//"_me.hdf5"
-!    call write_integer(ntrmegqwan,1,trim(fname),'/wannier','ntrmegqwan')
-!    call write_integer(nmegqwan,1,trim(fname),'/wannier','nmegqwan')
-!    call write_real8_array(megqwan,4,(/2,nmegqwan,ntrmegqwan,ngvecme/), &
-!      trim(fname),'/wannier','megqwan')
-!    call write_integer_array(itrmegqwan,2,(/3,ntrmegqwan/),trim(fname),'/wannier','itrmegqwan')
-!    call write_integer_array(bmegqwan,2,(/2,nmegqwan/),trim(fname),'/wannier','bmegqwan')
-!  endif
-!endif
-
 if (write_megq_file) then
   if (wproc) then
     write(150,*)
@@ -421,7 +375,7 @@ if (write_megq_file) then
       do i=0,mpi_grid_size(1)-1
         if (mpi_grid_x(1).eq.i) then
           do ikloc=1,nkptnrloc
-            call writeme(ikloc,fme,megqblh(1,1,ikloc),wann_c2,pmat(1,1,1,ikloc))
+            call writeme(ikloc,fme,megqblh(1,1,ikloc),pmat(1,1,1,ikloc))
           enddo
         endif
         call mpi_grid_barrier(dims=(/dim_k/))
@@ -431,7 +385,7 @@ if (write_megq_file) then
         ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
         write(fmek,'("_me_k_",I8.8)')ik
         fmek=trim(qnm)//trim(fmek)//".hdf5"
-        call writeme(ikloc,fmek,megqblh(1,1,ikloc),wann_c2,pmat(1,1,1,ikloc))
+        call writeme(ikloc,fmek,megqblh(1,1,ikloc),pmat(1,1,1,ikloc))
       enddo
     endif !.not.spit_megq_file
   endif !mpi_grid_root
@@ -439,116 +393,21 @@ if (write_megq_file) then
   if (wproc) write(150,'(" Done in : ",F8.2)')timer_get_value(3)
 endif
 
-!if (crpa) then
-!! sum chi0 over k-points
-!  if (root_cart((/0,1,0/)).and.mpi_dims(1).gt.1) then
-!    call d_reduce_cart(comm_cart_100,.false.,chi0w,2*ngvecme*ngvecme)
-!  endif
-!  if (root_cart((/1,1,0/))) then
-!	allocate(krnl(ngvecme,ngvecme))
-!	allocate(krnl_scr(ngvecme,ngvecme))
-!	allocate(vcgq(ngvecme))
-!	allocate(epsilon(ngvecme,ngvecme))
-!	krnl=zzero
-!	krnl_scr=zzero
-!	vcgq=0.d0
-!	do ig=1,ngvecme
-!	  vcgq(ig)=2*sqrt(pi)/gq0(ig)
-!	  krnl(ig,ig)=vcgq(ig)**2
-!	enddo !ig
-!    chi0w=chi0w/nkptnr/omega
-!	do ig1=1,ngvecme
-!	  do ig2=1,ngvecme
-!		epsilon(ig1,ig2)=-vcgq(ig1)*chi0w(ig1,ig2)*vcgq(ig2)
-!	  enddo
-!	  epsilon(ig1,ig1)=dcmplx(1.d0,0.d0)+epsilon(ig1,ig1)
-!	enddo
-!	call invzge(epsilon,ngvecme)
-!	do ig1=1,ngvecme
-!	  do ig2=1,ngvecme
-!		krnl_scr(ig1,ig2)=vcgq(ig1)*epsilon(ig1,ig2)*vcgq(ig2)
-!	  enddo
-!	enddo
-!  
-!	allocate(imegqwan(nwann,nwann))
-!	imegqwan=-1
-!	do i=1,nmegqwan
-!	  n1=bmegqwan(1,i)
-!	  n2=bmegqwan(2,i)
-!	  imegqwan(n1,n2)=i
-!	enddo
-!	
-!	allocate(uscrn(nwann,nwann))
-!	allocate(ubare(nwann,nwann))
-!	uscrn=zzero
-!	ubare=zzero
-!	do i1=1,ngvecme
-!	  do i2=1,ngvecme
-!		do n1=1,nwann
-!		  do n2=1,nwann
-!			uscrn(n1,n2)=uscrn(n1,n2)+dconjg(megqwan(imegqwan(n1,n1),1,i1))*&
-!			  krnl_scr(i1,i2)*megqwan(imegqwan(n2,n2),1,i2)
-!			ubare(n1,n2)=ubare(n1,n2)+dconjg(megqwan(imegqwan(n1,n1),1,i1))*&
-!			  krnl(i1,i2)*megqwan(imegqwan(n2,n2),1,i2)
-!		  enddo
-!		enddo
-!	  enddo
-!	enddo
-!	uscrn=ha2ev*uscrn/omega
-!	ubare=ha2ev*ubare/omega
-!	fname=trim(qnm)//"_U"
-!	open(170,file=trim(fname),status='replace',form='unformatted')
-!	write(170)uscrn,ubare
-!	close(170)
-!	fname=trim(qnm)//"_U.txt"
-!	open(170,file=trim(fname),status='replace',form='formatted')
-!	write(170,'("Screened U matrix")')
-!	write(170,'("real part")')
-!	do i=1,nwann
-!	  write(170,'(100F12.6)')(dreal(uscrn(i,j)),j=1,nwann)
-!	enddo
-!	write(170,'("imag part")')
-!	do i=1,nwann
-!	  write(170,'(100F12.6)')(dimag(uscrn(i,j)),j=1,nwann)
-!	enddo
-!	write(170,*)      
-!	write(170,'("Bare U matrix")')
-!	write(170,'("real part")')
-!	do i=1,nwann
-!	  write(170,'(100F12.6)')(dreal(ubare(i,j)),j=1,nwann)
-!	enddo
-!	write(170,'("imag part")')
-!	do i=1,nwann
-!	  write(170,'(100F12.6)')(dimag(ubare(i,j)),j=1,nwann)
-!	enddo  
-!	close(170)
-!
-!	if (ngvecme.gt.10) then
-!	  n1=10
-!	else
-!	  n1=ngvecme
-!	endif
-!	fname=trim(qnm)//"_krnl.txt"
-!	open(170,file=trim(fname),status='replace',form='formatted')
-!	write(170,'("Screened W matrix")')
-!	write(170,'("real part")')
-!	do i=1,n1
-!	  write(170,'(100F12.6)')(dreal(krnl_scr(i,j)),j=1,n1)
-!	enddo
-!	write(170,'("imag part")')
-!	do i=1,n1
-!	  write(170,'(100F12.6)')(dimag(krnl_scr(i,j)),j=1,n1)
-!	enddo
-!	close(170)
-!	
-!	deallocate(uscrn,ubare)
-!	deallocate(krnl)
-!	deallocate(krnl_scr)
-!	deallocate(vcgq)
-!	deallocate(epsilon)
-!	deallocate(imegqwan)
-!  endif
-!endif !crpa
+if (wannier_megq) then
+! sum over all k-points to get <n,T=0|e^{-i(G+q)x|n',T'>
+  if (mpi_grid_root((/dim2/))) then
+    call mpi_grid_reduce(megqwan(1,1,1),nmegqwan*ntrmegqwan*ngvecme,dims=(/dim_k/))
+  endif
+  megqwan=megqwan/nkptnr
+  if (mpi_grid_root((/dim_k,dim2/)).and.write_megq_file) then
+    call write_integer(ntrmegqwan,1,trim(fme),'/wannier','ntrmegqwan')
+    call write_integer(nmegqwan,1,trim(fme),'/wannier','nmegqwan')
+    call write_real8_array(megqwan,4,(/2,nmegqwan,ntrmegqwan,ngvecme/), &
+      trim(fme),'/wannier','megqwan')
+    call write_integer_array(itrmegqwan,2,(/3,ntrmegqwan/),trim(fme),'/wannier','itrmegqwan')
+    call write_integer_array(bmegqwan,2,(/2,nmegqwan/),trim(fme),'/wannier','bmegqwan')
+  endif
+endif
 
 ! deallocate arrays if we saved the ME file
 if (write_megq_file) then
@@ -556,6 +415,11 @@ if (write_megq_file) then
   deallocate(nmegqblh)
   deallocate(bmegqblh)
   deallocate(idxkq)
+  if (wannier_megq) then
+    deallocate(bmegqwan)
+    deallocate(itrmegqwan)
+    deallocate(megqwan)
+  endif
 endif
 
 deallocate(wfsvmt2)
@@ -567,23 +431,13 @@ deallocate(igntuju)
 if (spinpol) then
   deallocate(spinor_ud)
 endif
-if (wannier) then
-  deallocate(wann_c2)
-  deallocate(bmegqwan)
-  deallocate(itrmegqwan)
-  deallocate(megqwan)
-endif
-if (crpa) then
-  deallocate(chi0w)
+
+if (mpi_grid_root((/dim_k,dim2/)).and.write_megq_file) then
+  complete=1
+  call rewrite_integer(complete,1,trim(fme),'/parameters','complete')
 endif
 
-!if (root_cart((/1,1,0/)).and.lwriteme) then
-!  complete=1
-!  fname=trim(qnm)//"_me.hdf5"
-!  call rewrite_integer(complete,1,trim(fname),'/parameters','complete')
-!endif
-
-!call barrier(comm_cart_110)
+call mpi_grid_barrier((/dim_k,dim2/))
 
 30 continue
 if (wproc) then

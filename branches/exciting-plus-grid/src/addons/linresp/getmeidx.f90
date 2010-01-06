@@ -12,7 +12,7 @@ logical, external :: bndint
 logical, external :: wann_diel
 integer, allocatable :: wann_bnd(:,:)
 
-if (wannier) then
+if (wannier_megq) then
   allocate(wann_bnd(nstsv,nkptnr))
   wann_bnd=0
 ! mark all bands that contribute to WF expansion
@@ -49,7 +49,7 @@ endif !wannier
 if (req.and.wproc) then
   write(150,*)
   write(150,'("Bloch functions band interval (N1,N2 or E1,E2) : ",2F8.3)')lr_e1,lr_e2
-  if (wannier) then
+  if (wannier_megq) then
     write(150,'("Wannier functions band interval (N1,N2 or E1,E2) : ",2F8.3)')min_e1_wann,max_e2_wann
   endif
 endif
@@ -75,7 +75,7 @@ do ikloc=1,nkptnrloc
 !     1b. we are doing response in Wannier basis or constrained RPA
 !     2.  both bands ist1 and ist2 fall into energy interval
       lwann=.false.
-      if (wannier) then
+      if (wannier_megq) then
         le1w=bndint(ist1,lr_evalsvnr(ist1,ik),min_e1_wann,max_e2_wann)
         le2w=bndint(ist2,lr_evalsvnr(ist2,jk),min_e1_wann,max_e2_wann)
         if ((wannier_chi0_chi.and..not.wann_diel()).and.(le1w.and.le2w)) lwann=.true.

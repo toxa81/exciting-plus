@@ -1,9 +1,6 @@
 subroutine getwfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
-  wfsvit2,ngknr2,igkignr2,wann_c2) !,evecfv2,evecsv2)
+  wfsvit2,ngknr2,igkignr2)
 use modmain
-#ifdef _MPI_
-use mpi
-#endif
 implicit none
 integer, intent(in) :: ikstep
 complex(8), intent(in) :: wfsvmtloc(lmmaxvr,nrfmax,natmtot,nspinor,nstsv,*)
@@ -14,15 +11,8 @@ complex(8), intent(out) :: wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
 complex(8), intent(out) :: wfsvit2(ngkmax,nspinor,nstsv)
 integer, intent(out) :: ngknr2
 integer, intent(out) :: igkignr2(ngkmax)
-complex(8), intent(out) :: wann_c2(nwann,nstsv)
-!complex(8), intent(out) :: evecfv2(nmatmax,nstfv,nspnfv)
-!complex(8), intent(out) :: evecsv2(nstsv,nstsv)
 
-integer idx0,bs,ip,jx
-logical lsend,lrecv
-integer i,ik,jk,ikloc,nkptnrloc1,jkloc,j
-integer rank,tag,ierr,req
-integer, allocatable :: stat(:)
+integer i,ik,jk,nkptnrloc1,jkloc,j,tag
 
 ! each proc knows that it needs wave-functions at jk=idxkq(1,ik) (at k'=k+q)
 !
@@ -56,12 +46,11 @@ do i=0,mpi_grid_size(dim_k)-1
       tag=(ikstep*mpi_grid_size(dim_k)+i)*10
       call mpi_grid_send(wfsvmtloc(1,1,1,1,1,jkloc),&
         lmmaxvr*nrfmax*natmtot*nspinor*nstsv,(/dim_k/),(/i/),tag)
-!      write(*,*)mpi_grid_x(dim_k), ' --> ',i,sum(wfsvmtloc(:,:,:,:,:,jkloc))
       call mpi_grid_send(wfsvitloc(1,1,1,jkloc),ngkmax*nspinor*nstsv,&
         (/dim_k/),(/i/),tag+1)
       call mpi_grid_send(ngknr(jkloc),1,(/dim_k/),(/i/),tag+2)
       call mpi_grid_send(igkignr(1,jkloc),ngkmax,(/dim_k/),(/i/),tag+3)
-      if (wannier) then
+      if (wannier_megq) then
         call mpi_grid_send(wann_c(1,1,jkloc),nwann*nstsv,(/dim_k/),(/i/),tag+4)
       endif
     endif
@@ -71,13 +60,13 @@ do i=0,mpi_grid_size(dim_k)-1
         tag=(ikstep*mpi_grid_size(dim_k)+i)*10
         call mpi_grid_recieve(wfsvmt2(1,1,1,1,1),&
           lmmaxvr*nrfmax*natmtot*nspinor*nstsv,(/dim_k/),(/j/),tag)
-!        write(*,*)mpi_grid_x(dim_k), ' <-- ',j,sum(wfsvmt2(:,:,:,:,:))
         call mpi_grid_recieve(wfsvit2(1,1,1),ngkmax*nspinor*nstsv,&
           (/dim_k/),(/j/),tag+1)
         call mpi_grid_recieve(ngknr2,1,(/dim_k/),(/j/),tag+2)
         call mpi_grid_recieve(igkignr2(1),ngkmax,(/dim_k/),(/j/),tag+3)
-        if (wannier) then
-          call mpi_grid_recieve(wann_c2(1,1),nwann*nstsv,(/dim_k/),(/j/),tag+4)
+        if (wannier_megq) then
+          call mpi_grid_recieve(wann_c(1,1,ikstep+nkptnrloc),nwann*nstsv,&
+            (/dim_k/),(/j/),tag+4)
         endif
       else
 ! local copy
@@ -85,11 +74,11 @@ do i=0,mpi_grid_size(dim_k)-1
         wfsvit2(:,:,:)=wfsvitloc(:,:,:,jkloc)
         ngknr2=ngknr(jkloc)
         igkignr2(:)=igkignr(:,jkloc)
-        if (wannier) wann_c2(:,:)=wann_c(:,:,jkloc)
+        if (wannier_megq) wann_c(:,:,ikstep+nkptnrloc)=wann_c(:,:,jkloc)
       endif
     endif
   endif   
 enddo
-call mpi_grid_barrier((/dim_k,dim_g/))
+call mpi_grid_barrier((/dim_k,dim2/))
 return
 end

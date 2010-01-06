@@ -60,7 +60,10 @@ if (nvq0.eq.0) then
   write(*,*)
   call pstop
 endif
-  
+
+! high-level swich  
+wannier_chi0_chi=.true.
+
 if (.not.wannier) then
   wannier_chi0_chi=.false.
   lwannopt=.false.
@@ -77,6 +80,9 @@ if (task.eq.403) write_megq_file=.false.
 ! set the switch to compute screened matrices
 screen_w_u=crpa
 screened_w=.false.
+
+wannier_megq=.false.
+if (crpa.or.wannier_chi0_chi) wannier_megq=.true.
 
 ! this is enough for matrix elements
 lmaxvr=5
@@ -155,7 +161,7 @@ endif
 if (wproc) then
   write(151,'("Running on ",I8," proc.")')nproc
   if (parallel_read.and.nproc.gt.1) then
-    write(151,'("Reading files in parallel")')
+    write(151,'("  parallel file reading is on")')
   endif
   write(151,'("MPI grid size : ",3I6)')mpi_grid_size
   write(151,'("Wannier functions : ",L1)')wannier
@@ -271,10 +277,12 @@ if (task.eq.400.or.task.eq.403) then
     call flushifc(151)
   endif
 ! generate Wannier function expansion coefficients
-  if (wannier) then
+  if (wannier_megq) then
     call timer_start(1,reset=.true.)
     if (allocated(wann_c)) deallocate(wann_c)
-    allocate(wann_c(nwann,nstsv,nkptnrloc))
+! use first nkptnrloc points to store wann_c(k) and second nkptnrloc points
+!   to store wann_c(k+q)
+    allocate(wann_c(nwann,nstsv,2*nkptnrloc))
     if (wproc) then
       write(151,*)
       write(151,'("Generating Wannier functions")')
@@ -305,7 +313,7 @@ if (task.eq.400.or.task.eq.403) then
   call mpi_grid_reduce(lr_evalsvnr(1,1),nstsv*nkptnr,dims=(/dim_k/),all=.true.)
   allocate(lr_occsvnr(nstsv,nkptnr))
   call occupy2(nkptnr,wkptnr,lr_evalsvnr,lr_occsvnr)
-  if (wannier) then
+  if (wannier_megq) then
 ! calculate Wannier function occupancies 
     wann_occ=0.d0
     do n=1,nwann
@@ -424,7 +432,7 @@ if (task.eq.400.or.task.eq.403) then
   deallocate(igkignr)
 !  deallocate(lr_occsvnr)
 !  deallocate(lr_evalsvnr)   
-  if (wannier) deallocate(wann_c)
+  if (wannier_megq) deallocate(wann_c)
 endif
 
 return
