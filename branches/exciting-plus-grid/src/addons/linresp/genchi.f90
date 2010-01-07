@@ -40,7 +40,7 @@ integer itrans_m
 integer nnzme 
 integer, allocatable :: inzme(:,:)
 
-integer ig,i,j,ig1,ig2,ie1,ie2,idx0,bs,n1,n2,it1,it2,n3,n4,n
+integer ig,i,j,ig1,ig2,idx0,bs,n1,n2,it1,it2,n3,n4,n
 integer i1,i2,ifxc,ifxc1,ifxc2
 integer iv(3)
 character*100 fchi,fchi0,fme,qnm,path
@@ -297,7 +297,6 @@ endif !wannier_chi0_chi
 !
 
 igq0=lr_igq0-gvecchi1+1
-!fourpiq0=fourpi/(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)
 ig1=gvecchi1-gvecme1+1
 ig2=ig1+ngvecchi-1
 
@@ -343,9 +342,6 @@ endif !lrtype.eq.1
 i=0
 nwstep=mpi_grid_map(nepts,dim_w,x=i)
 nwloc=mpi_grid_map(nepts,dim_w)
-!bs=mpi_grid_map(nepts,dim_w,offs=idx0)
-!ie1=idx0+1
-!ie2=idx0+bs
 ! distribute nfxca between 2-nd dimension 
 bs=mpi_grid_map(nfxca,dim_f,offs=idx0)
 ifxc1=idx0+1
@@ -492,11 +488,12 @@ do iwstep=1,nwstep
      enddo !ifxc
    endif
 enddo !ie
+
 call mpi_grid_reduce(lr_w(1),nepts,dims=(/dim_w/))
 call mpi_grid_reduce(chi_(1,1,1),7*nepts*nfxca,dims=(/dim_w,dim_f/))
 call mpi_grid_reduce(epsilon_(1,1,1),5*nepts*nfxca,dims=(/dim_w,dim_f/))
 ! write response functions to .dat file
-if (mpi_grid_root(dims=(/dim_q/))) then
+if (mpi_grid_root(dims=(/dim_w,dim_f/))) then
   do ifxc=1,nfxca
     fxca=fxca0+(ifxc-1)*fxca1
     call write_chi(lr_igq0,ivq0m,chi_(1,1,ifxc),epsilon_(1,1,ifxc),fxca)

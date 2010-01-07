@@ -23,17 +23,9 @@ complex(8) zt1,zt3
 !complex(8), allocatable :: mewfx(:,:,:)
 !complex(8), allocatable :: pmat(:,:,:,:)
 
-!logical l1
-
 logical lafm
 logical, external :: bndint
 logical, external :: wann_diel
-
-! HDF5
-!integer(hid_t) h5_root_id
-!integer(hid_t) h5_w_id
-!integer(hid_t) h5_iw_id
-!integer(hid_t) h5_tmp_id
 
 complex(8), external :: zdotu
 
@@ -84,7 +76,6 @@ if (write_megq_file) then
     call flushifc(150)
   endif
 endif
-
 
 ! for response in Wannier bais
 if (wannier_chi0_chi) then
