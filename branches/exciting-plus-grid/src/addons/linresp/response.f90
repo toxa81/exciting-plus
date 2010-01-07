@@ -29,10 +29,13 @@ logical, external :: wann_diel
 !   it should be refactored; new hdf5 and mpi_grid interfaces are
 !   "a must"
 !
+! after some refactoring the code is still ugly
+!
 ! typical execution patterns
 !  I) compute and save ME (task 400), read ME, compute and save chi0 (task 401),
 !     read chi0 and compute chi (task 402)
 !  II) the same + Wannier channels decomposition 
+!  III) same as I) and II) but without saving matrix elements
 !
 ! New task list:
 !   400 - compute and write ME
@@ -46,7 +49,8 @@ logical, external :: wann_diel
 !                                           transitions x (3) q-points 
 !   401 (chi0) : (1) k-points x (2) interband transition x (3) q-points 
 !   402 (chi) : (1) energy mesh x (2) number of fxc kernels x (3) q-points
-
+!
+! todo: more comments!!!
 
 if (lrtype.eq.1.and..not.spinpol) then
   write(*,*)
@@ -63,6 +67,7 @@ endif
 
 ! high-level swich  
 wannier_chi0_chi=.true.
+lr_maxtr=1
 
 if (.not.wannier) then
   wannier_chi0_chi=.false.
@@ -432,7 +437,7 @@ if (task.eq.400.or.task.eq.403) then
   deallocate(igkignr)
 !  deallocate(lr_occsvnr)
 !  deallocate(lr_evalsvnr)   
-  if (wannier_megq) deallocate(wann_c)
+!  if (wannier_megq) deallocate(wann_c)
 endif
 
 return

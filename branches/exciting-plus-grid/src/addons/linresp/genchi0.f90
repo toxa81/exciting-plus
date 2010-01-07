@@ -7,37 +7,33 @@ implicit none
 integer, intent(in) :: ivq0m(3)
 ! local variables
 complex(8), allocatable :: chi0w(:,:)
-integer i,j,ik,ie,nkptnr_,i1,i2,i3,ikloc,nspinor_
+integer i,j,ik,ie,i1,i2,i3,ikloc
 integer idx0,bs
 integer igq0
 complex(8) wt
 character*100 path,qnm,fout,fchi0
-character*8 c8
-integer ierr
 logical exist
-integer ie1,n,n1,n2,n3,n4,jk,ist1,ist2,ig,sz1,sz2
-!complex(8), allocatable :: wann_c1(:,:,:)
-!complex(8), allocatable :: wann_c2(:,:,:)
+integer ie1,n,n1,n2,n3,n4,jk,ist1,ist2,sz1,sz2
 complex(8), allocatable :: zv1(:),zm2(:,:,:)
 integer iv(3)
 
-integer it1,it2
+integer it2
 real(8) vtrc(3)
-complex(8) zt1,zt2,zt3
+complex(8) zt1,zt3
 !complex(8), allocatable :: mewfx(:,:,:)
-complex(8), allocatable :: pmat(:,:,:,:)
+!complex(8), allocatable :: pmat(:,:,:,:)
 
-logical l1
+!logical l1
 
 logical lafm
 logical, external :: bndint
 logical, external :: wann_diel
 
 ! HDF5
-integer(hid_t) h5_root_id
-integer(hid_t) h5_w_id
-integer(hid_t) h5_iw_id
-integer(hid_t) h5_tmp_id
+!integer(hid_t) h5_root_id
+!integer(hid_t) h5_w_id
+!integer(hid_t) h5_iw_id
+!integer(hid_t) h5_tmp_id
 
 complex(8), external :: zdotu
 
@@ -77,7 +73,7 @@ if (write_megq_file) then
     call flushifc(150)
   endif
   call readmegqblh(qnm)
-  if (wannier_megq) call readmegqwan(qnm)
+  if (wannier_chi0_chi) call readmegqwan(qnm)
   call timer_stop(1)
   if (wproc) then
     write(150,'("Done in ",F8.2," seconds")')timer_get_value(1)
@@ -142,33 +138,7 @@ if (mpi_grid_root((/dim_k,dim_b/))) then
   inquire(file=trim(fchi0),exist=exist)
   exist=.false.
   if (.not.exist) then
-    call h5fcreate_f(trim(fchi0),H5F_ACC_TRUNC_F,h5_root_id,ierr)
-    call h5gcreate_f(h5_root_id,'parameters',h5_tmp_id,ierr)
-    call h5gclose_f(h5_tmp_id,ierr)
-    if (wannier_chi0_chi) then
-      call h5gcreate_f(h5_root_id,'wannier',h5_tmp_id,ierr)
-      call h5gclose_f(h5_tmp_id,ierr)
-    endif
-    call h5gcreate_f(h5_root_id,'iw',h5_w_id,ierr)
-    do i=1,nepts
-      write(c8,'(I8.8)')i
-      call h5gcreate_f(h5_w_id,c8,h5_iw_id,ierr)
-      call h5gclose_f(h5_iw_id,ierr)
-    enddo
-    call h5gclose_f(h5_w_id,ierr)
-    call h5fclose_f(h5_root_id,ierr)
-    call write_integer(nepts,1,trim(fchi0),'/parameters','nepts')
-    call write_integer(lr_igq0,1,trim(fchi0),'/parameters','lr_igq0')
-    call write_integer(gshme1,1,trim(fchi0),'/parameters','gshme1')
-    call write_integer(gshme2,1,trim(fchi0),'/parameters','gshme2')
-    call write_integer(gvecme1,1,trim(fchi0),'/parameters','gvecme1')
-    call write_integer(gvecme2,1,trim(fchi0),'/parameters','gvecme2')
-    call write_integer(ngvecme,1,trim(fchi0),'/parameters','ngvecme')
-    call write_real8(vq0l,3,trim(fchi0),'/parameters','vq0l')
-    call write_real8(vq0rl,3,trim(fchi0),'/parameters','vq0rl')
-    call write_real8(vq0c,3,trim(fchi0),'/parameters','vq0c')
-    call write_real8(vq0rc,3,trim(fchi0),'/parameters','vq0rc')
-    call write_integer(ie1,1,trim(fchi0),'/parameters','ie1')
+    call write_chi0_header(qnm)
   else
     call read_integer(ie1,1,trim(fchi0),'/parameters','ie1')
   endif
@@ -363,9 +333,11 @@ deallocate(megqblh)
 deallocate(chi0w)
 if (wannier_megq) then
   deallocate(wann_c)
-  deallocate(itrmegqwan)
-  deallocate(megqwan)
-  deallocate(bmegqwan)
+  if (write_megq_file) then
+    deallocate(itrmegqwan)
+    deallocate(megqwan)
+    deallocate(bmegqwan)
+  endif
 endif
 if (wannier_chi0_chi) then
   deallocate(itrchi0wan)
@@ -377,6 +349,12 @@ endif
 !if (lwannopt) then
 !  deallocate(pmat)
 !endif
+if (wproc) then
+  write(150,*)
+  write(150,'("Done.")')
+  call flushifc(150)
+endif
+
  
 return
 end

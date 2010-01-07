@@ -40,7 +40,7 @@ integer itrans_m
 integer nnzme 
 integer, allocatable :: inzme(:,:)
 
-integer ie,ig,i,j,ig1,ig2,ie1,ie2,idx0,bs,n1,n2,it1,it2,n3,n4,n
+integer ig,i,j,ig1,ig2,ie1,ie2,idx0,bs,n1,n2,it1,it2,n3,n4,n
 integer i1,i2,ifxc,ifxc1,ifxc2
 integer iv(3)
 character*100 fchi,fchi0,fme,qnm,path
@@ -108,56 +108,34 @@ call mpi_grid_bcast(vq0l(1),3,dims=(/dim_w,dim_f/))
 call mpi_grid_bcast(vq0rl(1),3,dims=(/dim_w,dim_f/))
 call mpi_grid_bcast(vq0c(1),3,dims=(/dim_w,dim_f/))
 call mpi_grid_bcast(vq0rc(1),3,dims=(/dim_w,dim_f/))
-!if (wannier_chi0_chi) then
-!  call i_bcast_cart(comm_cart_110,ntrchi0wan,1)
-!endif
-!! read from me file 
-!if (root_cart((/1,1,0/))) then
-!  if (wannier) then
-!    call read_integer(ntrmegqwan,1,trim(fname_me),'/wannier','ntrmegqwan')
-!    call read_integer(nmegqwan,1,trim(fname_me),'/wannier','nmegqwan')
-!  endif 
-!endif
-!if (wannier) then
-!  call i_bcast_cart(comm_cart_110,ntrmegqwan,1)
-!  call i_bcast_cart(comm_cart_110,nmegqwan,1)
-!endif
-!! read arrays from chi0 file
-!if (lwannresp) then
-!  allocate(itrchi0wan(3,ntrchi0wan))
-!  allocate(itridxwan(ntrmegqwan,ntrmegqwan))
-!  if (root_cart((/1,1,0/))) then
-!    call read_integer_array(itrchi0wan,2,(/3,ntrchi0wan/),trim(fchi0),'/wannier','itrchi0wan')
-!    call read_integer_array(itridxwan,2,(/ntrmegqwan,ntrmegqwan/),trim(fname_chi0),'/wannier','itridxwan')
-!  endif
-!  call i_bcast_cart(comm_cart_110,itrchi0wan,3*ntrchi0wan)
-!  call i_bcast_cart(comm_cart_110,itridxwan,ntrmegqwan*ntrmegqwan)
-!endif
-!! read arrays from me file 
-!if (wannier) then
-!  allocate(itrmegqwan(3,ntrmegqwan))
-!  allocate(megqwan(nmegqwan,ntrmegqwan,ngvecme))
-!  allocate(bmegqwan(2,nwann*nwann))
-!  if (root_cart((/1,1,0/))) then
-!    call read_integer_array(itrmegqwan,2,(/3,ntrmegqwan/),trim(fname_me),'/wannier','itrmegqwan')
-!    call read_real8_array(megqwan,4,(/2,nmegqwan,ntrmegqwan,ngvecme/), &
-!      trim(fname_me),'/wannier','megqwan')
-!    call read_integer_array(bmegqwan,2,(/2,nmegqwan/),trim(fname_me),'/wannier','bmegqwan')
-!  endif
-!  call i_bcast_cart(comm_cart_110,itrmegqwan,3*ntrmegqwan)
-!  call i_bcast_cart(comm_cart_110,bmegqwan,2*nmegqwan)
-!  call d_bcast_cart(comm_cart_110,megqwan,2*nmegqwan*ntrmegqwan*ngvecme)
-!endif
-!if (crpa) then
-!  allocate(imegqwan(nwann,nwann))
-!  imegqwan=-1
-!  do i=1,nmegqwan
-!    n1=bmegqwan(1,i)
-!    n2=bmegqwan(2,i)
-!    imegqwan(n1,n2)=i
-!  enddo
-!endif
-!
+if (wannier_chi0_chi) then
+  call mpi_grid_bcast(ntrchi0wan,dims=(/dim_w,dim_f/))
+endif
+
+if (wannier_megq.and.write_megq_file) call readmegqwan(qnm)
+
+! read arrays from chi0 file
+if (wannier_chi0_chi) then
+  allocate(itrchi0wan(3,ntrchi0wan))
+  allocate(itridxwan(ntrmegqwan,ntrmegqwan))
+  if (mpi_grid_root(dims=(/dim_w,dim_f/))) then
+    call read_integer_array(itrchi0wan,2,(/3,ntrchi0wan/),trim(fchi0),'/wannier','itrchi0wan')
+    call read_integer_array(itridxwan,2,(/ntrmegqwan,ntrmegqwan/),trim(fchi0),'/wannier','itridxwan')
+  endif
+  call mpi_grid_bcast(itrchi0wan(1,1),3*ntrchi0wan,dims=(/dim_w,dim_f/))
+  call mpi_grid_bcast(itridxwan(1,1),ntrmegqwan*ntrmegqwan,dims=(/dim_w,dim_f/))
+endif
+
+if (crpa) then
+  allocate(imegqwan(nwann,nwann))
+  imegqwan=-1
+  do i=1,nmegqwan
+    n1=bmegqwan(1,i)
+    n2=bmegqwan(2,i)
+    imegqwan(n1,n2)=i
+  enddo
+endif
+
 if (wproc) then
   write(150,'("chi0 was calculated for ")')
   write(150,'("  G-shells  : ",I4," to ",I4)')gshme1,gshme2
@@ -177,11 +155,22 @@ if (wproc) then
   call flushifc(150)
 endif
 
-!
-!! for response in Wannier basis
-!if (lwannresp) then
-!  allocate(chi0wan(nmegqwan,nmegqwan,ntrchi0wan))
-!! cut off some matrix elements
+! for response in Wannier basis
+if (wannier_chi0_chi) then
+  allocate(chi0wan(nmegqwan,nmegqwan,ntrchi0wan))
+! cut off some matrix elements
+  d1=0.001
+  if (wproc) then
+    write(150,'("minimal matrix element : ",F12.6)')d1
+  endif
+  do it1=1,ntrmegqwan
+    do n=1,nmegqwan
+      do ig=1,ngvecme
+        if (abs(megqwan(n,it1,ig)).lt.d1) megqwan(n,it1,ig)=zzero
+      enddo
+    enddo
+  enddo
+
 !  inquire(file='mewf.in',exist=exist)
 !  if (exist) then
 !    open(70,file='mewf.in',form='formatted',status='old')
@@ -233,65 +222,65 @@ endif
 !      deallocate(itrans)
 !    endif
 !  endif
-!  if (wproc) then
-!    write(150,*)
-!    write(150,'("Matrix elements in WF basis : ")')
-!    write(150,*)
-!    do it1=1,ntrmegqwan
-!      if (sum(abs(megqwan(:,it1,:))).gt.1d-8) then
-!        write(150,'("translation : ",3I4)')itrmegqwan(:,it1)
-!        do n=1,nmegqwan
-!          if (sum(abs(megqwan(n,it1,:))).gt.1d-8) then
-!            write(150,'("  transition ",I4," between wfs : ",2I4)')&
-!              n,bmegqwan(1,n),bmegqwan(2,n)
-!            do ig=1,ngvecme
-!              write(150,'("    ig : ",I4," mewf=(",2F12.6,"), |mewf|=",F12.6)')&
-!                ig,megqwan(n,it1,ig),abs(megqwan(n,it1,ig))
-!            enddo
-!          endif
-!        enddo !n
-!      endif
-!    enddo
-!  endif
-!  if (wproc) then
-!    write(150,*)
-!    write(150,'("Full matrix size in local basis : ",I6)')nmegqwan*ntrmegqwan
-!  endif
-!  allocate(inzme(2,nmegqwan*ntrmegqwan))
-!  inzme=0
-!  nnzme=0
-!  do it1=1,ntrmegqwan
-!    do n=1,nmegqwan
-!      if (sum(abs(megqwan(n,it1,:))).gt.1d-8) then
-!        nnzme=nnzme+1
-!        inzme(1,nnzme)=it1
-!        inzme(2,nnzme)=n
-!      endif
-!    enddo
-!  enddo
-!  if (wproc) then
-!    write(150,*)
-!    write(150,'("Reduced matrix size in local basis : ",I6)')nnzme
-!  endif
-!  allocate(mtrx_v(nnzme,nnzme))
-!! Coulomb matrix in local basis
-!  mtrx_v=zzero
-!  do i=1,nnzme
-!    do j=1,nnzme
-!      i1=inzme(1,i)
-!      n1=inzme(2,i)
-!      i2=inzme(1,j)
-!      n2=inzme(2,j)
-!      do ig=1,ngvecchi
-!        vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
-!        gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
-!        mtrx_v(i,j)=mtrx_v(i,j)+dconjg(megqwan(n1,i1,ig))*megqwan(n2,i2,ig)*&
-!          fourpi/gq0**2
-!      enddo
-!    enddo
-!  enddo
-!  if (wproc) call flushifc(150)
-!endif !lwannresp
+  if (wproc) then
+    write(150,*)
+    write(150,'("Matrix elements in WF basis : ")')
+    write(150,*)
+    do it1=1,ntrmegqwan
+      if (sum(abs(megqwan(:,it1,:))).gt.1d-8) then
+        write(150,'("translation : ",3I4)')itrmegqwan(:,it1)
+        do n=1,nmegqwan
+          if (sum(abs(megqwan(n,it1,:))).gt.1d-8) then
+            write(150,'("  transition ",I4," between wfs : ",2I4)')&
+              n,bmegqwan(1,n),bmegqwan(2,n)
+            do ig=1,ngvecme
+              write(150,'("    ig : ",I4," mewf=(",2F12.6,"), |mewf|=",F12.6)')&
+                ig,megqwan(n,it1,ig),abs(megqwan(n,it1,ig))
+            enddo
+          endif
+        enddo !n
+      endif
+    enddo
+  endif
+  if (wproc) then
+    write(150,*)
+    write(150,'("Full matrix size in local basis : ",I6)')nmegqwan*ntrmegqwan
+  endif
+  allocate(inzme(2,nmegqwan*ntrmegqwan))
+  inzme=0
+  nnzme=0
+  do it1=1,ntrmegqwan
+    do n=1,nmegqwan
+      if (sum(abs(megqwan(n,it1,:))).gt.1d-8) then
+        nnzme=nnzme+1
+        inzme(1,nnzme)=it1
+        inzme(2,nnzme)=n
+      endif
+    enddo
+  enddo
+  if (wproc) then
+    write(150,*)
+    write(150,'("Reduced matrix size in local basis : ",I6)')nnzme
+  endif
+  allocate(mtrx_v(nnzme,nnzme))
+! Coulomb matrix in local basis
+  mtrx_v=zzero
+  do i=1,nnzme
+    do j=1,nnzme
+      i1=inzme(1,i)
+      n1=inzme(2,i)
+      i2=inzme(1,j)
+      n2=inzme(2,j)
+      do ig=1,ngvecchi
+        vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
+        gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
+        mtrx_v(i,j)=mtrx_v(i,j)+dconjg(megqwan(n1,i1,ig))*megqwan(n2,i2,ig)*&
+          fourpi/gq0**2
+      enddo
+    enddo
+  enddo
+  if (wproc) call flushifc(150)
+endif !wannier_chi0_chi
 !
 !!if (lwannopt) then
 !!  allocate(mewfx(3,nwann*nwann,ntrmegqwan))
@@ -410,10 +399,10 @@ do iwstep=1,nwstep
       endif
       call solve_chi(igq0,vcgq,chi0m,krnl,chi_(1,iw,ifxc),epsilon_(1,iw,ifxc),&
         krnl_scr)
-!    if (wannier.and.lwannresp.and.ifxc.eq.1) then
-!      call solve_chi_wf(ntrmegqwan,ntrchi0wan,itridxwan,nmegqwan,nnzme,inzme,megqwan,chi0wan,mtrx_v,&
-!        chi_(6,ie,1),chi_(7,ie,1),igq0)
-!    endif
+      if (wannier_chi0_chi.and.ifxc.eq.1) then
+        call solve_chi_wf(ntrmegqwan,ntrchi0wan,itridxwan,nmegqwan,nnzme,inzme,megqwan,chi0wan,mtrx_v,&
+          chi_(6,iw,1),chi_(7,iw,1),igq0)
+      endif
 !    if (.true..and.ie.eq.1.and.ifxc.eq.1) then
 !      if (ngvecchi.gt.10) then
 !        n1=10
@@ -518,7 +507,8 @@ deallocate(krnl,krnl_rpa,ixcft)
 if (screened_w) deallocate(krnl_scr)
 deallocate(lr_w,chi0m,chi0w,chi_,epsilon_)
 deallocate(vcgq)
-if (wannier) then
+
+if (wannier_megq) then
   deallocate(itrmegqwan)
   deallocate(megqwan)
   deallocate(bmegqwan)

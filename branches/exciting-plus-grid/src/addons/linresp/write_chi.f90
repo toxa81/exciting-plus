@@ -100,5 +100,62 @@ do ie=1,nepts
 enddo
 deallocate(func)
 close(160)
+if (wannier_chi0_chi) then
+  if (lrtype.eq.0) then
+    fname=trim(qnm)//"__"//trim(adjustl(c4))//"__G_"//trim(adjustl(c3))//&
+      "__A_"//trim(adjustl(c2))//"__wann__.dat"
+  else
+    fname=trim(qnm)//"_A"//c2//"_s"//c1//".dat"
+  endif
+  open(160,file=trim(fname),form='formatted',status='replace')
+  if (lrtype.eq.0) write(160,'("# charge density response")')
+  if (lrtype.eq.1) write(160,'("# magnetization density response")')
+  write(160,'("#")')
+  write(160,'("# Band interval (Ha) : ",2F8.2)')lr_e1,lr_e2
+  write(160,'("#")')
+  write(160,'("# k-mesh division                    : ",3I4)')ngridk(1),ngridk(2),ngridk(3)
+  write(160,'("# Energy mesh parameters             : ")')
+  write(160,'("#   maximum energy [eV]              : ", F9.4)')maxomega
+  write(160,'("#   energy step    [eV]              : ", F9.4)')domega
+  write(160,'("#   eta            [eV]              : ", F9.4)')lr_eta
+  write(160,'("# q-vector information               : ")')
+  write(160,'("#   q-vector (mesh coord.)           : ",3I4)')ivq0m
+  write(160,'("#   q-vector (lat. coord.)           : ",3F18.10)')vq0l
+  write(160,'("#   q-vector (Cart. coord.) [a.u.]   : ",3F18.10)')vq0c
+  write(160,'("#   q-vector length         [a.u.]   : ",3F18.10)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)
+  write(160,'("#   q-vector (Cart. coord.) [1/A]    : ",3F18.10)')vq0c/au2ang
+  write(160,'("#   q-vector length         [1/A]    : ",3F18.10)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)/au2ang
+  write(160,'("# G-vector information               : ")')
+  write(160,'("#   G-shells                         : ",2I4)')gshchi1,gshchi2
+  write(160,'("#   G-vectors                        : ",2I4)')gvecchi1,gvecchi2
+  write(160,'("#   index of Gq vector               : ",I4)')igq0
+  if (lrtype.eq.0) then
+    write(160,'("#")')
+    write(160,'("# fxc type : ",I1)')fxctype
+    write(160,'("# fxc A : ",F8.4)')fxca
+  endif
+  write(160,'("#")')
+  write(160,'("# Definition of columns")')
+  write(160,'("#   1: energy            [eV]")')
+  write(160,'("#   2: -Re chi0_wf_full(Gq,Gq)   [1/eV/A^3]    ")')
+  write(160,'("#   3: -Im chi0_wf_full(Gq,Gq)   [1/eV/A^3]    ")')
+  write(160,'("#   4: -Re chi_wf(Gq,Gq)         [1/eV/A^3]    ")')
+  write(160,'("#   5: -Im chi_wf(Gq,Gq)         [1/eV/A^3]    ")')
+  write(160,'("#   6: -Re chi0_wf(Gq,Gq)        [1/eV/A^3]    ")')
+  write(160,'("#   7: -Im chi0_wf(Gq,Gq)        [1/eV/A^3]    ")')
+  write(160,'("#")')
+  allocate(func(7,nepts))
+  do ie=1,nepts
+    func(1,ie)=dreal(lr_w(ie))*ha2ev
+    func(2,ie)=-dreal(chi_(5,ie))/ha2ev/(au2ang)**3
+    func(3,ie)=-dimag(chi_(5,ie))/ha2ev/(au2ang)**3
+    func(4,ie)=-dreal(chi_(7,ie))/ha2ev/(au2ang)**3
+    func(5,ie)=-dimag(chi_(7,ie))/ha2ev/(au2ang)**3
+    func(6,ie)=-dreal(chi_(6,ie))/ha2ev/(au2ang)**3
+    func(7,ie)=-dimag(chi_(6,ie))/ha2ev/(au2ang)**3
+    write(160,'(7G14.6)')func(1:7,ie)
+  enddo
+  deallocate(func)
+endif
 return
 end
