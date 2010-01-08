@@ -401,13 +401,13 @@ do iwstep=1,nwstep
         call solve_chi_wf(ntrmegqwan,ntrchi0wan,itridxwan,nmegqwan,nnzme,inzme,megqwan,chi0wan,mtrx_v,&
           chi_(6,iw,1),chi_(7,iw,1),igq0)
       endif
-    if (.true..and.iw.eq.1.and.ifxc.eq.1) then
+    if (screened_w.and.iw.eq.1.and.ifxc.eq.1) then
       if (ngvecchi.gt.10) then
         n1=10
       else
         n1=ngvecchi
       endif
-      fw=trim(qnm)//"_krnl.txt"
+      fw=trim(qnm)//"_W.txt"
       open(170,file=trim(fw),status='replace',form='formatted')
       write(170,'("Screened W matrix")')
       write(170,'("real part")')

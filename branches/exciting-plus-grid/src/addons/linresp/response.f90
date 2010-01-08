@@ -21,7 +21,7 @@ integer i,j,n,ik,ikloc,ik1,isym,idx0,ivq1,ivq2,iq
 integer sz,nvq0loc,i1,i2,i3
 character*100 qnm
 real(8) w2
-logical lgamma,lpmat
+logical lgamma,lpmat,wproc1
 logical, external :: wann_diel
 
 ! comment: after all new implementations (response in WF, cRPA,
@@ -44,8 +44,7 @@ logical, external :: wann_diel
 !   401 - compute and write chi0
 !   402 - compute and write chi
 !   403 - compute ME, compute and write chi0, compute and write chi or
-!         compute ME, compute chi0 chi and screened U; contorlled by crpa
-!   404 - sum over all q to get total screened U
+!         compute ME, compute chi0 chi and screened U, sum over q; contorlled by crpa
 !
 ! MPI grid for tasks:
 !   400 (matrix elements) : (1) k-points x (2) G-vectors or interband 
@@ -68,12 +67,6 @@ if (nvq0.eq.0) then
   call pstop
 endif
 
-! high-level switch  
-wannier_chi0_chi=.false.
-lr_maxtr=0
-
-crpa=.true.
-
 if (.not.wannier) then
   wannier_chi0_chi=.false.
   lwannopt=.false.
@@ -90,10 +83,9 @@ if (task.eq.403) write_megq_file=.false.
 write_chi0_file=.true.
 if (crpa) write_chi0_file=.false.
 
-! set the switch to compute screened matrices
-!screen_w_u=crpa
+! set the switch to compute screened W matrix in task 402
 screened_w=.false.
-if (crpa) screened_w=.true.
+!if (crpa) screened_w=.true.
 
 wannier_megq=.false.
 if (crpa.or.wannier_chi0_chi) wannier_megq=.true.
@@ -163,30 +155,33 @@ if (mpi_grid_root()) then
 endif
 call mpi_grid_barrier()
 
-wproc=.false.
+wproc1=.false.
 if (mpi_grid_root()) then
-  wproc=.true.
+  wproc1=.true.
   if (task.eq.400) open(151,file='RESPONSE_ME.OUT',form='formatted',status='replace')
   if (task.eq.401) open(151,file='RESPONSE_CHI0.OUT',form='formatted',status='replace')
   if (task.eq.402) open(151,file='RESPONSE_CHI.OUT',form='formatted',status='replace')
   if (task.eq.403) open(151,file='RESPONSE.OUT',form='formatted',status='replace')  
-  if (task.eq.404) open(151,file='RESPONSE_U.OUT',form='formatted',status='replace')
 endif
-if (wproc) then
+if (wproc1) then
   write(151,'("Running on ",I8," proc.")')nproc
   if (parallel_read.and.nproc.gt.1) then
     write(151,'("  parallel file reading is on")')
   endif
   write(151,'("MPI grid size : ",3I6)')mpi_grid_size
   write(151,'("Wannier functions : ",L1)')wannier
-  write(151,'("Response in local basis  : ",L1)')wannier_chi0_chi
+  write(151,'("Response in Wannier basis : ",L1)')wannier_chi0_chi
+  write(151,'("Constrained RPA : ",L1)')crpa
+  write(151,'("Matrix elements of plane-waves in Wannier basis : ",L1)')wannier_megq
+  write(151,'("Write matrix elements : ",L1)')write_megq_file
+  write(151,'("Write chi0 : ",L1)')write_chi0_file  
   call flushifc(151)
 endif
 
 if (task.eq.400.or.task.eq.403) then
 ! get energies of states in reduced part of BZ
   call timer_start(3,reset=.true.)
-  if (wproc) then
+  if (wproc1) then
     write(151,*)
     write(151,'("Reading energies of states")')
     call flushifc(151)
@@ -204,7 +199,7 @@ if (task.eq.400.or.task.eq.403) then
     lr_evalsvnr(:,ik)=evalsv(:,ik1)
   enddo
   call timer_stop(3)
-  if (wproc) then
+  if (wproc1) then
     write(151,'("Done in ",F8.2," seconds")')timer_get_value(3)
     call flushifc(151)
   endif
@@ -235,7 +230,7 @@ if (task.eq.400.or.task.eq.403) then
   if (lpmat) then
     allocate(pmat(3,nstsv,nstsv,nkptnrloc))
   endif
-  if (wproc) then
+  if (wproc1) then
     sz=lmmaxvr*nrfmax*natmtot*nstsv*nspinor
     sz=sz+ngkmax*nstsv*nspinor
     sz=sz+nmatmax*nstfv*nspnfv
@@ -286,7 +281,7 @@ if (task.eq.400.or.task.eq.403) then
   call mpi_grid_bcast(evecsvloc(1,1,1),nstsv*nstsv*nkptnrloc,&
     dims=(/dim2,dim3/))
   call timer_stop(1)
-  if (wproc) then
+  if (wproc1) then
     write(151,'("Done in ",F8.2," seconds")')timer_get_value(2)
     call flushifc(151)
   endif
@@ -297,11 +292,11 @@ if (task.eq.400.or.task.eq.403) then
 ! use first nkptnrloc points to store wann_c(k) and second nkptnrloc points
 !   to store wann_c(k+q)
     allocate(wann_c(nwann,nstsv,2*nkptnrloc))
-    if (wproc) then
+    if (wproc1) then
       write(151,*)
       write(151,'("Generating Wannier functions")')
       call flushifc(151)
-    endif !wproc
+    endif !wproc1
     do ikloc=1,nkptnrloc
       ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
       call genwann_c(ik,lr_evalsvnr(1,ik),wfsvmtloc(1,1,1,1,1,ikloc),&
@@ -340,17 +335,17 @@ if (task.eq.400.or.task.eq.403) then
       enddo
     enddo
     call mpi_grid_reduce(wann_occ(1),nwann,dims=(/dim_k/),all=.true.)
-    if (wproc) then
+    if (wproc1) then
       write(151,'("  Wannier function occupation numbers : ")')
       do n=1,nwann
         write(151,'("    n : ",I4,"  occ : ",F8.6)')n,wann_occ(n)
       enddo
     endif
-    if (wproc) then
+    if (wproc1) then
       write(151,'("  Dielectric Wannier functions : ",L1)')wann_diel()
     endif
     call timer_stop(1)
-    if (wproc) then
+    if (wproc1) then
       write(151,'("Done in ",F8.2," seconds")')timer_get_value(1)
       call flushifc(151)
     endif
@@ -379,7 +374,7 @@ if (task.eq.400) then
       igkignr,pmat)
   enddo
   call timer_stop(10)
-  if (wproc) then
+  if (wproc1) then
     write(151,*)
     write(151,'("Total time for matrix elements : ",F8.2," seconds")')timer_get_value(10)
     call flushifc(151)
@@ -396,7 +391,7 @@ if (task.eq.401) then
     call genchi0(ivq0m_list(1,iq))
   enddo
   call timer_stop(11)
-  if (wproc) then
+  if (wproc1) then
     write(151,*)
     write(151,'("Total time for chi0 : ",F8.2," seconds")')timer_get_value(11)
     call flushifc(151)
@@ -413,13 +408,16 @@ if (task.eq.402) then
     call genchi(ivq0m_list(1,iq))
   enddo
   call timer_stop(12)
-  if (wproc) then
+  if (wproc1) then
     write(151,*)    
     write(151,'("Total time for chi : ",F8.2," seconds")')timer_get_value(12)
     call flushifc(151)
   endif
 endif
 
+!------------------------------------------!
+!    task 403: compute me, chi0 and chi    !
+!------------------------------------------!
 if (task.eq.403) then
   do iq=ivq1,ivq2
     call genmegq(ivq0m_list(1,iq),wfsvmtloc,wfsvitloc,ngknr, &
@@ -431,7 +429,7 @@ if (task.eq.403) then
   if (crpa.and.mpi_grid_root()) call response_u
 endif
 
-if (wproc) close(151)
+if (wproc1) close(151)
 
 if (task.eq.400.and.lpmat) deallocate(pmat)
 
