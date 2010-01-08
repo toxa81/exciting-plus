@@ -22,6 +22,10 @@ real(8) vtrc(3)
 complex(8) zt1,zt3
 !complex(8), allocatable :: mewfx(:,:,:)
 !complex(8), allocatable :: pmat(:,:,:,:)
+real(8), allocatable :: vcgq(:)
+real(8) vgq0c(3)
+integer ig
+real(8) gq0
 
 logical lafm
 logical, external :: bndint
@@ -121,11 +125,21 @@ endif !wannier_chi0_chi
 !  allocate(pmat(3,nstsv,nstsv,nkptnr_loc))
 !endif
 !
+if (crpa) then
+  allocate(vcgq(ngvecme))
+  do ig=1,ngvecme
+! generate G+q vectors  
+    vgq0c(:)=vgc(:,ig+gvecme1-1)+vq0rc(:)
+    gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
+    vcgq(ig)=sqrt(fourpi)/gq0
+  enddo !ig
+endif
+
 igq0=lr_igq0-gvecme1+1
 
 ie1=0
 fchi0=trim(qnm)//"_chi0.hdf5"
-if (mpi_grid_root((/dim_k,dim_b/))) then
+if (mpi_grid_root((/dim_k,dim_b/)).and.write_chi0_file) then
   inquire(file=trim(fchi0),exist=exist)
   exist=.false.
   if (.not.exist) then
@@ -189,6 +203,7 @@ do ie=ie1,nepts
   call mpi_grid_reduce(chi0w(1,1),ngvecme*ngvecme,dims=(/dim_k,dim_b/))
 !  endif
   chi0w=chi0w/nkptnr/omega
+  if (crpa.and.ie.eq.1) call genwu(ngvecme,chi0w,vcgq,qnm)
 ! compute ch0 matrix in Wannier basis
 ! todo: put in a separate call 
   if (mpi_grid_root((/dim2/)).and.wannier_chi0_chi) then
@@ -246,7 +261,7 @@ do ie=ie1,nepts
   call timer_stop(3)
 ! write to file
   call timer_start(4,reset=.true.)
-  if (mpi_grid_root((/dim_k,dim_b/))) then
+  if (mpi_grid_root((/dim_k,dim_b/)).and.write_chi0_file) then
     write(path,'("/iw/",I8.8)')ie
     call write_real8(lr_w(ie),2,trim(fchi0),trim(path),'w')
     call write_real8_array(chi0w,3,(/2,ngvecme,ngvecme/), &
@@ -272,7 +287,7 @@ do ie=ie1,nepts
   call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 enddo !ie
 
-if (wannier_chi0_chi) then
+if (wannier_chi0_chi.and.write_chi0_file) then
   if (mpi_grid_root((/dim_k,dim2/))) then
     call write_integer(ntrchi0wan,1,trim(fchi0),'/wannier','ntrchi0wan')
     call write_integer_array(itrchi0wan,2,(/3,ntrchi0wan/),trim(fchi0),'/wannier','itrchi0wan')
@@ -337,6 +352,10 @@ if (wannier_chi0_chi) then
   deallocate(zv1)
   deallocate(zm2)
 endif
+if (crpa) then
+  deallocate(vcgq)
+endif
+
 !if (lwannopt) then
 !  deallocate(pmat)
 !endif

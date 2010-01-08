@@ -43,10 +43,12 @@ integer, allocatable :: inzme(:,:)
 integer ig,i,j,ig1,ig2,idx0,bs,n1,n2,it1,it2,n3,n4,n
 integer i1,i2,ifxc,ifxc1,ifxc2
 integer iv(3)
-character*100 fchi,fchi0,fme,qnm,path
+character*100 fchi,fchi0,fme,qnm,path,fw
 character*3 c3
 integer nwstep,iwstep,iw,nwloc
 complex(8), external :: zdotu
+
+! todo: move kerenl construction to solve_chi
 
 ! we need Bcx and magnetization from STATE.OUT
 if (lrtype.eq.1) call readstate
@@ -399,25 +401,25 @@ do iwstep=1,nwstep
         call solve_chi_wf(ntrmegqwan,ntrchi0wan,itridxwan,nmegqwan,nnzme,inzme,megqwan,chi0wan,mtrx_v,&
           chi_(6,iw,1),chi_(7,iw,1),igq0)
       endif
-!    if (.true..and.ie.eq.1.and.ifxc.eq.1) then
-!      if (ngvecchi.gt.10) then
-!        n1=10
-!      else
-!        n1=ngvecchi
-!      endif
-!      fname=trim(qnm)//"_krnl.txt"
-!      open(170,file=trim(fname),status='replace',form='formatted')
-!      write(170,'("Screened W matrix")')
-!      write(170,'("real part")')
-!      do i=1,n1
-!        write(170,'(100F12.6)')(dreal(krnl_scr(i,j)),j=1,n1)
-!      enddo
-!      write(170,'("imag part")')
-!      do i=1,n1
-!        write(170,'(100F12.6)')(dimag(krnl_scr(i,j)),j=1,n1)
-!      enddo
-!      close(170)
-!    endif
+    if (.true..and.iw.eq.1.and.ifxc.eq.1) then
+      if (ngvecchi.gt.10) then
+        n1=10
+      else
+        n1=ngvecchi
+      endif
+      fw=trim(qnm)//"_krnl.txt"
+      open(170,file=trim(fw),status='replace',form='formatted')
+      write(170,'("Screened W matrix")')
+      write(170,'("real part")')
+      do i=1,n1
+        write(170,'(100F12.6)')(dreal(krnl_scr(i,j)),j=1,n1)
+      enddo
+      write(170,'("imag part")')
+      do i=1,n1
+        write(170,'(100F12.6)')(dimag(krnl_scr(i,j)),j=1,n1)
+      enddo
+      close(170)
+    endif
 !    if (crpa.and.ie.eq.1.and.ifxc.eq.1) then
 !      allocate(uscrn(nwann,nwann))
 !      allocate(ubare(nwann,nwann))

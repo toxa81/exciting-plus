@@ -29,20 +29,23 @@ logical, external :: wann_diel
 !   it should be refactored; new hdf5 and mpi_grid interfaces are
 !   "a must"
 !
-! after some refactoring the code is still ugly
+! after some refactoring the code is still ugly; do something with wannir
+!   response
 !
 ! typical execution patterns
 !  I) compute and save ME (task 400), read ME, compute and save chi0 (task 401),
 !     read chi0 and compute chi (task 402)
 !  II) the same + Wannier channels decomposition 
 !  III) same as I) and II) but without saving matrix elements
+!  IV) constraind RPA: compute ME, compute chi0 -> chi -> screened W and U 
 !
 ! New task list:
 !   400 - compute and write ME
 !   401 - compute and write chi0
 !   402 - compute and write chi
-!   403 - compute ME, compute chi0, compute and write chi
-!   404 - sum over all q to get screened U
+!   403 - compute ME, compute and write chi0, compute and write chi or
+!         compute ME, compute chi0 chi and screened U; contorlled by crpa
+!   404 - sum over all q to get total screened U
 !
 ! MPI grid for tasks:
 !   400 (matrix elements) : (1) k-points x (2) G-vectors or interband 
@@ -65,9 +68,11 @@ if (nvq0.eq.0) then
   call pstop
 endif
 
-! high-level swich  
+! high-level switch  
 wannier_chi0_chi=.true.
 lr_maxtr=1
+
+crpa=.true.
 
 if (.not.wannier) then
   wannier_chi0_chi=.false.
@@ -82,9 +87,13 @@ enddo
 ! set the switch to write matrix elements
 write_megq_file=.true.
 if (task.eq.403) write_megq_file=.false.
+write_chi0_file=.true.
+if (crpa) write_chi0_file=.false.
+
 ! set the switch to compute screened matrices
-screen_w_u=crpa
+!screen_w_u=crpa
 screened_w=.false.
+if (crpa) screened_w=.true.
 
 wannier_megq=.false.
 if (crpa.or.wannier_chi0_chi) wannier_megq=.true.
@@ -416,7 +425,7 @@ if (task.eq.403) then
     call genmegq(ivq0m_list(1,iq),wfsvmtloc,wfsvitloc,ngknr, &
       igkignr,pmat)
     call genchi0(ivq0m_list(1,iq))
-    call genchi(ivq0m_list(1,iq))
+    if (.not.crpa) call genchi(ivq0m_list(1,iq))
   enddo
 endif
 
