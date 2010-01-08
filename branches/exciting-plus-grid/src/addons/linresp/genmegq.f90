@@ -308,12 +308,11 @@ enddo !ikstep
 if (wannier_megq) then
 ! sum over all k-points to get <n,T=0|e^{-i(G+q)x|n',T'>
   if (mpi_grid_root((/dim2/))) then
-    call mpi_grid_reduce(megqwan(1,1,1),nmegqwan*ntrmegqwan*ngvecme,dims=(/dim_k/))
+    call mpi_grid_reduce(megqwan(1,1,1),nmegqwan*ntrmegqwan*ngvecme,&
+      dims=(/dim_k/))
   endif
   megqwan=megqwan/nkptnr
 endif
-
-
 
 if (write_megq_file) then
   if (wproc) then

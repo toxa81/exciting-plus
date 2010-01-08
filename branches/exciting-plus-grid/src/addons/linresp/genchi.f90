@@ -128,15 +128,15 @@ if (wannier_chi0_chi) then
   call mpi_grid_bcast(itridxwan(1,1),ntrmegqwan*ntrmegqwan,dims=(/dim_w,dim_f/))
 endif
 
-if (crpa) then
-  allocate(imegqwan(nwann,nwann))
-  imegqwan=-1
-  do i=1,nmegqwan
-    n1=bmegqwan(1,i)
-    n2=bmegqwan(2,i)
-    imegqwan(n1,n2)=i
-  enddo
-endif
+!if (crpa) then
+!  allocate(imegqwan(nwann,nwann))
+!  imegqwan=-1
+!  do i=1,nmegqwan
+!    n1=bmegqwan(1,i)
+!    n2=bmegqwan(2,i)
+!    imegqwan(n1,n2)=i
+!  enddo
+!endif
 
 if (wproc) then
   write(150,'("chi0 was calculated for ")')

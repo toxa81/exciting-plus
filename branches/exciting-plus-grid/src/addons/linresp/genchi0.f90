@@ -79,6 +79,8 @@ if (write_megq_file) then
     write(150,'("  G-vectors : ",I4," to ", I4)')gvecme1,gvecme2
     call flushifc(150)
   endif
+else
+  call mpi_grid_bcast(megqblh(1,1,1),ngvecme*nmegqblhmax*nkptnrloc,dims=(/dim_b/))                            
 endif
 
 ! for response in Wannier bais
@@ -133,6 +135,13 @@ if (crpa) then
     gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
     vcgq(ig)=sqrt(fourpi)/gq0
   enddo !ig
+  allocate(imegqwan(nwann,nwann))
+  imegqwan=-1
+  do i=1,nmegqwan
+    n1=bmegqwan(1,i)
+    n2=bmegqwan(2,i)
+    imegqwan(n1,n2)=i
+  enddo  
 endif
 
 igq0=lr_igq0-gvecme1+1
@@ -203,7 +212,9 @@ do ie=ie1,nepts
   call mpi_grid_reduce(chi0w(1,1),ngvecme*ngvecme,dims=(/dim_k,dim_b/))
 !  endif
   chi0w=chi0w/nkptnr/omega
-  if (crpa.and.ie.eq.1) call genwu(ngvecme,chi0w,vcgq,qnm)
+  if (crpa.and.ie.eq.1.and.mpi_grid_root(dims=(/dim_k,dim_b/))) then
+    call genwu(ngvecme,chi0w,vcgq,qnm)
+  endif
 ! compute ch0 matrix in Wannier basis
 ! todo: put in a separate call 
   if (mpi_grid_root((/dim2/)).and.wannier_chi0_chi) then
@@ -329,8 +340,8 @@ endif
 !
 call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 
-deallocate(lr_evalsvnr)
-deallocate(lr_occsvnr)
+!deallocate(lr_evalsvnr)
+!deallocate(lr_occsvnr)
 deallocate(lr_w)
 deallocate(idxkq)
 deallocate(nmegqblh)
@@ -338,12 +349,10 @@ deallocate(bmegqblh)
 deallocate(megqblh)
 deallocate(chi0w)
 if (wannier_megq) then
-  deallocate(wann_c)
-  if (write_megq_file) then
-    deallocate(itrmegqwan)
-    deallocate(megqwan)
-    deallocate(bmegqwan)
-  endif
+ ! deallocate(wann_c)
+  deallocate(itrmegqwan)
+  deallocate(megqwan)
+  deallocate(bmegqwan)
 endif
 if (wannier_chi0_chi) then
   deallocate(itrchi0wan)
@@ -354,6 +363,7 @@ if (wannier_chi0_chi) then
 endif
 if (crpa) then
   deallocate(vcgq)
+  deallocate(imegqwan)
 endif
 
 !if (lwannopt) then

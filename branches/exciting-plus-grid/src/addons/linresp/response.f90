@@ -69,8 +69,8 @@ if (nvq0.eq.0) then
 endif
 
 ! high-level switch  
-wannier_chi0_chi=.true.
-lr_maxtr=1
+wannier_chi0_chi=.false.
+lr_maxtr=0
 
 crpa=.true.
 
@@ -109,7 +109,7 @@ if (.not.mpi_grid_in()) return
 
 ! for constrained RPA all q-vectors in BZ are required 
 lgamma=.false.
-if (crpa.and..false.) then
+if (crpa) then
   if (allocated(ivq0m_list)) deallocate(ivq0m_list)
   if (lgamma) then
     nvq0=nkptnr
@@ -427,12 +427,10 @@ if (task.eq.403) then
     call genchi0(ivq0m_list(1,iq))
     if (.not.crpa) call genchi(ivq0m_list(1,iq))
   enddo
+  call mpi_grid_barrier()
+  if (crpa.and.mpi_grid_root()) call response_u
 endif
 
-if (task.eq.404.and.crpa.and.mpi_grid_root()) then
-  call response_u
-endif
-  
 if (wproc) close(151)
 
 if (task.eq.400.and.lpmat) deallocate(pmat)
@@ -444,9 +442,9 @@ if (task.eq.400.or.task.eq.403) then
   deallocate(evecsvloc)
   deallocate(ngknr)
   deallocate(igkignr)
-!  deallocate(lr_occsvnr)
-!  deallocate(lr_evalsvnr)   
-!  if (wannier_megq) deallocate(wann_c)
+  deallocate(lr_occsvnr)
+  deallocate(lr_evalsvnr)   
+  if (wannier_megq) deallocate(wann_c)
 endif
 
 return

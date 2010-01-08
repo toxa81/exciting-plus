@@ -93,7 +93,7 @@ if (chi0summation.eq.2) then
 endif
 if (chi0summation.eq.3) then
   do j2=1,ngvecme
-    do i=1,nmegqblh(ikloc)
+    do i=i1,i2
       if (l2(i).and.abs(megqblh(j2,i,ikloc)).gt.1d-1) then
         zt1=wt(i)*dconjg(megqblh(j2,i,ikloc))
         do j1=1,ngvecme

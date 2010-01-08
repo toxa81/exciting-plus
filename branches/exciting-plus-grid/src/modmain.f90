@@ -1104,12 +1104,12 @@ data wannier_chi0_chi/.false./
 logical wannier_megq
 ! low-level switch: write or not file with matrix elements; depends on task 
 logical write_megq_file
-! low level switch: compute screened W matrix and screened U; depends on crpa
-logical screen_w_u
+! low level switch: compute screened W matrix; depends on crpa
 logical screened_w
 data screened_w/.false./
 logical screened_u
 data screened_u/.false./
+logical write_chi0_file
 
 
 
