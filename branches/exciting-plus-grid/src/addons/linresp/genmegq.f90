@@ -170,12 +170,12 @@ if (wannier_megq) then
     write(150,'("Number of WF transitions : ",I4)')nmegqwan
   endif
 ! list of translations
-  ntrmegqwan=(2*lr_maxtr+1)**3
+  ntrmegqwan=(2*megqwan_maxtr+1)**3
   allocate(itrmegqwan(3,ntrmegqwan))
   i=0
-  do i1=-lr_maxtr,lr_maxtr
-    do i2=-lr_maxtr,lr_maxtr
-      do i3=-lr_maxtr,lr_maxtr
+  do i1=-megqwan_maxtr,megqwan_maxtr
+    do i2=-megqwan_maxtr,megqwan_maxtr
+      do i3=-megqwan_maxtr,megqwan_maxtr
         i=i+1
         itrmegqwan(:,i)=(/i1,i2,i3/)
       enddo

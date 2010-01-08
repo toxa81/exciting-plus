@@ -190,11 +190,10 @@ nwfplot=1
 firstwf=1
 lr_e1=-100.1d0
 lr_e2=100.1d0
-alpha1=1.d0
 wannier_lc=.false.
 lwannopt=.false.
-lr_maxtr=0
-lwfexpand=.false.
+megqwan_maxtr=0
+megqwan_cutoff=-0.1d0
 nwann_h=0
 crpa=.false.
 wannier_soft_eint_width=0.05 
@@ -925,25 +924,13 @@ case('response_bands')
   read(50,*,err=20) lr_e1,lr_e2
 case('response_fxc')
   read(50,*,err=20) fxctype,nfxca,fxca0,fxca1
-case('response_wann_expand')
-  lwfexpand=.true.
-  read(50,*,err=20)laddwf
-  read(50,*,err=20)nintwann
-  allocate(ewannint(2,nintwann))
-  allocate(nwannint(nintwann))
-  allocate(iwannint(maxiwann,nintwann))
-  do i=1,nintwann
-    read(50,*,err=20)ewannint(1,i),ewannint(2,i),nwannint(i), &
-      (iwannint(l,i),l=1,nwannint(i))
-  enddo
-  read(50,*,err=20) alpha1
 case('response_options')
   read(50,*,err=20) scalar_chi
   read(50,*,err=20) split_megq_file
 case('response_wann')
   read(50,*,err=20) wannier_chi0_chi
-  read(50,*,err=20) lwannopt
-  read(50,*,err=20) lr_maxtr
+  read(50,*,err=20) megqwan_maxtr
+  read(50,*,err=20) megqwan_cutoff  
 case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_add_poco

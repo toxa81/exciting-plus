@@ -93,12 +93,13 @@ if (wannier_chi0_chi) then
     write(150,*)
     write(150,'("AFM case : ",L1)')lafm
   endif
-  ntrchi0wan=(4*lr_maxtr+1)**3
+  ntrchi0wan=(4*megqwan_maxtr+1)**3
   allocate(itrchi0wan(3,ntrchi0wan))
   i=0
-  do i1=-2*lr_maxtr,2*lr_maxtr
-    do i2=-2*lr_maxtr,2*lr_maxtr
-      do i3=-2*lr_maxtr,2*lr_maxtr
+  n1=2*megqwan_maxtr
+  do i1=-n1,n1
+    do i2=-n1,n1
+      do i3=-n1,n1
         i=i+1
         itrchi0wan(:,i)=(/i1,i2,i3/)
       enddo

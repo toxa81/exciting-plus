@@ -1114,21 +1114,12 @@ logical write_chi0_file
 
 
 logical lwannopt
-!logical lwanndiel
-logical lwfexpand
-integer lr_maxtr
+integer megqwan_maxtr
+real(8) megqwan_cutoff
 
 logical crpa
 real(8) crpa_e1,crpa_e2
 
-
-integer nintwann
-integer, parameter :: maxiwann=500
-real(8), allocatable :: ewannint(:,:)
-integer, allocatable :: nwannint(:)
-integer, allocatable :: iwannint(:,:)
-logical laddwf
-real(8) alpha1
 
 integer, allocatable :: spinor_ud(:,:,:)
 
