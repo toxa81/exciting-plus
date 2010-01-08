@@ -116,6 +116,8 @@ OBJ_LIB = $(SRC_LIB:.f90=.o)
 
 REV=$$(svn info|grep Revision | awk '{split($$0,a,": "); print a[2]}')$
 
+all:	fft exciting
+
 exciting:	$(OBJ)
 	$(F90) $(F90_LINK_OPTS) -o $(EXE).r$(REV) $(OBJ) $(LIB_LPK) $(LIB_FFT) $(LIB_SYS)
 
@@ -128,7 +130,6 @@ fft:
 xc:
 	cd xclib; $(MAKE); cp xclib.a ..
 
-all:	fft exciting
 
 clean:
 	rm -f *.mod *~ fort.* ifc* *.gcno gmon.out *.aux *.dvi *.log *.pdf \

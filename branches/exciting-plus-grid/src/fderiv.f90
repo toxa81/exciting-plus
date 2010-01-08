@@ -52,9 +52,15 @@ if (m.ge.4) then
   return
 end if
 ! high accuracy (anti-)derivatives from a clamped spline fit to the data
+!if (.true..and.m.gt.0) 
 call spline(n,x,1,f,cf)
 select case(m)
 case(:-1)
+!  g(1)=0.d0
+!  do i=1,n-1
+!    dx=x(i+1)-x(i)
+!    g(i+1)=g(i)+0.5d0*(f(i)+f(i+1))*dx
+!  end do
   g(1)=0.d0
   do i=1,n-1
     dx=x(i+1)-x(i)

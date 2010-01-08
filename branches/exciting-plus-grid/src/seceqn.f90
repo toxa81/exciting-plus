@@ -36,7 +36,7 @@ complex(8), allocatable :: apwalm(:,:,:,:,:)
 integer ik
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
-call timer_start(t_fvhmlt_tot)
+call timer_start(t_seceqnfv)
 ! loop over first-variational spins (nspnfv=2 for spin-spirals only)
 do ispn=1,nspnfv
 ! find the matching coefficients
@@ -55,8 +55,8 @@ do ispn=1,nspnfv
      evecfv(:,:,ispn),ik)
   end if
 end do
-call timer_stop(t_fvhmlt_tot)
-call timer_start(t_svhmlt_tot)
+call timer_stop(t_seceqnfv)
+call timer_start(t_seceqnsv)
 if (spinsprl) then
 ! solve the spin-spiral second-variational secular equation
   call seceqnss(ik,apwalm,evalfv,evecfv,evecsv)
@@ -72,7 +72,7 @@ if (wannier.and.wann_add_poco) then
   call wann_seceqn(ikloc,evecsv)
   call genwann(ikloc,evecfv,evecsv)
 endif
-call timer_stop(t_svhmlt_tot)
+call timer_stop(t_seceqnsv)
 deallocate(apwalm)
 return
 end subroutine

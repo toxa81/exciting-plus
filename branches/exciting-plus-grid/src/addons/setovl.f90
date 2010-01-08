@@ -13,22 +13,24 @@ integer l1,m1,lm1,io1
 integer i,j,ilo1,ilo2
 integer iv(3)
 
+call timer_start(t_seceqnfv_setup_o)
+call timer_start(t_seceqnfv_setup_o_mt)
 do is=1,nspecies
   do ia=1,natoms(is)
     ias=idxas(ia,is)
 !----------------------!
 !     APW-APW term     !
 !----------------------!
-	do l1=0,lmaxmat
-	  do m1=-l1,l1
-	    lm1=idxlm(l1,m1)
-	    do io1=1,apword(l1,is)
-		  do ig=1,ngp
-		    call zaxpy(ig,dconjg(apwalm(ig,io1,lm1,ias)),apwalm(:,io1,lm1,ias),1,o(:,ig),1)
-		  enddo
-		enddo !io1
-	  enddo !m1
-	enddo !l1
+    do l1=0,lmaxmat
+      do m1=-l1,l1
+        lm1=idxlm(l1,m1)
+        do io1=1,apword(l1,is)
+          do ig=1,ngp
+            call zaxpy(ig,dconjg(apwalm(ig,io1,lm1,ias)),apwalm(:,io1,lm1,ias),1,o(:,ig),1)
+          enddo
+        enddo !io1
+      enddo !m1
+    enddo !l1
 !---------------------!
 !     APW-lo term     !
 !---------------------!  
@@ -63,12 +65,11 @@ do is=1,nspecies
     end do
   end do !ia
 end do !is
-
+call timer_stop(t_seceqnfv_setup_o_mt)
+call timer_start(t_seceqnfv_setup_o_it)
 !---------------------!
 !     interstitial    !
 !---------------------!
-!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(j,i,iv,ig)
-!$OMP DO
 do j=1,ngp
   do i=1,j
     iv(:)=ivg(:,igpig(i))-ivg(:,igpig(j))
@@ -76,8 +77,9 @@ do j=1,ngp
     o(i,j)=o(i,j)+dconjg(cfunig(ig))
   end do
 end do
-!$OMP END DO
-!$OMP END PARALLEL
+call timer_stop(t_seceqnfv_setup_o_it)
+o=dconjg(o)
+call timer_stop(t_seceqnfv_setup_o)
 
 return
 end

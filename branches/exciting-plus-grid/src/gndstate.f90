@@ -123,17 +123,24 @@ do iscl=1,maxscl
  call timer_start(t_iter_tot,reset=.true.)
 ! reset all timers
   call timer_reset(t_apw_rad)
-  call timer_reset(t_fvhmlt_setup_mt)
-  call timer_reset(t_fvhmlt_setup_it)  
-  call timer_reset(t_fvhmlt_setup_tot)
-  call timer_reset(t_fvhmlt_diag)
+  call timer_reset(t_seceqn)
+  call timer_reset(t_seceqnfv)
+  call timer_reset(t_seceqnfv_setup)
+  call timer_reset(t_seceqnfv_setup_h)
+  call timer_reset(t_seceqnfv_setup_h_mt)
+  call timer_reset(t_seceqnfv_setup_h_it)
+  call timer_reset(t_seceqnfv_setup_o)
+  call timer_reset(t_seceqnfv_setup_o_mt)
+  call timer_reset(t_seceqnfv_setup_o_it)
+  call timer_reset(t_seceqnfv_diag)
+  call timer_reset(t_seceqnsv)
   call timer_reset(t_svhmlt_setup)
   call timer_reset(t_svhmlt_diag)
-  call timer_reset(t_seceqn_tot)
   call timer_reset(t_rho_mag_sum)
   call timer_reset(t_rho_mag_sym)
   call timer_reset(t_rho_mag_tot)
-  call timer_reset(t_pot)  
+  call timer_reset(t_pot) 
+  call timer_reset(t_dmat)   
   if (wproc) then
     write(60,*)
     write(60,'("+-------------------------+")')
@@ -169,13 +176,13 @@ do iscl=1,maxscl
   call timer_stop(t_apw_rad)
 ! begin parallel loop over k-points
   evalsv=0.d0
-  call timer_start(t_seceqn_tot)
+  call timer_start(t_seceqn)
   do ikloc=1,nkptloc
 ! solve the first- and second-variational secular equations
     call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
       evecsvloc(1,1,ikloc))
   end do
-  call timer_stop(t_seceqn_tot)
+  call timer_stop(t_seceqn)
   call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),&
     side=.true.,all=.true.)
   if (wproc) then
@@ -235,6 +242,7 @@ do iscl=1,maxscl
   call timer_stop(t_rho_mag_tot)
 ! LDA+U
   if (ldapu.ne.0) then
+    call timer_start(t_dmat)
 ! generate the LDA+U density matrix
     call gendmatlu
 ! generate the LDA+U potential matrix
@@ -242,6 +250,7 @@ do iscl=1,maxscl
 ! write the LDA+U matrices to file
     if (wproc) call writeldapu
     call gendmatrsh
+    call timer_stop(t_dmat)
   end if
 ! compute the effective potential
   call timer_start(t_pot)
@@ -345,15 +354,26 @@ do iscl=1,maxscl
     write(60,'("  Radial APW setup                          : ",F12.2)')&
       timer_get_value(t_apw_rad)
     write(60,'("  Total for secular equation                : ",F12.2)')&
-      timer_get_value(t_seceqn_tot)
-    write(60,'("    first-variation setup (total, MT, IT)   : ",3F12.2)')&
-      timer_get_value(t_fvhmlt_setup_tot),timer_get_value(t_fvhmlt_setup_mt),&
-      timer_get_value(t_fvhmlt_setup_it)
-    write(60,'("    first-variation diagonalization         : ",F12.2)')&
-      timer_get_value(t_fvhmlt_diag)
-    write(60,'("    second-variation setup                  : ",F12.2)')&
+      timer_get_value(t_seceqn)
+    write(60,'("    firt-variational                        : ",F12.2)')&
+      timer_get_value(t_seceqnfv)
+    write(60,'("      setup                                 : ",F12.2)')&
+      timer_get_value(t_seceqnfv_setup)
+    write(60,'("        setup H (total, MT, IT)             : ",3F12.2)')&
+      timer_get_value(t_seceqnfv_setup_h),&
+      timer_get_value(t_seceqnfv_setup_h_mt),&
+      timer_get_value(t_seceqnfv_setup_h_it)
+    write(60,'("        setup O (total, MT, IT)             : ",3F12.2)')&
+      timer_get_value(t_seceqnfv_setup_o),&
+      timer_get_value(t_seceqnfv_setup_o_mt),&
+      timer_get_value(t_seceqnfv_setup_o_it)
+    write(60,'("      diagonalization                       : ",F12.2)')&
+      timer_get_value(t_seceqnfv_diag)
+    write(60,'("    second-variational                      : ",F12.2)')&
+      timer_get_value(t_seceqnsv)
+    write(60,'("      setup                                 : ",F12.2)')&
       timer_get_value(t_svhmlt_setup)
-    write(60,'("    second-variation diagonalization        : ",F12.2)')&
+    write(60,'("      diagonalization                       : ",F12.2)')&
       timer_get_value(t_svhmlt_diag)
     write(60,'("  Total for charge and magnetization        : ",F12.2)')&
       timer_get_value(t_rho_mag_tot)
@@ -363,6 +383,8 @@ do iscl=1,maxscl
       timer_get_value(t_rho_mag_sym)
     write(60,'("  Total for potential                       : ",F12.2)')&
       timer_get_value(t_pot)
+    write(60,'("  Density matrix setup                      : ",F12.2)')&
+      timer_get_value(t_dmat)
   end if !wproc
 ! end the self-consistent loop
 

@@ -1192,20 +1192,30 @@ logical ldisentangle
 
 integer, parameter :: t_iter_tot=2
 integer, parameter :: t_init=10
-integer, parameter :: t_fvhmlt_setup_mt=20
-integer, parameter :: t_fvhmlt_setup_it=21
-integer, parameter :: t_fvhmlt_setup_tot=22
-integer, parameter :: t_fvhmlt_diag=23
-integer, parameter :: t_fvhmlt_tot=24
-integer, parameter :: t_svhmlt_setup=25
-integer, parameter :: t_svhmlt_diag=26
-integer, parameter :: t_svhmlt_tot=27
-integer, parameter :: t_seceqn_tot=28
-integer, parameter :: t_apw_rad=30
-integer, parameter :: t_rho_mag_sum=31
-integer, parameter :: t_rho_mag_sym=32
-integer, parameter :: t_rho_mag_tot=33
-integer, parameter :: t_pot=34
+
+integer, parameter :: t_seceqn=18
+integer, parameter :: t_seceqnfv=19
+integer, parameter :: t_seceqnfv_setup=20
+integer, parameter :: t_seceqnfv_setup_h=21
+integer, parameter :: t_seceqnfv_setup_h_mt=22
+integer, parameter :: t_seceqnfv_setup_h_it=23
+integer, parameter :: t_seceqnfv_setup_o=24
+integer, parameter :: t_seceqnfv_setup_o_mt=25
+integer, parameter :: t_seceqnfv_setup_o_it=26
+integer, parameter :: t_seceqnfv_diag=27
+
+integer, parameter :: t_seceqnsv=30
+integer, parameter :: t_svhmlt_setup=31
+integer, parameter :: t_svhmlt_diag=32
+integer, parameter :: t_svhmlt_tot=33
+
+integer, parameter :: t_apw_rad=40
+integer, parameter :: t_rho_mag_sum=41
+integer, parameter :: t_rho_mag_sym=42
+integer, parameter :: t_rho_mag_tot=43
+integer, parameter :: t_pot=44
+integer, parameter :: t_dmat=45
+
 
 
 

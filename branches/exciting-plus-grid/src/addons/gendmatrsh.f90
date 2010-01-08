@@ -17,7 +17,7 @@ complex(8), allocatable :: dm2(:,:)
 complex(8) z1
 integer i1
 real(8) d1(nspinor)
-integer ikloc
+integer ikloc,ik
 character*2 :: c2
 character*20 :: fmt
 
@@ -37,9 +37,10 @@ ematylm=dcmplx(0.d0,0.d0)
 ! compute matrix in Ylm
 ! begin loop over k-points
 do ikloc=1,nkptloc
-  call match(ngk(1,ikloc),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc), &
+  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+  call match(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc), &
     sfacgk(1,1,1,ikloc),apwalm)
-  call genwfsvmt(lmaxvr,lmmaxvr,ngk(1,ikloc),evecfvloc(1,1,1,ikloc), &
+  call genwfsvmt(lmaxvr,lmmaxvr,ngk(1,ik),evecfvloc(1,1,1,ikloc), &
     evecsvloc(1,1,ikloc),apwalm,wfsvmt)
 ! begin loop over atoms and species
   do is=1,nspecies
@@ -57,18 +58,18 @@ do ikloc=1,nkptloc
                 lm1=idxlm(l,m1)
                 lm2=idxlm(l,m2)
                 z1=wfsvmt(lm1,io1,ias,ispn,j)*dconjg(wfsvmt(lm2,io2,ias,jspn,j))*&
-                  urfprod(l,io1,io2,ias)*wkpt(ikloc)
+                  urfprod(l,io1,io2,ias)*wkpt(ik)
                 if (ldensmtrx) then
-                  if (evalsv(j,ikloc).ge.dm_e1.and. &
-                      evalsv(j,ikloc).le.dm_e2) then
+                  if (evalsv(j,ik).ge.dm_e1.and. &
+                      evalsv(j,ik).le.dm_e2) then
                     dmatylm(lm1,lm2,ispn,jspn,ias)=dmatylm(lm1,lm2,ispn,jspn,ias)+z1
                   endif                 
                 else
                   dmatylm(lm1,lm2,ispn,jspn,ias)=dmatylm(lm1,lm2,ispn,jspn,ias)+&
-                    z1*occsv(j,ikloc)
+                    z1*occsv(j,ik)
                 endif
                 ematylm(lm1,lm2,ispn,jspn,ias)=ematylm(lm1,lm2,ispn,jspn,ias)+&
-                    z1*evalsv(j,ikloc)
+                    z1*evalsv(j,ik)
               enddo
               enddo
             enddo
@@ -81,8 +82,10 @@ do ikloc=1,nkptloc
   enddo !is
 enddo !ikloc
 
-!call zsync(dmatylm,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,.true.,.true.)
-!call zsync(ematylm,lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,.true.,.true.)
+call mpi_grid_reduce(dmatylm(1,1,1,1,1),lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,&
+  dims=(/dim_k/),all=.true.)
+call mpi_grid_reduce(ematylm(1,1,1,1,1),lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,&
+  dims=(/dim_k/),all=.true.)
 call symdmat(lmaxlu,lmmaxlu,dmatylm)
 call symdmat(lmaxlu,lmmaxlu,ematylm)
 

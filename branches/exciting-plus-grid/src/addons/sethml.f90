@@ -17,7 +17,8 @@ integer l1,m1,lm1,l2,m2,lm2,l3,m3,lm3,io1,io2
 integer i,j,ilo1,ilo2
 integer iv(3)
 
-call timer_start(t_fvhmlt_setup_mt)
+call timer_start(t_seceqnfv_setup_h)
+call timer_start(t_seceqnfv_setup_h_mt)
 allocate(zv(ngp,lmmaxmat,apwordmax,natmtot))
 zv=dcmplx(0.d0,0.d0)
 do is=1,nspecies
@@ -137,11 +138,11 @@ do is=1,nspecies
     end do
   end do !ia
 end do !is
-call timer_stop(t_fvhmlt_setup_mt)
+call timer_stop(t_seceqnfv_setup_h_mt)
 !---------------------!
 !     interstitial    !
 !---------------------!
-call timer_start(t_fvhmlt_setup_it)
+call timer_start(t_seceqnfv_setup_h_it)
 do j=1,ngp
   do i=1,j
     iv(:)=ivg(:,igpig(i))-ivg(:,igpig(j))
@@ -150,7 +151,9 @@ do j=1,ngp
     h(i,j)=h(i,j)+dconjg(veffig(ig)+t1*cfunig(ig))
   end do
 end do
-call timer_stop(t_fvhmlt_setup_it)
+call timer_stop(t_seceqnfv_setup_h_it)
+h=dconjg(h)
+call timer_stop(t_seceqnfv_setup_h)
 deallocate(zv)
 
 return

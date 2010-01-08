@@ -78,7 +78,7 @@ endif
 !     Hamiltonian and overlap set up     !
 !----------------------------------------!
 call timesec(ts0)
-call timer_start(t_fvhmlt_setup_tot)
+call timer_start(t_seceqnfv_setup)
 ! set the matrices to zero
 h(:)=0.d0
 o(:)=0.d0
@@ -100,8 +100,6 @@ if (packed) then
 else
   call sethml(ngp,nmatp,vgpc,igpig,apwalm,h)
   call setovl(ngp,nmatp,igpig,apwalm,o)
-  h=dconjg(h)
-  o=dconjg(o)
   if (lwrite_hmlt_ovl) then
     if (ik.eq.1) then
       open(200,file='ho.dat',form='unformatted',status='replace')
@@ -111,13 +109,13 @@ else
   endif
 endif
 call timesec(ts1)
-call timer_stop(t_fvhmlt_setup_tot)
+call timer_stop(t_seceqnfv_setup)
 timemat=timemat+ts1-ts0
 !------------------------------------!
 !     solve the secular equation     !
 !------------------------------------!
 call timesec(ts0)
-call timer_start(t_fvhmlt_diag)
+call timer_start(t_seceqnfv_diag)
 vl=0.d0
 vu=0.d0
 if (packed) then
@@ -144,7 +142,7 @@ if (info.ne.0) then
 end if
 call timesec(ts1)
 timefv=timefv+ts1-ts0
-call timer_stop(t_fvhmlt_diag)
+call timer_stop(t_seceqnfv_diag)
 deallocate(iwork,ifail,w,rwork,v,h,o,work)
 return
 end subroutine
