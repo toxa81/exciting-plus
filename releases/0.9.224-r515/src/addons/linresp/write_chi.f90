@@ -30,8 +30,8 @@ open(160,file=trim(fname),form='formatted',status='replace')
 if (lrtype.eq.0) write(160,'("# charge density response")')
 if (lrtype.eq.1) write(160,'("# magnetization density response")')
 write(160,'("#")')
-write(160,'("# Band interval (Ha) : ",2F8.2)')lr_e1,lr_e2
-write(160,'("#")')
+!write(160,'("# Band interval (Ha) : ",2F8.2)')lr_e1,lr_e2
+!write(160,'("#")')
 write(160,'("# k-mesh division                    : ",3I4)')ngridk(1),ngridk(2),ngridk(3)
 write(160,'("# Energy mesh parameters             : ")')
 write(160,'("#   maximum energy [eV]              : ", F9.4)')maxomega

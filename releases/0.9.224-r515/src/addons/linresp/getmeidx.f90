@@ -9,7 +9,7 @@ logical, intent(in) :: req
 real(8), intent(in) :: occsvnr(nstsv,nkptnr)
 real(8), intent(in) :: evalsvnr(nstsv,nkptnr)
 
-integer i,ik,jk,ist1,ist2,ikloc
+integer i,ik,jk,ist1,ist2,ikloc,irng
 logical laddme,ldocc
 real(8) d1,min_e12
 logical l11,l12,l21,l22,le1,le2
@@ -30,8 +30,22 @@ do ikloc=1,nkptnr_loc
   i=0
   do ist1=1,nstsv
     do ist2=1,nstsv
-      le1=bndint(ist1,evalsvnr(ist1,ik),lr_e1,lr_e2)
-      le2=bndint(ist2,evalsvnr(ist2,jk),lr_e1,lr_e2)
+      le1=.false.
+      le2=.false.
+      if (nrespbints.eq.0) then
+        ! check for in range of emax and emin
+        le1=((evalsvnr(ist1,ik).ge.lr_e1).and.(evalsvnr(ist1,ik).le.lr_e2))
+        le2=((evalsvnr(ist2,ik).ge.lr_e1).and.(evalsvnr(ist2,ik).le.lr_e2))
+      else
+        ! the user has specified band ranges, so run through the list
+        ! of user specified band ranges
+        do irng = 1,nrespbints
+          le1=le1.or.bndint(ist1,evalsvnr(ist1,ik),respbints(1,irng),respbints(2,irng))
+          le2=le2.or.bndint(ist2,evalsvnr(ist2,ik),respbints(1,irng),respbints(2,irng))
+        enddo
+      endif
+      !le1=bndint(ist1,evalsvnr(ist1,ik),lr_e1,lr_e2)
+      !le2=bndint(ist2,evalsvnr(ist2,jk),lr_e1,lr_e2)
       d1=occsvnr(ist1,ik)-occsvnr(ist2,jk)
       ldocc=abs(d1).gt.1d-5
       laddme=.false.
@@ -74,6 +88,7 @@ if (req) then
     write(150,'("Minimal energy transition (eV) : ",F12.6)')min_e12*ha2ev
   endif
 endif
+
 
 return
 end

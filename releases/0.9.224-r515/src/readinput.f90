@@ -193,6 +193,7 @@ nwfplot=1
 firstwf=1
 lr_e1=-100.1d0
 lr_e2=100.1d0
+nrespbints=0
 alpha1=1.d0
 wannier_lc=.false.
 lwannresp=.false.
@@ -920,7 +921,11 @@ case('response')
   enddo
   read(50,*,err=20) maxomega, domega, lr_eta
 case('response_bands')
-  read(50,*,err=20) lr_e1,lr_e2
+  read(50,*,err=20) nrespbints
+  allocate(respbints(2,nrespbints))
+  do i=1,nrespbints
+    read(50,*,err=20) respbints(1,i),respbints(2,i)
+  enddo
 case('response_fxc')
   read(50,*,err=20) fxctype,nfxca,fxca0,fxca1
 case('response_wann_expand')

@@ -1015,6 +1015,9 @@ integer ngvecchi
 real(8) maxomega
 real(8) domega
 real(8) lr_eta
+! array of response band intervals
+integer nrespbints
+real(8), allocatable :: respbints(:,:)
 real(8) lr_e1,lr_e2
 integer lrtype
 ! array for k and k+q stuff

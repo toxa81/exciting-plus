@@ -431,6 +431,8 @@ if (in_cart()) then
 
 endif !in_cart()
 
+if (allocated(respbints)) deallocate(respbints)
+
 return
 end
 #endif
