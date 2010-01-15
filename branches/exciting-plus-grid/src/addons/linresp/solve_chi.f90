@@ -4,7 +4,7 @@ implicit none
 integer, intent(in) :: igq0
 real(8), intent(in) :: vcgq(ngvecchi)
 complex(8), intent(in) :: chi0m(ngvecchi,ngvecchi)
-complex(8), intent(in) :: krnl(ngvecchi,ngvecchi)
+complex(8), intent(inout) :: krnl(ngvecchi,ngvecchi)
 complex(8), intent(out) :: chi_(4)
 complex(8), intent(out) :: epsilon_(5)
 complex(8), intent(out) :: krnl_scr(ngvecchi,ngvecchi)
@@ -20,6 +20,13 @@ integer i,ig1,ig2
 ! functions that are related to physical measurements are: 
 !   1. chi_{Gq,Gq}(q-Gq,w) 
 !   2. epsilon_eff(q-Gq,w)
+
+! construct full kernel
+if (lrtype.eq.0) then
+  do i=1,ngvecchi
+    krnl(i,i)=krnl(i,i)+vcgq(i)**2
+  enddo
+endif
 
 allocate(epsilon(ngvecchi,ngvecchi))
 allocate(mtrx1(ngvecchi,ngvecchi))

@@ -1096,6 +1096,9 @@ data split_megq_file/.false./
 ! high-level switch:: read files in parallel
 logical parallel_read
 data parallel_read/.false./
+! high-level switch:: write files in parallel (where it is possible)
+logical parallel_write
+data parallel_write/.false./
 ! high-level switch: compute chi0 and chi in Wannier functions basis
 logical wannier_chi0_chi 
 data wannier_chi0_chi/.false./

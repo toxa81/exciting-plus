@@ -44,7 +44,8 @@ logical, external :: wann_diel
 !   401 - compute and write chi0
 !   402 - compute and write chi
 !   403 - compute ME, compute and write chi0, compute and write chi or
-!         compute ME, compute chi0 chi and screened U, sum over q; contorlled by crpa
+!         compute ME, compute chi0 chi and screened U, sum over q; behaviour is
+!         contorlled by crpa
 !
 ! MPI grid for tasks:
 !   400 (matrix elements) : (1) k-points x (2) G-vectors or interband 
@@ -168,13 +169,16 @@ if (wproc1) then
   if (parallel_read.and.nproc.gt.1) then
     write(151,'("  parallel file reading is on")')
   endif
-  write(151,'("MPI grid size : ",3I6)')mpi_grid_size
-  write(151,'("Wannier functions : ",L1)')wannier
-  write(151,'("Response in Wannier basis : ",L1)')wannier_chi0_chi
-  write(151,'("Constrained RPA : ",L1)')crpa
-  write(151,'("Matrix elements of plane-waves in Wannier basis : ",L1)')wannier_megq
-  write(151,'("Write matrix elements : ",L1)')write_megq_file
-  write(151,'("Write chi0 : ",L1)')write_chi0_file  
+  if (parallel_write.and.nproc.gt.1) then
+    write(151,'("  parallel file writing is on")')
+  endif
+  write(151,'("MPI grid size                    : ",3I6)')mpi_grid_size
+  write(151,'("Wannier functions                : ",L1)')wannier
+  write(151,'("Response in Wannier basis        : ",L1)')wannier_chi0_chi
+  write(151,'("Constrained RPA                  : ",L1)')crpa
+  write(151,'("Matrix elements in Wannier basis : ",L1)')wannier_megq
+  write(151,'("Write matrix elements            : ",L1)')write_megq_file
+  write(151,'("Write chi0                       : ",L1)')write_chi0_file  
   call flushifc(151)
 endif
 
@@ -243,9 +247,7 @@ if (task.eq.400.or.task.eq.403) then
     call flushifc(151)
   endif
   call timer_start(1,reset=.true.)
-! read and transform eigen-vectors
-  wfsvmtloc=zzero
-  wfsvitloc=zzero
+! read eigen-vectors
   if (mpi_grid_side(dims=(/dim_k/))) then
     do i=0,mpi_grid_size(dim_k)-1
       if (i.eq.mpi_grid_x(dim_k)) then
@@ -253,36 +255,38 @@ if (task.eq.400.or.task.eq.403) then
           ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
           call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfvloc(1,1,1,ikloc))
           call getevecsv(vklnr(1,ik),evecsvloc(1,1,ikloc))
-! get apw coeffs 
-          call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),        &
-            sfacgknr(1,1,ikloc),apwalm)
-! generate wave functions in muffin-tins
-          call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
-            evecsvloc(1,1,ikloc),apwalm,wfsvmtloc(1,1,1,1,1,ikloc))
-! generate wave functions in interstitial
-          call genwfsvit(ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
-            evecsvloc(1,1,ikloc),wfsvitloc(1,1,1,ikloc))
-          if (lpmat) then
-            call genpmat(ngknr(ikloc),igkignr(1,ikloc),vgkcnr(1,1,ikloc),&
-              apwalm,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),pmat(1,1,1,ikloc))
-          endif
         enddo !ikloc
       endif
       if (.not.parallel_read) call mpi_grid_barrier(dims=(/dim_k/))
     enddo
   endif !mpi_grid_side(dims=(/dim_k/)
   call mpi_grid_barrier
-  call mpi_grid_bcast(wfsvmtloc(1,1,1,1,1,1),&
-    lmmaxvr*nrfmax*natmtot*nspinor*nstsv*nkptnrloc,dims=(/dim2,dim3/))
-  call mpi_grid_bcast(wfsvitloc(1,1,1,1),ngkmax*nspinor*nstsv*nkptnrloc,&
-    dims=(/dim2,dim3/))
   call mpi_grid_bcast(evecfvloc(1,1,1,1),nmatmax*nstfv*nspnfv*nkptnrloc,&
     dims=(/dim2,dim3/))
   call mpi_grid_bcast(evecsvloc(1,1,1),nstsv*nstsv*nkptnrloc,&
     dims=(/dim2,dim3/))
+! transform eigen-vectors
+  wfsvmtloc=zzero
+  wfsvitloc=zzero
+  do ikloc=1,nkptnrloc
+    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+! get apw coeffs 
+    call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),        &
+      sfacgknr(1,1,ikloc),apwalm)
+! generate wave functions in muffin-tins
+    call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
+      evecsvloc(1,1,ikloc),apwalm,wfsvmtloc(1,1,1,1,1,ikloc))
+! generate wave functions in interstitial
+    call genwfsvit(ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
+      evecsvloc(1,1,ikloc),wfsvitloc(1,1,1,ikloc))
+    if (lpmat) then
+      call genpmat(ngknr(ikloc),igkignr(1,ikloc),vgkcnr(1,1,ikloc),&
+        apwalm,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),pmat(1,1,1,ikloc))
+    endif
+  enddo !ikloc
   call timer_stop(1)
   if (wproc1) then
-    write(151,'("Done in ",F8.2," seconds")')timer_get_value(2)
+    write(151,'("Done in ",F8.2," seconds")')timer_get_value(1)
     call flushifc(151)
   endif
 ! generate Wannier function expansion coefficients

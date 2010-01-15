@@ -16,7 +16,6 @@ complex(8), allocatable :: ixcft(:)
 
 ! kernel of matrix equaiton
 complex(8), allocatable :: krnl(:,:)
-complex(8), allocatable :: krnl_rpa(:,:)
 complex(8), allocatable :: krnl_scr(:,:)
 complex(8), allocatable :: chi0w(:,:)
 real(8) fxca
@@ -35,7 +34,6 @@ complex(8) zt1
 logical exist
 integer ntrans
 integer, allocatable :: itrans(:,:)
-real(8) d1
 integer itrans_m
 integer nnzme 
 integer, allocatable :: inzme(:,:)
@@ -128,16 +126,6 @@ if (wannier_chi0_chi) then
   call mpi_grid_bcast(itridxwan(1,1),ntrmegqwan*ntrmegqwan,dims=(/dim_w,dim_f/))
 endif
 
-!if (crpa) then
-!  allocate(imegqwan(nwann,nwann))
-!  imegqwan=-1
-!  do i=1,nmegqwan
-!    n1=bmegqwan(1,i)
-!    n2=bmegqwan(2,i)
-!    imegqwan(n1,n2)=i
-!  enddo
-!endif
-
 if (wproc) then
   write(150,'("chi0 was calculated for ")')
   write(150,'("  G-shells  : ",I4," to ",I4)')gshme1,gshme2
@@ -157,18 +145,81 @@ if (wproc) then
   call flushifc(150)
 endif
 
+!
+!!if (lwannopt) then
+!!  allocate(mewfx(3,nwann*nwann,ntrmegqwan))
+!!  if (root_cart((/1,1,0/))) then
+!!    call read_real8_array(mewfx,4,(/2,3,nwann*nwann,ntrmegqwan/), &
+!!      trim(fname),'/wann','mewfx')
+!!  endif
+!!  call d_bcast_cart(comm_cart_110,mewfx,2*3*nwann*nwann*ntrmegqwan)
+!!!  allocate(mtrx1(nwann*nwann*ntrmegqwan,nwann*nwann*ntrmegqwan))
+!!!  allocate(mtrx2(nwann*nwann*ntrmegqwan,nwann*nwann*ntrmegqwan)) 
+!!  allocate(epswf(nepts))
+!!  epswf=zzero
+!!endif
+!
+
+igq0=lr_igq0-gvecchi1+1
+ig1=gvecchi1-gvecme1+1
+ig2=ig1+ngvecchi-1
+
+allocate(krnl(ngvecchi,ngvecchi))
+if (screened_w) allocate(krnl_scr(ngvecchi,ngvecchi))
+allocate(vcgq(ngvecchi))
+allocate(ixcft(ngvec))
+allocate(lr_w(nepts))
+allocate(chi0w(ngvecme,ngvecme))  
+allocate(chi0m(ngvecchi,ngvecchi))
+allocate(chi_(7,nepts,nfxca))
+allocate(epsilon_(5,nepts,nfxca))
+chi_=zzero
+epsilon_=zzero
+lr_w=zzero
+
+! generate sqrt(4*Pi)/|G+q|  
+do ig=1,ngvecchi
+  vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
+  gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
+  vcgq(ig)=sqrt(fourpi)/gq0
+enddo !ig
+
+
+! construct RPA kernel of the matrix equation
+!krnl_rpa=zzero
+! for charge response
+!if (lrtype.eq.0) then
+!  do ig=1,ngvecchi
+! generate G+q vectors  
+!    vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
+!    gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
+!    krnl_rpa(ig,ig)=fourpi/(gq0**2)
+!    vcgq(ig)=sqrt(fourpi)/gq0
+!  enddo !ig
+!endif !lrtype.eq.0
+! for magnetic response
+!if (lrtype.eq.1) then
+!  call genixc(ixcft)
+! contruct Ixc_{G,G'}=Ixc(G-G')
+!  do i=1,ngvecchi
+!    do j=1,ngvecchi
+!      iv(:)=-ivg(:,gvecchi1+i-1)+ivg(:,gvecchi1+j-1)
+!      krnl_rpa(i,j)=ixcft(ivgig(iv(1),iv(2),iv(3)))
+!    enddo
+!  enddo
+!endif !lrtype.eq.1
+
+
 ! for response in Wannier basis
 if (wannier_chi0_chi) then
   allocate(chi0wan(nmegqwan,nmegqwan,ntrchi0wan))
-! cut off some matrix elements
-  d1=0.001
   if (wproc) then
-    write(150,'("minimal matrix element : ",F12.6)')d1
+    write(150,'("minimal matrix element : ",F12.6)')megqwan_cutoff
   endif
   do it1=1,ntrmegqwan
     do n=1,nmegqwan
       do ig=1,ngvecme
-        if (abs(megqwan(n,it1,ig)).lt.d1) megqwan(n,it1,ig)=zzero
+        if (abs(megqwan(n,it1,ig)).lt.megqwan_cutoff) megqwan(n,it1,ig)=zzero
       enddo
     enddo
   enddo
@@ -274,71 +325,21 @@ if (wannier_chi0_chi) then
       i2=inzme(1,j)
       n2=inzme(2,j)
       do ig=1,ngvecchi
-        vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
-        gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
         mtrx_v(i,j)=mtrx_v(i,j)+dconjg(megqwan(n1,i1,ig))*megqwan(n2,i2,ig)*&
-          fourpi/gq0**2
+          vcgq(ig)**2
       enddo
     enddo
   enddo
   if (wproc) call flushifc(150)
 endif !wannier_chi0_chi
-!
-!!if (lwannopt) then
-!!  allocate(mewfx(3,nwann*nwann,ntrmegqwan))
-!!  if (root_cart((/1,1,0/))) then
-!!    call read_real8_array(mewfx,4,(/2,3,nwann*nwann,ntrmegqwan/), &
-!!      trim(fname),'/wann','mewfx')
-!!  endif
-!!  call d_bcast_cart(comm_cart_110,mewfx,2*3*nwann*nwann*ntrmegqwan)
-!!!  allocate(mtrx1(nwann*nwann*ntrmegqwan,nwann*nwann*ntrmegqwan))
-!!!  allocate(mtrx2(nwann*nwann*ntrmegqwan,nwann*nwann*ntrmegqwan)) 
-!!  allocate(epswf(nepts))
-!!  epswf=zzero
-!!endif
-!
 
-igq0=lr_igq0-gvecchi1+1
-ig1=gvecchi1-gvecme1+1
-ig2=ig1+ngvecchi-1
 
-allocate(krnl(ngvecchi,ngvecchi))
-allocate(krnl_rpa(ngvecchi,ngvecchi))
-if (screened_w) allocate(krnl_scr(ngvecchi,ngvecchi))
-allocate(vcgq(ngvecchi))
-allocate(ixcft(ngvec))
-allocate(lr_w(nepts))
-allocate(chi0w(ngvecme,ngvecme))  
-allocate(chi0m(ngvecchi,ngvecchi))
-allocate(chi_(7,nepts,nfxca))
-allocate(epsilon_(5,nepts,nfxca))
-chi_=zzero
-epsilon_=zzero
-lr_w=zzero
 
-! construct RPA kernel of the matrix equation
-krnl_rpa=zzero
-! for charge response
-if (lrtype.eq.0) then
-  do ig=1,ngvecchi
-! generate G+q vectors  
-    vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
-    gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
-    krnl_rpa(ig,ig)=fourpi/(gq0**2)
-    vcgq(ig)=sqrt(fourpi)/gq0
-  enddo !ig
-endif !lrtype.eq.0
-! for magnetic response
-if (lrtype.eq.1) then
-  call genixc(ixcft)
-! contruct Ixc_{G,G'}=Ixc(G-G')
-  do i=1,ngvecchi
-    do j=1,ngvecchi
-      iv(:)=-ivg(:,gvecchi1+i-1)+ivg(:,gvecchi1+j-1)
-      krnl_rpa(i,j)=ixcft(ivgig(iv(1),iv(2),iv(3)))
-    enddo
-  enddo
-endif !lrtype.eq.1
+
+
+
+
+
 
 ! distribute energy points between 1-st dimension
 i=0
@@ -381,17 +382,14 @@ do iwstep=1,nwstep
     do ifxc=ifxc1,ifxc2
       fxca=fxca0+(ifxc-1)*fxca1
 ! prepare fxc kernel
-      krnl=krnl_rpa
+      krnl=zzero
       if (lrtype.eq.0) then
         do ig=1,ngvecchi
           if (fxctype.eq.1) then
             krnl(ig,ig)=krnl(ig,ig)-fxca/2.d0
           endif
           if (fxctype.eq.2) then
-! generate G+q vector  
-            vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
-            gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
-            krnl(ig,ig)=krnl(ig,ig)-fxca*krnl_rpa(ig,ig)
+            krnl(ig,ig)=krnl(ig,ig)-fxca*vcgq(ig)**2
           endif
         enddo
       endif
@@ -401,94 +399,27 @@ do iwstep=1,nwstep
         call solve_chi_wf(ntrmegqwan,ntrchi0wan,itridxwan,nmegqwan,nnzme,inzme,megqwan,chi0wan,mtrx_v,&
           chi_(6,iw,1),chi_(7,iw,1),igq0)
       endif
-    if (screened_w.and.iw.eq.1.and.ifxc.eq.1) then
-      if (ngvecchi.gt.10) then
-        n1=10
-      else
-        n1=ngvecchi
-      endif
-      fw=trim(qnm)//"_W.txt"
-      open(170,file=trim(fw),status='replace',form='formatted')
-      write(170,'("Screened W matrix")')
-      write(170,'("real part")')
-      do i=1,n1
-        write(170,'(100F12.6)')(dreal(krnl_scr(i,j)),j=1,n1)
-      enddo
-      write(170,'("imag part")')
-      do i=1,n1
-        write(170,'(100F12.6)')(dimag(krnl_scr(i,j)),j=1,n1)
-      enddo
-      close(170)
-    endif
-!    if (crpa.and.ie.eq.1.and.ifxc.eq.1) then
-!      allocate(uscrn(nwann,nwann))
-!      allocate(ubare(nwann,nwann))
-!      uscrn=zzero
-!      ubare=zzero
-!      do i1=1,ngvecchi
-!        do i2=1,ngvecchi
-!          do n1=1,nwann
-!            do n2=1,nwann
-!              uscrn(n1,n2)=uscrn(n1,n2)+dconjg(megqwan(imegqwan(n1,n1),1,i1))*&
-!                krnl_scr(i1,i2)*megqwan(imegqwan(n2,n2),1,i2)
-!              ubare(n1,n2)=ubare(n1,n2)+dconjg(megqwan(imegqwan(n1,n1),1,i1))*&
-!                krnl(i1,i2)*megqwan(imegqwan(n2,n2),1,i2)
-!            enddo
-!          enddo
-!        enddo
-!      enddo
-!      uscrn=ha2ev*uscrn/omega
-!      ubare=ha2ev*ubare/omega
-!      fname=trim(qnm)//"_U"
-!      open(170,file=trim(fname),status='replace',form='unformatted')
-!      write(170)uscrn,ubare
-!      close(170)
-!      fname=trim(qnm)//"_U.txt"
-!      open(170,file=trim(fname),status='replace',form='formatted')
-!!      write(170,'("Screened W matrix")')
-!!      write(170,'("real part")')
-!!      do i=1,nwann
-!!        write(170,'(100F12.6)')(dreal(krnl_scr(i,j)),j=1,nwann)
-!!      enddo
-!!      write(170,'("imag part")')
-!!      do i=1,nwann
-!!        write(170,'(100F12.6)')(dimag(krnl_scr(i,j)),j=1,nwann)
-!!      enddo
-!!      write(170,*)
-!      write(170,'("Screened U matrix")')
-!      write(170,'("real part")')
-!      do i=1,nwann
-!        write(170,'(100F12.6)')(dreal(uscrn(i,j)),j=1,nwann)
-!      enddo
-!      write(170,'("imag part")')
-!      do i=1,nwann
-!        write(170,'(100F12.6)')(dimag(uscrn(i,j)),j=1,nwann)
-!      enddo
-!!      write(170,*)
-!!      write(170,'("Bare V matrix")')
-!!      write(170,'("real part")')
-!!      do i=1,nwann
-!!        write(170,'(100F12.6)')(dreal(krnl(i,j)),j=1,nwann)
-!!      enddo
-!!      write(170,'("imag part")')
-!!      do i=1,nwann
-!!        write(170,'(100F12.6)')(dimag(krnl(i,j)),j=1,nwann)
-!!      enddo
-!      write(170,*)      
-!      write(170,'("Bare U matrix")')
-!      write(170,'("real part")')
-!      do i=1,nwann
-!        write(170,'(100F12.6)')(dreal(ubare(i,j)),j=1,nwann)
-!      enddo
-!      write(170,'("imag part")')
-!      do i=1,nwann
-!        write(170,'(100F12.6)')(dimag(ubare(i,j)),j=1,nwann)
-!      enddo  
-!      close(170)
-!      deallocate(uscrn,ubare)
-!    endif
-     enddo !ifxc
-   endif
+      if (screened_w.and.iw.eq.1.and.ifxc.eq.1) then
+        if (ngvecchi.gt.10) then
+          n1=10
+        else
+          n1=ngvecchi
+        endif
+        fw=trim(qnm)//"_W.txt"
+        open(170,file=trim(fw),status='replace',form='formatted')
+        write(170,'("Screened W matrix")')
+        write(170,'("real part")')
+        do i=1,n1
+          write(170,'(100F12.6)')(dreal(krnl_scr(i,j)),j=1,n1)
+        enddo
+        write(170,'("imag part")')
+        do i=1,n1
+          write(170,'(100F12.6)')(dimag(krnl_scr(i,j)),j=1,n1)
+        enddo
+        close(170)
+      endif !screened_w.and.iw.eq.1.and.ifxc.eq.1
+    enddo !ifxc
+  endif !iwstep.le.nwloc
 enddo !ie
 
 call mpi_grid_reduce(lr_w(1),nepts,dims=(/dim_w/))
@@ -502,7 +433,7 @@ if (mpi_grid_root(dims=(/dim_w,dim_f/))) then
   enddo
 endif
 
-deallocate(krnl,krnl_rpa,ixcft)
+deallocate(krnl,ixcft)
 if (screened_w) deallocate(krnl_scr)
 deallocate(lr_w,chi0m,chi0w,chi_,epsilon_)
 deallocate(vcgq)

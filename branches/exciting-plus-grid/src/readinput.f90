@@ -927,6 +927,8 @@ case('response_fxc')
 case('response_options')
   read(50,*,err=20) scalar_chi
   read(50,*,err=20) split_megq_file
+  read(50,*,err=20) parallel_read
+  read(50,*,err=20) parallel_write  
 case('response_wann')
   read(50,*,err=20) wannier_chi0_chi
   read(50,*,err=20) megqwan_maxtr
