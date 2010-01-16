@@ -16,17 +16,17 @@ integer, intent(in) :: ik
 integer, intent(in) :: jk
 complex(8), intent(inout) :: megqblh_(ngvecme,nmegqblhmax)
 
-complex(8), allocatable :: mit(:,:)
-complex(8), allocatable :: a1(:) 
+complex(8), allocatable :: a1(:)
+complex(8), allocatable :: a2(:,:)
 complex(8), allocatable :: megq_tmp(:,:)
-integer ivg1(3),ig1,ig2
-integer ig,ist1,ist2,i,ispn,ispn2,j,ist
-integer idx0,bs,idx_g1,idx_g2,igp,ifg,ir,idx_i1,idx_i2
+integer ivg1(3),ivg2(3),ig1,ig2
+integer ig,ist1,ist2,i,ispn,ispn2
+integer idx0,bs,idx_i1,idx_i2
 complex(8) zt1
 logical l1
 complex(8), external :: zdotu,zdotc
 integer ist1_prev
-logical, allocatable :: lig1(:)
+logical, allocatable :: lf1g(:)
 
 ! TODO: add explanation about how it all works
 
@@ -34,7 +34,8 @@ allocate(megq_tmp(ngvecme,nmegqblhmax))
 megq_tmp=zzero
 
 allocate(a1(ngrtot))
-allocate(lig1(ngrtot))
+allocate(a2(ngkmax,ngvecme))
+allocate(lf1g(ngrtot))
 ! split interband transitions between processors
 bs=mpi_grid_map(nmegqblh_,dim2,offs=idx0)
 idx_i1=idx0+1
@@ -50,55 +51,59 @@ do ispn=1,nspinor
 ! precompute
     if (ist1.ne.ist1_prev) then
       a1=zzero
-      lig1=.false.
+      a2=zzero
+      lf1g=.false.
       l1=.true.
       if (spinpol) then
         if (spinor_ud(ispn,ist1,ik).eq.0) l1=.false.
       endif
       if (l1) then
-! determine, which Fourie coefficients we need for the product u_1^{*}(r)*\theta(r)
         do ig=1,ngvecme
           do ig2=1,ngknr2
-! G1=G+Gq-G2
-            ivg1(:)=ivg(:,ig+gvecme1-1)+ivg(:,igkq)-ivg(:,igkignr2(ig2))
-            if (ivg1(1).lt.intgv(1,1).or.ivg1(1).gt.intgv(1,2).or.&
-                ivg1(2).lt.intgv(2,1).or.ivg1(1).gt.intgv(2,2).or.&
-                ivg1(3).lt.intgv(3,1).or.ivg1(1).gt.intgv(3,2)) then
+! ivg2(:)=G+Gq-G2         
+            ivg2(:)=ivg(:,ig+gvecme1-1)+ivg(:,igkq)-ivg(:,igkignr2(ig2))
+            if (ivg2(1).lt.intgv(1,1).or.ivg2(1).gt.intgv(1,2).or.&
+                ivg2(2).lt.intgv(2,1).or.ivg2(2).gt.intgv(2,2).or.&
+                ivg2(3).lt.intgv(3,1).or.ivg2(3).gt.intgv(3,2)) then
               write(*,*)
               write(*,'("Error(megqblhit): G-vector is outside of boundaries")')
-              write(*,'("  G+G_q-G2 : ",3I5)')ivg1
+              write(*,'("  G+G_q-G2 : ",3I5)')ivg2
               write(*,'("  boundaries : ",2I5,",",2I5,",",2I5)')&
                 intgv(1,:),intgv(2,:),intgv(3,:)
               write(*,*)
               call pstop
             endif
-            lig1(ivgig(ivg1(1),ivg1(2),ivg1(3)))=.true.
-          enddo
-        enddo !ig 
-        do ig=1,ngrtot
-          if (lig1(ig)) then
-            zt1=zzero
-            do ig1=1,ngknr1
-! Gt=G1+G
-              ivg1(:)=ivg(:,ig)+ivg(:,igkignr1(ig1))
-              if (ivg1(1).lt.intgv(1,1).or.ivg1(1).gt.intgv(1,2).or.&
-                  ivg1(2).lt.intgv(2,1).or.ivg1(1).gt.intgv(2,2).or.&
-                  ivg1(3).lt.intgv(3,1).or.ivg1(1).gt.intgv(3,2)) then
-                write(*,*)
-                write(*,'("Error(megqblhit): G-vector is outside of boundaries")')
-                write(*,'("  G1+G : ",3I5)')ivg1
-                write(*,'("  boundaries : ",2I5,",",2I5,",",2I5)')&
-                  intgv(1,:),intgv(2,:),intgv(3,:)
-                write(*,*)
-                call pstop
-              endif
-              zt1=zt1+dconjg(wfsvit1(ig1,ispn,ist1))* &
-                      cfunig(ivgig(ivg1(1),ivg1(2),ivg1(3)))
-            enddo
-            a1(ig)=zt1
-          endif
-        enddo
-      endif
+! if we don't have this Fourier coefficient
+            if (.not.lf1g(ivgig(ivg2(1),ivg2(2),ivg2(3)))) then
+              zt1=zzero
+! compute \sum_{G1} u_1^{*}(G1)*\theta(G1+G)
+              do ig1=1,ngknr1
+! ivg1(:)=G1+(G+Gq-G2)             
+                ivg1(:)=ivg(:,igkignr1(ig1))+ivg2(:)
+                if (ivg1(1).lt.intgv(1,1).or.ivg1(1).gt.intgv(1,2).or.&
+                    ivg1(2).lt.intgv(2,1).or.ivg1(1).gt.intgv(2,2).or.&
+                    ivg1(3).lt.intgv(3,1).or.ivg1(1).gt.intgv(3,2)) then
+                  write(*,*)
+                  write(*,'("Error(megqblhit): G-vector is outside of boundaries")')
+                  write(*,'("  G1+G : ",3I5)')ivg1
+                  write(*,'("  boundaries : ",2I5,",",2I5,",",2I5)')&
+                    intgv(1,:),intgv(2,:),intgv(3,:)
+                  write(*,*)
+                  call pstop
+                endif
+                zt1=zt1+dconjg(wfsvit1(ig1,ispn,ist1))* &
+                        cfunig(ivgig(ivg1(1),ivg1(2),ivg1(3)))
+              enddo !ig1
+! save the coefficient
+              a1(ivgig(ivg2(1),ivg2(2),ivg2(3)))=zt1
+! mark it as computed
+              lf1g(ivgig(ivg2(1),ivg2(2),ivg2(3)))=.true.
+            endif !.not.lf1g(ivgig(ivg2(1),ivg2(2),ivg2(3)))
+! optimal arrangement for zdotu call
+            a2(ig2,ig)=a1(ivgig(ivg2(1),ivg2(2),ivg2(3)))
+          enddo !ig2
+        enddo !ig
+      endif !l1
       ist1_prev=ist1
     endif !ist1.ne.ist1_prev
     l1=.true.
@@ -107,17 +112,13 @@ do ispn=1,nspinor
     endif
     if (l1) then
       do ig=1,ngvecme
-        zt1=zzero
-        do ig2=1,ngknr2
-          ivg1(:)=ivg(:,ig+gvecme1-1)+ivg(:,igkq)-ivg(:,igkignr2(ig2))
-          zt1=zt1+a1(ivgig(ivg1(1),ivg1(2),ivg1(3)))*wfsvit2(ig2,ispn2,ist2)
-        enddo !ig2
-        megq_tmp(ig,i)=zt1
+        megq_tmp(ig,i)=zdotu(ngknr2,a2(1,ig),1,wfsvit2(1,ispn2,ist2),1)
       enddo !ig
     endif
   enddo !i
 enddo !ispn
-deallocate(a1,lig1)
+deallocate(a1,lf1g)
+deallocate(a2)
 !if (mpi_grid_size(dim2).gt.1.) then
   call mpi_grid_reduce(megq_tmp(1,1),ngvecme*nmegqblhmax,dims=(/dim2/))
 !endif
