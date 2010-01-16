@@ -163,16 +163,17 @@ if (mpi_grid_root()) then
   if (task.eq.401) open(151,file='RESPONSE_CHI0.OUT',form='formatted',status='replace')
   if (task.eq.402) open(151,file='RESPONSE_CHI.OUT',form='formatted',status='replace')
   if (task.eq.403) open(151,file='RESPONSE.OUT',form='formatted',status='replace')  
+  call timestamp(151)
 endif
 if (wproc1) then
-  write(151,'("Running on ",I8," proc.")')nproc
-  if (parallel_read.and.nproc.gt.1) then
-    write(151,'("  parallel file reading is on")')
-  endif
-  if (parallel_write.and.nproc.gt.1) then
-    write(151,'("  parallel file writing is on")')
-  endif
+  write(151,'("Total number of processors       : ",I6)')nproc
   write(151,'("MPI grid size                    : ",3I6)')mpi_grid_size
+  if (nproc.gt.1) then
+    write(151,'("Parallel file reading            : ",L1)')parallel_read
+  endif
+  if (nproc.gt.1) then
+    write(151,'("Parallel file writing            : ",L1)')parallel_write
+  endif
   write(151,'("Wannier functions                : ",L1)')wannier
   write(151,'("Response in Wannier basis        : ",L1)')wannier_chi0_chi
   write(151,'("Constrained RPA                  : ",L1)')crpa
@@ -205,6 +206,7 @@ if (task.eq.400.or.task.eq.403) then
   call timer_stop(3)
   if (wproc1) then
     write(151,'("Done in ",F8.2," seconds")')timer_get_value(3)
+    call timestamp(151)
     call flushifc(151)
   endif
 endif
@@ -287,6 +289,7 @@ if (task.eq.400.or.task.eq.403) then
   call timer_stop(1)
   if (wproc1) then
     write(151,'("Done in ",F8.2," seconds")')timer_get_value(1)
+    call timestamp(151)
     call flushifc(151)
   endif
 ! generate Wannier function expansion coefficients
@@ -351,6 +354,7 @@ if (task.eq.400.or.task.eq.403) then
     call timer_stop(1)
     if (wproc1) then
       write(151,'("Done in ",F8.2," seconds")')timer_get_value(1)
+      call timestamp(151)
       call flushifc(151)
     endif
   endif !wannier
@@ -373,11 +377,13 @@ ivq2=idx0+nvq0loc
 if (task.eq.400) then
 ! calculate matrix elements
   call timer_start(10,reset=.true.)
+  if (wproc1) call timestamp(151,txt='start genmegq')
   do iq=ivq1,ivq2
     call genmegq(ivq0m_list(1,iq),wfsvmtloc,wfsvitloc,ngknr, &
       igkignr,pmat)
   enddo
   call timer_stop(10)
+  if (wproc1) call timestamp(151,txt='stop genmegq')
   if (wproc1) then
     write(151,*)
     write(151,'("Total time for matrix elements : ",F8.2," seconds")')timer_get_value(10)
@@ -391,10 +397,12 @@ endif
 if (task.eq.401) then
 ! calculate chi0
   call timer_start(11,reset=.true.)
+  if (wproc1) call timestamp(151,txt='start genchi0')
   do iq=ivq1,ivq2
     call genchi0(ivq0m_list(1,iq))
   enddo
   call timer_stop(11)
+  if (wproc1) call timestamp(151,txt='stop genchi0')
   if (wproc1) then
     write(151,*)
     write(151,'("Total time for chi0 : ",F8.2," seconds")')timer_get_value(11)

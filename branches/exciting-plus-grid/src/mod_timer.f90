@@ -6,6 +6,21 @@ integer :: timer_count(ntimers)
 
 contains
 
+subroutine timestamp(fout,txt)
+implicit none
+integer, intent(in) :: fout
+character(*), optional, intent(in) :: txt
+integer values(8)
+call date_and_time(values=values)
+write(fout,*)
+write(fout,'("timestamp: ",I2.2,".",I2.2,".",I4.4,"  ",I2.2,":",I2.2,":",I2.2)') &
+  values(3),values(2),values(1),values(5),values(6),values(7)
+if (present(txt)) write(fout,'("comment: ",A)')trim(adjustl(txt))
+write(fout,*)
+return
+end subroutine
+
+
 real(8) function cpu_seconds()
 implicit none
 integer values(8)
