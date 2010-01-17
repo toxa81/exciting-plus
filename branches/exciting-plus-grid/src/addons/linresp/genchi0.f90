@@ -11,7 +11,7 @@ integer i,j,ik,ie,i1,i2,i3,ikloc
 integer idx0,bs
 integer igq0
 complex(8) wt
-character*100 path,qnm,fout,fchi0
+character*100 path,qnm,fout,fchi0,fu
 logical exist
 integer ie1,n,n1,n2,n3,n4,jk,ist1,ist2,sz1,sz2
 complex(8), allocatable :: zv1(:),zm2(:,:,:)
@@ -40,6 +40,15 @@ if (mpi_grid_root((/dim_k,dim_b/))) then
   wproc=.true.
   fout=trim(qnm)//"_CHI0.OUT"
   open(150,file=trim(fout),form='formatted',status='replace')
+endif
+
+if (crpa) then
+  if (mpi_grid_root((/dim_k,dim2/))) then
+    fu=trim(qnm)//"_U"
+    inquire(file=trim(fu),exist=exist)
+  endif
+  call mpi_grid_bcast(exist,dims=(/dim_k,dim2/))
+  if (exist) goto 30
 endif
 
 if (wproc) then
@@ -341,8 +350,6 @@ endif
 !
 call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 
-!deallocate(lr_evalsvnr)
-!deallocate(lr_occsvnr)
 deallocate(lr_w)
 deallocate(idxkq)
 deallocate(nmegqblh)
@@ -350,7 +357,6 @@ deallocate(bmegqblh)
 deallocate(megqblh)
 deallocate(chi0w)
 if (wannier_megq) then
- ! deallocate(wann_c)
   deallocate(itrmegqwan)
   deallocate(megqwan)
   deallocate(bmegqwan)
@@ -370,6 +376,8 @@ endif
 !if (lwannopt) then
 !  deallocate(pmat)
 !endif
+30 continue
+
 if (wproc) then
   write(150,*)
   write(150,'("Done.")')

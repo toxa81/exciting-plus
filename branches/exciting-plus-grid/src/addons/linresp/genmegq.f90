@@ -33,7 +33,7 @@ integer nkstep
 integer lmaxexp
 integer lmmaxexp
 
-character*100 :: qnm,fout,fme
+character*100 :: qnm,fout,fme,fu
 logical l1
 
 logical exist
@@ -72,6 +72,15 @@ if (mpi_grid_root((/dim_k,dim2/))) then
 endif
 call mpi_grid_bcast(complete,dims=(/dim_k,dim2/))
 if (complete.eq.1) goto 30
+
+if (crpa) then
+  if (mpi_grid_root((/dim_k,dim2/))) then
+    fu=trim(qnm)//"_U"
+    inquire(file=trim(fu),exist=exist)
+  endif
+  call mpi_grid_bcast(exist,dims=(/dim_k,dim2/))
+  if (exist) goto 30
+endif
 
 if (wproc) then
   write(150,*)

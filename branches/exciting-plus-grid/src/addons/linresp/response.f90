@@ -67,6 +67,12 @@ if (nvq0.eq.0) then
   write(*,*)
   call pstop
 endif
+if (crpa.and.task.ne.403) then
+  write(*,*)
+  write(*,'("Error(response): cRPA must be run with task=403")')
+  write(*,*)
+  call pstop
+endif
 
 if (.not.wannier) then
   wannier_chi0_chi=.false.
@@ -307,7 +313,7 @@ if (task.eq.400.or.task.eq.403) then
     do ikloc=1,nkptnrloc
       ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
       call genwann_c(ik,lr_evalsvnr(1,ik),wfsvmtloc(1,1,1,1,1,ikloc),&
-        wann_c(1,1,ikloc))
+        wann_c(1,1,ikloc))  
       if (ldisentangle) then
 ! disentangle bands
         call disentangle(lr_evalsvnr(1,ik),wann_c(1,1,ikloc),evecsvloc(1,1,ikloc))
