@@ -1075,9 +1075,6 @@ complex(8), allocatable :: chi0wan(:,:,:)
 !  2-nd index: 1: index of k'=k+q-K
 !              2: index of K-vector which brings k+q to first BZ
 integer, allocatable :: idxkq(:,:)
-
-! Kohn-Sham polarizability
-!complex(8), allocatable :: chi0(:,:,:,:)
 ! number of energy-mesh points
 integer nepts
 ! energy mesh
@@ -1095,10 +1092,10 @@ logical split_megq_file
 data split_megq_file/.false./
 ! high-level switch:: read files in parallel
 logical parallel_read
-data parallel_read/.false./
+data parallel_read/.true./
 ! high-level switch:: write files in parallel (where it is possible)
 logical parallel_write
-data parallel_write/.false./
+data parallel_write/.true./
 ! high-level switch: compute chi0 and chi in Wannier functions basis
 logical wannier_chi0_chi 
 data wannier_chi0_chi/.false./
@@ -1114,8 +1111,6 @@ logical screened_u
 data screened_u/.false./
 logical write_chi0_file
 
-
-
 logical lwannopt
 integer megqwan_maxtr
 real(8) megqwan_cutoff
@@ -1123,11 +1118,40 @@ real(8) megqwan_cutoff
 logical crpa
 real(8) crpa_e1,crpa_e2
 
-
 integer, allocatable :: spinor_ud(:,:,:)
 
 real(8), allocatable :: lr_occsvnr(:,:)
 real(8), allocatable :: lr_evalsvnr(:,:)
+
+! indices of response functions in global array f_response(:,:,:)
+integer, parameter :: f_chi0                 = 1
+integer, parameter :: f_chi                  = 2
+integer, parameter :: f_chi_scalar           = 3
+integer, parameter :: f_chi_pseudo_scalar    = 4
+integer, parameter :: f_epsilon_matrix_GqGq  = 5
+integer, parameter :: f_epsilon_scalar_GqGq  = 6
+integer, parameter :: f_inv_epsilon_inv_GqGq = 7
+integer, parameter :: f_epsilon_eff          = 8
+integer, parameter :: f_epsilon_eff_scalar   = 9
+integer, parameter :: f_sigma                = 10
+integer, parameter :: f_sigma_scalar         = 11
+integer, parameter :: f_loss                 = 12
+integer, parameter :: f_loss_scalar          = 13
+integer, parameter :: f_chi0_wann_full       = 14
+integer, parameter :: f_chi0_wann            = 15
+integer, parameter :: f_chi_wann             = 16
+integer, parameter :: f_epsilon_eff_wann     = 17
+integer, parameter :: f_sigma_wann           = 18
+integer, parameter :: f_loss_wann            = 19
+
+integer, parameter :: nf_response            = 19
+complex(8), allocatable :: f_response(:,:,:)
+
+
+
+
+
+
 
 
 !------------------!
@@ -1192,7 +1216,6 @@ logical ldisentangle
 !----------------!
 !      timer     !
 !----------------!
-
 integer, parameter :: t_iter_tot=2
 integer, parameter :: t_init=10
 

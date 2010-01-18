@@ -19,12 +19,10 @@ complex(8), allocatable :: krnl(:,:)
 complex(8), allocatable :: krnl_scr(:,:)
 complex(8), allocatable :: chi0w(:,:)
 real(8) fxca
-complex(8), allocatable :: epsilon_(:,:,:)
-complex(8), allocatable :: chi_(:,:,:)
 real(8) fourpiq0
 complex(8), allocatable :: megqwan_t(:,:,:)
 !complex(8), allocatable :: mewfx(:,:,:)
-complex(8), allocatable :: mtrx_v(:,:)
+complex(8), allocatable :: vcwan(:,:)
 complex(8), allocatable :: uscrn(:,:)
 complex(8), allocatable :: ubare(:,:)
 real(8), allocatable :: vcgq(:)
@@ -45,8 +43,6 @@ character*100 fchi,fchi0,fme,qnm,path,fw
 character*3 c3
 integer nwstep,iwstep,iw,nwloc
 complex(8), external :: zdotu
-
-! todo: move kerenl construction to solve_chi
 
 ! we need Bcx and magnetization from STATE.OUT
 if (lrtype.eq.1) call readstate
@@ -171,10 +167,8 @@ allocate(ixcft(ngvec))
 allocate(lr_w(nepts))
 allocate(chi0w(ngvecme,ngvecme))  
 allocate(chi0m(ngvecchi,ngvecchi))
-allocate(chi_(7,nepts,nfxca))
-allocate(epsilon_(5,nepts,nfxca))
-chi_=zzero
-epsilon_=zzero
+allocate(f_response(nf_response,nepts,nfxca))
+f_response=zzero
 lr_w=zzero
 
 ! generate sqrt(4*Pi)/|G+q|  
@@ -183,32 +177,6 @@ do ig=1,ngvecchi
   gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
   vcgq(ig)=sqrt(fourpi)/gq0
 enddo !ig
-
-
-! construct RPA kernel of the matrix equation
-!krnl_rpa=zzero
-! for charge response
-!if (lrtype.eq.0) then
-!  do ig=1,ngvecchi
-! generate G+q vectors  
-!    vgq0c(:)=vgc(:,ig+gvecchi1-1)+vq0rc(:)
-!    gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
-!    krnl_rpa(ig,ig)=fourpi/(gq0**2)
-!    vcgq(ig)=sqrt(fourpi)/gq0
-!  enddo !ig
-!endif !lrtype.eq.0
-! for magnetic response
-!if (lrtype.eq.1) then
-!  call genixc(ixcft)
-! contruct Ixc_{G,G'}=Ixc(G-G')
-!  do i=1,ngvecchi
-!    do j=1,ngvecchi
-!      iv(:)=-ivg(:,gvecchi1+i-1)+ivg(:,gvecchi1+j-1)
-!      krnl_rpa(i,j)=ixcft(ivgig(iv(1),iv(2),iv(3)))
-!    enddo
-!  enddo
-!endif !lrtype.eq.1
-
 
 ! for response in Wannier basis
 if (wannier_chi0_chi) then
@@ -223,7 +191,6 @@ if (wannier_chi0_chi) then
       enddo
     enddo
   enddo
-
 !  inquire(file='mewf.in',exist=exist)
 !  if (exist) then
 !    open(70,file='mewf.in',form='formatted',status='old')
@@ -315,9 +282,9 @@ if (wannier_chi0_chi) then
     write(150,*)
     write(150,'("Reduced matrix size in local basis : ",I6)')nnzme
   endif
-  allocate(mtrx_v(nnzme,nnzme))
+  allocate(vcwan(nnzme,nnzme))
 ! Coulomb matrix in local basis
-  mtrx_v=zzero
+  vcwan=zzero
   do i=1,nnzme
     do j=1,nnzme
       i1=inzme(1,i)
@@ -325,21 +292,13 @@ if (wannier_chi0_chi) then
       i2=inzme(1,j)
       n2=inzme(2,j)
       do ig=1,ngvecchi
-        mtrx_v(i,j)=mtrx_v(i,j)+dconjg(megqwan(n1,i1,ig))*megqwan(n2,i2,ig)*&
+        vcwan(i,j)=vcwan(i,j)+dconjg(megqwan(n1,i1,ig))*megqwan(n2,i2,ig)*&
           vcgq(ig)**2
       enddo
     enddo
   enddo
   if (wproc) call flushifc(150)
 endif !wannier_chi0_chi
-
-
-
-
-
-
-
-
 
 ! distribute energy points between 1-st dimension
 i=0
@@ -363,7 +322,8 @@ do iwstep=1,nwstep
           call read_real8_array(chi0w,3,(/2,ngvecme,ngvecme/), &
             trim(fchi0),trim(path),'chi0')
           if (wannier_chi0_chi) then
-            call read_real8_array(chi_(5,iw,1),1,(/2/),trim(fchi0),trim(path),'chi0wf')
+            call read_real8_array(f_response(f_chi0_wann_full,iw,1),1,(/2/), &
+              trim(fchi0),trim(path),'chi0wf')
             call read_real8_array(chi0wan,4,(/2,nmegqwan,nmegqwan,ntrchi0wan/), &
               trim(fchi0),trim(path),'chi0wan')
           endif
@@ -393,11 +353,9 @@ do iwstep=1,nwstep
           endif
         enddo
       endif
-      call solve_chi(igq0,vcgq,chi0m,krnl,chi_(1,iw,ifxc),epsilon_(1,iw,ifxc),&
-        krnl_scr)
+      call solve_chi(igq0,vcgq,lr_w(iw),chi0m,krnl,krnl_scr,f_response(1,iw,ifxc))
       if (wannier_chi0_chi.and.ifxc.eq.1) then
-        call solve_chi_wf(ntrmegqwan,ntrchi0wan,itridxwan,nmegqwan,nnzme,inzme,megqwan,chi0wan,mtrx_v,&
-          chi_(6,iw,1),chi_(7,iw,1),igq0)
+        call solve_chi_wf(igq0,vcgq,lr_w(iw),nnzme,inzme,vcwan,f_response(1,iw,ifxc))
       endif
       if (screened_w.and.iw.eq.1.and.ifxc.eq.1) then
         if (ngvecchi.gt.10) then
@@ -423,19 +381,17 @@ do iwstep=1,nwstep
 enddo !ie
 
 call mpi_grid_reduce(lr_w(1),nepts,dims=(/dim_w/))
-call mpi_grid_reduce(chi_(1,1,1),7*nepts*nfxca,dims=(/dim_w,dim_f/))
-call mpi_grid_reduce(epsilon_(1,1,1),5*nepts*nfxca,dims=(/dim_w,dim_f/))
+call mpi_grid_reduce(f_response(1,1,1),nf_response*nepts*nfxca,dims=(/dim_w,dim_f/))
 ! write response functions to .dat file
 if (mpi_grid_root(dims=(/dim_w,dim_f/))) then
   do ifxc=1,nfxca
-    fxca=fxca0+(ifxc-1)*fxca1
-    call write_chi(lr_igq0,ivq0m,chi_(1,1,ifxc),epsilon_(1,1,ifxc),fxca)
+    call write_chi(lr_igq0,ivq0m,ifxc)
   enddo
 endif
 
 deallocate(krnl,ixcft)
 if (screened_w) deallocate(krnl_scr)
-deallocate(lr_w,chi0m,chi0w,chi_,epsilon_)
+deallocate(lr_w,chi0m,chi0w,f_response)
 deallocate(vcgq)
 
 if (wannier_megq) then
@@ -447,6 +403,7 @@ if (wannier_chi0_chi) then
   deallocate(itrchi0wan)
   deallocate(itridxwan)
   deallocate(chi0wan)
+  deallocate(vcwan)
 endif
 if (crpa) then
   deallocate(imegqwan)

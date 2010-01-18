@@ -1,13 +1,13 @@
-subroutine solve_chi(igq0,vcgq,chi0m,krnl,chi_,epsilon_,krnl_scr)
+subroutine solve_chi(igq0,vcgq,w,chi0m,krnl,krnl_scr,f_response_)
 use modmain
 implicit none
 integer, intent(in) :: igq0
 real(8), intent(in) :: vcgq(ngvecchi)
+complex(8), intent(in) :: w
 complex(8), intent(in) :: chi0m(ngvecchi,ngvecchi)
 complex(8), intent(inout) :: krnl(ngvecchi,ngvecchi)
-complex(8), intent(out) :: chi_(4)
-complex(8), intent(out) :: epsilon_(5)
 complex(8), intent(out) :: krnl_scr(ngvecchi,ngvecchi)
+complex(8), intent(out) :: f_response_(nf_response)
 ! local variables
 complex(8), allocatable :: epsilon(:,:)
 complex(8), allocatable :: mtrx1(:,:)
@@ -15,11 +15,13 @@ complex(8), allocatable :: zm1(:,:),zm2(:,:)
 real(8) d1
 integer i,ig1,ig2
 
-! Note: different epsilons and chis are introdued only to go inside the 
+! Note: different epsilons and chis are introduced only to go inside the 
 !   "black box" of non-linear marix equation for chi
 ! functions that are related to physical measurements are: 
-!   1. chi_{Gq,Gq}(q-Gq,w) 
+!   1. chi_{Gq,Gq}(q-Gq,w)  -> S(q,w)
 !   2. epsilon_eff(q-Gq,w)
+!   3. sigma
+!   4. loss
 
 ! construct full kernel
 if (lrtype.eq.0) then
@@ -27,45 +29,68 @@ if (lrtype.eq.0) then
     krnl(i,i)=krnl(i,i)+vcgq(i)**2
   enddo
 endif
+! for magnetic response
+!if (lrtype.eq.1) then
+!  call genixc(ixcft)
+! contruct Ixc_{G,G'}=Ixc(G-G')
+!  do i=1,ngvecchi
+!    do j=1,ngvecchi
+!      iv(:)=-ivg(:,gvecchi1+i-1)+ivg(:,gvecchi1+j-1)
+!      krnl_rpa(i,j)=ixcft(ivgig(iv(1),iv(2),iv(3)))
+!    enddo
+!  enddo
+!endif !lrtype.eq.1
+if (lrtype.eq.1) then
+  write(*,*)
+  write(*,'("Error(solve_chi): Ixc kernel is required for magnetic response")')
+  write(*,'("  not yet implemented")')
+  write(*,*)
+  call pstop
+endif
 
 allocate(epsilon(ngvecchi,ngvecchi))
 allocate(mtrx1(ngvecchi,ngvecchi))
 allocate(zm1(ngvecchi,ngvecchi))
 allocate(zm2(ngvecchi,ngvecchi))
 
-! save chi0
-chi_(1)=chi0m(igq0,igq0)
+! save chi0_GqGq
+f_response_(f_chi0)=chi0m(igq0,igq0)
 ! compute matrix 1-chi0*(v+fxc) 
-epsilon=dcmplx(0.d0,0.d0)
+epsilon=zzero
 do i=1,ngvecchi
-  epsilon(i,i)=dcmplx(1.d0,0.d0)
+  epsilon(i,i)=zone
 enddo
 call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(-1.d0,0.d0), &
-  chi0m,ngvecchi,krnl,ngvecchi,dcmplx(1.d0,0.d0),epsilon,ngvecchi)
-!call wrmtrx('epsilon.txt',ngvecchi,epsilon)
+  chi0m,ngvecchi,krnl,ngvecchi,zone,epsilon,ngvecchi)
 ! save epsilon_matrix_GqGq
-epsilon_(1)=epsilon(igq0,igq0)
+f_response_(f_epsilon_matrix_GqGq)=epsilon(igq0,igq0)
 ! save epsilon_scalar_GqGq
-epsilon_(2)=1.d0-chi0m(igq0,igq0)*krnl(igq0,igq0)
+f_response_(f_epsilon_scalar_GqGq)=1.d0-chi0m(igq0,igq0)*krnl(igq0,igq0)
 ! invert epsilon matrix
 call invzge(epsilon,ngvecchi)
-!call wrmtrx('epsilon_inv.txt',ngvecchi,epsilon)
 ! save 1/(epsilon^-1)_{GqGq}
-epsilon_(3)=1.d0/epsilon(igq0,igq0)
+f_response_(f_inv_epsilon_inv_GqGq)=1.d0/epsilon(igq0,igq0)
 ! save chi_scalar
-chi_(2)=chi0m(igq0,igq0)/epsilon_(2)
+f_response_(f_chi_scalar)=chi0m(igq0,igq0)/f_response_(f_epsilon_scalar_GqGq)
 ! save chi_pseudo_scalar
-chi_(3)=chi0m(igq0,igq0)/epsilon_(3)
+f_response_(f_chi_pseudo_scalar)=chi0m(igq0,igq0)/f_response_(f_epsilon_matrix_GqGq)
 ! compute chi=epsilon^-1 * chi0
 call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
   epsilon,ngvecchi,chi0m,ngvecchi,dcmplx(0.d0,0.d0),mtrx1,ngvecchi)
-!call wrmtrx('chi.txt',ngvecchi,mtrx1)
 ! save chi
-chi_(4)=mtrx1(igq0,igq0)
+f_response_(f_chi)=mtrx1(igq0,igq0)
 ! save epsilon_eff
-epsilon_(4)=1.d0/(1.d0+(vcgq(igq0)**2)*chi_(4))
+f_response_(f_epsilon_eff)=1.d0/(1.d0+(vcgq(igq0)**2)*f_response_(f_chi))
 ! save epsilon_eff_scalar
-epsilon_(5)=1.d0/(1.d0+(vcgq(igq0)**2)*chi_(2))
+f_response_(f_epsilon_eff_scalar)=1.d0/(1.d0+(vcgq(igq0)**2)*f_response_(f_chi_scalar))
+
+f_response_(f_sigma)=zi*dreal(w)*(zone-f_response_(f_epsilon_eff))/fourpi
+f_response_(f_sigma_scalar)=zi*dreal(w)*(zone-f_response_(f_epsilon_eff_scalar))/fourpi
+f_response_(f_loss)=1.d0/f_response_(f_epsilon_eff)
+f_response_(f_loss_scalar)=1.d0/f_response_(f_epsilon_eff_scalar)
+
+
+
 
 if (screened_w) then
 ! compute screened Coulomb potential: vscr=vbare+vbare*chi*vbare

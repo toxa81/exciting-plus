@@ -356,7 +356,7 @@ deallocate(nmegqblh)
 deallocate(bmegqblh)
 deallocate(megqblh)
 deallocate(chi0w)
-if (wannier_megq) then
+if (wannier_megq.and.write_megq_file) then
   deallocate(itrmegqwan)
   deallocate(megqwan)
   deallocate(bmegqwan)

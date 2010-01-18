@@ -53,7 +53,9 @@ do n=1,nwann
         if (bndint(j,e(j),wann_eint(1,itype),wann_eint(2,itype))) then
           call genprjao(ias,lm,ispn,j,wfsvmt,zt1)
 ! <psi_k(r)|g(r-T)>=<psi(r+T)|g(r)>=e^{-ikT}<psi(r)|g(r)>
-          prjao(n,j)=prjao(n,j)+zt1*d1*exp(-zi*dot_product(vkc(:,ik),tr(:)))
+          prjao(n,j)=prjao(n,j)+zt1*d1*exp(-zi*dot_product(vkc(:,ik),tr(:)))*&
+            orbwt(e(j),wannier_soft_eint_e1,wannier_soft_eint_e2,&
+              wannier_soft_eint_width)
         endif
       enddo
     enddo !i
@@ -81,6 +83,17 @@ do j=1,nstsv
   enddo
   if (d1.lt.wannier_min_prjao) prjao(:,j)=zzero
 enddo
+
+if (.false.) then
+  write(*,'("Total contribution of projected orbitals : ")')
+  do j=1,nstsv
+    d1=0.d0
+    do n=1,nwann
+      d1=d1+abs(prjao(n,j))**2
+    enddo
+    write(*,'("  band : ",I4,"  wt : ",F12.6)')j,d1
+  enddo
+endif
 
 call wann_ort(ik,prjao)
 wann_c_=prjao

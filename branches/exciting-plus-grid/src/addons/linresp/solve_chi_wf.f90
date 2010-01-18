@@ -1,24 +1,18 @@
-subroutine solve_chi_wf(ntr1,ntr2,itridx,nwfme,nnzme,inzme,mewf2, &
-  mewf4,mtrx_v,chi0wf,chiwf,igq0)
+subroutine solve_chi_wf(igq0,vcgq,w,nnzme,inzme,vcwan,f_response_)
 use modmain
 implicit none
-integer, intent(in) :: ntr1
-integer, intent(in) :: ntr2
-integer, intent(in) :: itridx(ntr1,ntr1)
-integer, intent(in) :: nwfme
+integer, intent(in) :: igq0
+real(8), intent(in) :: vcgq(ngvecchi)
+complex(8), intent(in) :: w
 integer, intent(in) :: nnzme
 integer, intent(in) :: inzme(2,nnzme)
-complex(8), intent(in) :: mewf2(nwfme,ntr1,ngvecme)
-complex(8), intent(in) :: mewf4(nwfme,nwfme,ntr2)
-complex(8), intent(in) :: mtrx_v(nnzme,nnzme)
-complex(8), intent(out) :: chi0wf
-complex(8), intent(out) :: chiwf
-integer, intent(in) :: igq0
+complex(8), intent(in) :: vcwan(nnzme,nnzme)
+complex(8), intent(out) :: f_response_(nf_response)
 
 complex(8), allocatable :: mtrx1(:,:)
 complex(8), allocatable :: mtrx2(:,:)
 complex(8), allocatable :: mtrx3(:,:)
-complex zt1
+complex zt1,zt2
 
 integer i1,i2,n1,n2,i,j,it2,i3,ig
 
@@ -35,9 +29,9 @@ do i=1,nnzme
     n1=inzme(2,i)
     i2=inzme(1,j)
     n2=inzme(2,j)
-    i3=itridx(i1,i2)
+    i3=itridxwan(i1,i2)
     if (i3.ne.-1) then
-      mtrx1(i,j)=mewf4(n1,n2,i3)
+      mtrx1(i,j)=chi0wan(n1,n2,i3)
     endif
   enddo
 enddo
@@ -47,29 +41,41 @@ do i1=1,nnzme
   mtrx3(i1,i1)=zone
 enddo
 call zgemm('N','N',nnzme,nnzme,nnzme,dcmplx(-1.d0,0.d0), &
-  mtrx_v,nnzme,mtrx1,nnzme,dcmplx(1.d0,0.d0),mtrx3,nnzme)
+  vcwan,nnzme,mtrx1,nnzme,dcmplx(1.d0,0.d0),mtrx3,nnzme)
 call invzge(mtrx3,nnzme)
 call zgemm('N','N',nnzme,nnzme,nnzme,dcmplx(1.d0,0.d0), &
   mtrx1,nnzme,mtrx3,nnzme,dcmplx(0.d0,0.d0),mtrx2,nnzme)
 
-chi0wf=zzero
+! zt1 is chi0wf
+zt1=zzero
+! zt2 is chiwf
+zt2=zzero
 do i=1,nnzme
   do j=1,nnzme
     i1=inzme(1,i)
     n1=inzme(2,i)
     i2=inzme(1,j)
     n2=inzme(2,j)
-    i3=itridx(i1,i2)
+    i3=itridxwan(i1,i2)
     if (i3.ne.-1) then
-      chi0wf=chi0wf+mewf2(n1,i1,igq0)*mewf4(n1,n2,i3)*dconjg(mewf2(n2,i2,igq0))
+      zt1=zt1+megqwan(n1,i1,igq0)*chi0wan(n1,n2,i3)*dconjg(megqwan(n2,i2,igq0))
     endif
-    chiwf=chiwf+mewf2(n1,i1,igq0)*mtrx2(i,j)*dconjg(mewf2(n2,i2,igq0))
+    zt2=zt2+megqwan(n1,i1,igq0)*mtrx2(i,j)*dconjg(megqwan(n2,i2,igq0))
   enddo
 enddo
 
 deallocate(mtrx1)
 deallocate(mtrx2)
 deallocate(mtrx3)
+
+f_response_(f_chi0_wann)=zt1
+f_response_(f_chi_wann)=zt2
+
+f_response_(f_epsilon_eff_wann)=1.d0/(1.d0+(vcgq(igq0)**2)*f_response_(f_chi_wann))
+f_response_(f_sigma_wann)=zi*dreal(w)*(zone-f_response_(f_epsilon_eff_wann))/fourpi
+f_response_(f_loss_wann)=1.d0/f_response_(f_epsilon_eff_wann)
+
+
 
 !  if (lwannopt) then
 !    do it1=1,ntr1
