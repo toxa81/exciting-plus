@@ -81,8 +81,8 @@ do ispn=1,nspinor
 ! ivg1(:)=G1+(G+Gq-G2)             
                 ivg1(:)=ivg(:,igkignr1(ig1))+ivg2(:)
                 if (ivg1(1).lt.intgv(1,1).or.ivg1(1).gt.intgv(1,2).or.&
-                    ivg1(2).lt.intgv(2,1).or.ivg1(1).gt.intgv(2,2).or.&
-                    ivg1(3).lt.intgv(3,1).or.ivg1(1).gt.intgv(3,2)) then
+                    ivg1(2).lt.intgv(2,1).or.ivg1(2).gt.intgv(2,2).or.&
+                    ivg1(3).lt.intgv(3,1).or.ivg1(3).gt.intgv(3,2)) then
                   write(*,*)
                   write(*,'("Error(megqblhit): G-vector is outside of boundaries")')
                   write(*,'("  G1+G : ",3I5)')ivg1
