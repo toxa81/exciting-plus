@@ -52,7 +52,7 @@ if (mpi_grid_root(dims=(/dim_k,dim2/))) then
     call write_real8(wann_occ,nwann,trim(fme),'/wannier','wann_occ')
   endif
 endif
-if (mpi_grid_root(dims=(/dim_k,dim2/)).and.split_megq_file) then
+if (mpi_grid_root(dims=(/dim2/)).and.split_megq_file) then
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
     write(c8,'(I8.8)')ik
