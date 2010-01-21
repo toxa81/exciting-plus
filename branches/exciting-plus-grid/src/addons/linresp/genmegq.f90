@@ -19,7 +19,7 @@ complex(8), allocatable :: wfsvit2(:,:,:)
 integer n1,n2,i1,i2,i3,itr,n,ist1,ist2
 real(8) vtrc(3)
 
-integer i,j,ik,jk,ig,ikstep,sz,ikloc,complete
+integer i,j,ik,jk,ig,ikstep,sz,ikloc,complete,igloc
 integer ngknr2
 real(8) vkq0l(3)
 integer ivg1(3)
@@ -148,6 +148,12 @@ call getmeidx(.true.)
 call mpi_grid_reduce(nmegqblhmax,dims=(/dim_k/),all=.true.,op=op_max)
 allocate(nmegqblh(nkptnrloc))
 allocate(bmegqblh(2,nmegqblhmax,nkptnrloc))
+if (wannier_megq) then
+  allocate(nmegqblhwan(nkptnrloc))
+  allocate(imegqblhwan(nmegqblhmax,nkptnrloc))
+  nmegqblhwan=0
+  imegqblhwan=0
+endif
 call getmeidx(.false.)
 call timer_stop(1)
 if (wproc) then
@@ -285,16 +291,18 @@ do ikstep=1,nkstep
                 avec(:,2)*itrmegqwan(2,itr)+&
                 avec(:,3)*itrmegqwan(3,itr)
         zt1=exp(dcmplx(0.d0,-dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
-        do ig=1,ngvecme
+        do igloc=1,ngvecmeloc
+          ig=mpi_grid_map(ngvecme,dim_g,loc=igloc)
           do n=1,nmegqwan
             n1=bmegqwan(1,n)
             n2=bmegqwan(2,n)
-            do i=1,nmegqblh(ikstep)
+            do i1=1,nmegqblhwan(ikstep)
+              i=imegqblhwan(i1,ikstep)
               ist1=bmegqblh(1,i,ikstep)
               ist2=bmegqblh(2,i,ikstep)
               megqwan(n,itr,ig)=megqwan(n,itr,ig)+dconjg(wann_c(n1,ist1,ikstep))*&
                   wann_c(n2,ist2,ikstep+nkptnrloc)*megqblh(ig,i,ikstep)*zt1
-            enddo !i
+            enddo !i1
           enddo !n
         enddo !ig      
       enddo !itr
@@ -316,10 +324,10 @@ enddo !ikstep
 
 if (wannier_megq) then
 ! sum over all k-points to get <n,T=0|e^{-i(G+q)x|n',T'>
-  if (mpi_grid_root((/dim2/))) then
+  !if (mpi_grid_root((/dim2/))) then
     call mpi_grid_reduce(megqwan(1,1,1),nmegqwan*ntrmegqwan*ngvecme,&
-      dims=(/dim_k/))
-  endif
+      dims=(/dim_k,dim2/))
+  !endif
   megqwan=megqwan/nkptnr
 endif
 
@@ -356,6 +364,12 @@ deallocate(igntuju)
 if (spinpol) then
   deallocate(spinor_ud)
 endif
+
+if (wannier_megq) then
+  deallocate(nmegqblhwan)
+  deallocate(imegqblhwan)
+endif
+
 
 if (mpi_grid_root((/dim_k,dim2/)).and.write_megq_file) then
   complete=1

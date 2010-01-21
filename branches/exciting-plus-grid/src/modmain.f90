@@ -1059,6 +1059,9 @@ integer, allocatable :: bmegqwan(:,:)
 integer, allocatable :: imegqwan(:,:)
 complex(8), allocatable :: megqwan(:,:,:)
 
+integer, allocatable :: nmegqblhwan(:)
+integer, allocatable :: imegqblhwan(:,:)
+
 integer ntrmegqwan
 integer, allocatable :: itrmegqwan(:,:)
 

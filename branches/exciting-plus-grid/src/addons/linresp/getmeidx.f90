@@ -98,8 +98,12 @@ do ikloc=1,nkptnrloc
         if (.not.req) then
           bmegqblh(1,i,ikloc)=ist1
           bmegqblh(2,i,ikloc)=ist2
-          !ime(3,i,ikloc)=1 
-          !docc(i,ikloc)=d1
+          if (wannier_megq) then
+            if (wann_bnd(ist1,1).ne.0.and.wann_bnd(ist2,1).ne.0) then
+              nmegqblhwan(ikloc)=nmegqblhwan(ikloc)+1
+              imegqblhwan(nmegqblhwan(ikloc),ikloc)=i
+            endif
+          endif
         endif
         if (req) then
           min_e12=min(min_e12,abs(lr_evalsvnr(ist1,ik)-lr_evalsvnr(ist2,jk)))
