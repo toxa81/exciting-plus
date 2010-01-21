@@ -8,9 +8,9 @@ integer i,ik,jk,ist1,ist2,ikloc,n
 logical laddme,ldocc
 real(8) d1,min_e12,min_e1_wann,max_e2_wann
 logical l11,l12,l21,l22,le1,le2,lwann,le1w,le2w
+integer, allocatable :: wann_bnd(:,:)
 logical, external :: bndint
 logical, external :: wann_diel
-integer, allocatable :: wann_bnd(:,:)
 
 if (wannier_megq) then
   allocate(wann_bnd(nstsv,nkptnr))
@@ -44,7 +44,6 @@ if (wannier_megq) then
       exit
     endif
   enddo
-  deallocate(wann_bnd)
 endif !wannier
 if (req.and.wproc) then
   write(150,*)
@@ -121,6 +120,10 @@ if (req) then
     write(150,*)
     write(150,'("Minimal energy transition (eV) : ",F12.6)')min_e12*ha2ev
   endif
+endif
+
+if (wannier_megq) then
+  deallocate(wann_bnd)
 endif
 
 return
