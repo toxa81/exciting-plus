@@ -1,0 +1,619 @@
+
+Calculation of KS polarisability chi0
+
+Energy mesh parameters:
+  maximum energy [eV] :   10.0000
+  energy step    [eV] :    0.1000
+  eta            [eV] :    0.4000
+
+Reading matrix elements
+Done in     1.34 seconds
+
+matrix elements were calculated for: 
+  G-shells  :    1 to    2
+  G-vectors :    1 to    9
+
+Starting chi0 summation
+  first energy point :    1
+energy point    1 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3024.17 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point    2 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point    3 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point    4 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point    5 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point    6 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point    7 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point    8 was done in     0.25 seconds
+  zgerc time         :     0.24 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2824.22 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point    9 was done in     0.24 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2945.96 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   10 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3037.61 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   11 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3037.61 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   12 was done in     0.24 seconds
+  zgerc time         :     0.24 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2908.35 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   13 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   14 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3037.61 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   15 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3037.61 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   16 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3024.17 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   17 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   18 was done in     0.24 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2945.96 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   19 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3078.66 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   20 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   21 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   22 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   23 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   24 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   25 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   26 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   27 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3010.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   28 was done in     0.24 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2920.78 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   29 was done in     0.24 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2958.71 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   30 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3024.17 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   31 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2997.64 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   32 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2997.64 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   33 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2958.71 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   34 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3024.17 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   35 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2997.64 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   36 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   37 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   38 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   39 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   40 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3078.66 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   41 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3078.66 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   42 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3078.66 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   43 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   44 was done in     0.25 seconds
+  zgerc time         :     0.25 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2744.83 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   45 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3078.66 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   46 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   47 was done in     0.24 seconds
+  zgerc time         :     0.24 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2883.81 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   48 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   49 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3024.17 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   50 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2984.55 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   51 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2997.64 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   52 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   53 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3010.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   54 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   55 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2997.64 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   56 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2997.64 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   57 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3024.17 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.01 seconds
+energy point   58 was done in     0.25 seconds
+  zgerc time         :     0.25 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2744.83 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   59 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2997.64 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   60 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3010.85 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   61 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2984.55 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   62 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   63 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   64 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3024.17 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   65 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3010.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   66 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2984.55 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.01 seconds
+energy point   67 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3024.17 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   68 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   69 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   70 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2971.57 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   71 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   72 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   73 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   74 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   75 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   76 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3078.66 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   77 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   78 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   79 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3024.17 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   80 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   81 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   82 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   83 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   84 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3078.66 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   85 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   86 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   87 was done in     0.25 seconds
+  zgerc time         :     0.24 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  2801.07 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   88 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   89 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   90 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   91 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   92 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   93 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   94 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   95 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   96 was done in     0.23 seconds
+  zgerc time         :     0.23 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3010.85 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.00 seconds
+energy point   97 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3064.85 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point   98 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :     0.00 seconds
+  write time         :     0.01 seconds
+energy point   99 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3051.17 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+energy point  100 was done in     0.23 seconds
+  zgerc time         :     0.22 seconds
+  zgerc call speed   : ******** calls/sec.
+  zgerc memory speed :  3078.66 Mb/sec.
+  sync time          :    -0.00 seconds
+  write time         :     0.00 seconds
+
+Done.

@@ -1,5 +1,6 @@
 tasks
-  402
+  403
+  
 
 avec
   0.0  1.0  1.0
@@ -19,7 +20,7 @@ atoms
   0.0  0.0  0.0    0.0  0.0  0.0      : atposl, bfcmt
 
 ngridk
-  10 10 10
+ 10 10 10
     
 nempty
    60
@@ -27,7 +28,5 @@ nempty
 response
   1 2 0
   9 3 12
- 80.0 0.05 0.4
+ 10.0 0.1 0.4
  
-response_fxc
-  2 20 0 0.1  

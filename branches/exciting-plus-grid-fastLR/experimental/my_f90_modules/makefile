@@ -1,0 +1,16 @@
+F90=mpif90
+F90_OPTS=-cpp  -D_MPI_
+
+.SUFFIXES: .o .f90
+
+.f90.o:
+	$(F90) $(F90_OPTS) -c $< 
+
+SRC = mod_mpi_grid.f90 main.f90 
+OBJ = $(SRC:.f90=.o)
+
+all: $(OBJ)
+	$(F90) -o main $(OBJ) 
+
+clean:
+	rm -rf *.o *.mod

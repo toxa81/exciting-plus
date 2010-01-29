@@ -1,0 +1,35 @@
+
+timestamp: 29.01.2010  16:04:58
+
+Total number of processors       :      1
+MPI grid size                    :      1     1     1
+Wannier functions                : F
+Response in Wannier basis        : F
+Constrained RPA                  : F
+Matrix elements in Wannier basis : F
+Write matrix elements            : T
+Write chi0                       : T
+
+Reading energies of states
+Done in     0.04 seconds
+
+timestamp: 29.01.2010  16:04:58
+
+
+Size of wave-function arrays (MB) :    365
+
+Reading eigen-vectors
+Done in    11.81 seconds
+
+timestamp: 29.01.2010  16:05:10
+
+
+timestamp: 29.01.2010  16:05:10
+comment: start genmegq
+
+
+timestamp: 29.01.2010  16:06:28
+comment: stop genmegq
+
+
+Total time for matrix elements :    78.06 seconds

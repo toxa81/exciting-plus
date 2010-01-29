@@ -1,0 +1,21 @@
+
+timestamp: 29.01.2010  16:08:56
+
+Total number of processors       :      1
+MPI grid size                    :      1     1     1
+Wannier functions                : F
+Response in Wannier basis        : F
+Constrained RPA                  : F
+Matrix elements in Wannier basis : F
+Write matrix elements            : T
+Write chi0                       : T
+
+timestamp: 29.01.2010  16:08:56
+comment: start genchi0
+
+
+timestamp: 29.01.2010  16:09:20
+comment: stop genchi0
+
+
+Total time for chi0 :    24.61 seconds

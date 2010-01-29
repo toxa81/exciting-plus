@@ -1,0 +1,25 @@
+
+timestamp: 29.01.2010  16:02:16
+
+Total number of processors       :      1
+MPI grid size                    :      1     1     1
+Wannier functions                : F
+Response in Wannier basis        : F
+Constrained RPA                  : F
+Matrix elements in Wannier basis : F
+Write matrix elements            : F
+Write chi0                       : T
+
+Reading energies of states
+Done in     0.05 seconds
+
+timestamp: 29.01.2010  16:02:16
+
+
+Size of wave-function arrays (MB) :    365
+
+Reading eigen-vectors
+Done in    12.27 seconds
+
+timestamp: 29.01.2010  16:02:29
+
