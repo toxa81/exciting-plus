@@ -4,27 +4,41 @@ implicit none
 ! arguments
 integer, intent(in) :: lmaxexp
 integer, intent(in) :: ngntujumax
-integer, intent(out) :: ngntuju(natmtot,ngvecmeloc)
-integer, intent(out) :: igntuju(4,ngntujumax,natmtot,ngvecmeloc)
-complex(8), intent(out) :: gntuju(ngntujumax,natmtot,ngvecmeloc)
+integer, intent(out) :: ngntuju(natmtot,ngvecme)
+integer, intent(out) :: igntuju(4,ngntujumax,natmtot,ngvecme)
+complex(8), intent(out) :: gntuju(ngntujumax,natmtot,ngvecme)
 
 
 integer ig,is,ir,n,ias,i,io1,io2,l1,m1,lm1,l2,m2,lm2,l3,m3,lm3
-integer igloc,igloc1,ngvecmeloc1
 ! for parallel
-integer cart_size,cart_rank,cart_group,ierr
-integer tmp_comm,tmp_group,tmp_size
-integer, allocatable :: ranks(:)
 integer idx0,bs
+integer lmmaxexp
 complex(8) zt1
 real(8) fr(nrmtmax),gr(nrmtmax),cf(3,nrmtmax)
 real(8), allocatable :: jl(:,:)
 real(8), allocatable :: uju(:,:,:,:,:)
+real(8), allocatable :: gnt(:,:,:)
 real(8), external :: gaunt
 
-! use first direction in the grid (direction of k-points) to compute
-!   MT integrals in parallel
-ngvecmeloc1=mpi_grid_map(ngvecmeloc,dim_k)
+lmmaxexp=(lmaxexp+1)**2
+allocate(gnt(lmmaxexp,lmmaxvr,lmmaxvr))
+do l1=0,lmaxvr
+  do m1=-l1,l1
+    lm1=idxlm(l1,m1)
+    do l2=0,lmaxvr
+      do m2=-l2,l2
+        lm2=idxlm(l2,m2)
+        do l3=0,lmaxexp
+          do m3=-l3,l3
+            lm3=idxlm(l3,m3)
+            gnt(lm3,lm2,lm1)=gaunt(l2,l1,l3,m2,m1,m3)
+          enddo
+        enddo
+      enddo
+    enddo
+  enddo
+enddo
+
 allocate(jl(nrmtmax,0:lmaxexp))
 allocate(uju(0:lmaxexp,0:lmaxvr,0:lmaxvr,nrfmax,nrfmax))
 
@@ -32,9 +46,7 @@ igntuju=0
 ngntuju=0
 gntuju=dcmplx(0.d0,0.d0)
 ! loop over G-vectors
-do igloc1=1,ngvecmeloc1
-  igloc=mpi_grid_map(ngvecmeloc,dim_k,loc=igloc1)
-  ig=mpi_grid_map(ngvecme,dim_g,loc=igloc)
+do ig=1,ngvecme
 ! loop over atoms
   do ias=1,natmtot
     is=ias2is(ias)
@@ -82,18 +94,21 @@ do igloc1=1,ngvecmeloc1
             do l3=0,lmaxexp
             do m3=-l3,l3
               lm3=idxlm(l3,m3)
-              zt1=zt1+gaunt(l2,l1,l3,m2,m1,m3)*uju(l3,l1,l2,io1,io2)*&
-                lr_ylmgq0(lm3,ig)*dconjg(zi**l3)*fourpi*dconjg(lr_sfacgq0(ig,ias))
+              !zt1=zt1+gaunt(l2,l1,l3,m2,m1,m3)*uju(l3,l1,l2,io1,io2)*&
+              !  lr_ylmgq0(lm3,ig)*dconjg(zi**l3)*fourpi*dconjg(lr_sfacgq0(ig,ias))
+              zt1=zt1+gnt(lm3,lm2,lm1)*uju(l3,l1,l2,io1,io2)*&
+                lr_ylmgq0(lm3,ig)*dconjg(zi**l3)
             enddo
             enddo
+            zt1=zt1*fourpi*dconjg(lr_sfacgq0(ig,ias))
             if (abs(zt1).gt.1d-16) then
-              ngntuju(ias,igloc)=ngntuju(ias,igloc)+1
-              n=ngntuju(ias,igloc)
-              gntuju(n,ias,igloc)=zt1
-              igntuju(1,n,ias,igloc)=lm1
-              igntuju(2,n,ias,igloc)=lm2
-              igntuju(3,n,ias,igloc)=io1
-              igntuju(4,n,ias,igloc)=io2
+              ngntuju(ias,ig)=ngntuju(ias,ig)+1
+              n=ngntuju(ias,ig)
+              gntuju(n,ias,ig)=zt1
+              igntuju(1,n,ias,ig)=lm1
+              igntuju(2,n,ias,ig)=lm2
+              igntuju(3,n,ias,ig)=io1
+              igntuju(4,n,ias,ig)=io2
             endif
           enddo !m2
           enddo !l2
@@ -102,17 +117,18 @@ do igloc1=1,ngvecmeloc1
       enddo !io2
     enddo !io1
   enddo !ias
-enddo !igloc1
+enddo !ig
 ! syncronize all values along auxiliary k-direction
-do igloc=1,ngvecmeloc
-  call mpi_grid_reduce(gntuju(1,1,igloc),ngntujumax*natmtot,dims=(/dim_k/),&
-    all=.true.)
-  call mpi_grid_reduce(igntuju(1,1,1,igloc),4*ngntujumax*natmtot,dims=(/dim_k/),&
-    all=.true.)
-  call mpi_grid_reduce(ngntuju(1,igloc),natmtot,dims=(/dim_k/),all=.true.)    
-  call mpi_grid_barrier(dims=(/dim_k/))
-enddo
+!do igloc=1,ngvecme
+!  call mpi_grid_reduce(gntuju(1,1,igloc),ngntujumax*natmtot,dims=(/dim_k/),&
+!    all=.true.)
+!  call mpi_grid_reduce(igntuju(1,1,1,igloc),4*ngntujumax*natmtot,dims=(/dim_k/),&
+!    all=.true.)
+!  call mpi_grid_reduce(ngntuju(1,igloc),natmtot,dims=(/dim_k/),all=.true.)    
+!  call mpi_grid_barrier(dims=(/dim_k/))
+!enddo
 deallocate(jl)
 deallocate(uju)
+deallocate(gnt)
 return
 end

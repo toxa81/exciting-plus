@@ -19,7 +19,7 @@ complex(8), allocatable :: wfsvit2(:,:,:)
 integer n1,n2,i1,i2,i3,itr,n,ist1,ist2
 real(8) vtrc(3)
 
-integer i,j,ik,jk,ig,ikstep,sz,ikloc,complete,igloc
+integer i,j,ik,jk,ig,ikstep,sz,ikloc,complete
 integer ngknr2
 real(8) vkq0l(3)
 integer ivg1(3)
@@ -145,7 +145,7 @@ if (spinpol) then
   call mpi_grid_reduce(spinor_ud(1,1,1),2*nstsv*nkptnr,dims=(/dim_k/),all=.true.)
 endif
 call getmeidx(.true.)
-call mpi_grid_reduce(nmegqblhmax,dims=(/dim_k/),all=.true.,op=op_max)
+!call mpi_grid_reduce(nmegqblhmax,dims=(/dim_k/),all=.true.,op=op_max)
 allocate(nmegqblh(nkptnrloc))
 allocate(bmegqblh(2,nmegqblhmax,nkptnrloc))
 if (wannier_megq) then
@@ -162,6 +162,13 @@ if (wproc) then
   write(150,'("Done in ",F8.2," seconds")')timer_get_value(1)
   call flushifc(150)
 endif
+
+allocate(nmegqblhloc(2,nkptnrloc))
+do ikloc=1,nkptnrloc
+  nmegqblhloc(1,ikloc)=mpi_grid_map(nmegqblh(ikloc),dim_b,offs=i)
+  nmegqblhloc(2,ikloc)=i
+enddo
+nmegqblhlocmax=maxval(nmegqblhloc)
 
 if (wannier_megq) then
   allocate(bmegqwan(2,nwann*nwann))
@@ -203,15 +210,14 @@ endif
 if (write_megq_file) call write_me_header(qnm)
 
 call getmaxgnt(lmaxexp,ngntujumax)
-ngvecmeloc=mpi_grid_map(ngvecme,dim_g)
 
 call timer_start(1,reset=.true.)
-allocate(ngntuju(natmtot,ngvecmeloc))
-allocate(igntuju(4,ngntujumax,natmtot,ngvecmeloc))
-allocate(gntuju(ngntujumax,natmtot,ngvecmeloc))
+allocate(ngntuju(natmtot,ngvecme))
+allocate(igntuju(4,ngntujumax,natmtot,ngvecme))
+allocate(gntuju(ngntujumax,natmtot,ngvecme))
 call gengntuju(lmaxexp,ngntujumax,ngntuju,igntuju,gntuju)
 call timer_stop(1)
-sz=4.d0*natmtot*ngvecmeloc*(1+8*ngntujumax)/1024/1024
+sz=4.d0*natmtot*ngvecme*(1+8*ngntujumax)/1024/1024
 if (wproc) then
   write(150,*)
   write(150,'("Maximum number of Gaunt-like coefficients : ",I8)')ngntujumax
@@ -220,13 +226,13 @@ if (wproc) then
   call flushifc(150)
 endif
 
-sz=16.d0*ngvecme*nmegqblhmax*nkptnrloc/1024/1024
+sz=16.d0*ngvecme*nmegqblhlocmax*nkptnrloc/1024/1024
 if (wproc) then
   write(150,*)
   write(150,'("Size of matrix elements (MB): ",I6)')sz
   call flushifc(150)
 endif
-allocate(megqblh(ngvecme,nmegqblhmax,nkptnrloc))
+allocate(megqblh(nmegqblhlocmax,ngvecme,nkptnrloc))
 allocate(wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
 allocate(wfsvit2(ngkmax,nspinor,nstsv))
 allocate(igkignr2(ngkmax))
@@ -255,20 +261,19 @@ do ikstep=1,nkstep
 ! compute matrix elements  
   call timer_start(2,reset=.true.)
   if (ikstep.le.nkptnrloc) then
-    ik=mpi_grid_map(nkptnr,dim_k,loc=ikstep)
-    jk=idxkq(1,ik)
+!    ik=mpi_grid_map(nkptnr,dim_k,loc=ikstep)
+!    jk=idxkq(1,ik)
     megqblh(:,:,ikstep)=zzero
 ! calculate muffin-tin contribution for all combinations of n,n'
     call timer_start(4,reset=.true.)
-    call megqblhmt(nmegqblh(ikstep),bmegqblh(1,1,ikstep),&
-      wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,ngntujumax,ngntuju,igntuju,gntuju,&
-      ik,jk,megqblh(1,1,ikstep))
+    call megqblhmt(ikstep,wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,ngntujumax,&
+      ngntuju,igntuju,gntuju)
     call timer_stop(4)
 ! calculate interstitial contribution for all combinations of n,n'
     call timer_start(5,reset=.true.)
-    call megqblhit(nmegqblh(ikstep),bmegqblh(1,1,ikstep),ngknr(ikstep), &
-      ngknr2,igkignr(1,ikstep),igkignr2,idxkq(2,ik),         &
-      wfsvitloc(1,1,1,ikstep),wfsvit2,ik,jk,megqblh(1,1,ikstep))
+!    call megqblhit(nmegqblh(ikstep),bmegqblh(1,1,ikstep),ngknr(ikstep), &
+!      ngknr2,igkignr(1,ikstep),igkignr2,idxkq(2,ik),         &
+!      wfsvitloc(1,1,1,ikstep),wfsvit2,ik,jk,megqblh(1,1,ikstep))
     call timer_stop(5)
 ! hack for q=0
 !    if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
@@ -291,8 +296,7 @@ do ikstep=1,nkstep
                 avec(:,2)*itrmegqwan(2,itr)+&
                 avec(:,3)*itrmegqwan(3,itr)
         zt1=exp(dcmplx(0.d0,-dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
-        do igloc=1,ngvecmeloc
-          ig=mpi_grid_map(ngvecme,dim_g,loc=igloc)
+        do ig=1,ngvecme
           do n=1,nmegqwan
             n1=bmegqwan(1,n)
             n2=bmegqwan(2,n)

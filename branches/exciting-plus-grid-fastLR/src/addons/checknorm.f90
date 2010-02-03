@@ -77,6 +77,7 @@ do ik=1,nkptnr
  call genwfsvmt(lmaxvr,lmmaxvr,ngknr,evecfv,evecsv,apwalm,wfsvmt)
   call genwfsvit(ngknr,evecfv,evecsv,wfsvit)
   wfnrmdev=0.d0
+  write(*,*)'ik=',ik
   call wfprodk(ngknr,igkignr,wfsvmt,wfsvit,wfnrmdev)
     
   j=0

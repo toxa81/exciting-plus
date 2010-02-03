@@ -1007,7 +1007,7 @@ integer gvecme1
 integer gvecme2
 ! number of G-vectors for matrix elements
 integer ngvecme
-integer ngvecmeloc
+!integer ngvecmeloc
 ! first G-shell for chi
 integer gshchi1
 ! last G-shell for chi
@@ -1041,8 +1041,10 @@ complex(8), allocatable :: lr_sfacgq0(:,:)
 ! number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> in the Bloch basis
 !  for a given k-point
 integer, allocatable :: nmegqblh(:)
+integer, allocatable :: nmegqblhloc(:,:)
 ! maximum number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> over all k-points
 integer nmegqblhmax
+integer nmegqblhlocmax
 ! matrix elements <nk|e^{-i(G+q)x}|n'k+q> in the Bloch basis
 !   1-st index : G-vector
 !   2-nd index : global index of pair of bands (n,n')

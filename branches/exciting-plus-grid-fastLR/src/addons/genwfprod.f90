@@ -12,11 +12,13 @@ complex(8), intent(in) :: pwit(ngp1,ngp2)
 complex(8), intent(out) :: zprod
 ! local variables
 integer ig1,ig2,is,ia,ias,l,m,lm,io1,io2
-zprod=zzero
+complex(8) zt1,zt2
+zt1=zzero
+zt2=zzero
 ! interstitial contribution
 do ig1=1,ngp1
   do ig2=1,ngp2
-    zprod=zprod+dconjg(wfit1(ig1))*pwit(ig1,ig2)*wfit2(ig2)
+    zt1=zt1+dconjg(wfit1(ig1))*pwit(ig1,ig2)*wfit2(ig2)
   enddo
 enddo
 ! muffin-tin contribution
@@ -28,7 +30,7 @@ do is=1,nspecies
         do io2=1,nrfmax
           do m=-l,l
             lm=idxlm(l,m)
-            zprod=zprod+dconjg(wfmt1(lm,io1,ias))*wfmt2(lm,io2,ias)*&
+            zt2=zt2+dconjg(wfmt1(lm,io1,ias))*wfmt2(lm,io2,ias)*&
               urfprod(l,io1,io2,ias)
           enddo !m
         enddo
@@ -36,5 +38,7 @@ do is=1,nspecies
     enddo !l
   enddo !ia
 enddo !is
+write(*,*)'muffin tin part:',zt2,' interstitial part:',zt1
+zprod=zt1+zt2
 return
 end

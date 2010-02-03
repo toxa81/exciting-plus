@@ -11,13 +11,15 @@ real(8), allocatable :: vgkcnr(:,:,:)
 real(8), allocatable :: gknr(:,:)
 real(8), allocatable :: tpgknr(:,:,:)
 complex(8), allocatable :: sfacgknr(:,:,:)
+complex(8), allocatable :: ylmgknr(:,:,:)
 
-complex(8), allocatable :: wfsvitloc(:,:,:,:)
 complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
+complex(8), allocatable :: wfsvitloc(:,:,:,:)
+complex(8), allocatable :: wfsvcgloc(:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: pmat(:,:,:,:)
 
-integer i,j,n,ik,ikloc,ik1,isym,idx0,ivq1,ivq2,iq
+integer i,j,n,ik,ikloc,ik1,isym,idx0,ivq1,ivq2,iq,ig
 integer sz,nvq0loc,i1,i2,i3
 character*100 qnm
 real(8) w2
@@ -43,7 +45,7 @@ logical, external :: wann_diel
 !   400 - compute and write ME
 !   401 - compute and write chi0
 !   402 - compute and write chi
-!   403 - compute ME, compute and write chi0, compute and write chi or
+!   403 - compute ME, compute and write chi0, compute and write chi OR
 !         compute ME, compute chi0 chi and screened U, sum over q; behaviour is
 !         contorlled by crpa
 !
@@ -228,14 +230,19 @@ if (task.eq.400.or.task.eq.403) then
   allocate(ngknr(nkptnrloc))
   allocate(sfacgknr(ngkmax,natmtot,nkptnrloc))
   allocate(igkignr(ngkmax,nkptnrloc))
+  allocate(ylmgknr(lmmaxvr,ngkmax,nkptnrloc))
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
     call gengpvec(vklnr(1,ik),vkcnr(1,ik),ngknr(ikloc),igkignr(1,ikloc), &
       vgklnr(1,1,ikloc),vgkcnr(1,1,ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc))
     call gensfacgp(ngknr(ikloc),vgkcnr(1,1,ikloc),ngkmax,sfacgknr(1,1,ikloc))
+    do ig=1,ngknr(ikloc)
+      call genylm(lmaxvr,tpgknr(1,ig,ikloc),ylmgknr(1,ig,ikloc))
+    enddo
   enddo
   allocate(wfsvmtloc(lmmaxvr,nrfmax,natmtot,nspinor,nstsv,nkptnrloc))
   allocate(wfsvitloc(ngkmax,nspinor,nstsv,nkptnrloc))
+  allocate(wfsvcgloc(ngkmax,nspinor,nstsv,nkptnrloc))  
   allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptnrloc))
   allocate(evecsvloc(nstsv,nstsv,nkptnrloc))
   allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
@@ -287,6 +294,11 @@ if (task.eq.400.or.task.eq.403) then
 ! generate wave functions in interstitial
     call genwfsvit(ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
       evecsvloc(1,1,ikloc),wfsvitloc(1,1,1,ikloc))
+! generate <e^{-i(G+k)x}|\psi>
+!    call genwfsvcg(ngknr(ikloc),igkignr(1,ikloc),gknr(1,ikloc), &
+!      ylmgknr(1,1,ikloc),sfacgknr(1,1,ikloc),wfsvmtloc(1,1,1,1,1,ikloc), &
+!        wfsvitloc(1,1,1,ikloc),wfsvcgloc(1,1,1,ikloc))
+!        call pstop
     if (lpmat) then
       call genpmat(ngknr(ikloc),igkignr(1,ikloc),vgkcnr(1,1,ikloc),&
         apwalm,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),pmat(1,1,1,ikloc))
