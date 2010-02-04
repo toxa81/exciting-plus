@@ -271,9 +271,12 @@ do ikstep=1,nkstep
     call timer_stop(4)
 ! calculate interstitial contribution for all combinations of n,n'
     call timer_start(5,reset=.true.)
-    call megqblhit(ikstep,ngknr(ikstep),ngknr2,igkignr(1,ikstep),igkignr2,&
-      wfsvitloc(1,1,1,ikstep),wfsvit2)
+!    call megqblhit(ikstep,ngknr(ikstep),ngknr2,igkignr(1,ikstep),igkignr2,&
+!      wfsvitloc(1,1,1,ikstep),wfsvit2)
     call timer_stop(5)
+    call genmegqblh(ikstep,ngntujumax,ngntuju,igntuju,gntuju,ngknr(ikstep),ngknr2,&
+      igkignr(1,ikstep),igkignr2,wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2, &
+      wfsvitloc(1,1,1,ikstep),wfsvit2)
 ! hack for q=0
 !    if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
 !      megqblh(1,:,ik1)=zzero

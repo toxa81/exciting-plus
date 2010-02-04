@@ -71,8 +71,8 @@ do ig=1,ngvecme
       n1=0
       l2=.true.
 ! collect right |ket> states into matrix wftmp2
-      do while (l2.and.(i+n1).le.nmegqblhloc(1,ikloc))
-        if (bmegqblh(1,i+offs+n1,ikloc).ne.bmegqblh(1,i+offs,ikloc)) l2=.false.
+      do while ((i+n1).le.nmegqblhloc(1,ikloc))
+        if (bmegqblh(1,i+offs+n1,ikloc).ne.bmegqblh(1,i+offs,ikloc)) exit
         ist2=bmegqblh(2,i+offs+n1,ikloc)
         n1=n1+1
         wftmp2(:,:,:,n1)=wfsvmt2(:,:,:,ispn2,ist2)

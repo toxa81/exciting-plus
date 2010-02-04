@@ -88,8 +88,8 @@ if (write_megq_file) then
     write(150,'("  G-vectors : ",I4," to ", I4)')gvecme1,gvecme2
     call flushifc(150)
   endif
-else
-  call mpi_grid_bcast(megqblh(1,1,1),ngvecme*nmegqblhmax*nkptnrloc,dims=(/dim_b/))                            
+!else
+!  call mpi_grid_bcast(megqblh(1,1,1),ngvecme*nmegqblhmax*nkptnrloc,dims=(/dim_b/))                            
 endif
 allocate(megqblh2(nmegqblhlocmax,ngvecme))
 
@@ -162,7 +162,6 @@ ie1=0
 fchi0=trim(qnm)//"_chi0.hdf5"
 if (mpi_grid_root((/dim_k,dim_b/)).and.write_chi0_file) then
   inquire(file=trim(fchi0),exist=exist)
-  exist=.false.
   if (.not.exist) then
     call write_chi0_header(qnm)
   else
