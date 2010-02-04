@@ -13,19 +13,20 @@ logical l1
 complex(8) zt1
 integer i,ist1,ist2
 integer, parameter :: bs=128
-integer, parameter :: chi0summation=1
-integer nb,sz1
+integer, parameter :: chi0summation=4
+integer nb,sz1,offs
 integer ib1,ib2,j1,j2
 logical, allocatable :: l2(:)
 complex(8), allocatable :: wt(:)
 logical, external :: bndint
 
-allocate(l2(nmegqblh(ikloc)))
-allocate(wt(nmegqblh(ikloc)))
+offs=nmegqblhloc(2,ikloc)
+allocate(l2(nmegqblhloc(1,ikloc)))
+allocate(wt(nmegqblhloc(1,ikloc)))
 l2=.false.
-do i=i1,i2
-  ist1=bmegqblh(1,i,ikloc)
-  ist2=bmegqblh(2,i,ikloc)
+do i=1,nmegqblhloc(1,ikloc)
+  ist1=bmegqblh(1,i+offs,ikloc)
+  ist2=bmegqblh(2,i+offs,ikloc)
 ! default : include all interband transitions         
   l1=.true.
 ! for cRPA : don't include bands in energy window [crpa_e1,crpa_e2]
@@ -45,9 +46,9 @@ do i=i1,i2
 enddo !i
 
 if (chi0summation.eq.1) then
-  do i=i1,i2
+  do i=1,nmegqblhloc(1,ikloc)
     if (l2(i)) then
-      call zgerc(ngvecme,ngvecme,wt(i),megqblh(1,i,ikloc),1,megqblh(1,i,ikloc),1, &
+      call zgerc(ngvecme,ngvecme,wt(i),megqblh(i,:,ikloc),1,megqblh(i,:,ikloc),1, &
         chi0w(1,1),ngvecme)
     endif
   enddo
@@ -106,11 +107,12 @@ if (chi0summation.eq.3) then
   enddo
 endif
 if (chi0summation.eq.4) then
-  do i=1,nmegqblh(ikloc)
-    megqblh2(i,:)=dconjg(megqblh1(i,:,ikloc))*wt(i)
+  do i=1,nmegqblhloc(1,ikloc)
+    megqblh2(i,:)=dconjg(megqblh(i,:,ikloc))*wt(i)
   enddo
-  call zgemm('T','N',ngvecme,ngvecme,nmegqblh(ikloc),zone,megqblh1(1,1,ikloc),&
-    nmegqblhmax,megqblh2(1,1),nmegqblhmax,zone,chi0w(1,1),ngvecme)
+  call zgemm('T','N',ngvecme,ngvecme,nmegqblhloc(1,ikloc),zone,&
+    megqblh(1,1,ikloc),nmegqblhlocmax,megqblh2(1,1),nmegqblhlocmax,&
+    zone,chi0w(1,1),ngvecme)
 endif
 
 deallocate(l2)

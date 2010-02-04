@@ -91,14 +91,7 @@ if (write_megq_file) then
 else
   call mpi_grid_bcast(megqblh(1,1,1),ngvecme*nmegqblhmax*nkptnrloc,dims=(/dim_b/))                            
 endif
-allocate(megqblh1(nmegqblhmax,ngvecme,nkptnrloc))
-allocate(megqblh2(nmegqblhmax,ngvecme))
-do ikloc=1,nkptnrloc
-  do i=1,ngvecme
-    megqblh1(:,i,ikloc)=megqblh(i,:,ikloc)
-  enddo
-enddo
-!deallocate(megqblh)
+allocate(megqblh2(nmegqblhlocmax,ngvecme))
 
 
 ! for response in Wannier bais
@@ -199,11 +192,11 @@ do ie=ie1,nepts
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
     jk=idxkq(1,ik)
-    if (nmegqblh(ikloc).gt.0) then
-      bs=mpi_grid_map(nmegqblh(ikloc),dim_b,offs=idx0)
-      i1=idx0+1
-      i2=idx0+bs
-      sz1=sz1+bs
+    if (nmegqblhloc(1,ikloc).gt.0) then
+      !bs=mpi_grid_map(nmegqblh(ikloc),dim_b,offs=idx0)
+      !i1=idx0+1
+      !i2=idx0+bs
+      sz1=sz1+nmegqblhloc(1,ikloc)
 ! for each k-point : sum over interband transitions
       call sumchi0(ikloc,ik,jk,i1,i2,lr_w(ie),chi0w)
     endif

@@ -266,14 +266,13 @@ do ikstep=1,nkstep
     megqblh(:,:,ikstep)=zzero
 ! calculate muffin-tin contribution for all combinations of n,n'
     call timer_start(4,reset=.true.)
-    call megqblhmt(ikstep,wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,ngntujumax,&
-      ngntuju,igntuju,gntuju)
+!    call megqblhmt(ikstep,wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,ngntujumax,&
+!      ngntuju,igntuju,gntuju)
     call timer_stop(4)
 ! calculate interstitial contribution for all combinations of n,n'
     call timer_start(5,reset=.true.)
-!    call megqblhit(nmegqblh(ikstep),bmegqblh(1,1,ikstep),ngknr(ikstep), &
-!      ngknr2,igkignr(1,ikstep),igkignr2,idxkq(2,ik),         &
-!      wfsvitloc(1,1,1,ikstep),wfsvit2,ik,jk,megqblh(1,1,ikstep))
+    call megqblhit(ikstep,ngknr(ikstep),ngknr2,igkignr(1,ikstep),igkignr2,&
+      wfsvitloc(1,1,1,ikstep),wfsvit2)
     call timer_stop(5)
 ! hack for q=0
 !    if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
@@ -325,6 +324,14 @@ do ikstep=1,nkstep
     call flushifc(150)
   endif
 enddo !ikstep
+
+!do ikloc=1,nkptnrloc
+!  write(*,*)'ikloc=',ikloc
+!  do i=1,nmegqblhloc(1,ikloc)
+!    write(*,*)'  ib=',i
+!    write(*,*)'    me=',megqblh(i,:,ikloc)                                                                  
+!  enddo                                                                                                     
+!enddo  
 
 if (wannier_megq) then
 ! sum over all k-points to get <n,T=0|e^{-i(G+q)x|n',T'>
