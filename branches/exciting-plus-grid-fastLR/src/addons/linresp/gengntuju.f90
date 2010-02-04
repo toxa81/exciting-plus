@@ -11,7 +11,7 @@ complex(8), intent(out) :: gntuju(ngntujumax,natmtot,ngvecme)
 
 integer ig,is,ir,n,ias,i,io1,io2,l1,m1,lm1,l2,m2,lm2,l3,m3,lm3
 ! for parallel
-integer idx0,bs
+integer igloc,ngvecmeloc
 integer lmmaxexp
 complex(8) zt1
 real(8) fr(nrmtmax),gr(nrmtmax),cf(3,nrmtmax)
@@ -46,7 +46,9 @@ igntuju=0
 ngntuju=0
 gntuju=dcmplx(0.d0,0.d0)
 ! loop over G-vectors
-do ig=1,ngvecme
+ngvecmeloc=mpi_grid_map(ngvecme,dim_k)
+do igloc=1,ngvecmeloc
+  ig=mpi_grid_map(ngvecme,dim_k,loc=igloc)
 ! loop over atoms
   do ias=1,natmtot
     is=ias2is(ias)
@@ -119,14 +121,14 @@ do ig=1,ngvecme
   enddo !ias
 enddo !ig
 ! syncronize all values along auxiliary k-direction
-!do igloc=1,ngvecme
-!  call mpi_grid_reduce(gntuju(1,1,igloc),ngntujumax*natmtot,dims=(/dim_k/),&
-!    all=.true.)
-!  call mpi_grid_reduce(igntuju(1,1,1,igloc),4*ngntujumax*natmtot,dims=(/dim_k/),&
-!    all=.true.)
-!  call mpi_grid_reduce(ngntuju(1,igloc),natmtot,dims=(/dim_k/),all=.true.)    
-!  call mpi_grid_barrier(dims=(/dim_k/))
-!enddo
+do ig=1,ngvecme
+  call mpi_grid_reduce(gntuju(1,1,ig),ngntujumax*natmtot,dims=(/dim_k/),&
+    all=.true.)
+  call mpi_grid_reduce(igntuju(1,1,1,ig),4*ngntujumax*natmtot,dims=(/dim_k/),&
+    all=.true.)
+  call mpi_grid_reduce(ngntuju(1,ig),natmtot,dims=(/dim_k/),all=.true.)    
+  call mpi_grid_barrier(dims=(/dim_k/))
+enddo
 deallocate(jl)
 deallocate(uju)
 deallocate(gnt)
