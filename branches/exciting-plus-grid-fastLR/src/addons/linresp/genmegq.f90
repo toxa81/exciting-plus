@@ -212,12 +212,12 @@ if (write_megq_file) call write_me_header(qnm)
 call getmaxgnt(lmaxexp,ngntujumax)
 
 call timer_start(1,reset=.true.)
-allocate(ngntuju(natmtot,ngvecme))
-allocate(igntuju(4,ngntujumax,natmtot,ngvecme))
-allocate(gntuju(ngntujumax,natmtot,ngvecme))
+allocate(ngntuju(nspecies,ngvecme))
+allocate(igntuju(4,ngntujumax,nspecies,ngvecme))
+allocate(gntuju(ngntujumax,nspecies,ngvecme))
 call gengntuju(lmaxexp,ngntujumax,ngntuju,igntuju,gntuju)
 call timer_stop(1)
-sz=4.d0*natmtot*ngvecme*(1+8*ngntujumax)/1024/1024
+sz=32.d0*ngntujumax*nspecies*ngvecme/1024/1024
 if (wproc) then
   write(150,*)
   write(150,'("Maximum number of Gaunt-like coefficients : ",I8)')ngntujumax

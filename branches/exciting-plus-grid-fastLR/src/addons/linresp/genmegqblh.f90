@@ -18,7 +18,7 @@ complex(8), intent(in) :: wfsvit2(ngkmax,nspinor,nstsv)
 
 integer wfsize
 integer ivg1(3),ivg2(3)
-integer i,j,ik,jk,offs,igkq,n1,ispn1,ispn2,ist1,ist2
+integer i,j,ik,jk,offs,igkq,n1,ispn1,ispn2,ist1,ist2,is
 integer ig,ig1,ig2,io1,io2,lm1,lm2,ias
 complex(8) zt1
 logical l1
@@ -66,14 +66,15 @@ do ispn1=1,nspinor
       do ig=1,ngvecme
 ! precompute muffint-tin part of \psi_1^{*}(r)*e^{-i(G+q)r}
         do ias=1,natmtot
-          do j=1,ngntuju(ias,ig)
-            lm1=igntuju(1,j,ias,ig)
-            lm2=igntuju(2,j,ias,ig)
-            io1=igntuju(3,j,ias,ig)
-            io2=igntuju(4,j,ias,ig)
+          is=ias2is(ias)
+          do j=1,ngntuju(is,ig)
+            lm1=igntuju(1,j,is,ig)
+            lm2=igntuju(2,j,is,ig)
+            io1=igntuju(3,j,is,ig)
+            io2=igntuju(4,j,is,ig)
             wftmp1(lm2+(io2-1)*lmmaxvr+(ias-1)*lmmaxvr*nrfmax,ig)= &
               wftmp1(lm2+(io2-1)*lmmaxvr+(ias-1)*lmmaxvr*nrfmax,ig)+&
-              dconjg(wfsvmt1(lm1,io1,ias,ispn1,ist1))*gntuju(j,ias,ig)
+              dconjg(wfsvmt1(lm1,io1,ias,ispn1,ist1))*gntuju(j,is,ig)*dconjg(lr_sfacgq0(ig,ias))
           enddo !j
         enddo !ias
 ! precompute interstitial part of \psi_1^{*}(r)*e^{-i(G+q)r}

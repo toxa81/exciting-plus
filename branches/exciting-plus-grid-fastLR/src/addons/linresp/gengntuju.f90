@@ -4,9 +4,9 @@ implicit none
 ! arguments
 integer, intent(in) :: lmaxexp
 integer, intent(in) :: ngntujumax
-integer, intent(out) :: ngntuju(natmtot,ngvecme)
-integer, intent(out) :: igntuju(4,ngntujumax,natmtot,ngvecme)
-complex(8), intent(out) :: gntuju(ngntujumax,natmtot,ngvecme)
+integer, intent(out) :: ngntuju(nspecies,ngvecme)
+integer, intent(out) :: igntuju(4,ngntujumax,nspecies,ngvecme)
+complex(8), intent(out) :: gntuju(ngntujumax,nspecies,ngvecme)
 
 
 integer ig,is,ir,n,ias,i,io1,io2,l1,m1,lm1,l2,m2,lm2,l3,m3,lm3
@@ -50,8 +50,7 @@ ngvecmeloc=mpi_grid_map(ngvecme,dim_k)
 do igloc=1,ngvecmeloc
   ig=mpi_grid_map(ngvecme,dim_k,loc=igloc)
 ! loop over atoms
-  do ias=1,natmtot
-    is=ias2is(ias)
+  do is=1,nspecies
 ! generate Bessel functions j_l(|G+q'|x)
     do ir=1,nrmt(is)
       call sbessel(lmaxexp,lr_gq0(ig)*spr(ir,is),jl(ir,:))
@@ -63,7 +62,7 @@ do igloc=1,ngvecmeloc
           do io1=1,nrfmax
             do io2=1,nrfmax
               do ir=1,nrmt(is)
-                fr(ir)=urf(ir,l1,io1,ias)*urf(ir,l2,io2,ias)*&
+                fr(ir)=urf(ir,l1,io1,idxas(1,is))*urf(ir,l2,io2,idxas(1,is))*&
                   jl(ir,l3)*(spr(ir,is)**2)
               enddo !ir
               call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
@@ -102,15 +101,15 @@ do igloc=1,ngvecmeloc
                 lr_ylmgq0(lm3,ig)*dconjg(zi**l3)
             enddo
             enddo
-            zt1=zt1*fourpi*dconjg(lr_sfacgq0(ig,ias))
+            zt1=zt1*fourpi !*dconjg(lr_sfacgq0(ig,ias))
             if (abs(zt1).gt.1d-16) then
-              ngntuju(ias,ig)=ngntuju(ias,ig)+1
-              n=ngntuju(ias,ig)
-              gntuju(n,ias,ig)=zt1
-              igntuju(1,n,ias,ig)=lm1
-              igntuju(2,n,ias,ig)=lm2
-              igntuju(3,n,ias,ig)=io1
-              igntuju(4,n,ias,ig)=io2
+              ngntuju(is,ig)=ngntuju(is,ig)+1
+              n=ngntuju(is,ig)
+              gntuju(n,is,ig)=zt1
+              igntuju(1,n,is,ig)=lm1
+              igntuju(2,n,is,ig)=lm2
+              igntuju(3,n,is,ig)=io1
+              igntuju(4,n,is,ig)=io2
             endif
           enddo !m2
           enddo !l2
@@ -118,7 +117,7 @@ do igloc=1,ngvecmeloc
         enddo !l1
       enddo !io2
     enddo !io1
-  enddo !ias
+  enddo !is
 enddo !ig
 ! syncronize all values along auxiliary k-direction
 do ig=1,ngvecme
