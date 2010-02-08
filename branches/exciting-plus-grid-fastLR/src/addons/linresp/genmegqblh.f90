@@ -65,6 +65,7 @@ do ispn1=1,nspinor
     if (l1) then
       do ig=1,ngvecme
 ! precompute muffint-tin part of \psi_1^{*}(r)*e^{-i(G+q)r}
+        call timer_start(3)
         do ias=1,natmtot
           is=ias2is(ias)
           do j=1,ngntuju(is,ig)
@@ -77,7 +78,9 @@ do ispn1=1,nspinor
               dconjg(wfsvmt1(lm1,io1,ias,ispn1,ist1))*gntuju(j,is,ig)*dconjg(lr_sfacgq0(ig,ias))
           enddo !j
         enddo !ias
+        call timer_stop(3)
 ! precompute interstitial part of \psi_1^{*}(r)*e^{-i(G+q)r}
+        call timer_start(4)
         do ig2=1,ngknr2
 ! ivg2(:)=G+Gq-G2         
           ivg2(:)=ivg(:,ig+gvecme1-1)+ivg(:,igkq)-ivg(:,igkignr2(ig2))
@@ -120,8 +123,10 @@ do ispn1=1,nspinor
           endif !.not.lf1g(ivgig(ivg2(1),ivg2(2),ivg2(3)))
           wftmp1(lmmaxvr*nrfmax*natmtot+ig2,ig)=a1(ivgig(ivg2(1),ivg2(2),ivg2(3)))
         enddo !ig2
+        call timer_stop(4)
       enddo !ig      
     endif !l1
+    call timer_start(5)
     n1=0
 ! collect right |ket> states into matrix wftmp2
     do while ((i+n1).le.nmegqblhloc(1,ikloc))
@@ -136,6 +141,7 @@ do ispn1=1,nspinor
     call zgemm('T','N',n1,ngvecme,wfsize,zone,wftmp2,wfsize,wftmp1,wfsize,&
       zone,megqblh(i,1,ikloc),nmegqblhlocmax)
     i=i+n1
+    call timer_stop(5)
   enddo !while
 enddo !ispn1
     
