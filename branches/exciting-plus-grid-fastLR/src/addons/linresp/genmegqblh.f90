@@ -4,13 +4,13 @@ use modmain
 implicit none
 integer, intent(in) :: ikloc
 integer, intent(in) :: ngntujumax
-integer, intent(in) :: ngntuju(natmtot,ngvecme)
-integer, intent(in) :: igntuju(4,ngntujumax,natmtot,ngvecme)
+integer, intent(in) :: ngntuju(nspecies,ngvecme)
+integer, intent(in) :: igntuju(4,ngntujumax,nspecies,ngvecme)
 integer, intent(in) :: ngknr1
 integer, intent(in) :: ngknr2
 integer, intent(in) :: igkignr1(ngkmax)
 integer, intent(in) :: igkignr2(ngkmax)
-complex(8), intent(in) :: gntuju(ngntujumax,natmtot,ngvecme)
+complex(8), intent(in) :: gntuju(ngntujumax,nspecies,ngvecme)
 complex(8), intent(in) :: wfsvmt1(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
 complex(8), intent(in) :: wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
 complex(8), intent(in) :: wfsvit1(ngkmax,nspinor,nstsv)
