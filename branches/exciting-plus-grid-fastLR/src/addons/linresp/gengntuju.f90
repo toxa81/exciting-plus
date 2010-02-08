@@ -121,11 +121,11 @@ do igloc=1,ngvecmeloc
 enddo !ig
 ! syncronize all values along auxiliary k-direction
 do ig=1,ngvecme
-  call mpi_grid_reduce(gntuju(1,1,ig),ngntujumax*natmtot,dims=(/dim_k/),&
+  call mpi_grid_reduce(gntuju(1,1,ig),ngntujumax*nspecies,dims=(/dim_k/),&
     all=.true.)
-  call mpi_grid_reduce(igntuju(1,1,1,ig),4*ngntujumax*natmtot,dims=(/dim_k/),&
+  call mpi_grid_reduce(igntuju(1,1,1,ig),4*ngntujumax*nspecies,dims=(/dim_k/),&
     all=.true.)
-  call mpi_grid_reduce(ngntuju(1,ig),natmtot,dims=(/dim_k/),all=.true.)    
+  call mpi_grid_reduce(ngntuju(1,ig),nspecies,dims=(/dim_k/),all=.true.)    
   call mpi_grid_barrier(dims=(/dim_k/))
 enddo
 deallocate(jl)
