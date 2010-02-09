@@ -15,7 +15,7 @@ integer i,ist1,ist2
 integer, parameter :: bs=128
 integer, parameter :: chi0summation=4
 integer nb,sz1,offs
-integer ib1,ib2,j1,j2
+integer ib1,ib2,j1,j2,ig
 logical, allocatable :: l2(:)
 complex(8), allocatable :: wt(:)
 logical, external :: bndint
@@ -107,8 +107,8 @@ if (chi0summation.eq.3) then
   enddo
 endif
 if (chi0summation.eq.4) then
-  do i=1,nmegqblhloc(1,ikloc)
-    megqblh2(i,:)=dconjg(megqblh(i,:,ikloc))*wt(i)
+  do ig=1,ngvecme
+    megqblh2(:,ig)=dconjg(megqblh(:,ig,ikloc))*wt(:)
   enddo
   call zgemm('T','N',ngvecme,ngvecme,nmegqblhloc(1,ikloc),zone,&
     megqblh(1,1,ikloc),nmegqblhlocmax,megqblh2(1,1),nmegqblhlocmax,&

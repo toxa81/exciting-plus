@@ -26,7 +26,7 @@ logical, allocatable :: lf1g(:)
 complex(8), allocatable :: a1(:)
 complex(8), allocatable :: wftmp1(:,:)
 complex(8), allocatable :: wftmp2(:,:)
-
+complex(8) b1(lmmaxvr,nrfmax)
 
 wfsize=lmmaxvr*nrfmax*natmtot+ngknr2
 allocate(wftmp1(wfsize,ngvecme))
@@ -67,6 +67,7 @@ do ispn1=1,nspinor
 ! precompute muffint-tin part of \psi_1^{*}(r)*e^{-i(G+q)r}
         call timer_start(3)
         do ias=1,natmtot
+          b1=dconjg(wfsvmt1(:,:,ias,ispn1,ist1)*lr_sfacgq0(ig,ias))
           is=ias2is(ias)
           do j=1,ngntuju(is,ig)
             lm1=igntuju(1,j,is,ig)
@@ -75,7 +76,7 @@ do ispn1=1,nspinor
             io2=igntuju(4,j,is,ig)
             wftmp1(lm2+(io2-1)*lmmaxvr+(ias-1)*lmmaxvr*nrfmax,ig)= &
               wftmp1(lm2+(io2-1)*lmmaxvr+(ias-1)*lmmaxvr*nrfmax,ig)+&
-              dconjg(wfsvmt1(lm1,io1,ias,ispn1,ist1))*gntuju(j,is,ig)*dconjg(lr_sfacgq0(ig,ias))
+              b1(lm1,io1)*gntuju(j,is,ig)
           enddo !j
         enddo !ias
         call timer_stop(3)
