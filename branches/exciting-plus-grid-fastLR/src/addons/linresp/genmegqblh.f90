@@ -19,7 +19,7 @@ complex(8), intent(in) :: wfsvit2(ngkmax,nspinor,nstsv)
 integer wfsize
 integer ivg1(3),ivg2(3)
 integer i,j,ik,jk,offs,igkq,n1,ispn1,ispn2,ist1,ist2,is
-integer ig,ig1,ig2,io1,io2,lm1,lm2,ias
+integer ig,ig1,ig2,io1,io2,lm1,lm2,ias,ifg,ir
 complex(8) zt1
 logical l1
 logical, allocatable :: lf1g(:)
@@ -27,12 +27,15 @@ complex(8), allocatable :: a1(:)
 complex(8), allocatable :: wftmp1(:,:)
 complex(8), allocatable :: wftmp2(:,:)
 complex(8) b1(lmmaxvr,nrfmax)
+complex(8), allocatable :: wfir1(:)
+
 
 wfsize=lmmaxvr*nrfmax*natmtot+ngknr2
 allocate(wftmp1(wfsize,ngvecme))
 allocate(wftmp2(wfsize,nstsv))
 allocate(a1(ngrtot))
 allocate(lf1g(ngrtot))
+allocate(wfir1(ngrtot))
 
 ! global k-point
 ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
@@ -81,51 +84,71 @@ do ispn1=1,nspinor
         enddo !ias
         call timer_stop(3)
 ! precompute interstitial part of \psi_1^{*}(r)*e^{-i(G+q)r}
-        call timer_start(4)
+!        call timer_start(4)
+!        do ig2=1,ngknr2
+!! ivg2(:)=G+Gq-G2         
+!          ivg2(:)=ivg(:,ig+gvecme1-1)+ivg(:,igkq)-ivg(:,igkignr2(ig2))
+!          if (ivg2(1).lt.intgv(1,1).or.ivg2(1).gt.intgv(1,2).or.&
+!              ivg2(2).lt.intgv(2,1).or.ivg2(2).gt.intgv(2,2).or.&
+!              ivg2(3).lt.intgv(3,1).or.ivg2(3).gt.intgv(3,2)) then
+!            write(*,*)
+!            write(*,'("Error(megqblhit): G-vector is outside of boundaries")')
+!            write(*,'("  G+G_q-G2 : ",3I5)')ivg2
+!            write(*,'("  boundaries : ",2I5,",",2I5,",",2I5)')&
+!              intgv(1,:),intgv(2,:),intgv(3,:)
+!            write(*,*)
+!            call pstop
+!          endif
+!! if we don't have this Fourier coefficient
+!          if (.not.lf1g(ivgig(ivg2(1),ivg2(2),ivg2(3)))) then
+!            zt1=zzero
+!! compute \sum_{G1} u_1^{*}(G1)*\theta(G1+G)
+!            do ig1=1,ngknr1
+!! ivg1(:)=G1+(G+Gq-G2)             
+!              ivg1(:)=ivg(:,igkignr1(ig1))+ivg2(:)
+!              if (ivg1(1).lt.intgv(1,1).or.ivg1(1).gt.intgv(1,2).or.&
+!                  ivg1(2).lt.intgv(2,1).or.ivg1(2).gt.intgv(2,2).or.&
+!                  ivg1(3).lt.intgv(3,1).or.ivg1(3).gt.intgv(3,2)) then
+!                write(*,*)
+!                write(*,'("Error(megqblhit): G-vector is outside of boundaries")')
+!                write(*,'("  G1+G : ",3I5)')ivg1
+!                write(*,'("  boundaries : ",2I5,",",2I5,",",2I5)')&
+!                  intgv(1,:),intgv(2,:),intgv(3,:)
+!                write(*,*)
+!                call pstop
+!              endif
+!              zt1=zt1+dconjg(wfsvit1(ig1,ispn1,ist1))* &
+!                      cfunig(ivgig(ivg1(1),ivg1(2),ivg1(3)))
+!            enddo !ig1
+!! save the coefficient
+!            a1(ivgig(ivg2(1),ivg2(2),ivg2(3)))=zt1
+!! mark it as computed
+!            lf1g(ivgig(ivg2(1),ivg2(2),ivg2(3)))=.true.
+!          endif !.not.lf1g(ivgig(ivg2(1),ivg2(2),ivg2(3)))
+!          wftmp1(lmmaxvr*nrfmax*natmtot+ig2,ig)=a1(ivgig(ivg2(1),ivg2(2),ivg2(3)))
+!        enddo !ig2
+!        call timer_stop(4)
+      enddo !ig  
+! interstitial part
+      call timer_start(4)
+      wfir1=zzero
+      do ig1=1,ngknr1
+        ifg=igfft(igkignr1(ig1))
+        wfir1(ifg)=wfsvit1(ig1,ispn1,ist1)
+      enddo
+      call zfftifc(3,ngrid,1,wfir1)
+      do ir=1,ngrtot
+        wfir1(ir)=wfir1(ir)*cfunir(ir)
+      enddo
+      call zfftifc(3,ngrid,-1,wfir1)
+      do ig=1,ngvecme
         do ig2=1,ngknr2
-! ivg2(:)=G+Gq-G2         
-          ivg2(:)=ivg(:,ig+gvecme1-1)+ivg(:,igkq)-ivg(:,igkignr2(ig2))
-          if (ivg2(1).lt.intgv(1,1).or.ivg2(1).gt.intgv(1,2).or.&
-              ivg2(2).lt.intgv(2,1).or.ivg2(2).gt.intgv(2,2).or.&
-              ivg2(3).lt.intgv(3,1).or.ivg2(3).gt.intgv(3,2)) then
-            write(*,*)
-            write(*,'("Error(megqblhit): G-vector is outside of boundaries")')
-            write(*,'("  G+G_q-G2 : ",3I5)')ivg2
-            write(*,'("  boundaries : ",2I5,",",2I5,",",2I5)')&
-              intgv(1,:),intgv(2,:),intgv(3,:)
-            write(*,*)
-            call pstop
-          endif
-! if we don't have this Fourier coefficient
-          if (.not.lf1g(ivgig(ivg2(1),ivg2(2),ivg2(3)))) then
-            zt1=zzero
-! compute \sum_{G1} u_1^{*}(G1)*\theta(G1+G)
-            do ig1=1,ngknr1
-! ivg1(:)=G1+(G+Gq-G2)             
-              ivg1(:)=ivg(:,igkignr1(ig1))+ivg2(:)
-              if (ivg1(1).lt.intgv(1,1).or.ivg1(1).gt.intgv(1,2).or.&
-                  ivg1(2).lt.intgv(2,1).or.ivg1(2).gt.intgv(2,2).or.&
-                  ivg1(3).lt.intgv(3,1).or.ivg1(3).gt.intgv(3,2)) then
-                write(*,*)
-                write(*,'("Error(megqblhit): G-vector is outside of boundaries")')
-                write(*,'("  G1+G : ",3I5)')ivg1
-                write(*,'("  boundaries : ",2I5,",",2I5,",",2I5)')&
-                  intgv(1,:),intgv(2,:),intgv(3,:)
-                write(*,*)
-                call pstop
-              endif
-              zt1=zt1+dconjg(wfsvit1(ig1,ispn1,ist1))* &
-                      cfunig(ivgig(ivg1(1),ivg1(2),ivg1(3)))
-            enddo !ig1
-! save the coefficient
-            a1(ivgig(ivg2(1),ivg2(2),ivg2(3)))=zt1
-! mark it as computed
-            lf1g(ivgig(ivg2(1),ivg2(2),ivg2(3)))=.true.
-          endif !.not.lf1g(ivgig(ivg2(1),ivg2(2),ivg2(3)))
-          wftmp1(lmmaxvr*nrfmax*natmtot+ig2,ig)=a1(ivgig(ivg2(1),ivg2(2),ivg2(3)))
-        enddo !ig2
-        call timer_stop(4)
-      enddo !ig      
+          ivg1(:)=ivg(:,igkignr2(ig2))-ivg(:,ig)-ivg(:,igkq)
+          ifg=igfft(ivgig(ivg1(1),ivg1(2),ivg1(3)))
+          wftmp1(lmmaxvr*nrfmax*natmtot+ig2,ig)=dconjg(wfir1(ifg))
+        enddo
+      enddo
+      call timer_stop(4)      
     endif !l1
     call timer_start(5)
     n1=0
@@ -150,6 +173,7 @@ deallocate(wftmp1)
 deallocate(wftmp2)
 deallocate(a1)
 deallocate(lf1g)
+deallocate(wfir1)
 
 return
 end
