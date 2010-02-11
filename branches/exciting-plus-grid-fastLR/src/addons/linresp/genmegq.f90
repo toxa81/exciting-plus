@@ -24,7 +24,7 @@ integer ngknr2
 real(8) vkq0l(3)
 integer ivg1(3)
 complex(8), allocatable :: gntuju(:,:,:)
-integer, allocatable :: igntuju(:,:,:,:)
+integer(2), allocatable :: igntuju(:,:,:,:)
 integer, allocatable :: ngntuju(:,:)
 integer ngntujumax
 complex(8) zt1
@@ -212,12 +212,12 @@ if (write_megq_file) call write_me_header(qnm)
 call getmaxgnt(lmaxexp,ngntujumax)
 
 call timer_start(1,reset=.true.)
-allocate(ngntuju(nspecies,ngvecme))
-allocate(igntuju(4,ngntujumax,nspecies,ngvecme))
-allocate(gntuju(ngntujumax,nspecies,ngvecme))
+allocate(ngntuju(natmcls,ngvecme))
+allocate(igntuju(4,ngntujumax,natmcls,ngvecme))
+allocate(gntuju(ngntujumax,natmcls,ngvecme))
 call gengntuju(lmaxexp,ngntujumax,ngntuju,igntuju,gntuju)
 call timer_stop(1)
-sz=32.d0*ngntujumax*nspecies*ngvecme/1024/1024
+sz=24.d0*ngntujumax*natmcls*ngvecme/1024/1024
 if (wproc) then
   write(150,*)
   write(150,'("Maximum number of Gaunt-like coefficients : ",I8)')ngntujumax
@@ -261,8 +261,6 @@ do ikstep=1,nkstep
 ! compute matrix elements  
   call timer_start(2,reset=.true.)
   if (ikstep.le.nkptnrloc) then
-!    ik=mpi_grid_map(nkptnr,dim_k,loc=ikstep)
-!    jk=idxkq(1,ik)
     megqblh(:,:,ikstep)=zzero
 ! calculate muffin-tin contribution for all combinations of n,n'
 !    call timer_start(4,reset=.true.)

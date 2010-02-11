@@ -347,6 +347,8 @@ allocate(urfprod(0:lmaxvr,nrfmax,nrfmax,natmtot))
 
 if (wannier) call wann_init
 
+call getatmcls
+
 call timesec(ts1)
 timeinit=timeinit+ts1-ts0
 

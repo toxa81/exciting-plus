@@ -4,13 +4,13 @@ use modmain
 implicit none
 integer, intent(in) :: ikloc
 integer, intent(in) :: ngntujumax
-integer, intent(in) :: ngntuju(nspecies,ngvecme)
-integer, intent(in) :: igntuju(4,ngntujumax,nspecies,ngvecme)
+integer, intent(in) :: ngntuju(natmcls,ngvecme)
+integer(2), intent(in) :: igntuju(4,ngntujumax,natmcls,ngvecme)
 integer, intent(in) :: ngknr1
 integer, intent(in) :: ngknr2
 integer, intent(in) :: igkignr1(ngkmax)
 integer, intent(in) :: igkignr2(ngkmax)
-complex(8), intent(in) :: gntuju(ngntujumax,nspecies,ngvecme)
+complex(8), intent(in) :: gntuju(ngntujumax,natmcls,ngvecme)
 complex(8), intent(in) :: wfsvmt1(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
 complex(8), intent(in) :: wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
 complex(8), intent(in) :: wfsvit1(ngkmax,nspinor,nstsv)
@@ -18,7 +18,7 @@ complex(8), intent(in) :: wfsvit2(ngkmax,nspinor,nstsv)
 
 integer wfsize
 integer ivg1(3),ivg2(3)
-integer i,j,ik,jk,offs,igkq,n1,ispn1,ispn2,ist1,ist2,is
+integer i,j,ik,jk,offs,igkq,n1,ispn1,ispn2,ist1,ist2,ic
 integer ig,ig1,ig2,io1,io2,lm1,lm2,ias,ifg,ir
 complex(8) zt1
 logical l1
@@ -71,19 +71,19 @@ do ispn1=1,nspinor
         call timer_start(3)
         do ias=1,natmtot
           b1=dconjg(wfsvmt1(:,:,ias,ispn1,ist1)*lr_sfacgq0(ig,ias))
-          is=ias2is(ias)
-          do j=1,ngntuju(is,ig)
-            lm1=igntuju(1,j,is,ig)
-            lm2=igntuju(2,j,is,ig)
-            io1=igntuju(3,j,is,ig)
-            io2=igntuju(4,j,is,ig)
+          ic=ias2ic(ias)
+          do j=1,ngntuju(ic,ig)
+            lm1=igntuju(1,j,ic,ig)
+            lm2=igntuju(2,j,ic,ig)
+            io1=igntuju(3,j,ic,ig)
+            io2=igntuju(4,j,ic,ig)
             wftmp1(lm2+(io2-1)*lmmaxvr+(ias-1)*lmmaxvr*nrfmax,ig)= &
               wftmp1(lm2+(io2-1)*lmmaxvr+(ias-1)*lmmaxvr*nrfmax,ig)+&
-              b1(lm1,io1)*gntuju(j,is,ig)
+              b1(lm1,io1)*gntuju(j,ic,ig)
           enddo !j
         enddo !ias
         call timer_stop(3)
-! precompute interstitial part of \psi_1^{*}(r)*e^{-i(G+q)r}
+!! precompute interstitial part of \psi_1^{*}(r)*e^{-i(G+q)r}
 !        call timer_start(4)
 !        do ig2=1,ngknr2
 !! ivg2(:)=G+Gq-G2         
@@ -130,11 +130,12 @@ do ispn1=1,nspinor
 !        call timer_stop(4)
       enddo !ig  
 ! interstitial part
+! this is test version of how to precompute interstitial 
       call timer_start(4)
       wfir1=zzero
       do ig1=1,ngknr1
         ifg=igfft(igkignr1(ig1))
-        wfir1(ifg)=wfsvit1(ig1,ispn1,ist1)
+        wfir1(ifg)=dconjg(wfsvit1(ig1,ispn1,ist1))
       enddo
       call zfftifc(3,ngrid,1,wfir1)
       do ir=1,ngrtot
@@ -145,7 +146,7 @@ do ispn1=1,nspinor
         do ig2=1,ngknr2
           ivg1(:)=ivg(:,igkignr2(ig2))-ivg(:,ig)-ivg(:,igkq)
           ifg=igfft(ivgig(ivg1(1),ivg1(2),ivg1(3)))
-          wftmp1(lmmaxvr*nrfmax*natmtot+ig2,ig)=dconjg(wfir1(ifg))
+          wftmp1(lmmaxvr*nrfmax*natmtot+ig2,ig)=wfir1(ifg)
         enddo
       enddo
       call timer_stop(4)      

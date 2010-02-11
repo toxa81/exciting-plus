@@ -4,12 +4,12 @@ implicit none
 ! arguments
 integer, intent(in) :: lmaxexp
 integer, intent(in) :: ngntujumax
-integer, intent(out) :: ngntuju(nspecies,ngvecme)
-integer, intent(out) :: igntuju(4,ngntujumax,nspecies,ngvecme)
-complex(8), intent(out) :: gntuju(ngntujumax,nspecies,ngvecme)
+integer, intent(out) :: ngntuju(natmcls,ngvecme)
+integer(2), intent(out) :: igntuju(4,ngntujumax,natmcls,ngvecme)
+complex(8), intent(out) :: gntuju(ngntujumax,natmcls,ngvecme)
 
 
-integer ig,is,ir,n,ias,i,io1,io2,l1,m1,lm1,l2,m2,lm2,l3,m3,lm3
+integer ig,is,ir,n,ias,i,io1,io2,l1,m1,lm1,l2,m2,lm2,l3,m3,lm3,ic
 ! for parallel
 integer igloc,ngvecmeloc
 integer lmmaxexp
@@ -49,8 +49,10 @@ gntuju=dcmplx(0.d0,0.d0)
 ngvecmeloc=mpi_grid_map(ngvecme,dim_k)
 do igloc=1,ngvecmeloc
   ig=mpi_grid_map(ngvecme,dim_k,loc=igloc)
-! loop over atoms
-  do is=1,nspecies
+! loop over atom classes
+  do ic=1,natmcls
+    ias=iatmcls(ic)
+    is=ias2is(ias)
 ! generate Bessel functions j_l(|G+q'|x)
     do ir=1,nrmt(is)
       call sbessel(lmaxexp,lr_gq0(ig)*spr(ir,is),jl(ir,:))
@@ -62,7 +64,7 @@ do igloc=1,ngvecmeloc
           do io1=1,nrfmax
             do io2=1,nrfmax
               do ir=1,nrmt(is)
-                fr(ir)=urf(ir,l1,io1,idxas(1,is))*urf(ir,l2,io2,idxas(1,is))*&
+                fr(ir)=urf(ir,l1,io1,ias)*urf(ir,l2,io2,ias)*&
                   jl(ir,l3)*(spr(ir,is)**2)
               enddo !ir
               call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
@@ -90,7 +92,10 @@ do igloc=1,ngvecmeloc
 !       = \int d \Omega Y_{l_1 m_1}^{*}Y_{l_3 m_3}^{*} Y_{l_2 m_2} = gaunt coeff, which is real
 !     so we can conjugate the integral:
 !     \int d \Omega Y_{l_1 m_1} Y_{l_3 m_3} Y_{l_2 m_2}^{*} = gaunt(lm2,lm1,lm3)
-!  3) we can sum over lm3 index of a plane-wave expansion           
+!  3) we can sum over lm3 index of a plane-wave expansion
+!  4) structure factor lr_sfacgq0 of a (G+q) plane wave is taken into 
+!     account in genmegqblh subroutine; this allows to keep radial integrals
+!     for atom classes only (not for all atoms)
             zt1=zzero
             do l3=0,lmaxexp
             do m3=-l3,l3
@@ -101,15 +106,15 @@ do igloc=1,ngvecmeloc
                 lr_ylmgq0(lm3,ig)*dconjg(zi**l3)
             enddo
             enddo
-            zt1=zt1*fourpi !*dconjg(lr_sfacgq0(ig,ias))
+            zt1=zt1*fourpi
             if (abs(zt1).gt.1d-16) then
-              ngntuju(is,ig)=ngntuju(is,ig)+1
-              n=ngntuju(is,ig)
-              gntuju(n,is,ig)=zt1
-              igntuju(1,n,is,ig)=lm1
-              igntuju(2,n,is,ig)=lm2
-              igntuju(3,n,is,ig)=io1
-              igntuju(4,n,is,ig)=io2
+              ngntuju(ic,ig)=ngntuju(is,ig)+1
+              n=ngntuju(ic,ig)
+              gntuju(n,ic,ig)=zt1
+              igntuju(1,n,ic,ig)=lm1
+              igntuju(2,n,ic,ig)=lm2
+              igntuju(3,n,ic,ig)=io1
+              igntuju(4,n,ic,ig)=io2
             endif
           enddo !m2
           enddo !l2
@@ -117,17 +122,23 @@ do igloc=1,ngvecmeloc
         enddo !l1
       enddo !io2
     enddo !io1
-  enddo !is
+  enddo !ic
 enddo !ig
 ! syncronize all values along auxiliary k-direction
-do ig=1,ngvecme
-  call mpi_grid_reduce(gntuju(1,1,ig),ngntujumax*nspecies,dims=(/dim_k/),&
-    all=.true.)
-  call mpi_grid_reduce(igntuju(1,1,1,ig),4*ngntujumax*nspecies,dims=(/dim_k/),&
-    all=.true.)
-  call mpi_grid_reduce(ngntuju(1,ig),nspecies,dims=(/dim_k/),all=.true.)    
-  call mpi_grid_barrier(dims=(/dim_k/))
-enddo
+call mpi_grid_reduce(gntuju(1,1,1),ngntujumax*natmcls*ngvecme,dims=(/dim_k/),all=.true.)
+call mpi_grid_barrier(dims=(/dim_k/))
+call mpi_grid_reduce(igntuju(1,1,1,1),4*ngntujumax*natmcls*ngvecme,dims=(/dim_k/),all=.true.)
+call mpi_grid_barrier(dims=(/dim_k/))
+call mpi_grid_reduce(ngntuju(1,1),natmcls*ngvecme,dims=(/dim_k/),all=.true.)    
+call mpi_grid_barrier(dims=(/dim_k/))
+!do ig=1,ngvecme
+!  call mpi_grid_reduce(gntuju(1,1,ig),ngntujumax*natmcls,dims=(/dim_k/),&
+!    all=.true.)
+!  call mpi_grid_reduce(igntuju(1,1,1,ig),4*ngntujumax*natmcls,dims=(/dim_k/),&
+!    all=.true.)
+!  call mpi_grid_reduce(ngntuju(1,ig),natmcls,dims=(/dim_k/),all=.true.)    
+!  call mpi_grid_barrier(dims=(/dim_k/))
+!enddo
 deallocate(jl)
 deallocate(uju)
 deallocate(gnt)

@@ -956,6 +956,7 @@ integer, allocatable :: nrfl(:,:)
 integer, allocatable :: lm2l(:)
 integer, allocatable :: ias2is(:)
 integer, allocatable :: ias2ia(:)
+integer, allocatable :: ias2ic(:)
 ! for local coordinate system
 integer natlcs
 real(8), allocatable :: lcsrsh(:,:,:)
@@ -975,6 +976,13 @@ complex(8), allocatable :: yrlm_lcs(:,:,:)
 integer bndranglow, bndranghi
 
 complex(8), allocatable :: veffir_zfft(:)
+
+! number of atom classes (non-equivalent atoms)
+integer natmcls
+! i-th class -> ias mapping
+integer, allocatable :: iatmcls(:)
+
+
 
 ! unit conversion
 real(8), parameter :: ha2ev=27.21138386d0

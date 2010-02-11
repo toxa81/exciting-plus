@@ -32,7 +32,7 @@ end interface
 
 interface mpi_grid_reduce
   module procedure mpi_grid_reduce_i,mpi_grid_reduce_d, &
-    mpi_grid_reduce_z,mpi_grid_reduce_f
+    mpi_grid_reduce_z,mpi_grid_reduce_f,mpi_grid_reduce_i2
 end interface
 
 interface mpi_grid_send
@@ -502,6 +502,64 @@ if (l1) then
   else
     if (mpi_grid_root(dims)) allocate(tmp(n_))
     call mpi_reduce(val,tmp,n_,MPI_INTEGER,op_,root,comm,ierr)
+    if (mpi_grid_root(dims)) then
+      call memcopy(tmp,val,n_*sz)
+      deallocate(tmp)
+    endif
+  endif
+endif
+#endif
+return
+end subroutine
+
+!-----------------------------!
+!      mpi_grid_reduce_i2      !
+!-----------------------------!
+subroutine mpi_grid_reduce_i2(val,n,dims,side,all,op)
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+! arguments
+integer(2), intent(inout) :: val
+integer, optional, intent(in) :: n
+integer, optional, dimension(:), intent(in) :: dims
+logical, optional, intent(in) :: side
+logical, optional, intent(in) :: all
+integer, optional, intent(in) :: op
+! local variables
+integer comm,root_x(mpi_grid_nd),root,ierr,sz
+logical all_,l1
+integer op_,n_
+integer(2), allocatable :: tmp(:)
+#ifdef _MPI_
+sz=sizeof(val)
+n_=1
+if (present(n)) n_=n
+all_=.false.
+if (present(all)) then
+  if (all) all_=.true.
+endif
+op_=op_sum
+if (present(op)) then
+  op_=op
+endif
+comm=mpi_grid_get_comm(dims)
+root_x=0
+call mpi_cart_rank(comm,root_x,root,ierr)
+l1=.true.
+if (present(side).and.present(dims)) then
+  if (side.and..not.mpi_grid_side(dims)) l1=.false.
+endif
+if (l1) then
+  if (all_) then
+    allocate(tmp(n_))
+    call mpi_allreduce(val,tmp,n_,MPI_INTEGER2,op_,comm,ierr)
+    call memcopy(tmp,val,n_*sz)
+    deallocate(tmp)
+  else
+    if (mpi_grid_root(dims)) allocate(tmp(n_))
+    call mpi_reduce(val,tmp,n_,MPI_INTEGER2,op_,root,comm,ierr)
     if (mpi_grid_root(dims)) then
       call memcopy(tmp,val,n_*sz)
       deallocate(tmp)
