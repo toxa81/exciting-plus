@@ -16,7 +16,7 @@ integer, allocatable :: igkignr2(:)
 complex(8), allocatable :: wfsvmt2(:,:,:,:,:)
 complex(8), allocatable :: wfsvit2(:,:,:)
 
-integer n1,n2,i1,i2,i3,itr,n,ist1,ist2
+integer n1,n2,i1,i2,i3,itr,n,ist1,ist2,ibloc,xloc
 real(8) vtrc(3)
 
 integer i,j,ik,jk,ig,ikstep,sz,ikloc,complete
@@ -262,57 +262,16 @@ do ikstep=1,nkstep
   call timer_start(2,reset=.true.)
   if (ikstep.le.nkptnrloc) then
     megqblh(:,:,ikstep)=zzero
-! calculate muffin-tin contribution for all combinations of n,n'
-!    call timer_start(4,reset=.true.)
-!    call megqblhmt(ikstep,wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,ngntujumax,&
-!      ngntuju,igntuju,gntuju)
-!    call timer_stop(4)
-! calculate interstitial contribution for all combinations of n,n'
-!    call timer_start(5,reset=.true.)
-!    call megqblhit(ikstep,ngknr(ikstep),ngknr2,igkignr(1,ikstep),igkignr2,&
-!      wfsvitloc(1,1,1,ikstep),wfsvit2)
-!    call timer_stop(5)
     call timer_reset(3)
     call timer_reset(4)
     call timer_reset(5)
     call genmegqblh(ikstep,ngntujumax,ngntuju,igntuju,gntuju,ngknr(ikstep),ngknr2,&
       igkignr(1,ikstep),igkignr2,wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2, &
       wfsvitloc(1,1,1,ikstep),wfsvit2)
-! hack for q=0
-!    if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
-!      megqblh(1,:,ik1)=zzero
-!      do i=1,nmegqblh(ikstep)
-!        ist1=bmegqblh(1,i,ikstep)
-!        ist2=bmegqblh(2,i,ikstep)
-!        if (ist1.eq.ist2) megqblh(1,i,ik1)=zone
-!        megqblh(1,i,ik1)=megqblh(1,i,ik1)-&
-!          dot_product(vq0rc(:),pmat(:,ist1,ist2,ikstep))/&
-!          (evalsvnr(ist1,ik)-evalsvnr(ist2,ik)+swidth)          
-!      enddo
-!    endif
 ! add contribution from k-point to the matrix elements of e^{-i(G+q)x} in 
 !  the basis of Wannier functions
     if (wannier_megq) then
-! todo: use dim2 of mpi grid for something (tranlations or G-vectors) 
-      do itr=1,ntrmegqwan
-        vtrc(:)=avec(:,1)*itrmegqwan(1,itr)+&
-                avec(:,2)*itrmegqwan(2,itr)+&
-                avec(:,3)*itrmegqwan(3,itr)
-        zt1=exp(dcmplx(0.d0,-dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
-        do ig=1,ngvecme
-          do n=1,nmegqwan
-            n1=bmegqwan(1,n)
-            n2=bmegqwan(2,n)
-            do i1=1,nmegqblhwan(ikstep)
-              i=imegqblhwan(i1,ikstep)
-              ist1=bmegqblh(1,i,ikstep)
-              ist2=bmegqblh(2,i,ikstep)
-              megqwan(n,itr,ig)=megqwan(n,itr,ig)+dconjg(wann_c(n1,ist1,ikstep))*&
-                  wann_c(n2,ist2,ikstep+nkptnrloc)*megqblh(ig,i,ikstep)*zt1
-            enddo !i1
-          enddo !n
-        enddo !ig      
-      enddo !itr
+      call genmegqwan(ikstep)
     endif !wannier
   endif !ikstep.le.nkptnrloc
   call timer_stop(2)
@@ -330,20 +289,10 @@ do ikstep=1,nkstep
   endif
 enddo !ikstep
 
-!do ikloc=1,nkptnrloc
-!  write(*,*)'ikloc=',ikloc
-!  do i=1,nmegqblhloc(1,ikloc)
-!    write(*,*)'  ib=',i
-!    write(*,*)'    me=',megqblh(i,:,ikloc)                                                                  
-!  enddo                                                                                                     
-!enddo  
-
 if (wannier_megq) then
-! sum over all k-points to get <n,T=0|e^{-i(G+q)x|n',T'>
-  !if (mpi_grid_root((/dim2/))) then
-    call mpi_grid_reduce(megqwan(1,1,1),nmegqwan*ntrmegqwan*ngvecme,&
-      dims=(/dim_k,dim2/))
-  !endif
+! sum over all k-points and interband transitions to get <n,T=0|e^{-i(G+q)x|n',T'>
+  call mpi_grid_reduce(megqwan(1,1,1),nmegqwan*ntrmegqwan*ngvecme,&
+    dims=(/dim_k,dim_b/))
   megqwan=megqwan/nkptnr
 endif
 
