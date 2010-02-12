@@ -194,6 +194,7 @@ wannier_lc=.false.
 lwannopt=.false.
 megqwan_maxtr=0
 megqwan_cutoff=-0.1d0
+megqwan_maxdist=0.1d0
 nwann_h=0
 crpa=.false.
 wannier_soft_eint_width=0.05 
@@ -932,7 +933,7 @@ case('response_options')
 case('response_wann')
   read(50,*,err=20) wannier_chi0_chi
   read(50,*,err=20) megqwan_maxtr
-  read(50,*,err=20) megqwan_cutoff  
+  read(50,*,err=20) megqwan_cutoff,megqwan_maxdist  
 case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_add_poco

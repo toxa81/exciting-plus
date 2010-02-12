@@ -28,6 +28,9 @@ complex(8), allocatable :: ubare(:,:)
 real(8), allocatable :: vcgq(:)
 
 complex(8) zt1
+real(8) dvec(3),pos1(3),pos2(3),vtrc(3)
+integer ias1,ias2
+real(8) d
 
 logical exist
 integer ntrans
@@ -185,7 +188,19 @@ if (wannier_chi0_chi) then
     write(150,'("minimal matrix element : ",F12.6)')megqwan_cutoff
   endif
   do it1=1,ntrmegqwan
+    vtrc(:)=avec(:,1)*itrmegqwan(1,it1)+&
+            avec(:,2)*itrmegqwan(2,it1)+&
+            avec(:,3)*itrmegqwan(3,it1)
     do n=1,nmegqwan
+      n1=bmegqwan(1,n)
+      n2=bmegqwan(2,n)
+      ias1=iwann(1,n1)
+      ias2=iwann(1,n2)
+      pos1(:)=atposc(:,ias2ia(ias1),ias2is(ias1))
+      pos2(:)=atposc(:,ias2ia(ias2),ias2is(ias2))
+      dvec(:)=pos2(:)+vtrc(:)-pos1(:)
+      d=sqrt(dvec(1)**2+dvec(2)**2+dvec(3)**2)
+      if (d.gt.megqwan_maxdist) megqwan(n,it1,:)=zzero
       do ig=1,ngvecme
         if (abs(megqwan(n,it1,ig)).lt.megqwan_cutoff) megqwan(n,it1,ig)=zzero
       enddo
@@ -247,12 +262,23 @@ if (wannier_chi0_chi) then
     write(150,'("Matrix elements in WF basis : ")')
     write(150,*)
     do it1=1,ntrmegqwan
+      vtrc(:)=avec(:,1)*itrmegqwan(1,it1)+&
+              avec(:,2)*itrmegqwan(2,it1)+&
+              avec(:,3)*itrmegqwan(3,it1)    
       if (sum(abs(megqwan(:,it1,:))).gt.1d-8) then
         write(150,'("translation : ",3I4)')itrmegqwan(:,it1)
-        do n=1,nmegqwan
+        do n=1,nmegqwan              
+          n1=bmegqwan(1,n)
+          n2=bmegqwan(2,n)
+          ias1=iwann(1,n1)
+          ias2=iwann(1,n2)
+          pos1(:)=atposc(:,ias2ia(ias1),ias2is(ias1))
+          pos2(:)=atposc(:,ias2ia(ias2),ias2is(ias2))
+          dvec(:)=pos2(:)+vtrc(:)-pos1(:)
+          d=sqrt(dvec(1)**2+dvec(2)**2+dvec(3)**2)
           if (sum(abs(megqwan(n,it1,:))).gt.1d-8) then
-            write(150,'("  transition ",I4," between wfs : ",2I4)')&
-              n,bmegqwan(1,n),bmegqwan(2,n)
+            write(150,'("  transition ",I4," between wfs : ",2I4,"  distance: ",F12.6)')&
+              n,bmegqwan(1,n),bmegqwan(2,n),d
             do ig=1,ngvecme
               write(150,'("    ig : ",I4," mewf=(",2F12.6,"), |mewf|=",F12.6)')&
                 ig,megqwan(n,it1,ig),abs(megqwan(n,it1,ig))

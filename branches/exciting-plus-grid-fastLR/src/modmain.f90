@@ -1133,6 +1133,7 @@ logical write_chi0_file
 logical lwannopt
 integer megqwan_maxtr
 real(8) megqwan_cutoff
+real(8) megqwan_maxdist
 
 logical crpa
 real(8) crpa_e1,crpa_e2
