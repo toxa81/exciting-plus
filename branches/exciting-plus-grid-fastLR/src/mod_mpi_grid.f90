@@ -9,6 +9,8 @@ data nproc/1/
 ! index of current processor
 integer iproc1
 data iproc/0/
+! number of processors in a grid
+integer mpi_grid_nproc
 ! number of grid dimensions
 integer mpi_grid_nd
 ! size of each grid dimension
@@ -158,6 +160,10 @@ if (mpi_grid_in()) then
       write(*,'("[mpi_grid_initialize] index of communicator : ",I3,&
         &", communicator directions : ",10L2)')i,l1
     endif
+  enddo
+  mpi_grid_nproc=1
+  do i=1,mpi_grid_nd
+    mpi_grid_nproc=mpi_grid_nproc*mpi_grid_size(i)
   enddo
 endif !mpi_grid_in
 #else

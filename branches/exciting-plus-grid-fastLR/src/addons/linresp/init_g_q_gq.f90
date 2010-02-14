@@ -21,14 +21,6 @@ call r3mv(bvec,vq0rl,vq0rc)
 
 call getngvecme(vgq0l)
 
-if (wproc) then
-  write(150,*)
-  write(150,'("G-shell limits      : ",2I4)')gshme1,gshme2
-  write(150,'("G-vector limits     : ",2I4)')gvecme1,gvecme2
-  write(150,'("number of G-vectors : ",I4)')ngvecme   
-  call flushifc(150)
-endif
-
 if (allocated(lr_vgq0c)) deallocate(lr_vgq0c)
 allocate(lr_vgq0c(3,ngvecme))
 if (allocated(lr_gq0)) deallocate(lr_gq0)
@@ -69,28 +61,6 @@ enddo
 
 ! generate structure factor for G+q' vectors
 call gensfacgp(ngvecme,lr_vgq0c,ngvecme,lr_sfacgq0)
-
-! write some info  
-if (wproc) then
-  write(150,*)
-  write(150,'("q-vector (lat.coord.)                        : ",&
-    & 3G18.10)')vq0l
-  write(150,'("q-vector (Cart.coord.) [a.u.]                : ",&
-    & 3G18.10)')vq0c
-  write(150,'("q-vector length [a.u.]                       : ",&
-    & G18.10)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)
-  write(150,'("q-vector length [1/A]                        : ",&
-    & G18.10)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)/au2ang
-  write(150,'("G-vector to reduce q to first BZ (lat.coord.): ",&
-    & 3I4)')vgq0l
-  write(150,'("index of G-vector                            : ",&
-    & I4)')lr_igq0
-  write(150,'("reduced q-vector (lat.coord.)                : ",&
-    & 3G18.10)')vq0rl
-  write(150,'("reduced q-vector (Cart.coord.) [a.u.]        : ",&
-    & 3G18.10)')vq0rc
-  call flushifc(150)
-endif
 
 return
 end

@@ -6,55 +6,43 @@ logical, intent(in) :: req
 
 integer i,ik,jk,ist1,ist2,ikloc,n
 logical laddme,ldocc
-real(8) d1,min_e12,min_e1_wann,max_e2_wann
+real(8) d1
 logical l11,l12,l21,l22,le1,le2,lwann,le1w,le2w
-integer, allocatable :: wann_bnd(:,:)
+integer, allocatable :: wann_bnd(:)
 logical, external :: bndint
 logical, external :: wann_diel
 
 if (wannier_megq) then
-  allocate(wann_bnd(nstsv,nkptnr))
+  allocate(wann_bnd(nstsv))
   wann_bnd=0
 ! mark all bands that contribute to WF expansion
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
     do i=1,nstsv
       do n=1,nwann
-        if (abs(wann_c(n,i,ikloc)).gt.1d-10) wann_bnd(i,ik)=1
+        if (abs(wann_c(n,i,ikloc)).gt.1d-10) wann_bnd(i)=1
       enddo
     enddo
   enddo
-  call mpi_grid_reduce(wann_bnd(1,1),nstsv*nkptnr,dims=(/dim_k/),all=.true.)
-  do i=1,nstsv
-    do ik=1,nkptnr
-      wann_bnd(i,1)=wann_bnd(i,1)+wann_bnd(i,ik)
-    enddo
-  enddo
+  call mpi_grid_reduce(wann_bnd(1),nstsv,dims=(/dim_k/),all=.true.,op=op_max)
 ! find lowest band
   do i=1,nstsv
-    if (wann_bnd(i,1).ne.0) then
-      min_e1_wann=i 
+    if (wann_bnd(i).ne.0) then
+      lr_e1_wan=i 
       exit
     endif
   enddo
 ! find highest band
   do i=nstsv,1,-1
-    if (wann_bnd(i,1).ne.0) then
-      max_e2_wann=i 
+    if (wann_bnd(i).ne.0) then
+      lr_e2_wan=i 
       exit
     endif
   enddo
 endif !wannier
-if (req.and.wproc) then
-  write(150,*)
-  write(150,'("Bloch functions band interval (N1,N2 or E1,E2) : ",2F8.3)')lr_e1,lr_e2
-  if (wannier_megq) then
-    write(150,'("Wannier functions band interval (N1,N2 or E1,E2) : ",2F8.3)')min_e1_wann,max_e2_wann
-  endif
-endif
 if (req) then
   nmegqblhmax=0
-  min_e12=100.d0
+  lr_min_e12=100.d0
 endif
 do ikloc=1,nkptnrloc
   ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
@@ -75,8 +63,8 @@ do ikloc=1,nkptnrloc
 !     2.  both bands ist1 and ist2 fall into energy interval
       lwann=.false.
       if (wannier_megq) then
-        le1w=bndint(ist1,lr_evalsvnr(ist1,ik),min_e1_wann,max_e2_wann)
-        le2w=bndint(ist2,lr_evalsvnr(ist2,jk),min_e1_wann,max_e2_wann)
+        le1w=bndint(ist1,lr_evalsvnr(ist1,ik),lr_e1_wan,lr_e2_wan)
+        le2w=bndint(ist2,lr_evalsvnr(ist2,jk),lr_e1_wan,lr_e2_wan)
         if ((wannier_chi0_chi.and..not.wann_diel()).and.(le1w.and.le2w)) lwann=.true.
         if (crpa.and.(le1w.and.le2w)) lwann=.true.
       endif
@@ -98,14 +86,14 @@ do ikloc=1,nkptnrloc
           bmegqblh(1,i,ikloc)=ist1
           bmegqblh(2,i,ikloc)=ist2
           if (wannier_megq) then
-            if (wann_bnd(ist1,1).ne.0.and.wann_bnd(ist2,1).ne.0) then
+            if (wann_bnd(ist1).ne.0.and.wann_bnd(ist2).ne.0) then
               nmegqblhwan(ikloc)=nmegqblhwan(ikloc)+1
               imegqblhwan(nmegqblhwan(ikloc),ikloc)=i
             endif
           endif
         endif
         if (req) then
-          min_e12=min(min_e12,abs(lr_evalsvnr(ist1,ik)-lr_evalsvnr(ist2,jk)))
+          lr_min_e12=min(lr_min_e12,abs(lr_evalsvnr(ist1,ik)-lr_evalsvnr(ist2,jk)))
         endif
       endif
     enddo
@@ -115,11 +103,7 @@ do ikloc=1,nkptnrloc
 enddo !ikloc
 
 if (req) then
-  call mpi_grid_reduce(min_e12,dims=(/dim_k/),op=op_min)
-  if (wproc) then
-    write(150,*)
-    write(150,'("Minimal energy transition (eV) : ",F12.6)')min_e12*ha2ev
-  endif
+  call mpi_grid_reduce(lr_min_e12,dims=(/dim_k/),op=op_min)
 endif
 
 if (wannier_megq) then

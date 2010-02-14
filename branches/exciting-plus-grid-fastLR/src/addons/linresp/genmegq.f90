@@ -16,32 +16,18 @@ integer, allocatable :: igkignr2(:)
 complex(8), allocatable :: wfsvmt2(:,:,:,:,:)
 complex(8), allocatable :: wfsvit2(:,:,:)
 
-integer n1,n2,i1,i2,i3
-
-integer i,j,ik,jk,ikstep,sz,ikloc,complete
+integer i,ikstep,sz,complete
 integer ngknr2
-real(8) vkq0l(3)
-integer ivg1(3)
 
-integer ngntujumax
-integer, allocatable :: ngntuju(:,:)
-integer(2), allocatable :: igntuju(:,:,:,:)
-complex(8), allocatable :: gntuju(:,:,:)
-complex(8) zt1
 integer nkstep
 real(8) t1,t2,t3,t4,t5,dn1
 
-integer lmaxexp
-integer lmmaxexp
+integer lmaxexp,lmmaxexp
 
 character*100 :: qnm,fout,fme,fu
-logical l1
 
 logical exist
 
-! external functions
-real(8), external :: r3taxi
-logical, external :: wann_diel
 
 ! comment:
 ! the subroutine computes <psi_{n,k}|e^{-i(G+q)x}|psi_{n',k+q}> 
@@ -89,148 +75,80 @@ if (wproc) then
   write(150,'("  <n,k|e^{-i(G+q)x}|n'',k+q>")')
 endif
 
+call timer_start(1,reset=.true.)
 ! initialize G, q and G+q vectors
 call init_g_q_gq(ivq0m,lmaxexp,lmmaxexp)
-
-! find k+q and reduce them to first BZ (this is required to utilize the 
-!   periodical property of Bloch-states: |k>=|k+K>, where K is any vector 
-!   of the reciprocal lattice)
-allocate(idxkq(2,nkptnr))
-do ik=1,nkptnr
-! k+q vector
-  vkq0l(:)=vklnr(:,ik)+vq0rl(:)+1d-12
-! K vector
-  ivg1(:)=floor(vkq0l(:))
-! reduced k+q vector: k'=k+q-K
-  vkq0l(:)=vkq0l(:)-ivg1(:)
-! search for index of reduced k+q vector 
-  do jk=1,nkptnr
-    if (r3taxi(vklnr(:,jk),vkq0l).lt.epslat) then
-      idxkq(1,ik)=jk
-      goto 10
-    endif
-  enddo
-  write(*,*)
-  write(*,'("Error(response_me): index of reduced k+q point is not found")')
-  write(*,'(" index of k-point: ",I4)')ik
-  write(*,'(" K-vector: ",3I4)')ivg1
-  write(*,'(" reduced k+q vector: ",3G18.10)')vkq0l
-  write(*,'(" check original q-vector coordinates")')
-  write(*,*)
-  call pstop
-10 continue
-  idxkq(2,ik)=ivgig(ivg1(1),ivg1(2),ivg1(3))
-enddo
-
-! hack for q=0
-!if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
-!  !vq0c=(/0.0112d0,0.0223d0,0.0331d0/)
-!  vq0c=(/-0.05685621179E-01,  0.05685621179E-01,  0.05685621179E-01/)
-!  vq0rc=vq0c
-!endif
-
-! setup n,n' stuff
-call timer_start(1,reset=.true.)
-if (spinpol) then
-  allocate(spinor_ud(2,nstsv,nkptnr))
-  spinor_ud=0
-  do ikloc=1,nkptnrloc
-    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-    do j=1,nstsv
-      zt1=sum(abs(evecsvloc(1:nstfv,j,ikloc)))
-      if (abs(zt1).gt.1d-10) spinor_ud(1,j,ik)=1
-      zt1=sum(abs(evecsvloc(nstfv+1:nstsv,j,ikloc)))
-      if (abs(zt1).gt.1d-10) spinor_ud(2,j,ik)=1
-    enddo
-  enddo
-  call mpi_grid_reduce(spinor_ud(1,1,1),2*nstsv*nkptnr,dims=(/dim_k/),all=.true.)
-endif
-call getmeidx(.true.)
-allocate(nmegqblh(nkptnrloc))
-allocate(bmegqblh(2,nmegqblhmax,nkptnrloc))
-if (wannier_megq) then
-  allocate(nmegqblhwan(nkptnrloc))
-  allocate(imegqblhwan(nmegqblhmax,nkptnrloc))
-  nmegqblhwan=0
-  imegqblhwan=0
-endif
-call getmeidx(.false.)
+! initialize k+q array
+call init_kq
+! initialize interband transitions
+call init_band_trans
+! initialize Gaunt-like coefficients 
+call init_gntuju(lmaxexp)
 call timer_stop(1)
+
 if (wproc) then
+  write(150,*)
+  write(150,'("G-shell limits      : ",2I4)')gshme1,gshme2
+  write(150,'("G-vector limits     : ",2I4)')gvecme1,gvecme2
+  write(150,'("number of G-vectors : ",I4)')ngvecme   
+  write(150,*)
+  write(150,'("q-vector (lat.coord.)                        : ",&
+    & 3G18.10)')vq0l
+  write(150,'("q-vector (Cart.coord.) [a.u.]                : ",&
+    & 3G18.10)')vq0c
+  write(150,'("q-vector length [a.u.]                       : ",&
+    & G18.10)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)
+  write(150,'("q-vector length [1/A]                        : ",&
+    & G18.10)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)/au2ang
+  write(150,'("G-vector to reduce q to first BZ (lat.coord.): ",&
+    & 3I4)')ivg(:,lr_igq0)
+  write(150,'("index of G-vector                            : ",&
+    & I4)')lr_igq0
+  write(150,'("reduced q-vector (lat.coord.)                : ",&
+    & 3G18.10)')vq0rl
+  write(150,'("reduced q-vector (Cart.coord.) [a.u.]        : ",&
+    & 3G18.10)')vq0rc
+  write(150,*)
+  write(150,'("Bloch functions band interval (N1,N2 or E1,E2) : ",2F8.3)')&
+    lr_e1,lr_e2
+  if (wannier_megq) then
+    write(150,'("Wannier functions band interval (N1,N2 or E1,E2) : ",2F8.3)')&
+      lr_e1_wan,lr_e2_wan
+  endif
+  write(150,*)
+  write(150,'("Minimal energy transition (eV) : ",F12.6)')lr_min_e12*ha2ev    
   write(150,*)
   write(150,'("Maximum number of interband transitions: ",I5)')nmegqblhmax
-  write(150,'("Done in ",F8.2," seconds")')timer_get_value(1)
-  call flushifc(150)
-endif
-
-allocate(nmegqblhloc(2,nkptnrloc))
-do ikloc=1,nkptnrloc
-  nmegqblhloc(1,ikloc)=mpi_grid_map(nmegqblh(ikloc),dim_b,offs=i)
-  nmegqblhloc(2,ikloc)=i
-enddo
-nmegqblhlocmax=maxval(nmegqblhloc)
-sz=int(16.d0*ngvecme*nmegqblhlocmax*nkptnrloc/1048576.d0)
-if (wproc) then
+  sz=int(16.d0*ngvecme*nmegqblhlocmax*nkptnrloc/1048576.d0)
   write(150,*)
-  write(150,'("Size of matrix elements (MB): ",I6)')sz
-  call flushifc(150)
-endif
-allocate(megqblh(nmegqblhlocmax,ngvecme,nkptnrloc))
-
-if (wannier_megq) then
-  allocate(bmegqwan(2,nwann*nwann))
-  nmegqwan=0
-  do n1=1,nwann
-    do n2=1,nwann
-      l1=.false.
-! for integer occupancy numbers take only transitions between occupied and empty bands
-      if (wann_diel().and.(abs(wann_occ(n1)-wann_occ(n2)).gt.1d-8)) l1=.true.
-! for fractional occupancies or cRPA calculation take all transitions
-      if (.not.wann_diel().or.crpa) l1=.true.
-      if (l1) then
-        nmegqwan=nmegqwan+1
-        bmegqwan(1,nmegqwan)=n1
-        bmegqwan(2,nmegqwan)=n2
-      endif
-    enddo
-  enddo
-  if (wproc) then
+  write(150,'("Array size of matrix elements in Bloch basis (MB) : ",I6)')sz
+  if (wannier_megq) then
+    sz=int(16.d0*nmegqwan*ntrmegqwan*ngvecme/1048576.d0)
     write(150,*)
     write(150,'("Number of WF transitions : ",I4)')nmegqwan
-  endif
-! list of translations
-  ntrmegqwan=(2*megqwan_maxtr+1)**3
-  allocate(itrmegqwan(3,ntrmegqwan))
-  i=0
-  do i1=-megqwan_maxtr,megqwan_maxtr
-    do i2=-megqwan_maxtr,megqwan_maxtr
-      do i3=-megqwan_maxtr,megqwan_maxtr
-        i=i+1
-        itrmegqwan(:,i)=(/i1,i2,i3/)
-      enddo
-    enddo
-  enddo
+    write(150,'("Number of WF translations : ",I4)')ntrmegqwan
+    write(150,'("Array size of matrix elements in Wannier basis (MB) : ",I6)')sz
+  endif   
+  sz=int(24.d0*ngntujumax*natmcls*ngvecme/1048576.d0)
+  write(150,*)
+  write(150,'("Maximum number of Gaunt-like coefficients : ",I8)')ngntujumax
+  write(150,'("Array size of Gaunt-like coefficients (MB) : ",I6)')sz
+  write(150,*)
+  write(150,'("Init done in ",F8.2," seconds")')timer_get_value(1)
+  call flushifc(150)
+endif
+
+if (allocated(megqblh)) deallocate(megqblh)
+allocate(megqblh(nmegqblhlocmax,ngvecme,nkptnrloc))
+megqblh(:,:,:)=zzero
+if (wannier_megq) then
+  if (allocated(megqwan)) deallocate(megqwan)
   allocate(megqwan(nmegqwan,ntrmegqwan,ngvecme))
-  megqwan=zzero
+  megqwan(:,:,:)=zzero
 endif
 
 if (write_megq_file) call write_me_header(qnm)
 
-call timer_start(1,reset=.true.)
-call getmaxgnt(lmaxexp,ngntujumax)
-allocate(ngntuju(natmcls,ngvecme))
-allocate(igntuju(4,ngntujumax,natmcls,ngvecme))
-allocate(gntuju(ngntujumax,natmcls,ngvecme))
-call gengntuju(lmaxexp,ngntujumax,ngntuju,igntuju,gntuju)
-call timer_stop(1)
-sz=int(24.d0*ngntujumax*natmcls*ngvecme/1048576.d0)
-if (wproc) then
-  write(150,*)
-  write(150,'("Maximum number of Gaunt-like coefficients : ",I8)')ngntujumax
-  write(150,'("  size (MB) : ",I6)')sz
-  write(150,'("Done in ",F8.2," seconds")')timer_get_value(1)
-  call flushifc(150)
-endif
 
 allocate(wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
 allocate(wfsvit2(ngkmax,nspinor,nstsv))
@@ -252,10 +170,8 @@ do ikstep=1,nkstep
 ! compute matrix elements  
   call timer_start(2)
   if (ikstep.le.nkptnrloc) then
-    megqblh(:,:,ikstep)=zzero
-    call genmegqblh(ikstep,ngntujumax,ngntuju,igntuju,gntuju,ngknr(ikstep),ngknr2,&
-      igkignr(1,ikstep),igkignr2,wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2, &
-      wfsvitloc(1,1,1,ikstep),wfsvit2)
+    call genmegqblh(ikstep,ngknr(ikstep),ngknr2,igkignr(1,ikstep),igkignr2, &
+      wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,wfsvitloc(1,1,1,ikstep),wfsvit2)
 ! add contribution from k-point to the matrix elements of e^{-i(G+q)x} in 
 !  the basis of Wannier functions
     if (wannier_megq) then
@@ -327,12 +243,12 @@ endif
 deallocate(wfsvmt2)
 deallocate(wfsvit2)
 deallocate(igkignr2)
-deallocate(ngntuju)
-deallocate(gntuju)
-deallocate(igntuju)
-if (spinpol) then
-  deallocate(spinor_ud)
-endif
+!deallocate(ngntuju)
+!deallocate(gntuju)
+!deallocate(igntuju)
+!if (spinpol) then
+!  deallocate(spinor_ud)
+!endif
 
 !if (wannier_megq) then
 !  deallocate(nmegqblhwan)

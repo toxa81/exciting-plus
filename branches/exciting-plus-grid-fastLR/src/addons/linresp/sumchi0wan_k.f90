@@ -10,10 +10,6 @@ complex(8), allocatable :: zv1(:)
 allocate(zv1(nmegqwan))
 ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
 jk=idxkq(1,ik)
-
-!write(*,*)'ikloc=',ikloc,'n=',nmegqblhwan(ikloc)
-!write(*,*)'i=',imegqblhwan(1:nmegqblhwan(ikloc),ikloc)
-
 do i1=1,nmegqblhwan(ikloc)
   i=imegqblhwan(i1,ikloc)
   ibloc=mpi_grid_map(nmegqblh(ikloc),dim_b,glob=i,x=xloc)

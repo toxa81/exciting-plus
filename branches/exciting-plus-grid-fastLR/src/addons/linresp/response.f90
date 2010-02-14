@@ -22,7 +22,7 @@ complex(8), allocatable :: pmat(:,:,:,:)
 integer i,j,n,ik,ikloc,ik1,isym,idx0,ivq1,ivq2,iq,ig
 integer sz,nvq0loc,i1,i2,i3
 character*100 qnm
-real(8) w2
+real(8) w2,t1
 logical lgamma,lpmat,wproc1
 logical, external :: wann_diel
 
@@ -383,6 +383,21 @@ if (task.eq.400.or.task.eq.403) then
   deallocate(gknr)
   deallocate(tpgknr)
   deallocate(sfacgknr)
+  if (spinpol) then
+    if (allocated(spinor_ud)) deallocate(spinor_ud)
+    allocate(spinor_ud(2,nstsv,nkptnr))
+    spinor_ud=0
+    do ikloc=1,nkptnrloc
+      ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+      do j=1,nstsv
+        t1=sum(abs(evecsvloc(1:nstfv,j,ikloc)))
+        if (t1.gt.1d-10) spinor_ud(1,j,ik)=1
+        t1=sum(abs(evecsvloc(nstfv+1:nstsv,j,ikloc)))
+        if (t1.gt.1d-10) spinor_ud(2,j,ik)=1
+      enddo
+    enddo
+    call mpi_grid_reduce(spinor_ud(1,1,1),2*nstsv*nkptnr,dims=(/dim_k/),all=.true.)
+  endif  
 endif !task.eq.400.or.task.eq.403
 
 ! distribute q-vectors along 3-rd dimention

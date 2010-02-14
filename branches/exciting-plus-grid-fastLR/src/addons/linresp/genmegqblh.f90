@@ -1,16 +1,12 @@
-subroutine genmegqblh(ikloc,ngntujumax,ngntuju,igntuju,gntuju,ngknr1,ngknr2,&
-  igkignr1,igkignr2,wfsvmt1,wfsvmt2,wfsvit1,wfsvit2)
+subroutine genmegqblh(ikloc,ngknr1,ngknr2,igkignr1,igkignr2,wfsvmt1,wfsvmt2,&
+  wfsvit1,wfsvit2)
 use modmain
 implicit none
 integer, intent(in) :: ikloc
-integer, intent(in) :: ngntujumax
-integer, intent(in) :: ngntuju(natmcls,ngvecme)
-integer(2), intent(in) :: igntuju(4,ngntujumax,natmcls,ngvecme)
 integer, intent(in) :: ngknr1
 integer, intent(in) :: ngknr2
 integer, intent(in) :: igkignr1(ngkmax)
 integer, intent(in) :: igkignr2(ngkmax)
-complex(8), intent(in) :: gntuju(ngntujumax,natmcls,ngvecme)
 complex(8), intent(in) :: wfsvmt1(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
 complex(8), intent(in) :: wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
 complex(8), intent(in) :: wfsvit1(ngkmax,nspinor,nstsv)
