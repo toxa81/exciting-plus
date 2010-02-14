@@ -1,11 +1,7 @@
-subroutine sumchi0(ikloc,ik,jk,i1,i2,w,chi0w)
+subroutine sumchi0(ikloc,w,chi0w)
 use modmain
 implicit none
 integer, intent(in) :: ikloc
-integer, intent(in) :: ik
-integer, intent(in) :: jk
-integer, intent(in) :: i1
-integer, intent(in) :: i2
 complex(8), intent(in) :: w
 complex(8), intent(out) :: chi0w(ngvecme,ngvecme)
 
@@ -14,15 +10,17 @@ complex(8) zt1
 integer i,ist1,ist2
 integer, parameter :: bs=128
 integer, parameter :: chi0summation=4
-integer nb,sz1,offs
+integer nb,sz1,offs,ik,jk
 integer ib1,ib2,j1,j2,ig
 logical, allocatable :: l2(:)
 complex(8), allocatable :: wt(:)
 logical, external :: bndint
 
+ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+jk=idxkq(1,ik)
 offs=nmegqblhloc(2,ikloc)
 allocate(l2(nmegqblhloc(1,ikloc)))
-allocate(wt(nmegqblhloc(1,ikloc)))
+allocate(wt(nmegqblhlocmax))
 l2=.false.
 do i=1,nmegqblhloc(1,ikloc)
   ist1=bmegqblh(1,i+offs,ikloc)
@@ -62,7 +60,7 @@ if (chi0summation.eq.2) then
   do j1=1,nb
     ib2=1
     do j2=1,nb
-      do i=i1,i2
+      do i=1,2 !i1,i2
         if (l2(i)) then
           call zgerc(bs,bs,wt(i),megqblh(ib1,i,ikloc),1,megqblh(ib2,i,ikloc),1, &
             chi0w(ib1,ib2),ngvecme)
@@ -76,7 +74,7 @@ if (chi0summation.eq.2) then
   if (sz1.ne.0) then
     ib1=1
     do j1=1,nb
-      do i=i1,i2
+      do i=1,2 !i1,i2
         if (l2(i)) then
           call zgerc(bs,sz1,wt(i),megqblh(ib1,i,ikloc),1,megqblh(nb*bs+1,i,ikloc),1, &
             chi0w(ib1,nb*bs+1),ngvecme)
@@ -86,25 +84,13 @@ if (chi0summation.eq.2) then
       enddo !i
       ib1=ib1+bs
     enddo !j1
-    do i=i1,i2
+    do i=1,2 !i1,i2
       if (l2(i)) then
         call zgerc(sz1,sz1,wt(i),megqblh(nb*bs+1,i,ikloc),1,megqblh(nb*bs+1,i,ikloc),1, &
           chi0w(nb*bs+1,nb*bs+1),ngvecme)
       endif
     enddo !i
   endif
-endif
-if (chi0summation.eq.3) then
-  do j2=1,ngvecme
-    do i=i1,i2
-      if (l2(i).and.abs(megqblh(j2,i,ikloc)).gt.1d-1) then
-        zt1=wt(i)*dconjg(megqblh(j2,i,ikloc))
-        do j1=1,ngvecme
-          chi0w(j1,j2)=chi0w(j1,j2)+zt1*megqblh(j1,i,ikloc) 
-        enddo
-      endif
-    enddo !i
-  enddo
 endif
 if (chi0summation.eq.4) then
   do ig=1,ngvecme

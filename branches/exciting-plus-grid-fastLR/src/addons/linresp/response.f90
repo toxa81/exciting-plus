@@ -174,6 +174,7 @@ if (mpi_grid_root()) then
   call timestamp(151)
 endif
 if (wproc1) then
+  write(151,'("Total number of q-vectors        : ",I6)')nvq0
   write(151,'("Total number of processors       : ",I6)')nproc
   write(151,'("MPI grid size                    : ",3I6)')mpi_grid_size
   if (nproc.gt.1) then

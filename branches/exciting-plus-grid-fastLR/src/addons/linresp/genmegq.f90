@@ -16,19 +16,20 @@ integer, allocatable :: igkignr2(:)
 complex(8), allocatable :: wfsvmt2(:,:,:,:,:)
 complex(8), allocatable :: wfsvit2(:,:,:)
 
-integer n1,n2,i1,i2,i3,itr,n,ist1,ist2,ibloc,xloc
-real(8) vtrc(3)
+integer n1,n2,i1,i2,i3
 
-integer i,j,ik,jk,ig,ikstep,sz,ikloc,complete
+integer i,j,ik,jk,ikstep,sz,ikloc,complete
 integer ngknr2
 real(8) vkq0l(3)
 integer ivg1(3)
-complex(8), allocatable :: gntuju(:,:,:)
-integer(2), allocatable :: igntuju(:,:,:,:)
-integer, allocatable :: ngntuju(:,:)
+
 integer ngntujumax
+integer, allocatable :: ngntuju(:,:)
+integer(2), allocatable :: igntuju(:,:,:,:)
+complex(8), allocatable :: gntuju(:,:,:)
 complex(8) zt1
 integer nkstep
+real(8) t1,t2,t3,t4,t5,dn1
 
 integer lmaxexp
 integer lmmaxexp
@@ -56,7 +57,7 @@ lmmaxexp=(lmaxexp+1)**2
 call qname(ivq0m,qnm)
 qnm="./"//trim(qnm)//"/"//trim(qnm)
 wproc=.false.
-if (mpi_grid_root((/dim_k,dim2/))) then
+if (mpi_grid_root((/dim_k,dim_b/))) then
   wproc=.true.
   fout=trim(qnm)//"_ME.OUT"
   open(150,file=trim(fout),form='formatted',status='replace')
@@ -64,13 +65,13 @@ endif
 
 complete=0
 fme=trim(qnm)//"_me.hdf5"
-if (mpi_grid_root((/dim_k,dim2/))) then
+if (mpi_grid_root((/dim_k,dim_b/))) then
   inquire(file=trim(fme),exist=exist)
   if (exist) then
     call read_integer(complete,1,trim(fme),'/parameters','complete')
   endif
 endif
-call mpi_grid_bcast(complete,dims=(/dim_k,dim2/))
+call mpi_grid_bcast(complete,dims=(/dim_k,dim_b/))
 if (complete.eq.1) goto 30
 
 if (crpa) then
@@ -145,7 +146,6 @@ if (spinpol) then
   call mpi_grid_reduce(spinor_ud(1,1,1),2*nstsv*nkptnr,dims=(/dim_k/),all=.true.)
 endif
 call getmeidx(.true.)
-!call mpi_grid_reduce(nmegqblhmax,dims=(/dim_k/),all=.true.,op=op_max)
 allocate(nmegqblh(nkptnrloc))
 allocate(bmegqblh(2,nmegqblhmax,nkptnrloc))
 if (wannier_megq) then
@@ -169,6 +169,13 @@ do ikloc=1,nkptnrloc
   nmegqblhloc(2,ikloc)=i
 enddo
 nmegqblhlocmax=maxval(nmegqblhloc)
+sz=int(16.d0*ngvecme*nmegqblhlocmax*nkptnrloc/1048576.d0)
+if (wproc) then
+  write(150,*)
+  write(150,'("Size of matrix elements (MB): ",I6)')sz
+  call flushifc(150)
+endif
+allocate(megqblh(nmegqblhlocmax,ngvecme,nkptnrloc))
 
 if (wannier_megq) then
   allocate(bmegqwan(2,nwann*nwann))
@@ -209,15 +216,14 @@ endif
 
 if (write_megq_file) call write_me_header(qnm)
 
-call getmaxgnt(lmaxexp,ngntujumax)
-
 call timer_start(1,reset=.true.)
+call getmaxgnt(lmaxexp,ngntujumax)
 allocate(ngntuju(natmcls,ngvecme))
 allocate(igntuju(4,ngntujumax,natmcls,ngvecme))
 allocate(gntuju(ngntujumax,natmcls,ngvecme))
 call gengntuju(lmaxexp,ngntujumax,ngntuju,igntuju,gntuju)
 call timer_stop(1)
-sz=24.d0*ngntujumax*natmcls*ngvecme/1024/1024
+sz=int(24.d0*ngntujumax*natmcls*ngvecme/1048576.d0)
 if (wproc) then
   write(150,*)
   write(150,'("Maximum number of Gaunt-like coefficients : ",I8)')ngntujumax
@@ -226,45 +232,27 @@ if (wproc) then
   call flushifc(150)
 endif
 
-sz=16.d0*ngvecme*nmegqblhlocmax*nkptnrloc/1024/1024
-if (wproc) then
-  write(150,*)
-  write(150,'("Size of matrix elements (MB): ",I6)')sz
-  call flushifc(150)
-endif
-allocate(megqblh(nmegqblhlocmax,ngvecme,nkptnrloc))
 allocate(wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
 allocate(wfsvit2(ngkmax,nspinor,nstsv))
 allocate(igkignr2(ngkmax))
 
 i=0
 nkstep=mpi_grid_map(nkptnr,dim_k,x=i)
-if (wproc) then
-  write(150,*)
-  write(150,'("Starting k-point loop")')
-  call flushifc(150)
-endif
+call timer_reset(1)
+call timer_reset(2)
+call timer_reset(3)
+call timer_reset(4)
+call timer_reset(5)
 do ikstep=1,nkstep
-  if (wproc) then
-    write(150,'("k-step ",I4," out of ",I4)')ikstep,nkstep
-    call flushifc(150)
-  endif
 ! transmit wave-functions
-  call timer_start(1,reset=.true.)
+  call timer_start(1)
   call getwfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
     wfsvit2,ngknr2,igkignr2)
-  if (wproc) then
-    write(150,'("  wave-functions are distributed")')
-    call flushifc(150)
-  endif
   call timer_stop(1)
 ! compute matrix elements  
-  call timer_start(2,reset=.true.)
+  call timer_start(2)
   if (ikstep.le.nkptnrloc) then
     megqblh(:,:,ikstep)=zzero
-    call timer_reset(3)
-    call timer_reset(4)
-    call timer_reset(5)
     call genmegqblh(ikstep,ngntujumax,ngntuju,igntuju,gntuju,ngknr(ikstep),ngknr2,&
       igkignr(1,ikstep),igkignr2,wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2, &
       wfsvitloc(1,1,1,ikstep),wfsvit2)
@@ -275,19 +263,35 @@ do ikstep=1,nkstep
     endif !wannier
   endif !ikstep.le.nkptnrloc
   call timer_stop(2)
-  if (wproc) then
-    write(150,'("  time (seconds)")')
-    write(150,'("    send/recv      : ",F8.2)')timer_get_value(1)
-    write(150,'("    matrix elements")')
-    write(150,'("      precompute MT : ",F8.2)')timer_get_value(3)
-    write(150,'("      precompute IT : ",F8.2)')timer_get_value(4)
-    write(150,'("      compute       : ",F8.2)')timer_get_value(5)
-    write(150,'("    total for kpt  : ",F8.2)')timer_get_value(2)
-    write(150,'("  speed (me/sec)   : ",F10.2)')&
-      ngvecme*nmegqblh(ikstep)/timer_get_value(2)
-    call flushifc(150)
-  endif
 enddo !ikstep
+! time for wave-functions send/recieve
+t1=timer_get_value(1)
+! total time for matrix elements calculation
+t2=timer_get_value(2)
+call mpi_grid_reduce(t2,dims=(/dim_k,dim_b/),side=.true.)
+! time to precompute MT
+t3=timer_get_value(3)
+call mpi_grid_reduce(t3,dims=(/dim_k,dim_b/),side=.true.)
+! time to precompute IT
+t4=timer_get_value(4)
+call mpi_grid_reduce(t4,dims=(/dim_k,dim_b/),side=.true.)
+! time to compute ME
+t5=timer_get_value(5)
+call mpi_grid_reduce(t5,dims=(/dim_k,dim_b/),side=.true.)
+! approximate number of matrix elements
+dn1=1.d0*nmegqblhmax*ngvecme*nkptnr
+if (wannier_megq) dn1=dn1+1.d0*nmegqwan*ntrmegqwan*ngvecme
+if (wproc) then
+  write(150,*)
+  write(150,'("Average time (seconds)")')
+  write(150,'("  send and receive wave-functions  : ",F8.2)')t1
+  write(150,'("  compute matrix elements          : ",F8.2)')t2/mpi_grid_nproc
+  write(150,'("    precompute muffin-tin part     : ",F8.2)')t3/mpi_grid_nproc
+  write(150,'("    precompute interstitial part   : ",F8.2)')t4/mpi_grid_nproc
+  write(150,'("    multiply wave-functions        : ",F8.2)')t5/mpi_grid_nproc
+  write(150,'("Speed (me/sec)                     : ",F10.2)')mpi_grid_nproc*dn1/t2
+  call flushifc(150)
+endif
 
 if (wannier_megq) then
 ! sum over all k-points and interband transitions to get <n,T=0|e^{-i(G+q)x|n',T'>
@@ -330,18 +334,17 @@ if (spinpol) then
   deallocate(spinor_ud)
 endif
 
-if (wannier_megq) then
-  deallocate(nmegqblhwan)
-  deallocate(imegqblhwan)
-endif
+!if (wannier_megq) then
+!  deallocate(nmegqblhwan)
+!  deallocate(imegqblhwan)
+!endif
 
-
-if (mpi_grid_root((/dim_k,dim2/)).and.write_megq_file) then
+if (mpi_grid_root((/dim_k,dim_b/)).and.write_megq_file) then
   complete=1
   call rewrite_integer(complete,1,trim(fme),'/parameters','complete')
 endif
 
-call mpi_grid_barrier((/dim_k,dim2/))
+call mpi_grid_barrier((/dim_k,dim_b/))
 
 30 continue
 if (wproc) then

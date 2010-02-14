@@ -1,4 +1,4 @@
-subroutine solve_chi_wf(igq0,vcgq,w,nnzme,inzme,vcwan,f_response_)
+subroutine solve_chi_wf(igq0,vcgq,w,nnzme,inzme,vcwan,chi0wan,f_response_)
 use modmain
 implicit none
 integer, intent(in) :: igq0
@@ -7,6 +7,7 @@ complex(8), intent(in) :: w
 integer, intent(in) :: nnzme
 integer, intent(in) :: inzme(2,nnzme)
 complex(8), intent(in) :: vcwan(nnzme,nnzme)
+complex(8), intent(in) :: chi0wan(nmegqwan,nmegqwan,ntrchi0wan)
 complex(8), intent(out) :: f_response_(nf_response)
 
 complex(8), allocatable :: mtrx1(:,:)

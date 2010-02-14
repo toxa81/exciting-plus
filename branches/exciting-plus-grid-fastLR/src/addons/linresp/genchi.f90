@@ -27,6 +27,8 @@ complex(8), allocatable :: uscrn(:,:)
 complex(8), allocatable :: ubare(:,:)
 real(8), allocatable :: vcgq(:)
 
+complex(8), allocatable :: chi0wan(:,:,:)
+
 complex(8) zt1
 real(8) dvec(3),pos1(3),pos2(3),vtrc(3)
 integer ias1,ias2
@@ -143,21 +145,6 @@ if (wproc) then
   write(150,'("Number of G-vectors : ",I4)')ngvecchi
   call flushifc(150)
 endif
-
-!
-!!if (lwannopt) then
-!!  allocate(mewfx(3,nwann*nwann,ntrmegqwan))
-!!  if (root_cart((/1,1,0/))) then
-!!    call read_real8_array(mewfx,4,(/2,3,nwann*nwann,ntrmegqwan/), &
-!!      trim(fname),'/wann','mewfx')
-!!  endif
-!!  call d_bcast_cart(comm_cart_110,mewfx,2*3*nwann*nwann*ntrmegqwan)
-!!!  allocate(mtrx1(nwann*nwann*ntrmegqwan,nwann*nwann*ntrmegqwan))
-!!!  allocate(mtrx2(nwann*nwann*ntrmegqwan,nwann*nwann*ntrmegqwan)) 
-!!  allocate(epswf(nepts))
-!!  epswf=zzero
-!!endif
-!
 
 igq0=lr_igq0-gvecchi1+1
 ig1=gvecchi1-gvecme1+1
@@ -381,7 +368,7 @@ do iwstep=1,nwstep
       endif
       call solve_chi(igq0,vcgq,lr_w(iw),chi0m,krnl,krnl_scr,f_response(1,iw,ifxc))
       if (wannier_chi0_chi.and.ifxc.eq.1) then
-        call solve_chi_wf(igq0,vcgq,lr_w(iw),nnzme,inzme,vcwan,f_response(1,iw,ifxc))
+        call solve_chi_wf(igq0,vcgq,lr_w(iw),nnzme,inzme,vcwan,chi0wan,f_response(1,iw,ifxc))
       endif
       if (screened_w.and.iw.eq.1.and.ifxc.eq.1) then
         if (ngvecchi.gt.10) then

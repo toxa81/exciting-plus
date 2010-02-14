@@ -6,22 +6,19 @@ implicit none
 ! arguments
 integer, intent(in) :: ivq0m(3)
 ! local variables
-complex(8), allocatable :: chi0w(:,:)
-integer i,j,ik,ie,i1,i2,i3,ikloc
-integer idx0,bs
+complex(8), allocatable :: chi0(:,:)
+complex(8), allocatable :: chi0wan(:,:,:)
+complex(8), allocatable :: chi0wan_k(:,:,:)
+complex(8) :: chi0_GqGq_wan_full
+
+
+integer i,ik,ie,i1,i2,i3,ikloc
 integer igq0
-complex(8) wt
 character*100 path,qnm,fout,fchi0,fu
 logical exist
-integer ie1,n,n1,n2,n3,n4,jk,ist1,ist2,sz1,sz2
-complex(8), allocatable :: zv1(:),zm2(:,:,:)
+integer ie1,n1,n2,jk
 integer iv(3)
 
-integer it2
-real(8) vtrc(3)
-complex(8) zt1,zt3
-!complex(8), allocatable :: mewfx(:,:,:)
-!complex(8), allocatable :: pmat(:,:,:,:)
 real(8), allocatable :: vcgq(:)
 real(8) vgq0c(3)
 integer ig
@@ -63,7 +60,7 @@ if (wproc) then
 endif
   
 ! setup energy mesh
-nepts=1+maxomega/domega
+nepts=1+int(maxomega/domega)
 allocate(lr_w(nepts))
 do i=1,nepts
   lr_w(i)=dcmplx(domega*(i-1),lr_eta)/ha2ev
@@ -88,11 +85,8 @@ if (write_megq_file) then
     write(150,'("  G-vectors : ",I4," to ", I4)')gvecme1,gvecme2
     call flushifc(150)
   endif
-!else
-!  call mpi_grid_bcast(megqblh(1,1,1),ngvecme*nmegqblhmax*nkptnrloc,dims=(/dim_b/))                            
 endif
 allocate(megqblh2(nmegqblhlocmax,ngvecme))
-
 
 ! for response in Wannier bais
 if (wannier_chi0_chi) then
@@ -131,14 +125,9 @@ if (wannier_chi0_chi) then
     enddo
   enddo
   allocate(chi0wan(nmegqwan,nmegqwan,ntrchi0wan))
-  allocate(zv1(nmegqwan))
-  allocate(zm2(nmegqwan,nmegqwan,nkptnrloc))
+  allocate(chi0wan_k(nmegqwan,nmegqwan,nkptnrloc))
 endif !wannier_chi0_chi
-!
-!if (lwannopt) then
-!  allocate(pmat(3,nstsv,nstsv,nkptnr_loc))
-!endif
-!
+
 if (crpa) then
   allocate(vcgq(ngvecme))
   do ig=1,ngvecme
@@ -171,7 +160,7 @@ endif
 call mpi_grid_bcast(ie1,dims=(/dim_k,dim_b/))
 ie1=ie1+1
 
-allocate(chi0w(ngvecme,ngvecme))
+allocate(chi0(ngvecme,ngvecme))
 
 if (wproc) then
   write(150,*)
@@ -181,115 +170,43 @@ if (wproc) then
 endif
 ! loop over energy points
 do ie=ie1,nepts
-  chi0w=zzero
-  if (wannier_chi0_chi) zm2=zzero
-  sz1=0
-  sz2=0
+  chi0=zzero
+  if (wannier_chi0_chi) chi0wan_k=zzero
   call timer_start(1,reset=.true.)
   call timer_start(2,reset=.true.)
 ! sum over k-points
   do ikloc=1,nkptnrloc
-    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-    jk=idxkq(1,ik)
     if (nmegqblhloc(1,ikloc).gt.0) then
-      !bs=mpi_grid_map(nmegqblh(ikloc),dim_b,offs=idx0)
-      !i1=idx0+1
-      !i2=idx0+bs
-      sz1=sz1+nmegqblhloc(1,ikloc)
 ! for each k-point : sum over interband transitions
-      call sumchi0(ikloc,ik,jk,i1,i2,lr_w(ie),chi0w)
+      call sumchi0(ikloc,lr_w(ie),chi0)
     endif
 ! for response in Wannier basis
-    if (wannier_chi0_chi) then
-      sz2=sz2+nmegqblh(ikloc)*nmegqwan**2
-      do i=1,nmegqblh(ikloc)
-        ist1=bmegqblh(1,i,ikloc)
-        ist2=bmegqblh(2,i,ikloc)
-        do n=1,nmegqwan
-          n1=bmegqwan(1,n)
-          n2=bmegqwan(2,n)
-          zv1(n)=wann_c(n1,ist1,ikloc)*dconjg(wann_c(n2,ist2,ikloc+nkptnrloc))
-        enddo
-        wt=(lr_occsvnr(ist1,ik)-lr_occsvnr(ist2,jk))/(lr_evalsvnr(ist1,ik) - &
-            lr_evalsvnr(ist2,jk)+lr_w(ie))
-        call zgerc(nmegqwan,nmegqwan,wt,zv1,1,zv1,1,zm2(1,1,ikloc),nmegqwan)
-      enddo !i
-    endif !wannier_chi0_chi
+    if (wannier_chi0_chi) call sumchi0wan_k(ikloc,lr_w(ie),chi0wan_k(1,1,ikloc))
   enddo !ikloc
   call timer_stop(2)
   call timer_start(3,reset=.true.)
 ! sum over k-points and band transitions
-!  if (mpi_grid_size(dim_k).gt.1.or.mpi_grid_size(dim_b).gt.1) then
-  call mpi_grid_reduce(chi0w(1,1),ngvecme*ngvecme,dims=(/dim_k,dim_b/))
-!  endif
-  chi0w=chi0w/nkptnr/omega
-  if (crpa.and.ie.eq.1.and.mpi_grid_root(dims=(/dim_k,dim_b/))) then
-    call genwu(ngvecme,chi0w,vcgq,qnm)
-  endif
+  call mpi_grid_reduce(chi0(1,1),ngvecme*ngvecme,dims=(/dim_k,dim_b/))
+  chi0=chi0/nkptnr/omega
+  if (wannier_chi0_chi) call mpi_grid_reduce(chi0wan_k(1,1,1), &
+    nmegqwan*nmegqwan*nkptnrloc,dims=(/dim_b/))
+  if (crpa.and.ie.eq.1.and.mpi_grid_root(dims=(/dim_k,dim_b/))) &
+    call genwu(ngvecme,chi0,vcgq,qnm)
 ! compute ch0 matrix in Wannier basis
-! todo: put in a separate call 
-  if (mpi_grid_root((/dim2/)).and.wannier_chi0_chi) then
-! zt3 is chi0_GqGq calculated using Wannier functions expansion    
-! todo: utilize second dimension of mpi grid
-    zt3=zzero
-! we will split matrix elements along 1-st dimention      
-    bs=mpi_grid_map(nmegqwan,dim1,offs=idx0)
-    n3=idx0+1
-    n4=idx0+bs    
-! loop over translations
-    do it2=1,ntrchi0wan
-      sz2=sz2+nkptnrloc*nmegqwan**2
-      !zm1=zzero
-      chi0wan(:,:,it2)=zzero
-      do ikloc=1,nkptnrloc
-        ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-! translation vector
-        vtrc(:)=avec(:,1)*itrchi0wan(1,it2)+&
-                avec(:,2)*itrchi0wan(2,it2)+&
-                avec(:,3)*itrchi0wan(3,it2)
-! phase e^{i(k+q)T}
-        zt1=exp(dcmplx(0.d0,dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
-! chi0wan=chi0wan+e^{i(k+q)T}*zm2(k)
-        call zaxpy(nmegqwan*nmegqwan,zt1,zm2(1,1,ikloc),1,chi0wan(1,1,it2),1)
-      enddo !ikloc
-! sum chi0wan over all k-points
-      call mpi_grid_reduce(chi0wan(1,1,it2),nmegqwan*nmegqwan, &
-        dims=(/dim_k/),all=.true.)
-      chi0wan(:,:,it2)=chi0wan(:,:,it2)/nkptnr/omega
-      if (lafm) chi0wan(:,:,it2)=chi0wan(:,:,it2)*2.d0    
-! compute chi0_GqGq using the Wannier functions expansion
-!  chi0=\sum_{T,T'}\sum_{n,m,n',m'} A^{*}_{nmT}(q,Gq)*chi0wan(n,m,n',m',T-T')*A_{n'm'T'}(q,Gq)
-!  where A_{nmT}(q,G)=<n,0|e^{-i(G+q)x}|m,T>
-      do i=1,ntrmegqwan
-        do j=1,ntrmegqwan
-          if (itridxwan(i,j).eq.it2) then
-            sz2=sz2+ntrmegqwan*ntrmegqwan
-! loop over fraction of rows
-            do n2=n3,n4
-! perform column times vector multiplication
-!  zt1_{n,m,T,T'}=\sum_{n',m'}chi0wan(n,m,n',m',T-T')*A_{n'm'T'}(q,Gq)
-              zt1=zdotu(nmegqwan,chi0wan(1,n2,it2),1,megqwan(1,i,igq0),1)
-! perform vector times vector multiplication
-!  zt3=zt3+\sum_{T,T'}\sum_{n,m}A^{*}_{nmT}(q,Gq)*zt1_{n,m,T,T'}
-              zt3=zt3+zt1*dconjg(megqwan(n2,j,igq0))
-            enddo !n2
-          endif
-        enddo !j
-      enddo !i
-    enddo !it2
-! sum all rows
-    call mpi_grid_reduce(zt3,dims=(/dim1/))
-  endif !(root_cart((/0,1,0/)).and.wannier_chi0_chi)    
+  if (mpi_grid_root((/dim_b/)).and.wannier_chi0_chi) then
+    call genchi0wan(igq0,chi0wan_k,chi0wan,chi0_GqGq_wan_full)
+    if (lafm) chi0wan(:,:,:)=chi0wan(:,:,:)*2.d0    
+  endif
   call timer_stop(3)
 ! write to file
   call timer_start(4,reset=.true.)
   if (mpi_grid_root((/dim_k,dim_b/)).and.write_chi0_file) then
     write(path,'("/iw/",I8.8)')ie
     call write_real8(lr_w(ie),2,trim(fchi0),trim(path),'w')
-    call write_real8_array(chi0w,3,(/2,ngvecme,ngvecme/), &
+    call write_real8_array(chi0,3,(/2,ngvecme,ngvecme/), &
       trim(fchi0),trim(path),'chi0')
     if (wannier_chi0_chi) then
-      call write_real8_array(zt3,1,(/2/),trim(fchi0),trim(path),'chi0wf')
+      call write_real8_array(chi0_GqGq_wan_full,1,(/2/),trim(fchi0),trim(path),'chi0wf')
       call write_real8_array(chi0wan,4,(/2,nmegqwan,nmegqwan,ntrchi0wan/), &
         trim(fchi0),trim(path),'chi0wan')
     endif
@@ -297,15 +214,15 @@ do ie=ie1,nepts
   endif
   call timer_stop(4)
   call timer_stop(1)
-  if (wproc) then
-    write(150,'("energy point ",I4," was done in ",F8.2," seconds")')ie,timer_get_value(1)
-    write(150,'("  zgerc time         : ",F8.2," seconds")')timer_get_value(2)
-    write(150,'("  zgerc call speed   : ",F8.2," calls/sec.")')sz1/timer_get_value(2)
-    write(150,'("  zgerc memory speed : ",F8.2," Mb/sec.")')16.d0*sz1*ngvecme*ngvecme/1048576.d0/timer_get_value(2)
-    write(150,'("  sync time          : ",F8.2," seconds")')timer_get_value(3)
-    write(150,'("  write time         : ",F8.2," seconds")')timer_get_value(4)
-    call flushifc(150)
-  endif
+  !if (wproc) then
+    !write(150,'("energy point ",I4," was done in ",F8.2," seconds")')ie,timer_get_value(1)
+    !write(150,'("  zgerc time         : ",F8.2," seconds")')timer_get_value(2)
+    !write(150,'("  zgerc call speed   : ",F8.2," calls/sec.")')sz1/timer_get_value(2)
+    !write(150,'("  zgerc memory speed : ",F8.2," Mb/sec.")')16.d0*sz1*ngvecme*ngvecme/1048576.d0/timer_get_value(2)
+    !write(150,'("  sync time          : ",F8.2," seconds")')timer_get_value(3)
+    !write(150,'("  write time         : ",F8.2," seconds")')timer_get_value(4)
+    !call flushifc(150)
+  !endif
   call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 enddo !ie
 
@@ -316,39 +233,7 @@ if (wannier_chi0_chi.and.write_chi0_file) then
     call write_integer_array(itridxwan,2,(/ntrmegqwan,ntrmegqwan/),trim(fchi0),'/wannier','itridxwan')
   endif
 endif
-!!
-!!if (lwannopt) then
-!!  allocate(mewfx(3,nwann*nwann,ntr1))
-!!  mewfx=zzero
-!!  do it1=1,ntr1
-!!    vtrc(:)=avec(:,1)*itr1l(1,it1)+avec(:,2)*itr1l(2,it1)+avec(:,3)*itr1l(3,it1)
-!!    do ikloc=1,nkptnr_loc
-!!      ik=ikptnrloc(mpi_x(1),1)+ikloc-1
-!!      zt1=exp(dcmplx(0.d0,-dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
-!!      do n1=1,nwann
-!!        do n2=1,nwann
-!!          do ist1=1,nstsv
-!!            do ist2=1,nstsv
-!!              mewfx(:,(n1-1)*nwann+n2,it1)=mewfx(:,(n1-1)*nwann+n2,it1)+&
-!!                dconjg(wann_c1(n1,ist1,ikloc))*wann_c2(n2,ist2,ikloc)*zt1*&
-!!                pmat(:,ist1,ist2,ikloc)*zi/(evalsvnr(ist1,ik)-evalsvnr(ist2,ik)+swidth)
-!!            enddo
-!!          enddo
-!!        enddo
-!!      enddo
-!!    enddo !ikloc
-!!  enddo !itr1
-!!  if (root_cart((/0,1,0/)).and.mpi_dims(1).gt.1) then
-!!    call d_reduce_cart(comm_cart_100,.false.,mewfx,2*3*nwann*nwann*ntr1)
-!!  endif
-!!  if (root_cart((/1,1,0/))) then
-!!    mewfx=mewfx/nkptnr
-!!    call write_real8_array(mewfx,4,(/2,3,nwann*nwann,ntr1/), &
-!!      trim(fname),'/wann','mewfx')
-!!  endif
-!!  deallocate(mewfx)
-!!endif
-!
+
 call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 
 deallocate(lr_w)
@@ -356,7 +241,7 @@ deallocate(idxkq)
 deallocate(nmegqblh)
 deallocate(bmegqblh)
 deallocate(megqblh)
-deallocate(chi0w)
+deallocate(chi0)
 if (wannier_megq.and.write_megq_file) then
   deallocate(itrmegqwan)
   deallocate(megqwan)
@@ -366,17 +251,12 @@ if (wannier_chi0_chi) then
   deallocate(itrchi0wan)
   deallocate(itridxwan)
   deallocate(chi0wan)
-  deallocate(zv1)
-  deallocate(zm2)
 endif
 if (crpa) then
   deallocate(vcgq)
   deallocate(imegqwan)
 endif
 
-!if (lwannopt) then
-!  deallocate(pmat)
-!endif
 30 continue
 
 if (wproc) then
