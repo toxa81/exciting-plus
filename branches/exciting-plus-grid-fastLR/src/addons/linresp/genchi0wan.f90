@@ -13,11 +13,7 @@ complex(8), external :: zdotu
 
 chi0wan(:,:,:)=zzero
 ! zt3 is chi0_GqGq calculated using Wannier functions expansion    
-! todo: utilize second dimension of mpi grid
-! we will split matrix elements along 1-st dimention      
-    !bs=mpi_grid_map(nmegqwan,dim1,offs=idx0)
-    !n3=idx0+1
-    !n4=idx0+bs    
+! todo: utilize mpi grid
 ! loop over translations
 do it2=1,ntrchi0wan
   do ikloc=1,nkptnrloc

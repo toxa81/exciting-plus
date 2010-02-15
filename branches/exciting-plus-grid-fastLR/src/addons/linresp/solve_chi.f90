@@ -1,12 +1,13 @@
-subroutine solve_chi(igq0,vcgq,w,chi0m,krnl,krnl_scr,f_response_)
+subroutine solve_chi(ng,igq0,vcgq,w,chi0m,krnl,krnl_scr,f_response_)
 use modmain
 implicit none
+integer, intent(in) :: ng
 integer, intent(in) :: igq0
-real(8), intent(in) :: vcgq(ngvecchi)
+real(8), intent(in) :: vcgq(ng)
 complex(8), intent(in) :: w
-complex(8), intent(in) :: chi0m(ngvecchi,ngvecchi)
-complex(8), intent(inout) :: krnl(ngvecchi,ngvecchi)
-complex(8), intent(out) :: krnl_scr(ngvecchi,ngvecchi)
+complex(8), intent(in) :: chi0m(ng,ng)
+complex(8), intent(inout) :: krnl(ng,ng)
+complex(8), intent(out) :: krnl_scr(ng,ng)
 complex(8), intent(out) :: f_response_(nf_response)
 ! local variables
 complex(8), allocatable :: epsilon(:,:)
@@ -25,7 +26,7 @@ integer i,ig1,ig2
 
 ! construct full kernel
 if (lrtype.eq.0) then
-  do i=1,ngvecchi
+  do i=1,ng
     krnl(i,i)=krnl(i,i)+vcgq(i)**2
   enddo
 endif
@@ -33,8 +34,8 @@ endif
 !if (lrtype.eq.1) then
 !  call genixc(ixcft)
 ! contruct Ixc_{G,G'}=Ixc(G-G')
-!  do i=1,ngvecchi
-!    do j=1,ngvecchi
+!  do i=1,ng
+!    do j=1,ng
 !      iv(:)=-ivg(:,gvecchi1+i-1)+ivg(:,gvecchi1+j-1)
 !      krnl_rpa(i,j)=ixcft(ivgig(iv(1),iv(2),iv(3)))
 !    enddo
@@ -48,26 +49,26 @@ if (lrtype.eq.1) then
   call pstop
 endif
 
-allocate(epsilon(ngvecchi,ngvecchi))
-allocate(mtrx1(ngvecchi,ngvecchi))
-allocate(zm1(ngvecchi,ngvecchi))
-allocate(zm2(ngvecchi,ngvecchi))
+allocate(epsilon(ng,ng))
+allocate(mtrx1(ng,ng))
+allocate(zm1(ng,ng))
+allocate(zm2(ng,ng))
 
 ! save chi0_GqGq
 f_response_(f_chi0)=chi0m(igq0,igq0)
 ! compute matrix 1-chi0*(v+fxc) 
 epsilon=zzero
-do i=1,ngvecchi
+do i=1,ng
   epsilon(i,i)=zone
 enddo
-call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(-1.d0,0.d0), &
-  chi0m,ngvecchi,krnl,ngvecchi,zone,epsilon,ngvecchi)
+call zgemm('N','N',ng,ng,ng,dcmplx(-1.d0,0.d0), &
+  chi0m,ng,krnl,ng,zone,epsilon,ng)
 ! save epsilon_matrix_GqGq
 f_response_(f_epsilon_matrix_GqGq)=epsilon(igq0,igq0)
 ! save epsilon_scalar_GqGq
 f_response_(f_epsilon_scalar_GqGq)=1.d0-chi0m(igq0,igq0)*krnl(igq0,igq0)
 ! invert epsilon matrix
-call invzge(epsilon,ngvecchi)
+call invzge(epsilon,ng)
 ! save 1/(epsilon^-1)_{GqGq}
 f_response_(f_inv_epsilon_inv_GqGq)=1.d0/epsilon(igq0,igq0)
 ! save chi_scalar
@@ -75,8 +76,8 @@ f_response_(f_chi_scalar)=chi0m(igq0,igq0)/f_response_(f_epsilon_scalar_GqGq)
 ! save chi_pseudo_scalar
 f_response_(f_chi_pseudo_scalar)=chi0m(igq0,igq0)/f_response_(f_epsilon_matrix_GqGq)
 ! compute chi=epsilon^-1 * chi0
-call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
-  epsilon,ngvecchi,chi0m,ngvecchi,dcmplx(0.d0,0.d0),mtrx1,ngvecchi)
+call zgemm('N','N',ng,ng,ng,dcmplx(1.d0,0.d0), &
+  epsilon,ng,chi0m,ng,dcmplx(0.d0,0.d0),mtrx1,ng)
 ! save chi
 f_response_(f_chi)=mtrx1(igq0,igq0)
 ! save epsilon_eff
@@ -96,28 +97,28 @@ if (screened_w) then
 ! compute screened Coulomb potential: vscr=vbare+vbare*chi*vbare
   krnl_scr=krnl
 ! compute zm2=chi*v
-  call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
-    mtrx1,ngvecchi,krnl,ngvecchi,dcmplx(0.d0,0.d0),zm2,ngvecchi)
+  call zgemm('N','N',ng,ng,ng,dcmplx(1.d0,0.d0), &
+    mtrx1,ng,krnl,ng,dcmplx(0.d0,0.d0),zm2,ng)
 ! compute krnl_scr=v*zm2
-  call zgemm('N','N',ngvecchi,ngvecchi,ngvecchi,dcmplx(1.d0,0.d0), &
-    krnl,ngvecchi,zm2,ngvecchi,dcmplx(1.d0,0.d0),krnl_scr,ngvecchi)
+  call zgemm('N','N',ng,ng,ng,dcmplx(1.d0,0.d0), &
+    krnl,ng,zm2,ng,dcmplx(1.d0,0.d0),krnl_scr,ng)
 ! compute screened Coulomb potential using "symmetrized" dielectric function
-  do ig1=1,ngvecchi
-    do ig2=1,ngvecchi
+  do ig1=1,ng
+    do ig2=1,ng
       epsilon(ig1,ig2)=-vcgq(ig1)*chi0m(ig1,ig2)*vcgq(ig2)
     enddo
     epsilon(ig1,ig1)=dcmplx(1.d0,0.d0)+epsilon(ig1,ig1)
   enddo
-  call invzge(epsilon,ngvecchi)
-  do ig1=1,ngvecchi
-    do ig2=1,ngvecchi
+  call invzge(epsilon,ng)
+  do ig1=1,ng
+    do ig2=1,ng
       zm1(ig1,ig2)=vcgq(ig1)*epsilon(ig1,ig2)*vcgq(ig2)
     enddo
   enddo
 ! compute difference
   d1=0.d0
-  do ig1=1,ngvecchi
-    do ig2=1,ngvecchi
+  do ig1=1,ng
+    do ig2=1,ng
       d1=d1+abs(krnl_scr(ig1,ig2)-zm1(ig1,ig2))
     enddo
   enddo

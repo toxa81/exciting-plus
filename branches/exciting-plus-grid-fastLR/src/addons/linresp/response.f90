@@ -20,6 +20,8 @@ complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: pmat(:,:,:,:)
 
 integer i,j,n,ik,ikloc,ik1,isym,idx0,ivq1,ivq2,iq,ig
+integer iv(3),n1,n2
+logical l1
 integer sz,nvq0loc,i1,i2,i3
 character*100 qnm
 real(8) w2,t1
@@ -132,8 +134,8 @@ if (crpa) then
 endif
 ! todo: put warnings to output
 if (crpa) then
-  maxomega=0.d0
-  domega=1.d0
+!  maxomega=0.d0
+!  domega=1.d0
   nfxca=1
   fxca0=0.d0
   fxca1=0.d0
@@ -400,6 +402,69 @@ if (task.eq.400.or.task.eq.403) then
   endif  
 endif !task.eq.400.or.task.eq.403
 
+if (wannier_megq) then
+  if (allocated(bmegqwan)) deallocate(bmegqwan)  
+  allocate(bmegqwan(2,nwann*nwann))
+  bmegqwan=0
+  nmegqwan=0
+  do n1=1,nwann
+    do n2=1,nwann
+      l1=.false.
+! for integer occupancy numbers take only transitions between occupied and empty bands
+      if (wann_diel().and.(abs(wann_occ(n1)-wann_occ(n2)).gt.1d-8)) l1=.true.
+! for fractional occupancies or cRPA calculation take all transitions
+      if (.not.wann_diel().or.crpa) l1=.true.
+      if (l1) then
+        nmegqwan=nmegqwan+1
+        bmegqwan(1,nmegqwan)=n1
+        bmegqwan(2,nmegqwan)=n2
+      endif
+    enddo
+  enddo
+! list of translations
+  ntrmegqwan=(2*megqwan_maxtr+1)**3
+  if (allocated(itrmegqwan)) deallocate(itrmegqwan)
+  allocate(itrmegqwan(3,ntrmegqwan))
+  i=0
+  do i1=-megqwan_maxtr,megqwan_maxtr
+    do i2=-megqwan_maxtr,megqwan_maxtr
+      do i3=-megqwan_maxtr,megqwan_maxtr
+        i=i+1
+        itrmegqwan(:,i)=(/i1,i2,i3/)
+      enddo
+    enddo
+  enddo
+endif
+
+if (wannier_chi0_chi) then
+  ntrchi0wan=(4*megqwan_maxtr+1)**3
+  allocate(itrchi0wan(3,ntrchi0wan))
+  i=0
+  do i1=-2*megqwan_maxtr,2*megqwan_maxtr
+    do i2=-2*megqwan_maxtr,2*megqwan_maxtr
+      do i3=-2*megqwan_maxtr,2*megqwan_maxtr
+        i=i+1
+        itrchi0wan(:,i)=(/i1,i2,i3/)
+      enddo
+    enddo
+  enddo
+  allocate(itridxwan(ntrmegqwan,ntrmegqwan))
+  itridxwan=-1
+  do n1=1,ntrmegqwan
+    do n2=1,ntrmegqwan
+      iv(:)=itrmegqwan(:,n1)-itrmegqwan(:,n2)
+      do i=1,ntrchi0wan
+        if (itrchi0wan(1,i).eq.iv(1).and.&
+            itrchi0wan(2,i).eq.iv(2).and.&
+            itrchi0wan(3,i).eq.iv(3)) then
+          itridxwan(n1,n2)=i
+        endif
+      enddo
+    enddo
+  enddo
+endif !wannier_chi0_chi
+
+
 ! distribute q-vectors along 3-rd dimention
 nvq0loc=mpi_grid_map(nvq0,dim3,offs=idx0)
 ivq1=idx0+1
@@ -447,19 +512,19 @@ endif
 !-----------------------------!
 !    task 402: compute chi    !
 !-----------------------------!
-if (task.eq.402) then
-! calculate chi
-  call timer_start(12,reset=.true.)
-  do iq=ivq1,ivq2
-    call genchi(ivq0m_list(1,iq))
-  enddo
-  call timer_stop(12)
-  if (wproc1) then
-    write(151,*)    
-    write(151,'("Total time for chi : ",F8.2," seconds")')timer_get_value(12)
-    call flushifc(151)
-  endif
-endif
+!if (task.eq.402) then
+!! calculate chi
+!  call timer_start(12,reset=.true.)
+!  do iq=ivq1,ivq2
+!    call genchi(ivq0m_list(1,iq))
+!  enddo
+!  call timer_stop(12)
+!  if (wproc1) then
+!    write(151,*)    
+!    write(151,'("Total time for chi : ",F8.2," seconds")')timer_get_value(12)
+!    call flushifc(151)
+!  endif
+!endif
 
 !------------------------------------------!
 !    task 403: compute me, chi0 and chi    !
@@ -469,7 +534,6 @@ if (task.eq.403) then
     call genmegq(ivq0m_list(1,iq),wfsvmtloc,wfsvitloc,ngknr, &
       igkignr,pmat)
     call genchi0(ivq0m_list(1,iq))
-    if (.not.crpa) call genchi(ivq0m_list(1,iq))
   enddo
   call mpi_grid_barrier()
   if (crpa.and.mpi_grid_root()) call response_u

@@ -15,19 +15,13 @@ complex(8), intent(in) :: pmat(3,nstsv,nstsv,nkptnrloc)
 integer, allocatable :: igkignr2(:)
 complex(8), allocatable :: wfsvmt2(:,:,:,:,:)
 complex(8), allocatable :: wfsvit2(:,:,:)
-
 integer i,ikstep,sz,complete
 integer ngknr2
-
 integer nkstep
 real(8) t1,t2,t3,t4,t5,dn1
-
 integer lmaxexp,lmmaxexp
-
 character*100 :: qnm,fout,fme,fu
-
 logical exist
-
 
 ! comment:
 ! the subroutine computes <psi_{n,k}|e^{-i(G+q)x}|psi_{n',k+q}> 
@@ -149,7 +143,6 @@ endif
 
 if (write_megq_file) call write_me_header(qnm)
 
-
 allocate(wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
 allocate(wfsvit2(ngkmax,nspinor,nstsv))
 allocate(igkignr2(ngkmax))
@@ -227,33 +220,9 @@ if (write_megq_file) then
   if (wproc) write(150,'(" Done in : ",F8.2)')timer_get_value(3)
 endif  
 
-! deallocate arrays if we saved the ME file
-if (write_megq_file) then
-  deallocate(megqblh)
-  deallocate(nmegqblh)
-  deallocate(bmegqblh)
-  deallocate(idxkq)
-  if (wannier_megq) then
-    deallocate(bmegqwan)
-    deallocate(itrmegqwan)
-    deallocate(megqwan)
-  endif
-endif
-
 deallocate(wfsvmt2)
 deallocate(wfsvit2)
 deallocate(igkignr2)
-!deallocate(ngntuju)
-!deallocate(gntuju)
-!deallocate(igntuju)
-!if (spinpol) then
-!  deallocate(spinor_ud)
-!endif
-
-!if (wannier_megq) then
-!  deallocate(nmegqblhwan)
-!  deallocate(imegqblhwan)
-!endif
 
 if (mpi_grid_root((/dim_k,dim_b/)).and.write_megq_file) then
   complete=1
