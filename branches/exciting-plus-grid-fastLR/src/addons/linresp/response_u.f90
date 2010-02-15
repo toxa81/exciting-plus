@@ -14,6 +14,8 @@ allocate(uscrn(nwann,nwann))
 allocate(ubare(nwann,nwann))
 allocate(z1(nwann,nwann))
 allocate(z2(nwann,nwann))
+if (allocated(lr_w)) deallocate(lr_w)
+allocate(lr_w(nepts))
 
 open(150,file='crpa.dat',status='replace',form='formatted')
 do ie=1,nepts
@@ -24,6 +26,7 @@ do ie=1,nepts
     call qname(ivq0m_list(:,iq),qnm)
     qnm="./"//trim(qnm)//"/"//trim(qnm)
     fname=trim(qnm)//"_lr.hdf5"
+    call read_real8(lr_w(ie)*ha2ev,2,trim(fname),c12,'w')
     call read_real8_array(z1,3,(/2,nwann,nwann/),trim(fname),c12,'uscrn')
     uscrn=uscrn+z1
     ubare=ubare+z2
@@ -31,12 +34,13 @@ do ie=1,nepts
   uscrn=uscrn/nvq0
   ubare=ubare/nvq0
 
-  uavg=0.d0
-  do i=1,nwann
-    uavg=uavg+dreal(uscrn(i,i))
-  enddo
-  uavg=uavg/nwann
-  write(150,'(2G18.10)')1.d0*ie,uavg
+  uavg=sum(dreal(uscrn(:,:)))
+!  uavg=0.d0
+!  do i=1,nwann
+!    uavg=uavg+dreal(uscrn(i,i))
+!  enddo
+  uavg=uavg/nwann/nwann
+  write(150,'(2G18.10)')dreal(lr_w(ie)),uavg
 enddo
 close(150)
 

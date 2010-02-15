@@ -191,7 +191,6 @@ firstwf=1
 lr_e1=-100.1d0
 lr_e2=100.1d0
 wannier_lc=.false.
-lwannopt=.false.
 megqwan_maxtr=0
 megqwan_cutoff=-0.1d0
 megqwan_maxdist=0.1d0

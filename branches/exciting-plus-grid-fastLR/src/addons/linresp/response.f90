@@ -17,7 +17,6 @@ complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
 complex(8), allocatable :: wfsvitloc(:,:,:,:)
 complex(8), allocatable :: wfsvcgloc(:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
-complex(8), allocatable :: pmat(:,:,:,:)
 
 integer i,j,n,ik,ikloc,ik1,isym,idx0,ivq1,ivq2,iq,ig
 integer iv(3),n1,n2
@@ -25,7 +24,7 @@ logical l1
 integer sz,nvq0loc,i1,i2,i3
 character*100 qnm
 real(8) w2,t1
-logical lgamma,lpmat,wproc1
+logical lgamma,wproc1
 logical, external :: wann_diel
 
 ! comment: after all new implementations (response in WF, cRPA,
@@ -65,7 +64,7 @@ if (lrtype.eq.1.and..not.spinpol) then
   write(*,*)
   call pstop
 endif
-if (nvq0.eq.0) then
+if (nvq0.eq.0.and..not.crpa) then
   write(*,*)
   write(*,'("Error(response): no q-vectors")')
   write(*,*)
@@ -80,14 +79,8 @@ endif
 
 if (.not.wannier) then
   wannier_chi0_chi=.false.
-  lwannopt=.false.
   crpa=.false.
 endif
-lpmat=.false.
-!if (lwannopt.or.crpa) lpmat=.true.
-do j=1,nvq0
-  if (ivq0m_list(1,j).eq.0.and.ivq0m_list(2,j).eq.0.and.ivq0m_list(3,j).eq.0) lpmat=.true.
-enddo
 ! set the switch to write matrix elements
 write_megq_file=.true.
 if (task.eq.403) write_megq_file=.false.
@@ -249,9 +242,6 @@ if (task.eq.400.or.task.eq.403) then
   allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptnrloc))
   allocate(evecsvloc(nstsv,nstsv,nkptnrloc))
   allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-  if (lpmat) then
-    allocate(pmat(3,nstsv,nstsv,nkptnrloc))
-  endif
   if (wproc1) then
     sz=lmmaxvr*nrfmax*natmtot*nstsv*nspinor
     sz=sz+ngkmax*nstsv*nspinor
@@ -302,10 +292,6 @@ if (task.eq.400.or.task.eq.403) then
 !      ylmgknr(1,1,ikloc),sfacgknr(1,1,ikloc),wfsvmtloc(1,1,1,1,1,ikloc), &
 !        wfsvitloc(1,1,1,ikloc),wfsvcgloc(1,1,1,ikloc))
 !        call pstop
-    if (lpmat) then
-      call genpmat(ngknr(ikloc),igkignr(1,ikloc),vgkcnr(1,1,ikloc),&
-        apwalm,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),pmat(1,1,1,ikloc))
-    endif
   enddo !ikloc
   call timer_stop(1)
   if (wproc1) then
@@ -464,6 +450,22 @@ if (wannier_chi0_chi) then
   enddo
 endif !wannier_chi0_chi
 
+! setup energy mesh
+nepts=1+int(maxomega/domega)
+if (allocated(lr_w)) deallocate(lr_w)
+allocate(lr_w(nepts))
+do i=1,nepts
+  lr_w(i)=dcmplx(domega*(i-1),lr_eta)/ha2ev
+enddo
+
+if (crpa) then
+  if (allocated(uscrnwan)) deallocate(uscrnwan)
+  allocate(uscrnwan(nwann,nwann,nepts))
+  uscrnwan=zzero
+  if (allocated(ubarewan)) deallocate(ubarewan)
+  allocate(ubarewan(nwann,nwann))
+  ubarewan=zzero
+endif
 
 ! distribute q-vectors along 3-rd dimention
 nvq0loc=mpi_grid_map(nvq0,dim3,offs=idx0)
@@ -479,7 +481,7 @@ if (task.eq.400) then
   if (wproc1) call timestamp(151,txt='start genmegq')
   do iq=ivq1,ivq2
     call genmegq(ivq0m_list(1,iq),wfsvmtloc,wfsvitloc,ngknr, &
-      igkignr,pmat)
+      igkignr)
   enddo
   call timer_stop(10)
   if (wproc1) call timestamp(151,txt='stop genmegq')
@@ -532,16 +534,27 @@ endif
 if (task.eq.403) then
   do iq=ivq1,ivq2
     call genmegq(ivq0m_list(1,iq),wfsvmtloc,wfsvitloc,ngknr, &
-      igkignr,pmat)
+      igkignr)
     call genchi0(ivq0m_list(1,iq))
-  enddo
+  enddo  
   call mpi_grid_barrier()
-  if (crpa.and.mpi_grid_root()) call response_u
+  if (crpa) then
+    uscrnwan=ha2ev*uscrnwan/omega/nvq0
+    ubarewan=ha2ev*ubarewan/omega/nvq0
+  endif
+  open(150,file='crpa.dat',status='replace',form='formatted')
+  do i=1,nepts
+    write(150,'(2G18.10)')dreal(lr_w(i)),sum(dreal(uscrnwan(:,:,i)))/nwann/nwann
+  enddo
+  close(150)
+  
+
+
+
+  !if (crpa.and.mpi_grid_root()) call response_u
 endif
 
 if (wproc1) close(151)
-
-if (task.eq.400.and.lpmat) deallocate(pmat)
 
 if (task.eq.400.or.task.eq.403) then
   deallocate(wfsvmtloc)

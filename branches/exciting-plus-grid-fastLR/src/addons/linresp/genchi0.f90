@@ -87,14 +87,6 @@ if (wproc) then
   call flushifc(150)
 endif
   
-! setup energy mesh
-nepts=1+int(maxomega/domega)
-if (allocated(lr_w)) deallocate(lr_w)
-allocate(lr_w(nepts))
-do i=1,nepts
-  lr_w(i)=dcmplx(domega*(i-1),lr_eta)/ha2ev
-enddo
-
 ! setup sqrt(4Pi)/|G+q| array
 allocate(vcgq(ngvecme))
 do ig=1,ngvecme
@@ -304,7 +296,7 @@ if (allocated(f_response)) deallocate(f_response)
 allocate(f_response(nf_response,nepts,nfxca))
 f_response=zzero
 
-if (mpi_grid_root(dims=(/dim_k,dim_b/))) call write_lr_header(qnm)
+!if (mpi_grid_root(dims=(/dim_k,dim_b/))) call write_lr_header(qnm)
 
 ! distribute nfxca between 2-nd dimension 
 bs=mpi_grid_map(nfxca,dim_b,offs=idx0)

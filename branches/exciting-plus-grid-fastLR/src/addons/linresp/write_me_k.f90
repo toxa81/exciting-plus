@@ -1,11 +1,10 @@
-subroutine write_me_k(ikloc,fname,me,pmat)
+subroutine write_me_k(ikloc,fname,me)
 #ifdef _HDF5_
 use modmain
 implicit none
 integer, intent(in) :: ikloc
 character*(*), intent(in) :: fname 
 complex(8), intent(in) :: me(ngvecme,nmegqblhmax)
-complex(8), intent(in) :: pmat(3,nstsv,nstsv)
 
 character*100 path
 integer ik
@@ -25,10 +24,6 @@ if (wannier_megq) then
   call write_real8_array(wann_c(1,1,ikloc+nkptnrloc),3,(/2,nwann,nstsv/), &
     trim(fname),trim(path),'wann_c_kq')
 endif   
-if (lwannopt) then
-  call write_real8_array(pmat,4,(/2,3,nstsv,nstsv/),&
-    trim(fname),trim(path),'pmat')
-endif
 #endif
 return
 end

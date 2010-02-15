@@ -9,8 +9,8 @@ character(*), intent(in) :: qnm
 
 complex(8), allocatable :: epsilon(:,:)
 complex(8), allocatable :: mtrx1(:,:)
-complex(8), allocatable :: uscrn(:,:)
-complex(8), allocatable :: ubare(:,:)
+!complex(8), allocatable :: uscrn(:,:)
+!complex(8), allocatable :: ubare(:,:)
 integer ig1,ig2,n1,n2
 integer it1,i,j
 character*100 fname
@@ -59,33 +59,32 @@ do i=1,ntrmegqwan
     exit
   endif
 enddo
-allocate(uscrn(nwann,nwann))
-allocate(ubare(nwann,nwann))
-uscrn=zzero
+!allocate(uscrn(nwann,nwann))
+!allocate(ubare(nwann,nwann))
+!uscrn=zzero
 ! compute screened u
 do ig1=1,ng
   do ig2=1,ng
     do n1=1,nwann
       do n2=1,nwann
-        uscrn(n1,n2)=uscrn(n1,n2)+dconjg(megqwan(imegqwan(n1,n1),it1,ig1))*&
+        uscrnwan(n1,n2,iw)=uscrnwan(n1,n2,iw)+dconjg(megqwan(imegqwan(n1,n1),it1,ig1))*&
           mtrx1(ig1,ig2)*megqwan(imegqwan(n2,n2),it1,ig2)
       enddo
     enddo
   enddo
 enddo
 ! compute bare u
-ubare=zzero
-do ig1=1,ng
-  do n1=1,nwann
-    do n2=1,nwann
-      ubare(n1,n2)=ubare(n1,n2)+dconjg(megqwan(imegqwan(n1,n1),it1,ig1))*&
-        (vcgq(ig1)**2)*megqwan(imegqwan(n2,n2),it1,ig1)
+!ubare=zzero
+if (iw.eq.1) then
+  do ig1=1,ng
+    do n1=1,nwann
+      do n2=1,nwann
+        ubarewan(n1,n2)=ubarewan(n1,n2)+dconjg(megqwan(imegqwan(n1,n1),it1,ig1))*&
+          (vcgq(ig1)**2)*megqwan(imegqwan(n2,n2),it1,ig1)
+      enddo
     enddo
   enddo
-enddo
-uscrn=ha2ev*uscrn/omega
-ubare=ha2ev*ubare/omega
-
+endif
 
 ! write block of W matrix
 !if (ng.gt.10) then
@@ -133,14 +132,14 @@ ubare=ha2ev*ubare/omega
 !write(170)uscrn,ubare
 !close(170)
 
-fname=trim(qnm)//"_lr.hdf5"
-if (mpi_grid_root(dims=(/dim_k,dim_b/))) then
-  write(c12,'("/iw/",I8.8)')iw
-  call write_real8(lr_w(iw),2,trim(fname),c12,'w')
-  call write_real8_array(uscrn,3,(/2,nwann,nwann/),trim(fname),c12,'uscrn')
-endif
+!fname=trim(qnm)//"_lr.hdf5"
+!if (mpi_grid_root(dims=(/dim_k,dim_b/))) then
+!  write(c12,'("/iw/",I8.8)')iw
+!  call write_real8(lr_w(iw),2,trim(fname),c12,'w')
+!  call write_real8_array(uscrn,3,(/2,nwann,nwann/),trim(fname),c12,'uscrn')
+!endif
 
-deallocate(epsilon,mtrx1,uscrn,ubare)
+deallocate(epsilon,mtrx1)!,uscrn,ubare)
 
 return 
 end

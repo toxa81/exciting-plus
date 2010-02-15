@@ -43,6 +43,8 @@ wproc=mpi_grid_root()
 allocate(evalfv(nstfv,nspnfv,nkptloc))
 allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
 allocate(evecsvloc(nstsv,nstsv,nkptloc))
+! no band disentanglement in ground state calculation
+ldisentangle=.false. 
 ! initialise OEP variables if required
 if (xctype.lt.0) call init2
 if (wproc) then

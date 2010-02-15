@@ -1137,7 +1137,6 @@ logical screened_u
 data screened_u/.false./
 logical write_chi0_file
 
-logical lwannopt
 integer megqwan_maxtr
 real(8) megqwan_cutoff
 real(8) megqwan_maxdist
@@ -1173,6 +1172,10 @@ integer, parameter :: f_loss_wann            = 19
 
 integer, parameter :: nf_response            = 19
 complex(8), allocatable :: f_response(:,:,:)
+
+complex(8), allocatable :: uscrnwan(:,:,:)
+complex(8), allocatable :: ubarewan(:,:)
+
 
 
 

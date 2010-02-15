@@ -1,8 +1,7 @@
-subroutine write_me(qnm,pmat)
+subroutine write_me(qnm)
 use modmain
 implicit none
 character(*), intent(in) :: qnm
-complex(8), intent(in) :: pmat(3,nstsv,nstsv,nkptnrloc)
 integer ikloc,ik,i
 character*100 fme,fmek
 
@@ -13,7 +12,7 @@ if (mpi_grid_root(dims=(/dim2/))) then
     do i=0,mpi_grid_size(dim_k)-1
       if (mpi_grid_x(dim_k).eq.i) then
         do ikloc=1,nkptnrloc
-          call write_me_k(ikloc,fme,megqblh(1,1,ikloc),pmat(1,1,1,ikloc))
+          call write_me_k(ikloc,fme,megqblh(1,1,ikloc))
         enddo
       endif
       call mpi_grid_barrier(dims=(/dim_k/))
@@ -23,7 +22,7 @@ if (mpi_grid_root(dims=(/dim2/))) then
       ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
       write(fmek,'("_me_k_",I8.8)')ik
       fmek=trim(qnm)//trim(fmek)//".hdf5"
-      call write_me_k(ikloc,fmek,megqblh(1,1,ikloc),pmat(1,1,1,ikloc))
+      call write_me_k(ikloc,fmek,megqblh(1,1,ikloc))
     enddo
   endif !.not.spit_megq_file
 endif !mpi_grid_root

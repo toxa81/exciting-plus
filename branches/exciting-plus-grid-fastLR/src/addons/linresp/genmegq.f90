@@ -1,5 +1,5 @@
 #ifdef _HDF5_
-subroutine genmegq(ivq0m,wfsvmtloc,wfsvitloc,ngknr,igkignr,pmat)
+subroutine genmegq(ivq0m,wfsvmtloc,wfsvitloc,ngknr,igkignr)
 use modmain
 implicit none
 ! arguments
@@ -9,7 +9,6 @@ complex(8), intent(in) :: wfsvmtloc(lmmaxvr,nrfmax,natmtot,nspinor,nstsv,nkptnrl
 complex(8), intent(in) :: wfsvitloc(ngkmax,nspinor,nstsv,nkptnrloc)
 integer, intent(in) :: ngknr(nkptnrloc)
 integer, intent(in) :: igkignr(ngkmax,nkptnrloc)
-complex(8), intent(in) :: pmat(3,nstsv,nstsv,nkptnrloc)
 
 ! allocatable arrays
 integer, allocatable :: igkignr2(:)
@@ -215,7 +214,7 @@ if (write_megq_file) then
     write(150,'("Writing matrix elements")')
   endif
   call timer_start(3,reset=.true.)
-  call write_me(qnm,pmat)
+  call write_me(qnm)
   call timer_stop(3)
   if (wproc) write(150,'(" Done in : ",F8.2)')timer_get_value(3)
 endif  
