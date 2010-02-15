@@ -536,17 +536,21 @@ if (task.eq.403) then
     call genmegq(ivq0m_list(1,iq),wfsvmtloc,wfsvitloc,ngknr, &
       igkignr)
     call genchi0(ivq0m_list(1,iq))
-  enddo  
-  call mpi_grid_barrier()
+  enddo 
+  !call mpi_grid_barrier()
   if (crpa) then
-    uscrnwan=ha2ev*uscrnwan/omega/nvq0
-    ubarewan=ha2ev*ubarewan/omega/nvq0
+    call mpi_grid_reduce(uscrnwan(1,1,1),nwann*nwann*nepts,dims=(/dim_q/),&
+      side=.true.)
+    if (mpi_grid_root()) then
+      uscrnwan=ha2ev*uscrnwan/omega/nvq0
+      ubarewan=ha2ev*ubarewan/omega/nvq0
+      open(150,file='crpa.dat',status='replace',form='formatted')
+      do i=1,nepts
+        write(150,'(2G18.10)')dreal(lr_w(i)),sum(dreal(uscrnwan(:,:,i)))/nwann/nwann
+      enddo
+      close(150)
+    endif
   endif
-  open(150,file='crpa.dat',status='replace',form='formatted')
-  do i=1,nepts
-    write(150,'(2G18.10)')dreal(lr_w(i)),sum(dreal(uscrnwan(:,:,i)))/nwann/nwann
-  enddo
-  close(150)
   
 
 
