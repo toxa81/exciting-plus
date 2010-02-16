@@ -8,8 +8,6 @@ complex(8), intent(out) :: chi0_GqGq_wan_full
 integer ikloc,ik,it2,i1,i2,n1,n2
 real(8) vtrc(3)
 complex(8) zt1
-complex(8), allocatable :: zm1(:,:)
-complex(8), external :: zdotu
 
 chi0wan(:,:,:)=zzero
 ! zt3 is chi0_GqGq calculated using Wannier functions expansion    
@@ -35,19 +33,18 @@ chi0wan(:,:,:)=chi0wan(:,:,:)/nkptnr/omega
 !  chi0=\sum_{T,T'}\sum_{n,m,n',m'} A^{*}_{nmT}(q,Gq)*chi0wan(n,m,n',m',T-T')*A_{n'm'T'}(q,Gq)
 !  where A_{nmT}(q,G)=<n,0|e^{-i(G+q)x}|m,T>
 if (mpi_grid_root(dims=(/dim_k/))) then
-  allocate(zm1(nmegqwan,ntrmegqwan))
-  zm1(:,:)=zzero
+  chi0_GqGq_wan_full=zzero
   do i1=1,ntrmegqwan
     do n1=1,nmegqwan    
       do i2=1,ntrmegqwan
         do n2=1,nmegqwan
-          zm1(n1,i1)=zm1(n1,i1)+chi0wan(n2,n1,itridxwan(i1,i2))*dconjg(megqwan(n2,i2,igq0))
+          chi0_GqGq_wan_full=chi0_GqGq_wan_full+&
+            megqwan(n1,i1,igq0)*chi0wan(n1,n2,itridxwan(i1,i2))*&
+            dconjg(megqwan(n2,i2,igq0))
         enddo !n2
       enddo !i2
     enddo !n1
   enddo !i1
-  chi0_GqGq_wan_full=zdotu(nmegqwan*ntrmegqwan,zm1(1,1),1,megqwan(1,1,igq0),1)
-  deallocate(zm1)
 endif
 !      do i=1,ntrmegqwan
 !        do j=1,ntrmegqwan

@@ -31,7 +31,7 @@ real(8) gq0
 
 real(8) dvec(3),pos1(3),pos2(3),vtrc(3)
 integer ias1,ias2
-real(8) d
+real(8) d,t1
 
 
 logical lafm
@@ -308,12 +308,12 @@ if (wproc) then
   write(150,'("fisrt energy point : ",I4)')ie1
   call flushifc(150)
 endif
+call timer_start(1,reset=.true.)
 ! loop over energy points
 do ie=ie1,nepts
   chi0=zzero
   if (wannier_chi0_chi) chi0wan_k=zzero
-  call timer_start(1,reset=.true.)
-  call timer_start(2,reset=.true.)
+  !call timer_start(2,reset=.true.)
 ! sum over k-points
   do ikloc=1,nkptnrloc
     if (nmegqblhloc(1,ikloc).gt.0) then
@@ -325,8 +325,8 @@ do ie=ie1,nepts
       call sumchi0wan_k(ikloc,lr_w(ie),chi0wan_k(1,1,ikloc))
     endif
   enddo !ikloc
-  call timer_stop(2)
-  call timer_start(3,reset=.true.)
+  !call timer_stop(2)
+  !call timer_start(3,reset=.true.)
 ! sum over k-points and band transitions
   call mpi_grid_reduce(chi0(1,1),ngvecme*ngvecme,dims=(/dim_k,dim_b/))
   chi0=chi0/nkptnr/omega
@@ -342,7 +342,7 @@ do ie=ie1,nepts
     call genchi0wan(igq0,chi0wan_k,chi0wan,chi0_GqGq_wan_full)
     if (lafm) chi0wan(:,:,:)=chi0wan(:,:,:)*2.d0    
   endif
-  call timer_stop(3)
+  !call timer_stop(3)
 ! compute response functions
   if (mpi_grid_root(dims=(/dim_k/)).and..not.crpa) then
 ! loop over fxc
@@ -375,6 +375,7 @@ do ie=ie1,nepts
     close(160)
   endif
 enddo !ie
+call timer_stop(1)
 
 if (mpi_grid_root(dims=(/dim_k/))) then
   call mpi_grid_reduce(f_response(1,1,1),nf_response*nepts*nfxca,dims=(/dim_b/))
@@ -385,6 +386,13 @@ if (mpi_grid_root(dims=(/dim_k/))) then
     enddo
   endif
 endif
+t1=timer_get_value(1)
+if (wproc) then
+  write(150,*)
+  write(150,'("Time per frequency point : ",F8.2)')t1/nepts
+  call flushifc(150)
+endif
+
 
 call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 
