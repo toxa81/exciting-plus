@@ -19,6 +19,7 @@ integer ngknr2
 integer nkstep
 real(8) t1,t2,t3,t4,t5,dn1
 integer lmaxexp,lmmaxexp
+integer np
 character*100 :: qnm,fout,fme,fu
 logical exist
 
@@ -174,30 +175,32 @@ do ikstep=1,nkstep
 enddo !ikstep
 ! time for wave-functions send/recieve
 t1=timer_get_value(1)
+call mpi_grid_reduce(t1,dims=(/dim_k,dim_b/))
 ! total time for matrix elements calculation
 t2=timer_get_value(2)
-call mpi_grid_reduce(t2,dims=(/dim_k,dim_b/),side=.true.)
+call mpi_grid_reduce(t2,dims=(/dim_k,dim_b/))
 ! time to precompute MT
 t3=timer_get_value(3)
-call mpi_grid_reduce(t3,dims=(/dim_k,dim_b/),side=.true.)
+call mpi_grid_reduce(t3,dims=(/dim_k,dim_b/))
 ! time to precompute IT
 t4=timer_get_value(4)
-call mpi_grid_reduce(t4,dims=(/dim_k,dim_b/),side=.true.)
+call mpi_grid_reduce(t4,dims=(/dim_k,dim_b/))
 ! time to compute ME
 t5=timer_get_value(5)
-call mpi_grid_reduce(t5,dims=(/dim_k,dim_b/),side=.true.)
+call mpi_grid_reduce(t5,dims=(/dim_k,dim_b/))
 ! approximate number of matrix elements
 dn1=1.d0*nmegqblhmax*ngvecme*nkptnr
 if (wannier_megq) dn1=dn1+1.d0*nmegqwan*ntrmegqwan*ngvecme
+np=mpi_grid_size(dim_k)*mpi_grid_size(dim_b)
 if (wproc) then
   write(150,*)
-  write(150,'("Average time (seconds)")')
-  write(150,'("  send and receive wave-functions  : ",F8.2)')t1
-  write(150,'("  compute matrix elements          : ",F8.2)')t2/mpi_grid_nproc
-  write(150,'("    precompute muffin-tin part     : ",F8.2)')t3/mpi_grid_nproc
-  write(150,'("    precompute interstitial part   : ",F8.2)')t4/mpi_grid_nproc
-  write(150,'("    multiply wave-functions        : ",F8.2)')t5/mpi_grid_nproc
-  write(150,'("Speed (me/sec)                     : ",F10.2)')mpi_grid_nproc*dn1/t2
+  write(150,'("Average time (seconds/proc)")')
+  write(150,'("  send and receive wave-functions  : ",F8.2)')t1/np
+  write(150,'("  compute matrix elements          : ",F8.2)')t2/np
+  write(150,'("    precompute muffin-tin part     : ",F8.2)')t3/np
+  write(150,'("    precompute interstitial part   : ",F8.2)')t4/np
+  write(150,'("    multiply wave-functions        : ",F8.2)')t5/np
+  write(150,'("Speed (me/sec/proc)                : ",F10.2)')dn1/t2
   call flushifc(150)
 endif
 

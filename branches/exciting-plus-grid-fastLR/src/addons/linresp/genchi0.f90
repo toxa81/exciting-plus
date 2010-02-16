@@ -18,12 +18,11 @@ complex(8), allocatable :: krnl_scr(:,:)
 integer, external :: hash
 
 
-integer i,ik,ie,i1,i2,i3,ikloc,it1,n,j,bs,ifxc1,ifxc2,ifxc,idx0
+integer i,ie,i1,i2,ikloc,it1,n,j,bs,ifxc1,ifxc2,ifxc,idx0
 integer ig,igq0
-character*100 path,qnm,fout,fchi0,fu
+character*100 qnm,fout,fchi0,fu,fstat
 logical exist
-integer ie1,n1,n2,jk
-integer iv(3)
+integer ie1,n1,n2
 real(8) fxca
 
 real(8), allocatable :: vcgq(:)
@@ -49,6 +48,7 @@ if (mpi_grid_root((/dim_k,dim_b/))) then
   wproc=.true.
   fout=trim(qnm)//"_LR.OUT"
   open(150,file=trim(fout),form='formatted',status='replace')
+  fstat=trim(qnm)//"_chi0_stat.txt"
 endif
 
 if (crpa) then
@@ -369,6 +369,11 @@ do ie=ie1,nepts
       endif
     enddo
   endif  
+  if (wproc) then
+    open(160,file=trim(fstat),status='replace',form='formatted')
+    write(160,'(I8)')ie
+    close(160)
+  endif
 enddo !ie
 
 if (mpi_grid_root(dims=(/dim_k/))) then
