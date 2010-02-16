@@ -1017,15 +1017,15 @@ integer gvecme2
 integer ngvecme
 !integer ngvecmeloc
 ! first G-shell for chi
-integer gshchi1
+!integer gshchi1
 ! last G-shell for chi
-integer gshchi2
+!integer gshchi2
 ! first G-vector for chi
-integer gvecchi1
+!integer gvecchi1
 ! last G-vector for chi
-integer gvecchi2
+!integer gvecchi2
 ! number of G-vectors for chi
-integer ngvecchi
+!integer ngvecchi
 real(8) maxomega
 real(8) domega
 real(8) lr_eta

@@ -27,8 +27,8 @@ write(fout,'("#   q-vector (Cart. coord.) [1/A]    : ",3F18.10)')vq0c/au2ang
 write(fout,'("#   q-vector length         [1/A]    : ",3F18.10)') &
   sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)/au2ang
 write(fout,'("# G-vector information               : ")')
-write(fout,'("#   G-shells                         : ",2I4)')gshchi1,gshchi2
-write(fout,'("#   G-vectors                        : ",2I4)')gvecchi1,gvecchi2
+write(fout,'("#   G-shells                         : ",2I4)')gshme1,gshme2
+write(fout,'("#   G-vectors                        : ",2I4)')gvecme1,gvecme2
 write(fout,'("#   index of Gq vector               : ",I4)')igq0
 if (lrtype.eq.0) then
   write(fout,'("#")')

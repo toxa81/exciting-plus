@@ -10,16 +10,15 @@ real(8) vtrc(3)
 complex(8) zt1
 
 chi0wan(:,:,:)=zzero
-! zt3 is chi0_GqGq calculated using Wannier functions expansion    
-! todo: utilize mpi grid
+! todo: utilize second dimension
 ! loop over translations
 do it2=1,ntrchi0wan
+! translation vector
+  vtrc(:)=avec(:,1)*itrchi0wan(1,it2)+&
+          avec(:,2)*itrchi0wan(2,it2)+&
+          avec(:,3)*itrchi0wan(3,it2)
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-! translation vector
-    vtrc(:)=avec(:,1)*itrchi0wan(1,it2)+&
-            avec(:,2)*itrchi0wan(2,it2)+&
-            avec(:,3)*itrchi0wan(3,it2)
 ! phase e^{i(k+q)T}
     zt1=exp(dcmplx(0.d0,dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
 ! chi0wan=chi0wan+e^{i(k+q)T}*chi0wan_k(k)
@@ -34,37 +33,17 @@ chi0wan(:,:,:)=chi0wan(:,:,:)/nkptnr/omega
 !  where A_{nmT}(q,G)=<n,0|e^{-i(G+q)x}|m,T>
 if (mpi_grid_root(dims=(/dim_k/))) then
   chi0_GqGq_wan_full=zzero
-  do i1=1,ntrmegqwan
-    do n1=1,nmegqwan    
-      do i2=1,ntrmegqwan
-        do n2=1,nmegqwan
-          chi0_GqGq_wan_full=chi0_GqGq_wan_full+&
-            megqwan(n1,i1,igq0)*chi0wan(n1,n2,itridxwan(i1,i2))*&
-            dconjg(megqwan(n2,i2,igq0))
-        enddo !n2
-      enddo !i2
-    enddo !n1
-  enddo !i1
+!  do i1=1,ntrmegqwan
+!    do n1=1,nmegqwan    
+!      do i2=1,ntrmegqwan
+!        do n2=1,nmegqwan
+!          chi0_GqGq_wan_full=chi0_GqGq_wan_full+&
+!            megqwan(n1,i1,igq0)*chi0wan(n1,n2,itridxwan(i1,i2))*&
+!            dconjg(megqwan(n2,i2,igq0))
+!        enddo !n2
+!      enddo !i2
+!    enddo !n1
+!  enddo !i1
 endif
-!      do i=1,ntrmegqwan
-!        do j=1,ntrmegqwan
-!          if (itridxwan(i,j).eq.it2) then
-!            sz2=sz2+ntrmegqwan*ntrmegqwan
-!! loop over fraction of rows
-!            do n2=n3,n4
-!! perform column times vector multiplication
-!!  zt1_{n,m,T,T'}=\sum_{n',m'}chi0wan(n,m,n',m',T-T')*A_{n'm'T'}(q,Gq)
-!              zt1=zdotu(nmegqwan,chi0wan(1,n2,it2),1,megqwan(1,i,igq0),1)
-!! perform vector times vector multiplication
-!!  zt3=zt3+\sum_{T,T'}\sum_{n,m}A^{*}_{nmT}(q,Gq)*zt1_{n,m,T,T'}
-!              zt3=zt3+zt1*dconjg(megqwan(n2,j,igq0))
-!            enddo !n2
-!          endif
-!        enddo !j
-!      enddo !i
-!    enddo !it2
-!! sum all rows
-!    call mpi_grid_reduce(zt3,dims=(/dim1/))
-
 return
 end

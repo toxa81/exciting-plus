@@ -31,7 +31,7 @@ real(8) gq0
 
 real(8) dvec(3),pos1(3),pos2(3),vtrc(3)
 integer ias1,ias2
-real(8) d,t1
+real(8) d,t1,t2,t3,t4
 
 
 logical lafm
@@ -309,40 +309,43 @@ if (wproc) then
   call flushifc(150)
 endif
 call timer_start(1,reset=.true.)
+call timer_reset(2)
+call timer_reset(3)
+call timer_reset(4)
 ! loop over energy points
 do ie=ie1,nepts
   chi0=zzero
   if (wannier_chi0_chi) chi0wan_k=zzero
-  !call timer_start(2,reset=.true.)
 ! sum over k-points
+  call timer_start(2)
   do ikloc=1,nkptnrloc
     if (nmegqblhloc(1,ikloc).gt.0) then
 ! for each k-point : sum over interband transitions
       call sumchi0(ikloc,lr_w(ie),chi0)
     endif
-! for response in Wannier basis
-    if (wannier_chi0_chi) then
-      call sumchi0wan_k(ikloc,lr_w(ie),chi0wan_k(1,1,ikloc))
-    endif
-  enddo !ikloc
-  !call timer_stop(2)
-  !call timer_start(3,reset=.true.)
+  enddo
 ! sum over k-points and band transitions
   call mpi_grid_reduce(chi0(1,1),ngvecme*ngvecme,dims=(/dim_k,dim_b/))
   chi0=chi0/nkptnr/omega
+  call timer_stop(2)
+! for response in Wannier basis
   if (wannier_chi0_chi) then
+    call timer_start(3)
+    do ikloc=1,nkptnrloc
+      call sumchi0wan_k(ikloc,lr_w(ie),chi0wan_k(1,1,ikloc))
+    enddo !ikloc
     call mpi_grid_reduce(chi0wan_k(1,1,1),nmegqwan*nmegqwan*nkptnrloc,&
       dims=(/dim_b/))
+    call timer_stop(3)
+    call timer_start(4)
+! compute ch0 matrix in Wannier basis
+    call genchi0wan(igq0,chi0wan_k,chi0wan,chi0_GqGq_wan_full)
+    if (lafm) chi0wan(:,:,:)=chi0wan(:,:,:)*2.d0    
+    call timer_stop(4)
   endif
   if (crpa.and.mpi_grid_root(dims=(/dim_k,dim_b/))) then
     call genwu(ngvecme,ie,chi0,vcgq,qnm)
   endif
-! compute ch0 matrix in Wannier basis
-  if (mpi_grid_root((/dim_b/)).and.wannier_chi0_chi) then
-    call genchi0wan(igq0,chi0wan_k,chi0wan,chi0_GqGq_wan_full)
-    if (lafm) chi0wan(:,:,:)=chi0wan(:,:,:)*2.d0    
-  endif
-  !call timer_stop(3)
 ! compute response functions
   if (mpi_grid_root(dims=(/dim_k/)).and..not.crpa) then
 ! loop over fxc
@@ -387,9 +390,15 @@ if (mpi_grid_root(dims=(/dim_k/))) then
   endif
 endif
 t1=timer_get_value(1)
+t2=timer_get_value(2)
+t3=timer_get_value(3)
+t4=timer_get_value(4)
 if (wproc) then
   write(150,*)
-  write(150,'("Time per frequency point : ",F8.2)')t1/nepts
+  write(150,'("Total time per frequency point : ",F8.2)')t1/nepts
+  write(150,'("  Bloch basis part   : ",F8.2)')t2/nepts
+  write(150,'("  Wannier basis part (chi0wan_k) : ",F8.2)')t3/nepts
+  write(150,'("  Wannier basis part (chi0wan)   : ",F8.2)')t4/nepts  
   call flushifc(150)
 endif
 
