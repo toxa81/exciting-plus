@@ -15,6 +15,7 @@ complex(8) :: chi0_GqGq_wan_full
 complex(8), allocatable :: ixcft(:)
 complex(8), allocatable :: krnl(:,:)
 complex(8), allocatable :: krnl_scr(:,:)
+complex(8), allocatable :: mexp(:,:)
 integer, external :: hash
 
 
@@ -22,7 +23,7 @@ integer i,ie,i1,i2,ikloc,it1,n,j,bs,ifxc1,ifxc2,ifxc,idx0
 integer ig,igq0
 character*100 qnm,fout,fchi0,fu,fstat
 logical exist
-integer ie1,n1,n2
+integer ie1,n1,n2,it2,ik
 real(8) fxca
 
 real(8), allocatable :: vcgq(:)
@@ -272,6 +273,17 @@ if (wannier_chi0_chi) then
     enddo
   enddo
   if (wproc) call flushifc(150)
+  allocate(mexp(nkptnrloc,ntrchi0wan))
+  do it2=1,ntrchi0wan
+! translation vector
+    vtrc(:)=avec(:,1)*itrchi0wan(1,it2)+&
+            avec(:,2)*itrchi0wan(2,it2)+&
+            avec(:,3)*itrchi0wan(3,it2)
+    do ikloc=1,nkptnrloc
+      ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+      mexp(ikloc,it2)=exp(dcmplx(0.d0,dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
+    enddo
+  enddo
 endif !wannier_chi0_chi
 
 if (crpa) then
@@ -339,7 +351,7 @@ do ie=ie1,nepts
     call timer_stop(3)
     call timer_start(4)
 ! compute ch0 matrix in Wannier basis
-    call genchi0wan(igq0,chi0wan_k,chi0wan,chi0_GqGq_wan_full)
+    call genchi0wan(igq0,mexp,chi0wan_k,chi0wan,chi0_GqGq_wan_full)
     if (lafm) chi0wan(:,:,:)=chi0wan(:,:,:)*2.d0    
     call timer_stop(4)
   endif
@@ -414,6 +426,7 @@ if (wannier_chi0_chi) then
   deallocate(imegqwan2)
   deallocate(megqwan2)
   deallocate(vcwan)
+  deallocate(mexp)
 endif
 if (crpa) then
   deallocate(imegqwan)

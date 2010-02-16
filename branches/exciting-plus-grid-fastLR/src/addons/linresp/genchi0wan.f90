@@ -1,30 +1,36 @@
-subroutine genchi0wan(igq0,chi0wan_k,chi0wan,chi0_GqGq_wan_full)
+subroutine genchi0wan(igq0,mexp,chi0wan_k,chi0wan,chi0_GqGq_wan_full)
 use modmain
 implicit none
 integer, intent(in) :: igq0
 complex(8), intent(in) :: chi0wan_k(nmegqwan,nmegqwan,nkptnrloc)
+complex(8), intent(in) :: mexp(nkptnrloc,ntrchi0wan)
 complex(8), intent(out) :: chi0wan(nmegqwan,nmegqwan,ntrchi0wan)
 complex(8), intent(out) :: chi0_GqGq_wan_full
 integer ikloc,ik,it2,i1,i2,n1,n2
 real(8) vtrc(3)
 complex(8) zt1
+!complex(8), allocatable :: mexp(:,:)
 
-chi0wan(:,:,:)=zzero
+call zgemm('N','N',nmegqwan*nmegqwan,ntrchi0wan,nkptnrloc,zone,chi0wan_k,&
+  nmegqwan*nmegqwan,mexp,nkptnrloc,zzero,chi0wan,nmegqwan*nmegqwan)
+
+
+!chi0wan(:,:,:)=zzero
 ! todo: utilize second dimension
 ! loop over translations
-do it2=1,ntrchi0wan
-! translation vector
-  vtrc(:)=avec(:,1)*itrchi0wan(1,it2)+&
-          avec(:,2)*itrchi0wan(2,it2)+&
-          avec(:,3)*itrchi0wan(3,it2)
-  do ikloc=1,nkptnrloc
-    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-! phase e^{i(k+q)T}
-    zt1=exp(dcmplx(0.d0,dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
-! chi0wan=chi0wan+e^{i(k+q)T}*chi0wan_k(k)
-    call zaxpy(nmegqwan*nmegqwan,zt1,chi0wan_k(1,1,ikloc),1,chi0wan(1,1,it2),1)
-  enddo !ikloc
-enddo !it2
+!do it2=1,ntrchi0wan
+!! translation vector
+!  vtrc(:)=avec(:,1)*itrchi0wan(1,it2)+&
+!          avec(:,2)*itrchi0wan(2,it2)+&
+!          avec(:,3)*itrchi0wan(3,it2)
+!  do ikloc=1,nkptnrloc
+!    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+!! phase e^{i(k+q)T}
+!    zt1=exp(dcmplx(0.d0,dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
+!! chi0wan=chi0wan+e^{i(k+q)T}*chi0wan_k(k)
+!    call zaxpy(nmegqwan*nmegqwan,zt1,chi0wan_k(1,1,ikloc),1,chi0wan(1,1,it2),1)
+!  enddo !ikloc
+!enddo !it2
 ! sum chi0wan over all k-points
 call mpi_grid_reduce(chi0wan(1,1,1),nmegqwan*nmegqwan*ntrchi0wan,dims=(/dim_k/))
 chi0wan(:,:,:)=chi0wan(:,:,:)/nkptnr/omega
@@ -45,5 +51,6 @@ if (mpi_grid_root(dims=(/dim_k/))) then
 !    enddo !n1
 !  enddo !i1
 endif
+!deallocate(mexp)
 return
 end
