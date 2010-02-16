@@ -53,7 +53,7 @@ do ikloc=1,nkptnrloc
       le1=bndint(ist1,lr_evalsvnr(ist1,ik),lr_e1,lr_e2)
       le2=bndint(ist2,lr_evalsvnr(ist2,jk),lr_e1,lr_e2)
       d1=lr_occsvnr(ist1,ik)-lr_occsvnr(ist2,jk)
-      ldocc=abs(d1).gt.1d-5
+      ldocc=abs(d1).gt.1d-12
       laddme=.false.
 ! comment:
 !   include transition between bands ist1 and ist2 when:

@@ -43,7 +43,7 @@ do ig1=1,ng
   do ig2=1,ng
     epsilon(ig1,ig2)=-vcgq(ig1)*chi0(ig1,ig2)*vcgq(ig2)
   enddo
-  epsilon(ig1,ig1)=dcmplx(1.d0,0.d0)+epsilon(ig1,ig1)
+  epsilon(ig1,ig1)=zone+epsilon(ig1,ig1)
 enddo
 call invzge(epsilon,ng)
 do ig1=1,ng

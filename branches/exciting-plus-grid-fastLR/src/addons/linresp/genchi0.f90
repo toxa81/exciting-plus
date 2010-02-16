@@ -321,17 +321,22 @@ do ie=ie1,nepts
       call sumchi0(ikloc,lr_w(ie),chi0)
     endif
 ! for response in Wannier basis
-    if (wannier_chi0_chi) call sumchi0wan_k(ikloc,lr_w(ie),chi0wan_k(1,1,ikloc))
+    if (wannier_chi0_chi) then
+      call sumchi0wan_k(ikloc,lr_w(ie),chi0wan_k(1,1,ikloc))
+    endif
   enddo !ikloc
   call timer_stop(2)
   call timer_start(3,reset=.true.)
 ! sum over k-points and band transitions
   call mpi_grid_reduce(chi0(1,1),ngvecme*ngvecme,dims=(/dim_k,dim_b/))
   chi0=chi0/nkptnr/omega
-  if (wannier_chi0_chi) call mpi_grid_reduce(chi0wan_k(1,1,1), &
-    nmegqwan*nmegqwan*nkptnrloc,dims=(/dim_b/))
-  if (crpa.and.mpi_grid_root(dims=(/dim_k,dim_b/))) &
+  if (wannier_chi0_chi) then
+    call mpi_grid_reduce(chi0wan_k(1,1,1),nmegqwan*nmegqwan*nkptnrloc,&
+      dims=(/dim_b/))
+  endif
+  if (crpa.and.mpi_grid_root(dims=(/dim_k,dim_b/))) then
     call genwu(ngvecme,ie,chi0,vcgq,qnm)
+  endif
 ! compute ch0 matrix in Wannier basis
   if (mpi_grid_root((/dim_b/)).and.wannier_chi0_chi) then
     call genchi0wan(igq0,chi0wan_k,chi0wan,chi0_GqGq_wan_full)
