@@ -32,7 +32,7 @@ real(8) gq0
 
 real(8) dvec(3),pos1(3),pos2(3),vtrc(3)
 integer ias1,ias2
-real(8) d,t1,t2,t3,t4
+real(8) d,t1,t2,t3,t4,t5,t6,t7
 
 
 logical lafm
@@ -228,10 +228,10 @@ if (wannier_chi0_chi) then
           if (sum(abs(megqwan2(n,it1,:))).gt.1d-16) then
             write(150,'("  transition ",I4," between wfs : ",2I4,"  distance: ",F12.6)')&
               n,bmegqwan(1,n),bmegqwan(2,n),d
-            do ig=1,ngvecme
-              write(150,'("    ig : ",I4," mewf=(",2F12.6,"), |mewf|=",F12.6)')&
-                ig,megqwan2(n,it1,ig),abs(megqwan2(n,it1,ig))
-            enddo
+            !do ig=1,ngvecme
+            !  write(150,'("    ig : ",I4," mewf=(",2F12.6,"), |mewf|=",F12.6)')&
+            !    ig,megqwan2(n,it1,ig),abs(megqwan2(n,it1,ig))
+            !enddo
           endif
         enddo !n
       endif
@@ -324,6 +324,8 @@ call timer_start(1,reset=.true.)
 call timer_reset(2)
 call timer_reset(3)
 call timer_reset(4)
+call timer_reset(5)
+call timer_reset(6)
 ! loop over energy points
 do ie=ie1,nepts
   chi0=zzero
@@ -356,7 +358,9 @@ do ie=ie1,nepts
     call timer_stop(4)
   endif
   if (crpa.and.mpi_grid_root(dims=(/dim_k,dim_b/))) then
+    call timer_start(5)
     call genwu(ngvecme,ie,chi0,vcgq,qnm)
+    call timer_stop(5)
   endif
 ! compute response functions
   if (mpi_grid_root(dims=(/dim_k/)).and..not.crpa) then
@@ -375,12 +379,16 @@ do ie=ie1,nepts
           endif
         enddo
       endif !lrtype.eq.0 
+      call timer_start(6)
       call solve_chi(ngvecme,igq0,vcgq,lr_w(ie),chi0,krnl,krnl_scr, &
         f_response(1,ie,ifxc))
+      call timer_stop(6)
       if (wannier_chi0_chi.and.ifxc.eq.1) then
+        call timer_start(7)
         call solve_chi_wan(igq0,vcgq,lr_w(ie),nmegqwan2,imegqwan2,megqwan2,vcwan,&
           chi0wan,f_response(1,ie,ifxc))
         f_response(f_chi0_wann_full,ie,ifxc)=chi0_GqGq_wan_full
+        call timer_stop(7)
       endif
     enddo
   endif  
@@ -405,12 +413,18 @@ t1=timer_get_value(1)
 t2=timer_get_value(2)
 t3=timer_get_value(3)
 t4=timer_get_value(4)
+t5=timer_get_value(5)
+t6=timer_get_value(6)
+t6=timer_get_value(7)
 if (wproc) then
   write(150,*)
-  write(150,'("Total time per frequency point : ",F8.2)')t1/nepts
-  write(150,'("  Bloch basis part   : ",F8.2)')t2/nepts
+  write(150,'("Total time per frequency point   : ",F8.2)')t1/nepts
+  write(150,'("  Bloch basis part (chi0)        : ",F8.2)')t2/nepts
+  write(150,'("  Bloch basis part (chi)         : ",F8.2)')t6/nepts  
   write(150,'("  Wannier basis part (chi0wan_k) : ",F8.2)')t3/nepts
-  write(150,'("  Wannier basis part (chi0wan)   : ",F8.2)')t4/nepts  
+  write(150,'("  Wannier basis part (chi0wan)   : ",F8.2)')t4/nepts 
+  write(150,'("  Wannier basis part (crpa)      : ",F8.2)')t5/nepts   
+  write(150,'("  Wannier basis part (chi)       : ",F8.2)')t7/nepts   
   call flushifc(150)
 endif
 

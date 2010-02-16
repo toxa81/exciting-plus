@@ -11,7 +11,7 @@ if (mpi_grid_root()) then
   ubarewan=ha2ev*ubarewan/omega/nvq0
   open(150,file='crpa.dat',status='replace',form='formatted')
   do i=1,nepts
-    write(150,'(2G18.10)')dreal(lr_w(i)),sum(dreal(uscrnwan(:,:,i)))/nwann/nwann
+    write(150,'(2G18.10)')dreal(lr_w(i))*ha2ev,sum(dreal(uscrnwan(:,:,i)))/nwann/nwann
   enddo
   close(150)
   open(150,file='CRPA_U.OUT',status='replace',form='formatted')
