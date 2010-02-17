@@ -33,5 +33,8 @@ do ikloc=1,nkptnrloc
   nmegqblhloc(2,ikloc)=i
 enddo
 nmegqblhlocmax=maxval(nmegqblhloc)
+if (wannier_megq) then
+  nmegqblhwanmax=maxval(nmegqblhwan)
+endif
 return
 end

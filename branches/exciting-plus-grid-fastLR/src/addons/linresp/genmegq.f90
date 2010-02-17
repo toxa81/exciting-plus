@@ -117,10 +117,10 @@ if (wproc) then
   write(150,*)
   write(150,'("Array size of matrix elements in Bloch basis (MB) : ",I6)')sz
   if (wannier_megq) then
-    sz=int(16.d0*nmegqwan*ntrmegqwan*ngvecme/1048576.d0)
+    sz=int(16.d0*nmegqwan*ngvecme/1048576.d0)
     write(150,*)
-    write(150,'("Number of WF transitions : ",I4)')nmegqwan
-    write(150,'("Number of WF translations : ",I4)')ntrmegqwan
+    !write(150,'("Number of WF transitions : ",I4)')nmegqwan
+    !write(150,'("Number of WF translations : ",I4)')ntrmegqwan
     write(150,'("Array size of matrix elements in Wannier basis (MB) : ",I6)')sz
   endif   
   sz=int(24.d0*ngntujumax*natmcls*ngvecme/1048576.d0)
@@ -137,8 +137,8 @@ allocate(megqblh(nmegqblhlocmax,ngvecme,nkptnrloc))
 megqblh(:,:,:)=zzero
 if (wannier_megq) then
   if (allocated(megqwan)) deallocate(megqwan)
-  allocate(megqwan(nmegqwan,ntrmegqwan,ngvecme))
-  megqwan(:,:,:)=zzero
+  allocate(megqwan(nmegqwan,ngvecme))
+  megqwan(:,:)=zzero
 endif
 
 if (write_megq_file) call write_me_header(qnm)
@@ -190,7 +190,7 @@ t5=timer_get_value(5)
 call mpi_grid_reduce(t5,dims=(/dim_k,dim_b/))
 ! approximate number of matrix elements
 dn1=1.d0*nmegqblhmax*ngvecme*nkptnr
-if (wannier_megq) dn1=dn1+1.d0*nmegqwan*ntrmegqwan*ngvecme
+if (wannier_megq) dn1=dn1+1.d0*nmegqwan*ngvecme
 np=mpi_grid_size(dim_k)*mpi_grid_size(dim_b)
 if (wproc) then
   write(150,*)
@@ -206,8 +206,7 @@ endif
 
 if (wannier_megq) then
 ! sum over all k-points and interband transitions to get <n,T=0|e^{-i(G+q)x|n',T'>
-  call mpi_grid_reduce(megqwan(1,1,1),nmegqwan*ntrmegqwan*ngvecme,&
-    dims=(/dim_k,dim_b/))
+  call mpi_grid_reduce(megqwan(1,1),nmegqwan*ngvecme,dims=(/dim_k,dim_b/))
   megqwan=megqwan/nkptnr
 endif
 

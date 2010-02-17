@@ -14,25 +14,25 @@ allocate(wann_c(nwann,nstsv,2*nkptnrloc))
 fme=trim(qnm)//"_me.hdf5"
 if (mpi_grid_root((/dim_k,dim_b/))) then
   call read_real8(wann_occ,nwann,trim(fme),'/wannier','wann_occ')
-  call read_integer(ntrmegqwan,1,trim(fme),'/wannier','ntrmegqwan')
+  !call read_integer(ntrmegqwan,1,trim(fme),'/wannier','ntrmegqwan')
   call read_integer(nmegqwan,1,trim(fme),'/wannier','nmegqwan')
 endif
 call mpi_grid_bcast(wann_occ(1),nwann,dims=(/dim_k,dim_b/))
-call mpi_grid_bcast(ntrmegqwan,dims=(/dim_k,dim_b/))
+!call mpi_grid_bcast(ntrmegqwan,dims=(/dim_k,dim_b/))
 call mpi_grid_bcast(nmegqwan,dims=(/dim_k,dim_b/))
 
-allocate(itrmegqwan(3,ntrmegqwan))
-allocate(megqwan(nmegqwan,ntrmegqwan,ngvecme))
-allocate(bmegqwan(2,nwann*nwann))
+!allocate(itrmegqwan(3,ntrmegqwan))
+allocate(megqwan(nmegqwan,ngvecme))
+!allocate(bmegqwan(2,nwann*nwann))
 if (mpi_grid_root((/dim_k,dim2/))) then
-  call read_integer_array(itrmegqwan,2,(/3,ntrmegqwan/),trim(fme),'/wannier','itrmegqwan')
-  call read_real8_array(megqwan,4,(/2,nmegqwan,ntrmegqwan,ngvecme/), &
+  !call read_integer_array(itrmegqwan,2,(/3,ntrmegqwan/),trim(fme),'/wannier','itrmegqwan')
+  call read_real8_array(megqwan,3,(/2,nmegqwan,ngvecme/), &
     trim(fme),'/wannier','megqwan')
-  call read_integer_array(bmegqwan,2,(/2,nmegqwan/),trim(fme),'/wannier','bmegqwan')
+  !call read_integer_array(bmegqwan,2,(/2,nmegqwan/),trim(fme),'/wannier','bmegqwan')
 endif
-call mpi_grid_bcast(itrmegqwan(1,1),3*ntrmegqwan,dims=(/dim_k,dim2/))
-call mpi_grid_bcast(bmegqwan(1,1),2*nmegqwan,dims=(/dim_k,dim2/))
-call mpi_grid_bcast(megqwan(1,1,1),nmegqwan*ntrmegqwan*ngvecme,dims=(/dim_k,dim2/))
+!call mpi_grid_bcast(itrmegqwan(1,1),3*ntrmegqwan,dims=(/dim_k,dim2/))
+!call mpi_grid_bcast(bmegqwan(1,1),2*nmegqwan,dims=(/dim_k,dim2/))
+call mpi_grid_bcast(megqwan(1,1),nmegqwan*ngvecme,dims=(/dim_k,dim2/))
 
 ! read matrix elements
 if (.not.split_megq_file) then

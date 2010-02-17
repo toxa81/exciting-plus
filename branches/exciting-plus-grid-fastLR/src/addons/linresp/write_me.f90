@@ -29,12 +29,12 @@ endif !mpi_grid_root
 
 if (wannier_megq) then
   if (mpi_grid_root((/dim_k,dim2/))) then
-    call write_integer(ntrmegqwan,1,trim(fme),'/wannier','ntrmegqwan')
+    !call write_integer(ntrmegqwan,1,trim(fme),'/wannier','ntrmegqwan')
     call write_integer(nmegqwan,1,trim(fme),'/wannier','nmegqwan')
-    call write_real8_array(megqwan,4,(/2,nmegqwan,ntrmegqwan,ngvecme/), &
+    call write_real8_array(megqwan,3,(/2,nmegqwan,ngvecme/), &
       trim(fme),'/wannier','megqwan')
-    call write_integer_array(itrmegqwan,2,(/3,ntrmegqwan/),trim(fme),'/wannier','itrmegqwan')
-    call write_integer_array(bmegqwan,2,(/2,nmegqwan/),trim(fme),'/wannier','bmegqwan')
+!    call write_integer_array(itrmegqwan,2,(/3,ntrmegqwan/),trim(fme),'/wannier','itrmegqwan')
+!    call write_integer_array(bmegqwan,2,(/2,nmegqwan/),trim(fme),'/wannier','bmegqwan')
   endif
 endif
 

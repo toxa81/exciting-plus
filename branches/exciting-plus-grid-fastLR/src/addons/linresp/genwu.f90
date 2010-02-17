@@ -52,13 +52,13 @@ do ig1=1,ng
   enddo
 enddo
 
-do i=1,ntrmegqwan
-  if (itrmegqwan(1,i).eq.0.and.itrmegqwan(2,i).eq.0.and.&
-      itrmegqwan(3,i).eq.0) then
-    it1=i
-    exit
-  endif
-enddo
+!do i=1,ntrmegqwan
+!  if (itrmegqwan(1,i).eq.0.and.itrmegqwan(2,i).eq.0.and.&
+!      itrmegqwan(3,i).eq.0) then
+!    it1=i
+!    exit
+!  endif
+!enddo
 !allocate(uscrn(nwann,nwann))
 !allocate(ubare(nwann,nwann))
 !uscrn=zzero
@@ -67,8 +67,9 @@ do ig1=1,ng
   do ig2=1,ng
     do n1=1,nwann
       do n2=1,nwann
-        uscrnwan(n1,n2,iw)=uscrnwan(n1,n2,iw)+dconjg(megqwan(imegqwan(n1,n1),it1,ig1))*&
-          mtrx1(ig1,ig2)*megqwan(imegqwan(n2,n2),it1,ig2)
+        uscrnwan(n1,n2,iw)=uscrnwan(n1,n2,iw)+&
+          dconjg(megqwan(idxmegqwan(n1,n1,0,0,0),ig1))*mtrx1(ig1,ig2)*&
+          megqwan(idxmegqwan(n2,n2,0,0,0),ig2)
       enddo
     enddo
   enddo
@@ -79,8 +80,9 @@ if (iw.eq.1) then
   do ig1=1,ng
     do n1=1,nwann
       do n2=1,nwann
-        ubarewan(n1,n2)=ubarewan(n1,n2)+dconjg(megqwan(imegqwan(n1,n1),it1,ig1))*&
-          (vcgq(ig1)**2)*megqwan(imegqwan(n2,n2),it1,ig1)
+        ubarewan(n1,n2)=ubarewan(n1,n2)+&
+          dconjg(megqwan(idxmegqwan(n1,n1,0,0,0),ig1))*(vcgq(ig1)**2)*&
+          megqwan(idxmegqwan(n1,n1,0,0,0),ig1)
       enddo
     enddo
   enddo

@@ -21,7 +21,7 @@ complex(8), allocatable :: apwalm(:,:,:,:)
 integer i,j,n,ik,ikloc,ik1,isym,idx0,ivq1,ivq2,iq,ig
 integer iv(3),n1,n2
 logical l1
-integer sz,nvq0loc,i1,i2,i3
+integer sz,nvq0loc,i1,i2,i3,ias,jas
 character*100 qnm
 real(8) w2,t1
 logical lgamma,wproc1
@@ -127,12 +127,11 @@ if (crpa) then
 endif
 ! todo: put warnings to output
 if (crpa) then
-!  maxomega=0.d0
-!  domega=1.d0
   nfxca=1
   fxca0=0.d0
   fxca1=0.d0
 endif
+if (.not.spinpol) megqwan_afm=.false.
 
 ! necessary calls before generating Bloch wave-functions 
 if (task.eq.400.or.task.eq.403) then
@@ -389,66 +388,53 @@ if (task.eq.400.or.task.eq.403) then
 endif !task.eq.400.or.task.eq.403
 
 if (wannier_megq) then
-  if (allocated(bmegqwan)) deallocate(bmegqwan)  
-  allocate(bmegqwan(2,nwann*nwann))
-  bmegqwan=0
-  nmegqwan=0
-  do n1=1,nwann
-    do n2=1,nwann
-      l1=.false.
-! for integer occupancy numbers take only transitions between occupied and empty bands
-      if (wann_diel().and.(abs(wann_occ(n1)-wann_occ(n2)).gt.1d-8)) l1=.true.
-! for fractional occupancies or cRPA calculation take all transitions
-      if (.not.wann_diel().or.crpa) l1=.true.
-      if (l1) then
-        nmegqwan=nmegqwan+1
-        bmegqwan(1,nmegqwan)=n1
-        bmegqwan(2,nmegqwan)=n2
-      endif
-    enddo
-  enddo
-! list of translations
-  ntrmegqwan=(2*megqwan_maxtr+1)**3
-  if (allocated(itrmegqwan)) deallocate(itrmegqwan)
-  allocate(itrmegqwan(3,ntrmegqwan))
-  i=0
-  do i1=-megqwan_maxtr,megqwan_maxtr
-    do i2=-megqwan_maxtr,megqwan_maxtr
-      do i3=-megqwan_maxtr,megqwan_maxtr
-        i=i+1
-        itrmegqwan(:,i)=(/i1,i2,i3/)
-      enddo
-    enddo
-  enddo
-endif
-
-if (wannier_chi0_chi) then
-  ntrchi0wan=(4*megqwan_maxtr+1)**3
-  allocate(itrchi0wan(3,ntrchi0wan))
-  i=0
-  do i1=-2*megqwan_maxtr,2*megqwan_maxtr
-    do i2=-2*megqwan_maxtr,2*megqwan_maxtr
-      do i3=-2*megqwan_maxtr,2*megqwan_maxtr
-        i=i+1
-        itrchi0wan(:,i)=(/i1,i2,i3/)
-      enddo
-    enddo
-  enddo
-  allocate(itridxwan(ntrmegqwan,ntrmegqwan))
-  itridxwan=-1
-  do n1=1,ntrmegqwan
-    do n2=1,ntrmegqwan
-      iv(:)=itrmegqwan(:,n1)-itrmegqwan(:,n2)
-      do i=1,ntrchi0wan
-        if (itrchi0wan(1,i).eq.iv(1).and.&
-            itrchi0wan(2,i).eq.iv(2).and.&
-            itrchi0wan(3,i).eq.iv(3)) then
-          itridxwan(n1,n2)=i
+  call getnghbr(megqwan_maxdist)
+  nmegqwanmax=0
+  do n=1,nwann
+    ias=iwann(1,n)
+    do i=1,nnghbr(ias)
+      do n1=1,nwann
+        jas=iwann(1,n1)
+        if (jas.eq.inghbr(1,i,ias)) then
+          nmegqwanmax=nmegqwanmax+nwannias(jas)
         endif
       enddo
     enddo
   enddo
-endif !wannier_chi0_chi
+  allocate(imegqwan(5,nmegqwanmax))
+  nmegqwan=0   
+  do n=1,nwann
+    ias=iwann(1,n)
+    do i=1,nnghbr(ias)
+      do n1=1,nwann
+        jas=iwann(1,n1)
+        if (jas.eq.inghbr(1,i,ias)) then
+          l1=.false.
+! for integer occupancy numbers take only transitions between occupied and empty bands
+          if (wann_diel().and.(abs(wann_occ(n)-wann_occ(n1)).gt.1d-8)) l1=.true.
+! for fractional occupancies or cRPA calculation take all transitions
+          if (.not.wann_diel().or.crpa) l1=.true.
+          if (l1) then
+            nmegqwan=nmegqwan+1
+            imegqwan(1,nmegqwan)=n
+            imegqwan(2,nmegqwan)=n1
+            imegqwan(3:5,nmegqwan)=inghbr(3:5,i,ias)
+          endif 
+        endif
+      enddo
+    enddo
+  enddo
+  if (wproc1) then
+    write(151,*)
+    write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
+    write(151,'("List of Wannier transitions (n n1 T) ")')
+    do i=1,nmegqwan
+      write(151,'(I4,4X,I4,4X,3I3)')imegqwan(:,i)
+    enddo
+    call timestamp(151)
+    call flushifc(151)
+  endif      
+endif
 
 ! setup energy mesh
 nepts=1+int(maxomega/domega)
