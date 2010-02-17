@@ -191,8 +191,6 @@ firstwf=1
 lr_e1=-100.1d0
 lr_e2=100.1d0
 wannier_lc=.false.
-megqwan_maxtr=0
-megqwan_cutoff=-0.1d0
 megqwan_maxdist=0.1d0
 nwann_h=0
 crpa=.false.
@@ -931,8 +929,8 @@ case('response_options')
   read(50,*,err=20) parallel_write  
 case('response_wann')
   read(50,*,err=20) wannier_chi0_chi
-  read(50,*,err=20) megqwan_maxtr
-  read(50,*,err=20) megqwan_cutoff,megqwan_maxdist  
+  read(50,*,err=20) megqwan_afm
+  read(50,*,err=20) megqwan_maxdist  
 case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_add_poco

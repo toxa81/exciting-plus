@@ -1065,7 +1065,6 @@ complex(8), allocatable :: megqblh(:,:,:)
 !   1-st index : global index of pair of bands (n,n')
 !   2-nd index : G-vector
 !   3-rd index : k-point
-complex(8), allocatable :: megqblh1(:,:,:)
 complex(8), allocatable :: megqblh2(:,:)
 ! pair of bands (n,n') for matrix elements <nk|e^{-i(G+q)x}|n'k+q> by global index
 !   1-st index :  1 -> n
@@ -1073,20 +1072,24 @@ complex(8), allocatable :: megqblh2(:,:)
 !   2-nd index : global index of pair of bands (n,n')
 !   3-rd index : k-point
 integer, allocatable :: bmegqblh(:,:,:)
-integer nmegqwan
-integer, allocatable :: bmegqwan(:,:)
-integer, allocatable :: imegqwan(:,:)
-complex(8), allocatable :: megqwan(:,:,:)
 
+logical megqwan_afm
+data megqwan_afm/.false./
+
+integer nmegqwanmax
+integer nmegqwan
+integer megqwan_tlim(2,3)
+integer, allocatable :: imegqwan(:,:)
+integer, allocatable :: idxmegqwan(:,:,:,:,:)
+complex(8), allocatable :: megqwan(:,:)
+
+integer nmegqblhwanmax
 integer, allocatable :: nmegqblhwan(:)
 integer, allocatable :: imegqblhwan(:,:)
 
-integer ntrmegqwan
-integer, allocatable :: itrmegqwan(:,:)
+complex(8), allocatable :: wann_cc(:,:,:)
+complex(8), allocatable :: wann_cc2(:,:)
 
-integer ntrchi0wan
-integer, allocatable :: itrchi0wan(:,:)
-integer, allocatable :: itridxwan(:,:)
 
 integer ngntujumax
 integer, allocatable :: ngntuju(:,:)
@@ -1137,8 +1140,7 @@ logical screened_u
 data screened_u/.false./
 logical write_chi0_file
 
-integer megqwan_maxtr
-real(8) megqwan_cutoff
+!real(8) megqwan_cutoff
 real(8) megqwan_maxdist
 
 logical crpa
@@ -1202,6 +1204,7 @@ real(8), allocatable :: wann_v(:)
 
 integer nwann
 integer, allocatable :: iwann(:,:)
+integer, allocatable :: nwannias(:)
   
 ! expansion coefficients of Wannier functions over spinor Bloch eigen-functions  
 complex(8), allocatable :: wann_c(:,:,:)
@@ -1278,7 +1281,10 @@ integer, parameter :: t_dmat=45
 
 logical wproc
 
-
+! number of nearest neighbours for each atom
+integer, allocatable :: nnghbr(:)
+! list of nearest neighbours
+integer, allocatable :: inghbr(:,:,:)
 
 
 !-----------------------!

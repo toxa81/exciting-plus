@@ -19,6 +19,9 @@ do i=1,wann_natom
 enddo
 if (allocated(iwann)) deallocate(iwann)
 allocate(iwann(4,nwann))
+if (allocated(nwannias)) deallocate(nwannias)
+allocate(nwannias(natmtot))
+nwannias=0
 
 n=0
 do i=1,wann_natom
@@ -79,6 +82,7 @@ do n=1,nwann
   lm=iwann(2,n)
   ispn=iwann(3,n)
   itype=iwann(4,n)
+  nwannias(iatom)=nwannias(iatom)+1
   write(100,'("  wf : ",I4)')n
   write(100,'("    type : ",I4)')itype
   write(100,'("    pure spinor orbital for projection : ")')
@@ -86,7 +90,6 @@ do n=1,nwann
   write(100,'("      l,m  : ",2I4)')lm2l(lm),lm-lm2l(lm)**2
   write(100,'("      ispn : ",I4)')ispn
   write(100,'("  interval : [",F8.4,",",F8.4,"]")')wann_eint(:,itype)
-!  write(100,'("    band interval : from ",I4," to ",I4)')wann_nint(:,itype)
   write(100,'("    potential : ",F8.4)')wann_v(itype)
   write(100,*)
 enddo
@@ -133,15 +136,6 @@ wann_occ=0.d0
 
 if (allocated(wf_v_mtrx)) deallocate(wf_v_mtrx)
 allocate(wf_v_mtrx(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
-
-!if (allocated(wannmt)) deallocate(wannmt)
-!allocate(wannmt(lmmaxvr,nrcmtmax,natmtot,nspinor,wann_nmax,nkptloc))
-!if (allocated(wannit)) deallocate(wannit)
-!allocate(wannit(ngrtot,nspinor,wann_nmax,nkptloc))
-
-!if (allocated(wf_p)) deallocate(wf_p)
-!allocate(wf_p(3,wf_dim,wf_dim,wann_nspin,nkpt))
-!wf_p=dcmplx(0.d0,0.d0)
 
 return
 end

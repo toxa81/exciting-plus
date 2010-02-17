@@ -433,7 +433,19 @@ if (wannier_megq) then
     enddo
     call timestamp(151)
     call flushifc(151)
-  endif      
+  endif    
+  megqwan_tlim(1,1)=minval(imegqwan(3,:))
+  megqwan_tlim(2,1)=maxval(imegqwan(3,:))
+  megqwan_tlim(1,2)=minval(imegqwan(4,:))
+  megqwan_tlim(2,2)=maxval(imegqwan(4,:))
+  megqwan_tlim(1,3)=minval(imegqwan(5,:))
+  megqwan_tlim(2,3)=maxval(imegqwan(5,:))
+  if (wproc1) then
+    write(151,*)
+    write(151,'("Translation limits : ",6I6)')megqwan_tlim(:,1), &
+      megqwan_tlim(:,2),megqwan_tlim(:,3)
+    call flushifc(151)
+  endif
 endif
 
 ! setup energy mesh
@@ -526,7 +538,11 @@ if (task.eq.403) then
   if (crpa) call write_u
 endif
 
-if (wproc1) close(151)
+if (wproc1) then
+  write(151,*)
+  write(151,'("Done.")')
+  close(151)
+endif
 
 if (task.eq.400.or.task.eq.403) then
   deallocate(wfsvmtloc)
