@@ -186,16 +186,6 @@ if (wannier_chi0_chi) then
   enddo !ikloc
 endif !wannier_chi0_chi
 
-!if (crpa) then
-!  allocate(imegqwan(nwann,nwann))
-!  imegqwan=-1
-!  do i=1,nmegqwan
-!    n1=bmegqwan(1,i)
-!    n2=bmegqwan(2,i)
-!    imegqwan(n1,n2)=i
-!  enddo  
-!endif !crpa
-
 igq0=lr_igq0-gvecme1+1
 
 ie1=1

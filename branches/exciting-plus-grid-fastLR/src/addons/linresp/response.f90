@@ -402,6 +402,7 @@ if (wannier_megq) then
     enddo
   enddo
   allocate(imegqwan(5,nmegqwanmax))
+  imegqwan=0
   nmegqwan=0   
   do n=1,nwann
     ias=iwann(1,n)
@@ -446,6 +447,13 @@ if (wannier_megq) then
       megqwan_tlim(:,2),megqwan_tlim(:,3)
     call flushifc(151)
   endif
+  allocate(idxmegqwan(nwann,nwann,megqwan_tlim(1,1):megqwan_tlim(2,1),&
+    megqwan_tlim(1,2):megqwan_tlim(2,2),megqwan_tlim(1,3):megqwan_tlim(2,3)))
+  idxmegqwan=-100
+  do i=1,nmegqwan
+    idxmegqwan(imegqwan(1,i),imegqwan(2,i),imegqwan(3,i),imegqwan(4,i),&
+      imegqwan(5,i))=i
+  enddo
 endif
 
 ! setup energy mesh

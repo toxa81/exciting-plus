@@ -9,10 +9,8 @@ character(*), intent(in) :: qnm
 
 complex(8), allocatable :: epsilon(:,:)
 complex(8), allocatable :: mtrx1(:,:)
-!complex(8), allocatable :: uscrn(:,:)
-!complex(8), allocatable :: ubare(:,:)
 integer ig1,ig2,n1,n2
-integer it1,i,j
+integer i,j
 character*100 fname
 integer, external :: hash
 character*12 c12
@@ -52,16 +50,6 @@ do ig1=1,ng
   enddo
 enddo
 
-!do i=1,ntrmegqwan
-!  if (itrmegqwan(1,i).eq.0.and.itrmegqwan(2,i).eq.0.and.&
-!      itrmegqwan(3,i).eq.0) then
-!    it1=i
-!    exit
-!  endif
-!enddo
-!allocate(uscrn(nwann,nwann))
-!allocate(ubare(nwann,nwann))
-!uscrn=zzero
 ! compute screened u
 do ig1=1,ng
   do ig2=1,ng
@@ -141,7 +129,7 @@ endif
 !  call write_real8_array(uscrn,3,(/2,nwann,nwann/),trim(fname),c12,'uscrn')
 !endif
 
-deallocate(epsilon,mtrx1)!,uscrn,ubare)
+deallocate(epsilon,mtrx1)
 
 return 
 end
