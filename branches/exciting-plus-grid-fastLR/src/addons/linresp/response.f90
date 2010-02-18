@@ -3,6 +3,11 @@ subroutine response
 use modmain
 use hdf5
 implicit none
+#ifdef _PAPI_
+include 'f90papi.h'
+real real_time,cpu_time,mflops
+integer*8 fp_ins
+#endif
 
 integer, allocatable :: ngknr(:)
 integer, allocatable :: igkignr(:,:)
@@ -27,14 +32,11 @@ real(8) w2,t1
 logical lgamma,wproc1
 logical, external :: wann_diel
 
-! comment: after all new implementations (response in WF, cRPA,
-!   band disentanglement) the code has become ugly and unreadable;
-!   it should be refactored; new hdf5 and mpi_grid interfaces are
-!   "a must"
-!
-! after some refactoring the code is still ugly; do something with wannir
-!   response
-!
+#ifdef _PAPI_
+call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
+#endif
+
+
 ! typical execution patterns
 !  I) compute and save ME (task 400), read ME, compute and save chi0 (task 401),
 !     read chi0 and compute chi (task 402)
@@ -546,8 +548,15 @@ if (task.eq.403) then
   if (crpa) call write_u
 endif
 
+#ifdef _PAPI_
+call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
+#endif
+
 if (wproc1) then
   write(151,*)
+#ifdef _PAPI_
+  write(151,'("MFlops : ",F15.3)')mflops
+#endif  
   write(151,'("Done.")')
   close(151)
 endif
