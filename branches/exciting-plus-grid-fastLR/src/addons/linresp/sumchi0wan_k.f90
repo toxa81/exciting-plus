@@ -17,16 +17,16 @@ do i1=1,nmegqblhwan(ikloc)
   wt(i1)=(lr_occsvnr(ist1,ik)-lr_occsvnr(ist2,jk))/(lr_evalsvnr(ist1,ik) - &
       lr_evalsvnr(ist2,jk)+w)
 enddo
-!do i1=1,nmegqwan
-!  wann_cc2(:,i1)=dconjg(wann_cc(:,i1,ikloc))*wt(:)
-!enddo
-!call zgemm('T','N',nmegqwan,nmegqwan,nmegqblhwan(ikloc),zone,&
-!  wann_cc(1,1,ikloc),nmegqblhwanmax,wann_cc2(1,1),nmegqblhwanmax,&
-!  zone,chi0wan_k(1,1),nmegqwan)
-do i1=1,nmegqblhwan(ikloc)
-  call zgerc(nmegqwan,nmegqwan,wt(i1),wann_cc(1,i1,ikloc),1, &
-    wann_cc(1,i1,ikloc),1,chi0wan_k,nmegqwan)
-enddo !i1
+do i1=1,nmegqwan
+  wann_cc2(:,i1)=dconjg(wann_cc(:,i1,ikloc))*wt(:)
+enddo
+call zgemm('T','N',nmegqwan,nmegqwan,nmegqblhwan(ikloc),zone,&
+  wann_cc(1,1,ikloc),nmegqblhwanmax,wann_cc2(1,1),nmegqblhwanmax,&
+  zone,chi0wan_k(1,1),nmegqwan)
+!do i1=1,nmegqblhwan(ikloc)
+!  call zgerc(nmegqwan,nmegqwan,wt(i1),wann_cc(1,i1,ikloc),1, &
+!    wann_cc(1,i1,ikloc),1,chi0wan_k,nmegqwan)
+!enddo !i1
 ! TODO: utilize second dimension
 !do i1=1,nmegqblhwan(ikloc)
 !  i=imegqblhwan(i1,ikloc)

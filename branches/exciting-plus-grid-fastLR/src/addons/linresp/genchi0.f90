@@ -163,10 +163,10 @@ if (wannier_chi0_chi) then
      enddo
    enddo
 ! arrangement for zgemm  
-!  allocate(wann_cc(nmegqblhwanmax,nmegqwan,nkptnrloc))
-!  allocate(wann_cc2(nmegqblhwanmax,nmegqwan))
+  allocate(wann_cc(nmegqblhwanmax,nmegqwan,nkptnrloc))
+  allocate(wann_cc2(nmegqblhwanmax,nmegqwan))
 ! arrangement for zgerc  
-  allocate(wann_cc(nmegqwan,nmegqblhwanmax,nkptnrloc))
+!  allocate(wann_cc(nmegqwan,nmegqblhwanmax,nkptnrloc))
 
   wann_cc=zzero
   do ikloc=1,nkptnrloc
@@ -178,9 +178,9 @@ if (wannier_chi0_chi) then
         n1=imegqwan(1,n)
         n2=imegqwan(2,n)
         ! for zgemm
-        !wann_cc(i1,n,ikloc)=wann_c(n1,ist1,ikloc)*dconjg(wann_c(n2,ist2,ikloc+nkptnrloc))
+        wann_cc(i1,n,ikloc)=wann_c(n1,ist1,ikloc)*dconjg(wann_c(n2,ist2,ikloc+nkptnrloc))
         ! for zgerc
-        wann_cc(n,i1,ikloc)=wann_c(n1,ist1,ikloc)*dconjg(wann_c(n2,ist2,ikloc+nkptnrloc))
+        !wann_cc(n,i1,ikloc)=wann_c(n1,ist1,ikloc)*dconjg(wann_c(n2,ist2,ikloc+nkptnrloc))
       enddo
     enddo !i1
   enddo !ikloc
