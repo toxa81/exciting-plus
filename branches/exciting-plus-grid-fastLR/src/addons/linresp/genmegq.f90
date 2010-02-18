@@ -112,7 +112,9 @@ if (wproc) then
   write(150,*)
   write(150,'("Minimal energy transition (eV) : ",F12.6)')lr_min_e12*ha2ev    
   write(150,*)
-  write(150,'("Maximum number of interband transitions: ",I5)')nmegqblhmax
+  write(150,'("Maximum number of interband transitions : ",I5)')nmegqblhmax
+  write(150,*)
+  write(150,'("Maximum number of interband transitions for megqwan : ",I5)')nmegqblhwanmax
   sz=int(16.d0*ngvecme*nmegqblhlocmax*nkptnrloc/1048576.d0)
   write(150,*)
   write(150,'("Array size of matrix elements in Bloch basis (MB) : ",I6)')sz

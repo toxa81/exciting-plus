@@ -6,8 +6,7 @@ logical, intent(in) :: req
 
 integer i,ik,jk,ist1,ist2,ikloc,n
 logical laddme,ldocc
-real(8) d1
-logical l11,l12,l21,l22,le1,le2,lwann,le1w,le2w
+logical l11,l12,l21,l22,le1,le2,lwann,le1w,le2w,l3
 integer, allocatable :: wann_bnd(:)
 logical, external :: bndint
 logical, external :: wann_diel
@@ -39,7 +38,7 @@ if (wannier_megq) then
       exit
     endif
   enddo
-endif !wannier
+endif !wannier_megq
 if (req) then
   nmegqblhmax=0
   lr_min_e12=100.d0
@@ -52,8 +51,7 @@ do ikloc=1,nkptnrloc
     do ist2=1,nstsv
       le1=bndint(ist1,lr_evalsvnr(ist1,ik),lr_e1,lr_e2)
       le2=bndint(ist2,lr_evalsvnr(ist2,jk),lr_e1,lr_e2)
-      d1=lr_occsvnr(ist1,ik)-lr_occsvnr(ist2,jk)
-      ldocc=abs(d1).gt.1d-12
+      ldocc=abs(lr_occsvnr(ist1,ik)-lr_occsvnr(ist2,jk)).gt.1d-12
       laddme=.false.
 ! comment:
 !   include transition between bands ist1 and ist2 when:
@@ -63,10 +61,13 @@ do ikloc=1,nkptnrloc
 !     2.  both bands ist1 and ist2 fall into energy interval
       lwann=.false.
       if (wannier_megq) then
-        le1w=bndint(ist1,lr_evalsvnr(ist1,ik),lr_e1_wan,lr_e2_wan)
-        le2w=bndint(ist2,lr_evalsvnr(ist2,jk),lr_e1_wan,lr_e2_wan)
-        if ((wannier_chi0_chi.and..not.wann_diel()).and.(le1w.and.le2w)) lwann=.true.
-        if (crpa.and.(le1w.and.le2w)) lwann=.true.
+        l3=(wann_bnd(ist1).ne.0.and.wann_bnd(ist2).ne.0)
+        !le1w=bndint(ist1,lr_evalsvnr(ist1,ik),lr_e1_wan,lr_e2_wan)
+        !le2w=bndint(ist2,lr_evalsvnr(ist2,jk),lr_e1_wan,lr_e2_wan)
+        !if ((wannier_chi0_chi.and..not.wann_diel()).and.(le1w.and.le2w)) lwann=.true.
+        !if (crpa.and.(le1w.and.le2w)) lwann=.true.
+        if ((wannier_chi0_chi.and..not.wann_diel()).and.l3) lwann=.true.
+        if (crpa.and.l3) lwann=.true.
       endif
       if ((ldocc.or.lwann).and.(le1.and.le2)) then
         if (.not.spinpol) then
