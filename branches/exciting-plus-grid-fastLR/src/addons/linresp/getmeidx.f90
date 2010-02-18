@@ -7,37 +7,38 @@ logical, intent(in) :: req
 integer i,ik,jk,ist1,ist2,ikloc,n
 logical laddme,ldocc
 logical l11,l12,l21,l22,le1,le2,lwann,le1w,le2w,l3
-integer, allocatable :: wann_bnd(:)
+integer, allocatable :: wann_bnd(:,:)
 logical, external :: bndint
 logical, external :: wann_diel
 
 if (wannier_megq) then
-  allocate(wann_bnd(nstsv))
+  allocate(wann_bnd(nstsv,nkptnr))
   wann_bnd=0
 ! mark all bands that contribute to WF expansion
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
     do i=1,nstsv
       do n=1,nwann
-        if (abs(wann_c(n,i,ikloc)).gt.1d-10) wann_bnd(i)=1
+        if (abs(wann_c(n,i,ikloc)).gt.1d-10) wann_bnd(i,ik)=1
       enddo
     enddo
   enddo
-  call mpi_grid_reduce(wann_bnd(1),nstsv,dims=(/dim_k/),all=.true.,op=op_max)
+  call mpi_grid_reduce(wann_bnd(1,1),nstsv*nkptnr,dims=(/dim_k/),all=.true.,&
+    op=op_max)
 ! find lowest band
-  do i=1,nstsv
-    if (wann_bnd(i).ne.0) then
-      lr_e1_wan=i 
-      exit
-    endif
-  enddo
+!  do i=1,nstsv
+!    if (wann_bnd(i).ne.0) then
+!      lr_e1_wan=i 
+!      exit
+!    endif
+!  enddo
 ! find highest band
-  do i=nstsv,1,-1
-    if (wann_bnd(i).ne.0) then
-      lr_e2_wan=i 
-      exit
-    endif
-  enddo
+!  do i=nstsv,1,-1
+!    if (wann_bnd(i).ne.0) then
+!      lr_e2_wan=i 
+!      exit
+!    endif
+!  enddo
 endif !wannier_megq
 if (req) then
   nmegqblhmax=0
@@ -61,7 +62,7 @@ do ikloc=1,nkptnrloc
 !     2.  both bands ist1 and ist2 fall into energy interval
       lwann=.false.
       if (wannier_megq) then
-        l3=(wann_bnd(ist1).ne.0.and.wann_bnd(ist2).ne.0)
+        l3=(wann_bnd(ist1,ik).ne.0.and.wann_bnd(ist2,jk).ne.0)
         !le1w=bndint(ist1,lr_evalsvnr(ist1,ik),lr_e1_wan,lr_e2_wan)
         !le2w=bndint(ist2,lr_evalsvnr(ist2,jk),lr_e1_wan,lr_e2_wan)
         !if ((wannier_chi0_chi.and..not.wann_diel()).and.(le1w.and.le2w)) lwann=.true.
@@ -87,7 +88,7 @@ do ikloc=1,nkptnrloc
           bmegqblh(1,i,ikloc)=ist1
           bmegqblh(2,i,ikloc)=ist2
           if (wannier_megq) then
-            if (wann_bnd(ist1).ne.0.and.wann_bnd(ist2).ne.0) then
+            if (wann_bnd(ist1,ik).ne.0.and.wann_bnd(ist2,jk).ne.0) then
               nmegqblhwan(ikloc)=nmegqblhwan(ikloc)+1
               imegqblhwan(nmegqblhwan(ikloc),ikloc)=i
             endif
