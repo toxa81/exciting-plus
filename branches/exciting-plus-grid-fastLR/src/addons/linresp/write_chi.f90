@@ -1,7 +1,6 @@
-subroutine write_chi(igq0,ivq0m,ifxc)
+subroutine write_chi(ivq0m,ifxc)
 use modmain
 implicit none
-integer, intent(in) :: igq0
 integer, intent(in) :: ivq0m(3)
 integer, intent(in) :: ifxc
 
@@ -28,7 +27,7 @@ else
   fname=trim(qnm)//"_A"//c2//"_s"//c1//".dat"
 endif
 open(160,file=trim(fname),form='formatted',status='replace')
-call write_chi_header(160,igq0,ivq0m,fxca)
+call write_chi_header(160,lr_igq0,ivq0m,fxca)
 write(160,'("#")')
 write(160,'("# Definition of columns")')
 write(160,'("#   1: energy            [eV]")')
@@ -82,7 +81,7 @@ if (wannier_chi0_chi) then
     fname=trim(qnm)//"_A"//c2//"_s"//c1//".dat"
   endif
   open(160,file=trim(fname),form='formatted',status='replace')
-  call write_chi_header(160,igq0,ivq0m,fxca)
+  call write_chi_header(160,lr_igq0,ivq0m,fxca)
   write(160,'("#")')
   write(160,'("# Definition of columns")')
   write(160,'("#   1: energy            [eV]")')

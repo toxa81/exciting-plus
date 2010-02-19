@@ -3,9 +3,18 @@ use modmain
 implicit none
 integer i,j
 real(8) uavg
-call mpi_grid_reduce(uscrnwan(1,1,1),nwann*nwann*nepts,dims=(/dim_q/),&
-  side=.true.)
-call mpi_grid_reduce(ubarewan(1,1),nwann*nwann,dims=(/dim_q/),side=.true.)
+
+if (write_chi0_file) then
+  call mpi_grid_reduce(uscrnwan(1,1,1),nwann*nwann*nepts,dims=(/dim_k,dim_q/),&
+    side=.true.)
+  call mpi_grid_reduce(ubarewan(1,1),nwann*nwann,dims=(/dim_k,dim_q/),&
+    side=.true.)
+else
+  call mpi_grid_reduce(uscrnwan(1,1,1),nwann*nwann*nepts,dims=(/dim_q/),&
+    side=.true.)
+  call mpi_grid_reduce(ubarewan(1,1),nwann*nwann,dims=(/dim_q/),side=.true.)
+endif
+
 if (mpi_grid_root()) then
   uscrnwan=ha2ev*uscrnwan/omega/nvq0
   ubarewan=ha2ev*ubarewan/omega/nvq0

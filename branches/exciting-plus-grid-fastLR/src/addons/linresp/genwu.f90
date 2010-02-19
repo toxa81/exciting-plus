@@ -70,7 +70,7 @@ if (iw.eq.1) then
       do n2=1,nwann
         ubarewan(n1,n2)=ubarewan(n1,n2)+&
           dconjg(megqwan(idxmegqwan(n1,n1,0,0,0),ig1))*(vcgq(ig1)**2)*&
-          megqwan(idxmegqwan(n1,n1,0,0,0),ig1)
+          megqwan(idxmegqwan(n2,n2,0,0,0),ig1)
       enddo
     enddo
   enddo

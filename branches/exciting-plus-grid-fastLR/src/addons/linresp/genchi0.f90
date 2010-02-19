@@ -18,11 +18,11 @@ complex(8), allocatable :: mexp(:,:,:)
 integer, external :: hash
 
 
-integer i,ie,i1,i2,ikloc,n,j,bs,ifxc1,ifxc2,ifxc,idx0
+integer i,iw,i1,i2,ikloc,n,j,bs,ifxc1,ifxc2,ifxc,idx0
 integer ist1,ist2
 integer it1(3),it2(3),it(3)
-integer ig,igq0
-character*100 qnm,fout,fchi0,fu,fstat
+integer ig
+character*100 qnm,fout,fchi0,fu,fstat,path
 logical exist
 integer ie1,n1,n2,ik
 real(8) fxca
@@ -32,14 +32,8 @@ real(8) vgq0c(3)
 real(8) gq0
 
 real(8) vtrc(3)
-real(8) t1,t2,t3,t4,t5,t6,t7
+real(8) t1,t2,t3,t4,t5,t6,t7,t8
 
-
-
-! non-zero matrix elements in Wannier basis
-!integer nmegqwan2
-!integer, allocatable :: imegqwan2(:,:)
-!complex(8), allocatable :: megqwan2(:,:,:)
 
 call qname(ivq0m,qnm)
 qnm="./"//trim(qnm)//"/"//trim(qnm)
@@ -136,32 +130,20 @@ if (wannier_chi0_chi) then
       enddo
     enddo
   enddo
-  !if (wproc) call flushifc(150)
-!  allocate(mexp(nkptnrloc,ntrchi0wan))
-!  do it2=1,ntrchi0wan
-!! translation vector
-!    vtrc(:)=avec(:,1)*itrchi0wan(1,it2)+&
-!            avec(:,2)*itrchi0wan(2,it2)+&
-!            avec(:,3)*itrchi0wan(3,it2)
-!    do ikloc=1,nkptnrloc
-!      ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-!      mexp(ikloc,it2)=exp(dcmplx(0.d0,dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))
-!    enddo
-!  enddo
-   allocate(mexp(nmegqwan,nmegqwan,nkptnrloc))
-   do i1=1,nmegqwan
-     do i2=1,nmegqwan
-       it1(:)=imegqwan(3:5,i1)
-       it2(:)=imegqwan(3:5,i2)
-       it(:)=it1(:)-it2(:)
-       vtrc(:)=avec(:,1)*it(1)+avec(:,2)*it(2)+avec(:,3)*it(3)
-       do ikloc=1,nkptnrloc
-         ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-     ! phase e^{i(k+q)T}
-         mexp(i1,i2,ikloc)=exp(dcmplx(0.d0,dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))   
-       enddo
-     enddo
-   enddo
+  allocate(mexp(nmegqwan,nmegqwan,nkptnrloc))
+  do i1=1,nmegqwan
+    do i2=1,nmegqwan
+      it1(:)=imegqwan(3:5,i1)
+      it2(:)=imegqwan(3:5,i2)
+      it(:)=it1(:)-it2(:)
+      vtrc(:)=avec(:,1)*it(1)+avec(:,2)*it(2)+avec(:,3)*it(3)
+      do ikloc=1,nkptnrloc
+        ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+! phase e^{i(k+q)T}
+        mexp(i1,i2,ikloc)=exp(dcmplx(0.d0,dot_product(vkcnr(:,ik)+vq0rc(:),vtrc(:))))   
+      enddo
+    enddo
+  enddo
 ! arrangement for zgemm  
   allocate(wann_cc(nmegqblhwanmax,nmegqwan,nkptnrloc))
   allocate(wann_cc2(nmegqblhwanmax,nmegqwan))
@@ -186,7 +168,6 @@ if (wannier_chi0_chi) then
   enddo !ikloc
 endif !wannier_chi0_chi
 
-igq0=lr_igq0-gvecme1+1
 
 ie1=1
 
@@ -199,6 +180,10 @@ allocate(f_response(nf_response,nepts,nfxca))
 f_response=zzero
 
 !if (mpi_grid_root(dims=(/dim_k,dim_b/))) call write_lr_header(qnm)
+fchi0=trim(qnm)//"_chi0.hdf5"
+if (mpi_grid_root((/dim_k,dim_b/)).and.write_chi0_file) then
+  call write_chi0_header(qnm)
+endif
 
 ! distribute nfxca between 2-nd dimension 
 bs=mpi_grid_map(nfxca,dim_b,offs=idx0)
@@ -216,16 +201,18 @@ call timer_reset(3)
 call timer_reset(4)
 call timer_reset(5)
 call timer_reset(6)
+call timer_reset(7)
+call timer_reset(8)
 ! loop over energy points
-do ie=ie1,nepts
+do iw=ie1,nepts
   chi0=zzero
   if (wannier_chi0_chi) chi0wan_k=zzero
-! sum over k-points
+! sum over fraction of k-points
   call timer_start(2)
   do ikloc=1,nkptnrloc
     if (nmegqblhloc(1,ikloc).gt.0) then
 ! for each k-point : sum over interband transitions
-      call sumchi0(ikloc,lr_w(ie),chi0)
+      call sumchi0(ikloc,lr_w(iw),chi0)
     endif
   enddo
 ! sum over k-points and band transitions
@@ -236,68 +223,75 @@ do ie=ie1,nepts
   if (wannier_chi0_chi) then
     call timer_start(3)
     do ikloc=1,nkptnrloc
-      call sumchi0wan_k(ikloc,lr_w(ie),chi0wan_k(1,1,ikloc))
+      if (nmegqblhwan(ikloc).gt.0) then
+        call sumchi0wan_k(ikloc,lr_w(iw),chi0wan_k(1,1,ikloc))
+      endif
     enddo !ikloc
     !call mpi_grid_reduce(chi0wan_k(1,1,1),nmegqwan*nmegqwan*nkptnrloc,&
     !  dims=(/dim_b/))
     call timer_stop(3)
     call timer_start(4)
 ! compute ch0 matrix in Wannier basis
-    call genchi0wan(igq0,mexp,chi0wan_k,chi0wan)
+    call genchi0wan(mexp,chi0wan_k,chi0wan)
     if (megqwan_afm) chi0wan(:,:)=chi0wan(:,:)*2.d0    
     call timer_stop(4)
   endif
-  if (crpa.and.mpi_grid_root(dims=(/dim_k,dim_b/))) then
-    call timer_start(5)
-    call genwu(ngvecme,ie,chi0,vcgq,qnm)
-    call timer_stop(5)
-  endif
-! compute response functions
-  if (mpi_grid_root(dims=(/dim_k/)).and..not.crpa) then
-! loop over fxc
-    do ifxc=ifxc1,ifxc2
-      fxca=fxca0+(ifxc-1)*fxca1
-! prepare fxc kernel
-      krnl=zzero
-      if (lrtype.eq.0) then
-        do ig=1,ngvecme
-          if (fxctype.eq.1) then
-            krnl(ig,ig)=krnl(ig,ig)-fxca/2.d0
-          endif
-          if (fxctype.eq.2) then
-            krnl(ig,ig)=krnl(ig,ig)-fxca*vcgq(ig)**2
-          endif
-        enddo
-      endif !lrtype.eq.0 
-      call timer_start(6)
-      call solve_chi(ngvecme,igq0,vcgq,lr_w(ie),chi0,krnl,krnl_scr, &
-        f_response(1,ie,ifxc))
-      call timer_stop(6)
-      if (wannier_chi0_chi.and.ifxc.eq.1) then
-        call timer_start(7)
-        call solve_chi_wan(igq0,vcgq,lr_w(ie),vcwan,chi0wan,&
-          f_response(1,ie,ifxc))
-        call timer_stop(7)
+  
+  if (write_chi0_file) then
+    call timer_start(8)
+    if (mpi_grid_root((/dim_k,dim_b/))) then
+      write(path,'("/iw/",I8.8)')iw
+      call write_real8(lr_w(iw),2,trim(fchi0),trim(path),'w')
+      call write_real8_array(chi0,3,(/2,ngvecme,ngvecme/),trim(fchi0), &
+        trim(path),'chi0')
+      if (wannier_chi0_chi) then
+        call write_real8_array(chi0wan,3,(/2,nmegqwan,nmegqwan/),trim(fchi0), &
+          trim(path),'chi0wan')
       endif
-    enddo
-  endif  
+    endif
+    call timer_stop(8)
+  else
+    if (crpa.and.mpi_grid_root(dims=(/dim_k,dim_b/))) then
+      call timer_start(5)
+      call genwu(ngvecme,iw,chi0,vcgq,qnm)
+      call timer_stop(5)
+    endif
+! compute response functions
+    if (mpi_grid_root(dims=(/dim_k/)).and..not.crpa) then
+! loop over fxc
+      do ifxc=ifxc1,ifxc2
+        fxca=fxca0+(ifxc-1)*fxca1
+! prepare fxc kernel
+        krnl=zzero
+        if (lrtype.eq.0) then
+          do ig=1,ngvecme
+            if (fxctype.eq.1) then
+              krnl(ig,ig)=krnl(ig,ig)-fxca/2.d0
+            endif
+            if (fxctype.eq.2) then
+              krnl(ig,ig)=krnl(ig,ig)-fxca*vcgq(ig)**2
+            endif
+          enddo
+        endif !lrtype.eq.0 
+        call timer_start(6)
+        call solve_chi(vcgq,lr_w(iw),chi0,krnl,krnl_scr,f_response(1,iw,ifxc))
+        call timer_stop(6)
+        if (wannier_chi0_chi.and.ifxc.eq.1) then
+          call timer_start(7)
+          call solve_chi_wan(vcgq,lr_w(iw),vcwan,chi0wan,f_response(1,iw,ifxc))
+          call timer_stop(7)
+        endif
+      enddo
+    endif !(mpi_grid_root(dims=(/dim_k/)).and..not.crpa)
+  endif !write_chi0_file
   if (wproc) then
     open(160,file=trim(fstat),status='replace',form='formatted')
-    write(160,'(I8)')ie
+    write(160,'(I8)')iw
     close(160)
   endif
-enddo !ie
+enddo !iw
 call timer_stop(1)
 
-if (mpi_grid_root(dims=(/dim_k/))) then
-  call mpi_grid_reduce(f_response(1,1,1),nf_response*nepts*nfxca,dims=(/dim_b/))
-! write response functions to .dat file
-  if (mpi_grid_root(dims=(/dim_b/))) then
-    do ifxc=1,nfxca
-      call write_chi(lr_igq0,ivq0m,ifxc)
-    enddo
-  endif
-endif
 t1=timer_get_value(1)
 t2=timer_get_value(2)
 t3=timer_get_value(3)
@@ -305,6 +299,7 @@ t4=timer_get_value(4)
 t5=timer_get_value(5)
 t6=timer_get_value(6)
 t7=timer_get_value(7)
+t8=timer_get_value(8)
 if (wproc) then
   write(150,*)
   write(150,'("Total time per frequency point   : ",F8.2)')t1/nepts
@@ -313,10 +308,22 @@ if (wproc) then
   write(150,'("  Wannier basis part (chi0wan_k) : ",F8.2)')t3/nepts
   write(150,'("  Wannier basis part (chi0wan)   : ",F8.2)')t4/nepts 
   write(150,'("  Wannier basis part (crpa)      : ",F8.2)')t5/nepts   
-  write(150,'("  Wannier basis part (chi)       : ",F8.2)')t7/nepts   
+  write(150,'("  Wannier basis part (chi)       : ",F8.2)')t7/nepts
+  write(150,'("  Write chi0                     : ",F8.2)')t8/nepts  
   call flushifc(150)
 endif
 
+if (.not.write_chi0_file) then
+  if (mpi_grid_root(dims=(/dim_k/))) then
+    call mpi_grid_reduce(f_response(1,1,1),nf_response*nepts*nfxca,dims=(/dim_b/))
+! write response functions to .dat file
+    if (mpi_grid_root(dims=(/dim_b/))) then
+      do ifxc=1,nfxca
+        call write_chi(ivq0m,ifxc)
+      enddo
+    endif
+  endif
+endif
 
 call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 
@@ -328,12 +335,15 @@ if (wannier_chi0_chi) then
   deallocate(chi0wan_k)
   deallocate(vcwan)
   deallocate(mexp)
+  deallocate(wann_cc)
+  deallocate(wann_cc2)
 endif
-!if (crpa) then
-!  deallocate(imegqwan)
-!endif
 deallocate(megqblh2)
 deallocate(vcgq)
+
+if (write_chi0_file) then
+  call genchi(ivq0m)
+endif
 
 30 continue
 if (wproc) then
@@ -342,7 +352,7 @@ if (wproc) then
   call flushifc(150)
 endif
 
- 
+
 return
 end
 

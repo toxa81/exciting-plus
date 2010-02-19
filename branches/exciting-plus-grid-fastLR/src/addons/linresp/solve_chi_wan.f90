@@ -1,7 +1,6 @@
-subroutine solve_chi_wan(igq0,vcgq,w,vcwan,chi0wan,f_response_)
+subroutine solve_chi_wan(vcgq,w,vcwan,chi0wan,f_response_)
 use modmain
 implicit none
-integer, intent(in) :: igq0
 real(8), intent(in) :: vcgq(ngvecme)
 complex(8), intent(in) :: w
 complex(8), intent(in) :: vcwan(nmegqwan,nmegqwan)
@@ -12,10 +11,17 @@ complex(8), allocatable :: mtrx1(:,:)
 complex(8), allocatable :: mtrx2(:,:)
 complex zt1,zt2
 
-integer i1,i2,n1,n2,i,j,it2,i3,ig
+integer i1,i2,n1,n2,i,j,it2,i3,ig,igq0
+
+igq0=lr_igq0-gvecme1+1
 
 allocate(mtrx1(nmegqwan,nmegqwan))
 allocate(mtrx2(nmegqwan,nmegqwan))
+
+! commemt:
+! compute chi0_GqGq using the Wannier functions expansion
+!  chi0=\sum_{T,T'}\sum_{n,m,n',m'} A^{*}_{nmT}(q,Gq)*chi0wan(n,m,n',m',T-T')*A_{n'm'T'}(q,Gq)
+!  where A_{nmT}(q,G)=<n,0|e^{-i(G+q)x}|m,T>
 
 mtrx1=zzero
 do i=1,nmegqwan
@@ -28,9 +34,9 @@ call invzge(mtrx1,nmegqwan)
 ! mtrx2 = chi0*(1-v*chi0)^-1
 call zgemm('N','N',nmegqwan,nmegqwan,nmegqwan,zone,chi0wan,nmegqwan,mtrx1,&
   nmegqwan,zzero,mtrx2,nmegqwan)
-! zt1 is chi0wf
+! zt1 is chi0_GqGq_wan
 zt1=zzero
-! zt2 is chiwf
+! zt2 is chi_GqGq_wan
 zt2=zzero
 do i=1,nmegqwan
   do j=1,nmegqwan

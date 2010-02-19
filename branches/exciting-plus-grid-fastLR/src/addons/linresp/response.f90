@@ -25,7 +25,7 @@ complex(8), allocatable :: wfsvcgloc(:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 
 integer i,j,n,ik,ikloc,ik1,isym,idx0,ivq1,ivq2,iq,ig
-integer iv(3),n1,n2
+integer n1
 logical l1
 integer sz,nvq0loc,i1,i2,i3,ias,jas
 character*100 qnm
@@ -87,8 +87,8 @@ endif
 ! set the switch to write matrix elements
 write_megq_file=.true.
 if (task.eq.403) write_megq_file=.false.
-write_chi0_file=.true.
-if (crpa) write_chi0_file=.false.
+write_chi0_file=.false.
+if (crpa) write_chi0_file=.true.
 
 ! set the switch to compute screened W matrix in task 402
 screened_w=.false.
@@ -551,12 +551,14 @@ endif
 
 #ifdef _PAPI_
 call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
+t1=dble(mflops)
+call mpi_grid_reduce(t1)
 #endif
 
 if (wproc1) then
   write(151,*)
 #ifdef _PAPI_
-  write(151,'("MFlops : ",F15.3)')mflops
+  write(151,'("Average GFlops : ",F15.3)')t1/mpi_grid_nproc/1000.d0
 #endif  
   write(151,'("Done.")')
   close(151)

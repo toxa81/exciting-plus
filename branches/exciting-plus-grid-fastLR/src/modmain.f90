@@ -932,16 +932,10 @@ complex(8), allocatable :: evecsvloc(:,:,:)
 
 ! dimension for k-points 
 integer dim_k
-! dimension for g-vectors
-integer dim_g
 ! dimension for q-vectors
 integer dim_q
-! dimension for frequency
-integer dim_w
 ! dimension for interband transitions
 integer dim_b
-! dimension for fxc kernels
-integer dim_f
 
 
 !------------------!
