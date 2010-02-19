@@ -4,6 +4,7 @@ use modmain
 use hdf5
 implicit none
 #ifdef _PAPI_
+integer ierr
 include 'f90papi.h'
 real real_time,cpu_time,mflops
 integer*8 fp_ins
