@@ -558,7 +558,7 @@ call mpi_grid_reduce(t1)
 if (wproc1) then
   write(151,*)
 #ifdef _PAPI_
-  write(151,'("Average GFlops : ",F15.3)')t1/mpi_grid_nproc/1000.d0
+  write(151,'("Average performance (Gflops/proc) : ",F15.3)')t1/mpi_grid_nproc/1000.d0
 #endif  
   write(151,'("Done.")')
   close(151)
