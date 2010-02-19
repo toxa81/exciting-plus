@@ -184,6 +184,7 @@ fchi0=trim(qnm)//"_chi0.hdf5"
 if (mpi_grid_root((/dim_k,dim_b/)).and.write_chi0_file) then
   call write_chi0_header(qnm)
 endif
+call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 
 ! distribute nfxca between 2-nd dimension 
 bs=mpi_grid_map(nfxca,dim_b,offs=idx0)
