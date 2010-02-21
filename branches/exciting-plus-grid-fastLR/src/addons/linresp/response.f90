@@ -477,7 +477,7 @@ if (crpa) then
 endif
 
 ! distribute q-vectors along 3-rd dimention
-nvq0loc=mpi_grid_map(nvq0,dim3,offs=idx0)
+nvq0loc=mpi_grid_map(nvq0,dim_q,offs=idx0)
 ivq1=idx0+1
 ivq2=idx0+nvq0loc
 
@@ -489,8 +489,7 @@ if (task.eq.400) then
   call timer_start(10,reset=.true.)
   if (wproc1) call timestamp(151,txt='start genmegq')
   do iq=ivq1,ivq2
-    call genmegq(ivq0m_list(1,iq),wfsvmtloc,wfsvitloc,ngknr, &
-      igkignr)
+    call genmegq(ivq0m_list(1,iq),wfsvmtloc,wfsvitloc,ngknr,igkignr)
   enddo
   call timer_stop(10)
   if (wproc1) call timestamp(151,txt='stop genmegq')
@@ -542,8 +541,7 @@ endif
 !------------------------------------------!
 if (task.eq.403) then
   do iq=ivq1,ivq2
-    call genmegq(ivq0m_list(1,iq),wfsvmtloc,wfsvitloc,ngknr, &
-      igkignr)
+    call genmegq(ivq0m_list(1,iq),wfsvmtloc,wfsvitloc,ngknr,igkignr)
     call genchi0(ivq0m_list(1,iq))
   enddo 
   if (crpa) call write_u

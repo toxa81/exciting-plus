@@ -1,62 +1,62 @@
-subroutine genwu(ng,iw,chi0,vcgq,qnm)
+subroutine genwu(iw,chi0,vcgq,qnm,vscr)
 use modmain
 implicit none
-integer, intent(in) :: ng
 integer, intent(in) :: iw
-complex(8), intent(in) :: chi0(ng,ng)
-real(8), intent(in) :: vcgq(ng)
+complex(8), intent(in) :: chi0(ngvecme,ngvecme)
+real(8), intent(in) :: vcgq(ngvecme)
 character(*), intent(in) :: qnm
+complex(8), intent(out) :: vscr(ngvecme,ngvecme)
 
 complex(8), allocatable :: epsilon(:,:)
-complex(8), allocatable :: mtrx1(:,:)
+!complex(8), allocatable :: mtrx1(:,:)
 integer ig1,ig2,n1,n2
 integer i,j
 character*100 fname
 integer, external :: hash
 character*12 c12
 
-allocate(epsilon(ng,ng))
-allocate(mtrx1(ng,ng))
+allocate(epsilon(ngvecme,ngvecme))
+!allocate(mtrx1(ngvecme,ngvecme))
 
 !! rpa kernel
 !mtrx1=dcmplx(0.d0,0.d0)
-!do i=1,ng
+!do i=1,ngvecme
 !  mtrx1(i,i)=vcgq(i)**2
 !enddo
 !! compute matrix epsilon=1-chi0*v
 !epsilon=dcmplx(0.d0,0.d0)
-!do i=1,ng
+!do i=1,ngvecme
 !  epsilon(i,i)=dcmplx(1.d0,0.d0)
 !enddo
-!call zgemm('N','N',ng,ng,ng,dcmplx(-1.d0,0.d0),chi0,ng,mtrx1,ng,&
-!  dcmplx(1.d0,0.d0),epsilon,ng)
+!call zgemm('N','N',ngvecme,ngvecme,ngvecme,dcmplx(-1.d0,0.d0),chi0,ngvecme,mtrx1,ngvecme,&
+!  dcmplx(1.d0,0.d0),epsilon,ngvecme)
 !! invert epsilon matrix
-!call invzge(epsilon,ng)
+!call invzge(epsilon,ngvecme)
 !! compute chi=epsilon^-1 * chi0
-!call zgemm('N','N',ng,ng,ng,dcmplx(1.d0,0.d0),epsilon,ng,chi0,ng,&
-!  dcmplx(0.d0,0.d0),mtrx1,ng)
+!call zgemm('N','N',ngvecme,ngvecme,ngvecme,dcmplx(1.d0,0.d0),epsilon,ngvecme,chi0,ngvecme,&
+!  dcmplx(0.d0,0.d0),mtrx1,ngvecme)
 
 ! compute screened Coulomb potential using "symmetrized" dielectric function
-do ig1=1,ng
-  do ig2=1,ng
+do ig1=1,ngvecme
+  do ig2=1,ngvecme
     epsilon(ig1,ig2)=-vcgq(ig1)*chi0(ig1,ig2)*vcgq(ig2)
   enddo
   epsilon(ig1,ig1)=zone+epsilon(ig1,ig1)
 enddo
-call invzge(epsilon,ng)
-do ig1=1,ng
-  do ig2=1,ng
-    mtrx1(ig1,ig2)=vcgq(ig1)*epsilon(ig1,ig2)*vcgq(ig2)
+call invzge(epsilon,ngvecme)
+do ig1=1,ngvecme
+  do ig2=1,ngvecme
+    vscr(ig1,ig2)=vcgq(ig1)*epsilon(ig1,ig2)*vcgq(ig2)
   enddo
 enddo
 
 ! compute screened u
-do ig1=1,ng
-  do ig2=1,ng
+do ig1=1,ngvecme
+  do ig2=1,ngvecme
     do n1=1,nwann
       do n2=1,nwann
         uscrnwan(n1,n2,iw)=uscrnwan(n1,n2,iw)+&
-          dconjg(megqwan(idxmegqwan(n1,n1,0,0,0),ig1))*mtrx1(ig1,ig2)*&
+          dconjg(megqwan(idxmegqwan(n1,n1,0,0,0),ig1))*vscr(ig1,ig2)*&
           megqwan(idxmegqwan(n2,n2,0,0,0),ig2)
       enddo
     enddo
@@ -65,7 +65,7 @@ enddo
 ! compute bare u
 !ubare=zzero
 if (iw.eq.1) then
-  do ig1=1,ng
+  do ig1=1,ngvecme
     do n1=1,nwann
       do n2=1,nwann
         ubarewan(n1,n2)=ubarewan(n1,n2)+&
@@ -77,10 +77,10 @@ if (iw.eq.1) then
 endif
 
 ! write block of W matrix
-!if (ng.gt.10) then
+!if (ngvecme.gt.10) then
 !  n1=10
 !else
-!  n1=ng
+!  n1=ngvecme
 !endif
 !fname=trim(qnm)//"_W__.txt"
 !open(170,file=trim(fname),status='replace',form='formatted')
@@ -129,7 +129,7 @@ endif
 !  call write_real8_array(uscrn,3,(/2,nwann,nwann/),trim(fname),c12,'uscrn')
 !endif
 
-deallocate(epsilon,mtrx1)
+deallocate(epsilon)
 
 return 
 end

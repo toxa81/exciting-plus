@@ -254,7 +254,7 @@ do iw=ie1,nepts
   else
     if (crpa.and.mpi_grid_root(dims=(/dim_k,dim_b/))) then
       call timer_start(5)
-      call genwu(ngvecme,iw,chi0,vcgq,qnm)
+      call genwu(iw,chi0,vcgq,qnm)
       call timer_stop(5)
     endif
 ! compute response functions
