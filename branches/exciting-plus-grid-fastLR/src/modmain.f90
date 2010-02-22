@@ -6,6 +6,7 @@
 module modmain
 use mod_mpi_grid
 use mod_timer
+use mod_hdf5
 
 !----------------------------!
 !     lattice parameters     !

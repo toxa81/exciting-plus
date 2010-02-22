@@ -13,7 +13,7 @@ complex(8), allocatable :: krnl(:,:)
 complex(8), allocatable :: krnl_scr(:,:)
 real(8), allocatable :: vcgq(:)
 
-logical, parameter :: lwrite_w=.true. 
+logical, parameter :: lwrite_w=.false. 
 
 ! G+q vector in Cartesian coordinates
 real(8) vgq0c(3)
@@ -21,14 +21,11 @@ real(8) vgq0c(3)
 real(8) gq0
 
 real(8) fxca
-real(8) d
-
-logical exist
 
 integer ig,i,j,idx0,bs
 integer ifxc,ifxc1,ifxc2
-character*100 fchi0,qnm,path
-character*3 c3
+character*100 fchi0,qnm,path,fvscr
+character*8 c8
 integer iw,nwloc,iwloc,nwstep
 
 ! we need Bcx and magnetization from STATE.OUT
@@ -36,13 +33,17 @@ if (lrtype.eq.1) call readstate
 
 call qname(ivq0m,qnm)
 qnm="./"//trim(qnm)//"/"//trim(qnm)
-wproc=.false.
-
 fchi0=trim(qnm)//"_chi0.hdf5"
-
-!if (lwrite_w.and.mpi_grid_root()) call write_fw_header
-!fw="fw.hdf5"
-!call mpi_grid_barrier(dims=(/dim_k,dim_b/))
+fvscr=trim(qnm)//"_vscr.hdf5"
+if (mpi_grid_root((/dim_k,dim_b/)).and.write_chi0_file.and.lwrite_w) then
+  call hdf5_create_file(trim(fvscr))
+  call hdf5_create_group(trim(fvscr),'/','iw')
+  do i=1,nepts
+    write(c8,'(I8.8)')i
+    call hdf5_create_group(trim(fvscr),'/iw',c8)
+  enddo
+endif
+call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 
 allocate(chi0(ngvecme,ngvecme))
 allocate(krnl(ngvecme,ngvecme))
@@ -60,7 +61,6 @@ do ig=1,ngvecme
   gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
   vcgq(ig)=sqrt(fourpi)/gq0
 enddo !ig
-
 
 ! for response in Wannier basis
 if (wannier_chi0_chi) then
@@ -91,38 +91,38 @@ do iwloc=1,nwstep
     iw=mpi_grid_map(nepts,dim_k,loc=iwloc)
     if (mpi_grid_root(dims=(/dim_b/))) then
       write(path,'("/iw/",I8.8)')iw
-      call read_real8_array(chi0,3,(/2,ngvecme,ngvecme/),trim(fchi0),&
-        trim(path),'chi0')
+      call hdf5_read(trim(fchi0),trim(path),'chi0',chi0(1,1),&
+        dims=(/ngvecme,ngvecme/))
     endif
-    call mpi_grid_bcast(chi0(1,1),ngvecme*ngvecme,dims=(/dim_b/))
+!    call mpi_grid_bcast(chi0(1,1),ngvecme*ngvecme,dims=(/dim_b/))
     if (crpa.and.mpi_grid_root(dims=(/dim_b/))) then
       call genwu(iw,chi0,vcgq,qnm,krnl_scr)
     endif
-    if (.not.crpa) then
-      do ifxc=ifxc1,ifxc2
-        fxca=fxca0+(ifxc-1)*fxca1
-  ! prepare fxc kernel
-        krnl=zzero
-        if (lrtype.eq.0) then
-          do ig=1,ngvecme
-            if (fxctype.eq.1) then
-              krnl(ig,ig)=krnl(ig,ig)-fxca/2.d0
-            endif
-            if (fxctype.eq.2) then
-              krnl(ig,ig)=krnl(ig,ig)-fxca*vcgq(ig)**2
-            endif
-          enddo
-        endif !lrtype.eq.0 
-        call timer_start(6)
-        call solve_chi(vcgq,lr_w(iw),chi0,krnl,krnl_scr,f_response(1,iw,ifxc))
-        call timer_stop(6)
-        if (wannier_chi0_chi.and.ifxc.eq.1) then
-          call timer_start(7)
-          call solve_chi_wan(vcgq,lr_w(iw),vcwan,chi0wan,f_response(1,iw,ifxc))
-          call timer_stop(7)
-        endif
-      enddo !ifxc
-    endif ! .not.crpa
+!    if (.not.crpa) then
+!      do ifxc=ifxc1,ifxc2
+!        fxca=fxca0+(ifxc-1)*fxca1
+!  ! prepare fxc kernel
+!        krnl=zzero
+!        if (lrtype.eq.0) then
+!          do ig=1,ngvecme
+!            if (fxctype.eq.1) then
+!              krnl(ig,ig)=krnl(ig,ig)-fxca/2.d0
+!            endif
+!            if (fxctype.eq.2) then
+!              krnl(ig,ig)=krnl(ig,ig)-fxca*vcgq(ig)**2
+!            endif
+!          enddo
+!        endif !lrtype.eq.0 
+!        call timer_start(6)
+!        call solve_chi(vcgq,lr_w(iw),chi0,krnl,krnl_scr,f_response(1,iw,ifxc))
+!        call timer_stop(6)
+!        if (wannier_chi0_chi.and.ifxc.eq.1) then
+!          call timer_start(7)
+!          call solve_chi_wan(vcgq,lr_w(iw),vcwan,chi0wan,f_response(1,iw,ifxc))
+!          call timer_stop(7)
+!        endif
+!      enddo !ifxc
+!    endif ! .not.crpa
   endif !iwloc.le.nwloc
   if (mpi_grid_root(dims=(/dim_b/)).and.lwrite_w) then
     do i=0,mpi_grid_size(dim_k)-1
@@ -130,8 +130,8 @@ do iwloc=1,nwstep
         if (iwloc.le.nwloc) then
           iw=mpi_grid_map(nepts,dim_k,loc=iwloc)
           write(path,'("/iw/",I8.8)')iw
-          call write_real8_array(krnl_scr,3,(/2,ngvecme,ngvecme/), &
-            trim(fchi0),trim(path),'vscr')
+          call hdf5_write(trim(fvscr),trim(path),'vscr',krnl_scr(1,1),&
+            dims=(/ngvecme,ngvecme/))
         endif
       endif
       call mpi_grid_barrier(dims=(/dim_k/))

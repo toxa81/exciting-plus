@@ -7,16 +7,12 @@
 program main
 use modmain
 use mod_mpi_grid
-#ifdef _HDF5_
-use hdf5
-#endif
+use mod_hdf5
 implicit none
 ! local variables
-integer itask,ierr
+integer itask
 call mpi_world_initialize
-#ifdef _HDF5_
-call h5open_f(ierr)
-#endif
+call hdf5_initialize
 
 ! read input files
 call readinput
@@ -114,9 +110,7 @@ do itask=1,ntasks
   end select
   call mpi_world_barrier
 end do
-#ifdef _HDF5_
-call h5close_f(ierr)
-#endif
+call hdf5_finalize
 call mpi_grid_finalize
 call mpi_world_finalize
 stop

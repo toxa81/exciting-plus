@@ -545,6 +545,7 @@ if (task.eq.403) then
     call genchi0(ivq0m_list(1,iq))
   enddo 
   if (crpa) call write_u
+!  if (crpa) call qsum
 endif
 
 #ifdef _PAPI_

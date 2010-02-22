@@ -18,12 +18,12 @@ complex(8), allocatable :: mexp(:,:,:)
 integer, external :: hash
 
 
-integer i,iw,i1,i2,ikloc,n,j,bs,ifxc1,ifxc2,ifxc,idx0
-integer ist1,ist2
+integer i,iw,i1,i2,ikloc,n,j,ifxc
+integer ist1,ist2,nfxcloc,ifxcloc
 integer it1(3),it2(3),it(3)
 integer ig
-character*100 qnm,fout,fchi0,fu,fstat,path
-logical exist
+character*100 qnm,fout,fchi0,fstat,path
+character*8 c8
 integer ie1,n1,n2,ik
 real(8) fxca
 
@@ -34,7 +34,6 @@ real(8) gq0
 real(8) vtrc(3)
 real(8) t1,t2,t3,t4,t5,t6,t7,t8
 
-
 call qname(ivq0m,qnm)
 qnm="./"//trim(qnm)//"/"//trim(qnm)
 wproc=.false.
@@ -43,15 +42,6 @@ if (mpi_grid_root((/dim_k,dim_b/))) then
   fout=trim(qnm)//"_LR.OUT"
   open(150,file=trim(fout),form='formatted',status='replace')
   fstat=trim(qnm)//"_chi0_stat.txt"
-endif
-
-if (crpa) then
-  if (mpi_grid_root((/dim_k,dim2/))) then
-    fu=trim(qnm)//"_U"
-    inquire(file=trim(fu),exist=exist)
-  endif
-  call mpi_grid_bcast(exist,dims=(/dim_k,dim2/))
-  if (exist) goto 30
 endif
 
 ! we need Bcx and magnetization from STATE.OUT
@@ -90,7 +80,7 @@ do ig=1,ngvecme
   vcgq(ig)=sqrt(fourpi)/gq0
 enddo !ig
 
-!read matrix elements
+! read matrix elements
 if (write_megq_file) then
   call timer_start(1,reset=.true.)
   if (wproc) then
@@ -149,7 +139,6 @@ if (wannier_chi0_chi) then
   allocate(wann_cc2(nmegqblhwanmax,nmegqwan))
 ! arrangement for zgerc  
 !  allocate(wann_cc(nmegqwan,nmegqblhwanmax,nkptnrloc))
-
   wann_cc=zzero
   do ikloc=1,nkptnrloc
     do i1=1,nmegqblhwan(ikloc)
@@ -168,28 +157,29 @@ if (wannier_chi0_chi) then
   enddo !ikloc
 endif !wannier_chi0_chi
 
-
 ie1=1
 
 allocate(chi0(ngvecme,ngvecme))
 allocate(krnl(ngvecme,ngvecme))
-!if (screened_w) allocate(krnl_scr(ngvecchi,ngvecchi))
+if (screened_w.or.crpa) allocate(krnl_scr(ngvecme,ngvecme))
 allocate(ixcft(ngvec))
 if (allocated(f_response)) deallocate(f_response)
 allocate(f_response(nf_response,nepts,nfxca))
 f_response=zzero
 
-!if (mpi_grid_root(dims=(/dim_k,dim_b/))) call write_lr_header(qnm)
 fchi0=trim(qnm)//"_chi0.hdf5"
 if (mpi_grid_root((/dim_k,dim_b/)).and.write_chi0_file) then
-  call write_chi0_header(qnm)
+  call hdf5_create_file(trim(fchi0))
+  call hdf5_create_group(trim(fchi0),'/','iw')
+  do i=1,nepts
+    write(c8,'(I8.8)')i
+    call hdf5_create_group(trim(fchi0),'/iw',c8)
+  enddo
 endif
 call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 
 ! distribute nfxca between 2-nd dimension 
-bs=mpi_grid_map(nfxca,dim_b,offs=idx0)
-ifxc1=idx0+1
-ifxc2=idx0+bs
+nfxcloc=mpi_grid_map(nfxca,dim_b)
 
 if (wproc) then
   write(150,*)
@@ -242,25 +232,26 @@ do iw=ie1,nepts
     call timer_start(8)
     if (mpi_grid_root((/dim_k,dim_b/))) then
       write(path,'("/iw/",I8.8)')iw
-      call write_real8(lr_w(iw),2,trim(fchi0),trim(path),'w')
-      call write_real8_array(chi0,3,(/2,ngvecme,ngvecme/),trim(fchi0), &
-        trim(path),'chi0')
+      call hdf5_write(trim(fchi0),trim(path),'w',lr_w(iw))
+      call hdf5_write(trim(fchi0),trim(path),'chi0',chi0(1,1),&
+        dims=(/ngvecme,ngvecme/))
       if (wannier_chi0_chi) then
-        call write_real8_array(chi0wan,3,(/2,nmegqwan,nmegqwan/),trim(fchi0), &
-          trim(path),'chi0wan')
+        call hdf5_write(trim(fchi0),trim(path),'chi0wan',chi0wan(1,1), &
+          dims=(/nmegqwan,nmegqwan/))
       endif
     endif
     call timer_stop(8)
   else
     if (crpa.and.mpi_grid_root(dims=(/dim_k,dim_b/))) then
       call timer_start(5)
-      call genwu(iw,chi0,vcgq,qnm)
+      call genwu(iw,chi0,vcgq,qnm,krnl_scr)
       call timer_stop(5)
     endif
 ! compute response functions
     if (mpi_grid_root(dims=(/dim_k/)).and..not.crpa) then
 ! loop over fxc
-      do ifxc=ifxc1,ifxc2
+      do ifxcloc=1,nfxcloc
+        ifxc=mpi_grid_map(nfxca,dim_b,loc=ifxcloc)
         fxca=fxca0+(ifxc-1)*fxca1
 ! prepare fxc kernel
         krnl=zzero
