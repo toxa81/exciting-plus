@@ -134,18 +134,21 @@ if (task.eq.0.or.task.eq.1) then
   grid_dim=(/nproc/)
 else if (task.eq.400.or.task.eq.401.or.task.eq.402.or.task.eq.403) then
   allocate(grid_dim(3))
-  if (nproc.le.nkptnr) then
-    grid_dim=(/nproc,1,1/)
+! overwrite default grid layout
+  if (lmpi_grid) then
+    grid_dim=mpi_grid 
   else
-    i1=nproc/nkptnr
-    if (i1.le.nvq0) then
-      grid_dim=(/nkptnr,1,i1/)
+    if (nproc.le.nkptnr) then
+      grid_dim=(/nproc,1,1/)
     else
-      grid_dim=(/nkptnr,nproc/(nkptnr*nvq0),nvq0/)
+      i1=nproc/nkptnr
+      if (i1.le.nvq0) then
+        grid_dim=(/nkptnr,1,i1/)
+      else
+        grid_dim=(/nkptnr,nproc/(nkptnr*nvq0),nvq0/)
+      endif
     endif
   endif
-! overwrite default grid layout
-  if (lmpi_grid) grid_dim=mpi_grid 
 else
   allocate(grid_dim(1))
   grid_dim=(/nproc/)
