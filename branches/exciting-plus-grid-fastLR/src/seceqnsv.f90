@@ -45,6 +45,7 @@ complex(8), allocatable :: zfft1(:)
 complex(8), allocatable :: zfft2(:)
 complex(8), allocatable :: zv(:,:)
 complex(8), allocatable :: work(:)
+integer natmtotloc,iasloc
 ! external functions
 complex(8) zdotc,zfmtinp
 external zdotc,zfmtinp
@@ -91,9 +92,14 @@ evecsv(:,:)=0.d0
 !-------------------------!
 !     muffin-tin part     !
 !-------------------------!
-do is=1,nspecies
-  do ia=1,natoms(is)
-    ias=idxas(ia,is)
+natmtotloc=mpi_grid_map(natmtot,2)
+do iasloc=1,natmtotloc
+  ias=mpi_grid_map(natmtot,2,loc=iasloc)
+  is=ias2is(ias)
+  ia=ias2ia(ias)
+!do is=1,nspecies
+!  do ia=1,natoms(is)
+!    ias=idxas(ia,is)
     if (spinpol) then
 ! exchange-correlation magnetic field in spherical coordinates
       if (ncmag) then
@@ -213,8 +219,9 @@ do is=1,nspecies
       end do
     end do
 ! end loops over atoms and species
-  end do
+  !end do
 end do
+call mpi_grid_reduce(evecsv(1,1),nstsv*nstsv,dims=(/2/))
 !---------------------------!
 !     interstitial part     !
 !---------------------------!
@@ -309,6 +316,8 @@ deallocate(wfmt1,wfmt2,zfft1,zfft2,zv,work)
 call timer_stop(t_svhmlt_diag)
 call timesec(ts1)
 timesv=timesv+ts1-ts0
+call mpi_grid_bcast(evecsv(1,1),nstsv*nstsv,dims=(/2/))
+call mpi_grid_bcast(evalsv(1,ik),nstsv,dims=(/2/))
 return
 20 continue
 write(*,*)

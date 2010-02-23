@@ -88,6 +88,7 @@ call mpi_grid_reduce(ematylm(1,1,1,1,1),lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,
   dims=(/dim_k/),all=.true.)
 call symdmat(lmaxlu,lmmaxlu,dmatylm)
 call symdmat(lmaxlu,lmmaxlu,ematylm)
+dmatlu=dmatylm
 
 ! compute matrix in Rlm
 dmatrlm=dcmplx(0.d0,0.d0)

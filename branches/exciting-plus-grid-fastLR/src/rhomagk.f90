@@ -41,6 +41,7 @@ complex(8), intent(in) :: evecsv(nstsv,nstsv)
 ! local variables
 integer nsd,ispn,jspn,is,ia,ias,ist
 integer ir,irc,itp,igk,ifg,i,j,n
+integer natmtotloc,iasloc,jloc,nstsvloc
 real(8) wo,t1,t2,t3
 real(8) ts0,ts1
 complex(8) zq(2),zt1,zt2,zt3
@@ -80,109 +81,112 @@ end do
 !----------------------------!
 !     muffin-tin density     !
 !----------------------------!
-do is=1,nspecies
+natmtotloc=mpi_grid_map(natmtot,2)
+do iasloc=1,natmtotloc
+  ias=mpi_grid_map(natmtot,2,loc=iasloc)
+  is=ias2is(ias)
+  ia=ias2ia(ias)
   n=lmmaxvr*nrcmt(is)
-  do ia=1,natoms(is)
-    ias=idxas(ia,is)
 ! de-phasing factor for spin-spirals
-    if (spinsprl) then
-      t1=-0.5d0*dot_product(vqcss(:),atposc(:,ia,is))
-      zq(1)=cmplx(cos(t1),sin(t1),8)
-      zq(2)=conjg(zq(1))
-    end if
-    done(:,:)=.false.
-    rfmt(:,:,:)=0.d0
-    do j=1,nstsv
-      wo=wkpt(ik)*occsv(j,ik)
-      if (abs(wo).gt.epsocc) then
-        if (tevecsv) then
+  if (spinsprl) then
+    t1=-0.5d0*dot_product(vqcss(:),atposc(:,ia,is))
+    zq(1)=cmplx(cos(t1),sin(t1),8)
+    zq(2)=conjg(zq(1))
+  end if
+  done(:,:)=.false.
+  rfmt(:,:,:)=0.d0
+  do j=1,nstsv
+    wo=wkpt(ik)*occsv(j,ik)
+    if (abs(wo).gt.epsocc) then
+      if (tevecsv) then
 ! generate spinor wavefunction from second-variational eigenvectors
-          wfmt3(:,:,:)=0.d0
-          i=0
-          do ispn=1,nspinor
-            if (spinsprl) then
-              jspn=ispn
-            else
-              jspn=1
-            end if
-            do ist=1,nstfv
-              i=i+1
-              zt1=evecsv(i,j)
-              if (spinsprl) zt1=zt1*zq(ispn)
-              if (abs(dble(zt1))+abs(aimag(zt1)).gt.epsocc) then
-                if (.not.done(ist,jspn)) then
-                  call wavefmt(lradstp,lmaxvr,is,ia,ngk(jspn,ik), &
-                   apwalm(:,:,:,:,jspn),evecfv(:,ist,jspn),lmmaxvr,wfmt1)
+        wfmt3(:,:,:)=0.d0
+        i=0
+        do ispn=1,nspinor
+          if (spinsprl) then
+            jspn=ispn
+          else
+            jspn=1
+          end if
+          do ist=1,nstfv
+            i=i+1
+            zt1=evecsv(i,j)
+            if (spinsprl) zt1=zt1*zq(ispn)
+            if (abs(dble(zt1))+abs(aimag(zt1)).gt.epsocc) then
+              if (.not.done(ist,jspn)) then
+                call wavefmt(lradstp,lmaxvr,is,ia,ngk(jspn,ik), &
+                 apwalm(:,:,:,:,jspn),evecfv(:,ist,jspn),lmmaxvr,wfmt1)
 ! convert from spherical harmonics to spherical coordinates
-                  call zgemm('N','N',lmmaxvr,nrcmt(is),lmmaxvr,zone,zbshtvr, &
-                   lmmaxvr,wfmt1,lmmaxvr,zzero,wfmt2(:,:,ist,jspn),lmmaxvr)
-                  done(ist,jspn)=.true.
-                end if
+                call zgemm('N','N',lmmaxvr,nrcmt(is),lmmaxvr,zone,zbshtvr, &
+                 lmmaxvr,wfmt1,lmmaxvr,zzero,wfmt2(:,:,ist,jspn),lmmaxvr)
+                done(ist,jspn)=.true.
+              end if
 ! add to spinor wavefunction
-                call zaxpy(n,zt1,wfmt2(:,:,ist,jspn),1,wfmt3(:,:,ispn),1)
-              end if
-            end do
+              call zaxpy(n,zt1,wfmt2(:,:,ist,jspn),1,wfmt3(:,:,ispn),1)
+            end if
           end do
-        else
+        end do
+      else
 ! spin-unpolarised wavefunction
-          call wavefmt(lradstp,lmaxvr,is,ia,ngk(1,ik),apwalm,evecfv(:,j,1), &
-           lmmaxvr,wfmt1)
+        call wavefmt(lradstp,lmaxvr,is,ia,ngk(1,ik),apwalm,evecfv(:,j,1), &
+         lmmaxvr,wfmt1)
 ! convert from spherical harmonics to spherical coordinates
-          call zgemm('N','N',lmmaxvr,nrcmt(is),lmmaxvr,zone,zbshtvr,lmmaxvr, &
-           wfmt1,lmmaxvr,zzero,wfmt3,lmmaxvr)
-        end if
-! add to the spin density matrix
-        if (spinpol) then
-! spin-polarised
-          do irc=1,nrcmt(is)
-            do itp=1,lmmaxvr
-              zt1=wfmt3(itp,irc,1)
-              zt2=wfmt3(itp,irc,2)
-              rfmt(itp,irc,1)=rfmt(itp,irc,1)+wo*(dble(zt1)**2+aimag(zt1)**2)
-              rfmt(itp,irc,2)=rfmt(itp,irc,2)+wo*(dble(zt2)**2+aimag(zt2)**2)
-              if (ncmag) then
-                zt3=zt1*conjg(zt2)
-                rfmt(itp,irc,3)=rfmt(itp,irc,3)+wo*dble(zt3)
-                rfmt(itp,irc,4)=rfmt(itp,irc,4)+wo*aimag(zt3)
-              end if
-            end do
-          end do
-        else
-! spin-unpolarised
-          do irc=1,nrcmt(is)
-            do itp=1,lmmaxvr
-              zt1=wfmt3(itp,irc,1)
-              rfmt(itp,irc,1)=rfmt(itp,irc,1)+wo*(dble(zt1)**2+aimag(zt1)**2)
-            end do
-          end do
-        end if
+        call zgemm('N','N',lmmaxvr,nrcmt(is),lmmaxvr,zone,zbshtvr,lmmaxvr, &
+         wfmt1,lmmaxvr,zzero,wfmt3,lmmaxvr)
       end if
-    end do
-! add to rhomt and magmt
-    irc=0
-    do ir=1,nrmt(is),lradstp
-      irc=irc+1
+! add to the spin density matrix
       if (spinpol) then
 ! spin-polarised
-        if (ncmag) then
-          magmt(:,ir,ias,1)=magmt(:,ir,ias,1)+2.d0*rfmt(:,irc,3)
-          magmt(:,ir,ias,2)=magmt(:,ir,ias,2)-2.d0*rfmt(:,irc,4)
-          magmt(:,ir,ias,3)=magmt(:,ir,ias,3)+rfmt(:,irc,1)-rfmt(:,irc,2)
-        else
-          magmt(:,ir,ias,1)=magmt(:,ir,ias,1)+rfmt(:,irc,1)-rfmt(:,irc,2)
-        end if
-        rhomt(:,ir,ias)=rhomt(:,ir,ias)+rfmt(:,irc,1)+rfmt(:,irc,2)
+        do irc=1,nrcmt(is)
+          do itp=1,lmmaxvr
+            zt1=wfmt3(itp,irc,1)
+            zt2=wfmt3(itp,irc,2)
+            rfmt(itp,irc,1)=rfmt(itp,irc,1)+wo*(dble(zt1)**2+aimag(zt1)**2)
+            rfmt(itp,irc,2)=rfmt(itp,irc,2)+wo*(dble(zt2)**2+aimag(zt2)**2)
+            if (ncmag) then
+              zt3=zt1*conjg(zt2)
+              rfmt(itp,irc,3)=rfmt(itp,irc,3)+wo*dble(zt3)
+              rfmt(itp,irc,4)=rfmt(itp,irc,4)+wo*aimag(zt3)
+            end if
+          end do
+        end do
       else
 ! spin-unpolarised
-        rhomt(:,ir,ias)=rhomt(:,ir,ias)+rfmt(:,irc,1)
+        do irc=1,nrcmt(is)
+          do itp=1,lmmaxvr
+            zt1=wfmt3(itp,irc,1)
+            rfmt(itp,irc,1)=rfmt(itp,irc,1)+wo*(dble(zt1)**2+aimag(zt1)**2)
+          end do
+        end do
       end if
-    end do
+    end if
+  end do
+! add to rhomt and magmt
+  irc=0
+  do ir=1,nrmt(is),lradstp
+    irc=irc+1
+    if (spinpol) then
+! spin-polarised
+      if (ncmag) then
+        magmt(:,ir,ias,1)=magmt(:,ir,ias,1)+2.d0*rfmt(:,irc,3)
+        magmt(:,ir,ias,2)=magmt(:,ir,ias,2)-2.d0*rfmt(:,irc,4)
+        magmt(:,ir,ias,3)=magmt(:,ir,ias,3)+rfmt(:,irc,1)-rfmt(:,irc,2)
+      else
+        magmt(:,ir,ias,1)=magmt(:,ir,ias,1)+rfmt(:,irc,1)-rfmt(:,irc,2)
+      end if
+      rhomt(:,ir,ias)=rhomt(:,ir,ias)+rfmt(:,irc,1)+rfmt(:,irc,2)
+    else
+! spin-unpolarised
+      rhomt(:,ir,ias)=rhomt(:,ir,ias)+rfmt(:,irc,1)
+    end if
   end do
 end do
 !------------------------------!
 !     interstitial density     !
 !------------------------------!
-do j=1,nstsv
+nstsvloc=mpi_grid_map(nstsv,2)
+do jloc=1,nstsvloc
+  j=mpi_grid_map(nstsv,2,loc=jloc)
   wo=wkpt(ik)*occsv(j,ik)
   if (abs(wo).gt.epsocc) then
     t1=wo/omega

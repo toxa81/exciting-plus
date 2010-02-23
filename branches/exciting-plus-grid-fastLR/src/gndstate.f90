@@ -122,7 +122,7 @@ if (wproc) then
   write(60,'("+------------------------------+")')
 end if
 do iscl=1,maxscl
- call timer_start(t_iter_tot,reset=.true.)
+  call timer_start(t_iter_tot,reset=.true.)
 ! reset all timers
   call timer_reset(t_apw_rad)
   call timer_reset(t_seceqn)
@@ -181,8 +181,7 @@ do iscl=1,maxscl
   call timer_start(t_seceqn)
   do ikloc=1,nkptloc
 ! solve the first- and second-variational secular equations
-    call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
-      evecsvloc(1,1,ikloc))
+    call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
   end do
   call timer_stop(t_seceqn)
   call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),&
@@ -195,7 +194,7 @@ do iscl=1,maxscl
 ! write the Fermi energy to file
     call writefermi
   endif
-  call mpi_grid_bcast(occsv(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.)
+  call mpi_grid_bcast(occsv(1,1),nstsv*nkpt,dims=(/dim_k,2/))
   if (wannier) call wann_ene_occ
 ! set the charge density and magnetisation to zero
   call timer_start(t_rho_mag_tot)
@@ -210,14 +209,14 @@ do iscl=1,maxscl
 ! add to the density and magnetisation
     call rhomagk(ikloc,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
   end do
-  call mpi_grid_reduce(rhomt(1,1,1),lmmaxvr*nrmtmax*natmtot,dims=(/dim_k/),&
-    side=.true.,all=.true.)
-  call mpi_grid_reduce(rhoir(1),ngrtot,dims=(/dim_k/),side=.true.,all=.true.)
+  call mpi_grid_reduce(rhomt(1,1,1),lmmaxvr*nrmtmax*natmtot,dims=(/dim_k,2/),&
+    all=.true.)
+  call mpi_grid_reduce(rhoir(1),ngrtot,dims=(/dim_k,2/),all=.true.)
   if (spinpol) then
     call mpi_grid_reduce(magmt(1,1,1,1),lmmaxvr*nrmtmax*natmtot*ndmag,&
-      dims=(/dim_k/),side=.true.,all=.true.)
-    call mpi_grid_reduce(magir(1,1),ngrtot*ndmag,dims=(/dim_k/),&
-      side=.true.,all=.true.)
+      dims=(/dim_k,2/),all=.true.)
+    call mpi_grid_reduce(magir(1,1),ngrtot*ndmag,dims=(/dim_k,2/),&
+      all=.true.)
   endif
   call rhomagsh
   call timer_stop(t_rho_mag_sum)
@@ -246,12 +245,12 @@ do iscl=1,maxscl
   if (ldapu.ne.0) then
     call timer_start(t_dmat)
 ! generate the LDA+U density matrix
-    call gendmatlu
+    !call gendmatlu
+    call gendmatrsh
 ! generate the LDA+U potential matrix
     call genvmatlu
 ! write the LDA+U matrices to file
     if (wproc) call writeldapu
-    call gendmatrsh
     call timer_stop(t_dmat)
   end if
 ! compute the effective potential

@@ -80,8 +80,8 @@ endif
 call timesec(ts0)
 call timer_start(t_seceqnfv_setup)
 ! set the matrices to zero
-h(:)=0.d0
-o(:)=0.d0
+h(:)=zzero
+o(:)=zzero
 if (packed) then
 ! muffin-tin contributions
   do is=1,nspecies
@@ -114,35 +114,39 @@ timemat=timemat+ts1-ts0
 !------------------------------------!
 !     solve the secular equation     !
 !------------------------------------!
-call timesec(ts0)
-call timer_start(t_seceqnfv_diag)
-vl=0.d0
-vu=0.d0
-if (packed) then
-! LAPACK 3.0 call
-  call zhpgvx(1,'V','I','U',nmatp,h,o,vl,vu,1,nstfv,evaltol,m,w,evecfv,nmatmax, &
-   work,rwork,iwork,ifail,info)
-else
-  call zhegvx(1,'V','I','U',nmatp,h,nmatp,o,nmatp,vl,vu,1,nstfv,evaltol,m,w,evecfv,&
-   nmatmax,work,lwork,rwork,iwork,ifail,info)
-endif
-evalfv(1:nstfv)=w(1:nstfv)
-if (info.ne.0) then
-  write(*,*)
-  write(*,'("Error(seceqnfv): diagonalisation failed")')
-  write(*,'(" ZHPGVX returned INFO = ",I8)') info
-  if (info.gt.nmatp) then
-    i=info-nmatp
-    write(*,'(" The leading minor of the overlap matrix of order ",I8)') i
-    write(*,'("  is not positive definite")')
-    write(*,'(" Order of overlap matrix : ",I8)') nmatp
+if (mpi_grid_root((/2/))) then
+  call timesec(ts0)
+  call timer_start(t_seceqnfv_diag)
+  vl=0.d0
+  vu=0.d0
+  if (packed) then
+  ! LAPACK 3.0 call
+    call zhpgvx(1,'V','I','U',nmatp,h,o,vl,vu,1,nstfv,evaltol,m,w,evecfv,&
+     nmatmax,work,rwork,iwork,ifail,info)
+  else
+    call zhegvx(1,'V','I','U',nmatp,h,nmatp,o,nmatp,vl,vu,1,nstfv,evaltol,&
+     m,w,evecfv,nmatmax,work,lwork,rwork,iwork,ifail,info)
+  endif
+  evalfv(1:nstfv)=w(1:nstfv)
+  if (info.ne.0) then
     write(*,*)
+    write(*,'("Error(seceqnfv): diagonalisation failed")')
+    write(*,'(" ZHPGVX returned INFO = ",I8)') info
+    if (info.gt.nmatp) then
+      i=info-nmatp
+      write(*,'(" The leading minor of the overlap matrix of order ",I8)') i
+      write(*,'("  is not positive definite")')
+      write(*,'(" Order of overlap matrix : ",I8)') nmatp
+      write(*,*)
+    end if
+    stop
   end if
-  stop
-end if
-call timesec(ts1)
-timefv=timefv+ts1-ts0
-call timer_stop(t_seceqnfv_diag)
+  call timesec(ts1)
+  timefv=timefv+ts1-ts0
+  call timer_stop(t_seceqnfv_diag)
+endif
+call mpi_grid_bcast(evecfv(1,1),nmatmax*nstfv,dims=(/2/))
+call mpi_grid_bcast(evalfv(1),nstfv,dims=(/2/))
 deallocate(iwork,ifail,w,rwork,v,h,o,work)
 return
 end subroutine

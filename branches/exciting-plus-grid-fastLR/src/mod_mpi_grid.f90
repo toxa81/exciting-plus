@@ -478,9 +478,20 @@ integer, optional, intent(in) :: op
 ! local variables
 integer comm,root_x(mpi_grid_nd),root,ierr,sz
 logical all_,l1
-integer op_,n_
+integer op_,n_,i
 integer, allocatable :: tmp(:)
 #ifdef _MPI_
+! check if we need to do a reduction
+if (present(dims)) then
+  l1=.true.
+  do i=1,size(dims)
+    if (mpi_grid_size(dims(i)).ne.1) l1=.false.
+  enddo
+else
+  l1=.false.
+endif
+if (l1) return
+
 sz=sizeof(val)
 n_=1
 if (present(n)) n_=n
@@ -536,9 +547,20 @@ integer, optional, intent(in) :: op
 ! local variables
 integer comm,root_x(mpi_grid_nd),root,ierr,sz
 logical all_,l1
-integer op_,n_
+integer op_,n_,i
 integer(2), allocatable :: tmp(:)
 #ifdef _MPI_
+! check if we need to do a reduction
+if (present(dims)) then
+  l1=.true.
+  do i=1,size(dims)
+    if (mpi_grid_size(dims(i)).ne.1) l1=.false.
+  enddo
+else
+  l1=.false.
+endif
+if (l1) return
+
 sz=sizeof(val)
 n_=1
 if (present(n)) n_=n
@@ -594,9 +616,20 @@ integer, optional, intent(in) :: op
 ! local variables
 integer comm,root_x(mpi_grid_nd),root,ierr,sz
 logical all_,l1
-integer op_,n_
+integer op_,n_,i
 real(8), allocatable :: tmp(:)
 #ifdef _MPI_
+! check if we need to do a reduction
+if (present(dims)) then
+  l1=.true.
+  do i=1,size(dims)
+    if (mpi_grid_size(dims(i)).ne.1) l1=.false.
+  enddo
+else
+  l1=.false.
+endif
+if (l1) return
+
 sz=sizeof(val)
 n_=1
 if (present(n)) n_=n
@@ -652,9 +685,20 @@ integer, optional, intent(in) :: op
 ! local variables
 integer comm,root_x(mpi_grid_nd),root,ierr,sz
 logical all_,l1
-integer op_,n_
+integer op_,n_,i
 complex(8), allocatable :: tmp(:)
 #ifdef _MPI_
+! check if we need to do a reduction
+if (present(dims)) then
+  l1=.true.
+  do i=1,size(dims)
+    if (mpi_grid_size(dims(i)).ne.1) l1=.false.
+  enddo
+else
+  l1=.false.
+endif
+if (l1) return
+
 sz=sizeof(val)
 n_=1
 if (present(n)) n_=n
@@ -710,9 +754,20 @@ integer, optional, intent(in) :: op
 ! local variables
 integer comm,root_x(mpi_grid_nd),root,ierr,sz
 logical all_,l1
-integer op_,n_
+integer op_,n_,i
 real(4), allocatable :: tmp(:)
 #ifdef _MPI_
+! check if we need to do a reduction
+if (present(dims)) then
+  l1=.true.
+  do i=1,size(dims)
+    if (mpi_grid_size(dims(i)).ne.1) l1=.false.
+  enddo
+else
+  l1=.false.
+endif
+if (l1) return
+
 sz=sizeof(val)
 n_=1
 if (present(n)) n_=n

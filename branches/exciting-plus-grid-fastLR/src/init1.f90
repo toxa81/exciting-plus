@@ -130,8 +130,16 @@ dim_k=dim1
 dim_b=dim2
 dim_q=dim3
 if (task.eq.0.or.task.eq.1) then
-  allocate(grid_dim(1))
-  grid_dim=(/nproc/)
+  allocate(grid_dim(2))
+  if (nproc.le.nkpt) then
+    grid_dim=(/nproc,1/)
+  else
+    i1=nproc/nkpt
+    grid_dim=(/nkpt,i1/)
+  endif    
+  if (lmpi_grid) then
+    grid_dim(1:2)=mpi_grid(1:2)
+  endif
 else if (task.eq.400.or.task.eq.401.or.task.eq.402.or.task.eq.403) then
   allocate(grid_dim(3))
 ! overwrite default grid layout
