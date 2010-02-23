@@ -69,41 +69,47 @@ if (.not.ncmag) then
   iwann=iwann_tmp
   deallocate(iwann_tmp)
 endif
-      
-open(100,file='WANNIER.OUT',form='formatted',status='replace')
-write(100,'("number of WF atoms : ", I4)')wann_natom
-write(100,'("number of WF orbital groups : ", I4)')wann_norbgrp
-write(100,'("number of WF types : ", I4)')wann_ntype
-write(100,*)
-write(100,'("total number of WF : ", I4)')nwann
-write(100,*)
+
+if (mpi_grid_root()) then     
+  open(100,file='WANNIER.OUT',form='formatted',status='replace')
+  write(100,'("number of WF atoms : ", I4)')wann_natom
+  write(100,'("number of WF orbital groups : ", I4)')wann_norbgrp
+  write(100,'("number of WF types : ", I4)')wann_ntype
+  write(100,*)
+  write(100,'("total number of WF : ", I4)')nwann
+  write(100,*)
+endif
 do n=1,nwann
   iatom=iwann(1,n)
   lm=iwann(2,n)
   ispn=iwann(3,n)
   itype=iwann(4,n)
   nwannias(iatom)=nwannias(iatom)+1
-  write(100,'("  wf : ",I4)')n
-  write(100,'("    type : ",I4)')itype
-  write(100,'("    pure spinor orbital for projection : ")')
-  write(100,'("      atom : ",I4)')iatom
-  write(100,'("      l,m  : ",2I4)')lm2l(lm),lm-lm2l(lm)**2
-  write(100,'("      ispn : ",I4)')ispn
-  write(100,'("  interval : [",F8.4,",",F8.4,"]")')wann_eint(:,itype)
-  write(100,'("    potential : ",F8.4)')wann_v(itype)
-  write(100,*)
-enddo
-if (wannier_lc) then
-  write(100,*)
-  write(100,'("number of linear combinations of WF : ",I4)')nwann_lc
-  do n=1,nwann_lc
+  if (mpi_grid_root()) then     
     write(100,'("  wf : ",I4)')n
-    do i=1,wann_iorb_lc(0,1,n)
-      write(100,'("    ",4I4)')(wann_iorb_lc(i,j,n),j=1,4)
-    enddo
-  enddo  
+    write(100,'("    type : ",I4)')itype
+    write(100,'("    pure spinor orbital for projection : ")')
+    write(100,'("      atom : ",I4)')iatom
+    write(100,'("      l,m  : ",2I4)')lm2l(lm),lm-lm2l(lm)**2
+    write(100,'("      ispn : ",I4)')ispn
+    write(100,'("  interval : [",F8.4,",",F8.4,"]")')wann_eint(:,itype)
+    write(100,'("    potential : ",F8.4)')wann_v(itype)
+    write(100,*)
+  endif
+enddo
+if (mpi_grid_root()) then
+  if (wannier_lc) then
+    write(100,*)
+    write(100,'("number of linear combinations of WF : ",I4)')nwann_lc
+    do n=1,nwann_lc
+      write(100,'("  wf : ",I4)')n
+      do i=1,wann_iorb_lc(0,1,n)
+        write(100,'("    ",4I4)')(wann_iorb_lc(i,j,n),j=1,4)
+      enddo
+    enddo  
+  endif
+  close(100)
 endif
-close(100)
 if (wannier_lc) nwann=nwann_lc
 
 if (allocated(wann_c)) deallocate(wann_c)
