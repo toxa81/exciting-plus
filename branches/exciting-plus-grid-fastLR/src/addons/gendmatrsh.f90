@@ -49,33 +49,35 @@ do ikloc=1,nkptloc
       do ia=1,natoms(is)
         ias=idxas(ia,is)
         do j=1,nstsv
-          do ispn=1,nspinor
-          do jspn=1,nspinor
-            do io1=1,nrfmax
-            do io2=1,nrfmax
-              do m1=-l,l
-              do m2=-l,l
-                lm1=idxlm(l,m1)
-                lm2=idxlm(l,m2)
-                z1=wfsvmt(lm1,io1,ias,ispn,j)*dconjg(wfsvmt(lm2,io2,ias,jspn,j))*&
-                  urfprod(l,io1,io2,ias)*wkpt(ik)
-                if (ldensmtrx) then
-                  if (evalsv(j,ik).ge.dm_e1.and. &
-                      evalsv(j,ik).le.dm_e2) then
-                    dmatylm(lm1,lm2,ispn,jspn,ias)=dmatylm(lm1,lm2,ispn,jspn,ias)+z1
-                  endif                 
-                else
-                  dmatylm(lm1,lm2,ispn,jspn,ias)=dmatylm(lm1,lm2,ispn,jspn,ias)+&
-                    z1*occsv(j,ik)
-                endif
-                ematylm(lm1,lm2,ispn,jspn,ias)=ematylm(lm1,lm2,ispn,jspn,ias)+&
-                    z1*evalsv(j,ik)
+          if (ldensmtrx.or.(occsv(j,ik).gt.epsocc)) then
+            do ispn=1,nspinor
+            do jspn=1,nspinor
+              do io1=1,nrfmax
+              do io2=1,nrfmax
+                do m1=-l,l
+                do m2=-l,l
+                  lm1=idxlm(l,m1)
+                  lm2=idxlm(l,m2)
+                  z1=wfsvmt(lm1,io1,ias,ispn,j)*dconjg(wfsvmt(lm2,io2,ias,jspn,j))*&
+                    urfprod(l,io1,io2,ias)*wkpt(ik)
+                  if (ldensmtrx) then
+                    if (evalsv(j,ik).ge.dm_e1.and. &
+                        evalsv(j,ik).le.dm_e2) then
+                      dmatylm(lm1,lm2,ispn,jspn,ias)=dmatylm(lm1,lm2,ispn,jspn,ias)+z1
+                    endif                 
+                  else
+                    dmatylm(lm1,lm2,ispn,jspn,ias)=dmatylm(lm1,lm2,ispn,jspn,ias)+&
+                      z1*occsv(j,ik)
+                  endif
+                  ematylm(lm1,lm2,ispn,jspn,ias)=ematylm(lm1,lm2,ispn,jspn,ias)+&
+                      z1*evalsv(j,ik)
+                enddo
+                enddo
               enddo
               enddo
-            enddo
-            enddo
-          enddo !ispn
-          enddo !jspn
+            enddo !ispn
+            enddo !jspn
+          endif
         enddo !j
       enddo !ia
     endif
