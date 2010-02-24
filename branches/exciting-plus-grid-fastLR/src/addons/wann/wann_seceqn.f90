@@ -1,14 +1,16 @@
-subroutine wann_seceqn(ik,evecsv)
+subroutine wann_seceqn(ikloc,evecsv)
 use modmain
 ! arguments
 implicit none
-integer, intent(in) :: ik
+integer, intent(in) :: ikloc
 complex(8), intent(inout) :: evecsv(nstsv,nstsv)
 ! local variables
 complex(8), allocatable :: z1(:,:),z2(:,:)
 complex(8), allocatable :: work(:)
 real(8), allocatable :: rwork(:)
-integer i,j,i1,i2,info,lwork,itype,n
+integer i,j,i1,i2,info,lwork,itype,n,ik
+
+ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 
 lwork=2*nstsv
 allocate(z1(nstsv,nstsv))
@@ -25,7 +27,7 @@ do n=1,nwann
   itype=iwann(4,n)
   do i1=1,nstsv
     do i2=1,nstsv
-      z1(i1,i2)=z1(i1,i2)+dconjg(wann_c(n,i1,ik))*wann_c(n,i2,ik)*wann_v(itype)
+      z1(i1,i2)=z1(i1,i2)+dconjg(wann_c(n,i1,ikloc))*wann_c(n,i2,ikloc)*wann_v(itype)
     enddo
   enddo
 enddo
