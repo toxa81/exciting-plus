@@ -10,6 +10,7 @@ logical vbz,l1
 real(8) b(3)
 
 call init0
+call init1
 
 ! connect center point with neigbours
 m=1

@@ -102,6 +102,8 @@ do itask=1,ntasks
     call writewann
   case(700)
     call writebz
+  case(701)
+    call writexc
   case default
     write(*,*)
     write(*,'("Error(main): task not defined : ",I8)') task
