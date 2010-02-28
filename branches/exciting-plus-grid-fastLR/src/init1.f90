@@ -164,6 +164,7 @@ endif
 call mpi_grid_initialize(grid_dim)
 nkptloc=mpi_grid_map(nkpt,dim_k)
 nkptnrloc=mpi_grid_map(nkptnr,dim_k)
+deallocate(grid_dim)
 
 !---------------------!
 !     G+k vectors     !

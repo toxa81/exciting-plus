@@ -88,7 +88,7 @@ endif
 write_megq_file=.true.
 if (task.eq.403) write_megq_file=.false.
 write_chi0_file=.false.
-if (crpa) write_chi0_file=.true.
+!if (crpa) write_chi0_file=.true.
 
 ! set the switch to compute screened W matrix in task 402
 screened_w=.false.

@@ -7,6 +7,7 @@ implicit none
 integer, intent(in) :: ivq0m(3)
 ! local variables
 complex(8), allocatable :: chi0(:,:)
+complex(8), allocatable :: chi0w(:,:,:)
 complex(8), allocatable :: chi0wan(:,:)
 complex(8), allocatable :: chi0wan_k(:,:,:)
 complex(8), allocatable :: vcwan(:,:)
@@ -19,7 +20,7 @@ integer, external :: hash
 
 
 integer i,iw,i1,i2,ikloc,n,j,ifxc
-integer ist1,ist2,nfxcloc,ifxcloc
+integer ist1,ist2,nfxcloc,ifxcloc,nwloc,jwloc,iwloc,tag
 integer it1(3),it2(3),it(3)
 integer ig
 character*100 qnm,fout,fchi0,fstat,path
@@ -180,6 +181,11 @@ call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 
 ! distribute nfxca between 2-nd dimension 
 nfxcloc=mpi_grid_map(nfxca,dim_b)
+nwloc=mpi_grid_map(nepts,dim_k)
+
+if (crpa) then
+  allocate(chi0w(ngvecme,ngvecme,nwloc))
+endif
 
 if (wproc) then
   write(150,*)
@@ -242,10 +248,21 @@ do iw=ie1,nepts
     endif
     call timer_stop(8)
   else
-    if (crpa.and.mpi_grid_root(dims=(/dim_k,dim_b/))) then
-      call timer_start(5)
-      call genwu(iw,chi0,vcgq,qnm,krnl_scr)
-      call timer_stop(5)
+    if (crpa.and.mpi_grid_root(dims=(/dim_b/))) then
+      jwloc=mpi_grid_map(nepts,dim_k,glob=iw,x=j)
+      if (mpi_grid_x(dim_k).eq.0) then
+        if (j.eq.0) then
+          chi0w(:,:,jwloc)=chi0(:,:)  
+        else
+          tag=iw
+          call mpi_grid_send(chi0(1,1),ngvecme*ngvecme,(/dim_k/),(/j/),tag)
+        endif
+      endif
+      if (mpi_grid_x(dim_k).eq.j.and.j.ne.0) then
+        tag=iw
+        call mpi_grid_recieve(chi0w(1,1,jwloc),ngvecme*ngvecme,(/dim_k/),&
+          (/0/),tag)
+      endif
     endif
 ! compute response functions
     if (mpi_grid_root(dims=(/dim_k/)).and..not.crpa) then
@@ -283,7 +300,12 @@ do iw=ie1,nepts
   endif
 enddo !iw
 call timer_stop(1)
-
+do iwloc=1,nwloc
+  iw=mpi_grid_map(nepts,dim_k,loc=iwloc)
+  call timer_start(5)
+  call genwu(iw,chi0w(1,1,iwloc),vcgq,qnm,krnl_scr)
+  call timer_stop(5)
+enddo
 t1=timer_get_value(1)
 t2=timer_get_value(2)
 t3=timer_get_value(3)
@@ -299,7 +321,7 @@ if (wproc) then
   write(150,'("  Bloch basis part (chi)         : ",F8.2)')t6/nepts  
   write(150,'("  Wannier basis part (chi0wan_k) : ",F8.2)')t3/nepts
   write(150,'("  Wannier basis part (chi0wan)   : ",F8.2)')t4/nepts 
-  write(150,'("  Wannier basis part (crpa)      : ",F8.2)')t5/nepts   
+  write(150,'("  Wannier basis part (crpa)      : ",F8.2)')t5/nwloc   
   write(150,'("  Wannier basis part (chi)       : ",F8.2)')t7/nepts
   write(150,'("  Write chi0                     : ",F8.2)')t8/nepts  
   call flushifc(150)
@@ -332,6 +354,10 @@ if (wannier_chi0_chi) then
 endif
 deallocate(megqblh2)
 deallocate(vcgq)
+if (crpa) then
+  deallocate(chi0w)
+  deallocate(krnl_scr)
+endif
 
 if (write_chi0_file) then
   call genchi(ivq0m)
