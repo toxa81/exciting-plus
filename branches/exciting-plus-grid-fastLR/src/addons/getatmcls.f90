@@ -26,5 +26,6 @@ do i=1,natmcls
     endif
   enddo
 enddo
+write(*,*)'mpi_grid_x=',mpi_grid_x,'natmcls=',natmcls,'iatmcls=',iatmcls,'ias2ic=',ias2ic
 return
 end
