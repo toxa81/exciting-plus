@@ -300,12 +300,14 @@ do iw=ie1,nepts
   endif
 enddo !iw
 call timer_stop(1)
-do iwloc=1,nwloc
-  iw=mpi_grid_map(nepts,dim_k,loc=iwloc)
-  call timer_start(5)
-  call genwu(iw,chi0w(1,1,iwloc),vcgq,qnm,krnl_scr)
-  call timer_stop(5)
-enddo
+if (crpa) then
+  do iwloc=1,nwloc
+    iw=mpi_grid_map(nepts,dim_k,loc=iwloc)
+    call timer_start(5)
+    call genwu(iw,chi0w(1,1,iwloc),vcgq,qnm,krnl_scr)
+    call timer_stop(5)
+  enddo
+endif
 t1=timer_get_value(1)
 t2=timer_get_value(2)
 t3=timer_get_value(3)
