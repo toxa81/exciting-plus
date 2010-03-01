@@ -37,6 +37,7 @@ if ((task.eq.2).or.(task.eq.3)) tforce=.true.
 call timer_start(t_init,reset=.true.)
 call init0
 call init1
+if (.not.mpi_grid_in()) return
 ! only root processor writes
 wproc=mpi_grid_root()
 ! allocate arrays for eigen-values/-vectors
