@@ -100,7 +100,7 @@ do igloc=1,ngvecmeloc
                   enddo !m3
                 enddo !l3
                 zt1=zt1*fourpi
-                if (abs(zt1).gt.1d-16) then
+                if (abs(zt1).gt.1d-12) then
                   ngntuju(ic,ig)=ngntuju(is,ig)+1
                   n=ngntuju(ic,ig)
                   gntuju(n,ic,ig)=zt1
