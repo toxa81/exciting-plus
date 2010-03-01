@@ -39,7 +39,7 @@ allocate(uju(0:lmaxexp,0:lmaxvr,0:lmaxvr,nrfmax,nrfmax))
 
 igntuju=0
 ngntuju=0
-gntuju=dcmplx(0.d0,0.d0)
+gntuju=zzero
 ! loop over G-vectors
 ngvecmeloc=mpi_grid_map(ngvecme,dim_k)
 do igloc=1,ngvecmeloc

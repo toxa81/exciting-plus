@@ -3,8 +3,6 @@ use modmain
 implicit none
 integer, intent(in) :: lmaxexp
 call getmaxgnt(lmaxexp,ngntujumax)
-write(*,*)'x=',mpi_grid_x,'ngntujumax=',ngntujumax
-call mpi_grid_barrier
 if (allocated(ngntuju)) deallocate(ngntuju)
 allocate(ngntuju(natmcls,ngvecme))
 ngntuju=0
