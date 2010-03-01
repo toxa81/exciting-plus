@@ -70,14 +70,6 @@ do igloc=1,ngvecmeloc
       enddo !l1
     enddo !l3
 ! compute muffin-tin integrals
-    do io1=1,nrfmax
-      do io2=1,nrfmax
-        do l1=0,lmaxvr
-        do m1=-l1,l1 
-          lm1=idxlm(l1,m1)
-          do l2=0,lmaxvr
-          do m2=-l2,l2
-            lm2=idxlm(l2,m2)
 !  1) sfacgq0 and ylmgq0 are generated for exp^{+i(G+q)x}
 !     expansion of a plane-wave: 
 !       exp^{+igx}=4\pi \sum_{l_3 m_3} i^{l_3} j_{l_3}(gr)Y_{l_3 m_3}^{*}(\hat g)Y_{l_3 m_3}(\hat r)
@@ -91,32 +83,38 @@ do igloc=1,ngvecmeloc
 !  4) structure factor lr_sfacgq0 of a (G+q) plane wave is taken into 
 !     account in genmegqblh subroutine; this allows to keep radial integrals
 !     for atom classes only (not for all atoms)
-            zt1=zzero
-            do l3=0,lmaxexp
-            do m3=-l3,l3
-              lm3=idxlm(l3,m3)
-              !zt1=zt1+gaunt(l2,l1,l3,m2,m1,m3)*uju(l3,l1,l2,io1,io2)*&
-              !  lr_ylmgq0(lm3,ig)*dconjg(zi**l3)*fourpi*dconjg(lr_sfacgq0(ig,ias))
-              zt1=zt1+gnt(lm3,lm2,lm1)*uju(l3,l1,l2,io1,io2)*&
-                lr_ylmgq0(lm3,ig)*dconjg(zi**l3)
-            enddo
-            enddo
-            zt1=zt1*fourpi
-            if (abs(zt1).gt.1d-16) then
-              ngntuju(ic,ig)=ngntuju(is,ig)+1
-              n=ngntuju(ic,ig)
-              gntuju(n,ic,ig)=zt1
-              igntuju(1,n,ic,ig)=lm1
-              igntuju(2,n,ic,ig)=lm2
-              igntuju(3,n,ic,ig)=io1
-              igntuju(4,n,ic,ig)=io2
-            endif
+    do l1=0,lmaxvr
+      do m1=-l1,l1 
+        lm1=idxlm(l1,m1)
+        do l2=0,lmaxvr
+          do m2=-l2,l2
+            lm2=idxlm(l2,m2)
+            do io1=1,nrfl(l1,is)
+              do io2=1,nrfl(l2,is)
+                zt1=zzero
+                do l3=0,lmaxexp
+                  do m3=-l3,l3
+                    lm3=idxlm(l3,m3)
+                    zt1=zt1+gnt(lm3,lm2,lm1)*uju(l3,l1,l2,io1,io2)*&
+                      lr_ylmgq0(lm3,ig)*dconjg(zi**l3)
+                  enddo !m3
+                enddo !l3
+                zt1=zt1*fourpi
+                if (abs(zt1).gt.1d-16) then
+                  ngntuju(ic,ig)=ngntuju(is,ig)+1
+                  n=ngntuju(ic,ig)
+                  gntuju(n,ic,ig)=zt1
+                  igntuju(1,n,ic,ig)=lm1
+                  igntuju(2,n,ic,ig)=lm2
+                  igntuju(3,n,ic,ig)=io1
+                  igntuju(4,n,ic,ig)=io2
+                endif
+              enddo !io2
+            enddo !io1
           enddo !m2
-          enddo !l2
-        enddo !m1
-        enddo !l1
-      enddo !io2
-    enddo !io1
+        enddo !l2
+      enddo !m1
+    enddo !l1
   enddo !ic
 enddo !ig
 ! syncronize all values along auxiliary k-direction

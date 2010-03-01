@@ -18,10 +18,10 @@ do l1=0,lmaxvr
         t1=0.d0
         do l3=0,lmaxexp
           do m3=-l3,l3
-            t1=t1+gaunt(l2,l1,l3,m2,m1,m3)
+            t1=t1+abs(gaunt(l2,l1,l3,m2,m1,m3))
           enddo
         enddo
-        if (abs(t1).gt.1d-16) maxgnt=maxgnt+nrf1*nrf2
+        if (t1.gt.1d-16) maxgnt=maxgnt+nrf1*nrf2
       enddo
     enddo
   enddo
