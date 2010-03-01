@@ -21,7 +21,7 @@ do l1=0,lmaxvr
             t1=t1+abs(gaunt(l2,l1,l3,m2,m1,m3))
           enddo
         enddo
-        if (t1.gt.1d-18) maxgnt=maxgnt+nrf1*nrf2
+        if (t1.gt.1d-16) maxgnt=maxgnt+nrf1*nrf2
       enddo
     enddo
   enddo
