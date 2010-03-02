@@ -4,6 +4,8 @@
 ! See the file COPYING for license details.
 
 module modmain
+use mod_mpi_grid
+use mod_extra
 
 !----------------------------!
 !     lattice parameters     !

@@ -22,8 +22,8 @@ include ../make.inc
 # modules
 SRC_libxc = libxcifc_stub.f90
 include libxc.inc
-SRC_modules = modmain.f90 $(SRC_libxc) modxcifc.f90 modldapu.f90 modrdm.f90 \
- modtest.f90
+SRC_modules =  mod_extra.f90 mod_mpi_grid.f90 modmain.f90 $(SRC_libxc) modxcifc.f90 \
+ modldapu.f90 modrdm.f90 modtest.f90
 
 # main program
 SRC_main = main.f90
@@ -132,7 +132,6 @@ EXE = elk
 #-------------------------------------------------------------------------------
 elk:	$(OBJ)
 	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) $(LIB_LPK) $(LIB_FFT) $(LIB_XC) 
-	$(LIB_SYS)
 
 blas:
 	cd BLAS; $(MAKE); cp blas.a ..
