@@ -183,7 +183,7 @@ call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 nfxcloc=mpi_grid_map(nfxca,dim_b)
 nwloc=mpi_grid_map(nepts,dim_k)
 
-if (crpa) then
+if (.not.write_chi0_file) then
   allocate(chi0w(ngvecme,ngvecme,nwloc))
 endif
 
@@ -224,16 +224,14 @@ do iw=ie1,nepts
         call sumchi0wan_k(ikloc,lr_w(iw),chi0wan_k(1,1,ikloc))
       endif
     enddo !ikloc
-    !call mpi_grid_reduce(chi0wan_k(1,1,1),nmegqwan*nmegqwan*nkptnrloc,&
-    !  dims=(/dim_b/))
     call timer_stop(3)
     call timer_start(4)
 ! compute ch0 matrix in Wannier basis
     call genchi0wan(mexp,chi0wan_k,chi0wan)
     if (megqwan_afm) chi0wan(:,:)=chi0wan(:,:)*2.d0    
     call timer_stop(4)
-  endif
-  
+  endif !wannier_chi0_chi
+! save chi0 or distribute it over processors  
   if (write_chi0_file) then
     call timer_start(8)
     if (mpi_grid_root((/dim_k,dim_b/))) then
@@ -248,7 +246,7 @@ do iw=ie1,nepts
     endif
     call timer_stop(8)
   else
-    if (crpa.and.mpi_grid_root(dims=(/dim_b/))) then
+    if (mpi_grid_root(dims=(/dim_b/))) then
       jwloc=mpi_grid_map(nepts,dim_k,glob=iw,x=j)
       if (mpi_grid_x(dim_k).eq.0) then
         if (j.eq.0) then
@@ -264,8 +262,27 @@ do iw=ie1,nepts
           (/0/),tag)
       endif
     endif
-! compute response functions
-    if (mpi_grid_root(dims=(/dim_k/)).and..not.crpa) then
+  endif !write_chi0_file
+  if (wproc) then
+    open(160,file=trim(fstat),status='replace',form='formatted')
+    write(160,'(I8)')iw
+    close(160)
+  endif
+enddo !iw
+call timer_stop(1)
+
+if (.not.write_chi0_file) then
+  do iwloc=1,nwloc
+    iw=mpi_grid_map(nepts,dim_k,loc=iwloc)
+! compute screened W and U  
+    if (crpa) then
+      call timer_start(5)
+      call genwu(iw,chi0w(1,1,iwloc),vcgq,qnm,krnl_scr)
+      call timer_stop(5)
+    else
+! compute response functions 
+! broadcast chi0
+      call mpi_grid_bcast(chi0w(1,1,iwloc),ngvecme*ngvecme,dims=(/dim_b/))
 ! loop over fxc
       do ifxcloc=1,nfxcloc
         ifxc=mpi_grid_map(nfxca,dim_b,loc=ifxcloc)
@@ -283,31 +300,17 @@ do iw=ie1,nepts
           enddo
         endif !lrtype.eq.0 
         call timer_start(6)
-        call solve_chi(vcgq,lr_w(iw),chi0,krnl,krnl_scr,f_response(1,iw,ifxc))
+        call solve_chi(vcgq,lr_w(iw),chi0w(1,1,iwloc),krnl,krnl_scr,f_response(1,iw,ifxc))
         call timer_stop(6)
         if (wannier_chi0_chi.and.ifxc.eq.1) then
           call timer_start(7)
           call solve_chi_wan(vcgq,lr_w(iw),vcwan,chi0wan,f_response(1,iw,ifxc))
           call timer_stop(7)
-        endif
-      enddo
-    endif !(mpi_grid_root(dims=(/dim_k/)).and..not.crpa)
-  endif !write_chi0_file
-  if (wproc) then
-    open(160,file=trim(fstat),status='replace',form='formatted')
-    write(160,'(I8)')iw
-    close(160)
-  endif
-enddo !iw
-call timer_stop(1)
-if (crpa) then
-  do iwloc=1,nwloc
-    iw=mpi_grid_map(nepts,dim_k,loc=iwloc)
-    call timer_start(5)
-    call genwu(iw,chi0w(1,1,iwloc),vcgq,qnm,krnl_scr)
-    call timer_stop(5)
-  enddo
-endif
+        endif !wannier_chi0_chi.and.ifxc.eq.1
+      enddo !ifxcloc
+    endif !crpa
+  enddo !iwloc
+endif !.not.write_chi0_file
 t1=timer_get_value(1)
 t2=timer_get_value(2)
 t3=timer_get_value(3)
@@ -329,15 +332,13 @@ if (wproc) then
   call flushifc(150)
 endif
 
-if (.not.write_chi0_file) then
-  if (mpi_grid_root(dims=(/dim_k/))) then
-    call mpi_grid_reduce(f_response(1,1,1),nf_response*nepts*nfxca,dims=(/dim_b/))
+if (.not.write_chi0_file.and..not.crpa) then
+  call mpi_grid_reduce(f_response(1,1,1),nf_response*nepts*nfxca,dims=(/dim_k,dim_b/))
+  if (mpi_grid_root(dims=(/dim_k,dim_b/))) then
 ! write response functions to .dat file
-    if (mpi_grid_root(dims=(/dim_b/))) then
-      do ifxc=1,nfxca
-        call write_chi(ivq0m,ifxc)
-      enddo
-    endif
+    do ifxc=1,nfxca
+      call write_chi(ivq0m,ifxc)
+    enddo
   endif
 endif
 
@@ -356,11 +357,12 @@ if (wannier_chi0_chi) then
 endif
 deallocate(megqblh2)
 deallocate(vcgq)
-if (crpa) then
+if (.not.write_chi0_file) then
   deallocate(chi0w)
+endif
+if (crpa) then
   deallocate(krnl_scr)
 endif
-
 if (write_chi0_file) then
   call genchi(ivq0m)
 endif
