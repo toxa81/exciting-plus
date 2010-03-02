@@ -8,12 +8,14 @@ allocate(ias2ic(natmtot))
 ias2ic=0
 do is=1,nspecies
   do ia1=1,natoms(is)
-    if (ias2ic(idxas(ia1,is)).eq.0) natmcls=natmcls+1
-    do ia2=1,natoms(is) 
-      if (eqatoms(ia1,ia2,is)) then
-        ias2ic(idxas(ia2,is))=natmcls
-      endif
-    enddo
+    if (ias2ic(idxas(ia1,is)).eq.0) then
+      natmcls=natmcls+1
+      do ia2=1,natoms(is) 
+        if (eqatoms(ia1,ia2,is)) then
+          ias2ic(idxas(ia2,is))=natmcls
+        endif
+      enddo
+    endif
   enddo
 enddo
 if (allocated(iatmcls)) deallocate(iatmcls)
@@ -26,7 +28,5 @@ do i=1,natmcls
     endif
   enddo
 enddo
-write(*,*)'mpi_grid_x=',mpi_grid_x,'natmcls=',natmcls,'iatmcls=',iatmcls,'ias2ic=',ias2ic
-call mpi_grid_barrier
 return
 end
