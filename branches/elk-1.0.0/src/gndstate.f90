@@ -24,15 +24,15 @@ use modldapu
 implicit none
 ! local variables
 logical exist
-integer ik,is,ia,idm
+integer ik,is,ia,idm,ikloc
 integer n,nwork
 real(8) dv,etp,de,timetot
 ! allocatable arrays
 real(8), allocatable :: v(:)
 real(8), allocatable :: work(:)
 real(8), allocatable :: evalfv(:,:,:)
-complex(8), allocatable :: evecfv(:,:,:)
-complex(8), allocatable :: evecsv(:,:)
+!complex(8), allocatable :: evecfv(:,:,:)
+!complex(8), allocatable :: evecsv(:,:)
 ! require forces for structural optimisation
 if ((task.eq.2).or.(task.eq.3)) tforce=.true.
 ! initialise global variables
@@ -86,20 +86,20 @@ if (wproc) then
 endif
 ! initialise or read the charge density and potentials from file
 iscl=0
-write(60,*)
+if (wproc) write(60,*)
 if ((task.eq.1).or.(task.eq.3)) then
   call readstate
-  write(60,'("Potential read in from STATE.OUT")')
+  if (wproc) write(60,'("Potential read in from STATE.OUT")')
 else if (task.eq.200) then
   call phveff
-  write(60,'("Supercell potential constructed from STATE.OUT")')
+  if (wproc) write(60,'("Supercell potential constructed from STATE.OUT")')
 else
   call rhoinit
   call poteff
   call genveffig
-  write(60,'("Density and potential initialised from atomic data")')
+  if (wproc) write(60,'("Density and potential initialised from atomic data")')
 end if
-call flushifc(60)
+if (wproc) call flushifc(60)
 ! size of mixing vector
 n=lmmaxvr*nrmtmax*natmtot+ngrtot
 if (spinpol) n=n*(1+ndmag)
@@ -117,30 +117,57 @@ tstop=.false.
 tlast=.false.
 etp=0.d0
 ! delete any existing eigenvector files
-if ((task.eq.0).or.(task.eq.2)) call delevec
+if (wproc.and.(task.eq.0).or.(task.eq.2)) call delevec
 ! begin the self-consistent loop
-write(60,*)
-write(60,'("+------------------------------+")')
-write(60,'("| Self-consistent loop started |")')
-write(60,'("+------------------------------+")')
-do iscl=1,maxscl
+if (wproc) then
   write(60,*)
-  write(60,'("+-------------------------+")')
-  write(60,'("| Iteration number : ",I4," |")') iscl
-  write(60,'("+-------------------------+")')
-  call flushifc(60)
-  if (iscl.ge.maxscl) then
+  write(60,'("+------------------------------+")')
+  write(60,'("| Self-consistent loop started |")')
+  write(60,'("+------------------------------+")')
+endif
+do iscl=1,maxscl
+  call timer_start(t_iter_tot,reset=.true.)
+! reset all timers
+  call timer_reset(t_apw_rad)
+  call timer_reset(t_seceqn)
+  call timer_reset(t_seceqnfv)
+  call timer_reset(t_seceqnfv_setup)
+  call timer_reset(t_seceqnfv_setup_h)
+  call timer_reset(t_seceqnfv_setup_h_mt)
+  call timer_reset(t_seceqnfv_setup_h_it)
+  call timer_reset(t_seceqnfv_setup_o)
+  call timer_reset(t_seceqnfv_setup_o_mt)
+  call timer_reset(t_seceqnfv_setup_o_it)
+  call timer_reset(t_seceqnfv_diag)
+  call timer_reset(t_seceqnsv)
+  call timer_reset(t_svhmlt_setup)
+  call timer_reset(t_svhmlt_diag)
+  call timer_reset(t_rho_mag_sum)
+  call timer_reset(t_rho_mag_sym)
+  call timer_reset(t_rho_mag_tot)
+  call timer_reset(t_pot) 
+  call timer_reset(t_dmat)   
+  if (wproc) then
     write(60,*)
-    write(60,'("Reached self-consistent loops maximum")')
+    write(60,'("+-------------------------+")')
+    write(60,'("| Iteration number : ",I4," |")') iscl
+    write(60,'("+-------------------------+")')
+    call flushifc(60)
+  endif
+  if (iscl.ge.maxscl) then
+    if (wproc) then
+      write(60,*)
+      write(60,'("Reached self-consistent loops maximum")')
+    endif
     tlast=.true.
   end if
-  call flushifc(60)
+  if (wproc) call flushifc(60)
 ! generate the core wavefunctions and densities
   call gencore
 ! find the new linearisation energies
   call linengy
 ! write out the linearisation energies
-  call writelinen
+  if (wproc) call writelinen
 ! generate the APW radial functions
   call genapwfr
 ! generate the local-orbital radial functions
@@ -149,29 +176,33 @@ do iscl=1,maxscl
   call olprad
 ! compute the Hamiltonian radial integrals
   call hmlrad
+! get radial-muffint tin functions
+  call getufr
+! get product of radia functions
+  call genufrp  
 ! generate muffin-tin effective magnetic fields and s.o. coupling functions
   call genbeffmt
 ! begin parallel loop over k-points
-  do ik=1,nkpt
-! every thread should allocate its own arrays
-    allocate(evalfv(nstfv,nspnfv,1))
-    allocate(evecfv(nmatmax,nstfv,nspnfv))
-    allocate(evecsv(nstsv,nstsv))
+  evalsv=0.d0
+  do ikloc=1,nkptloc
 ! solve the first- and second-variational secular equations
-    call seceqn(ik,evalfv,evecfv,evecsv)
+    call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
+      evecsvloc(1,1,ikloc))
 ! write the eigenvalues/vectors to file
-    call putevalfv(ik,evalfv)
-    call putevalsv(ik,evalsv(:,ik))
-    call putevecfv(ik,evecfv)
-    call putevecsv(ik,evecsv)
-    deallocate(evalfv,evecfv,evecsv)
   end do
+  call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.,&
+    all=.true.)
+  if (wproc) then
 ! find the occupation numbers and Fermi energy
-  call occupy
+    call occupy
 ! write out the eigenvalues and occupation numbers
-  call writeeval
+    call writeeval
 ! write the Fermi energy to file
-  call writefermi
+    call writefermi
+  endif
+  call mpi_grid_bcast(occsv(1,1),nstsv*nkpt,dims=(/dim_k,dim2/))
+  call mpi_grid_barrier
+  call pstop
 ! set the charge density and magnetisation to zero
   rhomt(:,:,:)=0.d0
   rhoir(:)=0.d0
@@ -180,16 +211,16 @@ do iscl=1,maxscl
     magir(:,:)=0.d0
   end if
   do ik=1,nkpt
-    allocate(evecfv(nmatmax,nstfv,nspnfv))
-    allocate(evecsv(nstsv,nstsv))
+    !allocate(evecfv(nmatmax,nstfv,nspnfv))
+    !allocate(evecsv(nstsv,nstsv))
 ! write the occupancies to file
-    call putoccsv(ik,occsv(:,ik))
+    !call putoccsv(ik,occsv(:,ik))
 ! get the eigenvectors from file
-    call getevecfv(vkl(:,ik),vgkl(:,:,:,ik),evecfv)
-    call getevecsv(vkl(:,ik),evecsv)
+    !call getevecfv(vkl(:,ik),vgkl(:,:,:,ik),evecfv)
+    !call getevecsv(vkl(:,ik),evecsv)
 ! add to the density and magnetisation
-    call rhomagk(ik,evecfv,evecsv)
-    deallocate(evecfv,evecsv)
+    call rhomagk(ik,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
+    !deallocate(evecfv,evecsv)
   end do
 ! convert muffin-tin density/magnetisation to spherical harmonics
   call rhomagsh

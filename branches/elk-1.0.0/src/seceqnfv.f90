@@ -37,7 +37,7 @@ complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 real(8), intent(out) :: evalfv(nstfv)
 complex(8), intent(out) :: evecfv(nmatmax,nstfv)
 ! local variables
-integer is,ia,i,m,np,info
+integer is,ia,i,m,np,info,nb,lwork
 real(8) v(1),vl,vu
 real(8) ts0,ts1
 ! allocatable arrays
@@ -48,63 +48,90 @@ real(8), allocatable :: rwork(:)
 complex(8), allocatable :: h(:)
 complex(8), allocatable :: o(:)
 complex(8), allocatable :: work(:)
-np=(nmatp*(nmatp+1))/2
+logical, parameter :: packed=.false.
+integer, external :: ilaenv
+if (packed) then
+  np=(nmatp*(nmatp+1))/2
+else
+  np=nmatp*nmatp
+endif  
 !-----------------------------------------------!
 !     Hamiltonian and overlap matrix set up     !
 !-----------------------------------------------!
 call timesec(ts0)
 allocate(h(np),o(np))
+h(:)=zzero
+o(:)=zzero
+if (packed) then
 ! Hamiltonian
-h(:)=0.d0
-do is=1,nspecies
-  do ia=1,natoms(is)
-    call hmlaa(.false.,is,ia,ngp,apwalm,v,h)
-    call hmlalo(.false.,is,ia,ngp,apwalm,v,h)
-    call hmllolo(.false.,is,ia,ngp,v,h)
+  do is=1,nspecies
+    do ia=1,natoms(is)
+      call hmlaa(.false.,is,ia,ngp,apwalm,v,h)
+      call hmlalo(.false.,is,ia,ngp,apwalm,v,h)
+      call hmllolo(.false.,is,ia,ngp,v,h)
+    end do
   end do
-end do
-call hmlistl(.false.,ngp,igpig,vgpc,v,h)
+  call hmlistl(.false.,ngp,igpig,vgpc,v,h)
 ! overlap
-o(:)=0.d0
-do is=1,nspecies
-  do ia=1,natoms(is)
-    call olpaa(.false.,is,ia,ngp,apwalm,v,o)
-    call olpalo(.false.,is,ia,ngp,apwalm,v,o)
-    call olplolo(.false.,is,ia,ngp,v,o)
+  do is=1,nspecies
+    do ia=1,natoms(is)
+      call olpaa(.false.,is,ia,ngp,apwalm,v,o)
+      call olpalo(.false.,is,ia,ngp,apwalm,v,o)
+      call olplolo(.false.,is,ia,ngp,v,o)
+    end do
   end do
-end do
-call olpistl(.false.,ngp,igpig,v,o)
+  call olpistl(.false.,ngp,igpig,v,o)
+else
+  call sethml(ngp,nmatp,vgpc,igpig,apwalm,h)
+  call setovl(ngp,nmatp,igpig,apwalm,o)
+endif
 call timesec(ts1)
 timemat=timemat+ts1-ts0
 !------------------------------------!
 !     solve the secular equation     !
 !------------------------------------!
-call timesec(ts0)
-allocate(iwork(5*nmatp))
-allocate(ifail(nmatp))
-allocate(w(nmatp))
-allocate(rwork(7*nmatp))
-allocate(work(2*nmatp))
-! LAPACK 3.x call
-call zhpgvx(1,'V','I','U',nmatp,h,o,vl,vu,1,nstfv,evaltol,m,w,evecfv,nmatmax, &
- work,rwork,iwork,ifail,info)
-evalfv(1:nstfv)=w(1:nstfv)
-if (info.ne.0) then
-  write(*,*)
-  write(*,'("Error(seceqnfv): diagonalisation failed")')
-  write(*,'(" ZHPGVX returned INFO = ",I8)') info
-  if (info.gt.nmatp) then
-    i=info-nmatp
-    write(*,'(" The leading minor of the overlap matrix of order ",I8)') i
-    write(*,'("  is not positive definite")')
-    write(*,'(" Order of overlap matrix : ",I8)') nmatp
+if (mpi_grid_root((/dim2/))) then
+  call timesec(ts0)
+  allocate(iwork(5*nmatp))
+  allocate(ifail(nmatp))
+  allocate(w(nmatp))
+  allocate(rwork(7*nmatp))
+  if (packed) then 
+    allocate(work(2*nmatp))
+  else
+    nb=ilaenv(1,'ZHETRD','U',nmatp,-1,-1,-1)
+    lwork=(nb+1)*nmatp
+    allocate(work(lwork))
+  endif 
+  ! LAPACK 3.x call
+  if (packed) then
+    call zhpgvx(1,'V','I','U',nmatp,h,o,vl,vu,1,nstfv,evaltol,m,w,evecfv,nmatmax, &
+     work,rwork,iwork,ifail,info)
+  else
+    call zhegvx(1,'V','I','U',nmatp,h,nmatp,o,nmatp,vl,vu,1,nstfv,evaltol,&
+     m,w,evecfv,nmatmax,work,lwork,rwork,iwork,ifail,info)
+  endif
+  evalfv(1:nstfv)=w(1:nstfv)
+  if (info.ne.0) then
     write(*,*)
+    write(*,'("Error(seceqnfv): diagonalisation failed")')
+    write(*,'(" ZHPGVX returned INFO = ",I8)') info
+    if (info.gt.nmatp) then
+      i=info-nmatp
+      write(*,'(" The leading minor of the overlap matrix of order ",I8)') i
+      write(*,'("  is not positive definite")')
+      write(*,'(" Order of overlap matrix : ",I8)') nmatp
+      write(*,*)
+    end if
+    call pstop
   end if
-  stop
-end if
-call timesec(ts1)
+  call timesec(ts1)
+  deallocate(iwork,ifail,w,rwork,work)
+endif
+call mpi_grid_bcast(evecfv(1,1),nmatmax*nstfv,dims=(/dim2/))
+call mpi_grid_bcast(evalfv(1),nstfv,dims=(/dim2/))
 timefv=timefv+ts1-ts0
-deallocate(iwork,ifail,w,rwork,h,o,work)
+deallocate(h,o)
 return
 end subroutine
 !EOC

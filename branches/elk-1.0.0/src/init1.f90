@@ -213,6 +213,7 @@ if (allocated(tpgkc)) deallocate(tpgkc)
 allocate(tpgkc(2,ngkmax,nspnfv,nkptloc))
 if (allocated(sfacgk)) deallocate(sfacgk)
 allocate(sfacgk(ngkmax,natmtot,nspnfv,nkptloc))
+ngk=0
 do ikloc=1,nkptloc
   ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
   do ispn=1,nspnfv

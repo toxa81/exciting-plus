@@ -5,7 +5,7 @@
 
 !BOP
 ! !ROUTINE: seceqn
-subroutine seceqn(ik,evalfv,evecfv,evecsv)
+subroutine seceqn(ikloc,evalfv,evecfv,evecsv)
 ! !USES:
 use modmain
 ! !INPUT/OUTPUT PARAMETERS:
@@ -23,38 +23,39 @@ use modmain
 !BOC
 implicit none
 ! arguments
-integer, intent(in) :: ik
+integer, intent(in) :: ikloc
 real(8), intent(out) :: evalfv(nstfv,nspnfv)
 complex(8), intent(out) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(out) :: evecsv(nstsv,nstsv)
 ! local variables
-integer ispn
+integer ispn,ik
 ! allocatable arrays
 complex(8), allocatable :: apwalm(:,:,:,:,:)
+ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
 ! loop over first-variational spins (nspnfv=2 for spin-spirals only)
 do ispn=1,nspnfv
 ! find the matching coefficients
-  call match(ngk(ispn,ik),gkc(:,ispn,ik),tpgkc(:,:,ispn,ik), &
-   sfacgk(:,:,ispn,ik),apwalm(:,:,:,:,ispn))
+  call match(ngk(ispn,ik),gkc(:,ispn,ikloc),tpgkc(:,:,ispn,ikloc), &
+   sfacgk(:,:,ispn,ikloc),apwalm(:,:,:,:,ispn))
 ! solve the first-variational secular equation
   if (tseqit) then
 ! iteratively
-    call seceqnit(nmat(ispn,ik),ngk(ispn,ik),igkig(:,ispn,ik),vkl(:,ik), &
-     vgkl(:,:,ispn,ik),vgkc(:,:,ispn,ik),apwalm(:,:,:,:,ispn),evalfv(:,ispn), &
-     evecfv(:,:,ispn))
+    call seceqnit(nmat(ispn,ik),ngk(ispn,ik),igkig(:,ispn,ikloc),vkl(:,ik), &
+     vgkl(:,:,ispn,ikloc),vgkc(:,:,ispn,ikloc),apwalm(:,:,:,:,ispn), &
+     evalfv(:,ispn),evecfv(:,:,ispn))
   else
 ! directly
-    call seceqnfv(nmat(ispn,ik),ngk(ispn,ik),igkig(:,ispn,ik), &
-     vgkc(:,:,ispn,ik),apwalm(:,:,:,:,ispn),evalfv(:,ispn),evecfv(:,:,ispn))
+    call seceqnfv(nmat(ispn,ik),ngk(ispn,ik),igkig(:,ispn,ikloc), &
+     vgkc(:,:,ispn,ikloc),apwalm(:,:,:,:,ispn),evalfv(:,ispn),evecfv(:,:,ispn))
   end if
 end do
 if (spinsprl) then
 ! solve the spin-spiral second-variational secular equation
-  call seceqnss(ik,apwalm,evalfv,evecfv,evecsv)
+  call seceqnss(ikloc,apwalm,evalfv,evecfv,evecsv)
 else
 ! solve the second-variational secular equation
-  call seceqnsv(ik,apwalm,evalfv,evecfv,evecsv)
+  call seceqnsv(ikloc,apwalm,evalfv,evecfv,evecsv)
 end if
 deallocate(apwalm)
 return

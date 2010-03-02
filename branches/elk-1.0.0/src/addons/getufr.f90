@@ -1,4 +1,4 @@
-subroutine geturf
+subroutine getufr
 use modmain
 implicit none
 integer is,ia,ias,l,io,ilo,ic

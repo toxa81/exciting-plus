@@ -4,19 +4,19 @@
 ! This file is distributed under the terms of the GNU General Public License.
 ! See the file COPYING for license details.
 
-subroutine seceqnsv(ik,apwalm,evalfv,evecfv,evecsv)
+subroutine seceqnsv(ikloc,apwalm,evalfv,evecfv,evecsv)
 use modmain
 use modldapu
 implicit none
 ! arguments
-integer, intent(in) :: ik
+integer, intent(in) :: ikloc
 complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 real(8), intent(in) :: evalfv(nstfv)
 complex(8), intent(in) :: evecfv(nmatmax,nstfv)
 complex(8), intent(out) :: evecsv(nstsv,nstsv)
 ! local variables
-integer ispn,jspn,ia,is,ias
-integer ist,jst,i,j,k,l,lm,nm
+integer ispn,jspn,ia,is,ias,ik
+integer ist,jst,i,j,k,l,lm,nm,natmtotloc,iasloc
 integer nrc,irc,ir,igk,ifg
 integer lmax,nsc,lwork,info
 real(8) cb,t1
@@ -37,6 +37,7 @@ complex(8), allocatable :: work(:)
 ! external functions
 complex(8) zdotc,zfmtinp
 external zdotc,zfmtinp
+ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 ! spin-unpolarised case
 if ((.not.spinpol).and.(ldapu.eq.0)) then
   do i=1,nstsv
@@ -78,91 +79,93 @@ evecsv(:,:)=0.d0
 !-------------------------!
 !     muffin-tin part     !
 !-------------------------!
-do is=1,nspecies
+natmtotloc=mpi_grid_map(natmtot,dim2)
+do iasloc=1,natmtotloc
+  ias=mpi_grid_map(natmtot,2,loc=iasloc)
+  is=ias2is(ias)
+  ia=ias2ia(ias)
   nrc=nrcmt(is)
-  do ia=1,natoms(is)
-    ias=idxas(ia,is)
 ! compute the first-variational wavefunctions
-    do ist=1,nstfv
-      call wavefmt(lradstp,lmaxvr,is,ia,ngk(1,ik),apwalm,evecfv(:,ist), &
-       lmmaxvr,wfmt1(:,:,ist))
-    end do
+  do ist=1,nstfv
+    call wavefmt(lradstp,lmaxvr,is,ia,ngk(1,ik),apwalm,evecfv(:,ist), &
+     lmmaxvr,wfmt1(:,:,ist))
+  end do
 ! begin loop over states
-    do jst=1,nstfv
-      if (spinpol) then
+  do jst=1,nstfv
+    if (spinpol) then
 ! convert wavefunction to spherical coordinates
-        call zgemm('N','N',lmmaxvr,nrc,lmmaxvr,zone,zbshtvr,lmmaxvr, &
-         wfmt1(:,:,jst),lmmaxvr,zzero,wfmt2,lmmaxvr)
+      call zgemm('N','N',lmmaxvr,nrc,lmmaxvr,zone,zbshtvr,lmmaxvr, &
+       wfmt1(:,:,jst),lmmaxvr,zzero,wfmt2,lmmaxvr)
 ! apply effective magnetic field and convert to spherical harmonics
-        wfmt3(:,1:nrc)=wfmt2(:,1:nrc)*beffmt(:,1:nrc,ias,ndmag)
-        call zgemm('N','N',lmmaxvr,nrc,lmmaxvr,zone,zfshtvr,lmmaxvr, &
-         wfmt3,lmmaxvr,zzero,wfmt4(:,:,1),lmmaxvr)
-        wfmt4(:,1:nrc,2)=-wfmt4(:,1:nrc,1)
+      wfmt3(:,1:nrc)=wfmt2(:,1:nrc)*beffmt(:,1:nrc,ias,ndmag)
+      call zgemm('N','N',lmmaxvr,nrc,lmmaxvr,zone,zfshtvr,lmmaxvr, &
+       wfmt3,lmmaxvr,zzero,wfmt4(:,:,1),lmmaxvr)
+      wfmt4(:,1:nrc,2)=-wfmt4(:,1:nrc,1)
 ! non-collinear field
-        if (ncmag) then
-          wfmt3(:,1:nrc)=wfmt2(:,1:nrc) &
-           *cmplx(beffmt(:,1:nrc,ias,1),-beffmt(:,1:nrc,ias,2),8)
-          call zgemm('N','N',lmmaxvr,nrc,lmmaxvr,zone,zfshtvr,lmmaxvr, &
-           wfmt3,lmmaxvr,zzero,wfmt4(:,:,3),lmmaxvr)
-        end if
+      if (ncmag) then
+        wfmt3(:,1:nrc)=wfmt2(:,1:nrc) &
+         *cmplx(beffmt(:,1:nrc,ias,1),-beffmt(:,1:nrc,ias,2),8)
+        call zgemm('N','N',lmmaxvr,nrc,lmmaxvr,zone,zfshtvr,lmmaxvr, &
+         wfmt3,lmmaxvr,zzero,wfmt4(:,:,3),lmmaxvr)
+      end if
 ! apply spin-orbit coupling if required
-        if (spinorb) then
-          do irc=1,nrc
-            call lopzflm(lmaxvr,wfmt1(:,irc,jst),lmmaxvr,zlflm)
-            t1=socfr(irc,ias)
-            do lm=1,lmmaxvr
-              wfmt4(lm,irc,1)=wfmt4(lm,irc,1)+t1*zlflm(lm,3)
-              wfmt4(lm,irc,2)=wfmt4(lm,irc,2)-t1*zlflm(lm,3)
-              wfmt4(lm,irc,3)=wfmt4(lm,irc,3)+t1*(zlflm(lm,1)-zi*zlflm(lm,2))
-            end do
+      if (spinorb) then
+        do irc=1,nrc
+          call lopzflm(lmaxvr,wfmt1(:,irc,jst),lmmaxvr,zlflm)
+          t1=socfr(irc,ias)
+          do lm=1,lmmaxvr
+            wfmt4(lm,irc,1)=wfmt4(lm,irc,1)+t1*zlflm(lm,3)
+            wfmt4(lm,irc,2)=wfmt4(lm,irc,2)-t1*zlflm(lm,3)
+            wfmt4(lm,irc,3)=wfmt4(lm,irc,3)+t1*(zlflm(lm,1)-zi*zlflm(lm,2))
           end do
-        end if
-      else
-        wfmt4(:,:,:)=0.d0
+        end do
       end if
+    else
+      wfmt4(:,:,:)=0.d0
+    end if
 ! apply LDA+U potential if required
-      if ((ldapu.ne.0).and.(llu(is).ge.0)) then
-        l=llu(is)
-        nm=2*l+1
-        lm=idxlm(l,-l)
-        do k=1,nsc
-          if (k.eq.1) then
-            ispn=1
-            jspn=1
-          else if (k.eq.2) then
-            ispn=2
-            jspn=2
-          else
-            ispn=1
-            jspn=2
-          end if
-          call zgemm('N','N',nm,nrc,nm,zone,vmatlu(lm,lm,ispn,jspn,ias), &
-           lmmaxlu,wfmt1(lm,1,jst),lmmaxvr,zone,wfmt4(lm,1,k),lmmaxvr)
-        end do
-      end if
+    if ((ldapu.ne.0).and.(llu(is).ge.0)) then
+      l=llu(is)
+      nm=2*l+1
+      lm=idxlm(l,-l)
+      do k=1,nsc
+        if (k.eq.1) then
+          ispn=1
+          jspn=1
+        else if (k.eq.2) then
+          ispn=2
+          jspn=2
+        else
+          ispn=1
+          jspn=2
+        end if
+        call zgemm('N','N',nm,nrc,nm,zone,vmatlu(lm,lm,ispn,jspn,ias), &
+         lmmaxlu,wfmt1(lm,1,jst),lmmaxvr,zone,wfmt4(lm,1,k),lmmaxvr)
+      end do
+    end if
 ! second-variational Hamiltonian matrix
-      do ist=1,nstfv
-        do k=1,nsc
-          if (k.eq.1) then
-            i=ist
-            j=jst
-          else if (k.eq.2) then
-            i=ist+nstfv
-            j=jst+nstfv
-          else
-            i=ist
-            j=jst+nstfv
-          end if
-          if (i.le.j) then
-            evecsv(i,j)=evecsv(i,j)+zfmtinp(.true.,lmax,nrc,rcmt(:,is), &
-             lmmaxvr,wfmt1(:,:,ist),wfmt4(:,:,k))
-          end if
-        end do
+    do ist=1,nstfv
+      do k=1,nsc
+        if (k.eq.1) then
+          i=ist
+          j=jst
+        else if (k.eq.2) then
+          i=ist+nstfv
+          j=jst+nstfv
+        else
+          i=ist
+          j=jst+nstfv
+        end if
+        if (i.le.j) then
+          evecsv(i,j)=evecsv(i,j)+zfmtinp(.true.,lmax,nrc,rcmt(:,is), &
+           lmmaxvr,wfmt1(:,:,ist),wfmt4(:,:,k))
+        end if
       end do
     end do
-! end loops over atoms and species
   end do
+! end loops over atoms and species
 end do
+call mpi_grid_reduce(evecsv(1,1),nstsv*nstsv,dims=(/dim2/))
 !---------------------------!
 !     interstitial part     !
 !---------------------------!
@@ -182,7 +185,7 @@ if (spinpol) then
   do jst=1,nstfv
     zfft1(:)=0.d0
     do igk=1,ngk(1,ik)
-      ifg=igfft(igkig(igk,1,ik))
+      ifg=igfft(igkig(igk,1,ikloc))
       zfft1(ifg)=evecfv(igk,jst)
     end do
 ! Fourier transform wavefunction to real-space
@@ -191,7 +194,7 @@ if (spinpol) then
     zfft2(:)=zfft1(:)*bir(:,3)
     call zfftifc(3,ngrid,-1,zfft2)
     do igk=1,ngk(1,ik)
-      ifg=igfft(igkig(igk,1,ik))
+      ifg=igfft(igkig(igk,1,ikloc))
       zv(igk,1)=zfft2(ifg)
       zv(igk,2)=-zfft2(ifg)
     end do
@@ -199,7 +202,7 @@ if (spinpol) then
       zfft2(:)=zfft1(:)*cmplx(bir(:,1),-bir(:,2),8)
       call zfftifc(3,ngrid,-1,zfft2)
       do igk=1,ngk(1,ik)
-        ifg=igfft(igkig(igk,1,ik))
+        ifg=igfft(igkig(igk,1,ikloc))
         zv(igk,3)=zfft2(ifg)
       end do
     end if
@@ -254,6 +257,8 @@ deallocate(bir,rwork,wfmt1,wfmt2,wfmt3,wfmt4)
 deallocate(zfft1,zfft2,zv,work)
 call timesec(ts1)
 timesv=timesv+ts1-ts0
+call mpi_grid_bcast(evecsv(1,1),nstsv*nstsv,dims=(/dim2/))
+call mpi_grid_bcast(evalsv(1,ik),nstsv,dims=(/dim2/))
 return
 20 continue
 write(*,*)
