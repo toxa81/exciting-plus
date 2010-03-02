@@ -4,6 +4,7 @@
 ! License. See the file COPYING for license details.
 
 module modtest
+use mod_mpi_grid
 
 ! if test is .true. then the test variables are written to file
 logical test
@@ -27,6 +28,7 @@ complex(8), optional, intent(in) :: zva(*)
 integer i
 character(256) fname
 if (.not.test) return
+if (.not.mpi_grid_root()) return
 if ((id.lt.0).or.(id.gt.999)) then
   write(*,*)
   write(*,'("Error(writetest): id out of range : ",I8)') id
