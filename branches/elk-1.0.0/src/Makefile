@@ -113,9 +113,11 @@ SRC_lib = \
 SRC_xc = \
   xc_pzca.f90 xc_pwca.f90 xc_pbe.f90 xc_am05.f90 xc_xalpha.f90 xc_wc06.f90 \
   x_wc06.f90 x_pbe.f90 c_pbe.f90 c_pbe_gcor.f90 xc_vbh.f90
+  
+SRC_addons := $(shell ls addons/*.f90 addons/linresp/*.f90 addons/wann/*.f90)
 
 SRC = $(SRC_modules) $(SRC_main) $(SRC_routines) $(SRC_lib) $(SRC_advanced) \
- $(SRC_phonon) $(SRC_optics) $(SRC_xc) $(SRC_LDAU) $(SRC_rdmft)
+ $(SRC_phonon) $(SRC_optics) $(SRC_xc) $(SRC_LDAU) $(SRC_rdmft) $(SRC_addons)
 
 OBJ = $(SRC:.f90=.o)
 EXE = elk
@@ -125,7 +127,7 @@ EXE = elk
 #-------------------------------------------------------------------------------
 .SUFFIXES: .o .f90
 .f90.o:
-	$(F90) $(F90_OPTS) -c $<
+	$(F90) $(F90_OPTS) -c -o $(*D)/$(*F).o $<
 
 #-------------------------------------------------------------------------------
 # Targets

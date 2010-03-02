@@ -3,7 +3,15 @@ module mod_extra
 ! number of atom classes (non-equivalent atoms)
 integer natmcls
 ! i-th class -> ias mapping
-integer, allocatable :: iatmcls(:)
+integer, allocatable :: ic2ias(:)
+! ias -> ic mapping
+integer, allocatable :: ias2ic(:)
+! ias -> is mapping
+integer, allocatable :: ias2is(:)
+! ias -> ia mapping
+integer, allocatable :: ias2ia(:)
+! lm -> l mapping
+integer, allocatable :: lm2l(:)
 ! maximum number of muffin-tin radial functions
 integer nfrmax
 ! muffin-tin radial functions
@@ -22,14 +30,6 @@ real(8), allocatable :: ufrp(:,:,:,:)
 !  1-st index: l (from 0 to lmaxvr)
 !  2-nd index: atom species (from 1 to nspecies)
 integer, allocatable :: nfr(:,:)
-! lm -> l mapping
-integer, allocatable :: lm2l(:)
-! ias -> is mapping
-integer, allocatable :: ias2is(:)
-! ias -> ia mapping
-integer, allocatable :: ias2ia(:)
-! ias -> ic mapping
-integer, allocatable :: ias2ic(:)
 ! number of atoms with local "coordinate" system (local orbital system is
 !  a better term because transformation of spherical harmonics is not a
 !  rotation but a more general unitary transformation)
@@ -70,10 +70,10 @@ integer nkptnrloc
 ! .true. if processor writes some info
 logical wproc
 ! .true. if mpi grid layout comes from input file
-logical mpi_grid
-data mpi_grid/.false./
+logical lmpigrid
+data lmpigrid/.false./
 ! dimensions of mpi grid
-integer mpi_grid_size(3)
+integer mpigrid(3)
 ! local fraction of fv eigen vectors
 complex(8), allocatable :: evecfvloc(:,:,:,:)
 ! local fraction of sv eigen vectors

@@ -21,11 +21,12 @@ use modtest
 !BOC
 implicit none
 ! local variables
-integer ik,is,ia,ias,io,ilo
+integer ik,is,ia,ias,io,ilo,ikloc
 integer i1,i2,i3,ispn,iv(3)
 integer l1,l2,l3,m1,m2,m3,lm1,lm2,lm3
 real(8) vl(3),vc(3),boxl(3,4),sum
 real(8) ts0,ts1
+integer, allocatable :: sz(:)
 ! external functions
 complex(8) gauntyry
 external gauntyry
@@ -126,6 +127,46 @@ end if
 ! write the k-points to test file
 call writetest(910,'k-points (Cartesian)',nv=3*nkpt,tol=1.d-8,rva=vkc)
 
+!------------------------!
+!     parallel grid      !
+!------------------------!
+if (task.eq.0.or.task.eq.1.or.task.eq.22) then
+  i2=2
+  allocate(sz(i2))
+  if (nproc.le.nkpt) then
+    sz=(/nproc,1/)
+  else
+    i1=nproc/nkpt
+    sz=(/nkpt,i1/)
+  endif    
+else if (task.eq.400.or.task.eq.401.or.task.eq.402.or.task.eq.403) then
+  i2=3
+  allocate(sz(i2))
+  if (nproc.le.nkptnr) then
+    sz=(/nproc,1,1/)
+  else
+    i1=nproc/nkptnr
+    if (i1.le.nvq0) then
+      sz=(/nkptnr,1,i1/)
+    else
+      sz=(/nkptnr,nproc/(nkptnr*nvq0),nvq0/)
+    endif
+  endif
+else
+  i2=1
+  allocate(sz(i2))
+  sz=(/nproc/)
+endif  
+! overwrite default grid layout
+if (lmpigrid) then
+  sz(1:i2)=mpigrid(1:i2) 
+endif
+call mpi_grid_initialize(sz)
+deallocate(sz)
+if (.not.mpi_grid_in()) return
+nkptloc=mpi_grid_map(nkpt,dim_k)
+nkptnrloc=mpi_grid_map(nkptnr,dim_k)
+
 !---------------------!
 !     G+k vectors     !
 !---------------------!
@@ -161,18 +202,19 @@ call getngkmax
 if (allocated(ngk)) deallocate(ngk)
 allocate(ngk(nspnfv,nkpt))
 if (allocated(igkig)) deallocate(igkig)
-allocate(igkig(ngkmax,nspnfv,nkpt))
+allocate(igkig(ngkmax,nspnfv,nkptloc))
 if (allocated(vgkl)) deallocate(vgkl)
-allocate(vgkl(3,ngkmax,nspnfv,nkpt))
+allocate(vgkl(3,ngkmax,nspnfv,nkptloc))
 if (allocated(vgkc)) deallocate(vgkc)
-allocate(vgkc(3,ngkmax,nspnfv,nkpt))
+allocate(vgkc(3,ngkmax,nspnfv,nkptloc))
 if (allocated(gkc)) deallocate(gkc)
-allocate(gkc(ngkmax,nspnfv,nkpt))
+allocate(gkc(ngkmax,nspnfv,nkptloc))
 if (allocated(tpgkc)) deallocate(tpgkc)
-allocate(tpgkc(2,ngkmax,nspnfv,nkpt))
+allocate(tpgkc(2,ngkmax,nspnfv,nkptloc))
 if (allocated(sfacgk)) deallocate(sfacgk)
-allocate(sfacgk(ngkmax,natmtot,nspnfv,nkpt))
-do ik=1,nkpt
+allocate(sfacgk(ngkmax,natmtot,nspnfv,nkptloc))
+do ikloc=1,nkptloc
+  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
   do ispn=1,nspnfv
     if (spinsprl) then
 ! spin-spiral case
@@ -188,12 +230,13 @@ do ik=1,nkpt
       vc(:)=vkc(:,ik)
     end if
 ! generate the G+k-vectors
-    call gengpvec(vl,vc,ngk(ispn,ik),igkig(:,ispn,ik),vgkl(:,:,ispn,ik), &
-     vgkc(:,:,ispn,ik),gkc(:,ispn,ik),tpgkc(:,:,ispn,ik))
+    call gengpvec(vl,vc,ngk(ispn,ik),igkig(:,ispn,ikloc),vgkl(:,:,ispn,ikloc), &
+     vgkc(:,:,ispn,ikloc),gkc(:,ispn,ikloc),tpgkc(:,:,ispn,ikloc))
 ! generate structure factors for G+k-vectors
-    call gensfacgp(ngk(ispn,ik),vgkc(:,:,ispn,ik),ngkmax,sfacgk(:,:,ispn,ik))
+    call gensfacgp(ngk(ispn,ik),vgkc(:,:,ispn,ikloc),ngkmax,sfacgk(:,:,ispn,ikloc))
   end do
 end do
+call mpi_grid_reduce(ngk(1,1),nspnfv*nkpt,dims=(/dim_k/),all=.true.)
 
 !---------------------------------!
 !     APWs and local-orbitals     !
@@ -315,6 +358,20 @@ do l1=0,lmaxmat
     end do
   end do
 end do
+
+!----------------!
+!      extra     !
+!----------------!
+call getatmcls
+if (allocated(nfr)) deallocate(nfr)
+allocate(nfr(0:lmaxvr,nspecies))
+call getnfr(lmaxvr)
+if (allocated(ufr)) deallocate(ufr)
+allocate(ufr(nrmtmax,0:lmaxvr,nfrmax,natmcls))
+if (allocated(ufrp)) deallocate(ufrp)
+allocate(ufrp(0:lmaxvr,nfrmax,nfrmax,natmcls))
+
+!if (wannier) call wann_init
 
 call timesec(ts1)
 timeinit=timeinit+ts1-ts0

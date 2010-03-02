@@ -30,7 +30,7 @@ real(8) dv,etp,de,timetot
 ! allocatable arrays
 real(8), allocatable :: v(:)
 real(8), allocatable :: work(:)
-real(8), allocatable :: evalfv(:,:)
+real(8), allocatable :: evalfv(:,:,:)
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
 ! require forces for structural optimisation
@@ -38,39 +38,52 @@ if ((task.eq.2).or.(task.eq.3)) tforce=.true.
 ! initialise global variables
 call init0
 call init1
+if (.not.mpi_grid_in()) return
+! only root processor writes
+wproc=mpi_grid_root()
+! allocate arrays for eigen-values/-vectors
+allocate(evalfv(nstfv,nspnfv,nkptloc))
+allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
+allocate(evecsvloc(nstsv,nstsv,nkptloc))
+! no band disentanglement in ground state calculation
+ldisentangle=.false. 
 ! initialise OEP variables if required
 if (xctype(1).lt.0) call init2
+if (wproc) then
 ! write the real and reciprocal lattice vectors to file
-call writelat
+  call writelat
 ! write interatomic distances to file
-call writeiad(.false.)
+  call writeiad(.false.)
 ! write symmetry matrices to file
-call writesym
+  call writesym
 ! output the k-point set to file
-call writekpts
+  call writekpts
 ! write lattice vectors and atomic positions to file
-call writegeom(.false.)
+  call writegeom(.false.)
 ! open INFO.OUT file
-open(60,file='INFO'//trim(filext),action='WRITE',form='FORMATTED')
+  open(60,file='INFO'//trim(filext),action='WRITE',form='FORMATTED')
 ! open TOTENERGY.OUT
-open(61,file='TOTENERGY'//trim(filext),action='WRITE',form='FORMATTED')
+  open(61,file='TOTENERGY'//trim(filext),action='WRITE',form='FORMATTED')
 ! open FERMIDOS.OUT
-open(62,file='FERMIDOS'//trim(filext),action='WRITE',form='FORMATTED')
+  open(62,file='FERMIDOS'//trim(filext),action='WRITE',form='FORMATTED')
 ! open MOMENT.OUT if required
-if (spinpol) open(63,file='MOMENT'//trim(filext),action='WRITE', &
- form='FORMATTED')
+  if (spinpol) open(63,file='MOMENT'//trim(filext),action='WRITE', &
+   form='FORMATTED')
 ! open FORCEMAX.OUT if required
-if (tforce) open(64,file='FORCEMAX'//trim(filext),action='WRITE', &
- form='FORMATTED')
+  if (tforce) open(64,file='FORCEMAX'//trim(filext),action='WRITE', &
+   form='FORMATTED')
 ! open RMSDVEFF.OUT
-open(65,file='RMSDVEFF'//trim(filext),action='WRITE',form='FORMATTED')
+  open(65,file='RMSDVEFF'//trim(filext),action='WRITE',form='FORMATTED')
 ! open DTOTENERGY.OUT
-open(66,file='DTOTENERGY'//trim(filext),action='WRITE',form='FORMATTED')
+  open(66,file='DTOTENERGY'//trim(filext),action='WRITE',form='FORMATTED')
 ! open TENSMOM.OUT
-if (tmomlu) open(67,file='TENSMOM'//trim(filext),action='WRITE', &
- form='FORMATTED')
+  if (tmomlu) open(67,file='TENSMOM'//trim(filext),action='WRITE', &
+   form='FORMATTED')
 ! write out general information to INFO.OUT
-call writeinfo(60)
+  call writeinfo(60)
+  call writenn
+  call writegshells
+endif
 ! initialise or read the charge density and potentials from file
 iscl=0
 write(60,*)
@@ -141,7 +154,7 @@ do iscl=1,maxscl
 ! begin parallel loop over k-points
   do ik=1,nkpt
 ! every thread should allocate its own arrays
-    allocate(evalfv(nstfv,nspnfv))
+    allocate(evalfv(nstfv,nspnfv,1))
     allocate(evecfv(nmatmax,nstfv,nspnfv))
     allocate(evecsv(nstsv,nstsv))
 ! solve the first- and second-variational secular equations

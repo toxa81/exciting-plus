@@ -9,6 +9,8 @@ use modmain
 implicit none
 ! local variables
 integer itask
+call mpi_world_initialize
+!call hdf5_initialize
 ! read input files
 call readinput
 ! perform the appropriate task
@@ -90,7 +92,9 @@ do itask=1,ntasks
     write(*,*)
     stop
   end select
+  call mpi_world_barrier
 end do
+call mpi_world_finalize
 stop
 end program
 

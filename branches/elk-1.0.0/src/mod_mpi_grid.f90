@@ -965,7 +965,13 @@ end subroutine
 
 
 
-
+! partition something of size "length" to blocks 
+!   (in) nblocks is number of blocks
+!   (in) iblock is the index of block (from 1 to nblocks)
+!   (out) idx0 is the offset in global block
+!   (out) blocksize is the size of local block
+! if length.eq.0 -> nothing to partition
+! if iblock outside the boundaries -> return with error 
 subroutine idxofs(length,nblocks,iblock,idx0,blocksize)
 implicit none
 integer, intent(in) :: length
