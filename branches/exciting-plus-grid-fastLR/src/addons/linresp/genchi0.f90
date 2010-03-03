@@ -212,9 +212,19 @@ do iw=ie1,nepts
       call sumchi0(ikloc,lr_w(iw),chi0)
     endif
   enddo
+! if we don't save the chi0 matrix, we need to know the processor which will 
+!  store it
+  jwloc=mpi_grid_map(nepts,dim_k,glob=iw,x=j)
 ! sum over k-points and band transitions
-  call mpi_grid_reduce(chi0(1,1),ngvecme*ngvecme,dims=(/dim_k,dim_b/))
+  if (write_chi0_file) then
+    call mpi_grid_reduce(chi0(1,1),ngvecme*ngvecme,dims=(/dim_k,dim_b/))
+  else
+    call mpi_grid_reduce(chi0(1,1),ngvecme*ngvecme,dims=(/dim_k,dim_b/),root=(/j,0/))
+  endif
   chi0=chi0/nkptnr/omega
+  if (.not.write_chi0_file) then
+    if (mpi_grid_x(dim_k).eq.j) chi0w(:,:,jwloc)=chi0(:,:)
+  endif
   call timer_stop(2)
 ! for response in Wannier basis
   if (wannier_chi0_chi) then
@@ -245,24 +255,24 @@ do iw=ie1,nepts
       endif
     endif
     call timer_stop(8)
-  else
-    if (mpi_grid_root(dims=(/dim_b/))) then
-      jwloc=mpi_grid_map(nepts,dim_k,glob=iw,x=j)
-      if (mpi_grid_x(dim_k).eq.0) then
-        if (j.eq.0) then
-          chi0w(:,:,jwloc)=chi0(:,:)  
-        else
-          tag=iw
-          call mpi_grid_send(chi0(1,1),ngvecme*ngvecme,(/dim_k/),(/j/),tag)
-        endif
-      endif
-      if (mpi_grid_x(dim_k).eq.j.and.j.ne.0) then
-        tag=iw
-        call mpi_grid_recieve(chi0w(1,1,jwloc),ngvecme*ngvecme,(/dim_k/),&
-          (/0/),tag)
-      endif
-    endif
-  endif !write_chi0_file
+  endif
+!    if (mpi_grid_root(dims=(/dim_b/))) then
+!      jwloc=mpi_grid_map(nepts,dim_k,glob=iw,x=j)
+!      if (mpi_grid_x(dim_k).eq.0) then
+!        if (j.eq.0) then
+!          chi0w(:,:,jwloc)=chi0(:,:)  
+!        else
+!          tag=iw
+!          call mpi_grid_send(chi0(1,1),ngvecme*ngvecme,(/dim_k/),(/j/),tag)
+!        endif
+!      endif
+!      if (mpi_grid_x(dim_k).eq.j.and.j.ne.0) then
+!        tag=iw
+!        call mpi_grid_recieve(chi0w(1,1,jwloc),ngvecme*ngvecme,(/dim_k/),&
+!          (/0/),tag)
+!      endif
+!    endif
+!  endif !write_chi0_file
   if (wproc) then
     open(160,file=trim(fstat),status='replace',form='formatted')
     write(160,'(I8)')iw

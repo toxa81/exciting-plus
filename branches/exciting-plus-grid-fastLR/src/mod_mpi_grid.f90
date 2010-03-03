@@ -7,7 +7,7 @@ data debug/.false./
 integer nproc
 data nproc/1/
 ! index of current processor
-integer iproc1
+integer iproc
 data iproc/0/
 ! number of processors in a grid
 integer mpi_grid_nproc
@@ -63,6 +63,7 @@ call mpi_comm_rank(MPI_COMM_WORLD,iproc,ierr)
 op_sum=MPI_SUM
 op_min=MPI_MIN
 op_max=MPI_MAX
+call mpi_grid_initialize((/nproc/))
 #endif
 return
 end subroutine
@@ -111,12 +112,26 @@ integer ierr,i,j,nc,i1
 
 if (present(debug_)) debug=debug_
 
+call mpi_grid_finalize
+
 #ifdef _MPI_
 ! get number of dimensions
 mpi_grid_nd=size(mpi_grid_size_)
 if (allocated(mpi_grid_size)) deallocate(mpi_grid_size)
 allocate(mpi_grid_size(mpi_grid_nd))
 mpi_grid_size=mpi_grid_size_
+! get number of processors in the grid
+mpi_grid_nproc=1
+do i=1,mpi_grid_nd
+  mpi_grid_nproc=mpi_grid_nproc*mpi_grid_size(i)
+enddo
+if (mpi_grid_nproc.gt.nproc) then
+  write(*,*)
+  write(*,'("Error(mpi_grid_initialize): not enough processors to build a grid")')
+  write(*,'("  number of processors : ",I8)')nproc
+  write(*,'("  grid size : ",10I8)')mpi_grid_size
+  call pstop
+endif
 ! get number of communicators
 nc=2**mpi_grid_nd-1
 if (allocated(mpi_grid_comm)) deallocate(mpi_grid_comm)
@@ -141,6 +156,7 @@ if (mpi_grid_in()) then
     write(*,*)
     write(*,'("[mpi_grid_initialize] number of grid dimensions : ",I2)')mpi_grid_nd
     write(*,'("[mpi_grid_initialize] dimension sizes : ",10I8)')mpi_grid_size   
+    write(*,'("[mpi_grid_initialize] number of communicators : ",I2)')nc
   endif
 ! get all possible communicators
 !   for example, for 3D grid we have 7 possibilities:
@@ -198,10 +214,10 @@ if (mpi_grid_in()) then
     call mpi_comm_free(mpi_grid_comm(i),ierr)
   enddo
 endif
-deallocate(mpi_grid_comm)
+if (allocated(mpi_grid_comm)) deallocate(mpi_grid_comm)
 #endif
-deallocate(mpi_grid_size)
-deallocate(mpi_grid_x)
+if (allocated(mpi_grid_size)) deallocate(mpi_grid_size)
+if (allocated(mpi_grid_x)) deallocate(mpi_grid_x)
 return
 end subroutine
 
@@ -265,7 +281,11 @@ use mpi
 #endif
 implicit none
 #ifdef _MPI_
-mpi_grid_in=(mpi_grid_comm(0).ne.MPI_COMM_NULL)
+if (allocated(mpi_grid_comm)) then
+  mpi_grid_in=(mpi_grid_comm(0).ne.MPI_COMM_NULL)
+else
+  mpi_grid_in=.false.
+endif
 #else
 mpi_grid_in=.true.
 #endif
@@ -460,10 +480,69 @@ if (l1) call mpi_bcast(val,n_,MPI_LOGICAL,root,comm,ierr)
 return
 end subroutine
 
+subroutine mpi_grid_reduce_common(n_,dims_,side_,all_,op_,root_,lreduce_,&
+  lallreduce_,length_,reduceop_,comm_,rootid_)
+#ifdef _MPI_
+use mpi
+implicit none
+integer, optional, intent(in) :: n_
+integer, optional, dimension(:), intent(in) :: dims_
+logical, optional, intent(in) :: side_
+logical, optional, intent(in) :: all_
+integer, optional, intent(in) :: op_
+integer, optional, dimension(:), intent(in) :: root_
+logical, intent(out) :: lreduce_
+logical, intent(out) :: lallreduce_
+integer, intent(out) :: length_
+integer, intent(out) :: reduceop_
+integer, intent(out) :: comm_
+integer, intent(out) :: rootid_
+integer root_x(mpi_grid_nd),ierr,i
+! check if a reduction is necessary
+if (present(dims_)) then
+  lreduce_=.false.
+  do i=1,size(dims_)
+    if (mpi_grid_size(dims_(i)).ne.1) lreduce_=.true.
+  enddo
+else
+  lreduce_=.true.
+endif
+! check if only side processors do a reduction
+if (lreduce_) then
+  if (present(side_).and.present(dims_)) then
+    if (side_.and..not.mpi_grid_side(dims_)) lreduce_=.false.
+  endif
+endif
+! check for allreduce
+lallreduce_=.false.
+if (present(all_)) then
+  if (all_) lallreduce_=.true.
+endif
+! length of array
+length_=1
+if (present(n_)) length_=n_
+! reduction operation
+reduceop_=op_sum
+if (present(op_)) then
+  reduceop_=op_
+endif
+! get communicator
+comm_=mpi_grid_get_comm(dims_)
+! get root id
+if (present(root_)) then
+  root_x(1:size(root_))=root_
+else
+  root_x=0
+endif
+call mpi_cart_rank(comm_,root_x,rootid_,ierr)
+#endif
+end subroutine
+
+
 !-----------------------------!
 !      mpi_grid_reduce_i      !
 !-----------------------------!
-subroutine mpi_grid_reduce_i(val,n,dims,side,all,op)
+subroutine mpi_grid_reduce_i(val,n,dims,side,all,op,root)
 #ifdef _MPI_
 use mpi
 #endif
@@ -475,64 +554,34 @@ integer, optional, dimension(:), intent(in) :: dims
 logical, optional, intent(in) :: side
 logical, optional, intent(in) :: all
 integer, optional, intent(in) :: op
+integer, optional, dimension(:), intent(in) :: root
 ! local variables
-integer comm,root_x(mpi_grid_nd),root,ierr,sz
-logical all_,l1
-integer op_,n_,i
+integer comm,rootid,ierr,sz
+logical lreduce,lallreduce
+integer length,reduceop
 integer, allocatable :: tmp(:)
 #ifdef _MPI_
-! check if we need to do a reduction
-if (present(dims)) then
-  l1=.true.
-  do i=1,size(dims)
-    if (mpi_grid_size(dims(i)).ne.1) l1=.false.
-  enddo
-else
-  l1=.false.
-endif
-if (l1) return
-
+call mpi_grid_reduce_common(n_=n,dims_=dims,side_=side,all_=all,op_=op,&
+  root_=root,lreduce_=lreduce,lallreduce_=lallreduce,length_=length,&
+  reduceop_=reduceop,comm_=comm,rootid_=rootid)
 sz=sizeof(val)
-n_=1
-if (present(n)) n_=n
-all_=.false.
-if (present(all)) then
-  if (all) all_=.true.
+if (.not.lreduce) return
+allocate(tmp(length))
+if (lallreduce) then
+  call mpi_allreduce(val,tmp,length,MPI_INTEGER,reduceop,comm,ierr)
+else
+  call mpi_reduce(val,tmp,length,MPI_INTEGER,reduceop,rootid,comm,ierr)
 endif
-op_=op_sum
-if (present(op)) then
-  op_=op
-endif
-comm=mpi_grid_get_comm(dims)
-root_x=0
-call mpi_cart_rank(comm,root_x,root,ierr)
-l1=.true.
-if (present(side).and.present(dims)) then
-  if (side.and..not.mpi_grid_side(dims)) l1=.false.
-endif
-if (l1) then
-  if (all_) then
-    allocate(tmp(n_))
-    call mpi_allreduce(val,tmp,n_,MPI_INTEGER,op_,comm,ierr)
-    call memcopy(tmp,val,n_*sz)
-    deallocate(tmp)
-  else
-    if (mpi_grid_root(dims)) allocate(tmp(n_))
-    call mpi_reduce(val,tmp,n_,MPI_INTEGER,op_,root,comm,ierr)
-    if (mpi_grid_root(dims)) then
-      call memcopy(tmp,val,n_*sz)
-      deallocate(tmp)
-    endif
-  endif
-endif
+call memcopy(tmp,val,length*sz)
+deallocate(tmp)
 #endif
 return
 end subroutine
 
 !-----------------------------!
-!      mpi_grid_reduce_i2      !
+!      mpi_grid_reduce_i2     !
 !-----------------------------!
-subroutine mpi_grid_reduce_i2(val,n,dims,side,all,op)
+subroutine mpi_grid_reduce_i2(val,n,dims,side,all,op,root)
 #ifdef _MPI_
 use mpi
 #endif
@@ -544,56 +593,26 @@ integer, optional, dimension(:), intent(in) :: dims
 logical, optional, intent(in) :: side
 logical, optional, intent(in) :: all
 integer, optional, intent(in) :: op
+integer, optional, dimension(:), intent(in) :: root
 ! local variables
-integer comm,root_x(mpi_grid_nd),root,ierr,sz
-logical all_,l1
-integer op_,n_,i
+integer comm,rootid,ierr,sz
+logical lreduce,lallreduce
+integer length,reduceop
 integer(2), allocatable :: tmp(:)
 #ifdef _MPI_
-! check if we need to do a reduction
-if (present(dims)) then
-  l1=.true.
-  do i=1,size(dims)
-    if (mpi_grid_size(dims(i)).ne.1) l1=.false.
-  enddo
-else
-  l1=.false.
-endif
-if (l1) return
-
+call mpi_grid_reduce_common(n_=n,dims_=dims,side_=side,all_=all,op_=op,&
+  root_=root,lreduce_=lreduce,lallreduce_=lallreduce,length_=length,&
+  reduceop_=reduceop,comm_=comm,rootid_=rootid)
 sz=sizeof(val)
-n_=1
-if (present(n)) n_=n
-all_=.false.
-if (present(all)) then
-  if (all) all_=.true.
+if (.not.lreduce) return
+allocate(tmp(length))
+if (lallreduce) then
+  call mpi_allreduce(val,tmp,length,MPI_INTEGER2,reduceop,comm,ierr)
+else
+  call mpi_reduce(val,tmp,length,MPI_INTEGER2,reduceop,rootid,comm,ierr)
 endif
-op_=op_sum
-if (present(op)) then
-  op_=op
-endif
-comm=mpi_grid_get_comm(dims)
-root_x=0
-call mpi_cart_rank(comm,root_x,root,ierr)
-l1=.true.
-if (present(side).and.present(dims)) then
-  if (side.and..not.mpi_grid_side(dims)) l1=.false.
-endif
-if (l1) then
-  if (all_) then
-    allocate(tmp(n_))
-    call mpi_allreduce(val,tmp,n_,MPI_INTEGER2,op_,comm,ierr)
-    call memcopy(tmp,val,n_*sz)
-    deallocate(tmp)
-  else
-    if (mpi_grid_root(dims)) allocate(tmp(n_))
-    call mpi_reduce(val,tmp,n_,MPI_INTEGER2,op_,root,comm,ierr)
-    if (mpi_grid_root(dims)) then
-      call memcopy(tmp,val,n_*sz)
-      deallocate(tmp)
-    endif
-  endif
-endif
+call memcopy(tmp,val,length*sz)
+deallocate(tmp)
 #endif
 return
 end subroutine
@@ -601,7 +620,7 @@ end subroutine
 !-----------------------------!
 !      mpi_grid_reduce_d      !
 !-----------------------------!
-subroutine mpi_grid_reduce_d(val,n,dims,side,all,op)
+subroutine mpi_grid_reduce_d(val,n,dims,side,all,op,root)
 #ifdef _MPI_
 use mpi
 #endif
@@ -613,56 +632,26 @@ integer, optional, dimension(:), intent(in) :: dims
 logical, optional, intent(in) :: side
 logical, optional, intent(in) :: all
 integer, optional, intent(in) :: op
+integer, optional, dimension(:), intent(in) :: root
 ! local variables
-integer comm,root_x(mpi_grid_nd),root,ierr,sz
-logical all_,l1
-integer op_,n_,i
+integer comm,rootid,ierr,sz
+logical lreduce,lallreduce
+integer length,reduceop
 real(8), allocatable :: tmp(:)
 #ifdef _MPI_
-! check if we need to do a reduction
-if (present(dims)) then
-  l1=.true.
-  do i=1,size(dims)
-    if (mpi_grid_size(dims(i)).ne.1) l1=.false.
-  enddo
-else
-  l1=.false.
-endif
-if (l1) return
-
+call mpi_grid_reduce_common(n_=n,dims_=dims,side_=side,all_=all,op_=op,&
+  root_=root,lreduce_=lreduce,lallreduce_=lallreduce,length_=length,&
+  reduceop_=reduceop,comm_=comm,rootid_=rootid)
 sz=sizeof(val)
-n_=1
-if (present(n)) n_=n
-all_=.false.
-if (present(all)) then
-  if (all) all_=.true.
+if (.not.lreduce) return
+allocate(tmp(length))
+if (lallreduce) then
+  call mpi_allreduce(val,tmp,length,MPI_DOUBLE_PRECISION,reduceop,comm,ierr)
+else
+  call mpi_reduce(val,tmp,length,MPI_DOUBLE_PRECISION,reduceop,rootid,comm,ierr)
 endif
-op_=op_sum
-if (present(op)) then
-  op_=op
-endif
-comm=mpi_grid_get_comm(dims)
-root_x=0
-call mpi_cart_rank(comm,root_x,root,ierr)
-l1=.true.
-if (present(side).and.present(dims)) then
-  if (side.and..not.mpi_grid_side(dims)) l1=.false.
-endif
-if (l1) then
-  if (all_) then
-    allocate(tmp(n_))
-    call mpi_allreduce(val,tmp,n_,MPI_DOUBLE_PRECISION,op_,comm,ierr)
-    call memcopy(tmp,val,n_*sz)
-    deallocate(tmp)
-  else
-    if (mpi_grid_root(dims)) allocate(tmp(n_))
-    call mpi_reduce(val,tmp,n_,MPI_DOUBLE_PRECISION,op_,root,comm,ierr)
-    if (mpi_grid_root(dims)) then
-      call memcopy(tmp,val,n_*sz)
-      deallocate(tmp)
-    endif
-  endif
-endif
+call memcopy(tmp,val,length*sz)
+deallocate(tmp)
 #endif
 return
 end subroutine
@@ -670,7 +659,7 @@ end subroutine
 !-----------------------------!
 !      mpi_grid_reduce_z      !
 !-----------------------------!
-subroutine mpi_grid_reduce_z(val,n,dims,side,all,op)
+subroutine mpi_grid_reduce_z(val,n,dims,side,all,op,root)
 #ifdef _MPI_
 use mpi
 #endif
@@ -682,56 +671,26 @@ integer, optional, dimension(:), intent(in) :: dims
 logical, optional, intent(in) :: side
 logical, optional, intent(in) :: all
 integer, optional, intent(in) :: op
+integer, optional, dimension(:), intent(in) :: root
 ! local variables
-integer comm,root_x(mpi_grid_nd),root,ierr,sz
-logical all_,l1
-integer op_,n_,i
+integer comm,rootid,ierr,sz
+logical lreduce,lallreduce
+integer length,reduceop
 complex(8), allocatable :: tmp(:)
 #ifdef _MPI_
-! check if we need to do a reduction
-if (present(dims)) then
-  l1=.true.
-  do i=1,size(dims)
-    if (mpi_grid_size(dims(i)).ne.1) l1=.false.
-  enddo
-else
-  l1=.false.
-endif
-if (l1) return
-
+call mpi_grid_reduce_common(n_=n,dims_=dims,side_=side,all_=all,op_=op,&
+  root_=root,lreduce_=lreduce,lallreduce_=lallreduce,length_=length,&
+  reduceop_=reduceop,comm_=comm,rootid_=rootid)
 sz=sizeof(val)
-n_=1
-if (present(n)) n_=n
-all_=.false.
-if (present(all)) then
-  if (all) all_=.true.
+if (.not.lreduce) return
+allocate(tmp(length))
+if (lallreduce) then
+  call mpi_allreduce(val,tmp,length,MPI_DOUBLE_COMPLEX,reduceop,comm,ierr)
+else
+  call mpi_reduce(val,tmp,length,MPI_DOUBLE_COMPLEX,reduceop,rootid,comm,ierr)
 endif
-op_=op_sum
-if (present(op)) then
-  op_=op
-endif
-comm=mpi_grid_get_comm(dims)
-root_x=0
-call mpi_cart_rank(comm,root_x,root,ierr)
-l1=.true.
-if (present(side).and.present(dims)) then
-  if (side.and..not.mpi_grid_side(dims)) l1=.false.
-endif
-if (l1) then
-  if (all_) then
-    allocate(tmp(n_))
-    call mpi_allreduce(val,tmp,n_,MPI_DOUBLE_COMPLEX,op_,comm,ierr)
-    call memcopy(tmp,val,n_*sz)
-    deallocate(tmp)
-  else
-    if (mpi_grid_root(dims)) allocate(tmp(n_))
-    call mpi_reduce(val,tmp,n_,MPI_DOUBLE_COMPLEX,op_,root,comm,ierr)
-    if (mpi_grid_root(dims)) then
-      call memcopy(tmp,val,n_*sz)
-      deallocate(tmp)
-    endif
-  endif
-endif
+call memcopy(tmp,val,length*sz)
+deallocate(tmp)
 #endif
 return
 end subroutine
@@ -739,7 +698,7 @@ end subroutine
 !-----------------------------!
 !      mpi_grid_reduce_f      !
 !-----------------------------!
-subroutine mpi_grid_reduce_f(val,n,dims,side,all,op)
+subroutine mpi_grid_reduce_f(val,n,dims,side,all,op,root)
 #ifdef _MPI_
 use mpi
 #endif
@@ -751,56 +710,26 @@ integer, optional, dimension(:), intent(in) :: dims
 logical, optional, intent(in) :: side
 logical, optional, intent(in) :: all
 integer, optional, intent(in) :: op
+integer, optional, dimension(:), intent(in) :: root
 ! local variables
-integer comm,root_x(mpi_grid_nd),root,ierr,sz
-logical all_,l1
-integer op_,n_,i
+integer comm,rootid,ierr,sz
+logical lreduce,lallreduce
+integer length,reduceop
 real(4), allocatable :: tmp(:)
 #ifdef _MPI_
-! check if we need to do a reduction
-if (present(dims)) then
-  l1=.true.
-  do i=1,size(dims)
-    if (mpi_grid_size(dims(i)).ne.1) l1=.false.
-  enddo
-else
-  l1=.false.
-endif
-if (l1) return
-
+call mpi_grid_reduce_common(n_=n,dims_=dims,side_=side,all_=all,op_=op,&
+  root_=root,lreduce_=lreduce,lallreduce_=lallreduce,length_=length,&
+  reduceop_=reduceop,comm_=comm,rootid_=rootid)
 sz=sizeof(val)
-n_=1
-if (present(n)) n_=n
-all_=.false.
-if (present(all)) then
-  if (all) all_=.true.
+if (.not.lreduce) return
+allocate(tmp(length))
+if (lallreduce) then
+  call mpi_allreduce(val,tmp,length,MPI_REAL,reduceop,comm,ierr)
+else
+  call mpi_reduce(val,tmp,length,MPI_REAL,reduceop,rootid,comm,ierr)
 endif
-op_=op_sum
-if (present(op)) then
-  op_=op
-endif
-comm=mpi_grid_get_comm(dims)
-root_x=0
-call mpi_cart_rank(comm,root_x,root,ierr)
-l1=.true.
-if (present(side).and.present(dims)) then
-  if (side.and..not.mpi_grid_side(dims)) l1=.false.
-endif
-if (l1) then
-  if (all_) then
-    allocate(tmp(n_))
-    call mpi_allreduce(val,tmp,n_,MPI_REAL,op_,comm,ierr)
-    call memcopy(tmp,val,n_*sz)
-    deallocate(tmp)
-  else
-    if (mpi_grid_root(dims)) allocate(tmp(n_))
-    call mpi_reduce(val,tmp,n_,MPI_REAL,op_,root,comm,ierr)
-    if (mpi_grid_root(dims)) then
-      call memcopy(tmp,val,n_*sz)
-      deallocate(tmp)
-    endif
-  endif
-endif
+call memcopy(tmp,val,length*sz)
+deallocate(tmp)
 #endif
 return
 end subroutine
@@ -818,7 +747,6 @@ end subroutine
 !    ikloc=mpi_grid_map(nkp,dim_k,glob=ik)
 !  get local index of k-point for processor with coordinate h
 !    ikloc=mpi_grid_map(nkp,dim_k,x=h,glob=ik)
-
 integer function mpi_grid_map(length,idim,x,loc,glob,offs)
 implicit none
 ! arguments
@@ -965,7 +893,13 @@ end subroutine
 
 
 
-
+! partition something of size "length" to blocks 
+!   (in) nblocks is number of blocks
+!   (in) iblock is the index of block (from 1 to nblocks)
+!   (out) idx0 is the offset in global block
+!   (out) blocksize is the size of local block
+! if length.eq.0 -> nothing to partition
+! if iblock outside the boundaries -> return with error 
 subroutine idxofs(length,nblocks,iblock,idx0,blocksize)
 implicit none
 integer, intent(in) :: length
@@ -1121,7 +1055,7 @@ endif
 
 write(*,'("STOP execution")')
 write(*,'("  error code : ",I8)')ierr
-write(*,'("  global index of processor : ",I8)')iproc1
+write(*,'("  global index of processor : ",I8)')iproc
 if (allocated(mpi_grid_x)) &
   write(*,'("  coordinates of processor : ",10I8)')mpi_grid_x
 #ifdef _MPI_
