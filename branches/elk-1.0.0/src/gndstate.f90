@@ -431,10 +431,12 @@ call mpi_grid_bcast(tstop)
 if ((.not.tstop).and.(tforce)) then
   call force
 ! output forces to INFO.OUT
-  call writeforce(60)
+  if (wproc) then
+    call writeforce(60)
 ! write maximum force magnitude to FORCEMAX.OUT
-  write(64,'(G18.10)') forcemax
-  call flushifc(64)
+    write(64,'(G18.10)') forcemax
+    call flushifc(64)
+  endif
 end if
 !---------------------------------------!
 !     perform structural relaxation     !

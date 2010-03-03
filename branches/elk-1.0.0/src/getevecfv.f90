@@ -40,15 +40,19 @@ complex(8) zt1
 ! allocatable arrays
 complex(8), allocatable :: evecfvt(:,:)
 complex(8), allocatable :: zflm1(:,:),zflm2(:,:)
+real(8), allocatable :: vgkl_(:,:)
+integer, allocatable :: igkig_(:,:)
+allocate(vgkl_(3,ngkmax))
+allocate(igkig_(ngkmax,nspnfv))
 ! find the equivalent k-point number and crystal symmetry element
 call findkpt(vpl,isym,ik)
 ! index to spatial rotation in lattice point group
 lspl=lsplsymc(isym)
 ! find the record length
-inquire(iolength=recl) vkl_,nmatmax_,nstfv_,nspnfv_,evecfv
+inquire(iolength=recl) vkl_,nmatmax_,nstfv_,nspnfv_,evecfv,vgkl_,igkig_
 open(70,file=trim(scrpath)//'EVECFV'//trim(filext),action='READ', &
  form='UNFORMATTED',access='DIRECT',recl=recl)
-read(70,rec=ik) vkl_,nmatmax_,nstfv_,nspnfv_,evecfv
+read(70,rec=ik) vkl_,nmatmax_,nstfv_,nspnfv_,evecfv,vgkl_,igkig_
 close(70)
 t1=abs(vkl(1,ik)-vkl_(1))+abs(vkl(2,ik)-vkl_(2))+abs(vkl(3,ik)-vkl_(3))
 if (t1.gt.epslat) then
@@ -102,14 +106,14 @@ si(:,:)=dble(symlat(:,:,ilspl))
 !-----------------------------------------------!
 allocate(evecfvt(nmatmax,nstfv))
 do igk=1,ngk(1,ik)
-  ig=igkig(igk,1,ik)
+  ig=igkig_(igk,1)
   v(:)=dble(ivg(:,ig))
   t1=-twopi*dot_product(v(:),vtlsymc(:,isym))
   zt1=cmplx(cos(t1),sin(t1),8)
   evecfvt(igk,:)=zt1*evecfv(igk,:,1)
 end do
 do igk=1,ngk(1,ik)
-  call r3mtv(si,vgkl(:,igk,1,ik),v)
+  call r3mtv(si,vgkl_(:,igk),v)
   do igp=1,ngk(1,ik)
     t1=abs(v(1)-vgpl(1,igp))+abs(v(2)-vgpl(2,igp))+abs(v(3)-vgpl(3,igp))
     if (t1.lt.epslat) then
@@ -164,6 +168,7 @@ end do
 deallocate(zflm1,zflm2)
 20 continue
 deallocate(evecfvt)
+deallocate(vgkl_,igkig_)
 return
 end subroutine
 !EOC
