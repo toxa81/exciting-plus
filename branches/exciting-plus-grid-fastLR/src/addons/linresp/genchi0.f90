@@ -7,9 +7,10 @@ implicit none
 integer, intent(in) :: ivq0m(3)
 ! local variables
 complex(8), allocatable :: chi0(:,:)
-complex(8), allocatable :: chi0w(:,:,:)
-complex(8), allocatable :: chi0wan(:,:)
+complex(8), allocatable :: chi0loc(:,:,:)
 complex(8), allocatable :: chi0wan_k(:,:,:)
+complex(8), allocatable :: chi0wan(:,:)
+complex(8), allocatable :: chi0wanloc(:,:,:)
 complex(8), allocatable :: vcwan(:,:)
 ! Fourier-transform of Ixc(r)=Bxc(r)/m(r)
 complex(8), allocatable :: ixcft(:)
@@ -20,7 +21,7 @@ integer, external :: hash
 
 
 integer i,iw,i1,i2,ikloc,n,j,ifxc
-integer ist1,ist2,nfxcloc,ifxcloc,nwloc,jwloc,iwloc,tag
+integer ist1,ist2,nfxcloc,ifxcloc,nwloc,jwloc,iwloc
 integer it1(3),it2(3),it(3)
 integer ig
 character*100 qnm,fout,fchi0,fstat,path
@@ -184,7 +185,8 @@ nfxcloc=mpi_grid_map(nfxca,dim_b)
 nwloc=mpi_grid_map(nepts,dim_k)
 
 if (.not.write_chi0_file) then
-  allocate(chi0w(ngvecme,ngvecme,nwloc))
+  allocate(chi0loc(ngvecme,ngvecme,nwloc))
+  if (wannier_chi0_chi) allocate(chi0wanloc(nmegqwan,nmegqwan,nwloc))
 endif
 
 if (wproc) then
@@ -212,18 +214,15 @@ do iw=ie1,nepts
       call sumchi0(ikloc,lr_w(iw),chi0)
     endif
   enddo
-! if we don't save the chi0 matrix, we need to know the processor which will 
-!  store it
+! find the processor j which will get the full chi0 and chi0wan matrices
   jwloc=mpi_grid_map(nepts,dim_k,glob=iw,x=j)
 ! sum over k-points and band transitions
-  if (write_chi0_file) then
-    call mpi_grid_reduce(chi0(1,1),ngvecme*ngvecme,dims=(/dim_k,dim_b/))
-  else
-    call mpi_grid_reduce(chi0(1,1),ngvecme*ngvecme,dims=(/dim_k,dim_b/),root=(/j,0/))
-  endif
+  call mpi_grid_reduce(chi0(1,1),ngvecme*ngvecme,dims=(/dim_k,dim_b/),&
+    root=(/j,0/))
   chi0=chi0/nkptnr/omega
+! processor j saves chi0 to local array  
   if (.not.write_chi0_file) then
-    if (mpi_grid_x(dim_k).eq.j) chi0w(:,:,jwloc)=chi0(:,:)
+    if (mpi_grid_x(dim_k).eq.j) chi0loc(:,:,jwloc)=chi0(:,:)
   endif
   call timer_stop(2)
 ! for response in Wannier basis
@@ -237,14 +236,25 @@ do iw=ie1,nepts
     call timer_stop(3)
     call timer_start(4)
 ! compute ch0 matrix in Wannier basis
-    call genchi0wan(mexp,chi0wan_k,chi0wan)
-    if (megqwan_afm) chi0wan(:,:)=chi0wan(:,:)*2.d0    
+    chi0wan(:,:)=zzero
+    do ikloc=1,nkptnrloc
+      chi0wan(:,:)=chi0wan(:,:)+mexp(:,:,ikloc)*chi0wan_k(:,:,ikloc)
+    enddo
+! sum chi0wan over all k-points
+    call mpi_grid_reduce(chi0wan(1,1),nmegqwan*nmegqwan,dims=(/dim_k/),&
+      root=(/j/))
+    chi0wan(:,:)=chi0wan(:,:)/nkptnr/omega
+    if (megqwan_afm) chi0wan(:,:)=chi0wan(:,:)*2.d0
+! processor j saves chi0wan to local array  
+    if (.not.write_chi0_file) then
+      if (mpi_grid_x(dim_k).eq.j) chi0wanloc(:,:,jwloc)=chi0wan(:,:)
+    endif
     call timer_stop(4)
   endif !wannier_chi0_chi
 ! save chi0 or distribute it over processors  
   if (write_chi0_file) then
     call timer_start(8)
-    if (mpi_grid_root((/dim_k,dim_b/))) then
+    if (mpi_grid_x(dim_k).eq.j.and.mpi_grid_x(dim_b).eq.0) then
       write(path,'("/iw/",I8.8)')iw
       call hdf5_write(trim(fchi0),trim(path),'w',lr_w(iw))
       call hdf5_write(trim(fchi0),trim(path),'chi0',chi0(1,1),&
@@ -256,23 +266,6 @@ do iw=ie1,nepts
     endif
     call timer_stop(8)
   endif
-!    if (mpi_grid_root(dims=(/dim_b/))) then
-!      jwloc=mpi_grid_map(nepts,dim_k,glob=iw,x=j)
-!      if (mpi_grid_x(dim_k).eq.0) then
-!        if (j.eq.0) then
-!          chi0w(:,:,jwloc)=chi0(:,:)  
-!        else
-!          tag=iw
-!          call mpi_grid_send(chi0(1,1),ngvecme*ngvecme,(/dim_k/),(/j/),tag)
-!        endif
-!      endif
-!      if (mpi_grid_x(dim_k).eq.j.and.j.ne.0) then
-!        tag=iw
-!        call mpi_grid_recieve(chi0w(1,1,jwloc),ngvecme*ngvecme,(/dim_k/),&
-!          (/0/),tag)
-!      endif
-!    endif
-!  endif !write_chi0_file
   if (wproc) then
     open(160,file=trim(fstat),status='replace',form='formatted')
     write(160,'(I8)')iw
@@ -287,12 +280,12 @@ if (.not.write_chi0_file) then
 ! compute screened W and U  
     if (crpa) then
       call timer_start(5)
-      call genwu(iw,chi0w(1,1,iwloc),vcgq,qnm,krnl_scr)
+      call genwu(iw,chi0loc(1,1,iwloc),vcgq,qnm,krnl_scr)
       call timer_stop(5)
     else
 ! compute response functions 
 ! broadcast chi0
-      call mpi_grid_bcast(chi0w(1,1,iwloc),ngvecme*ngvecme,dims=(/dim_b/))
+      call mpi_grid_bcast(chi0loc(1,1,iwloc),ngvecme*ngvecme,dims=(/dim_b/))
 ! loop over fxc
       do ifxcloc=1,nfxcloc
         ifxc=mpi_grid_map(nfxca,dim_b,loc=ifxcloc)
@@ -310,11 +303,11 @@ if (.not.write_chi0_file) then
           enddo
         endif !lrtype.eq.0 
         call timer_start(6)
-        call solve_chi(vcgq,lr_w(iw),chi0w(1,1,iwloc),krnl,krnl_scr,f_response(1,iw,ifxc))
+        call solve_chi(vcgq,lr_w(iw),chi0loc(1,1,iwloc),krnl,krnl_scr,f_response(1,iw,ifxc))
         call timer_stop(6)
         if (wannier_chi0_chi.and.ifxc.eq.1) then
           call timer_start(7)
-          call solve_chi_wan(vcgq,lr_w(iw),vcwan,chi0wan,f_response(1,iw,ifxc))
+          call solve_chi_wan(vcgq,lr_w(iw),vcwan,chi0wanloc(1,1,iwloc),f_response(1,iw,ifxc))
           call timer_stop(7)
         endif !wannier_chi0_chi.and.ifxc.eq.1
       enddo !ifxcloc
@@ -357,6 +350,8 @@ call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 deallocate(chi0)
 deallocate(krnl)
 deallocate(ixcft)
+deallocate(megqblh2)
+deallocate(vcgq)
 if (wannier_chi0_chi) then
   deallocate(chi0wan)
   deallocate(chi0wan_k)
@@ -365,14 +360,14 @@ if (wannier_chi0_chi) then
   deallocate(wann_cc)
   deallocate(wann_cc2)
 endif
-deallocate(megqblh2)
-deallocate(vcgq)
 if (.not.write_chi0_file) then
-  deallocate(chi0w)
+  deallocate(chi0loc)
+  if (wannier_chi0_chi) deallocate(chi0wanloc)
 endif
 if (crpa) then
   deallocate(krnl_scr)
 endif
+
 if (write_chi0_file) then
   call genchi(ivq0m)
 endif
@@ -383,7 +378,6 @@ if (wproc) then
   write(150,'("Done.")')
   call flushifc(150)
 endif
-
 
 return
 end
