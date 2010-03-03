@@ -81,7 +81,7 @@ evecsv(:,:)=0.d0
 !-------------------------!
 natmtotloc=mpi_grid_map(natmtot,dim2)
 do iasloc=1,natmtotloc
-  ias=mpi_grid_map(natmtot,2,loc=iasloc)
+  ias=mpi_grid_map(natmtot,dim2,loc=iasloc)
   is=ias2is(ias)
   ia=ias2ia(ias)
   nrc=nrcmt(is)
