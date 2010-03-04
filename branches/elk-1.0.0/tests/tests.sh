@@ -7,7 +7,7 @@ do
   echo
   echo "Running test in directory $i..."
   \rm -f *.OUT
-  ../../src/elk > test.log
+  mpirun -np 3 ../../src/elk > test.log
   NERROR=`grep -c Error test.log`
   if test $NERROR -gt 0
   then

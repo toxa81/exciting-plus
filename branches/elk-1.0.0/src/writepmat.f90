@@ -19,11 +19,11 @@ use modmain
 !BOC
 implicit none
 ! local variables
-integer ik,recl
+integer ik,recl,ikloc,i
 complex(8), allocatable :: evecfv(:,:)
 complex(8), allocatable :: evecsv(:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
-complex(8), allocatable :: pmat(:,:,:)
+complex(8), allocatable :: pmat(:,:,:,:)
 ! initialise universal variables
 call init0
 call init1
@@ -35,33 +35,51 @@ call linengy
 call genapwfr
 ! generate the local-orbital radial functions
 call genlofr
+if (mpi_grid_root()) then
+  open(50,file='PMAT.OUT')
+  close(50,status='DELETE')
+endif
+allocate(evecfv(nmatmax,nstfv))
+allocate(evecsv(nstsv,nstsv))
+allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
+allocate(pmat(3,nstsv,nstsv,nkptloc))
 ! find the record length
-allocate(pmat(3,nstsv,nstsv))
-inquire(iolength=recl) pmat
-deallocate(pmat)
-open(50,file='PMAT.OUT',action='WRITE',form='UNFORMATTED',access='DIRECT', &
- status='REPLACE',recl=recl)
-do ik=1,nkpt
-  allocate(evecfv(nmatmax,nstfv))
-  allocate(evecsv(nstsv,nstsv))
-  allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-  allocate(pmat(3,nstsv,nstsv))
+inquire(iolength=recl) pmat(:,:,:,1)
+do ikloc=1,nkptloc
+  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 ! get the eigenvectors from file
-  call getevecfv(vkl(:,ik),vgkl(:,:,:,ik),evecfv)
+  call getevecfv(vkl(:,ik),vgkl(:,:,:,ikloc),evecfv)
   call getevecsv(vkl(:,ik),evecsv)
 ! find the matching coefficients
-  call match(ngk(1,ik),gkc(:,1,ik),tpgkc(:,:,1,ik),sfacgk(:,:,1,ik),apwalm)
+  call match(ngk(1,ik),gkc(:,1,ikloc),tpgkc(:,:,1,ikloc),sfacgk(:,:,1,ikloc),&
+    apwalm)
 ! calculate the momentum matrix elements
-  call genpmat(ngk(1,ik),igkig(:,1,ik),vgkc(:,:,1,ik),apwalm,evecfv,evecsv,pmat)
+  call genpmat(ngk(1,ik),igkig(:,1,ikloc),vgkc(:,:,1,ikloc),apwalm,evecfv,&
+    evecsv,pmat(1,1,1,ikloc))
 ! write the matrix elements to direct-access file
-  write(50,rec=ik) pmat
-  deallocate(evecfv,evecsv,apwalm,pmat)
 end do
-close(50)
-write(*,*)
-write(*,'("Info(writepmat):")')
-write(*,'(" momentum matrix elements written to file PMAT.OUT")')
-write(*,*)
+! write the matrix elements to direct-access file
+if (mpi_grid_side(dims=(/dim_k/))) then
+  do i=0,mpi_grid_size(dim_k)-1
+    if (mpi_grid_x(dim_k).eq.i) then
+      open(50,file='PMAT.OUT',action='WRITE',form='UNFORMATTED',access='DIRECT', &
+        recl=recl)
+      do ikloc=1,nkptloc
+        ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+        write(50,rec=ik) pmat(:,:,:,ikloc)
+      enddo
+      close(50)
+    endif
+  call mpi_grid_barrier(dims=(/dim_k/))
+  enddo
+endif
+if (mpi_grid_root()) then
+  write(*,*)
+  write(*,'("Info(writepmat):")')
+  write(*,'(" momentum matrix elements written to file PMAT.OUT")')
+  write(*,*)
+endif
+deallocate(evecfv,evecsv,apwalm,pmat)
 end subroutine
 !EOC
 

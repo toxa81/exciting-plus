@@ -79,7 +79,7 @@ use modtest
 !BOC
 implicit none
 ! local variables
-integer ik,is,ia,ias,nr,i
+integer ik,is,ia,ias,nr,i,ikloc
 real(8) sum,t1
 real(8) ts0,ts1
 ! allocatable arrays
@@ -135,6 +135,15 @@ call symvect(.false.,forcecr)
 forceibs(:,:)=0.d0
 if (tfibs) then
   allocate(ffacg(ngvec,nspecies))
+! generate the step function form factors
+  do is=1,nspecies
+    call genffacg(is,ffacg(:,is))
+  end do
+! compute k-point dependent contribution to the IBS force
+  do ikloc=1,nkptloc
+    call forcek(ikloc,ffacg)
+  end do
+  call mpi_grid_reduce(forceibs(1,1),3*natmtot,dims=(/dim_k/))
 ! integral of effective potential with gradient of valence density
   do is=1,nspecies
     nr=nrmt(is)
@@ -148,14 +157,6 @@ if (tfibs) then
         forceibs(i,ias)=forceibs(i,ias)+t1
       end do
     end do
-  end do
-! generate the step function form factors
-  do is=1,nspecies
-    call genffacg(is,ffacg(:,is))
-  end do
-! compute k-point dependent contribution to the IBS force
-  do ik=1,nkpt
-    call forcek(ik,ffacg)
   end do
 ! symmetrise IBS force
   call symvect(.false.,forceibs)

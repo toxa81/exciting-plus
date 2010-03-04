@@ -7,8 +7,13 @@ integer i,j,k,lwork,ipiv(3)
 integer nq(3)
 real(8) work(24)
 
-! q-vector, angstrom -> a.u.
-q=(/9.98,   7.05,   0.00000/)*au2ang
+! q-vector, direction.
+q=(/1.130773d0, 0.000000d0, -31.573183d0/)
+q=q/sqrt(sum(q(:)**2))
+! length ininverse angstroms sonverted to inverse a.u.
+q=3.4*q*au2ang
+
+write(*,*)'q=',q
 
 call readinput
 call init0
@@ -26,15 +31,13 @@ do i=1,3
   nq(i)=floor(b(i))
 enddo
 
-q=q/au2ang
-
 do i=-ngridk(1),ngridk(1)
 do j=-ngridk(2),ngridk(2)
 do k=-ngridk(3),ngridk(3)
   q1(:)=(nq(1)+i)*bvec(:,1)/ngridk(1)+&
         (nq(2)+j)*bvec(:,2)/ngridk(2)+&
         (nq(3)+k)*bvec(:,3)/ngridk(3)
-  q1(:)=q1(:)/au2ang
+!  q1(:)=q1(:)/au2ang
   ang=acos((q1(1)*q(1)+q1(2)*q(2)+q1(3)*q(3))/sqrt(sum(q1**2))/sqrt(sum(q**2)))
   write(*,'("angle : ",F8.4," diff : ",F8.4," coord : ",3I4)')ang,sqrt(sum((q-q1)**2)),nq(1)+i,nq(2)+j,nq(3)+k
 enddo
