@@ -103,7 +103,6 @@ lmaxvr=5
 ! initialise universal variables
 call init0
 call init1
-
 if (.not.mpi_grid_in()) return
 
 ! for constrained RPA all q-vectors in BZ are required 

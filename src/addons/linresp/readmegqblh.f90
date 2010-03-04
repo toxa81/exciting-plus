@@ -1,3 +1,4 @@
+#ifdef _HDF5_
 subroutine readmegqblh(qnm)
 use modmain
 implicit none
@@ -112,3 +113,4 @@ call mpi_grid_bcast(bmegqblh(1,1,1),2*nmegqblhmax*nkptnrloc,dims=(/dim_b/))
 call mpi_grid_bcast(megqblh(1,1,1),ngvecme*nmegqblhmax*nkptnrloc,dims=(/dim_b/))
 return
 end
+#endif

@@ -11,8 +11,8 @@ wfsvit=zzero
 do j=1,nstsv
   do ispn=1,nspinor
     do istfv=1,nstfv
-      wfsvit(:,ispn,j)=wfsvit(:,ispn,j)+&
-        evecsv(istfv+(ispn-1)*nstfv,j)*evecfv(:,istfv)
+      wfsvit(1:ngp,ispn,j)=wfsvit(1:ngp,ispn,j)+&
+        evecsv(istfv+(ispn-1)*nstfv,j)*evecfv(1:ngp,istfv)
     enddo
   enddo
 enddo 

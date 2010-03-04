@@ -21,10 +21,12 @@ call h5open_f(ierr)
 end subroutine
 
 subroutine hdf5_finalize
+#ifdef _HDF5_
 use hdf5
 implicit none
 integer ierr
 call h5close_f(ierr)
+#endif
 end subroutine
 
 subroutine hdf5_create_file(fname)
@@ -119,6 +121,7 @@ endif
 end subroutine
 
 subroutine hdf5_write_z(fname,path,dname,val,dims)
+#ifdef _HDF5_
 use hdf5
 implicit none
 character(*), intent(in) :: fname
@@ -168,10 +171,11 @@ deallocate(dims_)
   
 
 
-
+#endif
 end subroutine
 
 subroutine hdf5_read_z(fname,path,dname,val,dims)
+#ifdef _HDF5_
 use hdf5
 implicit none
 character(*), intent(in) :: fname
@@ -221,7 +225,7 @@ deallocate(dims_)
   
 
 
-
+#endif
 end subroutine
 
 
@@ -229,6 +233,7 @@ end module
 
 
 subroutine write_real8_array1(a,ndims,dims,fname,path,nm)
+#ifdef _HDF5_
 use hdf5
 use mod_mpi_grid
 implicit none
@@ -287,9 +292,11 @@ write(*,'("  fname : ",A)')trim(fname)
 write(*,'("  path : ",A)')trim(path)
 write(*,'("  nm : ",A)')trim(nm)
 call pstop
+#endif
 end
 
 subroutine read_real8_array1(a,ndims,dims,fname,path,nm)
+#ifdef _HDF5_
 use hdf5
 use mod_mpi_grid
 implicit none
@@ -343,6 +350,7 @@ write(*,'("  fname : ",A)')trim(fname)
 write(*,'("  path : ",A)')trim(path)
 write(*,'("  nm : ",A)')trim(nm)
 call pstop
+#endif
 end
 
 

@@ -1,3 +1,4 @@
+#ifdef _HDF5_
 subroutine write_chi0_header(qnm)
 use modmain
 implicit none
@@ -14,3 +15,4 @@ do i=1,nepts
 enddo
 return
 end
+#endif

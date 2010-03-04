@@ -106,6 +106,8 @@ do itask=1,ntasks
     call writexc
   case(702)
     call genscell
+  case(800)
+    call sic
   case default
     write(*,*)
     write(*,'("Error(main): task not defined : ",I8)') task
