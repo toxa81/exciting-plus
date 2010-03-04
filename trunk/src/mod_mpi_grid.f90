@@ -74,9 +74,7 @@ end subroutine
 subroutine mpi_world_finalize
 #ifdef _MPI_
 use mpi
-#endif
 implicit none
-#ifdef _MPI_
 integer ierr
 call mpi_barrier(MPI_COMM_WORLD,ierr)
 call mpi_finalize(ierr)
@@ -88,10 +86,12 @@ end subroutine
 !      mpi_world_barrier      !
 !-----------------------------!
 subroutine mpi_world_barrier
+#ifdef _MPI_
 use mpi
 implicit none
 integer ierr
 call mpi_barrier(MPI_COMM_WORLD,ierr)
+#endif
 return
 end subroutine
 
@@ -114,11 +114,14 @@ if (present(debug_)) debug=debug_
 
 call mpi_grid_finalize
 
-#ifdef _MPI_
 ! get number of dimensions
 mpi_grid_nd=size(mpi_grid_size_)
 if (allocated(mpi_grid_size)) deallocate(mpi_grid_size)
 allocate(mpi_grid_size(mpi_grid_nd))
+if (allocated(mpi_grid_x)) deallocate(mpi_grid_x)
+allocate(mpi_grid_x(mpi_grid_nd))
+
+#ifdef _MPI_
 mpi_grid_size=mpi_grid_size_
 ! get number of processors in the grid
 mpi_grid_nproc=1
@@ -137,8 +140,6 @@ nc=2**mpi_grid_nd-1
 if (allocated(mpi_grid_comm)) deallocate(mpi_grid_comm)
 allocate(mpi_grid_comm(0:nc))
 mpi_grid_comm=MPI_COMM_NULL
-if (allocated(mpi_grid_x)) deallocate(mpi_grid_x)
-allocate(mpi_grid_x(mpi_grid_nd))
 mpi_grid_x=-1
 
 allocate(l1(mpi_grid_nd))
@@ -184,12 +185,7 @@ if (mpi_grid_in()) then
 endif !mpi_grid_in
 #else
 ! get number of dimensions
-mpi_grid_nd=1
-if (allocated(mpi_grid_size)) deallocate(mpi_grid_size)
-allocate(mpi_grid_size(mpi_grid_nd))
 mpi_grid_size=1
-if (allocated(mpi_grid_x)) deallocate(mpi_grid_x)
-allocate(mpi_grid_x(mpi_grid_nd))
 mpi_grid_x=0
 if (debug) then
   write(*,*)
@@ -535,6 +531,14 @@ else
   root_x=0
 endif
 call mpi_cart_rank(comm_,root_x,rootid_,ierr)
+if (debug) then
+  write(*,'("[mpi_grid_reduce_common] lreduce_ : ",L1)')lreduce_
+  write(*,'("[mpi_grid_reduce_common] lallreduce_ : ",L1)')lallreduce_
+  write(*,'("[mpi_grid_reduce_common] length_ : ",I6)')length_
+  write(*,'("[mpi_grid_reduce_common] reduceop_ : ",I6)')reduceop_  
+  write(*,'("[mpi_grid_reduce_common] comm_ : ",I6)')comm_ 
+  write(*,'("[mpi_grid_reduce_common] rootid_ : ",I6)')rootid_  
+endif
 #endif
 end subroutine
 
@@ -678,6 +682,9 @@ logical lreduce,lallreduce
 integer length,reduceop
 complex(8), allocatable :: tmp(:)
 #ifdef _MPI_
+if (debug) then
+  write(*,'("[mpi_grid_reduce_z] start")')
+endif
 call mpi_grid_reduce_common(n_=n,dims_=dims,side_=side,all_=all,op_=op,&
   root_=root,lreduce_=lreduce,lallreduce_=lallreduce,length_=length,&
   reduceop_=reduceop,comm_=comm,rootid_=rootid)
@@ -799,7 +806,9 @@ end function
 !      mpi_grid_send_z      !
 !---------------------------!
 subroutine mpi_grid_send_z(val,n,dims,dest,tag)
+#ifdef _MPI_
 use mpi
+#endif
 implicit none
 complex(8), intent(in) :: val
 integer, intent(in) :: n
@@ -815,9 +824,11 @@ if (debug) then
   write(*,*)'[mpi_grid_send_z] dest=',dest
   write(*,*)'[mpi_grid_send_z] tag=',tag
 endif
+#ifdef _MPI_
 comm=mpi_grid_get_comm(dims)
 call mpi_cart_rank(comm,dest,dest_rank,ierr) 
 call mpi_isend(val,n,MPI_DOUBLE_COMPLEX,dest_rank,tag,comm,req,ierr)
+#endif
 return
 end subroutine
 
@@ -825,7 +836,9 @@ end subroutine
 !      mpi_grid_send_i      !
 !---------------------------!
 subroutine mpi_grid_send_i(val,n,dims,dest,tag)
+#ifdef _MPI_
 use mpi
+#endif
 implicit none
 integer, intent(in) :: val
 integer, intent(in) :: n
@@ -834,9 +847,11 @@ integer, dimension(:), intent(in) :: dest
 integer, intent(in) :: tag
 ! local variables
 integer comm,dest_rank,req,ierr
+#ifdef _MPI_
 comm=mpi_grid_get_comm(dims)
 call mpi_cart_rank(comm,dest,dest_rank,ierr) 
 call mpi_isend(val,n,MPI_INTEGER,dest_rank,tag,comm,req,ierr)
+#endif
 return
 end subroutine
 
@@ -844,7 +859,9 @@ end subroutine
 !      mpi_grid_recieve_z      !
 !------------------------------!
 subroutine mpi_grid_recieve_z(val,n,dims,src,tag)
+#ifdef _MPI_
 use mpi
+#endif
 implicit none
 complex(8), intent(out) :: val
 integer, intent(in) :: n
@@ -852,8 +869,10 @@ integer, dimension(:), intent(in) :: dims
 integer, dimension(:), intent(in) :: src
 integer, intent(in) :: tag
 ! local variables
+#ifdef _MPI_
 integer comm,src_rank,req,ierr
 integer stat(MPI_STATUS_SIZE)
+#endif
 if (debug) then
   write(*,*)'[mpi_grid_recieve_z] mpi_grid_x:',mpi_grid_x
   write(*,*)'[mpi_grid_recieve_z] n=',n
@@ -861,10 +880,12 @@ if (debug) then
   write(*,*)'[mpi_grid_recieve_z] src=',src
   write(*,*)'[mpi_grid_recieve_z] tag=',tag
 endif
+#ifdef _MPI_
 comm=mpi_grid_get_comm(dims)
 call mpi_cart_rank(comm,src,src_rank,ierr)
 call mpi_recv(val,n,MPI_DOUBLE_COMPLEX,src_rank,tag,comm,stat,ierr)
 !call mpi_irecv(val,n,MPI_DOUBLE_COMPLEX,src_rank,tag,comm,req,ierr)
+#endif
 return
 end subroutine
 
@@ -872,7 +893,9 @@ end subroutine
 !      mpi_grid_recieve_i      !
 !------------------------------!
 subroutine mpi_grid_recieve_i(val,n,dims,src,tag)
+#ifdef _MPI_
 use mpi
+#endif
 implicit none
 integer, intent(out) :: val
 integer, intent(in) :: n
@@ -880,12 +903,14 @@ integer, dimension(:), intent(in) :: dims
 integer, dimension(:), intent(in) :: src
 integer, intent(in) :: tag
 ! local variables
+#ifdef _MPI_
 integer comm,src_rank,req,ierr
 integer stat(MPI_STATUS_SIZE)
 comm=mpi_grid_get_comm(dims)
 call mpi_cart_rank(comm,src,src_rank,ierr)
 call mpi_recv(val,n,MPI_INTEGER,src_rank,tag,comm,stat,ierr)
 !call mpi_irecv(val,n,MPI_INTEGER,src_rank,tag,comm,req,ierr)
+#endif
 return
 end subroutine
 
