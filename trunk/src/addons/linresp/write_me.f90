@@ -1,3 +1,4 @@
+#ifdef _HDF5_
 subroutine write_me(qnm)
 use modmain
 implicit none
@@ -40,3 +41,4 @@ endif
 
 return
 end
+#endif

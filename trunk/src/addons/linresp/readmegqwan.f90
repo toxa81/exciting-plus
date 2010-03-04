@@ -1,3 +1,4 @@
+#ifdef _HDF5_
 subroutine readmegqwan(qnm)
 use modmain
 implicit none
@@ -82,3 +83,4 @@ call mpi_grid_bcast(wann_c(1,1,1),nwann*nstsv*2*nkptnrloc,dims=(/dim2/))
 !endif
 return
 end
+#endif

@@ -1,3 +1,4 @@
+#ifdef _HDF5_
 subroutine write_me_header(qnm)
 use modmain
 use hdf5
@@ -68,3 +69,4 @@ endif
 
 return
 end
+#endif

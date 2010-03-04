@@ -1,3 +1,4 @@
+#ifdef _HDF5_
 subroutine response_u
 use modmain
 implicit none
@@ -99,5 +100,5 @@ deallocate(uscrn,ubare,z1,z2)
 
 return
 end
-
+#endif
 
