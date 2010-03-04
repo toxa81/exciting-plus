@@ -3,12 +3,12 @@ use modmain
 implicit none
 
 integer i1,i2,i3,n
-integer ik,ikloc,ik1,j,ig,sz,i,isym,it,jtrloc
-integer ispn
+integer ik,ikloc,ik1,j,ig,sz,i,isym,jtrloc
+integer ispn,n1,n2
 complex(8) znorm
 integer ntr,itr,ntrloc,itrloc
 integer, allocatable :: vtrl(:,:)
-integer, parameter :: trmax=0
+integer, parameter :: trmax=1
 
 complex(8), allocatable :: wanmt(:,:,:,:,:,:)
 complex(8), allocatable :: wanir(:,:,:,:)
@@ -238,16 +238,16 @@ do itrloc=1,ntrloc
   itr=mpi_grid_map(ntr,dim_k,loc=itrloc)
   jtrloc=mpi_grid_map(ntr,dim_k,glob=itr,x=j)
   vtrc(:)=vtrl(1,itr)*avec(:,1)+vtrl(2,itr)*avec(:,2)+vtrl(3,itr)*avec(:,3)
-  write(*,*)'it=',it,'vtrl=',vtrl(:,it)
-!  call gen_wann_func(vtrc,vgkcnr,wanmt0,wanir0)
-!  call mpi_grid_reduce(wanmt0(1,1,1,1,1),lmmaxvr*nrmtmax*natmtot*nspinor*nwann,&
-!    dims=(/dim_k/),root=(/j/))
-!  call mpi_grid_reduce(wanir0(1,1,1),ngrtot*nspinor*nwann,&
-!    dims=(/dim_k/),root=(/j/))
-!  if (mpi_grid_x(dim_k).eq.j) then
-!    wanmt(:,:,:,:,:,jtrloc)=wanmt0(:,:,:,:,:)
-!    wanir(:,:,:,jtrloc)=wanir0(:,:,:)
-!  endif
+  write(*,*)'itr=',itr,'vtrl=',vtrl(:,itr)
+  call gen_wann_func(vtrc,ngknr,vgkcnr,wanmt0,wanir0)
+  call mpi_grid_reduce(wanmt0(1,1,1,1,1),lmmaxvr*nrmtmax*natmtot*nspinor*nwann,&
+    dims=(/dim_k/),root=(/j/))
+  call mpi_grid_reduce(wanir0(1,1,1),ngrtot*nspinor*nwann,&
+    dims=(/dim_k/),root=(/j/))
+  if (mpi_grid_x(dim_k).eq.j) then
+    wanmt(:,:,:,:,:,jtrloc)=wanmt0(:,:,:,:,:)
+    wanir(:,:,:,jtrloc)=wanir0(:,:,:)
+  endif
     
  
   !write(*,*)'mt part',timer_get_value(1),'it part',timer_get_value(2)
@@ -298,6 +298,23 @@ enddo !it
 !
 !
 
+! calculate overlap matrix
+do n1=1,nwann
+  do n2=1,nwann
+    znorm=zzero
+    do itrloc=1,ntrloc
+      do ispn=1,nspinor
+        znorm=znorm+zfinp_(.true.,wanmt(1,1,1,ispn,n1,itrloc),&
+          wanmt(1,1,1,ispn,n2,itrloc),wanir(1,ispn,n1,itrloc),&
+          wanir(1,ispn,n2,itrloc))
+      enddo
+    enddo
+    call mpi_grid_reduce(znorm,dims=(/dim_k/))
+    if (wproc) write(*,*)'n1=',n1,'n2=',n2,'norm=',znorm
+  enddo
+enddo
+
+
 
 
 
@@ -317,10 +334,11 @@ end
 
 
 
-subroutine gen_wann_func(vtrc,vgkcnr,wanmt,wanir)
+subroutine gen_wann_func(vtrc,ngknr,vgkcnr,wanmt,wanir)
 use modmain
 implicit none
 real(8), intent(in) :: vtrc(3)
+integer, intent(in) :: ngknr(nkptnrloc)
 real(8), intent(in) :: vgkcnr(3,ngkmax,nkptnrloc)
 complex(8), intent(out) :: wanmt(lmmaxvr,nrmtmax,natmtot,nspinor,nwann)
 complex(8), intent(out) :: wanir(ngrtot,nspinor,nwann)
@@ -366,8 +384,8 @@ do i3=0,ngrid(3)-1
       call r3mv(avec,v2,v3)
       if (.not.vrinmt(v3,is,ia,itmp,vr0,ir0,r0)) then
         v3(:)=v3(:)+vtrc(:)
-        do ikloc=1,nkptloc
-          do ig=1,ngk(1,ikloc)
+        do ikloc=1,nkptnrloc
+          do ig=1,ngknr(ikloc)
             expikr=exp(zi*dot_product(vgkcnr(:,ig,ikloc),v3(:)))
             do ispn=1,nspinor
               do n=1,nwann
