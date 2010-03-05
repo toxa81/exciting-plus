@@ -4,13 +4,15 @@ implicit none
 
 integer i1,i2,i3,n
 integer ik,ikloc,ik1,j,ig,sz,i,isym
-integer ispn,n1,n2
+integer n1,n2
 integer ntr,itr,ntrloc,itrloc
 integer, allocatable :: vtrl(:,:)
 integer, parameter :: trmax=0
 
 complex(8), allocatable :: wanmt(:,:,:,:,:,:)
 complex(8), allocatable :: wanir(:,:,:,:)
+complex(8), allocatable :: wanmt0(:,:,:,:,:)
+complex(8), allocatable :: wanir0(:,:,:)
 
 integer, allocatable :: ngknr(:)
 integer, allocatable :: igkignr(:,:)
@@ -25,7 +27,6 @@ complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
 complex(8), allocatable :: wfsvitloc(:,:,:,:)
 complex(8), allocatable :: wfsvcgloc(:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
-real(8) vtrc(3)
 complex(8), allocatable :: ovlm(:,:)
 complex(8), external :: zfinp_
 complex(8), external :: inner_product
@@ -204,7 +205,6 @@ endif !wannier
 call mpi_grid_reduce(lr_evalsvnr(1,1),nstsv*nkptnr,dims=(/dim_k/),all=.true.)
 allocate(lr_occsvnr(nstsv,nkptnr))
 call occupy2(nkptnr,wkptnr,lr_evalsvnr,lr_occsvnr)
-
 deallocate(wfsvmtloc)
 deallocate(wfsvitloc)
 deallocate(wfsvcgloc)  
@@ -244,13 +244,17 @@ endif
 
 call timer_reset(1)
 call timer_reset(2)
+allocate(wanmt0(lmmaxvr,nrmtmax,natmtot,nspinor,nwann))
+allocate(wanir0(ngrtot,nspinor,nwann))
 do itrloc=1,ntrloc
   itr=mpi_grid_map(ntr,dim2,loc=itrloc)
+  call gen_wann_func(vtrl(1,itr),ngknr,vgkcnr,wanmt0,wanir0)
   do n=1,nwann
-    call gen_wann_func(n,vtrl(1,itr),ngknr,vgkcnr,wanmt(1,1,1,1,itrloc,n),&
-      wanir(1,1,itrloc,n))
+    wanmt(:,:,:,:,itrloc,n)=wanmt0(:,:,:,:,n)
+    wanir(:,:,itrloc,n)=wanir0(:,:,n)
   enddo !n
 enddo !itr
+deallocate(wanmt0,wanir0)
 if (wproc) then
   write(151,*)
   write(151,'("MT part : ",F8.3)')timer_get_value(1)
