@@ -8,7 +8,7 @@ integer ispn,n1,n2
 complex(8) znorm
 integer ntr,itr,ntrloc,itrloc
 integer, allocatable :: vtrl(:,:)
-integer, parameter :: trmax=1
+integer, parameter :: trmax=0
 
 complex(8), allocatable :: wanmt(:,:,:,:,:,:)
 complex(8), allocatable :: wanir(:,:,:,:)
@@ -31,8 +31,8 @@ complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: tp(:,:)
 complex(8), allocatable :: ylmtp(:)
 real(8) vtrc(3)
+complex(8), allocatable :: ovlm(:,:)
 complex(8), external :: zfinp_
-logical, external :: vrinmt
 
 
 
@@ -233,12 +233,10 @@ call sphcover(lmmaxvr,tp)
 
 
 
-znorm=zzero
 do itrloc=1,ntrloc
   itr=mpi_grid_map(ntr,dim_k,loc=itrloc)
   jtrloc=mpi_grid_map(ntr,dim_k,glob=itr,x=j)
   vtrc(:)=vtrl(1,itr)*avec(:,1)+vtrl(2,itr)*avec(:,2)+vtrl(3,itr)*avec(:,3)
-  write(*,*)'itr=',itr,'vtrl=',vtrl(:,itr)
   call gen_wann_func(vtrc,ngknr,vgkcnr,wanmt0,wanir0)
   call mpi_grid_reduce(wanmt0(1,1,1,1,1),lmmaxvr*nrmtmax*natmtot*nspinor*nwann,&
     dims=(/dim_k/),root=(/j/))
@@ -247,86 +245,37 @@ do itrloc=1,ntrloc
   if (mpi_grid_x(dim_k).eq.j) then
     wanmt(:,:,:,:,:,jtrloc)=wanmt0(:,:,:,:,:)
     wanir(:,:,:,jtrloc)=wanir0(:,:,:)
-  endif
-    
- 
-  !write(*,*)'mt part',timer_get_value(1),'it part',timer_get_value(2)
-  !do ispn=1,nspinor
-  !  znorm=znorm+zfinp_(.true.,wanmt0(1,1,1,ispn,6),wanmt0(1,1,1,ispn,7),&
-  !      wanir0(1,ispn,6),wanir0(1,ispn,7))
-  !enddo
-!  do ias=1,natmtot
-!    is=ias2is(ias)
-!    do ir=1,nrmt(is)
-!      do ikloc=1,nkptnrloc
-!        zt3=exp(zi*dot_product(vkcnr(:,ikloc),vtrc(:)))/nkptnr
-!        do io=1,nrfmax
-!          do lm=1,lmmaxvr
-!            do ispn=1,nspinor
-!              do n=1,nwann
-!                wanmt(lm,ir,ias,)=wanmt(lm,ir,ias,it)+&
-!              zt3*wann_unkmt(lm,io,ias,1,1,ikloc)*urf(ir,lm2l(lm),io,ias)
-!          enddo !lm
-!        enddo !io
-!      enddo !ikloc
-!    enddo !ir
-!  enddo !ias 
-!  ir=0
-!  do i3=0,ngrid(3)-1
-!    v2(3)=dble(i3)/dble(ngrid(3))
-!    do i2=0,ngrid(2)-1
-!      v2(2)=dble(i2)/dble(ngrid(2))
-!      do i1=0,ngrid(1)-1
-!        v2(1)=dble(i1)/dble(ngrid(1))
-!        ir=ir+1
-!        call r3mv(avec,v2,v3)
-!        if (.not.vrinmt(v3,is,ia,itmp,vr0,ir0,r0)) then
-!          v3(:)=v3(:)+vtrc(:)
-!          do ikloc=1,nkptloc
-!            do ig=1,ngk(1,ikloc)
-!              zt3=exp(zi*dot_product(vgkcnr(:,ig,ikloc),v3(:)))/sqrt(omega)/nkptnr
-!              wanir(ir,it)=wanir(ir,it)+zt3*wann_unkit(ig,1,1,ikloc)
-!            enddo !ig
-!          enddo !ikloc
-!        endif
-!      enddo
-!    enddo
-!  enddo
-!  znorm=znorm+zfinp_(.true.,wanmt(1,1,1,it),wanmt(1,1,1,it),wanir(1,it),wanir(1,it))
-!  write(*,*)'nrom=',znorm
-enddo !it
-!
-!
+  endif 
+enddo !itrloc
 
+allocate(ovlm(nwann,nwann))
+ovlm=zzero
 ! calculate overlap matrix
 do n1=1,nwann
   do n2=1,nwann
     znorm=zzero
     do itrloc=1,ntrloc
       do ispn=1,nspinor
-        znorm=znorm+zfinp_(.true.,wanmt(1,1,1,ispn,n1,itrloc),&
+        ovlm(n1,n2)=ovlm(n1,n2)+zfinp_(.true.,wanmt(1,1,1,ispn,n1,itrloc),&
           wanmt(1,1,1,ispn,n2,itrloc),wanir(1,ispn,n1,itrloc),&
           wanir(1,ispn,n2,itrloc))
       enddo
     enddo
-    call mpi_grid_reduce(znorm,dims=(/dim_k/))
-    if (wproc) write(*,*)'n1=',n1,'n2=',n2,'norm=',znorm
   enddo
 enddo
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+call mpi_grid_reduce(ovlm(1,1),nwann*nwann,dims=(/dim_k/))
+if (wproc) then
+  write(151,*)
+  write(151,'("Overlap matrix")')
+  write(151,'("  Real part : ")')  
+  do n1=1,nwann
+    write(151,'(2X,255F12.6)')(dreal(ovlm(n1,n2)),n2=1,nwann)
+  enddo
+  write(151,'("  Image part : ")')  
+  do n1=1,nwann
+    write(151,'(2X,255F12.6)')(dimag(ovlm(n1,n2)),n2=1,nwann)
+  enddo
+endif
 
 if (wproc) close(151)
 return
