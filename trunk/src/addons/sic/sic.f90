@@ -221,6 +221,10 @@ do i1=-trmax,trmax
   enddo
 enddo
 ntrloc=mpi_grid_map(ntr,dim_k)
+if (wproc) then
+  write(151,*)
+  write(151,'("Number of translations : ",I4)')ntr
+endif
 
 allocate(wanmt(lmmaxvr,nrmtmax,natmtot,nspinor,nwann,ntrloc))
 allocate(wanir(ngrtot,nspinor,nwann,ntrloc))
@@ -230,11 +234,7 @@ allocate(tp(2,lmmaxvr))
 allocate(ylmtp(lmmaxvr))
 call sphcover(lmmaxvr,tp)
 
-
-
-
-do itrloc=1,ntrloc
-  itr=mpi_grid_map(ntr,dim_k,loc=itrloc)
+do itr=1,ntr
   jtrloc=mpi_grid_map(ntr,dim_k,glob=itr,x=j)
   vtrc(:)=vtrl(1,itr)*avec(:,1)+vtrl(2,itr)*avec(:,2)+vtrl(3,itr)*avec(:,3)
   call gen_wann_func(vtrc,ngknr,vgkcnr,wanmt0,wanir0)
@@ -245,7 +245,7 @@ do itrloc=1,ntrloc
   if (mpi_grid_x(dim_k).eq.j) then
     wanmt(:,:,:,:,:,jtrloc)=wanmt0(:,:,:,:,:)
     wanir(:,:,:,jtrloc)=wanir0(:,:,:)
-  endif 
+  endif
 enddo !itrloc
 
 allocate(ovlm(nwann,nwann))
