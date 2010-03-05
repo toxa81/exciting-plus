@@ -5,10 +5,9 @@ implicit none
 integer i1,i2,i3,n
 integer ik,ikloc,ik1,j,ig,sz,i,isym,jtrloc
 integer ispn,n1,n2
-complex(8) znorm
 integer ntr,itr,ntrloc,itrloc
 integer, allocatable :: vtrl(:,:)
-integer, parameter :: trmax=0
+integer, parameter :: trmax=1
 
 complex(8), allocatable :: wanmt(:,:,:,:,:,:)
 complex(8), allocatable :: wanir(:,:,:,:)
@@ -236,24 +235,28 @@ call sphcover(lmmaxvr,tp)
 
 do itr=1,ntr
   jtrloc=mpi_grid_map(ntr,dim_k,glob=itr,x=j)
+  if (wproc) then
+    write(151,'("itr : ",I4,3X,"vtrl : ",3I4,3X,"jtrloc : ",I4,3X,"j : ",I4)')&
+      itr,vtrl(:,itr),jtrloc,j
+    call flushifc(151)
+  endif
   vtrc(:)=vtrl(1,itr)*avec(:,1)+vtrl(2,itr)*avec(:,2)+vtrl(3,itr)*avec(:,3)
   call gen_wann_func(vtrc,ngknr,vgkcnr,wanmt0,wanir0)
   call mpi_grid_reduce(wanmt0(1,1,1,1,1),lmmaxvr*nrmtmax*natmtot*nspinor*nwann,&
     dims=(/dim_k/),root=(/j/))
   call mpi_grid_reduce(wanir0(1,1,1),ngrtot*nspinor*nwann,&
-    dims=(/dim_k/),root=(/j/))
+    dims=(/dim_k/),root=(/j/))    
   if (mpi_grid_x(dim_k).eq.j) then
     wanmt(:,:,:,:,:,jtrloc)=wanmt0(:,:,:,:,:)
     wanir(:,:,:,jtrloc)=wanir0(:,:,:)
   endif
-enddo !itrloc
+enddo !itr
 
+! calculate overlap matrix
 allocate(ovlm(nwann,nwann))
 ovlm=zzero
-! calculate overlap matrix
 do n1=1,nwann
   do n2=1,nwann
-    znorm=zzero
     do itrloc=1,ntrloc
       do ispn=1,nspinor
         ovlm(n1,n2)=ovlm(n1,n2)+zfinp_(.true.,wanmt(1,1,1,ispn,n1,itrloc),&
@@ -291,7 +294,7 @@ integer, intent(in) :: ngknr(nkptnrloc)
 real(8), intent(in) :: vgkcnr(3,ngkmax,nkptnrloc)
 complex(8), intent(out) :: wanmt(lmmaxvr,nrmtmax,natmtot,nspinor,nwann)
 complex(8), intent(out) :: wanir(ngrtot,nspinor,nwann)
-integer ia,is,ias,ir,ir0,i1,i2,i3,ig,ikloc
+integer ia,is,ias,ir,ir0,i1,i2,i3,ig,ikloc,ik
 integer io,lm,n,ispn,itmp(3)
 real(8) v2(3),v3(3),r0,vr0(3)
 complex(8) expikr
@@ -303,7 +306,8 @@ call timer_start(1,reset=.true.)
 do ias=1,natmtot
   is=ias2is(ias)
   do ikloc=1,nkptnrloc
-    expikr=exp(zi*dot_product(vkcnr(:,ikloc),vtrc(:)))/nkptnr
+    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+    expikr=exp(zi*dot_product(vkcnr(:,ik),vtrc(:)))/nkptnr
     do ir=1,nrmt(is)
       do lm=1,lmmaxvr
         do io=1,nrfl(lm2l(lm),is)
