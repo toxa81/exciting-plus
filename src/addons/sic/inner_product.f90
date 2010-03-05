@@ -21,5 +21,6 @@ do itrloc=1,ntrloc
   enddo
 enddo
 call mpi_grid_reduce(zprod,dims=(/dim2/))
+inner_product=zprod
 return
 end
