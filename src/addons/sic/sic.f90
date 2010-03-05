@@ -7,7 +7,7 @@ integer ik,ikloc,ik1,j,ig,sz,i,isym
 integer ispn,n1,n2
 integer ntr,itr,ntrloc,itrloc
 integer, allocatable :: vtrl(:,:)
-integer, parameter :: trmax=1
+integer, parameter :: trmax=0
 
 complex(8), allocatable :: wanmt(:,:,:,:,:,:)
 complex(8), allocatable :: wanir(:,:,:,:)
@@ -28,6 +28,7 @@ complex(8), allocatable :: apwalm(:,:,:,:)
 real(8) vtrc(3)
 complex(8), allocatable :: ovlm(:,:)
 complex(8), external :: zfinp_
+complex(8), external :: inner_product
 
 
 ! mpi grid layout
@@ -230,8 +231,8 @@ if (wproc) then
   write(151,'("Number of translations : ",I4)')ntr
 endif
 
-allocate(wanmt(lmmaxvr,nrmtmax,natmtot,nspinor,nwann,ntrloc))
-allocate(wanir(ngrtot,nspinor,nwann,ntrloc))
+allocate(wanmt(lmmaxvr,nrmtmax,natmtot,nspinor,ntrloc,nwann))
+allocate(wanir(ngrtot,nspinor,ntrloc,nwann))
 if (wproc) then
   sz=lmmaxvr*nrmtmax*natmtot+ngrtot
   sz=16*sz*nspinor*nwann*ntrloc/1024/1024
@@ -241,12 +242,20 @@ if (wproc) then
   call flushifc(151)
 endif
 
+call timer_reset(1)
+call timer_reset(2)
 do itrloc=1,ntrloc
   itr=mpi_grid_map(ntr,dim2,loc=itrloc)
-  vtrc(:)=vtrl(1,itr)*avec(:,1)+vtrl(2,itr)*avec(:,2)+vtrl(3,itr)*avec(:,3)
-  call gen_wann_func(vtrc,ngknr,vgkcnr,wanmt(1,1,1,1,1,itrloc),&
-    wanir(1,1,1,itrloc))
+  do n=1,nwann
+    call gen_wann_func(n,vtrl(1,itr),ngknr,vgkcnr,wanmt(1,1,1,1,itrloc,n),&
+      wanir(1,1,itrloc,n))
+  enddo !n
 enddo !itr
+if (wproc) then
+  write(151,*)
+  write(151,'("MT part : ",F8.3)')timer_get_value(1)
+  write(151,'("IT part : ",F8.3)')timer_get_value(2)
+endif
 
 ! calculate overlap matrix
 allocate(ovlm(nwann,nwann))
@@ -254,16 +263,11 @@ if (mpi_grid_root(dims=(/dim_k/))) then
   ovlm=zzero
   do n1=1,nwann
     do n2=1,nwann
-      do itrloc=1,ntrloc
-        do ispn=1,nspinor
-          ovlm(n1,n2)=ovlm(n1,n2)+zfinp_(.true.,wanmt(1,1,1,ispn,n1,itrloc),&
-            wanmt(1,1,1,ispn,n2,itrloc),wanir(1,ispn,n1,itrloc),&
-            wanir(1,ispn,n2,itrloc))
-        enddo
-      enddo
+      ovlm(n1,n2)=inner_product(ntr,ntrloc,vtrl,(/0,0,0/),&
+        wanmt(1,1,1,1,1,n1),wanir(1,1,1,n1),wanmt(1,1,1,1,1,n2),&
+        wanir(1,1,1,n2))
     enddo
   enddo
-  call mpi_grid_reduce(ovlm(1,1),nwann*nwann,dims=(/dim2/))
 endif
 if (wproc) then
   write(151,*)
@@ -277,144 +281,7 @@ if (wproc) then
     write(151,'(2X,255F12.6)')(dimag(ovlm(n1,n2)),n2=1,nwann)
   enddo
 endif
-
 if (wproc) close(151)
 return
 end
 
-
-
-subroutine gen_wann_func(vtrc,ngknr,vgkcnr,wanmt,wanir)
-use modmain
-implicit none
-real(8), intent(in) :: vtrc(3)
-integer, intent(in) :: ngknr(nkptnrloc)
-real(8), intent(in) :: vgkcnr(3,ngkmax,nkptnrloc)
-complex(8), intent(out) :: wanmt(lmmaxvr,nrmtmax,natmtot,nspinor,nwann)
-complex(8), intent(out) :: wanir(ngrtot,nspinor,nwann)
-integer ia,is,ias,ir,ir0,i1,i2,i3,ig,ikloc,ik
-integer io,lm,n,ispn,itmp(3)
-real(8) v2(3),v3(3),r0,vr0(3)
-complex(8) expikr
-logical, external :: vrinmt
-wanmt=zzero
-wanir=zzero
-! muffin-tin part
-call timer_start(1,reset=.true.)
-do ias=1,natmtot
-  is=ias2is(ias)
-  do ikloc=1,nkptnrloc
-    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-    expikr=exp(zi*dot_product(vkcnr(:,ik),vtrc(:)))/nkptnr
-    do ir=1,nrmt(is)
-      do lm=1,lmmaxvr
-        do io=1,nrfl(lm2l(lm),is)
-          do ispn=1,nspinor
-            do n=1,nwann
-              wanmt(lm,ir,ias,ispn,n)=wanmt(lm,ir,ias,ispn,n)+&
-                expikr*wann_unkmt(lm,io,ias,ispn,n,ikloc)*&
-                urf(ir,lm2l(lm),io,ias)
-            enddo !n
-          enddo !ispn
-        enddo !io
-      enddo !lm
-    enddo !ir
-  enddo !ikloc
-enddo !ias 
-call timer_stop(1)
-! interstitial part
-call timer_start(2,reset=.true.)
-ir=0
-do i3=0,ngrid(3)-1
-  v2(3)=dble(i3)/dble(ngrid(3))
-  do i2=0,ngrid(2)-1
-    v2(2)=dble(i2)/dble(ngrid(2))
-    do i1=0,ngrid(1)-1
-      v2(1)=dble(i1)/dble(ngrid(1))
-      ir=ir+1
-      call r3mv(avec,v2,v3)
-      if (.not.vrinmt(v3,is,ia,itmp,vr0,ir0,r0)) then
-        v3(:)=v3(:)+vtrc(:)
-        do ikloc=1,nkptnrloc
-          do ig=1,ngknr(ikloc)
-            expikr=exp(zi*dot_product(vgkcnr(:,ig,ikloc),v3(:)))
-            do ispn=1,nspinor
-              do n=1,nwann
-                wanir(ir,ispn,n)=wanir(ir,ispn,n)+&
-                  expikr*wann_unkit(ig,ispn,n,ikloc)
-              enddo !in
-            enddo !ispn
-          enddo !ig
-        enddo !ikloc
-      endif
-    enddo !i1
-  enddo !i2
-enddo !i3
-wanir(:,:,:)=wanir(:,:,:)/sqrt(omega)/nkptnr
-call timer_stop(2)
-call mpi_grid_reduce(wanmt(1,1,1,1,1),lmmaxvr*nrmtmax*natmtot*nspinor*nwann,&
-  dims=(/dim_k/))
-call mpi_grid_reduce(wanir(1,1,1),ngrtot*nspinor*nwann,dims=(/dim_k/))    
-return
-end
-
-
-
-
-
-complex(8) function zfinp_(tsh,zfmt1,zfmt2,zfir1,zfir2)
-! !USES:
-use modmain
-! !INPUT/OUTPUT PARAMETERS:
-!   tsh   : .true. if the muffin-tin functions are in spherical harmonics
-!           (in,logical)
-!   zfmt1 : first complex function in spherical harmonics/coordinates for all
-!           muffin-tins (in,complex(lmmaxvr,nrcmtmax,natmtot))
-!   zfmt2 : second complex function in spherical harmonics/coordinates for all
-!           muffin-tins (in,complex(lmmaxvr,nrcmtmax,natmtot))
-!   zfir1 : first complex interstitial function in real-space
-!           (in,complex(ngrtot))
-!   zfir2 : second complex interstitial function in real-space
-!           (in,complex(ngrtot))
-! !DESCRIPTION:
-!   Calculates the inner product of two complex fuctions over the entire unit
-!   cell. The muffin-tin functions should be stored on the coarse radial grid
-!   and have angular momentum cut-off {\tt lmaxvr}. In the intersitial region,
-!   the integrand is multiplied with the characteristic function, to remove the
-!   contribution from the muffin-tin. See routines {\tt zfmtinp} and
-!   {\tt gencfun}.
-!
-! !REVISION HISTORY:
-!   Created July 2004 (Sharma)
-!EOP
-!BOC
-implicit none
-! arguments
-logical, intent(in) :: tsh
-complex(8), intent(in) :: zfmt1(lmmaxvr,nrmtmax,natmtot)
-complex(8), intent(in) :: zfmt2(lmmaxvr,nrmtmax,natmtot)
-complex(8), intent(in) :: zfir1(ngrtot)
-complex(8), intent(in) :: zfir2(ngrtot)
-! local variables
-integer is,ia,ias,ir
-complex(8) zsum
-! external functions
-complex(8) zfmtinp
-external zfmtinp
-zsum=0.d0
-! interstitial contribution
-do ir=1,ngrtot
-  zsum=zsum+cfunir(ir)*conjg(zfir1(ir))*zfir2(ir)
-end do
-zsum=zsum*omega/dble(ngrtot)
-! muffin-tin contribution
-do is=1,nspecies
-  do ia=1,natoms(is)
-    ias=idxas(ia,is)
-    zsum=zsum+zfmtinp(tsh,lmaxvr,nrmt(is),spr(:,is),lmmaxvr,zfmt1(:,:,ias), &
-     zfmt2(:,:,ias))
-  end do
-end do
-zfinp_=zsum
-return
-end function
