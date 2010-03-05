@@ -3,7 +3,7 @@ use modmain
 implicit none
 
 integer i1,i2,i3,n
-integer ik,ikloc,ik1,j,ig,sz,i,isym,jtrloc
+integer ik,ikloc,ik1,j,ig,sz,i,isym
 integer ispn,n1,n2
 integer ntr,itr,ntrloc,itrloc
 integer, allocatable :: vtrl(:,:)
@@ -11,8 +11,6 @@ integer, parameter :: trmax=1
 
 complex(8), allocatable :: wanmt(:,:,:,:,:,:)
 complex(8), allocatable :: wanir(:,:,:,:)
-complex(8), allocatable :: wanmt0(:,:,:,:,:)
-complex(8), allocatable :: wanir0(:,:,:)
 
 integer, allocatable :: ngknr(:)
 integer, allocatable :: igkignr(:,:)
@@ -27,14 +25,21 @@ complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
 complex(8), allocatable :: wfsvitloc(:,:,:,:)
 complex(8), allocatable :: wfsvcgloc(:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
-complex(8), allocatable :: tp(:,:)
-complex(8), allocatable :: ylmtp(:)
 real(8) vtrc(3)
 complex(8), allocatable :: ovlm(:,:)
 complex(8), external :: zfinp_
 
 
-
+! mpi grid layout
+!          (2)
+!     +----+----+--> T-vectos 
+!     |    |    |
+!     +----+----+--
+! (1) |    |    |
+!     +----+----+--
+!     |    |    |
+!     v
+!  k-points
 
 
 ! initialise universal variables
@@ -138,10 +143,10 @@ if (mpi_grid_side(dims=(/dim_k/))) then
   enddo
 endif !mpi_grid_side(dims=(/dim_k/)
 call mpi_grid_barrier
-!call mpi_grid_bcast(evecfvloc(1,1,1,1),nmatmax*nstfv*nspnfv*nkptnrloc,&
-!  dims=(/dim2,dim3/))
-!call mpi_grid_bcast(evecsvloc(1,1,1),nstsv*nstsv*nkptnrloc,&
-!  dims=(/dim2,dim3/))
+call mpi_grid_bcast(evecfvloc(1,1,1,1),nmatmax*nstfv*nspnfv*nkptnrloc,&
+  dims=(/dim2/))
+call mpi_grid_bcast(evecsvloc(1,1,1),nstsv*nstsv*nkptnrloc,&
+  dims=(/dim2/))
 ! transform eigen-vectors
 wfsvmtloc=zzero
 wfsvitloc=zzero
@@ -219,7 +224,7 @@ do i1=-trmax,trmax
     enddo
   enddo
 enddo
-ntrloc=mpi_grid_map(ntr,dim_k)
+ntrloc=mpi_grid_map(ntr,dim2)
 if (wproc) then
   write(151,*)
   write(151,'("Number of translations : ",I4)')ntr
@@ -227,46 +232,39 @@ endif
 
 allocate(wanmt(lmmaxvr,nrmtmax,natmtot,nspinor,nwann,ntrloc))
 allocate(wanir(ngrtot,nspinor,nwann,ntrloc))
-allocate(wanmt0(lmmaxvr,nrmtmax,natmtot,nspinor,nwann))
-allocate(wanir0(ngrtot,nspinor,nwann))
-allocate(tp(2,lmmaxvr))
-allocate(ylmtp(lmmaxvr))
-call sphcover(lmmaxvr,tp)
+if (wproc) then
+  sz=lmmaxvr*nrmtmax*natmtot+ngrtot
+  sz=16*sz*nspinor*nwann*ntrloc/1024/1024
+  write(151,*)
+  write(151,'("Size of real-space Wannier functions arrays (MB) : ",I6)')sz
+  write(151,*)
+  call flushifc(151)
+endif
 
-do itr=1,ntr
-  jtrloc=mpi_grid_map(ntr,dim_k,glob=itr,x=j)
-  if (wproc) then
-    write(151,'("itr : ",I4,3X,"vtrl : ",3I4,3X,"jtrloc : ",I4,3X,"j : ",I4)')&
-      itr,vtrl(:,itr),jtrloc,j
-    call flushifc(151)
-  endif
+do itrloc=1,ntrloc
+  itr=mpi_grid_map(ntr,dim2,loc=itrloc)
   vtrc(:)=vtrl(1,itr)*avec(:,1)+vtrl(2,itr)*avec(:,2)+vtrl(3,itr)*avec(:,3)
-  call gen_wann_func(vtrc,ngknr,vgkcnr,wanmt0,wanir0)
-  call mpi_grid_reduce(wanmt0(1,1,1,1,1),lmmaxvr*nrmtmax*natmtot*nspinor*nwann,&
-    dims=(/dim_k/),root=(/j/))
-  call mpi_grid_reduce(wanir0(1,1,1),ngrtot*nspinor*nwann,&
-    dims=(/dim_k/),root=(/j/))    
-  if (mpi_grid_x(dim_k).eq.j) then
-    wanmt(:,:,:,:,:,jtrloc)=wanmt0(:,:,:,:,:)
-    wanir(:,:,:,jtrloc)=wanir0(:,:,:)
-  endif
+  call gen_wann_func(vtrc,ngknr,vgkcnr,wanmt(1,1,1,1,1,itrloc),&
+    wanir(1,1,1,itrloc))
 enddo !itr
 
 ! calculate overlap matrix
 allocate(ovlm(nwann,nwann))
-ovlm=zzero
-do n1=1,nwann
-  do n2=1,nwann
-    do itrloc=1,ntrloc
-      do ispn=1,nspinor
-        ovlm(n1,n2)=ovlm(n1,n2)+zfinp_(.true.,wanmt(1,1,1,ispn,n1,itrloc),&
-          wanmt(1,1,1,ispn,n2,itrloc),wanir(1,ispn,n1,itrloc),&
-          wanir(1,ispn,n2,itrloc))
+if (mpi_grid_root(dims=(/dim_k/))) then
+  ovlm=zzero
+  do n1=1,nwann
+    do n2=1,nwann
+      do itrloc=1,ntrloc
+        do ispn=1,nspinor
+          ovlm(n1,n2)=ovlm(n1,n2)+zfinp_(.true.,wanmt(1,1,1,ispn,n1,itrloc),&
+            wanmt(1,1,1,ispn,n2,itrloc),wanir(1,ispn,n1,itrloc),&
+            wanir(1,ispn,n2,itrloc))
+        enddo
       enddo
     enddo
   enddo
-enddo
-call mpi_grid_reduce(ovlm(1,1),nwann*nwann,dims=(/dim_k/))
+  call mpi_grid_reduce(ovlm(1,1),nwann*nwann,dims=(/dim2/))
+endif
 if (wproc) then
   write(151,*)
   write(151,'("Overlap matrix")')
@@ -354,6 +352,9 @@ do i3=0,ngrid(3)-1
 enddo !i3
 wanir(:,:,:)=wanir(:,:,:)/sqrt(omega)/nkptnr
 call timer_stop(2)
+call mpi_grid_reduce(wanmt(1,1,1,1,1),lmmaxvr*nrmtmax*natmtot*nspinor*nwann,&
+  dims=(/dim_k/))
+call mpi_grid_reduce(wanir(1,1,1),ngrtot*nspinor*nwann,dims=(/dim_k/))    
 return
 end
 
