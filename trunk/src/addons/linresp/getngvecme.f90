@@ -10,6 +10,19 @@ integer, allocatable :: ishellng(:,:)
 allocate(igishell(ngvec))
 allocate(ishellng(ngvec,2))
 call getgshells(ngsh,igishell,ishellng)
+if (vgq0l(1).lt.intgv(1,1).or.vgq0l(1).gt.intgv(1,2).or.&
+    vgq0l(2).lt.intgv(2,1).or.vgq0l(2).gt.intgv(2,2).or.&
+    vgq0l(3).lt.intgv(3,1).or.vgq0l(3).gt.intgv(3,2)) then
+  write(*,*)
+  write(*,'("Error(getngvecme): Gq-vector is outside of boundaries")')
+  write(*,'("                   (q-vector is too large)")')
+  write(*,'("  Gq : ",3I8)')vgq0l
+  write(*,'("  boundaries : ",2I5,",",2I5,",",2I5)')intgv(1,:),intgv(2,:),&
+    intgv(3,:)
+  call pstop
+endif
+  
+  
 gshq0=igishell(ivgig(vgq0l(1),vgq0l(2),vgq0l(3)))
 if (wproc) then
   write(150,*)
@@ -54,8 +67,8 @@ if (scalar_chi) then
   endif
   gvecme1=ivgig(vgq0l(1),vgq0l(2),vgq0l(3))
   gvecme2=gvecme1
-  gshme1=-1
-  gshme2=gshme1
+!  gshme1=-1
+!  gshme2=gshme1
   ngvecme=1
 endif
 deallocate(igishell)
