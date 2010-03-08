@@ -19,20 +19,14 @@ use modmain
 !BOC
 implicit none
 ! local variables
-integer ikloc,recl,i
-complex(8), allocatable :: apwalm(:,:,:,:)
+integer ik,recl,ikloc,i
 complex(8), allocatable :: evecfv(:,:)
 complex(8), allocatable :: evecsv(:,:)
+complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: pmat(:,:,:,:)
-integer :: ik
 ! initialise universal variables
 call init0
 call init1
-allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-allocate(evecfv(nmatmax,nstfv))
-allocate(evecsv(nstsv,nstsv))
-! allocate the momentum matrix elements array
-allocate(pmat(3,nstsv,nstsv,nkptloc))
 ! read in the density and potentials from file
 call readstate
 ! find the new linearisation energies
@@ -41,10 +35,14 @@ call linengy
 call genapwfr
 ! generate the local-orbital radial functions
 call genlofr
-if (iproc.eq.0) then
+if (mpi_grid_root()) then
   open(50,file='PMAT.OUT')
   close(50,status='DELETE')
 endif
+allocate(evecfv(nmatmax,nstfv))
+allocate(evecsv(nstsv,nstsv))
+allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
+allocate(pmat(3,nstsv,nstsv,nkptloc))
 ! find the record length
 inquire(iolength=recl) pmat(:,:,:,1)
 do ikloc=1,nkptloc
@@ -58,6 +56,7 @@ do ikloc=1,nkptloc
 ! calculate the momentum matrix elements
   call genpmat(ngk(1,ik),igkig(:,1,ikloc),vgkc(:,:,1,ikloc),apwalm,evecfv,&
     evecsv,pmat(1,1,1,ikloc))
+! write the matrix elements to direct-access file
 end do
 ! write the matrix elements to direct-access file
 if (mpi_grid_side(dims=(/dim_k/))) then
@@ -74,13 +73,13 @@ if (mpi_grid_side(dims=(/dim_k/))) then
   call mpi_grid_barrier(dims=(/dim_k/))
   enddo
 endif
-if (iproc.eq.0) then
+if (mpi_grid_root()) then
   write(*,*)
   write(*,'("Info(writepmat):")')
   write(*,'(" momentum matrix elements written to file PMAT.OUT")')
   write(*,*)
 endif
-deallocate(apwalm,evecfv,evecsv,pmat)
+deallocate(evecfv,evecsv,apwalm,pmat)
 end subroutine
 !EOC
 

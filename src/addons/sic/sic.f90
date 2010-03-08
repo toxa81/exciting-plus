@@ -7,7 +7,8 @@ integer ik,ikloc,ik1,j,ig,sz,i,isym
 integer n1,n2
 integer ntr,itr,ntrloc,itrloc
 integer, allocatable :: vtrl(:,:)
-integer, parameter :: trmax=0
+integer, allocatable :: ivtit(:,:,:)
+integer, parameter :: trmax=1
 
 complex(8), allocatable :: wanmt(:,:,:,:,:,:)
 complex(8), allocatable :: wanir(:,:,:,:)
@@ -216,12 +217,14 @@ deallocate(wann_c)
 
 ntr=(2*trmax+1)**3
 allocate(vtrl(3,ntr))
+allocate(ivtit(-trmax:trmax,-trmax:trmax,-trmax:trmax))
 n=0
 do i1=-trmax,trmax
   do i2=-trmax,trmax
     do i3=-trmax,trmax
       n=n+1
       vtrl(:,n)=(/i1,i2,i3/)
+      ivtit(i1,i2,i3)=n
     enddo
   enddo
 enddo
@@ -267,7 +270,7 @@ if (mpi_grid_root(dims=(/dim_k/))) then
   ovlm=zzero
   do n1=1,nwann
     do n2=1,nwann
-      ovlm(n1,n2)=inner_product(ntr,ntrloc,vtrl,(/0,0,0/),&
+      ovlm(n1,n2)=inner_product(ntr,ntrloc,trmax,vtrl,ivtit,(/1,0,0/),&
         wanmt(1,1,1,1,1,n1),wanir(1,1,1,n1),wanmt(1,1,1,1,1,n2),&
         wanir(1,1,1,n2))
     enddo
