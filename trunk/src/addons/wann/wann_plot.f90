@@ -91,6 +91,7 @@ do ir=1,nrtot
   
   if (iwfv.ne.0) call f_veff_p(vr(1,ir),veffmt,zfft_vir,t1)
   if (mpi_grid_root()) veff(ir)=t1
+  call mpi_grid_barrier()
 enddo
 
 if (mpi_grid_root()) then
