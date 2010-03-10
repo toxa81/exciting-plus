@@ -34,7 +34,8 @@ end interface
 
 interface mpi_grid_reduce
   module procedure mpi_grid_reduce_i,mpi_grid_reduce_d, &
-    mpi_grid_reduce_z,mpi_grid_reduce_f,mpi_grid_reduce_i2
+    mpi_grid_reduce_z,mpi_grid_reduce_f,mpi_grid_reduce_i2,&
+    mpi_grid_reduce_c
 end interface
 
 interface mpi_grid_send
@@ -321,15 +322,17 @@ end function
 !-------------------------!
 !      mpi_grid_side      !
 !-------------------------!
-! Example for 2D grid 3x4:
-! side processors for dim=1 (dimension of size 3)
+! Example for 2D grid 3x4 (zero is top-left corner):
+! side processors for dim=1 (dimension of size 3) are processors with 
+!  second zero coordinate
 !  x o o o
 !  x o o o
-!  x o o o  processors with second zero coordinate
-! side processors for dim=2 (dimension of size 4)
+!  x o o o  
+! side processors for dim=2 (dimension of size 4) are processors with 
+!  first zero coordinate
 !  x x x x  
 !  o o o o
-!  o o o o  processors with first zero coordinate
+!  o o o o  
 logical function mpi_grid_side(dims)
 implicit none
 ! arguments
@@ -352,6 +355,73 @@ mpi_grid_side=l1
 return
 end function
 
+function ortdims(dims)
+implicit none
+integer, intent(in) :: dims(:)
+integer ortdims(mpi_grid_nd-size(dims))
+integer i,j
+integer f(mpi_grid_nd)
+if (size(dims).eq.mpi_grid_nd) return
+f=1
+do j=1,size(dims)
+  f(dims(j))=0
+enddo
+i=0
+do j=1,mpi_grid_nd
+  if (f(j).eq.1) then
+    i=i+1
+    ortdims(i)=j
+  endif
+enddo
+return
+end function
+
+subroutine mpi_grid_bcast_common(n_,dims_,side_,root_,lbcast_,&
+  length_,comm_,rootid_)
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+integer, optional, intent(in) :: n_
+integer, optional, dimension(:), intent(in) :: dims_
+logical, optional, intent(in) :: side_
+integer, optional, dimension(:), intent(in) :: root_
+logical, intent(out) :: lbcast_
+integer, intent(out) :: length_
+integer, intent(out) :: comm_
+integer, intent(out) :: rootid_
+integer root_x(mpi_grid_nd),ierr,i
+! check if a broadcast is necessary
+if (present(dims_)) then
+  lbcast_=.false.
+  do i=1,size(dims_)
+    if (mpi_grid_size(dims_(i)).ne.1) lbcast_=.true.
+  enddo
+else
+  lbcast_=.true.
+endif
+if (.not.lbcast_) return
+! check if only side processors does a broadcast
+if (lbcast_) then
+  if (present(side_).and.present(dims_)) then
+    if (side_.and..not.mpi_grid_side(dims_)) lbcast_=.false.
+  endif
+endif
+! length of array
+length_=1
+if (present(n_)) length_=n_
+! get communicator
+comm_=mpi_grid_get_comm(dims_)
+! get root id
+if (present(root_)) then
+  root_x(1:size(root_))=root_
+else
+  root_x=0
+endif
+call mpi_cart_rank(comm_,root_x,rootid_,ierr)
+end subroutine
+
+
 !----------------------------!
 !      mpi_grid_bcast_d      !
 !----------------------------!
@@ -366,19 +436,13 @@ integer, optional, intent(in) :: n
 integer, optional, dimension(:), intent(in) :: dims
 logical, optional, intent(in) :: side
 ! local variables
-integer comm,root_x(mpi_grid_nd),root,ierr,n_
-logical l1
+integer comm,rootid,ierr,length
+logical lbcast
 #ifdef _MPI_
-n_=1
-if (present(n)) n_=n
-root_x=0
-comm=mpi_grid_get_comm(dims)
-call mpi_cart_rank(comm,root_x,root,ierr)
-l1=.true.
-if (present(side).and.present(dims)) then
-  if (side.and..not.mpi_grid_side(dims)) l1=.false.
-endif
-if (l1) call mpi_bcast(val,n_,MPI_DOUBLE_PRECISION,root,comm,ierr)
+call mpi_grid_bcast_common(n_=n,dims_=dims,side_=side,lbcast_=lbcast,&
+  length_=length,comm_=comm,rootid_=rootid)
+if (.not.lbcast) return
+call mpi_bcast(val,length,MPI_DOUBLE_PRECISION,rootid,comm,ierr)
 #endif
 return
 end subroutine
@@ -397,19 +461,13 @@ integer, optional, intent(in) :: n
 integer, optional, dimension(:), intent(in) :: dims
 logical, optional, intent(in) :: side
 ! local variables
-integer comm,root_x(mpi_grid_nd),root,ierr,n_
-logical l1
+integer comm,rootid,ierr,length
+logical lbcast
 #ifdef _MPI_
-n_=1
-if (present(n)) n_=n
-root_x=0
-comm=mpi_grid_get_comm(dims)
-call mpi_cart_rank(comm,root_x,root,ierr)
-l1=.true.
-if (present(side).and.present(dims)) then
-  if (side.and..not.mpi_grid_side(dims)) l1=.false.
-endif
-if (l1) call mpi_bcast(val,n_,MPI_DOUBLE_COMPLEX,root,comm,ierr)
+call mpi_grid_bcast_common(n_=n,dims_=dims,side_=side,lbcast_=lbcast,&
+  length_=length,comm_=comm,rootid_=rootid)
+if (.not.lbcast) return
+call mpi_bcast(val,length,MPI_DOUBLE_COMPLEX,rootid,comm,ierr)
 #endif
 return
 end subroutine
@@ -428,19 +486,13 @@ integer, optional, intent(in) :: n
 integer, optional, dimension(:), intent(in) :: dims
 logical, optional, intent(in) :: side
 ! local variables
-integer comm,root_x(mpi_grid_nd),root,ierr,n_
-logical l1
+integer comm,rootid,ierr,length
+logical lbcast
 #ifdef _MPI_
-n_=1
-if (present(n)) n_=n
-root_x=0
-comm=mpi_grid_get_comm(dims)
-call mpi_cart_rank(comm,root_x,root,ierr)
-l1=.true.
-if (present(side).and.present(dims)) then
-  if (side.and..not.mpi_grid_side(dims)) l1=.false.
-endif
-if (l1) call mpi_bcast(val,n_,MPI_INTEGER,root,comm,ierr)
+call mpi_grid_bcast_common(n_=n,dims_=dims,side_=side,lbcast_=lbcast,&
+  length_=length,comm_=comm,rootid_=rootid)
+if (.not.lbcast) return
+call mpi_bcast(val,length,MPI_INTEGER,rootid,comm,ierr)
 #endif
 return
 end subroutine
@@ -459,19 +511,13 @@ integer, optional, intent(in) :: n
 integer, optional, dimension(:), intent(in) :: dims
 logical, optional, intent(in) :: side
 ! local variables
-integer comm,root_x(mpi_grid_nd),root,ierr,n_
-logical l1
+integer comm,rootid,ierr,length
+logical lbcast
 #ifdef _MPI_
-n_=1
-if (present(n)) n_=n
-root_x=0
-comm=mpi_grid_get_comm(dims)
-call mpi_cart_rank(comm,root_x,root,ierr)
-l1=.true.
-if (present(side).and.present(dims)) then
-  if (side.and..not.mpi_grid_side(dims)) l1=.false.
-endif
-if (l1) call mpi_bcast(val,n_,MPI_LOGICAL,root,comm,ierr)
+call mpi_grid_bcast_common(n_=n,dims_=dims,side_=side,lbcast_=lbcast,&
+  length_=length,comm_=comm,rootid_=rootid)
+if (.not.lbcast) return
+call mpi_bcast(val,length,MPI_LOGICAL,rootid,comm,ierr)
 #endif
 return
 end subroutine
@@ -503,7 +549,7 @@ if (present(dims_)) then
 else
   lreduce_=.true.
 endif
-! check if only side processors do a reduction
+! check if only side processors does a reduction
 if (lreduce_) then
   if (present(side_).and.present(dims_)) then
     if (side_.and..not.mpi_grid_side(dims_)) lreduce_=.false.
@@ -695,6 +741,48 @@ if (lallreduce) then
   call mpi_allreduce(val,tmp,length,MPI_DOUBLE_COMPLEX,reduceop,comm,ierr)
 else
   call mpi_reduce(val,tmp,length,MPI_DOUBLE_COMPLEX,reduceop,rootid,comm,ierr)
+endif
+call memcopy(tmp,val,length*sz)
+deallocate(tmp)
+#endif
+return
+end subroutine
+
+!-----------------------------!
+!      mpi_grid_reduce_c      !
+!-----------------------------!
+subroutine mpi_grid_reduce_c(val,n,dims,side,all,op,root)
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+! arguments
+complex(4), intent(inout) :: val
+integer, optional, intent(in) :: n
+integer, optional, dimension(:), intent(in) :: dims
+logical, optional, intent(in) :: side
+logical, optional, intent(in) :: all
+integer, optional, intent(in) :: op
+integer, optional, dimension(:), intent(in) :: root
+! local variables
+integer comm,rootid,ierr,sz
+logical lreduce,lallreduce
+integer length,reduceop
+complex(4), allocatable :: tmp(:)
+#ifdef _MPI_
+if (debug) then
+  write(*,'("[mpi_grid_reduce_c] start")')
+endif
+call mpi_grid_reduce_common(n_=n,dims_=dims,side_=side,all_=all,op_=op,&
+  root_=root,lreduce_=lreduce,lallreduce_=lallreduce,length_=length,&
+  reduceop_=reduceop,comm_=comm,rootid_=rootid)
+sz=sizeof(val)
+if (.not.lreduce) return
+allocate(tmp(length))
+if (lallreduce) then
+  call mpi_allreduce(val,tmp,length,MPI_COMPLEX,reduceop,comm,ierr)
+else
+  call mpi_reduce(val,tmp,length,MPI_COMPLEX,reduceop,rootid,comm,ierr)
 endif
 call memcopy(tmp,val,length*sz)
 deallocate(tmp)

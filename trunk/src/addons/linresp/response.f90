@@ -21,7 +21,6 @@ complex(8), allocatable :: ylmgknr(:,:,:)
 
 complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
 complex(8), allocatable :: wfsvitloc(:,:,:,:)
-complex(8), allocatable :: wfsvcgloc(:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 
 integer i,j,n,ik,ikloc,ik1,isym,idx0,ivq1,ivq2,iq,ig
@@ -239,7 +238,6 @@ if (task.eq.400.or.task.eq.403) then
   enddo
   allocate(wfsvmtloc(lmmaxvr,nrfmax,natmtot,nspinor,nstsv,nkptnrloc))
   allocate(wfsvitloc(ngkmax,nspinor,nstsv,nkptnrloc))
-  allocate(wfsvcgloc(ngkmax,nspinor,nstsv,nkptnrloc))  
   allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptnrloc))
   allocate(evecsvloc(nstsv,nstsv,nkptnrloc))
   allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
@@ -288,11 +286,6 @@ if (task.eq.400.or.task.eq.403) then
 ! generate wave functions in interstitial
     call genwfsvit(ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
       evecsvloc(1,1,ikloc),wfsvitloc(1,1,1,ikloc))
-! generate <e^{-i(G+k)x}|\psi>
-!    call genwfsvcg(ngknr(ikloc),igkignr(1,ikloc),gknr(1,ikloc), &
-!      ylmgknr(1,1,ikloc),sfacgknr(1,1,ikloc),wfsvmtloc(1,1,1,1,1,ikloc), &
-!        wfsvitloc(1,1,1,ikloc),wfsvcgloc(1,1,1,ikloc))
-!        call pstop
   enddo !ikloc
   call timer_stop(1)
   if (wproc1) then
