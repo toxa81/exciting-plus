@@ -44,7 +44,7 @@ if (mpi_grid_side(dims=(/dim_k/))) then
     if (mpi_grid_x(dim_k).eq.i) then
       do ikloc=1,nkptloc
         ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-        call getwann(ikloc)
+        !call getwann(ikloc)
         if (task.eq.600) then
           call getevalsv(vkl(1,ik),evalsv(1,ik))
         endif

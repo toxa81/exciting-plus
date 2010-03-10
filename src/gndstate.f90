@@ -415,7 +415,7 @@ if (mpi_grid_side(dims=(/dim_k/))) then
         call putevecfv(ik,evecfvloc(1,1,1,ikloc))
         call putevecsv(ik,evecsvloc(1,1,ikloc))
         call putoccsv(ik,occsv(1,ik))
-        if (wannier) call putwann(ikloc)
+!        if (wannier) call putwann(ikloc)
       end do
     end if
     call mpi_grid_barrier(dims=(/dim_k/))

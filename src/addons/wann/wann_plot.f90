@@ -1,8 +1,6 @@
 subroutine wann_plot
 use modmain
-#ifdef _MPI_
-use mpi
-#endif
+use mod_nrkp
 implicit none
 
 real(8) orig(3)
@@ -20,6 +18,8 @@ integer ikloc
 
 call init0
 call init1
+if (.not.mpi_grid_in()) return
+wproc=mpi_grid_root()
 
 ! read density and potentials from file
 call readstate
@@ -36,14 +36,7 @@ call genlofr
 
 call geturf
 
-do i=0,nproc-1
-  if (iproc.eq.i) then
-    do ikloc=1,nkptloc
-      call getwann(ikloc)
-    end do
-  end if
-  !call barrier(comm_world)
-end do
+call genwfnr(-1)
 
 if (task.eq.361) then
   nrtot=nrxyz(1)
@@ -61,7 +54,7 @@ if (task.eq.363) then
   orig(:)=zero3d(:)-(bound3d(:,1)+bound3d(:,2)+bound3d(:,3))/2.d0
 endif
 
-if (iproc.eq.0) then
+if (mpi_grid_root()) then
   allocate(wf(nspinor,nwfplot,nrtot))
   allocate(wfp(nrtot))
   allocate(veff(nrtot))
@@ -80,10 +73,6 @@ do i1=0,nrxyz(1)-1
     enddo
   enddo
 enddo
-if (ir.ne.nrtot) then
-  write(*,*)'Error in r-mesh'
-  call pstop
-endif
 
 ! Fourier transform potential to G-space
 allocate(zfft_vir(ngrtot))
@@ -91,14 +80,14 @@ zfft_vir(:)=veffir(:)
 call zfftifc(3,ngrid,-1,zfft_vir)
 
 do ir=1,nrtot
-  if (mod(ir,nrxyz(2)*nrxyz(3)).eq.0.and.iproc.eq.0) then
+  if (mod(ir,nrxyz(2)*nrxyz(3)).eq.0.and.mpi_grid_root()) then
     write(*,*)'r-point : ',ir,' out of ',nrtot
   endif
   call wann_val(vr(1,ir),wf(1,1,ir))
-  if (iwfv.ne.0) call f_veff_p(vr(1,ir),veffmt,zfft_vir,veff(ir))
+  !if (iwfv.ne.0) call f_veff_p(vr(1,ir),veffmt,zfft_vir,veff(ir))
 enddo
 
-if (iproc.eq.0) then
+if (mpi_grid_root()) then
   !write(*,*)'MT part:',timer(1,2)
   !write(*,*)'IT part:',timer(2,2)
 
@@ -226,51 +215,3 @@ endif
 506  format('object 2 class gridconnections counts ', 2i4)
 return
 end
-
-
-
-
-
-
-!subroutine putwfc(ik,wfcp)
-!use modmain
-!implicit none
-!integer, intent(in) :: ik
-!complex(8), intent(in) :: wfcp(nwann,nstfv,nspinor)
-!integer recl
-!
-!!inquire(iolength=recl)ik,nwann,nstfv,nspinor,wfcp
-!!open(70,file='WANN_C.OUT',action='WRITE',form='UNFORMATTED', &
-!!  access='DIRECT',recl=recl)
-!!write(70,rec=ik)ik,nwann,nstfv,nspinor,wfcp
-!!close(70)
-!
-!return
-!end
-!
-!subroutine getwfc(ik,wfcp)
-!use modmain
-!implicit none
-!integer, intent(in) :: ik
-!complex(8), intent(out) :: wfcp(nwann,nstfv,nspinor)
-!integer ik_,wann_nmax_,nstfv_,wann_nspin_,recl
-!
-!!inquire(iolength=recl)ik_,wann_nmax_,nstfv_,wann_nspin_,wfcp
-!!open(70,file='WANN_C.OUT',action='READ',form='UNFORMATTED', &
-!!  access='DIRECT',recl=recl)
-!!read(70,rec=ik)ik_,wann_nmax_,nstfv_,wann_nspin_,wfcp
-!!close(70)
-!!if (ik_.ne.ik.or.wann_nmax_.ne.wann_nmax.or.nstfv_.ne.nstfv.or. &
-!!  wann_nspin_.ne.wann_nspin) then
-!!  write(*,*)
-!!  write(*,'("Error(getwfc): wrong dimensions")')
-!!  write(*,*)
-!!  call pstop
-!!endif
-!
-!return
-!end
-
-
-
-

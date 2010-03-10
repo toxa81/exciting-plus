@@ -23,11 +23,11 @@ call genlofr
 
 call geturf
 
-if (wannier) then
-  do ik=1,nkpt
-    call getwann(ik)
-  enddo
-endif
+!if (wannier) then
+!  do ik=1,nkpt
+!    call getwann(ik)
+!  enddo
+!endif
 
 if (allocated(veffir_zfft)) deallocate(veffir_zfft)
 allocate(veffir_zfft(ngrtot))
