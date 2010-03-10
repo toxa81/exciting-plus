@@ -124,7 +124,7 @@ if (mpi_grid_root()) then
         write(70,506)nrxyz(1),nrxyz(2)
       endif
       write(70,408)1,nrtot
-      write(70,'(4G18.10)')(sum(abs(wf(:,n,ir))),ir=1,nrtot)
+      write(70,'(4G18.10)')(sum(abs(wf(:,n,ir))**2),ir=1,nrtot)
       write(70,412)
       close(70)
     enddo
