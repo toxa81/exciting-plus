@@ -52,7 +52,7 @@ integer ia,is,ias
 integer ir0
 integer l,m,lm,ig,ifg,i,j
 real(8) tp(2),sum,t1,t2,sum2
-integer idx0,bs,ntr(3)
+integer idx0,bs,ntr(3),ngloc,igloc
 real(8) vr0(3),r0
 ! automatic arrays
 real(8) ya(nprad),c(nprad)
@@ -71,7 +71,7 @@ l1=vrinmt(vrc,is,ia,ntr,vr0,ir0,r0)
 sum=0.d0
 sum2=0.d0
 if (l1) then
-  if (iproc.eq.0) then
+  if (mpi_grid_root()) then
     l2=.false.
     if (r0.lt.0.1) then
       l2=.true.
@@ -111,19 +111,19 @@ if (l1) then
     enddo
   endif
 else
-  !call idxbos(ngvec,nproc,iproc+1,idx0,bs)
+  ngloc=mpi_grid_map(ngvec,dim_k)
 ! otherwise use interstitial function
-  do ig=idx0+1,idx0+bs
+  do igloc=1,ngloc
+    ig=mpi_grid_map(ngvec,dim_k,loc=igloc)
     ifg=igfft(ig)
     t1=vgc(1,ig)*vrc(1)+vgc(2,ig)*vrc(2)+vgc(3,ig)*vrc(3)
     sum2=sum2+dble(zfft(ifg)*cmplx(cos(t1),sin(t1),8))
   end do
-  !call dsync(sum2,1,.true.,.false.)
+  call mpi_grid_reduce(sum2,dims=(/dim_k/))
 endif
-if (iproc.eq.0) then
+if (mpi_grid_root()) then
   fp=sum+sum2
 endif
-call mpi_grid_barrier
 deallocate(rlm)
 return
 end subroutine

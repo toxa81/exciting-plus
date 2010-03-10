@@ -103,10 +103,10 @@ if (mpi_grid_side(dims=(/dim_k/))) then
   enddo
 endif !mpi_grid_side(dims=(/dim_k/)
 call mpi_grid_barrier
-!call mpi_grid_bcast(evecfvloc(1,1,1,1),nmatmax*nstfv*nspnfv*nkptnrloc,&
-!  dims=ortdims((/dim_k/)))
-!call mpi_grid_bcast(evecsvloc(1,1,1),nstsv*nstsv*nkptnrloc,&
-!  dims=ortdims((/dim_k/)))
+call mpi_grid_bcast(evecfvloc(1,1,1,1),nmatmax*nstfv*nspnfv*nkptnrloc,&
+  dims=ortdims((/dim_k/)))
+call mpi_grid_bcast(evecsvloc(1,1,1),nstsv*nstsv*nkptnrloc,&
+  dims=ortdims((/dim_k/)))
 ! transform eigen-vectors
 wfsvmtloc=zzero
 wfsvitloc=zzero

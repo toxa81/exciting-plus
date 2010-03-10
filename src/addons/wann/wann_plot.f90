@@ -5,6 +5,7 @@ implicit none
 
 real(8) orig(3)
 complex(4), allocatable :: wf(:,:,:)
+complex(4), allocatable :: wfval(:,:)
 complex(4), allocatable :: wfp(:)
 integer i,nrtot
 integer i1,i2,i3,ir,n,m
@@ -12,7 +13,7 @@ real(8), allocatable :: vr(:,:)
 real(8), allocatable :: veff(:)
 complex(8), allocatable :: zfft_vir(:)
 character*40 fname
-real(8) x(2),alph
+real(8) x(2),alph,t1
 logical, parameter :: wfprod=.false.
 integer ikloc
 
@@ -35,6 +36,7 @@ call genapwfr
 call genlofr
 
 call geturf
+call genurfprod
 
 call genwfnr(-1)
 
@@ -60,6 +62,7 @@ if (mpi_grid_root()) then
   allocate(veff(nrtot))
 endif
 allocate(vr(3,nrtot))
+allocate(wfval(nspinor,nwfplot))
 
 ! make (1,2,3)D-grid of r-points
 ir=0
@@ -83,8 +86,11 @@ do ir=1,nrtot
   if (mod(ir,nrxyz(2)*nrxyz(3)).eq.0.and.mpi_grid_root()) then
     write(*,*)'r-point : ',ir,' out of ',nrtot
   endif
-  call wann_val(vr(1,ir),wf(1,1,ir))
-  !if (iwfv.ne.0) call f_veff_p(vr(1,ir),veffmt,zfft_vir,veff(ir))
+  call wann_val(vr(1,ir),wfval)
+  if (mpi_grid_root()) wf(:,:,ir)=wfval(:,:)
+  
+  if (iwfv.ne.0) call f_veff_p(vr(1,ir),veffmt,zfft_vir,t1)
+  if (mpi_grid_root()) veff(ir)=t1
 enddo
 
 if (mpi_grid_root()) then
