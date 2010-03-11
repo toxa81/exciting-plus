@@ -961,7 +961,6 @@ case('wannier_plot')
   read(50,*,err=20)(bound3d(i,3),i=1,3)
   read(50,*,err=20)(nrxyz(i),i=1,3)
   read(50,*,err=20)nwfplot,firstwf
-  read(50,*,err=20)iwfv
 case('wannier_lc')
   read(50,*,err=20)wannier_lc
   read(50,*,err=20)nwann_lc

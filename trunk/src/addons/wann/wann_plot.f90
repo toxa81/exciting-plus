@@ -13,7 +13,7 @@ real(8), allocatable :: vr(:,:)
 real(8), allocatable :: veff(:)
 complex(8), allocatable :: zfft_vir(:)
 character*40 fname
-real(8) x(2),alph,t1
+real(8) x(2),alph,t1,x0,dx
 logical, parameter :: wfprod=.false.
 integer ikloc
 
@@ -88,137 +88,96 @@ do ir=1,nrtot
   endif
   call wann_val(vr(1,ir),wfval)
   if (mpi_grid_root()) wf(:,:,ir)=wfval(:,:)
-  
-  if (iwfv.ne.0) call f_veff_p(vr(1,ir),veffmt,zfft_vir,t1)
+  call f_veff_p(vr(1,ir),veffmt,zfft_vir,t1)
   if (mpi_grid_root()) veff(ir)=t1
   call mpi_grid_barrier()
 enddo
 
 if (mpi_grid_root()) then
-  !write(*,*)'MT part:',timer(1,2)
-  !write(*,*)'IT part:',timer(2,2)
-
   if (task.eq.362) then
     x(1)=sqrt(bound3d(1,1)**2+bound3d(2,1)**2+bound3d(3,1)**2)
     x(2)=sqrt(bound3d(1,2)**2+bound3d(2,2)**2+bound3d(3,2)**2)
     alph=dot_product(bound3d(:,1),bound3d(:,2))/x(1)/x(2)
     alph=acos(alph)
   endif
-  
+
+  if (task.eq.361) then
+    x0=-sqrt(sum(bound3d(:,1)**2))/2.d0
+    dx=sqrt(sum(bound3d(:,1)**2))/nrxyz(1)
+    do n=1,nwfplot
+      write(fname,'("wf_",I3.3,".dat")')n+firstwf-1
+      open(70,file=trim(fname),status="REPLACE",form="FORMATTED")
+      do ir=1,nrtot
+        write(70,'(2G18.10)')x0+(ir-1)*dx,sum(abs(wf(:,n,ir))**2)
+      enddo
+      close(70)
+    enddo
+    open(70,file="veff.dat",status="REPLACE",form="FORMATTED")
+    do ir=1,nrtot
+      write(70,'(2G18.10)')x0+(ir-1)*dx,veff(ir)
+    enddo
+    close(70)
+  endif  
   if (task.eq.362.or.task.eq.363) then
     do n=1,nwfplot
       write(fname,'("wf_",I3.3,".dx")')n+firstwf-1
-      open(70,file=trim(fname),status='replace',form='formatted')
-      if (task.eq.363) then
-        write(70,400)nrxyz(1),nrxyz(2),nrxyz(3)
-        write(70,402)orig(:)
-        do i=1,3
-          write(70,404)bound3d(:,i)/nrxyz(i)
-        enddo
-        write(70,406)nrxyz(1),nrxyz(2),nrxyz(3)
-      endif
+      open(70,file=trim(fname),status="REPLACE",form="FORMATTED")
       if (task.eq.362) then
-        write(70,500)nrxyz(1),nrxyz(2)
-        write(70,502)(/0.d0, 0.d0/)
-        write(70,504)(/x(1),0.d0/)/nrxyz(1)
-        write(70,504)(/x(2)*cos(alph),x(2)*sin(alph)/)/nrxyz(2)
-        write(70,506)nrxyz(1),nrxyz(2)
+        write(70,'("object 1 class gridpositions counts",2I4)')nrxyz(1),nrxyz(2)
+        write(70,'("origin ",2G18.10)')(/0.d0, 0.d0/)
+        write(70,'("delta ",2G18.10)')(/x(1),0.d0/)/nrxyz(1)
+        write(70,'("delta ",2G18.10)')(/x(2)*cos(alph),x(2)*sin(alph)/)/nrxyz(2)
+        write(70,'("object 2 class gridconnections counts",2I4)')nrxyz(1),nrxyz(2)
       endif
-      write(70,408)1,nrtot
-      write(70,'(4G18.10)')(sum(abs(wf(:,n,ir))**2),ir=1,nrtot)
-      write(70,412)
+      if (task.eq.363) then
+        write(70,'("object 1 class gridpositions counts",3I4)')nrxyz(1),nrxyz(2),nrxyz(3)
+        write(70,'("origin ",3G18.10)')orig(:)
+        do i=1,3
+          write(70,'("delta ",3G18.10)')bound3d(:,i)/nrxyz(i)
+        enddo
+        write(70,'("object 2 class gridconnections counts",3I4)')nrxyz(1),nrxyz(2),nrxyz(3)
+      endif
+      write(70,'("object 3 class array type float rank 1 shape 1 items ",&
+        &I8," lsb ieee data 4")')nrtot
+      write(70,'("object ""regular positions regular connections"" class field")')
+      write(70,'("component ""positions"" value 1")')
+      write(70,'("component ""connections"" value 2")')
+      write(70,'("component ""data"" value 3")')
+      write(70,'("end")')
       close(70)
-    enddo
-  endif
-  if (task.eq.361) then
-    do n=1,nwfplot
-      write(fname,'("wf_",I3.3,".dat")')n+firstwf-1
-      open(70,file=trim(fname),status='replace',form='formatted')
-      do ir=1,nrtot
-        write(70,'(2G18.10)')(ir-1)*sqrt(sum((vr(:,2)-vr(:,1))**2)),sum(abs(wf(:,n,ir)))
-      enddo
+      open(70,file=trim(fname),status="OLD",form="UNFORMATTED",position="APPEND")
+      write(70)(sum(abs(wf(:,n,ir))**2),ir=1,nrtot)
       close(70)
-    enddo
-  endif
-  
-  if (task.eq.362.or.task.eq.363) then
-    write(fname,'("veff.dx")')
-    open(70,file=trim(fname),status='replace',form='formatted')
-    if (task.eq.363) then
-      write(70,400)nrxyz(1),nrxyz(2),nrxyz(3)
-      write(70,402)orig(:)
-      do i=1,3
-        write(70,404)bound3d(:,i)/nrxyz(i)
-      enddo
-      write(70,406)nrxyz(1),nrxyz(2),nrxyz(3)
-    endif
+    enddo !n
+    fname="veff.dx"
+    open(70,file=trim(fname),status="REPLACE",form="FORMATTED")
     if (task.eq.362) then
-      write(70,500)nrxyz(1),nrxyz(2)
-      write(70,502)(/0.d0, 0.d0/)
-      write(70,504)(/x(1),0.d0/)/nrxyz(1)
-      write(70,504)(/x(2)*cos(alph),x(2)*sin(alph)/)/nrxyz(2)
-      write(70,506)nrxyz(1),nrxyz(2)
+      write(70,'("object 1 class gridpositions counts",2I4)')nrxyz(1),nrxyz(2)
+      write(70,'("origin ",2G18.10)')(/0.d0, 0.d0/)
+      write(70,'("delta ",2G18.10)')(/x(1),0.d0/)/nrxyz(1)
+      write(70,'("delta ",2G18.10)')(/x(2)*cos(alph),x(2)*sin(alph)/)/nrxyz(2)
+      write(70,'("object 2 class gridconnections counts",2I4)')nrxyz(1),nrxyz(2)
     endif
-    write(70,408)1,nrtot
-    write(70,'(4G18.10)')(veff(ir),ir=1,nrtot)
-    write(70,412)
+    if (task.eq.363) then
+      write(70,'("object 1 class gridpositions counts",3I4)')nrxyz(1),nrxyz(2),nrxyz(3)
+      write(70,'("origin ",3G18.10)')orig(:)
+      do i=1,3
+        write(70,'("delta ",3G18.10)')bound3d(:,i)/nrxyz(i)
+      enddo
+      write(70,'("object 2 class gridconnections counts",3I4)')nrxyz(1),nrxyz(2),nrxyz(3)
+    endif
+    write(70,'("object 3 class array type float rank 1 shape 1 items ",&
+      &I8," lsb ieee data 4")')nrtot
+    write(70,'("object ""regular positions regular connections"" class field")')
+    write(70,'("component ""positions"" value 1")')
+    write(70,'("component ""connections"" value 2")')
+    write(70,'("component ""data"" value 3")')
+    write(70,'("end")')
+    close(70)
+    open(70,file=trim(fname),status="OLD",form="UNFORMATTED",position="APPEND")
+    write(70)(sngl(veff(ir)),ir=1,nrtot)
     close(70)
   endif
-  if (task.eq.361) then
-    open(70,file='veff.dat',status='replace',form='formatted')
-    do ir=1,nrtot
-      write(70,'(2G18.10)')(ir-1)*sqrt(sum((vr(:,2)-vr(:,1))**2)),veff(ir)
-    enddo
-    close(70)
-  endif
-  
-!  if (wfprod) then
-!    do n=1,nwfplot
-!      do m=n,nwfplot
-!        write(fname,'("wf_prod_",I2.2,"x",I2.2,".dx")')n,m
-!        do ir=1,nrtot
-!          wfp(ir)=wf(n,ir)*conjg(wf(m,ir))
-!        enddo
-!        open(70,file=trim(fname),status='replace',form='formatted')
-!        if (wf3d) then
-!          write(70,400)nrxyz(1),nrxyz(2),nrxyz(3)
-!          write(70,402)orig3d(:)
-!          do i=1,3
-!            write(70,404)bound3d(:,i)/nrxyz(i)
-!          enddo
-!          write(70,406)nrxyz(1),nrxyz(2),nrxyz(3)
-!        else
-!          write(70,500)nrxyz(1),nrxyz(2)
-!          write(70,502)(/0.d0, 0.d0/)
-!          write(70,504)(/x(1),0.d0/)/nrxyz(1)
-!          write(70,504)(/x(2)*cos(alph),x(2)*sin(alph)/)/nrxyz(2)
-!          write(70,506)nrxyz(1),nrxyz(2)
-!        endif
-!        write(70,408)1,nrtot
-!        write(70,410)(abs(wfp(ir)),ir=1,nrtot)
-!        write(70,412)
-!        close(70)
-!      enddo
-!    enddo
-!  endif
-
 endif
-      
-400  format('object 1 class gridpositions counts ', 3i4)
-402  format('origin ', 3f12.6)
-404  format('delta ', 3f12.6)
-406  format('object 2 class gridconnections counts ', 3i4)
-408  format('object 3 class array type float rank 1 shape',i3, &
-       ' items ',i8,' data follows')
-410  format(f10.6)
-412  format('object "regular positions regular connections" class field', &
-       /'component "positions" value 1',   &
-       /'component "connections" value 2', &
-       /'component "data" value 3',        &
-       /'end')
-500  format('object 1 class gridpositions counts ', 2i4)
-502  format('origin ', 2f12.6)
-504  format('delta ', 2f12.6)
-506  format('object 2 class gridconnections counts ', 2i4)
 return
 end
