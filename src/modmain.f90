@@ -1224,7 +1224,6 @@ real(8) bound3d(3,3)
 integer nrxyz(3)
 integer nwfplot
 integer firstwf
-integer iwfv
 logical wannier_lc
 integer nwann_lc
 integer, allocatable :: wann_iorb_lc(:,:,:)

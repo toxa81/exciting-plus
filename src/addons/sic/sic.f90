@@ -8,28 +8,12 @@ integer i1,i2,i3,n
 integer ik,ikloc,ik1,j,ig,sz,i,isym
 integer n1,n2,ispn
 integer itr,ntrloc,itrloc
-!integer, allocatable :: vtrl(:,:)
-!integer, allocatable :: ivtit(:,:,:)
-!integer, parameter :: trmax=1
 
 complex(8), allocatable :: wanmt(:,:,:,:,:,:)
 complex(8), allocatable :: wanir(:,:,:,:)
 complex(8), allocatable :: wanmt0(:,:,:,:,:)
 complex(8), allocatable :: wanir0(:,:,:)
 
-!integer, allocatable :: ngknr(:)
-!integer, allocatable :: igkignr(:,:)
-!real(8), allocatable :: vgklnr(:,:,:)
-!real(8), allocatable :: vgkcnr(:,:,:)
-!real(8), allocatable :: gknr(:,:)
-!real(8), allocatable :: tpgknr(:,:,:)
-!complex(8), allocatable :: sfacgknr(:,:,:)
-!complex(8), allocatable :: ylmgknr(:,:,:)
-!
-!complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
-!complex(8), allocatable :: wfsvitloc(:,:,:,:)
-!complex(8), allocatable :: wfsvcgloc(:,:,:,:)
-!complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: ovlm(:,:)
 complex(8), external :: zfinp_
 complex(8), external :: inner_product
@@ -70,7 +54,6 @@ if (wproc) then
   open(151,file='SIC.OUT',form='FORMATTED',status='REPLACE')
 endif
 
-
 call lfa_init(0)
 call genwfnr(151)
 ! deallocate unnecessary wave-functions
@@ -97,9 +80,6 @@ if (wproc) then
   call flushifc(151)
 endif
 
-call mpi_grid_barrier()
-call pstop
-
 call timer_reset(1)
 call timer_reset(2)
 allocate(wanmt0(lmmaxvr,nrmtmax,natmtot,nspinor,nwann))
@@ -123,13 +103,15 @@ endif
 
 ! calculate overlap matrix
 allocate(ovlm(nwann,nwann))
+ovlm=zzero
 if (mpi_grid_root(dims=(/dim_k/))) then
   ovlm=zzero
   do n1=1,nwann
     do n2=1,nwann
-      ovlm(n1,n2)=inner_product(ntr,ntrloc,trmax,vtl,ivtit,(/1,0,0/),&
-        wanmt(1,1,1,1,1,n1),wanir(1,1,1,n1),wanmt(1,1,1,1,1,n2),&
-        wanir(1,1,1,n2))
+      do ispn=1,nspinor
+        ovlm(n1,n2)=ovlm(n1,n2)+lfa_dotp(.true.,(/0,0,0/),wanmt(1,1,1,1,ispn,n1),&
+          wanir(1,1,ispn,n1),wanmt(1,1,1,1,ispn,n2),wanir(1,1,ispn,n2))
+      enddo
     enddo
   enddo
 endif
