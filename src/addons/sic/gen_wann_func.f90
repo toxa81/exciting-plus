@@ -15,7 +15,7 @@ wanmt=zzero
 wanir=zzero
 vtrc(:)=vtrl(1)*avec(:,1)+vtrl(2)*avec(:,2)+vtrl(3)*avec(:,3)
 ! muffin-tin part
-call timer_start(1,reset=.true.)
+call timer_start(1)
 do ias=1,natmtot
   is=ias2is(ias)
   do ikloc=1,nkptnrloc
@@ -38,7 +38,7 @@ do ias=1,natmtot
 enddo !ias 
 call timer_stop(1)
 ! interstitial part
-call timer_start(2,reset=.true.)
+call timer_start(2)
 ir=0
 do i3=0,ngrid(3)-1
   v2(3)=dble(i3)/dble(ngrid(3))
@@ -68,8 +68,8 @@ enddo !i3
 wanir(:,:,:)=wanir(:,:,:)/sqrt(omega)/nkptnr
 call timer_stop(2)
 call mpi_grid_reduce(wanmt(1,1,1,1,1),lmmaxvr*nrmtmax*natmtot*nspinor*nwann,&
-  dims=(/dim_k/))
-call mpi_grid_reduce(wanir(1,1,1),ngrtot*nspinor*nwann,dims=(/dim_k/))    
+  dims=(/dim_k/),all=.true.)
+call mpi_grid_reduce(wanir(1,1,1),ngrtot*nspinor*nwann,dims=(/dim_k/),all=.true.)    
 return
 end
 
