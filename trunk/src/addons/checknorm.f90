@@ -74,11 +74,11 @@ do ik=1,nkptnr
 ! calculate the wavefunctions for all states
   call genwfsv(.false.,ngknr,igkignr,evalsv,apwalm,evecfv,evecsv,wfmt,wfir)
  
- call genwfsvmt(lmaxvr,lmmaxvr,ngknr,evecfv,evecsv,apwalm,wfsvmt)
-  call genwfsvit(ngknr,evecfv,evecsv,wfsvit)
+  !call genwfsvmt(lmaxvr,lmmaxvr,ngknr,evecfv,evecsv,apwalm,wfsvmt)
+  !call genwfsvit(ngknr,evecfv,evecsv,wfsvit)
   wfnrmdev=0.d0
-  write(*,*)'ik=',ik
-  call wfprodk(ngknr,igkignr,wfsvmt,wfsvit,wfnrmdev)
+  !write(*,*)'ik=',ik
+  !call wfprodk(ngknr,igkignr,wfsvmt,wfsvit,wfnrmdev)
     
   j=0
   do ist1=1,nstsv
