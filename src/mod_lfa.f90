@@ -51,11 +51,13 @@ complex(8), allocatable :: f2mt_tmp(:,:,:)
 complex(8), allocatable :: f2ir_tmp(:)
 
 complex(8) zprod
-integer ispn,itloc,it,jt,v1(3),v2(3),j,ntstep,ntrloc,itstep,ntloc1
+integer ispn,it,jt,v1(3),v2(3),j,ntstep,ntrloc,itstep,ntloc1
 integer jtloc,i,tag
 logical l1
 complex(8), external :: zfinp_
-! generates <f1_0|f2_t>
+
+! compute <f1_0|f2_T>=\int_{-\inf}^{\inf} f1^{*}(r)f2(r-T)dr = 
+!   = \sum_{R} \int_{\Omega} f1^{*}(r+R)f2(r+R-T)dr
 
 zprod=zzero
 allocate(f2mt_tmp(lmmaxvr,nrmtmax,natmtot))
@@ -112,9 +114,67 @@ return
 end function
 
 
+subroutine lfa_prod(f1mt,f1ir,f2mt,f2ir,f3mt,f3ir)
+use modmain
+implicit none
+complex(8), intent(in) :: f1mt(lmmaxvr,nrmtmax,natmtot,*)
+complex(8), intent(in) :: f1ir(ngrtot,*)
+complex(8), intent(in) :: f2mt(lmmaxvr,nrmtmax,natmtot,*)
+complex(8), intent(in) :: f2ir(ngrtot,*)
+complex(8), intent(out) :: f3mt(lmmaxvr,nrmtmax,natmtot,*)
+complex(8), intent(out) :: f3ir(ngrtot,*)
+
+complex(8), allocatable :: ft1(:,:,:)
+complex(8), allocatable :: ft2(:,:,:)
+integer itrloc,ntrloc
+
+ntrloc=mpi_grid_map(ntr,dim2)
+allocate(ft1(lmmaxvr,nrmtmax,natmtot))
+allocate(ft2(lmmaxvr,nrmtmax,natmtot))
+do itrloc=1,ntrloc
+  call lfa_sht('B',f1mt(1,1,1,itrloc),ft1)
+  call lfa_sht('B',f2mt(1,1,1,itrloc),ft2)
+  f3mt(:,:,:,itrloc)=dconjg(ft1(:,:,:))*ft2(:,:,:)
+  f3ir(:,itrloc)=dconjg(f1ir(:,itrloc))*f2ir(:,itrloc)
+enddo
+deallocate(ft1,ft2)
+return 
+end subroutine
 
 
 
+
+subroutine lfa_sht(sht,fmt_in,fmt_out)
+use modmain
+implicit none
+character, intent(in) :: sht
+complex(8), intent(in) :: fmt_in(lmmaxvr,nrmtmax,natmtot)
+complex(8), intent(out) :: fmt_out(lmmaxvr,nrmtmax,natmtot)
+integer ias,is
+complex(8), allocatable :: f1(:,:)
+
+allocate(f1(lmmaxvr,nrmtmax))
+! backward transform (spherical harmonics to coordinates)
+if (sht.eq.'b'.or.sht.eq.'B') then
+  do ias=1,natmtot
+    is=ias2is(ias)
+    f1=fmt_in(:,:,ias)
+    call zgemm('N','N',lmmaxvr,nrmt(is),lmmaxvr,zone,zbshtvr, &
+      lmmaxvr,f1,lmmaxvr,zzero,fmt_out(:,:,ias),lmmaxvr)
+  enddo !ias
+endif
+! forward transform (spherical coordinates to harmonics)
+if (sht.eq.'f'.or.sht.eq.'F') then
+  do ias=1,natmtot
+    is=ias2is(ias)
+    f1=fmt_in(:,:,ias)
+    call zgemm('N','N',lmmaxvr,nrmt(is),lmmaxvr,zone,zfshtvr, &
+      lmmaxvr,f1,lmmaxvr,zzero,fmt_out(:,:,ias),lmmaxvr)
+  enddo !ias
+endif
+deallocate(f1)
+return
+end subroutine
 
 
 end module

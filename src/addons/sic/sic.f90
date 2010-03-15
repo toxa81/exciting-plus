@@ -7,7 +7,7 @@ implicit none
 integer i1,i2,i3,n
 integer ik,ikloc,ik1,j,ig,sz,i,isym
 integer n1,n2,ispn
-integer itr,ntrloc,it,itloc,ir
+integer itr,ntrloc,it,jt,itloc,ir
 real(8) vtrc(3)
 complex(8) expikt
 
@@ -29,6 +29,10 @@ complex(8), allocatable :: vcwanmt(:,:,:,:,:)
 complex(8), allocatable :: vcwanir(:,:,:)
 real(8) spzn1(maxspecies)
 complex(8), allocatable :: vsic(:,:,:)
+complex(8), allocatable :: wfsvmtloc1(:,:,:,:,:,:)
+complex(8), allocatable :: wfsvitloc1(:,:,:,:)
+complex(8), allocatable :: evecfvloc1(:,:,:,:)
+complex(8), allocatable :: evecsvloc1(:,:,:)
 
 
 integer idm
@@ -75,12 +79,40 @@ endif
 
 call lfa_init(1)
 call genwfnr(151)
+!allocate(wfsvmtloc1(lmmaxvr,nrfmax,natmtot,nspinor,nstsv,nkptnrloc))
+!allocate(wfsvitloc1(ngkmax,nspinor,nstsv,nkptnrloc))
+!allocate(evecfvloc1(nmatmax,nstfv,nspnfv,nkptnrloc))
+!allocate(evecsvloc1(nstsv,nstsv,nkptnrloc))
+
+!do ikloc=1,nkptnrloc
+!  write(200+ikloc)evecfvloc(:,:,:,ikloc),evecsvloc(:,:,ikloc)
+!enddo
+!do ikloc=1,nkptnrloc
+!  read(200+ikloc)evecfvloc1(:,:,:,ikloc),evecsvloc1(:,:,ikloc)
+!enddo
+
+!do ikloc=1,nkptnrloc
+!  do j=1,nstfv
+!    do i=1,nmatmax
+!      evecfvloc1(i,j,1,ikloc)=evecfvloc1(i,j,1,ikloc)*abs(evecfvloc1(1,j,1,ikloc))/evecfvloc1(1,j,1,ikloc)
+!      evecfvloc1(i,j,1,ikloc)=evecfvloc1(i,j,1,ikloc)*abs(evecfvloc1(1,j,1,ikloc))/evecfvloc1(1,j,1,ikloc)
+
+!do ikloc=1,nkptnrloc
+!  write(*,*)'ik=',ikloc,'diff=',&
+!  sum(abs(abs(evecfvloc1(1:ngknr(ikloc),1:4,1,ikloc))-&
+!          abs(evecfvloc (1:ngknr(ikloc),1:4,1,ikloc))))
+!enddo
+call mpi_grid_barrier
+call pstop
+  
 ! deallocate unnecessary wave-functions
 deallocate(wfsvmtloc)
 deallocate(wfsvitloc)
 deallocate(evecfvloc)
 deallocate(evecsvloc)
 deallocate(wann_c)
+call mpi_grid_barrier()
+call pstop
 
 ! this part is for debug purpose: construct potential from charge density 
 !  using Bloch basis
@@ -231,6 +263,8 @@ allocate(vcwanir(ngrtot,ntrloc,nwann))
 vcwanmt=zzero
 vcwanir=zzero
 
+allocate(f2mt(lmmaxvr,nrmtmax,natmtot))
+allocate(f2ir(ngrtot))
 do ikloc=1,nkptnrloc
   ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
   do n=1,nwann
@@ -272,8 +306,6 @@ vcwanmt=vcwanmt/nkptnr
 vcwanir=vcwanir/nkptnr
 
 ! for debug: sum over all WFs and translations to get the total Coulomb potential
-!allocate(f2mt(lmmaxvr,nrmtmax,natmtot))
-!allocate(f2ir(ngrtot))
 !f2mt=zzero
 !f2ir=zzero
 !do itloc=1,ntrloc
@@ -321,6 +353,22 @@ if (wproc) then
     write(151,'("    image part : ")')  
     do n1=1,nwann
       write(151,'(4X,255F12.6)')(dimag(vsic(n1,n2,it)),n2=1,nwann)
+    enddo
+  enddo
+endif
+if (wproc) then
+  write(151,*)
+  write(151,'("SIC ""localization criterion"" <w_n1|v_n1-v_{n2,T}|w_{n2,T}>")')
+  do it=1,ntr
+    jt=ivtit(-vtl(1,it),-vtl(2,it),-vtl(3,it))
+    write(151,'("  translation : ",3I4)')vtl(:,it)
+    write(151,'("    real part : ")')  
+    do n1=1,nwann
+      write(151,'(4X,255F12.6)')(dreal(vsic(n1,n2,it)-dconjg(vsic(n2,n1,jt))),n2=1,nwann)
+    enddo
+    write(151,'("    image part : ")')  
+    do n1=1,nwann
+      write(151,'(4X,255F12.6)')(dimag(vsic(n1,n2,it)-dconjg(vsic(n2,n1,jt))),n2=1,nwann)
     enddo
   enddo
 endif
