@@ -23,6 +23,8 @@ implicit none
 integer, intent(in) :: fout
 integer ik,ikloc,n,j,ik1,isym,ig,i,sz
 complex(8), allocatable :: apwalm(:,:,:,:)
+real(8) w2
+logical, external :: wann_diel
 
 ! get energies of states in reduced part of BZ
 call timer_start(3,reset=.true.)
@@ -51,6 +53,15 @@ if (wproc.and.fout.gt.0) then
   call timestamp(fout)
   call flushifc(fout)
 endif
+!if (wproc.and.fout.gt.0) then
+!  write(fout,*)
+!  write(fout,'("non-reduced to reduced k-point mapping")')
+!  do ik=1,nkptnr
+!    call findkpt(vklnr(1,ik),isym,ik1)
+!    write(fout,'(" ik : ",I4,", vklnr(ik) : ",3F10.6,", jk : ",I4,&
+!      &", vkl(jk) : ",3F10.6)')ik,vklnr(:,ik),ik1,vkl(:,ik1)
+!  enddo
+!endif
 
 ! generate G+k vectors for entire BZ (this is required to compute 
 !   wave-functions at each k-point)
@@ -146,7 +157,7 @@ if (wannier) then
   endif !wproc
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-    call genwann_c(ik,evalsvnr(1,ik),wfsvmtloc(1,1,1,1,1,ikloc),&
+    call genwann_c(ik,vkcnr(:,ik),evalsvnr(1,ik),wfsvmtloc(1,1,1,1,1,ikloc),&
       wann_c(1,1,ikloc))  
     do n=1,nwann
       do j=1,nstsv
@@ -178,6 +189,29 @@ call mpi_grid_reduce(evalsvnr(1,1),nstsv*nkptnr,dims=(/dim_k/),all=.true.)
 allocate(occsvnr(nstsv,nkptnr))
 call occupy2(nkptnr,wkptnr,evalsvnr,occsvnr)
 deallocate(apwalm)
+if (wannier) then
+! calculate Wannier function occupancies 
+  wann_occ=0.d0
+  do n=1,nwann
+    do ikloc=1,nkptnrloc
+      ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+      do j=1,nstsv
+        w2=dreal(dconjg(wann_c(n,j,ikloc))*wann_c(n,j,ikloc))
+        wann_occ(n)=wann_occ(n)+w2*occsvnr(j,ik)/nkptnr
+      enddo
+    enddo
+  enddo
+  call mpi_grid_reduce(wann_occ(1),nwann,dims=(/dim_k/),all=.true.)
+  if (wproc.and.fout.gt.0) then
+    write(151,'("  Wannier function occupation numbers : ")')
+    do n=1,nwann
+      write(151,'("    n : ",I4,"  occ : ",F8.6)')n,wann_occ(n)
+    enddo
+  endif
+  if (wproc.and.fout.gt.0) then
+    write(151,'("  Dielectric Wannier functions : ",L1)')wann_diel()
+  endif
+endif
 
 end subroutine
 
