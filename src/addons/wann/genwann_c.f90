@@ -1,8 +1,9 @@
-subroutine genwann_c(ik,e,wfsvmt,wann_c_)
+subroutine genwann_c(ik,vpc,e,wfsvmt,wann_c_)
 use modmain
 implicit none
 ! arguments
 integer, intent(in) :: ik
+real(8), intent(in) :: vpc(3)
 real(8), intent(in) :: e(nstsv)
 complex(8), intent(in) :: wfsvmt(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
 complex(8), intent(out) :: wann_c_(nwann,nstsv)
@@ -21,7 +22,6 @@ complex(8), allocatable :: mtrx1(:,:)
 real(8), allocatable :: mtrx1ev(:)
 complex(8), allocatable :: mtrx2(:,:)
 complex(8), allocatable :: zv1(:)
-
 
 ! compute <\psi|g_n>
 allocate(prjao(nwann,nstsv))
@@ -53,7 +53,7 @@ do n=1,nwann
         if (bndint(j,e(j),wann_eint(1,itype),wann_eint(2,itype))) then
           call genprjao(ias,lm,ispn,j,wfsvmt,zt1)
 ! <psi_k(r)|g(r-T)>=<psi(r+T)|g(r)>=e^{-ikT}<psi(r)|g(r)>
-          prjao(n,j)=prjao(n,j)+zt1*d1*exp(-zi*dot_product(vkc(:,ik),tr(:)))*&
+          prjao(n,j)=prjao(n,j)+zt1*d1*exp(-zi*dot_product(vpc,tr))*&
             orbwt(e(j),wannier_soft_eint_e1,wannier_soft_eint_e2,&
               wannier_soft_eint_width)
         endif
