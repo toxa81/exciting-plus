@@ -307,7 +307,7 @@ if (task.eq.400.or.task.eq.403) then
     endif !wproc1
     do ikloc=1,nkptnrloc
       ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-      call genwann_c(ik,lr_evalsvnr(1,ik),wfsvmtloc(1,1,1,1,1,ikloc),&
+      call genwann_c(ik,vkcnr(:,ik),lr_evalsvnr(1,ik),wfsvmtloc(1,1,1,1,1,ikloc),&
         wann_c(1,1,ikloc))  
       if (ldisentangle) then
 ! disentangle bands
