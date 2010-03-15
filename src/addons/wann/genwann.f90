@@ -25,7 +25,7 @@ call match(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),sfacgk(1,1,1,ikloc),apwal
 call genwfsvmt(lmaxvr,lmmaxvr,ngk(1,ik),evecfv,evecsv,apwalm,wfsvmt)
 !call genwfsvit(ngk(1,ik),evecfv,evecsv,wfsvit)
 ! calculate WF expansion coefficients
-call genwann_c(ik,evalsv(1,ik),wfsvmt,wann_c(1,1,ikloc))
+call genwann_c(ik,vkc(:,ik),evalsv(1,ik),wfsvmt,wann_c(1,1,ikloc))
 ! compute Bloch-sums of Wannier functions
 !allocate(wann_unkmt_new(lmmaxvr,nrfmax,natmtot,nspinor,nwann))
 !allocate(wann_unkit_new(ngkmax,nspinor,nwann))
