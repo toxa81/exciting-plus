@@ -8,12 +8,10 @@ use modmain
 implicit none
 ! local variables
 integer ik,jk,ist
-integer ist0,ist1,nst
+integer ist0,ist1,nst,ikloc
 real(8) prd1,prd2
 ! allocatable arrays
 real(8), allocatable :: evalfv(:,:)
-complex(8), allocatable :: evecfv(:,:,:)
-complex(8), allocatable :: evecsv(:,:)
 ! initialise universal variables
 call init0
 call init1
@@ -31,17 +29,20 @@ call genlofr
 call olprad
 ! compute the Hamiltonian radial integrals
 call hmlrad
+! allocate arrays for eigen-values/-vectors
+allocate(evalfv(nstfv,nspnfv))
+allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
+allocate(evecsvloc(nstsv,nstsv,nkptloc))
+evalsv=0.d0
 ! begin parallel loop over reduced k-points set
-do ik=1,nkpt
-  allocate(evalfv(nstfv,nspnfv))
-  allocate(evecfv(nmatmax,nstfv,nspnfv))
-  allocate(evecsv(nstsv,nstsv))
-  write(*,'("Info(fermisurf): ",I6," of ",I6," k-points")') ik,nkpt
+do ikloc=1,nkptloc
 ! solve the first- and second-variational secular equations
-  call seceqn(ik,evalfv,evecfv,evecsv)
-  deallocate(evalfv,evecfv,evecsv)
-! end loop over reduced k-points set
+  call seceqn(ikloc,evalfv,evecfvloc(1,1,1,ikloc),&
+    evecsvloc(1,1,ikloc))
 end do
+call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),&
+  side=.true.,all=.true.)
+deallocate(evalfv,evecfvloc,evecsvloc)
 if (ndmag.eq.1) then
 ! special case of collinear magnetism
   open(50,file='FERMISURF_UP.OUT',action='WRITE',form='FORMATTED')
