@@ -29,15 +29,7 @@ complex(8), allocatable :: vcwanmt(:,:,:,:,:)
 complex(8), allocatable :: vcwanir(:,:,:)
 real(8) spzn1(maxspecies)
 complex(8), allocatable :: vsic(:,:,:)
-complex(8), allocatable :: wfsvmtloc1(:,:,:,:,:,:)
-complex(8), allocatable :: wfsvitloc1(:,:,:,:)
-complex(8), allocatable :: evecfvloc1(:,:,:,:)
-complex(8), allocatable :: evecsvloc1(:,:,:)
-
-
 integer idm
-
-
 complex(8), allocatable :: ovlm(:,:,:)
 complex(8), external :: zfinp_
 complex(8) z1
@@ -78,41 +70,13 @@ if (wproc) then
 endif
 
 call lfa_init(1)
-call genwfnr(151)
-!allocate(wfsvmtloc1(lmmaxvr,nrfmax,natmtot,nspinor,nstsv,nkptnrloc))
-!allocate(wfsvitloc1(ngkmax,nspinor,nstsv,nkptnrloc))
-!allocate(evecfvloc1(nmatmax,nstfv,nspnfv,nkptnrloc))
-!allocate(evecsvloc1(nstsv,nstsv,nkptnrloc))
-
-!do ikloc=1,nkptnrloc
-!  write(200+ikloc)evecfvloc(:,:,:,ikloc),evecsvloc(:,:,ikloc)
-!enddo
-!do ikloc=1,nkptnrloc
-!  read(200+ikloc)evecfvloc1(:,:,:,ikloc),evecsvloc1(:,:,ikloc)
-!enddo
-
-!do ikloc=1,nkptnrloc
-!  do j=1,nstfv
-!    do i=1,nmatmax
-!      evecfvloc1(i,j,1,ikloc)=evecfvloc1(i,j,1,ikloc)*abs(evecfvloc1(1,j,1,ikloc))/evecfvloc1(1,j,1,ikloc)
-!      evecfvloc1(i,j,1,ikloc)=evecfvloc1(i,j,1,ikloc)*abs(evecfvloc1(1,j,1,ikloc))/evecfvloc1(1,j,1,ikloc)
-
-!do ikloc=1,nkptnrloc
-!  write(*,*)'ik=',ikloc,'diff=',&
-!  sum(abs(abs(evecfvloc1(1:ngknr(ikloc),1:4,1,ikloc))-&
-!          abs(evecfvloc (1:ngknr(ikloc),1:4,1,ikloc))))
-!enddo
-call mpi_grid_barrier
-call pstop
-  
+call genwfnr(151)  
 ! deallocate unnecessary wave-functions
 deallocate(wfsvmtloc)
 deallocate(wfsvitloc)
 deallocate(evecfvloc)
 deallocate(evecsvloc)
 deallocate(wann_c)
-call mpi_grid_barrier()
-call pstop
 
 ! this part is for debug purpose: construct potential from charge density 
 !  using Bloch basis
