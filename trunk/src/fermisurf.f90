@@ -36,6 +36,8 @@ allocate(evecsvloc(nstsv,nstsv,nkptloc))
 evalsv=0.d0
 ! begin parallel loop over reduced k-points set
 do ikloc=1,nkptloc
+  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+  write(*,'("k-point ",I4," out of ",I4)')ik,nkpt
 ! solve the first- and second-variational secular equations
   call seceqn(ikloc,evalfv,evecfvloc(1,1,1,ikloc),&
     evecsvloc(1,1,ikloc))
