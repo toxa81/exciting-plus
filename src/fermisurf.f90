@@ -8,7 +8,7 @@ use modmain
 implicit none
 ! local variables
 integer ik,jk,ist
-integer ist0,ist1,nst,ikloc
+integer ist0,ist1,nst,ikloc,j
 real(8) prd1,prd2
 ! allocatable arrays
 real(8), allocatable :: evalfv(:,:)
@@ -102,16 +102,25 @@ else
     end do
   else
 ! write the eigenvalues minus the Fermi energy separately
-    ist=(nstfv-nempty)*nspinor
-    ist0=max(ist-nstfsp/2,1)
-    ist1=min(ist+nstfsp/2,nstsv)
+!    ist=(nstfv-nempty)*nspinor
+!    ist0=max(ist-nstfsp/2,1)
+!    ist1=min(ist+nstfsp/2,nstsv)
+!    nst=ist1-ist0+1
+    evalsv(:,:)=evalsv(:,:)-efermi
+    do j=1,nstsv
+      if (all(evalsv(j,:).lt.0.d0)) ist0=j+1
+      if (.not.all(evalsv(j,:).gt.0.d0)) ist1=j
+    enddo
     nst=ist1-ist0+1
+    write(*,'("bands crossing fermi : ",I4)')nst
+    write(*,'(" low band : ",I4)')ist0
+    write(*,'(" high band : ",I4)')ist1
     write(50,'(4I6," : grid size, number of states")') np3d(:),nst
     do ik=1,nkptnr
       jk=ikmap(ivknr(1,ik),ivknr(2,ik),ivknr(3,ik))
       write(50,'(3G18.10)',advance='NO') vkcnr(:,ik)
       do ist=ist0,ist1
-        write(50,'(F14.8)',advance='NO') evalsv(ist,jk)-efermi
+        write(50,'(F14.8)',advance='NO') evalsv(ist,jk) !-efermi
       end do
       write(50,*)
     end do
