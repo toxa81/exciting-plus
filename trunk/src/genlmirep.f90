@@ -43,7 +43,7 @@ do l=0,lmax
   lm=idxlm(l,-l)
   do i=lm,lm+n-1
     do j=i,lm+n-1
-      h(i,j)=dble(i*j)
+      h(i,j)=dble((i+0.1d0)*(j+0.2d0))
       h(j,i)=h(i,j)
     end do
   end do
