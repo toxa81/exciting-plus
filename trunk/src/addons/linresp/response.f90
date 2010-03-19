@@ -99,10 +99,14 @@ if (crpa.or.wannier_chi0_chi) wannier_megq=.true.
 ! this is enough for matrix elements
 lmaxvr=5
 
+if (iproc.eq.0) call timestamp(6,'before init0')
 ! initialise universal variables
 call init0
 call init1
+if (iproc.eq.0) call timestamp(6,'after init1')
 if (.not.mpi_grid_in()) return
+call mpi_grid_barrier()
+if (iproc.eq.0) call timestamp(6,'start of response')
 
 ! for constrained RPA all q-vectors in BZ are required 
 lgamma=.true.

@@ -14,8 +14,10 @@ integer itask
 call mpi_world_initialize
 call hdf5_initialize
 
+if (iproc.eq.0) call timestamp(6,'before readinput')
 ! read input files
 call readinput
+if (iproc.eq.0) call timestamp(6,'after readinput')
 
 ! perform the appropriate task
 do itask=1,ntasks
