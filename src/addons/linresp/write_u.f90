@@ -18,6 +18,10 @@ ubarewan=ha2ev*ubarewan/omega/nvq0
 fuscrn="uscrn.hdf5"
 if (mpi_grid_root()) then
   call hdf5_create_file(trim(fuscrn))
+  !call hdf5_create_group(trim(fuscrn),"/","parameters")
+  !call mdf5_write(fuscrn,"/parameters","ntr",ntr_uscrn)
+  !call mdf5_write(fuscrn,"/parameters","vtl",vtl_uscrn,(/3,ntr_uscrn/))
+  !call mdf5_write(fuscrn,"/parameters","ivtit",ivtit_uscrn,(/3,ntr_uscrn/)) 
   call hdf5_create_group(trim(fuscrn),"/","iw")
   do i=1,nepts
     write(c8,'(I8.8)')i
