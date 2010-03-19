@@ -1010,17 +1010,6 @@ integer gvecme1
 integer gvecme2
 ! number of G-vectors for matrix elements
 integer ngvecme
-!integer ngvecmeloc
-! first G-shell for chi
-!integer gshchi1
-! last G-shell for chi
-!integer gshchi2
-! first G-vector for chi
-!integer gvecchi1
-! last G-vector for chi
-!integer gvecchi2
-! number of G-vectors for chi
-!integer ngvecchi
 real(8) maxomega
 real(8) domega
 real(8) lr_eta
@@ -1135,16 +1124,12 @@ logical screened_u
 data screened_u/.false./
 logical write_chi0_file
 
-!real(8) megqwan_cutoff
 real(8) megqwan_maxdist
 
 logical crpa
 real(8) crpa_e1,crpa_e2
 
 integer, allocatable :: spinor_ud(:,:,:)
-
-real(8), allocatable :: lr_occsvnr(:,:)
-real(8), allocatable :: lr_evalsvnr(:,:)
 
 ! indices of response functions in global array f_response(:,:,:)
 integer, parameter :: f_chi0                 = 1
@@ -1170,7 +1155,11 @@ integer, parameter :: f_loss_wann            = 19
 integer, parameter :: nf_response            = 19
 complex(8), allocatable :: f_response(:,:,:)
 
-complex(8), allocatable :: uscrnwan(:,:,:)
+integer maxtr_uscrn
+integer ntr_uscrn
+integer, allocatable :: vtl_uscrn(:,:)
+integer, allocatable :: ivtit_uscrn(:,:,:)
+complex(8), allocatable :: uscrnwan(:,:,:,:)
 complex(8), allocatable :: ubarewan(:,:)
 
 

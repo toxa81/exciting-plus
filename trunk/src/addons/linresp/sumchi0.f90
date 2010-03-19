@@ -1,5 +1,6 @@
 subroutine sumchi0(ikloc,w,chi0w)
 use modmain
+use mod_nrkp
 implicit none
 integer, intent(in) :: ikloc
 complex(8), intent(in) :: w
@@ -30,13 +31,13 @@ do i=1,nmegqblhloc(1,ikloc)
   l1=.true.
 ! for cRPA : don't include bands in energy window [crpa_e1,crpa_e2]
   if (crpa) then
-    if (bndint(ist1,lr_evalsvnr(ist1,ik),crpa_e1,crpa_e2).and. &
-        bndint(ist2,lr_evalsvnr(ist2,jk),crpa_e1,crpa_e2)) l1=.false.
+    if (bndint(ist1,evalsvnr(ist1,ik),crpa_e1,crpa_e2).and. &
+        bndint(ist2,evalsvnr(ist2,jk),crpa_e1,crpa_e2)) l1=.false.
   endif
   if (l1) then
-    if (abs(lr_occsvnr(ist1,ik)-lr_occsvnr(ist2,jk)).gt.1d-5) then
-      wt(i)=(lr_occsvnr(ist1,ik)-lr_occsvnr(ist2,jk))/(lr_evalsvnr(ist1,ik) - &
-        lr_evalsvnr(ist2,jk)+w)
+    if (abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-10) then
+      wt(i)=(occsvnr(ist1,ik)-occsvnr(ist2,jk))/(evalsvnr(ist1,ik) - &
+        evalsvnr(ist2,jk)+w)
       l2(i)=.true.
     endif
   endif

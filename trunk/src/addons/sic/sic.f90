@@ -29,6 +29,8 @@ complex(8), allocatable :: vcwanmt(:,:,:,:,:)
 complex(8), allocatable :: vcwanir(:,:,:)
 real(8) spzn1(maxspecies)
 complex(8), allocatable :: vsic(:,:,:)
+complex(8), allocatable :: h0wan(:,:,:)
+complex(8), allocatable :: zm1(:,:,:)
 integer idm
 complex(8), allocatable :: ovlm(:,:,:)
 complex(8), external :: zfinp_
@@ -71,6 +73,48 @@ endif
 
 call lfa_init(1)
 call genwfnr(151)  
+
+allocate(h0wan(nwann,nwann,ntr))
+! compute <n,T=0|H^{LDA}|n',T'>
+
+allocate(zm1(nwann,nwann,nkptnrloc))
+zm1=zzero
+do ikloc=1,nkptnrloc
+  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+  do n1=1,nwann
+    do n2=1,nwann
+      do j=1,nstsv
+        zm1(n1,n2,ikloc)=zm1(n1,n2,ikloc)+dconjg(wann_c(n1,j,ikloc))*&
+          wann_c(n2,j,ikloc)*evalsvnr(j,ik)
+      enddo
+    enddo
+  enddo
+enddo 
+h0wan=zzero
+do it=1,ntr
+  vtrc(:)=vtl(1,it)*avec(:,1)+vtl(2,it)*avec(:,2)+vtl(3,it)*avec(:,3)
+  do ikloc=1,nkptnrloc
+    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+    expikt=exp(-1.d0*zi*dot_product(vkcnr(:,ik),vtrc(:)))
+    h0wan(:,:,it)=h0wan(:,:,it)+expikt*zm1(:,:,ikloc)
+  enddo
+enddo
+h0wan(:,:,:)=h0wan(:,:,:)/nkptnr
+if (wproc) then
+  write(151,*)
+  write(151,'("hopping parameters <w_n1|H^{LDA}|w_{n2,T}>")')
+  do it=1,ntr
+    write(151,'("  translation : ",3I4)')vtl(:,it)
+    write(151,'("    real part : ")')  
+    do n1=1,nwann
+      write(151,'(4X,255F12.6)')(dreal(h0wan(n1,n2,it)),n2=1,nwann)
+    enddo
+    write(151,'("    image part : ")')  
+    do n1=1,nwann
+      write(151,'(4X,255F12.6)')(dimag(h0wan(n1,n2,it)),n2=1,nwann)
+    enddo
+  enddo
+endif
 ! deallocate unnecessary wave-functions
 deallocate(wfsvmtloc)
 deallocate(wfsvitloc)

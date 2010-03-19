@@ -1,16 +1,17 @@
 #ifdef _HDF5_
 subroutine readmegqblh(qnm)
 use modmain
+use mod_nrkp
 implicit none
 character(*), intent(in) :: qnm
 integer i,j,ik,ikloc
 integer nkptnr_,nspinor_
 character*100 fme,fmek,path
 
-if (allocated(lr_evalsvnr)) deallocate(lr_evalsvnr)
-allocate(lr_evalsvnr(nstsv,nkptnr))
-if (allocated(lr_occsvnr)) deallocate(lr_occsvnr)
-allocate(lr_occsvnr(nstsv,nkptnr))
+if (allocated(evalsvnr)) deallocate(evalsvnr)
+allocate(evalsvnr(nstsv,nkptnr))
+if (allocated(occsvnr)) deallocate(occsvnr)
+allocate(occsvnr(nstsv,nkptnr))
 
 fme=trim(qnm)//"_me.hdf5"
 if (mpi_grid_root((/dim_k,dim_b/))) then
@@ -27,9 +28,9 @@ if (mpi_grid_root((/dim_k,dim_b/))) then
   call read_real8(vq0rl,3,trim(fme),'/parameters','vq0rl')
   call read_real8(vq0c,3,trim(fme),'/parameters','vq0c')
   call read_real8(vq0rc,3,trim(fme),'/parameters','vq0rc')
-  call read_real8_array(lr_evalsvnr,2,(/nstsv,nkptnr/), &
+  call read_real8_array(evalsvnr,2,(/nstsv,nkptnr/), &
       trim(fme),'/parameters','evalsvnr')
-  call read_real8_array(lr_occsvnr,2,(/nstsv,nkptnr/), &
+  call read_real8_array(occsvnr,2,(/nstsv,nkptnr/), &
       trim(fme),'/parameters','occsvnr')  
   if (nkptnr_.ne.nkptnr) then
     write(*,*)
@@ -55,8 +56,8 @@ call mpi_grid_bcast(vq0l(1),3,dims=(/dim_k,dim_b/))
 call mpi_grid_bcast(vq0rl(1),3,dims=(/dim_k,dim_b/))
 call mpi_grid_bcast(vq0c(1),3,dims=(/dim_k,dim_b/))
 call mpi_grid_bcast(vq0rc(1),3,dims=(/dim_k,dim_b/))
-call mpi_grid_bcast(lr_evalsvnr(1,1),nstsv*nkptnr,dims=(/dim_k,dim_b/))
-call mpi_grid_bcast(lr_occsvnr(1,1),nstsv*nkptnr,dims=(/dim_k,dim_b/))
+call mpi_grid_bcast(evalsvnr(1,1),nstsv*nkptnr,dims=(/dim_k,dim_b/))
+call mpi_grid_bcast(occsvnr(1,1),nstsv*nkptnr,dims=(/dim_k,dim_b/))
 
 allocate(idxkq(1,nkptnr))
 idxkq=0

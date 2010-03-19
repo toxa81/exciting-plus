@@ -1,21 +1,18 @@
 #ifdef _HDF5_
-subroutine genmegq(ivq0m,wfsvmtloc,wfsvitloc,ngknr,igkignr)
+subroutine genmegq(ivq0m)
 use modmain
+use mod_nrkp
 implicit none
-! arguments
 ! q-vector in k-mesh coordinates
 integer, intent(in) :: ivq0m(3)
-complex(8), intent(in) :: wfsvmtloc(lmmaxvr,nrfmax,natmtot,nspinor,nstsv,nkptnrloc)
-complex(8), intent(in) :: wfsvitloc(ngkmax,nspinor,nstsv,nkptnrloc)
-integer, intent(in) :: ngknr(nkptnrloc)
-integer, intent(in) :: igkignr(ngkmax,nkptnrloc)
 
 ! allocatable arrays
-integer, allocatable :: igkignr2(:)
-complex(8), allocatable :: wfsvmt2(:,:,:,:,:)
-complex(8), allocatable :: wfsvit2(:,:,:)
+integer, allocatable :: igkignr_jk(:)
+complex(8), allocatable :: wfsvmt_jk(:,:,:,:,:)
+complex(8), allocatable :: wfsvit_jk(:,:,:)
+complex(8), allocatable :: wann_c_jk(:,:,:)
+integer ngknr_jk
 integer i,ikstep,sz,complete
-integer ngknr2
 integer nkstep
 real(8) t1,t2,t3,t4,t5,dn1
 integer lmaxexp,lmmaxexp
@@ -145,9 +142,12 @@ endif
 
 if (write_megq_file) call write_me_header(qnm)
 
-allocate(wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
-allocate(wfsvit2(ngkmax,nspinor,nstsv))
-allocate(igkignr2(ngkmax))
+allocate(wfsvmt_jk(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
+allocate(wfsvit_jk(ngkmax,nspinor,nstsv))
+allocate(igkignr_jk(ngkmax))
+if (wannier_megq) then
+  allocate(wann_c_jk(nwann,nstsv,nkptnrloc))
+endif
 
 i=0
 nkstep=mpi_grid_map(nkptnr,dim_k,x=i)
@@ -159,18 +159,18 @@ call timer_reset(5)
 do ikstep=1,nkstep
 ! transmit wave-functions
   call timer_start(1)
-  call getwfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
-    wfsvit2,ngknr2,igkignr2)
+  call getwfkq(ikstep,ngknr_jk,igkignr_jk,wfsvmt_jk,wfsvit_jk,wann_c_jk)
   call timer_stop(1)
 ! compute matrix elements  
   call timer_start(2)
   if (ikstep.le.nkptnrloc) then
-    call genmegqblh(ikstep,ngknr(ikstep),ngknr2,igkignr(1,ikstep),igkignr2, &
-      wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt2,wfsvitloc(1,1,1,ikstep),wfsvit2)
+    call genmegqblh(ikstep,ngknr(ikstep),ngknr_jk,igkignr(1,ikstep),&
+      igkignr_jk,wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt_jk,&
+      wfsvitloc(1,1,1,ikstep),wfsvit_jk)
 ! add contribution from k-point to the matrix elements of e^{-i(G+q)x} in 
 !  the basis of Wannier functions
     if (wannier_megq) then
-      call genmegqwan(ikstep)
+      call genmegqwan(ikstep,wann_c_jk)
     endif !wannier
   endif !ikstep.le.nkptnrloc
   call timer_stop(2)
@@ -224,9 +224,12 @@ if (write_megq_file) then
   if (wproc) write(150,'(" Done in : ",F8.2)')timer_get_value(3)
 endif  
 
-deallocate(wfsvmt2)
-deallocate(wfsvit2)
-deallocate(igkignr2)
+deallocate(wfsvmt_jk)
+deallocate(wfsvit_jk)
+deallocate(igkignr_jk)
+if (wannier_megq) then
+  deallocate(wann_c_jk)
+endif
 
 if (mpi_grid_root((/dim_k,dim_b/)).and.write_megq_file) then
   complete=1
