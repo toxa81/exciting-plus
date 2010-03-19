@@ -15,26 +15,38 @@ uscrnwan=ha2ev*uscrnwan/omega/nvq0
 call mpi_grid_reduce(ubarewan(1,1),nwann*nwann,dims=(/dim_q/),side=.true.)
 ubarewan=ha2ev*ubarewan/omega/nvq0
 
-fuscrn="uscrn.hdf5"
-if (mpi_grid_root()) then
+!fuscrn="uscrn.hdf5"
+!if (mpi_grid_root()) then
+!  call hdf5_create_file(trim(fuscrn))
+!  !call hdf5_create_group(trim(fuscrn),"/","parameters")
+!  !call mdf5_write(fuscrn,"/parameters","ntr",ntr_uscrn)
+!  !call mdf5_write(fuscrn,"/parameters","vtl",vtl_uscrn,(/3,ntr_uscrn/))
+!  !call mdf5_write(fuscrn,"/parameters","ivtit",ivtit_uscrn,(/3,ntr_uscrn/)) 
+!  call hdf5_create_group(trim(fuscrn),"/","iw")
+!  do i=1,nepts
+!    write(c8,'(I8.8)')i
+!    call hdf5_create_group(trim(fuscrn),"/iw",c8)
+!    do it=1,ntr_uscrn
+!      write(c3,'(I3.3)')it
+!      call hdf5_create_group(trim(fuscrn),"/iw"//"/"//c8,c3)
+!    enddo
+!  enddo
+!endif
+if (mpi_grid_side(dims=(/dim_k/))) then
+  write(fuscrn,'("uscrn",I4.4,".hdf")')mpi_grid_x(dim_k)
   call hdf5_create_file(trim(fuscrn))
-  !call hdf5_create_group(trim(fuscrn),"/","parameters")
-  !call mdf5_write(fuscrn,"/parameters","ntr",ntr_uscrn)
-  !call mdf5_write(fuscrn,"/parameters","vtl",vtl_uscrn,(/3,ntr_uscrn/))
-  !call mdf5_write(fuscrn,"/parameters","ivtit",ivtit_uscrn,(/3,ntr_uscrn/)) 
   call hdf5_create_group(trim(fuscrn),"/","iw")
-  do i=1,nepts
-    write(c8,'(I8.8)')i
+  do iwloc=1,nwloc
+    iw=mpi_grid_map(nepts,dim_k,loc=iwloc)
+    write(c8,'(I8.8)')iw
     call hdf5_create_group(trim(fuscrn),"/iw",c8)
     do it=1,ntr_uscrn
       write(c3,'(I3.3)')it
       call hdf5_create_group(trim(fuscrn),"/iw"//"/"//c8,c3)
     enddo
   enddo
-endif
-if (mpi_grid_side(dims=(/dim_k/))) then
-  do i=0,mpi_grid_size(dim_k)-1
-    if (mpi_grid_x(dim_k).eq.i) then
+!  do i=0,mpi_grid_size(dim_k)-1
+!    if (mpi_grid_x(dim_k).eq.i) then
       do iwloc=1,nwloc
         iw=mpi_grid_map(nepts,dim_k,loc=iwloc)
         write(c8,'(I8.8)')iw
@@ -44,9 +56,9 @@ if (mpi_grid_side(dims=(/dim_k/))) then
             (/nwann,nwann/))
         enddo
       enddo
-    endif
-    call mpi_grid_barrier(dims=(/dim_k/))
-  enddo
+!    endif
+!    call mpi_grid_barrier(dims=(/dim_k/))
+!  enddo
 endif
 
         
