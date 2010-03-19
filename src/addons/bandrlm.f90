@@ -81,7 +81,7 @@ do ikloc=1,nkptloc
     e(ist,ik)=evalsv(ist,ik) !-efermi
   end do
 ! compute the band characters if required
-  call bandchar(.false.,lmax,ikloc,evecfv,evecsv,lmmax,bc(1,1,1,1,ik))
+  call bandchar(.true.,lmax,ikloc,evecfv,evecsv,lmmax,bc(1,1,1,1,ik))
 ! end loop over k-points
 end do
 deallocate(evalfv,evecfv,evecsv)
@@ -117,9 +117,18 @@ if (iproc.eq.0) then
     end do
   endif
   open(50,file='BNDCHR.OUT',action='WRITE',form='FORMATTED')
-  write(50,*)lmmax,natmtot,nspinor,nstfv,nstsv,nkpt,nvp1d
+  write(50,*)lmmax,nspecies,natmtot,nspinor,nstfv,nstsv,nkpt,nvp1d
   write(50,*)efermi
-  do ik = 1, nkpt
+  do is=1,nspecies
+    write(50,*)spsymb(is)
+    write(50,*)natoms(is)
+  enddo
+  do is=1,nspecies
+    do ia=1,natoms(is)
+      write(50,*)idxas(ia,is),is
+    enddo
+  enddo  
+  do ik=1,nkpt
     write(50,*)dpp1d(ik)
     write(50,*)(e(ist,ik),ist=1,nstsv)
     write(50,*)((((bc(lm,ias,ispn,ist,ik),lm=1,lmmax), &
