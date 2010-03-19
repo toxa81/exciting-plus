@@ -1,5 +1,6 @@
 subroutine sumchi0wan_k(ikloc,w,chi0wan_k)
 use modmain
+use mod_nrkp
 implicit none
 integer, intent(in) :: ikloc
 complex(8), intent(in) :: w
@@ -15,8 +16,8 @@ do i1=1,nmegqblhwan(ikloc)
   i=imegqblhwan(i1,ikloc)
   ist1=bmegqblh(1,i,ikloc)
   ist2=bmegqblh(2,i,ikloc)
-  wt(i1)=(lr_occsvnr(ist1,ik)-lr_occsvnr(ist2,jk))/(lr_evalsvnr(ist1,ik) - &
-      lr_evalsvnr(ist2,jk)+w)
+  wt(i1)=(occsvnr(ist1,ik)-occsvnr(ist2,jk))/(evalsvnr(ist1,ik) - &
+      evalsvnr(ist2,jk)+w)
 enddo
 do i1=1,nmegqwan
   wann_cc2(:,i1)=dconjg(wann_cc(:,i1,ikloc))*wt(:)

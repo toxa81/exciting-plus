@@ -2,6 +2,7 @@
 subroutine write_me_header(qnm)
 use modmain
 use hdf5
+use mod_nrkp
 implicit none
 character(*), intent(in) :: qnm
 integer ik,ikloc,ierr,complete
@@ -43,9 +44,9 @@ if (mpi_grid_root(dims=(/dim_k,dim2/))) then
   call write_real8(vq0rl,3,trim(fme),'/parameters','vq0rl')
   call write_real8(vq0c,3,trim(fme),'/parameters','vq0c')
   call write_real8(vq0rc,3,trim(fme),'/parameters','vq0rc')
-  call write_real8_array(lr_evalsvnr,2,(/nstsv,nkptnr/), &
+  call write_real8_array(evalsvnr,2,(/nstsv,nkptnr/), &
       trim(fme),'/parameters','evalsvnr')
-  call write_real8_array(lr_occsvnr,2,(/nstsv,nkptnr/), &
+  call write_real8_array(occsvnr,2,(/nstsv,nkptnr/), &
       trim(fme),'/parameters','occsvnr')  
   complete=0
   call write_integer(complete,1,trim(fme),'/parameters','complete')

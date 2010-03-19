@@ -1,16 +1,13 @@
-subroutine getwfkq(ikstep,wfsvmtloc,wfsvitloc,ngknr,igkignr,wfsvmt2, &
-  wfsvit2,ngknr2,igkignr2)
+subroutine getwfkq(ikstep,ngknr_jk,igkignr_jk,wfsvmt_jk,wfsvit_jk,wann_c_jk)
 use modmain
+use mod_nrkp
 implicit none
 integer, intent(in) :: ikstep
-complex(8), intent(in) :: wfsvmtloc(lmmaxvr,nrfmax,natmtot,nspinor,nstsv,*)
-complex(8), intent(in) :: wfsvitloc(ngkmax,nspinor,nstsv,*)
-integer, intent(in) :: ngknr(*)
-integer, intent(in) :: igkignr(ngkmax,*)
-complex(8), intent(out) :: wfsvmt2(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
-complex(8), intent(out) :: wfsvit2(ngkmax,nspinor,nstsv)
-integer, intent(out) :: ngknr2
-integer, intent(out) :: igkignr2(ngkmax)
+integer, intent(out) :: ngknr_jk
+integer, intent(out) :: igkignr_jk(ngkmax)
+complex(8), intent(out) :: wfsvmt_jk(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
+complex(8), intent(out) :: wfsvit_jk(ngkmax,nspinor,nstsv)
+complex(8), intent(out) :: wann_c_jk(nwann,nstsv,nkptnrloc)
 
 integer i,ik,jk,nkptnrloc1,jkloc,j,tag
 
@@ -58,23 +55,23 @@ do i=0,mpi_grid_size(dim_k)-1
       if (j.ne.i) then
 ! recieve from j
         tag=(ikstep*mpi_grid_size(dim_k)+i)*10
-        call mpi_grid_recieve(wfsvmt2(1,1,1,1,1),&
+        call mpi_grid_recieve(wfsvmt_jk(1,1,1,1,1),&
           lmmaxvr*nrfmax*natmtot*nspinor*nstsv,(/dim_k/),(/j/),tag)
-        call mpi_grid_recieve(wfsvit2(1,1,1),ngkmax*nspinor*nstsv,&
+        call mpi_grid_recieve(wfsvit_jk(1,1,1),ngkmax*nspinor*nstsv,&
           (/dim_k/),(/j/),tag+1)
-        call mpi_grid_recieve(ngknr2,1,(/dim_k/),(/j/),tag+2)
-        call mpi_grid_recieve(igkignr2(1),ngkmax,(/dim_k/),(/j/),tag+3)
+        call mpi_grid_recieve(ngknr_jk,1,(/dim_k/),(/j/),tag+2)
+        call mpi_grid_recieve(igkignr_jk(1),ngkmax,(/dim_k/),(/j/),tag+3)
         if (wannier_megq) then
-          call mpi_grid_recieve(wann_c(1,1,ikstep+nkptnrloc),nwann*nstsv,&
+          call mpi_grid_recieve(wann_c_jk(1,1,ikstep),nwann*nstsv,&
             (/dim_k/),(/j/),tag+4)
         endif
       else
 ! local copy
-        wfsvmt2(:,:,:,:,:)=wfsvmtloc(:,:,:,:,:,jkloc)
-        wfsvit2(:,:,:)=wfsvitloc(:,:,:,jkloc)
-        ngknr2=ngknr(jkloc)
-        igkignr2(:)=igkignr(:,jkloc)
-        if (wannier_megq) wann_c(:,:,ikstep+nkptnrloc)=wann_c(:,:,jkloc)
+        wfsvmt_jk(:,:,:,:,:)=wfsvmtloc(:,:,:,:,:,jkloc)
+        wfsvit_jk(:,:,:)=wfsvitloc(:,:,:,jkloc)
+        ngknr_jk=ngknr(jkloc)
+        igkignr_jk(:)=igkignr(:,jkloc)
+        if (wannier_megq) wann_c_jk(:,:,ikstep)=wann_c(:,:,jkloc)
       endif
     endif
   endif   

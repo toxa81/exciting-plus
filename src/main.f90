@@ -106,6 +106,8 @@ do itask=1,ntasks
     call writexc
   case(702)
     call genscell
+  case(703)
+    call genrlm_lcs
   case(800)
     call sic
   case default

@@ -1,5 +1,6 @@
 subroutine getmeidx(req)
 use modmain
+use mod_nrkp
 implicit none
 ! arguments
 logical, intent(in) :: req
@@ -25,20 +26,6 @@ if (wannier_megq) then
   enddo
   call mpi_grid_reduce(wann_bnd(1,1),nstsv*nkptnr,dims=(/dim_k/),all=.true.,&
     op=op_max)
-! find lowest band
-!  do i=1,nstsv
-!    if (wann_bnd(i).ne.0) then
-!      lr_e1_wan=i 
-!      exit
-!    endif
-!  enddo
-! find highest band
-!  do i=nstsv,1,-1
-!    if (wann_bnd(i).ne.0) then
-!      lr_e2_wan=i 
-!      exit
-!    endif
-!  enddo
 endif !wannier_megq
 if (req) then
   nmegqblhmax=0
@@ -50,9 +37,9 @@ do ikloc=1,nkptnrloc
   i=0
   do ist1=1,nstsv
     do ist2=1,nstsv
-      le1=bndint(ist1,lr_evalsvnr(ist1,ik),lr_e1,lr_e2)
-      le2=bndint(ist2,lr_evalsvnr(ist2,jk),lr_e1,lr_e2)
-      ldocc=abs(lr_occsvnr(ist1,ik)-lr_occsvnr(ist2,jk)).gt.1d-12
+      le1=bndint(ist1,evalsvnr(ist1,ik),lr_e1,lr_e2)
+      le2=bndint(ist2,evalsvnr(ist2,jk),lr_e1,lr_e2)
+      ldocc=abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-12
       laddme=.false.
 ! comment:
 !   include transition between bands ist1 and ist2 when:
@@ -63,10 +50,6 @@ do ikloc=1,nkptnrloc
       lwann=.false.
       if (wannier_megq) then
         l3=(wann_bnd(ist1,ik).ne.0.and.wann_bnd(ist2,jk).ne.0)
-        !le1w=bndint(ist1,lr_evalsvnr(ist1,ik),lr_e1_wan,lr_e2_wan)
-        !le2w=bndint(ist2,lr_evalsvnr(ist2,jk),lr_e1_wan,lr_e2_wan)
-        !if ((wannier_chi0_chi.and..not.wann_diel()).and.(le1w.and.le2w)) lwann=.true.
-        !if (crpa.and.(le1w.and.le2w)) lwann=.true.
         if ((wannier_chi0_chi.and..not.wann_diel()).and.l3) lwann=.true.
         if (crpa.and.l3) lwann=.true.
       endif
@@ -95,7 +78,7 @@ do ikloc=1,nkptnrloc
           endif
         endif
         if (req) then
-          lr_min_e12=min(lr_min_e12,abs(lr_evalsvnr(ist1,ik)-lr_evalsvnr(ist2,jk)))
+          lr_min_e12=min(lr_min_e12,abs(evalsvnr(ist1,ik)-evalsvnr(ist2,jk)))
         endif
       endif
     enddo

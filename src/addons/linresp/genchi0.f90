@@ -17,6 +17,7 @@ complex(8), allocatable :: ixcft(:)
 complex(8), allocatable :: krnl(:,:)
 complex(8), allocatable :: krnl_scr(:,:)
 complex(8), allocatable :: mexp(:,:,:)
+complex(8), allocatable :: megqwan1(:,:)
 integer, external :: hash
 
 
@@ -79,7 +80,11 @@ do ig=1,ngvecme
 ! generate G+q vectors  
   vgq0c(:)=vgc(:,ig+gvecme1-1)+vq0rc(:)
   gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
-  vcgq(ig)=sqrt(fourpi)/gq0
+  if (ig.eq.1.and.ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
+    vcgq(ig)=0.d0
+  else
+    vcgq(ig)=sqrt(fourpi)/gq0
+  endif
 enddo !ig
 
 ! read matrix elements
@@ -163,7 +168,13 @@ ie1=1
 
 allocate(chi0(ngvecme,ngvecme))
 allocate(krnl(ngvecme,ngvecme))
-if (screened_w.or.crpa) allocate(krnl_scr(ngvecme,ngvecme))
+if (screened_w.or.crpa) then
+  allocate(krnl_scr(ngvecme,ngvecme))
+  allocate(megqwan1(ngvecme,nwann))
+  do n1=1,nwann
+    megqwan1(:,n1)=megqwan(idxmegqwan(n1,n1,0,0,0),:)
+  enddo
+endif
 allocate(ixcft(ngvec))
 if (allocated(f_response)) deallocate(f_response)
 allocate(f_response(nf_response,nepts,nfxca))
@@ -182,6 +193,7 @@ call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 
 ! distribute nfxca between 2-nd dimension 
 nfxcloc=mpi_grid_map(nfxca,dim_b)
+! distribute frequency points over 1-st dimension
 nwloc=mpi_grid_map(nepts,dim_k)
 
 if (.not.write_chi0_file) then
@@ -277,15 +289,15 @@ call timer_stop(1)
 if (.not.write_chi0_file) then
   do iwloc=1,nwloc
     iw=mpi_grid_map(nepts,dim_k,loc=iwloc)
+! broadcast chi0
+    call mpi_grid_bcast(chi0loc(1,1,iwloc),ngvecme*ngvecme,dims=(/dim_b/))
 ! compute screened W and U  
     if (crpa) then
       call timer_start(5)
-      call genwu(iw,chi0loc(1,1,iwloc),vcgq,qnm,krnl_scr)
+      call genwu(iwloc,vcgq,chi0loc(1,1,iwloc),megqwan1,krnl_scr)
       call timer_stop(5)
     else
 ! compute response functions 
-! broadcast chi0
-      call mpi_grid_bcast(chi0loc(1,1,iwloc),ngvecme*ngvecme,dims=(/dim_b/))
 ! loop over fxc
       do ifxcloc=1,nfxcloc
         ifxc=mpi_grid_map(nfxca,dim_b,loc=ifxcloc)
@@ -366,6 +378,7 @@ if (.not.write_chi0_file) then
 endif
 if (crpa) then
   deallocate(krnl_scr)
+  deallocate(megqwan1)
 endif
 
 if (write_chi0_file) then

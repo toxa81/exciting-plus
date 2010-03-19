@@ -45,42 +45,40 @@ allocate(clust(natmtot*(2*llim(1)+1)*(2*llim(2)+1)*(2*llim(3)+1),6))
 
 do is=1,nspecies
   do ia=1,natoms(is)
-    ias=idxas(ia,is)
-    
+    ias=idxas(ia,is)    
     clust=0
     nneigh=0
     do js=1,nspecies 
       do ja=1,natoms(js)
         do i1=-llim(1),llim(1)
-	do i2=-llim(2),llim(2)
-	do i3=-llim(3),llim(3)
-	  v1(:)=atposc(:,ja,js)+i1*avec(:,1)+i2*avec(:,2)+i3*avec(:,3)-atposc(:,ia,is)
-	  d1=sqrt(v1(1)**2+v1(2)**2+v1(3)**2)
-	  if (d1.le.rclust) then
-	    nneigh=nneigh+1
-	    clust(nneigh,1)=js
-	    clust(nneigh,2)=ja
-	    clust(nneigh,3)=i1
-	    clust(nneigh,4)=i2
-	    clust(nneigh,5)=i3
-	    clust(nneigh,6)=d1*100000
-	  endif
-	enddo
-	enddo
-	enddo
+          do i2=-llim(2),llim(2)
+            do i3=-llim(3),llim(3)
+              v1(:)=atposc(:,ja,js)+i1*avec(:,1)+i2*avec(:,2)+i3*avec(:,3)-atposc(:,ia,is)
+              d1=sqrt(v1(1)**2+v1(2)**2+v1(3)**2)
+              if (d1.le.rclust) then
+                nneigh=nneigh+1
+                clust(nneigh,1)=js
+                clust(nneigh,2)=ja
+                clust(nneigh,3)=i1
+                clust(nneigh,4)=i2
+                clust(nneigh,5)=i3
+                clust(nneigh,6)=d1*100000
+              endif
+            enddo
+          enddo
+        enddo
       enddo
     enddo
-    
+! sort by distace
     do i1=1,nneigh-1
-    do i2=i1+1,nneigh
-      if (clust(i1,6).gt.clust(i2,6)) then
-        tmp(:)=clust(i1,:)
-	clust(i1,:)=clust(i2,:)
-	clust(i2,:)=tmp(:)
-      endif
+      do i2=i1+1,nneigh
+        if (clust(i1,6).gt.clust(i2,6)) then
+          tmp(:)=clust(i1,:)
+          clust(i1,:)=clust(i2,:)
+          clust(i2,:)=tmp(:)
+        endif
+      enddo
     enddo
-    enddo
-    
     write(50,*)
     write(50,'("Cluster around ",A," (is ia ias : ",I2,1X,I2,1X,I3")")')trim(spsymb(is)),is,ia,ias
     write(50,'(" jatom (js ja jas)   D(a.u.)     D(A)",8(" "),"T",18(" "),"R(Cart)")')
@@ -98,10 +96,7 @@ do is=1,nspecies
     enddo
   enddo
 enddo    
-
 close(50)
-
 deallocate(clust)
-
-
+return
 end
