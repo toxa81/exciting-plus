@@ -26,34 +26,15 @@ allocate(vtl(3,ntr))
 if (allocated(ivtit)) deallocate(ivtit)
 allocate(ivtit(-trmax:trmax,-trmax:trmax,-trmax:trmax))
 n=0
-if (.false.) then
-  do i1=-trmax,trmax
-    do i2=-trmax,trmax
-      do i3=-trmax,trmax
-        n=n+1
-        vtl(:,n)=(/i1,i2,i3/)
-        ivtit(i1,i2,i3)=n
-      enddo
+do i1=-trmax,trmax
+  do i2=-trmax,trmax
+    do i3=-trmax,trmax
+      n=n+1
+      vtl(:,n)=(/i1,i2,i3/)
+      ivtit(i1,i2,i3)=n
     enddo
   enddo
-else
-  do i1=-trmax,trmax
-    n=n+1
-    vtl(:,n)=(/i1,0,0/)
-    ivtit(i1,0,0)=n
-  enddo
-  do i2=-trmax,trmax
-    n=n+1
-    vtl(:,n)=(/0,i2,0/)
-    ivtit(0,i2,0)=n
-  enddo
-  do i3=-trmax,trmax
-    n=n+1
-    vtl(:,n)=(/0,0,i3/)
-    ivtit(0,0,i3)=n
-  enddo
-endif
-ntr=n
+enddo
 return
 end subroutine
 
