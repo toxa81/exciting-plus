@@ -33,11 +33,6 @@ real(8) w2,t1
 logical lgamma,wproc1
 logical, external :: wann_diel
 
-#ifdef _PAPI_
-call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
-#endif
-
-
 ! typical execution patterns
 !  I) compute and save ME (task 400), read ME, compute and save chi0 (task 401),
 !     read chi0 and compute chi (task 402)
@@ -99,6 +94,7 @@ if (crpa.or.wannier_chi0_chi) wannier_megq=.true.
 ! this is enough for matrix elements
 lmaxvr=5
 
+call mpi_world_barrier
 if (iproc.eq.0) call timestamp(6,'before init0')
 ! initialise universal variables
 call init0
@@ -107,6 +103,10 @@ if (iproc.eq.0) call timestamp(6,'after init1')
 if (.not.mpi_grid_in()) return
 call mpi_grid_barrier()
 if (iproc.eq.0) call timestamp(6,'start of response')
+
+#ifdef _PAPI_
+call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
+#endif
 
 ! for constrained RPA all q-vectors in BZ are required 
 lgamma=.true.
