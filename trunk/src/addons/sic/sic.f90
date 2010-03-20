@@ -203,7 +203,7 @@ allocate(wanmt0(lmmaxvr,nrmtmax,natmtot,nspinor,nwann))
 allocate(wanir0(ngrtot,nspinor,nwann))
 do itloc=1,ntrloc
   itr=mpi_grid_map(ntr,dim2,loc=itloc)
-  call gen_wann_func(vtl(1,itr),ngknr,vgkcnr,wanmt0,wanir0)
+  call gen_wann_func(vtl(1,itr),ngknr,vgkcnr,igkignr,wanmt0,wanir0)
   do ispn=1,nspinor
     do n=1,nwann
       wanmt(:,:,:,itloc,ispn,n)=wanmt0(:,:,:,ispn,n)
@@ -260,7 +260,8 @@ if (wproc) then
     enddo
   enddo
 endif
-
+call mpi_grid_barrier
+call pstop
 allocate(rhokwanmt(lmmaxvr,nrmtmax,natmtot))
 allocate(rhokwanir(ngrtot))
 allocate(vckwanmt(lmmaxvr,nrmtmax,natmtot))
