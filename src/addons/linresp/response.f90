@@ -104,10 +104,6 @@ if (.not.mpi_grid_in()) return
 call mpi_grid_barrier()
 if (iproc.eq.0) call timestamp(6,'start of response')
 
-#ifdef _PAPI_
-call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
-#endif
-
 ! for constrained RPA all q-vectors in BZ are required 
 lgamma=.true.
 if (crpa) then
@@ -496,6 +492,10 @@ endif
 nvq0loc=mpi_grid_map(nvq0,dim_q,offs=idx0)
 ivq1=idx0+1
 ivq2=idx0+nvq0loc
+
+#ifdef _PAPI_
+call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
+#endif
 
 !-----------------------------------------!
 !    task 400: compute matrix elements    !
