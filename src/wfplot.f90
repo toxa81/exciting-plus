@@ -76,14 +76,14 @@ rhomt(:,:,:)=0.d0
 rhoir(:)=0.d0
 ! compute the charge density with the new occupancies
 do ikloc=1,nkptloc
-  !ik=ikglob(ikloc)
 ! get the eigenvectors from file
   call getevecfv(vkl(:,ik),vgkl(:,:,:,ikloc),evecfv)
   call getevecsv(vkl(:,ik),evecsv)
   call rhomagk(ikloc,evecfv,evecsv)
 end do
-!call dsync(rhomt,lmmaxvr*nrmtmax*natmtot,.true.,.true.)
-!call dsync(rhoir,ngrtot,.true.,.true.)
+call mpi_grid_reduce(rhomt(1,1,1),lmmaxvr*nrmtmax*natmtot,dims=(/dim_k,2/),&
+  all=.true.)
+call mpi_grid_reduce(rhoir(1),ngrtot,dims=(/dim_k,2/),all=.true.)
 call rhomagsh
 ! symmetrise the density for the STM plot
 if (task.eq.162) then
@@ -118,11 +118,11 @@ case(162)
   write(*,'("Info(wfplot):")')
   write(*,'(" 2D STM image written to STM2D.OUT")')
 case(63,64)
-  if (iproc.eq.0)  then
+  if (mpi_grid_root())  then
     open(50,file='WF3D.OUT',action='WRITE',form='FORMATTED')
   endif
   call plot3d(50,1,lmaxvr,lmmaxvr,rhomt,rhoir)
-  if (iproc.eq.0) then
+  if (mpi_grid_root()) then
     close(50)
     write(*,*)
     write(*,'("Info(wfplot):")')
@@ -130,7 +130,7 @@ case(63,64)
   endif
 end select
 if (task.ne.162) then
-  if (iproc.eq.0) then
+  if (mpi_grid_root()) then
     write(*,'(" for k-point ",I6," and state ",I6)') kstlist(1,1),kstlist(2,1)
   endif
 end if

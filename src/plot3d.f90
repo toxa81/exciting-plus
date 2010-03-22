@@ -41,7 +41,7 @@ real(8) t1,t2,t3
 ! allocatable arrays
 real(8), allocatable :: vpl(:,:)
 real(8), allocatable :: fp(:,:)
-if (iproc.eq.0) then
+if (mpi_grid_root()) then
   if ((nf.lt.1).or.(nf.gt.4)) then
     write(*,*)
     write(*,'("Error(plot3d): invalid number of functions : ",I8)') nf
@@ -56,9 +56,9 @@ allocate(fp(np3d(1)*np3d(2)*np3d(3),nf))
 v1(:)=vclp3d(:,2) 
 v2(:)=vclp3d(:,3) 
 v3(:)=vclp3d(:,4) 
-if (iproc.eq.0) then
+if (mpi_grid_root()) then
   write(*,*)
-  write(*,'("Info(plot2d): cartesian vectors of the plane : ")')
+  write(*,'("Info(plot3d): cartesian vectors of the plane : ")')
   write(*,'("  v1     : ",3G18.10)')v1
   write(*,'("  v2     : ",3G18.10)')v2
   write(*,'("  v3     : ",3G18.10)')v3
@@ -84,7 +84,7 @@ do i=1,nf
   call rfarray(lmax,ld,rfmt(:,:,:,i),rfir(:,i),np,vpl,fp(:,i))
 end do
 ! write functions to file
-if (iproc.eq.0) then
+if (mpi_grid_root()) then
   write(fnum,'(3I6," : grid size")') np3d(:)
   do ip=1,np
     call r3mv(avec,vpl(:,ip),v1)
