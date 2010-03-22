@@ -25,6 +25,7 @@ integer fnum
 ! local variables
 integer i,is,ia
 character(10) dat,tim
+real(8) t1
 write(fnum,'("+----------------------------------+")')
 write(fnum,'("| EXCITING version ",I1.1,".",I1.1,".",I3.3," started |")') &
  version
@@ -94,6 +95,14 @@ write(fnum,'(3G18.10)') bvec(1,3),bvec(2,3),bvec(3,3)
 write(fnum,*)
 write(fnum,'("Unit cell volume      : ",G18.10)') omega
 write(fnum,'("Brillouin zone volume : ",G18.10)') (twopi**3)/omega
+t1=0.d0
+do is=1,nspecies
+  t1=t1+dble(natoms(is))*(4.d0/3.d0)*pi*(rmt(is)**3)
+enddo
+write(fnum,'("Muffin-tin volume     : ",G18.10)')t1
+write(fnum,'("Interstitial volume   : ",G18.10)')omega-t1
+
+
 if (autormt) then
   write(fnum,*)
   write(fnum,'("Automatic determination of muffin-tin radii")')
