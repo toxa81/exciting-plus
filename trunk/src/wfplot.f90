@@ -47,7 +47,7 @@ if ((task.eq.61).or.(task.eq.62).or.(task.eq.63)) then
   end if
 ! plotting a single wavefunction
   occsv(:,:)=0.d0
-  occsv(ist,ik)=1.d0
+  occsv(ist,ik)=1.d0/wkpt(ik)
 else if (task.eq.64) then
 ! use all k-points for plotting, but use only a limited number of bands
   occsv(:,:)=0.d0
@@ -91,6 +91,7 @@ if (task.eq.162) then
 end if
 ! convert the density from a coarse to a fine radial mesh
 call rfmtctof(rhomt)
+call charge
 ! write the wavefunction modulus squared plot to file
 select case(task)
 case(61)
