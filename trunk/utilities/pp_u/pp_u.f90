@@ -10,6 +10,7 @@ complex(8), allocatable :: uscrn(:,:,:)
 real(8) t1,uavg
 character*8 c8
 character*3 c3
+logical exist
 real(8), parameter :: ha2ev = 27.21138386d0
 
 call hdf5_initialize
@@ -34,13 +35,16 @@ do it=1,ntr_uscrn
 enddo
 do n=0,size-1
   write(fname,'("uscrn",I4.4,".hdf")')n
-  call hdf5_read(fname,"/parameters","nwloc",nwloc)
-  do iwloc=1,nwloc
-    write(c8,'(I8.8)')iwloc
-    call hdf5_read(fname,"/iwloc/"//c8,"iw",iw)
-    call hdf5_read(fname,"/iwloc/"//c8,"w",w(iw))
-    call hdf5_read(fname,"/iwloc/"//c8//"/"//c3,"uscrn",uscrn(1,1,iw))
-  enddo
+  inquire(file=trim(fname),exist=exist)
+  if (exist) then
+    call hdf5_read(fname,"/parameters","nwloc",nwloc)
+    do iwloc=1,nwloc
+      write(c8,'(I8.8)')iwloc
+      call hdf5_read(fname,"/iwloc/"//c8,"iw",iw)
+      call hdf5_read(fname,"/iwloc/"//c8,"w",w(iw))
+      call hdf5_read(fname,"/iwloc/"//c8//"/"//c3,"uscrn",uscrn(1,1,iw))
+    enddo
+  endif
 enddo
     
     
