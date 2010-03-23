@@ -7,7 +7,7 @@ subroutine wfplot
 use modmain
 implicit none
 ! local variables
-integer ik,ist,ikloc
+integer ik,ist,ikloc,ias
 real(8) x,t1
 ! allocatable arrays
 complex(8), allocatable :: evecfv(:,:)
@@ -92,6 +92,15 @@ end if
 ! convert the density from a coarse to a fine radial mesh
 call rfmtctof(rhomt)
 call charge
+if (mpi_grid_root()) then
+  write(*,*)
+  write(*,'("MT charges : ")')
+  do ias=1,natmtot
+    write(*,'("  ias : ",I6,"  charge : ",F10.6)')ias,chgmt(ias)
+  enddo
+  write(*,'("Total in MT : ",F10.6)')chgmttot
+  write(*,'("Total in IT : ",F10.6)')chgir  
+endif
 ! write the wavefunction modulus squared plot to file
 select case(task)
 case(61)
