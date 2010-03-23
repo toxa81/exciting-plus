@@ -71,7 +71,7 @@ do itloc=1,ntloc
   it=mpi_grid_map(ntr_uscrn,dim_b,loc=itloc)
   vtc(:)=vtl_uscrn(1,it)*avec(:,1)+vtl_uscrn(2,it)*avec(:,2)+&
          vtl_uscrn(3,it)*avec(:,3)
-  expiqt=exp(zi*dot_product(vq0c,vtc))
+  expiqt=exp(-zi*dot_product(vq0c,vtc))
   call zgemm('C','N',nwann,ngvecme,ngvecme,zone,megqwan1,ngvecme,&
     vscr,ngvecme,zzero,zm1,nwann)
   call zgemm('N','N',nwann,nwann,ngvecme,expiqt,zm1,nwann,megqwan1,ngvecme,&
@@ -94,12 +94,17 @@ enddo
 ! compute bare u
 !ubare=zzero
 if (mpi_grid_x(dim_k).eq.0.and.iwloc.eq.1) then
-  do n1=1,nwann
-    do n2=1,nwann
-      do ig1=1,ngvecme
-        ubarewan(n1,n2)=ubarewan(n1,n2)+&
-          dconjg(megqwan(idxmegqwan(n1,n1,0,0,0),ig1))*(vcgq(ig1)**2)*&
-          megqwan(idxmegqwan(n2,n2,0,0,0),ig1)
+  do itloc=1,ntloc
+    it=mpi_grid_map(ntr_uscrn,dim_b,loc=itloc)
+    vtc(:)=vtl_uscrn(1,it)*avec(:,1)+vtl_uscrn(2,it)*avec(:,2)+&
+           vtl_uscrn(3,it)*avec(:,3)
+    expiqt=exp(-zi*dot_product(vq0c,vtc))
+    do n1=1,nwann
+      do n2=1,nwann
+        do ig1=1,ngvecme
+          ubarewan(n1,n2,it)=ubarewan(n1,n2,it)+&
+            expiqt*dconjg(megqwan1(ig1,n1))*(vcgq(ig1)**2)*megqwan1(ig1,n2)
+        enddo
       enddo
     enddo
   enddo

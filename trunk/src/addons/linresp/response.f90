@@ -484,7 +484,7 @@ if (crpa) then
   allocate(uscrnwan(nwann,nwann,ntr_uscrn,nwloc))
   uscrnwan=zzero
   if (allocated(ubarewan)) deallocate(ubarewan)
-  allocate(ubarewan(nwann,nwann))
+  allocate(ubarewan(nwann,nwann,ntr_uscrn))
   ubarewan=zzero
 endif
 
