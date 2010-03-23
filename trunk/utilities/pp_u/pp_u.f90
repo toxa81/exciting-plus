@@ -8,6 +8,8 @@ integer n1,n2
 integer, allocatable :: vtl_uscrn(:,:)
 real(8), allocatable :: w(:)
 complex(8), allocatable :: uscrn(:,:,:)
+complex(8), allocatable :: ubare(:,:)
+
 complex(8), allocatable :: uscrn_stat(:,:,:)
 complex(8), allocatable :: zf(:)
 real(8) t1,uavg
@@ -15,17 +17,25 @@ character*8 c8
 character*3 c3
 logical exist
 real(8), parameter :: ha2ev = 27.21138386d0
-
+integer vtl(3)
 integer nwann_stat
 integer, allocatable :: iwann_stat(:)
 
 call hdf5_initialize
 
-nwann=17
+open(150,file="pp_u.in",form="FORMATTED",status="OLD")
+read(150,*)vtl
+read(150,*)nwann_stat
+allocate(iwann_stat(nwann_stat))
+read(150,*)iwann_stat
+close(150)
+
+
+!nwann=17
 
 fname="uscrn0000.hdf"
 call hdf5_read(fname,"/parameters","nepts",nepts)
-!call hdf5_read(fname,"/parameters","nwann",nwann)
+call hdf5_read(fname,"/parameters","nwann",nwann)
 call hdf5_read(fname,"/parameters","size",size)
 call hdf5_read(fname,"/parameters","ntr_uscrn",ntr_uscrn)
 allocate(vtl_uscrn(3,ntr_uscrn))
@@ -33,8 +43,10 @@ call hdf5_read(fname,"/parameters","vtl_uscrn",vtl_uscrn(1,1),(/3,ntr_uscrn/))
 
 allocate(w(nepts))
 allocate(uscrn(nwann,nwann,nepts))
+allocate(ubare(nwann,nwann))
 do it=1,ntr_uscrn
-  if (vtl_uscrn(1,it).eq.0.and.vtl_uscrn(2,it).eq.0.and.vtl_uscrn(3,it).eq.0) then
+  if (vtl_uscrn(1,it).eq.vtl(1).and.vtl_uscrn(2,it).eq.vtl(2).and.&
+      vtl_uscrn(3,it).eq.vtl(3)) then
     write(c3,'(I3.3)')it
   endif
 enddo
@@ -50,12 +62,12 @@ do n=0,size-1
       call hdf5_read(fname,"/iwloc/"//c8,"w",w(iw))
       call hdf5_read(fname,"/iwloc/"//c8//"/"//c3,"uscrn",uscrn(1,1,iw),(/nwann,nwann/))
     enddo
+    if (n.eq.0) then
+      call hdf5_read(fname,"/iwloc/00000001/"//c3,"ubare",ubare(1,1),(/nwann,nwann/))
+    endif
   endif
 enddo
 
-nwann_stat=5
-allocate(iwann_stat(nwann_stat))
-iwann_stat=(/1,2,3,4,5/)
 allocate(uscrn_stat(nwann_stat,nwann_stat,nepts))
 do iw=1,nepts
   do n1=1,nwann_stat
@@ -77,6 +89,16 @@ enddo
 write(150,'("#  imag part")')
 do i=1,nwann_stat
   write(150,'("# ",100F12.6)')(dimag(uscrn_stat(i,j,1)),j=1,nwann_stat)
+enddo
+write(150,'("#")')
+write(150,'("# Bare U matrix")')
+write(150,'("#  real part")')
+do i=1,nwann_stat
+  write(150,'("# ",100F12.6)')(dreal(ubare(iwann_stat(i),iwann_stat(j))),j=1,nwann_stat)
+enddo
+write(150,'("#  imag part")')
+do i=1,nwann_stat
+  write(150,'("# ",100F12.6)')(dimag(ubare(iwann_stat(i),iwann_stat(j))),j=1,nwann_stat)
 enddo
 write(150,'("#")')
 write(150,'("# columns : ")')
