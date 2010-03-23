@@ -12,7 +12,8 @@ nwloc=mpi_grid_map(nepts,dim_k)
 call mpi_grid_reduce(uscrnwan(1,1,1,1),nwann*nwann*ntr_uscrn*nwloc,&
   dims=(/dim_b,dim_q/))
 uscrnwan=ha2ev*uscrnwan/omega/nvq0
-call mpi_grid_reduce(ubarewan(1,1),nwann*nwann,dims=(/dim_q/),side=.true.)
+call mpi_grid_reduce(ubarewan(1,1,1),nwann*nwann*ntr_uscrn,dims=(/dim_b,dim_q/),&
+  side=.true.)
 ubarewan=ha2ev*ubarewan/omega/nvq0
 
 if (mpi_grid_side(dims=(/dim_k/)).and.nwloc.gt.0) then
@@ -40,6 +41,13 @@ if (mpi_grid_side(dims=(/dim_k/)).and.nwloc.gt.0) then
         uscrnwan(1,1,it,iwloc),(/nwann,nwann/))
     enddo
   enddo
+  if (mpi_grid_x(dim_k).eq.0) then
+    do it=1,ntr_uscrn
+      write(c3,'(I3.3)')it
+      call hdf5_write(fuscrn,"/iwloc/00000001/"//c3,"ubare",&
+        ubarewan(1,1,it),(/nwann,nwann/))
+    enddo  
+  endif
 endif
 return
 end

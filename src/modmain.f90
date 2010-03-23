@@ -1160,7 +1160,7 @@ integer ntr_uscrn
 integer, allocatable :: vtl_uscrn(:,:)
 integer, allocatable :: ivtit_uscrn(:,:,:)
 complex(8), allocatable :: uscrnwan(:,:,:,:)
-complex(8), allocatable :: ubarewan(:,:)
+complex(8), allocatable :: ubarewan(:,:,:)
 
 
 
