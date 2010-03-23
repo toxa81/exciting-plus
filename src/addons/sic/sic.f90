@@ -259,9 +259,9 @@ if (wproc) then
       write(151,'(4X,255F12.6)')(dimag(ovlm(n1,n2,it)),n2=1,nwann)
     enddo
   enddo
+  call flushifc(151)
 endif
-call mpi_grid_barrier
-call pstop
+
 allocate(rhokwanmt(lmmaxvr,nrmtmax,natmtot))
 allocate(rhokwanir(ngrtot))
 allocate(vckwanmt(lmmaxvr,nrmtmax,natmtot))
@@ -364,8 +364,6 @@ if (wproc) then
       write(151,'(4X,255F12.6)')(dimag(vsic(n1,n2,it)),n2=1,nwann)
     enddo
   enddo
-endif
-if (wproc) then
   write(151,*)
   write(151,'("SIC ""localization criterion"" <w_n1|v_n1-v_{n2,T}|w_{n2,T}>")')
   do it=1,ntr
