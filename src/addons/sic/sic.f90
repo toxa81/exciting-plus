@@ -76,6 +76,9 @@ endif
 
 call lfa_init(1)
 call genwfnr(151)  
+if (wproc) then
+  call timestamp(151,'done with wavefunctions')
+endif
 
 allocate(h0wan(nwann,nwann,ntr))
 ! compute <n,T=0|H^{LDA}|n',T'>
@@ -102,6 +105,7 @@ do it=1,ntr
     h0wan(:,:,it)=h0wan(:,:,it)+expikt*zm1(:,:,ikloc)
   enddo
 enddo
+call mpi_grid_reduce(h0wan(1,1,1),nwann*nwann*ntr,dims=(/dim_k/))
 h0wan(:,:,:)=h0wan(:,:,:)/nkptnr
 if (wproc) then
   write(151,*)
@@ -124,6 +128,9 @@ deallocate(wfsvitloc)
 deallocate(evecfvloc)
 deallocate(evecsvloc)
 deallocate(wann_c)
+if (wproc) then
+  call timestamp(151,'done with hoppings')
+endif
 
 ! this part is for debug purpose: construct potential from charge density 
 !  using Bloch basis
@@ -219,7 +226,12 @@ if (wproc) then
   write(151,*)
   write(151,'("MT part : ",F8.3)')timer_get_value(1)
   write(151,'("IT part : ",F8.3)')timer_get_value(2)
+  call flushifc(151)
 endif
+if (wproc) then
+  call timestamp(151,'done with Wannier functions')
+endif
+
 
 !allocate(identmt(lmmaxvr,nrmtmax,natmtot,ntrloc))
 !allocate(identir(ngrtot,ntrloc))
@@ -264,6 +276,10 @@ if (wproc) then
   enddo
   call flushifc(151)
 endif
+if (wproc) then
+  call timestamp(151,'done with overlap integrals')
+endif
+
 
 allocate(rhokwanmt(lmmaxvr,nrmtmax,natmtot))
 allocate(rhokwanir(ngrtot))
@@ -316,6 +332,10 @@ do n=1,nwann
 enddo
 vcwanmt=vcwanmt/nkptnr
 vcwanir=vcwanir/nkptnr
+if (wproc) then
+  call timestamp(151,'done with Coulomb potential')
+endif
+
 
 ! for debug: sum over all WFs and translations to get the total Coulomb potential
 !f2mt=zzero
@@ -370,6 +390,9 @@ if (wproc) then
   enddo
   write(151,*)
 endif
+if (wproc) then
+  call timestamp(151,'done with bare Coulomb integrals')
+endif
 
 
 ! multiply potential by Wannier function
@@ -422,6 +445,10 @@ if (wproc) then
     enddo
   enddo
 endif
+if (wproc) then
+  call timestamp(151,'done with SIC potential')
+endif
+
 
 !if (wproc) write(151,*)
 !allocate(f1mt(lmmaxvr,nrmtmax,natmtot,ntrloc))
