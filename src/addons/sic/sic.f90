@@ -13,6 +13,8 @@ complex(8) expikt
 
 complex(8), allocatable :: wanmt(:,:,:,:,:,:)
 complex(8), allocatable :: wanir(:,:,:,:)
+complex(8), allocatable :: rhowanmt(:,:,:,:,:)
+complex(8), allocatable :: rhowanir(:,:,:)
 complex(8), allocatable :: wanmt0(:,:,:,:,:)
 complex(8), allocatable :: wanir0(:,:,:)
 complex(8), allocatable :: identmt(:,:,:,:)
@@ -29,6 +31,7 @@ complex(8), allocatable :: vcwanmt(:,:,:,:,:)
 complex(8), allocatable :: vcwanir(:,:,:)
 real(8) spzn1(maxspecies)
 complex(8), allocatable :: vsic(:,:,:)
+complex(8), allocatable :: ubare(:,:,:)
 complex(8), allocatable :: h0wan(:,:,:)
 complex(8), allocatable :: zm1(:,:,:)
 integer idm
@@ -327,11 +330,51 @@ vcwanir=vcwanir/nkptnr
 !  write(100,*)spr(ir,ias2is(1)),dreal(f2mt(1,ir,1)),dimag(f2mt(1,ir,1))
 !enddo
 
-! convert to spherical coordinates and multiply potential by Wannier function
+allocate(rhowanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nwann))
+allocate(rhowanir(ngrtot,ntrloc,nwann))
+
+! convert to spherical coordinates
 do n=1,nwann
   do itloc=1,ntrloc
     call lfa_sht('B',wanmt(1,1,1,itloc,1,n),wanmt(1,1,1,itloc,1,n))
     call lfa_sht('B',vcwanmt(1,1,1,itloc,n),vcwanmt(1,1,1,itloc,n))
+    rhowanmt(:,:,:,itloc,n)=dconjg(wanmt(:,:,:,itloc,1,n))*wanmt(:,:,:,itloc,1,n)
+    rhowanir(:,itloc,n)=dconjg(wanir(:,itloc,1,n))*wanir(:,itloc,1,n)
+  enddo
+enddo
+
+! compute bare Coulomb interaction
+allocate(ubare(nwann,nwann,ntr))
+ubare=zzero
+do it=1,ntr
+  do n1=1,nwann
+    do n2=1,nwann
+      ubare(n1,n2,it)=lfa_dotp(.false.,vtl(1,it),vcwanmt(1,1,1,1,n1),&
+        vcwanir(1,1,n1),rhowanmt(1,1,1,1,n2),rhowanir(1,1,n2))
+    enddo
+  enddo
+enddo
+if (wproc) then
+  write(151,*)
+  write(151,'("Bare Coulomb interaction")')
+  do it=1,ntr
+    write(151,'("  translation : ",3I4)')vtl(:,it)
+    write(151,'("    real part : ")')  
+    do n1=1,nwann
+      write(151,'(4X,255F12.6)')(dreal(ubare(n1,n2,it)),n2=1,nwann)
+    enddo
+    write(151,'("    image part : ")')  
+    do n1=1,nwann
+      write(151,'(4X,255F12.6)')(dimag(ubare(n1,n2,it)),n2=1,nwann)
+    enddo
+  enddo
+  write(151,*)
+endif
+
+
+! multiply potential by Wannier function
+do n=1,nwann
+  do itloc=1,ntrloc
     vcwanmt(:,:,:,itloc,n)=vcwanmt(:,:,:,itloc,n)*wanmt(:,:,:,itloc,1,n)
     vcwanir(:,itloc,n)=vcwanir(:,itloc,n)*wanir(:,itloc,1,n)
   enddo
