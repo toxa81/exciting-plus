@@ -17,6 +17,7 @@ call hdf5_initialize
 if (iproc.eq.0) call timestamp(6,'before readinput')
 ! read input files
 call readinput
+call mpi_world_barrier
 if (iproc.eq.0) call timestamp(6,'after readinput')
 
 ! perform the appropriate task
@@ -52,6 +53,8 @@ do itask=1,ntasks
     call elfplot
   case(61,62,63,64,162)
     call wfplot
+  case(65)
+    call wfsvplot
   case(361,362,363)
     call wann_plot
   case(72,73,82,83,142,143,152,153)
