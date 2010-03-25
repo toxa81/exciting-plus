@@ -94,15 +94,13 @@ if (crpa.or.wannier_chi0_chi) wannier_megq=.true.
 ! this is enough for matrix elements
 lmaxvr=5
 
-call mpi_world_barrier
 if (iproc.eq.0) call timestamp(6,'before init0')
 ! initialise universal variables
 call init0
 call init1
+call mpi_world_barrier
 if (iproc.eq.0) call timestamp(6,'after init1')
 if (.not.mpi_grid_in()) return
-call mpi_grid_barrier()
-if (iproc.eq.0) call timestamp(6,'start of response')
 
 ! for constrained RPA all q-vectors in BZ are required 
 lgamma=.true.
@@ -539,11 +537,13 @@ endif
 !    task 403: compute me, chi0 and chi    !
 !------------------------------------------!
 if (task.eq.403) then
+  if (wproc1) call timestamp(151,txt='start task 403')
   do iq=ivq1,ivq2
     call genmegq(ivq0m_list(1,iq))
     call genchi0(ivq0m_list(1,iq))
   enddo 
   if (crpa) call write_u
+  if (wproc1) call timestamp(151,txt='stop task 403')
 !  if (crpa) call qsum
 endif
 
