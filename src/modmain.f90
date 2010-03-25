@@ -1019,8 +1019,6 @@ real(8) lr_e1,lr_e2
 !   1 : magnetic response
 integer lrtype
 real(8) lr_min_e12
-real(8) lr_e1_wan
-real(8) lr_e2_wan
 
 ! G+q vectors in Cart.coord.
 real(8), allocatable :: lr_vgq0c(:,:)
