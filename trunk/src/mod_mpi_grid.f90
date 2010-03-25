@@ -414,6 +414,7 @@ if (present(n_)) length_=n_
 comm_=mpi_grid_get_comm(dims_)
 ! get root id
 if (present(root_)) then
+  root_x=-1
   root_x(1:size(root_))=root_
 else
   root_x=0
@@ -425,7 +426,7 @@ end subroutine
 !----------------------------!
 !      mpi_grid_bcast_d      !
 !----------------------------!
-subroutine mpi_grid_bcast_d(val,n,dims,side)
+subroutine mpi_grid_bcast_d(val,n,dims,side,root)
 #ifdef _MPI_
 use mpi
 #endif
@@ -435,11 +436,12 @@ real(8), intent(in) :: val
 integer, optional, intent(in) :: n
 integer, optional, dimension(:), intent(in) :: dims
 logical, optional, intent(in) :: side
+integer, optional, dimension(:), intent(in) :: root
 ! local variables
 integer comm,rootid,ierr,length
 logical lbcast
 #ifdef _MPI_
-call mpi_grid_bcast_common(n_=n,dims_=dims,side_=side,lbcast_=lbcast,&
+call mpi_grid_bcast_common(n_=n,dims_=dims,side_=side,root_=root,lbcast_=lbcast,&
   length_=length,comm_=comm,rootid_=rootid)
 if (.not.lbcast) return
 call mpi_bcast(val,length,MPI_DOUBLE_PRECISION,rootid,comm,ierr)
@@ -450,7 +452,7 @@ end subroutine
 !----------------------------!
 !      mpi_grid_bcast_z      !
 !----------------------------!
-subroutine mpi_grid_bcast_z(val,n,dims,side)
+subroutine mpi_grid_bcast_z(val,n,dims,side,root)
 #ifdef _MPI_
 use mpi
 #endif
@@ -460,11 +462,12 @@ complex(8), intent(in) :: val
 integer, optional, intent(in) :: n
 integer, optional, dimension(:), intent(in) :: dims
 logical, optional, intent(in) :: side
+integer, optional, dimension(:), intent(in) :: root
 ! local variables
 integer comm,rootid,ierr,length
 logical lbcast
 #ifdef _MPI_
-call mpi_grid_bcast_common(n_=n,dims_=dims,side_=side,lbcast_=lbcast,&
+call mpi_grid_bcast_common(n_=n,dims_=dims,side_=side,root_=root,lbcast_=lbcast,&
   length_=length,comm_=comm,rootid_=rootid)
 if (.not.lbcast) return
 call mpi_bcast(val,length,MPI_DOUBLE_COMPLEX,rootid,comm,ierr)
@@ -475,7 +478,7 @@ end subroutine
 !----------------------------!
 !      mpi_grid_bcast_i      !
 !----------------------------!
-subroutine mpi_grid_bcast_i(val,n,dims,side)
+subroutine mpi_grid_bcast_i(val,n,dims,side,root)
 #ifdef _MPI_
 use mpi
 #endif
@@ -485,11 +488,12 @@ integer, intent(in) :: val
 integer, optional, intent(in) :: n
 integer, optional, dimension(:), intent(in) :: dims
 logical, optional, intent(in) :: side
+integer, optional, dimension(:), intent(in) :: root
 ! local variables
 integer comm,rootid,ierr,length
 logical lbcast
 #ifdef _MPI_
-call mpi_grid_bcast_common(n_=n,dims_=dims,side_=side,lbcast_=lbcast,&
+call mpi_grid_bcast_common(n_=n,dims_=dims,side_=side,root_=root,lbcast_=lbcast,&
   length_=length,comm_=comm,rootid_=rootid)
 if (.not.lbcast) return
 call mpi_bcast(val,length,MPI_INTEGER,rootid,comm,ierr)
@@ -500,7 +504,7 @@ end subroutine
 !----------------------------!
 !      mpi_grid_bcast_l      !
 !----------------------------!
-subroutine mpi_grid_bcast_l(val,n,dims,side)
+subroutine mpi_grid_bcast_l(val,n,dims,side,root)
 #ifdef _MPI_
 use mpi
 #endif
@@ -510,11 +514,12 @@ logical, intent(in) :: val
 integer, optional, intent(in) :: n
 integer, optional, dimension(:), intent(in) :: dims
 logical, optional, intent(in) :: side
+integer, optional, dimension(:), intent(in) :: root
 ! local variables
 integer comm,rootid,ierr,length
 logical lbcast
 #ifdef _MPI_
-call mpi_grid_bcast_common(n_=n,dims_=dims,side_=side,lbcast_=lbcast,&
+call mpi_grid_bcast_common(n_=n,dims_=dims,side_=side,root_=root,lbcast_=lbcast,&
   length_=length,comm_=comm,rootid_=rootid)
 if (.not.lbcast) return
 call mpi_bcast(val,length,MPI_LOGICAL,rootid,comm,ierr)
