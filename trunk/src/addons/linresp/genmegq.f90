@@ -102,10 +102,6 @@ if (wproc) then
   write(150,*)
   write(150,'("Bloch functions band interval (N1,N2 or E1,E2) : ",2F8.3)')&
     lr_e1,lr_e2
-  if (wannier_megq) then
-    write(150,'("Wannier functions band interval (N1,N2 or E1,E2) : ",2F8.3)')&
-      lr_e1_wan,lr_e2_wan
-  endif
   write(150,*)
   write(150,'("Minimal energy transition (eV) : ",F12.6)')lr_min_e12*ha2ev    
   write(150,*)
