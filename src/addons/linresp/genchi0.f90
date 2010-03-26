@@ -20,11 +20,11 @@ complex(8), allocatable :: mexp(:,:,:)
 complex(8), allocatable :: megqwan1(:,:)
 integer, external :: hash
 
-
 integer i,iw,i1,i2,ikloc,n,j,ifxc
 integer ist1,ist2,nfxcloc,ifxcloc,nwloc,jwloc,iwloc
 integer it1(3),it2(3),it(3)
 integer ig
+integer ierr
 character*100 qnm,fout,fchi0,fstat,path
 character*8 c8
 integer ie1,n1,n2,ik
@@ -107,7 +107,11 @@ if (write_megq_file) then
     call flushifc(150)
   endif
 endif
-allocate(megqblh2(nmegqblhlocmax,ngvecme))
+allocate(megqblh2(nmegqblhlocmax,ngvecme),stat=ierr)
+if (ierr.ne.0) then
+  write(*,'("Error allocating megqblh2")')
+  call pstop
+endif
 
 ! for response in Wannier bais
 if (wannier_chi0_chi) then
@@ -166,11 +170,27 @@ endif !wannier_chi0_chi
 
 ie1=1
 
-allocate(chi0(ngvecme,ngvecme))
-allocate(krnl(ngvecme,ngvecme))
+allocate(chi0(ngvecme,ngvecme),stat=ierr)
+if (ierr.ne.0) then
+  write(*,'("Error allocating chi0")')
+  call pstop
+endif
+allocate(krnl(ngvecme,ngvecme),stat=ierr)
+if (ierr.ne.0) then
+  write(*,'("Error allocating krnl")')
+  call pstop
+endif
 if (screened_w.or.crpa) then
-  allocate(krnl_scr(ngvecme,ngvecme))
-  allocate(megqwan1(ngvecme,nwann))
+  allocate(krnl_scr(ngvecme,ngvecme),stat=ierr)
+  if (ierr.ne.0) then
+    write(*,'("Error allocating krnl_scr")')
+    call pstop
+  endif
+  allocate(megqwan1(ngvecme,nwann),stat=ierr)
+  if (ierr.ne.0) then
+    write(*,'("Error allocating mmegqwan1")')
+    call pstop
+  endif
   do n1=1,nwann
     megqwan1(:,n1)=megqwan(idxmegqwan(n1,n1,0,0,0),:)
   enddo
@@ -197,7 +217,11 @@ nfxcloc=mpi_grid_map(nfxca,dim_b)
 nwloc=mpi_grid_map(nepts,dim_k)
 
 if (.not.write_chi0_file) then
-  allocate(chi0loc(ngvecme,ngvecme,nwloc))
+  allocate(chi0loc(ngvecme,ngvecme,nwloc),stat=ierr)
+  if (ierr.ne.0) then
+    write(*,'("Error allocating chi0loc")')
+    call pstop
+  endif  
   if (wannier_chi0_chi) allocate(chi0wanloc(nmegqwan,nmegqwan,nwloc))
 endif
 

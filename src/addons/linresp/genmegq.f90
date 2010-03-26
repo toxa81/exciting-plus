@@ -226,6 +226,9 @@ deallocate(igkignr_jk)
 if (wannier_megq) then
   deallocate(wann_c_jk)
 endif
+deallocate(ngntuju)
+deallocate(igntuju)
+deallocate(gntuju)
 
 if (mpi_grid_root((/dim_k,dim_b/)).and.write_megq_file) then
   complete=1
