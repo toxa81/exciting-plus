@@ -10,7 +10,7 @@ logical l1
 complex(8) zt1
 integer i,ist1,ist2
 integer, parameter :: bs=128
-integer, parameter :: chi0summation=4
+integer, parameter :: chi0summation=3
 integer nb,sz1,offs,ik,jk
 integer ib1,ib2,j1,j2,ig
 logical, allocatable :: l2(:)
@@ -92,7 +92,13 @@ enddo !i
 !    enddo !i
 !  endif
 !endif
-
+if (chi0summation.eq.3) then
+  do ig=1,ngvecme
+    do i=1,nmegqblhloc(1,ikloc)
+      chi0w(ig,ig)=chi0w(ig,ig)+wt(i)*abs(megqblh(i,ig,ikloc))**2
+    enddo
+  enddo
+endif
 if (chi0summation.eq.4) then
   do ig=1,ngvecme
     megqblh2(:,ig)=dconjg(megqblh(:,ig,ikloc))*wt(:)
