@@ -10,7 +10,7 @@ logical l1
 complex(8) zt1
 integer i,ist1,ist2
 integer, parameter :: bs=128
-integer, parameter :: chi0summation=3
+integer, parameter :: chi0summation=4
 integer nb,sz1,offs,ik,jk
 integer ib1,ib2,j1,j2,ig
 logical, allocatable :: l2(:)
