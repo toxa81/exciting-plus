@@ -48,11 +48,16 @@ integer nnzme
 integer, allocatable :: inzme(:,:)
 
 integer ie,ig,i,j,ig1,ig2,ie1,ie2,idx0,bs,n1,n2,it1,it2,n3,n4,n
+integer is,ia,ias,is1,is2,ia1,ia2
 integer i1,i2,ifxc,ifxc1,ifxc2
 integer iv(3)
 character*100 fname,qnm,path
 logical, external :: root_cart
 complex(8), external :: zdotu
+real(8) itrcart(3)
+real(8) itrcartd
+real(8) wftrcart(3)
+real(8) wftrcartd
 
 ! we need Bcx and magnetization from STATE.OUT
 if (lrtype.eq.1) call readstate
@@ -209,11 +214,33 @@ if (lwannresp) then
     write(150,*)
     do it1=1,ntr1
       if (sum(abs(mewf2(:,it1,:))).gt.1d-8) then
-        write(150,'("translation : ",3I4)')itr1l(:,it1)
+        itrcart(:)=avec(:,1)*itr1l(1,it1)+&
+                   avec(:,2)*itr1l(2,it1)+&
+                   avec(:,3)*itr1l(3,it1)
+        itrcartd=sqrt(itrcart(1)**2+itrcart(2)**2+itrcart(3)**2) 
+        write(150,'("\n\ntranslation : ",3I4)')itr1l(:,it1)
+        write(150,'("translation (cart) : ",3F12.6)')itrcart(:)
+        write(150,'("distance (cart)    : ",F12.6)')itrcartd
         do n=1,nwfme
           if (sum(abs(mewf2(n,it1,:))).gt.1d-8) then
+            do is=1,nspecies
+              do ia=1,natoms(is)
+                ias=idxas(ia,is)
+                if (ias.eq.iwann(1,iwfme(1,n))) then
+                  is1=is
+                  ia1=ia
+                endif
+                if (ias.eq.iwann(1,iwfme(2,n))) then
+                  is2=is
+                  ia2=ia
+                endif
+              enddo
+            enddo
+            wftrcart(:)=atposc(:,ia1,is1)-(itrcart(:)+atposc(:,ia2,is2))
+            wftrcartd=sqrt(wftrcart(1)**2+wftrcart(2)**2+wftrcart(3)**2)
             write(150,'("  transition ",I4," between wfs : ",2I4)')&
               n,iwfme(1,n),iwfme(2,n)
+            write(150,'("  distance : ",F12.6)')wftrcartd
             do ig=1,ngvecme
               write(150,'("    ig : ",I4," mewf=(",2F12.6,"), |mewf|=",F12.6)')&
                 ig,mewf2(n,it1,ig),abs(mewf2(n,it1,ig))
@@ -289,7 +316,7 @@ allocate(lr_w(nepts))
 allocate(chi0w(ngvecme,ngvecme))  
 allocate(chi0m(ngvecchi,ngvecchi))
 allocate(chi_(7,nepts,nfxca))
-allocate(epsilon_(5,nepts,nfxca))
+allocate(epsilon_(6,nepts,nfxca))
 chi_=zzero
 epsilon_=zzero
 lr_w=zzero
@@ -372,17 +399,22 @@ do ie=ie1,ie2
         endif
       enddo
     endif
+!    call solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_(1,ie,ifxc), &
+!      epsilon_(1,ie,ifxc))
     call solve_chi(ngvecchi,igq0,fourpiq0,chi0m,krnl,chi_(1,ie,ifxc), &
-      epsilon_(1,ie,ifxc))
+      epsilon_(:,ie,ifxc))
     if (lwannresp.and.ifxc.eq.1) then
       call solve_chi_wf(ntr1,ntr2,itridx,nwfme,nnzme,inzme,mewf2,mewf4,mtrx_v,&
+!        fourpiq0,epsilon_(6,ie,ifxc),epsilon_(8,ie,ifxc),&
+        fourpiq0,epsilon_(6,ie,ifxc),&
         chi_(6,ie,1),chi_(7,ie,1),igq0)
+        
     endif
   enddo !ifxc
 enddo !ie
 call d_reduce_cart(comm_cart_100,.false.,lr_w,2*nepts)
 call d_reduce_cart(comm_cart_110,.false.,chi_,2*7*nepts*nfxca)
-call d_reduce_cart(comm_cart_110,.false.,epsilon_,2*5*nepts*nfxca)
+call d_reduce_cart(comm_cart_110,.false.,epsilon_,2*6*nepts*nfxca)
 ! write response functions to .dat file
 if (root_cart((/1,1,0/))) then
   do ifxc=1,nfxca

@@ -54,6 +54,8 @@ chi_(4)=mtrx1(igq0,igq0)
 epsilon_(4)=1.d0/(1.d0+fourpiq0*chi_(4))
 ! save epsilon_eff_scalar
 epsilon_(5)=1.d0/(1.d0+fourpiq0*chi_(2))
+! save loss function
+!epsilon_(6)=1.d0/epsilon_(4)
 
 deallocate(epsilon,mtrx1)
 return

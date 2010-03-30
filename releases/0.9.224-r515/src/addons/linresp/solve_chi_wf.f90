@@ -1,5 +1,6 @@
 subroutine solve_chi_wf(ntr1,ntr2,itridx,nwfme,nnzme,inzme,mewf2, &
-  mewf4,mtrx_v,chi0wf,chiwf,igq0)
+  !mewf4,mtrx_v,fourpiq0,epsilonwf,losswf,chi0wf,chiwf,igq0)
+  mewf4,mtrx_v,fourpiq0,epsilonwf,chi0wf,chiwf,igq0)
 use modmain
 implicit none
 integer, intent(in) :: ntr1
@@ -11,6 +12,9 @@ integer, intent(in) :: inzme(2,nnzme)
 complex(8), intent(in) :: mewf2(nwfme,ntr1,ngvecme)
 complex(8), intent(in) :: mewf4(nwfme,nwfme,ntr2)
 complex(8), intent(in) :: mtrx_v(nnzme,nnzme)
+real(8), intent(in) :: fourpiq0
+complex(8), intent(out) :: epsilonwf
+!complex(8), intent(out) :: losswf
 complex(8), intent(out) :: chi0wf
 complex(8), intent(out) :: chiwf
 integer, intent(in) :: igq0
@@ -66,6 +70,10 @@ do i=1,nnzme
     chiwf=chiwf+mewf2(n1,i1,igq0)*mtrx2(i,j)*dconjg(mewf2(n2,i2,igq0))
   enddo
 enddo
+! epsilon_eff
+epsilonwf=1.d0/(1.d0+fourpiq0*chiwf)
+! loss function
+!losswf=1.d0/epsilonwf
 
 deallocate(mtrx1)
 deallocate(mtrx2)
