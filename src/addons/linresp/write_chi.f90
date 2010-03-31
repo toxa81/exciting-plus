@@ -6,10 +6,18 @@ integer, intent(in) :: ifxc
 
 real(8) fxca
 real(8), allocatable :: func(:,:)
+real(8) fsum
 character*100 fname,qnm
 character*10 c1,c2,c3,c4,c5
 integer ie,i
-complex(8) z1
+real(8) t1,t2
+
+fsum=0.d0
+do ie=1,nepts-1
+  t1=dimag(-1.d0/f_response(f_epsilon_eff,ie,ifxc))*dreal(lr_w(ie))
+  t2=dimag(-1.d0/f_response(f_epsilon_eff,ie+1,ifxc))*dreal(lr_w(ie+1))
+  fsum=fsum+0.5d0*dreal(lr_w(ie+1)-lr_w(ie))*(t1+t2)
+enddo
 
 fxca=fxca0+(ifxc-1)*fxca1
 
@@ -28,6 +36,9 @@ else
 endif
 open(160,file=trim(fname),form='formatted',status='replace')
 call write_chi_header(160,lr_igq0,ivq0m,fxca)
+write(160,'("#")')
+write(160,'("# f-sum rule : ",G18.10)')fsum
+write(160,'("# 2*Pi^2*rho_avg : ",G18.10)')2*pi*pi*(chgval/omega)
 write(160,'("#")')
 write(160,'("# Definition of columns")')
 write(160,'("#   1: energy            [eV]")')
