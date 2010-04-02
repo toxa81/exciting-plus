@@ -81,7 +81,7 @@ if (.not.wannier) then
 endif
 ! set the switch to write matrix elements
 write_megq_file=.true.
-if (task.eq.403) write_megq_file=.false.
+if (task.eq.402.or.task.eq.403) write_megq_file=.false.
 write_chi0_file=.false.
 
 ! set the switch to compute screened W matrix in task 402
@@ -89,7 +89,7 @@ screened_w=.false.
 !if (crpa) screened_w=.true.
 
 wannier_megq=.false.
-if (crpa.or.wannier_chi0_chi) wannier_megq=.true.
+if (crpa.or.wannier_chi0_chi.or.task.eq.402) wannier_megq=.true.
 
 ! this is enough for matrix elements
 lmaxvr=5
@@ -103,8 +103,8 @@ if (iproc.eq.0) call timestamp(6,'after init1')
 if (.not.mpi_grid_in()) return
 
 ! for constrained RPA all q-vectors in BZ are required 
-lgamma=.true.
-if (crpa) then
+lgamma=.false.
+if (crpa.or.task.eq.402) then
   if (allocated(ivq0m_list)) deallocate(ivq0m_list)
   if (lgamma) then
     nvq0=nkptnr
@@ -123,9 +123,6 @@ if (crpa) then
       enddo
     enddo
   enddo
-endif
-! todo: put warnings to output
-if (crpa) then
   nfxca=1
   fxca0=0.d0
   fxca1=0.d0
@@ -133,7 +130,7 @@ endif
 if (.not.spinpol) megqwan_afm=.false.
 
 ! necessary calls before generating Bloch wave-functions 
-if (task.eq.400.or.task.eq.403) then
+if (task.eq.400.or.task.eq.402.or.task.eq.403) then
 ! read the density and potentials from file
   call readstate
 ! find the new linearisation energies
@@ -162,8 +159,8 @@ if (mpi_grid_root()) then
   wproc1=.true.
   if (task.eq.400) open(151,file='RESPONSE_ME.OUT',form='formatted',status='replace')
   if (task.eq.401) open(151,file='RESPONSE_CHI0.OUT',form='formatted',status='replace')
-  if (task.eq.402) open(151,file='RESPONSE_CHI.OUT',form='formatted',status='replace')
-  if (task.eq.403) open(151,file='RESPONSE.OUT',form='formatted',status='replace')  
+  if (task.eq.402.or.task.eq.403) open(151,file='RESPONSE.OUT',&
+    form='formatted',status='replace')
   call timestamp(151)
 endif
 wproc=wproc1
@@ -186,185 +183,8 @@ if (wproc1) then
   call flushifc(151)
 endif
 
-if (task.eq.400.or.task.eq.403) then
+if (task.eq.400.or.task.eq.402.or.task.eq.403) then
   call genwfnr(151)
-!! get energies of states in reduced part of BZ
-!  call timer_start(3,reset=.true.)
-!  if (wproc1) then
-!    write(151,*)
-!    write(151,'("Reading energies of states")')
-!    call flushifc(151)
-!! read from IBZ
-!    do ik=1,nkpt
-!      call getevalsv(vkl(1,ik),evalsv(1,ik))
-!    enddo
-!  endif
-!  call mpi_grid_bcast(evalsv(1,1),nstsv*nkpt)
-!  allocate(lr_evalsvnr(nstsv,nkptnr))
-!  lr_evalsvnr=0.d0
-!  do ikloc=1,nkptnrloc
-!    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-!    call findkpt(vklnr(1,ik),isym,ik1) 
-!    lr_evalsvnr(:,ik)=evalsv(:,ik1)
-!  enddo
-!  call timer_stop(3)
-!  if (wproc1) then
-!    write(151,'("Done in ",F8.2," seconds")')timer_get_value(3)
-!    call timestamp(151)
-!    call flushifc(151)
-!  endif
-!endif
-!
-!! generate wave-functions
-!if (task.eq.400.or.task.eq.403) then
-!! generate G+k vectors for entire BZ (this is required to compute 
-!!   wave-functions at each k-point)
-!  allocate(vgklnr(3,ngkmax,nkptnrloc))
-!  allocate(vgkcnr(3,ngkmax,nkptnrloc))
-!  allocate(gknr(ngkmax,nkptnrloc))
-!  allocate(tpgknr(2,ngkmax,nkptnrloc))
-!  allocate(ngknr(nkptnrloc))
-!  allocate(sfacgknr(ngkmax,natmtot,nkptnrloc))
-!  allocate(igkignr(ngkmax,nkptnrloc))
-!  allocate(ylmgknr(lmmaxvr,ngkmax,nkptnrloc))
-!  do ikloc=1,nkptnrloc
-!    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-!    call gengpvec(vklnr(1,ik),vkcnr(1,ik),ngknr(ikloc),igkignr(1,ikloc), &
-!      vgklnr(1,1,ikloc),vgkcnr(1,1,ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc))
-!    call gensfacgp(ngknr(ikloc),vgkcnr(1,1,ikloc),ngkmax,sfacgknr(1,1,ikloc))
-!    do ig=1,ngknr(ikloc)
-!      call genylm(lmaxvr,tpgknr(1,ig,ikloc),ylmgknr(1,ig,ikloc))
-!    enddo
-!  enddo
-!  allocate(wfsvmtloc(lmmaxvr,nrfmax,natmtot,nspinor,nstsv,nkptnrloc))
-!  allocate(wfsvitloc(ngkmax,nspinor,nstsv,nkptnrloc))
-!  allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptnrloc))
-!  allocate(evecsvloc(nstsv,nstsv,nkptnrloc))
-!  allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-!  if (wproc1) then
-!    sz=lmmaxvr*nrfmax*natmtot*nstsv*nspinor
-!    sz=sz+ngkmax*nstsv*nspinor
-!    sz=sz+nmatmax*nstfv*nspnfv
-!    sz=sz+nstsv*nstsv
-!    sz=16*sz*nkptnrloc/1024/1024
-!    write(151,*)
-!    write(151,'("Size of wave-function arrays (MB) : ",I6)')sz
-!    write(151,*)
-!    write(151,'("Reading eigen-vectors")')
-!    call flushifc(151)
-!  endif
-!  call timer_start(1,reset=.true.)
-!! read eigen-vectors
-!  if (mpi_grid_side(dims=(/dim_k/))) then
-!    do i=0,mpi_grid_size(dim_k)-1
-!      if (i.eq.mpi_grid_x(dim_k)) then
-!        do ikloc=1,nkptnrloc
-!          ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-!          call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfvloc(1,1,1,ikloc))
-!          call getevecsv(vklnr(1,ik),evecsvloc(1,1,ikloc))
-!        enddo !ikloc
-!      endif
-!      if (.not.parallel_read) call mpi_grid_barrier(dims=(/dim_k/))
-!    enddo
-!  endif !mpi_grid_side(dims=(/dim_k/)
-!  call mpi_grid_barrier
-!  call mpi_grid_bcast(evecfvloc(1,1,1,1),nmatmax*nstfv*nspnfv*nkptnrloc,&
-!    dims=(/dim2,dim3/))
-!  call mpi_grid_bcast(evecsvloc(1,1,1),nstsv*nstsv*nkptnrloc,&
-!    dims=(/dim2,dim3/))
-!! transform eigen-vectors
-!  wfsvmtloc=zzero
-!  wfsvitloc=zzero
-!  do ikloc=1,nkptnrloc
-!    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-!! get apw coeffs 
-!    call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),        &
-!      sfacgknr(1,1,ikloc),apwalm)
-!! generate wave functions in muffin-tins
-!    call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
-!      evecsvloc(1,1,ikloc),apwalm,wfsvmtloc(1,1,1,1,1,ikloc))
-!! generate wave functions in interstitial
-!    call genwfsvit(ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
-!      evecsvloc(1,1,ikloc),wfsvitloc(1,1,1,ikloc))
-!  enddo !ikloc
-!  call timer_stop(1)
-!  if (wproc1) then
-!    write(151,'("Done in ",F8.2," seconds")')timer_get_value(1)
-!    call timestamp(151)
-!    call flushifc(151)
-!  endif
-!! generate Wannier function expansion coefficients
-!  if (wannier_megq) then
-!    call timer_start(1,reset=.true.)
-!    if (allocated(wann_c)) deallocate(wann_c)
-!! use first nkptnrloc points to store wann_c(k) and second nkptnrloc points
-!!   to store wann_c(k+q)
-!    allocate(wann_c(nwann,nstsv,2*nkptnrloc))
-!    if (wproc1) then
-!      write(151,*)
-!      write(151,'("Generating Wannier functions")')
-!      call flushifc(151)
-!    endif !wproc1
-!    do ikloc=1,nkptnrloc
-!      ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-!      call genwann_c(ik,vkcnr(:,ik),lr_evalsvnr(1,ik),wfsvmtloc(1,1,1,1,1,ikloc),&
-!        wann_c(1,1,ikloc))  
-!      if (ldisentangle) then
-!! disentangle bands
-!        call disentangle(lr_evalsvnr(1,ik),wann_c(1,1,ikloc),evecsvloc(1,1,ikloc))
-!! recompute wave functions
-!! get apw coeffs 
-!        call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),        &
-!          sfacgknr(1,1,ikloc),apwalm)
-!! generate wave functions in muffin-tins
-!        call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
-!          evecsvloc(1,1,ikloc),apwalm,wfsvmtloc(1,1,1,1,1,ikloc))
-!! generate wave functions in interstitial
-!        call genwfsvit(ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
-!          evecsvloc(1,1,ikloc),wfsvitloc(1,1,1,ikloc))       
-!      endif
-!    enddo !ikloc
-!  endif !wannier
-!! after optinal band disentanglement we can finally synchronize all eigen-values
-!!   and compute band occupation numbers 
-!  call mpi_grid_reduce(lr_evalsvnr(1,1),nstsv*nkptnr,dims=(/dim_k/),all=.true.)
-!  allocate(lr_occsvnr(nstsv,nkptnr))
-!  call occupy2(nkptnr,wkptnr,lr_evalsvnr,lr_occsvnr)
-!  if (wannier_megq) then
-!! calculate Wannier function occupancies 
-!    wann_occ=0.d0
-!    do n=1,nwann
-!      do ikloc=1,nkptnrloc
-!        ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-!        do j=1,nstsv
-!          w2=dreal(dconjg(wann_c(n,j,ikloc))*wann_c(n,j,ikloc))
-!          wann_occ(n)=wann_occ(n)+w2*lr_occsvnr(j,ik)/nkptnr
-!        enddo
-!      enddo
-!    enddo
-!    call mpi_grid_reduce(wann_occ(1),nwann,dims=(/dim_k/),all=.true.)
-!    if (wproc1) then
-!      write(151,'("  Wannier function occupation numbers : ")')
-!      do n=1,nwann
-!        write(151,'("    n : ",I4,"  occ : ",F8.6)')n,wann_occ(n)
-!      enddo
-!    endif
-!    if (wproc1) then
-!      write(151,'("  Dielectric Wannier functions : ",L1)')wann_diel()
-!    endif
-!    call timer_stop(1)
-!    if (wproc1) then
-!      write(151,'("Done in ",F8.2," seconds")')timer_get_value(1)
-!      call timestamp(151)
-!      call flushifc(151)
-!    endif
-!  endif !wannier
-!  deallocate(apwalm)
-!  deallocate(vgklnr)
-!  deallocate(vgkcnr)
-!  deallocate(gknr)
-!  deallocate(tpgknr)
-!  deallocate(sfacgknr)
   if (spinpol) then
     if (allocated(spinor_ud)) deallocate(spinor_ud)
     allocate(spinor_ud(2,nstsv,nkptnr))
@@ -459,7 +279,7 @@ do i=1,nepts
   lr_w(i)=dcmplx(domega*(i-1),lr_eta)/ha2ev
 enddo
 
-if (crpa) then
+if (crpa.or.task.eq.402) then
   maxtr_uscrn=1
   ntr_uscrn=(2*maxtr_uscrn+1)**3
   if (allocated(vtl_uscrn)) deallocate(vtl_uscrn)
@@ -532,6 +352,18 @@ if (task.eq.401) then
     call flushifc(151)
   endif
 endif
+!---------------------------------------!
+!    task 402: compute me and bare U    !
+!---------------------------------------!
+if (task.eq.402) then
+  if (wproc1) call timestamp(151,txt='start task 402')
+  do iq=ivq1,ivq2
+    call genmegq(ivq0m_list(1,iq))
+    call genubare(ivq0m_list(1,iq))
+  enddo 
+  call write_ubare
+  if (wproc1) call timestamp(151,txt='stop task 402')
+endif
 
 !------------------------------------------!
 !    task 403: compute me, chi0 and chi    !
@@ -542,9 +374,8 @@ if (task.eq.403) then
     call genmegq(ivq0m_list(1,iq))
     call genchi0(ivq0m_list(1,iq))
   enddo 
-  if (crpa) call write_u
+  if (crpa) call write_uscrn
   if (wproc1) call timestamp(151,txt='stop task 403')
-!  if (crpa) call qsum
 endif
 
 #ifdef _PAPI_

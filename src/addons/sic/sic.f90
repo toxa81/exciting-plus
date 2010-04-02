@@ -2,12 +2,13 @@ subroutine sic
 use modmain
 use mod_lfa
 use mod_nrkp
+use modxcifc
 implicit none
 
 integer i1,i2,i3,n
 integer ik,ikloc,ik1,j,ig,sz,i,isym
 integer n1,n2,ispn
-integer itr,ntrloc,it,jt,itloc,ir
+integer itr,ntrloc,it,jt,itloc,ir,m,ias
 real(8) vtrc(3)
 complex(8) expikt
 
@@ -34,10 +35,16 @@ complex(8), allocatable :: vsic(:,:,:)
 complex(8), allocatable :: ubare(:,:,:)
 complex(8), allocatable :: h0wan(:,:,:)
 complex(8), allocatable :: zm1(:,:,:)
+real(8), allocatable :: f3(:),f4(:)
+
+real(8), allocatable :: vx(:),vc(:)
 integer idm
 complex(8), allocatable :: ovlm(:,:,:)
 complex(8), external :: zfinp_
 complex(8) z1
+integer np
+real(8), allocatable :: vpl(:,:)
+real(8), allocatable :: fp(:)
 
 ! mpi grid layout
 !          (2)
@@ -122,35 +129,20 @@ if (wproc) then
     enddo
   enddo
 endif
-! deallocate unnecessary wave-functions
-deallocate(wfsvmtloc)
-deallocate(wfsvitloc)
-deallocate(evecfvloc)
-deallocate(evecsvloc)
-deallocate(wann_c)
 if (wproc) then
   call timestamp(151,'done with hoppings')
 endif
 
+call poteff1
+call mpi_grid_barrier
+call pstop
+
 ! this part is for debug purpose: construct potential from charge density 
 !  using Bloch basis
-!allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
-!allocate(evecsvloc(nstsv,nstsv,nkptloc))
-!if (mpi_grid_side(dims=(/dim_k/))) then
-!  do i=0,mpi_grid_size(dim_k)-1
-!    if (mpi_grid_x(dim_k).eq.i) then
-!      do ikloc=1,nkptloc
-!        ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-!        call getevecfv(vkl(1,ik),vgkl(1,1,1,ikloc),evecfvloc(1,1,1,ikloc))
-!        call getevecsv(vkl(1,ik),evecsvloc(1,1,ikloc))
-!      end do
-!    end if
-!    call mpi_grid_barrier(dims=(/dim_k/))
-!  end do
-!endif
-!occsv(1,:)=0.d0
-!occsv(2:4,:)=1.d0
-!occsv(5:,:)=0.d0
+! NiO case
+!occsv(1:4,:)=0.d0
+!occsv(5:7,:)=1.d0
+!occsv(8:,:)=0.d0
 !rhomt(:,:,:)=0.d0
 !rhoir(:)=0.d0
 !if (spinpol) then
@@ -187,7 +179,33 @@ endif
 !do ir=1,nrmt(ias2is(1))
 !  write(101,*)spr(ir,ias2is(1)),vclmt(1,ir,1)
 !enddo
-!spzn=spzn1
+!spzn=spzn1 
+!
+!np=500
+!allocate(vpl(3,np))
+!do i=1,np
+!  vpl(:,i)=2*(/i,i,i/)/1.d0/np
+!enddo
+!allocate(fp(np))
+!call rfarray(lmaxvr,lmmaxvr,vclmt,vclir,np,vpl,fp)
+!do i=1,np
+!  write(100,*)i,fp(i)
+!enddo
+
+
+! this is just a memo: 
+! coordinates -> harmonics but we need reverse if we want to plot v(r)
+!call dgemm('N','N',lmmaxvr,nrcmt(is),lmmaxvr,1.d0,rfshtvr,lmmaxvr,rfmt, &
+!     lmmaxvr,0.d0,rhomt(:,:,ias),ld)
+
+
+
+! deallocate unnecessary wave-functions
+deallocate(wfsvmtloc)
+deallocate(wfsvitloc)
+deallocate(evecfvloc)
+deallocate(evecsvloc)
+deallocate(wann_c)
 
 
 ntrloc=mpi_grid_map(ntr,dim2)
@@ -363,36 +381,54 @@ do n=1,nwann
   enddo
 enddo
 
-! compute bare Coulomb interaction
-allocate(ubare(nwann,nwann,ntr))
-ubare=zzero
-do it=1,ntr
-  do n1=1,nwann
-    do n2=1,nwann
-      ubare(n1,n2,it)=lfa_dotp(.false.,vtl(1,it),vcwanmt(1,1,1,1,n1),&
-        vcwanir(1,1,n1),rhowanmt(1,1,1,1,n2),rhowanir(1,1,n2))
+m=max(lmmaxvr,ngrtot)
+allocate(vx(m),vc(m))
+allocate(f3(m),f4(m))
+
+! add XC potential to Coulomb
+do n=1,nwann
+  do itloc=1,ntrloc
+    do ias=1,natmtot
+      do ir=1,nrmt(ias2is(ias))
+        call xcifc(xctype,n=lmmaxvr,rho=dreal(rhowanmt(:,ir,ias,itloc,n)),ex=f3,ec=f4,vx=vx,vc=vc)
+        vcwanmt(:,ir,ias,itloc,n)=vcwanmt(:,ir,ias,itloc,n)+vc(1:lmmaxvr)+vx(1:lmmaxvr)
+      enddo
     enddo
+    call xcifc(xctype,n=ngrtot,rho=dreal(rhowanir(:,itloc,n)),ex=f3,ec=f4,vx=vx,vc=vc)
+    vcwanir(:,itloc,n)=vcwanir(:,itloc,n)+vc(1:ngrtot)+vx(1:ngrtot)
   enddo
 enddo
-if (wproc) then
-  write(151,*)
-  write(151,'("Bare Coulomb interaction")')
-  do it=1,ntr
-    write(151,'("  translation : ",3I4)')vtl(:,it)
-    write(151,'("    real part : ")')  
-    do n1=1,nwann
-      write(151,'(4X,255F12.6)')(dreal(ubare(n1,n2,it)),n2=1,nwann)
-    enddo
-    write(151,'("    image part : ")')  
-    do n1=1,nwann
-      write(151,'(4X,255F12.6)')(dimag(ubare(n1,n2,it)),n2=1,nwann)
-    enddo
-  enddo
-  write(151,*)
-endif
-if (wproc) then
-  call timestamp(151,'done with bare Coulomb integrals')
-endif
+deallocate(vx,vc,f3,f4)
+! compute bare Coulomb interaction
+!allocate(ubare(nwann,nwann,ntr))
+!ubare=zzero
+!do it=1,ntr
+!  do n1=1,nwann
+!    do n2=1,nwann
+!      ubare(n1,n2,it)=lfa_dotp(.false.,vtl(1,it),vcwanmt(1,1,1,1,n1),&
+!        vcwanir(1,1,n1),rhowanmt(1,1,1,1,n2),rhowanir(1,1,n2))
+!    enddo
+!  enddo
+!enddo
+!if (wproc) then
+!  write(151,*)
+!  write(151,'("Bare Coulomb interaction")')
+!  do it=1,ntr
+!    write(151,'("  translation : ",3I4)')vtl(:,it)
+!    write(151,'("    real part : ")')  
+!    do n1=1,nwann
+!      write(151,'(4X,255F12.6)')(dreal(ubare(n1,n2,it)),n2=1,nwann)
+!    enddo
+!    write(151,'("    image part : ")')  
+!    do n1=1,nwann
+!      write(151,'(4X,255F12.6)')(dimag(ubare(n1,n2,it)),n2=1,nwann)
+!    enddo
+!  enddo
+!  write(151,*)
+!endif
+!if (wproc) then
+!  call timestamp(151,'done with bare Coulomb integrals')
+!endif
 
 
 ! multiply potential by Wannier function
