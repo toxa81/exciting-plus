@@ -15,6 +15,8 @@ real(8), allocatable :: vcgq(:)
 
 logical, parameter :: lwrite_w=.false. 
 
+! comment: this code needs a revision; currently it is not used
+
 ! G+q vector in Cartesian coordinates
 real(8) vgq0c(3)
 ! length of G+q vector
@@ -95,9 +97,9 @@ do iwloc=1,nwstep
         dims=(/ngvecme,ngvecme/))
     endif
 !    call mpi_grid_bcast(chi0(1,1),ngvecme*ngvecme,dims=(/dim_b/))
-    if (crpa.and.mpi_grid_root(dims=(/dim_b/))) then
-      call genwu(iw,chi0,vcgq,qnm,krnl_scr)
-    endif
+!    if (crpa.and.mpi_grid_root(dims=(/dim_b/))) then
+!      call genuscrn(iwloc,vcgq,chi0loc(1,1,iwloc),megqwan1,krnl_scr)
+!    endif
 !    if (.not.crpa) then
 !      do ifxc=ifxc1,ifxc2
 !        fxca=fxca0+(ifxc-1)*fxca1

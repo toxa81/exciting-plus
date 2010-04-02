@@ -1,7 +1,6 @@
 #ifdef _HDF5_
 subroutine genchi0(ivq0m)
 use modmain
-use hdf5
 implicit none
 ! arguments
 integer, intent(in) :: ivq0m(3)
@@ -318,7 +317,7 @@ if (.not.write_chi0_file) then
 ! compute screened W and U  
     if (crpa) then
       call timer_start(5)
-      call genwu(iwloc,vcgq,chi0loc(1,1,iwloc),megqwan1,krnl_scr)
+      call genuscrn(iwloc,vcgq,chi0loc(1,1,iwloc),megqwan1,krnl_scr)
       call timer_stop(5)
     else
 ! compute response functions 
