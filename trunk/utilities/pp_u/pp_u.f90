@@ -44,7 +44,6 @@ if (exist) then
   
   allocate(w(nepts))
   allocate(uscrn(nwann,nwann,nepts))
-  allocate(ubare(nwann,nwann))
   c3="+++"
   do it=1,ntr_uscrn
     if (vtl_uscrn(1,it).eq.vtl(1).and.vtl_uscrn(2,it).eq.vtl(2).and.&
@@ -64,9 +63,6 @@ if (exist) then
         call hdf5_read(fname,"/iwloc/"//c8,"w",w(iw))
         call hdf5_read(fname,"/iwloc/"//c8//"/"//c3,"uscrn",uscrn(1,1,iw),(/nwann,nwann/))
       enddo
-      if (n.eq.0) then
-        call hdf5_read(fname,"/iwloc/00000001/"//c3,"ubare",ubare(1,1),(/nwann,nwann/))
-      endif
     endif
   enddo
   
@@ -91,16 +87,6 @@ if (exist) then
   write(150,'("#  imag part")')
   do i=1,nwann_stat
     write(150,'("# ",100F12.6)')(dimag(uscrn_stat(i,j,1)),j=1,nwann_stat)
-  enddo
-  write(150,'("#")')
-  write(150,'("# Bare U matrix")')
-  write(150,'("#  real part")')
-  do i=1,nwann_stat
-    write(150,'("# ",100F12.6)')(dreal(ubare(iwann_stat(i),iwann_stat(j))),j=1,nwann_stat)
-  enddo
-  write(150,'("#  imag part")')
-  do i=1,nwann_stat
-    write(150,'("# ",100F12.6)')(dimag(ubare(iwann_stat(i),iwann_stat(j))),j=1,nwann_stat)
   enddo
   write(150,'("#")')
   write(150,'("# columns : ")')
@@ -155,6 +141,9 @@ if (exist) then
     enddo
   enddo
   write(150,'("Average total screened U : ",F12.6)')uavg 
+  close(150)
+  
+  deallocate(vtl_uscrn)
 endif
 
 fname="ubare.hdf"
