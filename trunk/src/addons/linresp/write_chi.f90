@@ -13,7 +13,7 @@ integer ie,i
 real(8) t1,t2
 
 fsum=0.d0
-do ie=1,nepts-1
+do ie=1,lr_nw-1
   t1=dimag(-1.d0/f_response(f_epsilon_eff,ie,ifxc))*dreal(lr_w(ie))
   t2=dimag(-1.d0/f_response(f_epsilon_eff,ie+1,ifxc))*dreal(lr_w(ie+1))
   fsum=fsum+0.5d0*dreal(lr_w(ie+1)-lr_w(ie))*(t1+t2)
@@ -60,8 +60,8 @@ write(160,'("#  16:  Im sigma_scalar [eV]           ")')
 write(160,'("#  17:  loss_function                  ")')
 write(160,'("#  18:  loss_function_scalar           ")')
 write(160,'("#")')
-allocate(func(18,nepts))
-do ie=1,nepts
+allocate(func(18,lr_nw))
+do ie=1,lr_nw
   func(1,ie)=dreal(lr_w(ie))*ha2ev
   func(2,ie)=-dreal(f_response(f_chi0,ie,ifxc))/ha2ev/(au2ang)**3
   func(3,ie)=-dimag(f_response(f_chi0,ie,ifxc))/ha2ev/(au2ang)**3
@@ -109,8 +109,8 @@ if (wannier_chi0_chi) then
   write(160,'("#  12:  loss_function                          ")')
 
   write(160,'("#")')
-  allocate(func(12,nepts))
-  do ie=1,nepts
+  allocate(func(12,lr_nw))
+  do ie=1,lr_nw
     func(1,ie)=dreal(lr_w(ie))*ha2ev
     func(2,ie)=-dreal(f_response(f_chi0_wann_full,ie,ifxc))/ha2ev/(au2ang)**3
     func(3,ie)=-dimag(f_response(f_chi0_wann_full,ie,ifxc))/ha2ev/(au2ang)**3

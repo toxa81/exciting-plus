@@ -176,5 +176,18 @@ deallocate(f1)
 return
 end subroutine
 
+!subroutine lfa_write(fname,fmt,fir)
+!use modmain
+!implicit none
+!character*(*), intent(in) :: fname
+!complex(8), intent(in) :: fmt(lmmaxvr,nrmtmax,natmtot,*)
+!complex(8), intent(in) :: fir(ngrtot,*)
+!
+!integer ntrloc
+!
+!ntrloc=mpi_grid_map(ntr,dim2)
+!
+!end subroutine
+
 
 end module

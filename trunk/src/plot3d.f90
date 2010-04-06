@@ -73,7 +73,8 @@ do ip3=0,np3d(3)-1
     do ip1=0,np3d(1)-1
       t1=dble(ip1)/dble(np3d(1))
       ip=ip+1
-      vc(:)=vclp3d(:,1)-0.5d0*(v1(:)+v2(:)+v3(:))+t1*v1(:)+t2*v2(:)+t3*v3(:)
+      !vc(:)=vclp3d(:,1)-0.5d0*(v1(:)+v2(:)+v3(:))+t1*v1(:)+t2*v2(:)+t3*v3(:)
+      vc(:)=vclp3d(:,1)+t1*v1(:)+t2*v2(:)+t3*v3(:)
       call r3mv(ainv,vc,vpl(:,ip))
     end do
   end do

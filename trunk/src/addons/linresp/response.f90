@@ -11,19 +11,6 @@ real real_time,cpu_time,mflops
 integer*8 fp_ins
 #endif
 
-!integer, allocatable :: ngknr(:)
-!integer, allocatable :: igkignr(:,:)
-!real(8), allocatable :: vgklnr(:,:,:)
-!real(8), allocatable :: vgkcnr(:,:,:)
-!real(8), allocatable :: gknr(:,:)
-!real(8), allocatable :: tpgknr(:,:,:)
-!complex(8), allocatable :: sfacgknr(:,:,:)
-!complex(8), allocatable :: ylmgknr(:,:,:)
-!
-!complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
-!complex(8), allocatable :: wfsvitloc(:,:,:,:)
-!complex(8), allocatable :: apwalm(:,:,:,:)
-
 integer i,j,n,ik,ikloc,ik1,isym,idx0,ivq1,ivq2,iq,ig
 integer n1,nwloc
 logical l1
@@ -272,11 +259,12 @@ if (wannier_megq) then
 endif
 
 ! setup energy mesh
-nepts=1+int(maxomega/domega)
+!lr_nw=1+int(maxomega/domega)
+lr_dw=(lr_w1-lr_w0)/(lr_nw-1)
 if (allocated(lr_w)) deallocate(lr_w)
-allocate(lr_w(nepts))
-do i=1,nepts
-  lr_w(i)=dcmplx(domega*(i-1),lr_eta)/ha2ev
+allocate(lr_w(lr_nw))
+do i=1,lr_nw
+  lr_w(i)=dcmplx(lr_w0+lr_dw*(i-1),lr_eta)/ha2ev
 enddo
 
 if (crpa.or.task.eq.402) then
@@ -297,7 +285,7 @@ if (crpa.or.task.eq.402) then
       enddo
     enddo
   enddo
-  nwloc=mpi_grid_map(nepts,dim_k)
+  nwloc=mpi_grid_map(lr_nw,dim_k)
   if (allocated(uscrnwan)) deallocate(uscrnwan)
   allocate(uscrnwan(nwann,nwann,ntr_uscrn,nwloc))
   uscrnwan=zzero
