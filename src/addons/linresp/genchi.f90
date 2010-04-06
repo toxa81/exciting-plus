@@ -40,7 +40,7 @@ fvscr=trim(qnm)//"_vscr.hdf5"
 if (mpi_grid_root((/dim_k,dim_b/)).and.write_chi0_file.and.lwrite_w) then
   call hdf5_create_file(trim(fvscr))
   call hdf5_create_group(trim(fvscr),'/','iw')
-  do i=1,nepts
+  do i=1,lr_nw
     write(c8,'(I8.8)')i
     call hdf5_create_group(trim(fvscr),'/iw',c8)
   enddo
@@ -52,7 +52,7 @@ allocate(krnl(ngvecme,ngvecme))
 if (screened_w.or.crpa) allocate(krnl_scr(ngvecme,ngvecme))
 allocate(ixcft(ngvec))
 if (allocated(f_response)) deallocate(f_response)
-allocate(f_response(nf_response,nepts,nfxca))
+allocate(f_response(nf_response,lr_nw,nfxca))
 f_response=zzero
 
 ! setup sqrt(4Pi)/|G+q| array
@@ -81,8 +81,8 @@ endif !wannier_chi0_chi
 
 ! distribute energy points between 1-st dimension
 i=0
-nwstep=mpi_grid_map(nepts,dim_k,x=i)
-nwloc=mpi_grid_map(nepts,dim_k)
+nwstep=mpi_grid_map(lr_nw,dim_k,x=i)
+nwloc=mpi_grid_map(lr_nw,dim_k)
 ! distribute nfxca between 2-nd dimension 
 bs=mpi_grid_map(nfxca,dim_b,offs=idx0)
 ifxc1=idx0+1
@@ -90,7 +90,7 @@ ifxc2=idx0+bs
 ! main loop over energy points 
 do iwloc=1,nwstep
   if (iwloc.le.nwloc) then
-    iw=mpi_grid_map(nepts,dim_k,loc=iwloc)
+    iw=mpi_grid_map(lr_nw,dim_k,loc=iwloc)
     if (mpi_grid_root(dims=(/dim_b/))) then
       write(path,'("/iw/",I8.8)')iw
       call hdf5_read(trim(fchi0),trim(path),'chi0',chi0(1,1),&
@@ -130,7 +130,7 @@ do iwloc=1,nwstep
     do i=0,mpi_grid_size(dim_k)-1
       if (mpi_grid_x(dim_k).eq.i) then
         if (iwloc.le.nwloc) then
-          iw=mpi_grid_map(nepts,dim_k,loc=iwloc)
+          iw=mpi_grid_map(lr_nw,dim_k,loc=iwloc)
           write(path,'("/iw/",I8.8)')iw
           call hdf5_write(trim(fvscr),trim(path),'vscr',krnl_scr(1,1),&
             dims=(/ngvecme,ngvecme/))
@@ -140,7 +140,7 @@ do iwloc=1,nwstep
     enddo
    endif
 enddo
-call mpi_grid_reduce(f_response(1,1,1),nf_response*nepts*nfxca,dims=(/dim_k,dim_b/))
+call mpi_grid_reduce(f_response(1,1,1),nf_response*lr_nw*nfxca,dims=(/dim_k,dim_b/))
 ! write response functions to .dat file
 if (mpi_grid_root(dims=(/dim_k,dim_b/))) then
   do ifxc=1,nfxca

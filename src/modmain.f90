@@ -1010,9 +1010,20 @@ integer gvecme1
 integer gvecme2
 ! number of G-vectors for matrix elements
 integer ngvecme
-real(8) maxomega
-real(8) domega
+
+! number of energy-mesh points
+!integer nepts
+integer lr_nw
+real(8) lr_w0
+real(8) lr_w1
+real(8) lr_dw
+! energy mesh
+complex(8), allocatable :: lr_w(:)
+!real(8) maxomega
+!real(8) domega
 real(8) lr_eta
+
+
 real(8) lr_e1,lr_e2
 ! type of linear response calculation
 !   0 : charge response
@@ -1086,10 +1097,6 @@ complex(8), allocatable :: gntuju(:,:,:)
 !  2-nd index: 1: index of k'=k+q-K
 !              2: index of K-vector which brings k+q to first BZ
 integer, allocatable :: idxkq(:,:)
-! number of energy-mesh points
-integer nepts
-! energy mesh
-complex(8), allocatable :: lr_w(:)
 real(8) fxca0
 real(8) fxca1
 integer nfxca
@@ -1126,6 +1133,10 @@ real(8) megqwan_maxdist
 
 logical crpa
 real(8) crpa_e1,crpa_e2
+! 0: W is computed from "symmetrized" dielectric function
+! 1: W is computed from chi
+! 2: W is computed from chi but without bare Coulomb part
+integer crpa_scrn
 
 integer, allocatable :: spinor_ud(:,:,:)
 

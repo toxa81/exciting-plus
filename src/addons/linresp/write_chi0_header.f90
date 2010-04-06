@@ -9,7 +9,7 @@ character*8 c8
 fchi0=trim(qnm)//"_chi0.hdf5"
 call hdf5_create_file(trim(fchi0))
 call hdf5_create_group(trim(fchi0),'/','iw')
-do i=1,nepts
+do i=1,lr_nw
   write(c8,'(I8.8)')i
   call hdf5_create_group(trim(fchi0),'/iw',c8)
 enddo

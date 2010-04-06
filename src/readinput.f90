@@ -201,6 +201,10 @@ wannier_soft_eint_e1=-100.d0
 wannier_soft_eint_e2= 100.d0
 wannier_min_prjao=0.01d0
 ldisentangle=.false.
+lr_nw=200
+lr_w0=0.d0
+lr_w1=20.d0
+lr_eta=0.3d0
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -919,7 +923,9 @@ case('response')
   do i=1,nvq0
     read(50,*,err=20) ivq0m_list(:,i)
   enddo
-  read(50,*,err=20) maxomega, domega, lr_eta
+case('response_w')
+  read(50,*,err=20) lr_nw
+  read(50,*,err=20) lr_w0,lr_w1,lr_eta
 case('response_bands')
   read(50,*,err=20) lr_e1,lr_e2
 case('response_fxc')
@@ -1017,6 +1023,7 @@ case('clda')
 case('crpa')
   read(50,*,err=20)crpa
   read(50,*,err=20)crpa_e1,crpa_e2
+  read(50,*,err=20)crpa_scrn
 case('mpi_grid')
   lmpi_grid=.true.
   read(50,*,err=20)mpi_grid(1),mpi_grid(2),mpi_grid(3)

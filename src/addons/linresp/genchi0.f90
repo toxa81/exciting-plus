@@ -59,9 +59,9 @@ if (wproc) then
   endif
   write(150,*)
   write(150,'("Energy mesh parameters:")')
-  write(150,'("  maximum energy [eV] : ", F9.4)')maxomega
-  write(150,'("  energy step    [eV] : ", F9.4)')domega
-  write(150,'("  eta            [eV] : ", F9.4)')lr_eta
+  write(150,'("  energy interval [eV] : ", 2F9.4)')lr_w0,lr_w1
+  write(150,'("  energy step     [eV] : ", F9.4)')lr_dw
+  write(150,'("  eta             [eV] : ", F9.4)')lr_eta
   write(150,*)
   if (lrtype.eq.0) then
     write(150,'("Type of fxc kernel : ")')
@@ -196,14 +196,14 @@ if (screened_w.or.crpa) then
 endif
 allocate(ixcft(ngvec))
 if (allocated(f_response)) deallocate(f_response)
-allocate(f_response(nf_response,nepts,nfxca))
+allocate(f_response(nf_response,lr_nw,nfxca))
 f_response=zzero
 
 fchi0=trim(qnm)//"_chi0.hdf5"
 if (mpi_grid_root((/dim_k,dim_b/)).and.write_chi0_file) then
   call hdf5_create_file(trim(fchi0))
   call hdf5_create_group(trim(fchi0),'/','iw')
-  do i=1,nepts
+  do i=1,lr_nw
     write(c8,'(I8.8)')i
     call hdf5_create_group(trim(fchi0),'/iw',c8)
   enddo
@@ -213,7 +213,7 @@ call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 ! distribute nfxca between 2-nd dimension 
 nfxcloc=mpi_grid_map(nfxca,dim_b)
 ! distribute frequency points over 1-st dimension
-nwloc=mpi_grid_map(nepts,dim_k)
+nwloc=mpi_grid_map(lr_nw,dim_k)
 
 if (.not.write_chi0_file) then
   allocate(chi0loc(ngvecme,ngvecme,nwloc),stat=ierr)
@@ -238,7 +238,7 @@ call timer_reset(6)
 call timer_reset(7)
 call timer_reset(8)
 ! loop over energy points
-do iw=ie1,nepts
+do iw=ie1,lr_nw
   chi0=zzero
   if (wannier_chi0_chi) chi0wan_k=zzero
 ! sum over fraction of k-points
@@ -250,7 +250,7 @@ do iw=ie1,nepts
     endif
   enddo
 ! find the processor j which will get the full chi0 and chi0wan matrices
-  jwloc=mpi_grid_map(nepts,dim_k,glob=iw,x=j)
+  jwloc=mpi_grid_map(lr_nw,dim_k,glob=iw,x=j)
 ! sum over k-points and band transitions
   call mpi_grid_reduce(chi0(1,1),ngvecme*ngvecme,dims=(/dim_k,dim_b/),&
     root=(/j,0/))
@@ -311,7 +311,7 @@ call timer_stop(1)
 
 if (.not.write_chi0_file) then
   do iwloc=1,nwloc
-    iw=mpi_grid_map(nepts,dim_k,loc=iwloc)
+    iw=mpi_grid_map(lr_nw,dim_k,loc=iwloc)
 ! broadcast chi0
     call mpi_grid_bcast(chi0loc(1,1,iwloc),ngvecme*ngvecme,dims=(/dim_b/))
 ! compute screened W and U  
@@ -359,19 +359,19 @@ t7=timer_get_value(7)
 t8=timer_get_value(8)
 if (wproc) then
   write(150,*)
-  write(150,'("Total time per frequency point   : ",F8.2)')t1/nepts
-  write(150,'("  Bloch basis part (chi0)        : ",F8.2)')t2/nepts
-  write(150,'("  Bloch basis part (chi)         : ",F8.2)')t6/nepts  
-  write(150,'("  Wannier basis part (chi0wan_k) : ",F8.2)')t3/nepts
-  write(150,'("  Wannier basis part (chi0wan)   : ",F8.2)')t4/nepts 
+  write(150,'("Total time per frequency point   : ",F8.2)')t1/lr_nw
+  write(150,'("  Bloch basis part (chi0)        : ",F8.2)')t2/lr_nw
+  write(150,'("  Bloch basis part (chi)         : ",F8.2)')t6/lr_nw  
+  write(150,'("  Wannier basis part (chi0wan_k) : ",F8.2)')t3/lr_nw
+  write(150,'("  Wannier basis part (chi0wan)   : ",F8.2)')t4/lr_nw 
   write(150,'("  Wannier basis part (crpa)      : ",F8.2)')t5/nwloc   
-  write(150,'("  Wannier basis part (chi)       : ",F8.2)')t7/nepts
-  write(150,'("  Write chi0                     : ",F8.2)')t8/nepts  
+  write(150,'("  Wannier basis part (chi)       : ",F8.2)')t7/lr_nw
+  write(150,'("  Write chi0                     : ",F8.2)')t8/lr_nw  
   call flushifc(150)
 endif
 
 if (.not.write_chi0_file.and..not.crpa) then
-  call mpi_grid_reduce(f_response(1,1,1),nf_response*nepts*nfxca,dims=(/dim_k,dim_b/))
+  call mpi_grid_reduce(f_response(1,1,1),nf_response*lr_nw*nfxca,dims=(/dim_k,dim_b/))
   if (mpi_grid_root(dims=(/dim_k,dim_b/))) then
 ! write response functions to .dat file
     do ifxc=1,nfxca

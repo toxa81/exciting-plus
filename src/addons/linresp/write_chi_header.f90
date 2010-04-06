@@ -14,9 +14,9 @@ write(fout,'("#")')
 write(fout,'("# k-mesh division                    : ",3I4)') &
   ngridk(1),ngridk(2),ngridk(3)
 write(fout,'("# Energy mesh parameters             : ")')
-write(fout,'("#   maximum energy [eV]              : ", F9.4)')maxomega
-write(fout,'("#   energy step    [eV]              : ", F9.4)')domega
-write(fout,'("#   eta            [eV]              : ", F9.4)')lr_eta
+write(fout,'("#   energy interval [eV]              : ", 2F9.4)')lr_w0,lr_w1
+write(fout,'("#   energy step     [eV]              : ", F9.4)')lr_dw
+write(fout,'("#   eta             [eV]              : ", F9.4)')lr_eta
 write(fout,'("# q-vector information               : ")')
 write(fout,'("#   q-vector (mesh coord.)           : ",3I4)')ivq0m
 write(fout,'("#   q-vector (lat. coord.)           : ",3F18.10)')vq0l
