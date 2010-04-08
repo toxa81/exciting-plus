@@ -34,7 +34,7 @@ integer iw,nwloc,iwloc,nwstep
 if (lrtype.eq.1) call readstate
 
 call qname(ivq0m,qnm)
-qnm="./"//trim(qnm)//"/"//trim(qnm)
+qnm="./qv/"//trim(qnm)//"/"//trim(qnm)
 fchi0=trim(qnm)//"_chi0.hdf5"
 fvscr=trim(qnm)//"_vscr.hdf5"
 if (mpi_grid_root((/dim_k,dim_b/)).and.write_chi0_file.and.lwrite_w) then

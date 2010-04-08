@@ -32,7 +32,7 @@ lmaxexp=lmaxvr+2
 lmmaxexp=(lmaxexp+1)**2
 
 call qname(ivq0m,qnm)
-qnm="./"//trim(qnm)//"/"//trim(qnm)
+qnm="./qv/"//trim(qnm)//"/"//trim(qnm)
 wproc=.false.
 if (mpi_grid_root((/dim_k,dim_b/))) then
   wproc=.true.

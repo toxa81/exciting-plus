@@ -134,9 +134,10 @@ if (task.eq.400.or.task.eq.402.or.task.eq.403) then
 endif
 ! create q-directories
 if (mpi_grid_root()) then
+  call system("mkdir -p  qv")
   do iq=1,nvq0
     call qname(ivq0m_list(:,iq),qnm)
-    call system("mkdir -p "//trim(qnm))
+    call system("mkdir -p ./qv/"//trim(qnm))
   enddo
 endif
 call mpi_grid_barrier()
