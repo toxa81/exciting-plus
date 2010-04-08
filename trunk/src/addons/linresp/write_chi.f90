@@ -22,7 +22,7 @@ enddo
 fxca=fxca0+(ifxc-1)*fxca1
 
 call qname(ivq0m,qnm)
-qnm="./"//trim(qnm)//"/"//trim(qnm)
+qnm="./qv/"//trim(qnm)//"/"//trim(qnm)
 write(c2,'(F7.3)')fxca
 write(c3,'(I8)')ngvecme
 write(c4,'(F6.3)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)/au2ang

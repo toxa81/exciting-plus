@@ -37,7 +37,7 @@ real(8) vtrc(3)
 real(8) t1,t2,t3,t4,t5,t6,t7,t8
 
 call qname(ivq0m,qnm)
-qnm="./"//trim(qnm)//"/"//trim(qnm)
+qnm="./qv/"//trim(qnm)//"/"//trim(qnm)
 wproc=.false.
 if (mpi_grid_root((/dim_k,dim_b/))) then
   wproc=.true.
