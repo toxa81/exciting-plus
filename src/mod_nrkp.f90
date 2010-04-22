@@ -11,16 +11,18 @@ complex(8), allocatable :: ylmgknr(:,:,:)
 
 complex(8), allocatable :: wfsvmtloc(:,:,:,:,:,:)
 complex(8), allocatable :: wfsvitloc(:,:,:,:)
+complex(8), allocatable :: pmat(:,:,:,:)
 
 real(8), allocatable :: evalsvnr(:,:)
 real(8), allocatable :: occsvnr(:,:)
 
 contains
 
-subroutine genwfnr(fout)
+subroutine genwfnr(fout,lpmat)
 use modmain
 implicit none
 integer, intent(in) :: fout
+logical, intent(in) :: lpmat
 integer ik,ikloc,n,j,ik1,isym,ig,i,sz
 complex(8), allocatable :: apwalm(:,:,:,:)
 real(8) w2
@@ -86,6 +88,9 @@ allocate(wfsvmtloc(lmmaxvr,nrfmax,natmtot,nspinor,nstsv,nkptnrloc))
 allocate(wfsvitloc(ngkmax,nspinor,nstsv,nkptnrloc))
 allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptnrloc))
 allocate(evecsvloc(nstsv,nstsv,nkptnrloc))
+if (lpmat) then
+  allocate(pmat(3,nstsv,nstsv,nkptnrloc))
+endif
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 if (wproc.and.fout.gt.0) then
   sz=lmmaxvr*nrfmax*natmtot*nstsv*nspinor
@@ -132,6 +137,10 @@ do ikloc=1,nkptnrloc
 ! generate wave functions in interstitial
   call genwfsvit(ngknr(ikloc),evecfvloc(1,1,1,ikloc), &
     evecsvloc(1,1,ikloc),wfsvitloc(1,1,1,ikloc))
+  if (lpmat) then
+    call genpmat(ngknr(ikloc),igkignr(1,ikloc),vgkcnr(1,1,ikloc),&
+      apwalm,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),pmat(1,1,1,ikloc))
+  endif    
 enddo !ikloc
 call timer_stop(1)
 if (wproc.and.fout.gt.0) then

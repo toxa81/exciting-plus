@@ -13,7 +13,7 @@ complex(8), allocatable :: wfsvit_jk(:,:,:)
 complex(8), allocatable :: wann_c_jk(:,:,:)
 integer ngknr_jk
 integer i,ikstep,sz,complete
-integer nkstep
+integer nkstep,ist1,ist2,ikloc,ik
 real(8) t1,t2,t3,t4,t5,dn1
 integer lmaxexp,lmmaxexp
 integer np
@@ -171,6 +171,23 @@ do ikstep=1,nkstep
   endif !ikstep.le.nkptnrloc
   call timer_stop(2)
 enddo !ikstep
+
+! hack for q=0
+if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
+  do ikloc=1,nkptnrloc
+    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+    megqblh(:,1,ikloc)=zzero
+    do i=1,nmegqblhloc(1,ikloc)
+      ist1=bmegqblh(1,i+nmegqblhloc(2,ikloc),ikloc)
+      ist2=bmegqblh(2,i+nmegqblhloc(2,ikloc),ikloc)
+      if (ist1.eq.ist2) megqblh(i,1,ikloc)=zone
+      megqblh(i,1,ikloc)=megqblh(i,1,ikloc)-&
+        dot_product((/0.1d0,0.d0,0.d0/),pmat(:,ist1,ist2,ikloc))/&
+        (evalsvnr(ist1,ik)-evalsvnr(ist2,ik)+swidth)          
+    enddo
+  enddo
+endif
+
 ! time for wave-functions send/recieve
 t1=timer_get_value(1)
 call mpi_grid_reduce(t1,dims=(/dim_k,dim_b/))
@@ -201,12 +218,12 @@ if (wproc) then
   write(150,'("Speed (me/sec/proc)                : ",F10.2)')dn1/t2
   call flushifc(150)
 endif
-
 if (wannier_megq) then
 ! sum over all k-points and interband transitions to get <n,T=0|e^{-i(G+q)x|n',T'>
   call mpi_grid_reduce(megqwan(1,1),nmegqwan*ngvecme,dims=(/dim_k,dim_b/),&
     all=.true.)
   megqwan=megqwan/nkptnr
+  megqwan=zone
 endif
 
 if (write_megq_file) then

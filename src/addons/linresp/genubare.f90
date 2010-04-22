@@ -9,18 +9,28 @@ complex(8) expiqt
 
 ntloc=mpi_grid_map(ntr_uscrn,dim_b)
 
-! setup sqrt(4Pi)/|G+q| array
+! setup 4Pi/|G+q|^2 array
 allocate(vcgq(ngvecme))
 do ig=1,ngvecme
 ! generate G+q vectors  
   vgq0c(:)=vgc(:,ig+gvecme1-1)+vq0rc(:)
-  gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
+  gq0=dot_product(vgq0c,vgq0c)
   if (ig.eq.1.and.ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
     vcgq(ig)=0.d0
+    do n1=1,8
+      vgq0c(:)=q0gamma(:,n1)
+      gq0=dot_product(vgq0c,vgq0c)
+      vcgq(ig)=vcgq(ig)+0.125*(2*Pi)**3*a0gamma(n1)*fourpi/gq0
+    enddo
   else
-    vcgq(ig)=sqrt(fourpi)/gq0
+    vcgq(ig)=fourpi/gq0
   endif
 enddo !ig
+vcgq(:)=vcgq(:)/omega/nkptnr
+
+if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
+  write(*,*)'gamma contribution to integral',vcgq(1)
+endif
 
 if (mpi_grid_x(dim_k).eq.0) then
   do itloc=1,ntloc
@@ -32,7 +42,7 @@ if (mpi_grid_x(dim_k).eq.0) then
       do n2=1,nwann
         do ig=1,ngvecme
           ubarewan(n1,n2,it)=ubarewan(n1,n2,it)+&
-            expiqt*dconjg(megqwan(idxmegqwan(n1,n1,0,0,0),ig))*(vcgq(ig)**2)*&
+            expiqt*dconjg(megqwan(idxmegqwan(n1,n1,0,0,0),ig))*vcgq(ig)* &
             megqwan(idxmegqwan(n2,n2,0,0,0),ig)
         enddo
       enddo

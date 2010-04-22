@@ -82,7 +82,7 @@ if (wproc) then
 endif
 
 call lfa_init(1)
-call genwfnr(151)  
+call genwfnr(151,.false.)  
 if (wproc) then
   call timestamp(151,'done with wavefunctions')
 endif
