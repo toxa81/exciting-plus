@@ -77,13 +77,17 @@ endif
 allocate(vcgq(ngvecme))
 do ig=1,ngvecme
 ! generate G+q vectors  
-  vgq0c(:)=vgc(:,ig+gvecme1-1)+vq0rc(:)
-  gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
   if (ig.eq.1.and.ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
-    vcgq(ig)=0.d0
+    vgq0c(:)=vgc(:,ig+gvecme1-1)+(/0.1d0,0.d0,0.d0/)
   else
-    vcgq(ig)=sqrt(fourpi)/gq0
+    vgq0c(:)=vgc(:,ig+gvecme1-1)+vq0rc(:)
   endif
+  gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
+!  if (ig.eq.1.and.ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
+!    vcgq(ig)=0.d0
+!  else
+    vcgq(ig)=sqrt(fourpi)/gq0
+!  endif
 enddo !ig
 
 ! read matrix elements

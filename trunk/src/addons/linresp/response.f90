@@ -17,7 +17,7 @@ logical l1
 integer sz,nvq0loc,i1,i2,i3,ias,jas
 character*100 qnm
 real(8) w2,t1
-logical lgamma,wproc1
+logical lgamma,wproc1,lpmat
 logical, external :: wann_diel
 
 ! typical execution patterns
@@ -42,6 +42,8 @@ logical, external :: wann_diel
 !   402 (chi) : (1) energy mesh x (2) number of fxc kernels x (3) q-points
 !
 ! todo: more comments!!!
+!
+! TODO: code revision, (?) remove hdf5 IO
 
 if (lrtype.eq.1.and..not.spinpol) then
   write(*,*)
@@ -49,7 +51,7 @@ if (lrtype.eq.1.and..not.spinpol) then
   write(*,*)
   call pstop
 endif
-if (nvq0.eq.0.and..not.crpa) then
+if (nvq0.eq.0.and..not.(crpa.or.task.eq.402)) then
   write(*,*)
   write(*,'("Error(response): no q-vectors")')
   write(*,*)
@@ -61,7 +63,7 @@ if (crpa.and.task.ne.403) then
   write(*,*)
   call pstop
 endif
-
+    
 if (.not.wannier) then
   wannier_chi0_chi=.false.
   crpa=.false.
@@ -79,7 +81,7 @@ wannier_megq=.false.
 if (crpa.or.wannier_chi0_chi.or.task.eq.402) wannier_megq=.true.
 
 ! this is enough for matrix elements
-lmaxvr=5
+!lmaxvr=5
 
 if (iproc.eq.0) call timestamp(6,'before init0')
 ! initialise universal variables
@@ -113,7 +115,17 @@ if (crpa.or.task.eq.402) then
   nfxca=1
   fxca0=0.d0
   fxca1=0.d0
+  if (lgamma) call init_q0gamma
 endif
+lpmat=.false.
+do j=1,nvq0
+  if (ivq0m_list(1,j).eq.0.and.ivq0m_list(2,j).eq.0.and. &
+      ivq0m_list(3,j).eq.0) then
+    lpmat=.true.
+  endif
+enddo
+
+
 if (.not.spinpol) megqwan_afm=.false.
 
 ! necessary calls before generating Bloch wave-functions 
@@ -172,7 +184,7 @@ if (wproc1) then
 endif
 
 if (task.eq.400.or.task.eq.402.or.task.eq.403) then
-  call genwfnr(151)
+  call genwfnr(151,lpmat)
   if (spinpol) then
     if (allocated(spinor_ud)) deallocate(spinor_ud)
     allocate(spinor_ud(2,nstsv,nkptnr))
@@ -217,7 +229,7 @@ if (wannier_megq) then
 ! for integer occupancy numbers take only transitions between occupied and empty bands
           if (wann_diel().and.(abs(wann_occ(n)-wann_occ(n1)).gt.1d-8)) l1=.true.
 ! for fractional occupancies or cRPA calculation take all transitions
-          if (.not.wann_diel().or.crpa) l1=.true.
+          if (.not.wann_diel().or.crpa.or.task.eq.402) l1=.true.
           if (l1) then
             nmegqwan=nmegqwan+1
             imegqwan(1,nmegqwan)=n

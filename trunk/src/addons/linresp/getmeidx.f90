@@ -51,7 +51,7 @@ do ikloc=1,nkptnrloc
       if (wannier_megq) then
         l3=(wann_bnd(ist1,ik).ne.0.and.wann_bnd(ist2,jk).ne.0)
         if ((wannier_megq.and..not.wann_diel()).and.l3) lwann=.true.
-        if (crpa.and.l3) lwann=.true.
+        if ((crpa.or.task.eq.402).and.l3) lwann=.true.
       endif
       if ((ldocc.or.lwann).and.(le1.and.le2)) then
         if (.not.spinpol) then

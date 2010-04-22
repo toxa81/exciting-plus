@@ -38,7 +38,7 @@ call genlofr
 call geturf
 call genurfprod
 
-call genwfnr(-1)
+call genwfnr(-1,.false.)
 
 if (task.eq.361) then
   nrtot=nrxyz(1)

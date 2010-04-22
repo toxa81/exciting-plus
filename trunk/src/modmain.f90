@@ -1129,6 +1129,9 @@ logical screened_u
 data screened_u/.false./
 logical write_chi0_file
 
+real(8) q0gamma(3,8)
+real(8) a0gamma(8)
+
 real(8) megqwan_maxdist
 
 logical crpa
