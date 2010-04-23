@@ -1,4 +1,4 @@
-subroutine sumchi0(ikloc,w,chi0w)
+subroutine genchi0(ikloc,w,chi0w)
 use modmain
 use mod_nrkp
 implicit none

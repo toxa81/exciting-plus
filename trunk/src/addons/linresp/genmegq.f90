@@ -172,8 +172,7 @@ do ikstep=1,nkstep
   endif !ikstep.le.nkptnrloc
   call timer_stop(2)
 enddo !ikstep
-
-! hack for q=0
+! for G=q=0
 if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)

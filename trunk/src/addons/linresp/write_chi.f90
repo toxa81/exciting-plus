@@ -1,13 +1,14 @@
-subroutine write_chi(ivq0m,ifxc)
+subroutine write_chi(iq,ivq0m,ifxc)
 use modmain
 implicit none
+integer, intent(in) :: iq
 integer, intent(in) :: ivq0m(3)
 integer, intent(in) :: ifxc
 
 real(8) fxca
 real(8), allocatable :: func(:,:)
 real(8) fsum
-character*100 fname,qnm
+character*100 fname,qnm,qdir
 character*10 c1,c2,c3,c4,c5
 integer ie,i
 real(8) t1,t2
@@ -21,8 +22,9 @@ enddo
 
 fxca=fxca0+(ifxc-1)*fxca1
 
-call qname(ivq0m,qnm)
-qnm="./qv/"//trim(qnm)//"/"//trim(qnm)
+call getqdir(iq,ivq0m,qdir)
+call getqname(ivq0m,qnm)
+qnm=trim(qdir)//"/"//trim(qnm)
 write(c2,'(F7.3)')fxca
 write(c3,'(I8)')ngvecme
 write(c4,'(F6.3)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)/au2ang

@@ -1,9 +1,8 @@
-#ifdef _HDF5_
-subroutine genchi(ivq0m)
+subroutine genchi(iq)
 use modmain
 implicit none
 ! arguments
-integer, intent(in) :: ivq0m(3)
+integer, intent(in) :: iq
 ! local variables
 complex(8), allocatable :: chi0(:,:)
 complex(8), allocatable :: chi0loc(:,:,:)
@@ -18,13 +17,14 @@ complex(8), allocatable :: krnl_scr(:,:)
 complex(8), allocatable :: mexp(:,:,:)
 complex(8), allocatable :: megqwan1(:,:)
 integer, external :: hash
+integer ivq0m(3)
 
 integer i,iw,i1,i2,ikloc,n,j,ifxc
 integer ist1,ist2,nfxcloc,ifxcloc,nwloc,jwloc,iwloc
 integer it1(3),it2(3),it(3)
 integer ig
 integer ierr
-character*100 qnm,fout,fchi0,fstat,path
+character*100 qnm,qdir,fout,fchi0,fstat,path
 character*8 c8
 integer ie1,n1,n2,ik
 real(8) fxca
@@ -36,8 +36,10 @@ real(8) gq0
 real(8) vtrc(3)
 real(8) t1,t2,t3,t4,t5,t6,t7,t8
 
-call qname(ivq0m,qnm)
-qnm="./qv/"//trim(qnm)//"/"//trim(qnm)
+ivq0m(:)=ivq0m_list(:,iq)
+call getqdir(iq,ivq0m,qdir)
+call getqname(ivq0m,qnm)
+qnm=trim(qdir)//"/"//trim(qnm)
 wproc=.false.
 if (mpi_grid_root((/dim_k,dim_b/))) then
   wproc=.true.
@@ -78,7 +80,7 @@ allocate(vcgq(ngvecme))
 do ig=1,ngvecme
 ! generate G+q vectors  
   if (ig.eq.1.and.ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
-    vgq0c(:)=vgc(:,ig+gvecme1-1)+(/0.1d0,0.d0,0.d0/)
+    vgq0c(:)=vgc(:,ig+gvecme1-1)+q0gamma(:,iq)
   else
     vgq0c(:)=vgc(:,ig+gvecme1-1)+vq0rc(:)
   endif
@@ -190,7 +192,7 @@ do iw=1,lr_nw
   do ikloc=1,nkptnrloc
     if (nmegqblhloc(1,ikloc).gt.0) then
 ! for each k-point : sum over interband transitions
-      call sumchi0(ikloc,lr_w(iw),chi0)
+      call genchi0(ikloc,lr_w(iw),chi0)
     endif
   enddo
 ! find the processor j which will get the full chi0 and chi0wan matrices
@@ -296,7 +298,7 @@ if (task.eq.400) then
   if (mpi_grid_root(dims=(/dim_k,dim_b/))) then
 ! write response functions to .dat file
     do ifxc=1,nfxca
-      call write_chi(ivq0m,ifxc)
+      call write_chi(iq,ivq0m,ifxc)
     enddo
   endif
 endif
@@ -329,5 +331,3 @@ if (wproc) then
 endif
 return
 end
-
-#endif
