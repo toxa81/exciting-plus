@@ -6,11 +6,10 @@ character*8 c8
 character*3 c3
 integer it
 
-write(*,*)'ubare=',ubarewan(1,1,14)
-
 call mpi_grid_reduce(ubarewan(1,1,1),nwann*nwann*ntr_uscrn,dims=(/dim_b,dim_q/),&
   side=.true.)
-ubarewan=ha2ev*ubarewan !/omega/nkptnr
+ubarewan=ubarewan/omega/nkptnr
+write(*,*)'ubare=',ubarewan(1,1,14)
 
 if (mpi_grid_side(dims=(/dim_k/)).and.mpi_grid_x(dim_k).eq.0) then
   fubare="ubare.hdf"

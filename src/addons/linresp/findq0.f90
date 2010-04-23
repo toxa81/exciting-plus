@@ -40,20 +40,26 @@ do i1=0,n-1
     enddo
   enddo
 enddo
-write(*,*)'qvec=',qvec
-write(*,*)'vol=',vol
+!write(*,*)'qvec=',qvec
+!write(*,*)'vol=',vol
 t=t/(n**3)
-write(*,*)'t=',t
+!write(*,*)'t=',t
+! take half of the diagonal 
 q0(:)=0.5d0*(qvec(:,1)+qvec(:,2)+qvec(:,3))
-! (2Pi)^-3 \int_dq f(q) = V*f(q0)*a0
-! (2Pi)^-3 \int_dq f(q) = (2Pi)^-3 \sum f(q_i) delta_q
-! delta_q = V/N
-! (2Pi)^-3 \sum f(q_i) V/N = V*f(q0)*a0
-! a0= (2Pi)^-3 \sum f(q_i) /N/f(q0)
+! Let f(q)=1/q^2; we search for a0, shuch as
+! (2Pi)^-3 \int dq f(q) = vol*f(q0)*a0, where vol is the volume of reciprocal
+!  microcell; let's convert integral (in the left) to q-point summation:
+! (2Pi)^-3 \int dq f(q) = (2Pi)^-3 \sum_i f(q_i) delta_q_i, where
+!   delta_q_i = vol/N; then
+! (2Pi)^-3 \sum f(q_i) vol/N = vol*f(q0)*a0
+! a0 = (2Pi)^-3 \sum f(q_i) / N / f(q0)
 a0=dot_product(q0,q0)*t/(twopi**3)
-
-write(*,*)'f(q_i)*V*a0=',a0*vol/dot_product(q0,q0)
-write(*,*)'q0=',q0,'a0=',a0
-
+! Now, instead of integral we are using q-sum (in cRPA and bare U)
+! by following substitution:
+! (2Pi)^-3 \int dq f(q) = 1/N_k/Omega \sum_q_i f(q_i)
+! we know that in the microcell around Gamma
+!  (2Pi)^-3 \int dq f(q) = vol*f(q0)*a0
+! we will redifine a0 such as 1/N_k/Omega f(q0)*a0 = (2Pi)^-3 \int dq f(q)
+a0=vol*a0*nkptnr*omega
 return
 end

@@ -22,8 +22,8 @@ jk=idxkq(1,ik)
 offs=nmegqblhloc(2,ikloc)
 allocate(l2(nmegqblhlocmax))
 allocate(wt(nmegqblhlocmax))
-wt=zzero
-l2=.false.
+wt(:)=zzero
+l2(:)=.false.
 do i=1,nmegqblhloc(1,ikloc)
   ist1=bmegqblh(1,i+offs,ikloc)
   ist2=bmegqblh(2,i+offs,ikloc)

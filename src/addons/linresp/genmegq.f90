@@ -43,26 +43,6 @@ if (mpi_grid_root((/dim_k,dim_b/))) then
   open(150,file=trim(fout),form='formatted',status='replace')
 endif
 
-!complete=0
-!fme=trim(qnm)//"_me.hdf5"
-!if (mpi_grid_root((/dim_k,dim_b/))) then
-!  inquire(file=trim(fme),exist=exist)
-!  if (exist) then
-!    call read_integer(complete,1,trim(fme),'/parameters','complete')
-!  endif
-!endif
-!call mpi_grid_bcast(complete,dims=(/dim_k,dim_b/))
-!if (complete.eq.1) goto 30
-
-!if (crpa) then
-!  if (mpi_grid_root((/dim_k,dim2/))) then
-!    fu=trim(qnm)//"_U"
-!    inquire(file=trim(fu),exist=exist)
-!  endif
-!  call mpi_grid_bcast(exist,dims=(/dim_k,dim2/))
-!  if (exist) goto 30
-!endif
-
 if (wproc) then
   write(150,*)
   write(150,'("Calculation of matrix elements:")')
@@ -153,6 +133,7 @@ call timer_reset(2)
 call timer_reset(3)
 call timer_reset(4)
 call timer_reset(5)
+goto 55
 do ikstep=1,nkstep
 ! transmit wave-functions
   call timer_start(1)
@@ -187,6 +168,7 @@ if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
     enddo
   enddo
 endif
+55 continue
 
 ! time for wave-functions send/recieve
 t1=timer_get_value(1)

@@ -44,7 +44,7 @@ wproc=.false.
 if (mpi_grid_root((/dim_k,dim_b/))) then
   wproc=.true.
   fout=trim(qnm)//"_LR.OUT"
-  open(150,file=trim(fout),form='formatted',status='replace')
+  open(150,file=trim(fout),form="FORMATTED",status="REPLACE")
   fstat=trim(qnm)//"_chi0_stat.txt"
 endif
 
@@ -85,11 +85,7 @@ do ig=1,ngvecme
     vgq0c(:)=vgc(:,ig+gvecme1-1)+vq0rc(:)
   endif
   gq0=sqrt(vgq0c(1)**2+vgq0c(2)**2+vgq0c(3)**2)
-!  if (ig.eq.1.and.ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
-!    vcgq(ig)=0.d0
-!  else
-    vcgq(ig)=sqrt(fourpi)/gq0
-!  endif
+  vcgq(ig)=sqrt(fourpi)/gq0
 enddo !ig
 
 ! for response in Wannier bais

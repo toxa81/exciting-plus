@@ -120,15 +120,9 @@ if (wproc1) then
   if (nproc.gt.1) then
     write(151,'("Parallel file reading            : ",L1)')parallel_read
   endif
-!  if (nproc.gt.1) then
-!    write(151,'("Parallel file writing            : ",L1)')parallel_write
-!  endif
   write(151,'("Wannier functions                : ",L1)')wannier
   write(151,'("Matrix elements in Wannier basis : ",L1)')wannier_megq
   write(151,'("Response in Wannier basis        : ",L1)')wannier_chi0_chi
-!  write(151,'("Constrained RPA                  : ",L1)')crpa
-!  write(151,'("Write matrix elements            : ",L1)')write_megq_file
-!  write(151,'("Write chi0                       : ",L1)')write_chi0_file  
   call flushifc(151)
 endif
 
