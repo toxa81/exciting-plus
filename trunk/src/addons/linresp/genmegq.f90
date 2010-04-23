@@ -1,11 +1,12 @@
 #ifdef _HDF5_
-subroutine genmegq(ivq0m)
+subroutine genmegq(iq)
 use modmain
 use mod_nrkp
 implicit none
-! q-vector in k-mesh coordinates
-integer, intent(in) :: ivq0m(3)
+integer, intent(in) :: iq
 
+! q-vector in k-mesh coordinates
+integer ivq0m(3)
 ! allocatable arrays
 integer, allocatable :: igkignr_jk(:)
 complex(8), allocatable :: wfsvmt_jk(:,:,:,:,:)
@@ -17,7 +18,7 @@ integer nkstep,ist1,ist2,ikloc,ik
 real(8) t1,t2,t3,t4,t5,dn1
 integer lmaxexp,lmmaxexp
 integer np
-character*100 :: qnm,fout,fme,fu
+character*100 :: qnm,qdir,fout,fme,fu
 logical exist
 
 ! comment:
@@ -30,9 +31,11 @@ logical exist
 ! maximum l for exponent expansion
 lmaxexp=lmaxvr+2
 lmmaxexp=(lmaxexp+1)**2
-
-call qname(ivq0m,qnm)
-qnm="./qv/"//trim(qnm)//"/"//trim(qnm)
+! q-vector in mesh coordinates
+ivq0m(:)=ivq0m_list(:,iq)
+call getqdir(iq,ivq0m,qdir)
+call getqname(ivq0m,qnm)
+qnm=trim(qdir)//"/"//trim(qnm)
 wproc=.false.
 if (mpi_grid_root((/dim_k,dim_b/))) then
   wproc=.true.
@@ -40,25 +43,25 @@ if (mpi_grid_root((/dim_k,dim_b/))) then
   open(150,file=trim(fout),form='formatted',status='replace')
 endif
 
-complete=0
-fme=trim(qnm)//"_me.hdf5"
-if (mpi_grid_root((/dim_k,dim_b/))) then
-  inquire(file=trim(fme),exist=exist)
-  if (exist) then
-    call read_integer(complete,1,trim(fme),'/parameters','complete')
-  endif
-endif
-call mpi_grid_bcast(complete,dims=(/dim_k,dim_b/))
-if (complete.eq.1) goto 30
+!complete=0
+!fme=trim(qnm)//"_me.hdf5"
+!if (mpi_grid_root((/dim_k,dim_b/))) then
+!  inquire(file=trim(fme),exist=exist)
+!  if (exist) then
+!    call read_integer(complete,1,trim(fme),'/parameters','complete')
+!  endif
+!endif
+!call mpi_grid_bcast(complete,dims=(/dim_k,dim_b/))
+!if (complete.eq.1) goto 30
 
-if (crpa) then
-  if (mpi_grid_root((/dim_k,dim2/))) then
-    fu=trim(qnm)//"_U"
-    inquire(file=trim(fu),exist=exist)
-  endif
-  call mpi_grid_bcast(exist,dims=(/dim_k,dim2/))
-  if (exist) goto 30
-endif
+!if (crpa) then
+!  if (mpi_grid_root((/dim_k,dim2/))) then
+!    fu=trim(qnm)//"_U"
+!    inquire(file=trim(fu),exist=exist)
+!  endif
+!  call mpi_grid_bcast(exist,dims=(/dim_k,dim2/))
+!  if (exist) goto 30
+!endif
 
 if (wproc) then
   write(150,*)
@@ -136,8 +139,6 @@ if (wannier_megq) then
   megqwan(:,:)=zzero
 endif
 
-if (write_megq_file) call write_me_header(qnm)
-
 allocate(wfsvmt_jk(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
 allocate(wfsvit_jk(ngkmax,nspinor,nstsv))
 allocate(igkignr_jk(ngkmax))
@@ -182,7 +183,7 @@ if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
       ist2=bmegqblh(2,i+nmegqblhloc(2,ikloc),ikloc)
       if (ist1.eq.ist2) megqblh(i,1,ikloc)=zone
       megqblh(i,1,ikloc)=megqblh(i,1,ikloc)-&
-        dot_product((/0.1d0,0.d0,0.d0/),pmat(:,ist1,ist2,ikloc))/&
+        dot_product(q0gamma(:,iq),pmat(:,ist1,ist2,ikloc))/&
         (evalsvnr(ist1,ik)-evalsvnr(ist2,ik)+swidth)          
     enddo
   enddo
@@ -226,17 +227,6 @@ if (wannier_megq) then
   megqwan=zone
 endif
 
-if (write_megq_file) then
-  if (wproc) then
-    write(150,*)
-    write(150,'("Writing matrix elements")')
-  endif
-  call timer_start(3,reset=.true.)
-  call write_me(qnm)
-  call timer_stop(3)
-  if (wproc) write(150,'(" Done in : ",F8.2)')timer_get_value(3)
-endif  
-
 deallocate(wfsvmt_jk)
 deallocate(wfsvit_jk)
 deallocate(igkignr_jk)
@@ -246,11 +236,6 @@ endif
 deallocate(ngntuju)
 deallocate(igntuju)
 deallocate(gntuju)
-
-if (mpi_grid_root((/dim_k,dim_b/)).and.write_megq_file) then
-  complete=1
-  call rewrite_integer(complete,1,trim(fme),'/parameters','complete')
-endif
 
 call mpi_grid_barrier((/dim_k,dim_b/))
 

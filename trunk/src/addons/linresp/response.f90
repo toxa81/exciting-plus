@@ -11,35 +11,24 @@ real real_time,cpu_time,mflops
 integer*8 fp_ins
 #endif
 
-integer i,j,n,ik,ikloc,ik1,isym,idx0,ivq1,ivq2,iq,ig
+integer i,j,n,ik,ikloc,ik1,isym,idx0,iq,ig
 integer n1,nwloc
 logical l1
-integer sz,nvq0loc,i1,i2,i3,ias,jas
+integer sz,nvq0loc,iqloc,i1,i2,i3,ias,jas
 character*100 qnm
 real(8) w2,t1
 logical lgamma,wproc1,lpmat
 logical, external :: wann_diel
 
-! typical execution patterns
-!  I) compute and save ME (task 400), read ME, compute and save chi0 (task 401),
-!     read chi0 and compute chi (task 402)
-!  II) the same + Wannier channels decomposition 
-!  III) same as I) and II) but without saving matrix elements
-!  IV) constraind RPA: compute ME, compute chi0 -> chi -> screened W and U 
+! Task list:
+!   400 - response functions
+!   401 - cRPA
+!   402 - bare U
 !
-! New task list:
-!   400 - compute and write ME
-!   401 - compute and write chi0
-!   402 - compute and write chi
-!   403 - compute ME, compute and write chi0, compute and write chi OR
-!         compute ME, compute chi0 chi and screened U, sum over q; behaviour is
-!         contorlled by crpa
-!
-! MPI grid for tasks:
-!   400 (matrix elements) : (1) k-points x (2) G-vectors or interband 
-!                                           transitions x (3) q-points 
-!   401 (chi0) : (1) k-points x (2) interband transition x (3) q-points 
-!   402 (chi) : (1) energy mesh x (2) number of fxc kernels x (3) q-points
+! MPI grid:
+!   (matrix elements) : (1) k-points x (2) interband transitions x 
+!                     x (3) q-points 
+!   (response) : (1) energy mesh x (2) number of fxc kernels x (3) q-points
 !
 ! todo: more comments!!!
 !
@@ -51,34 +40,15 @@ if (lrtype.eq.1.and..not.spinpol) then
   write(*,*)
   call pstop
 endif
-if (nvq0.eq.0.and..not.(crpa.or.task.eq.402)) then
+if (nvq0.eq.0.and..not.(task.eq.401.or.task.eq.402)) then
   write(*,*)
   write(*,'("Error(response): no q-vectors")')
   write(*,*)
   call pstop
-endif
-if (crpa.and.task.ne.403) then
-  write(*,*)
-  write(*,'("Error(response): cRPA must be run with task=403")')
-  write(*,*)
-  call pstop
-endif
-    
-if (.not.wannier) then
-  wannier_chi0_chi=.false.
-  crpa=.false.
-endif
-! set the switch to write matrix elements
-write_megq_file=.true.
-if (task.eq.402.or.task.eq.403) write_megq_file=.false.
-write_chi0_file=.false.
-
-! set the switch to compute screened W matrix in task 402
-screened_w=.false.
-!if (crpa) screened_w=.true.
-
-wannier_megq=.false.
-if (crpa.or.wannier_chi0_chi.or.task.eq.402) wannier_megq=.true.
+endif   
+if (.not.wannier) wannier_chi0_chi=.false.
+if (.not.spinpol) megqwan_afm=.false.
+if (wannier_chi0_chi.or.task.eq.401.or.task.eq.402) wannier_megq=.true.
 
 ! this is enough for matrix elements
 !lmaxvr=5
@@ -91,21 +61,23 @@ call mpi_world_barrier
 if (iproc.eq.0) call timestamp(6,'after init1')
 if (.not.mpi_grid_in()) return
 
-! for constrained RPA all q-vectors in BZ are required 
-lgamma=.false.
-if (crpa.or.task.eq.402) then
+! check if all q-vectors in BZ are required 
+! TODO: put to a separate file
+lgamma=.true.
+if (task.eq.401.or.task.eq.402) then
   if (allocated(ivq0m_list)) deallocate(ivq0m_list)
+  nvq0=nkptnr-1
+  j=0  
   if (lgamma) then
-    nvq0=nkptnr
-  else
-    nvq0=nkptnr-1 
+    nvq0=nvq0+8
+    j=8
   endif
   allocate(ivq0m_list(3,nvq0))
-  j=0
+  ivq0m_list=0
   do i1=0,ngridk(1)-1
     do i2=0,ngridk(2)-1
       do i3=0,ngridk(3)-1
-        if (.not.(i1.eq.0.and.i2.eq.0.and.i3.eq.0.and..not.lgamma)) then
+        if (.not.(i1.eq.0.and.i2.eq.0.and.i3.eq.0)) then
           j=j+1
           ivq0m_list(:,j)=(/i1,i2,i3/)
         endif
@@ -117,6 +89,7 @@ if (crpa.or.task.eq.402) then
   fxca1=0.d0
   if (lgamma) call init_q0gamma
 endif
+! check if momentum matrix is required
 lpmat=.false.
 do j=1,nvq0
   if (ivq0m_list(1,j).eq.0.and.ivq0m_list(2,j).eq.0.and. &
@@ -124,43 +97,19 @@ do j=1,nvq0
     lpmat=.true.
   endif
 enddo
-
-
-if (.not.spinpol) megqwan_afm=.false.
-
-! necessary calls before generating Bloch wave-functions 
-if (task.eq.400.or.task.eq.402.or.task.eq.403) then
-! read the density and potentials from file
-  call readstate
-! find the new linearisation energies
-  call linengy
-! generate the APW radial functions
-  call genapwfr
-! generate the local-orbital radial functions
-  call genlofr
-  call geturf
-  call genurfprod
-! read Fermi energy
-  if (mpi_grid_root()) call readfermi
-  call mpi_grid_bcast(efermi)
-endif
 ! create q-directories
 if (mpi_grid_root()) then
-  call system("mkdir -p  qv")
+  call system("mkdir -p q")
   do iq=1,nvq0
-    call qname(ivq0m_list(:,iq),qnm)
-    call system("mkdir -p ./qv/"//trim(qnm))
+    call getqdir(iq,ivq0m_list(:,iq),qnm)
+    call system("mkdir -p "//trim(qnm))
   enddo
 endif
-call mpi_grid_barrier()
 
 wproc1=.false.
 if (mpi_grid_root()) then
   wproc1=.true.
-  if (task.eq.400) open(151,file='RESPONSE_ME.OUT',form='formatted',status='replace')
-  if (task.eq.401) open(151,file='RESPONSE_CHI0.OUT',form='formatted',status='replace')
-  if (task.eq.402.or.task.eq.403) open(151,file='RESPONSE.OUT',&
-    form='formatted',status='replace')
+  open(151,file="RESPONSE.OUT",form="FORMATTED",status="REPLACE")
   call timestamp(151)
 endif
 wproc=wproc1
@@ -171,37 +120,50 @@ if (wproc1) then
   if (nproc.gt.1) then
     write(151,'("Parallel file reading            : ",L1)')parallel_read
   endif
-  if (nproc.gt.1) then
-    write(151,'("Parallel file writing            : ",L1)')parallel_write
-  endif
+!  if (nproc.gt.1) then
+!    write(151,'("Parallel file writing            : ",L1)')parallel_write
+!  endif
   write(151,'("Wannier functions                : ",L1)')wannier
-  write(151,'("Response in Wannier basis        : ",L1)')wannier_chi0_chi
-  write(151,'("Constrained RPA                  : ",L1)')crpa
   write(151,'("Matrix elements in Wannier basis : ",L1)')wannier_megq
-  write(151,'("Write matrix elements            : ",L1)')write_megq_file
-  write(151,'("Write chi0                       : ",L1)')write_chi0_file  
+  write(151,'("Response in Wannier basis        : ",L1)')wannier_chi0_chi
+!  write(151,'("Constrained RPA                  : ",L1)')crpa
+!  write(151,'("Write matrix elements            : ",L1)')write_megq_file
+!  write(151,'("Write chi0                       : ",L1)')write_chi0_file  
   call flushifc(151)
 endif
 
-if (task.eq.400.or.task.eq.402.or.task.eq.403) then
-  call genwfnr(151,lpmat)
-  if (spinpol) then
-    if (allocated(spinor_ud)) deallocate(spinor_ud)
-    allocate(spinor_ud(2,nstsv,nkptnr))
-    spinor_ud=0
-    do ikloc=1,nkptnrloc
-      ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-      do j=1,nstsv
-        t1=sum(abs(evecsvloc(1:nstfv,j,ikloc)))
-        if (t1.gt.1d-10) spinor_ud(1,j,ik)=1
-        t1=sum(abs(evecsvloc(nstfv+1:nstsv,j,ikloc)))
-        if (t1.gt.1d-10) spinor_ud(2,j,ik)=1
-      enddo
+! read the density and potentials from file
+call readstate
+! find the new linearisation energies
+call linengy
+! generate the APW radial functions
+call genapwfr
+! generate the local-orbital radial functions
+call genlofr
+call geturf
+call genurfprod
+! read Fermi energy
+if (mpi_grid_root()) call readfermi
+call mpi_grid_bcast(efermi)
+! generate wave-functions for entire BZ
+call genwfnr(151,lpmat)
+if (spinpol) then
+  if (allocated(spinor_ud)) deallocate(spinor_ud)
+  allocate(spinor_ud(2,nstsv,nkptnr))
+  spinor_ud=0
+  do ikloc=1,nkptnrloc
+    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+    do j=1,nstsv
+      t1=sum(abs(evecsvloc(1:nstfv,j,ikloc)))
+      if (t1.gt.1d-10) spinor_ud(1,j,ik)=1
+      t1=sum(abs(evecsvloc(nstfv+1:nstsv,j,ikloc)))
+      if (t1.gt.1d-10) spinor_ud(2,j,ik)=1
     enddo
-    call mpi_grid_reduce(spinor_ud(1,1,1),2*nstsv*nkptnr,dims=(/dim_k/),all=.true.)
-  endif  
-endif !task.eq.400.or.task.eq.403
+  enddo
+  call mpi_grid_reduce(spinor_ud(1,1,1),2*nstsv*nkptnr,dims=(/dim_k/),all=.true.)
+endif  
 
+! TODO: put to separate file
 if (wannier_megq) then
   call getnghbr(megqwan_maxdist)
   nmegqwanmax=0
@@ -229,7 +191,7 @@ if (wannier_megq) then
 ! for integer occupancy numbers take only transitions between occupied and empty bands
           if (wann_diel().and.(abs(wann_occ(n)-wann_occ(n1)).gt.1d-8)) l1=.true.
 ! for fractional occupancies or cRPA calculation take all transitions
-          if (.not.wann_diel().or.crpa.or.task.eq.402) l1=.true.
+          if (.not.wann_diel().or.task.eq.401.or.task.eq.402) l1=.true.
           if (l1) then
             nmegqwan=nmegqwan+1
             imegqwan(1,nmegqwan)=n
@@ -272,7 +234,6 @@ if (wannier_megq) then
 endif
 
 ! setup energy mesh
-!lr_nw=1+int(maxomega/domega)
 lr_dw=(lr_w1-lr_w0)/(lr_nw-1)
 if (allocated(lr_w)) deallocate(lr_w)
 allocate(lr_w(lr_nw))
@@ -280,7 +241,7 @@ do i=1,lr_nw
   lr_w(i)=dcmplx(lr_w0+lr_dw*(i-1),lr_eta)/ha2ev
 enddo
 
-if (crpa.or.task.eq.402) then
+if (task.eq.401.or.task.eq.402) then
   maxtr_uscrn=1
   ntr_uscrn=(2*maxtr_uscrn+1)**3
   if (allocated(vtl_uscrn)) deallocate(vtl_uscrn)
@@ -308,76 +269,85 @@ if (crpa.or.task.eq.402) then
 endif
 
 ! distribute q-vectors along 3-rd dimention
-nvq0loc=mpi_grid_map(nvq0,dim_q,offs=idx0)
-ivq1=idx0+1
-ivq2=idx0+nvq0loc
+nvq0loc=mpi_grid_map(nvq0,dim_q)
 
 #ifdef _PAPI_
 call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
 #endif
 
-!-----------------------------------------!
-!    task 400: compute matrix elements    !
-!-----------------------------------------!
-if (task.eq.400) then
-! calculate matrix elements
-  call timer_start(10,reset=.true.)
-  if (wproc1) call timestamp(151,txt='start genmegq')
-  do iq=ivq1,ivq2
-    call genmegq(ivq0m_list(1,iq))
-  enddo
-  call timer_stop(10)
-  if (wproc1) call timestamp(151,txt='stop genmegq')
-  if (wproc1) then
-    write(151,*)
-    write(151,'("Total time for matrix elements : ",F8.2," seconds")')timer_get_value(10)
-    call flushifc(151)
-  endif
-endif
+! main loop over q-points
+do iqloc=1,nvq0loc
+  iq=mpi_grid_map(nvq0,dim_q,loc=iqloc)
+  call genmegq(iq)
+  if (task.eq.400.or.task.eq.401) call genchi(iq)
+  if (task.eq.402) call genubare(iq)
+enddo
+if (task.eq.401) call write_uscrn
+if (task.eq.402) call write_ubare
 
-!------------------------------!
-!    task 401: compute chi0    !
-!------------------------------!
-if (task.eq.401) then
-! calculate chi0
-  call timer_start(11,reset=.true.)
-  if (wproc1) call timestamp(151,txt='start genchi0')
-  do iq=ivq1,ivq2
-    call genchi0(ivq0m_list(1,iq))
-  enddo
-  call timer_stop(11)
-  if (wproc1) call timestamp(151,txt='stop genchi0')
-  if (wproc1) then
-    write(151,*)
-    write(151,'("Total time for chi0 : ",F8.2," seconds")')timer_get_value(11)
-    call flushifc(151)
-  endif
-endif
-!---------------------------------------!
-!    task 402: compute me and bare U    !
-!---------------------------------------!
-if (task.eq.402) then
-  if (wproc1) call timestamp(151,txt='start task 402')
-  do iq=ivq1,ivq2
-    call genmegq(ivq0m_list(1,iq))
-    call genubare(ivq0m_list(1,iq))
-  enddo 
-  call write_ubare
-  if (wproc1) call timestamp(151,txt='stop task 402')
-endif
-
-!------------------------------------------!
-!    task 403: compute me, chi0 and chi    !
-!------------------------------------------!
-if (task.eq.403) then
-  if (wproc1) call timestamp(151,txt='start task 403')
-  do iq=ivq1,ivq2
-    call genmegq(ivq0m_list(1,iq))
-    call genchi0(ivq0m_list(1,iq))
-  enddo 
-  if (crpa) call write_uscrn
-  if (wproc1) call timestamp(151,txt='stop task 403')
-endif
+!
+!!-----------------------------------------!
+!!    task 400: compute matrix elements    !
+!!-----------------------------------------!
+!if (task.eq.400) then
+!! calculate matrix elements
+!  call timer_start(10,reset=.true.)
+!  if (wproc1) call timestamp(151,txt='start genmegq')
+!  do iq=ivq1,ivq2
+!    call genmegq(ivq0m_list(1,iq))
+!  enddo
+!  call timer_stop(10)
+!  if (wproc1) call timestamp(151,txt='stop genmegq')
+!  if (wproc1) then
+!    write(151,*)
+!    write(151,'("Total time for matrix elements : ",F8.2," seconds")')timer_get_value(10)
+!    call flushifc(151)
+!  endif
+!endif
+!
+!!------------------------------!
+!!    task 401: compute chi0    !
+!!------------------------------!
+!if (task.eq.401) then
+!! calculate chi0
+!  call timer_start(11,reset=.true.)
+!  if (wproc1) call timestamp(151,txt='start genchi0')
+!  do iq=ivq1,ivq2
+!    call genchi0(ivq0m_list(1,iq))
+!  enddo
+!  call timer_stop(11)
+!  if (wproc1) call timestamp(151,txt='stop genchi0')
+!  if (wproc1) then
+!    write(151,*)
+!    write(151,'("Total time for chi0 : ",F8.2," seconds")')timer_get_value(11)
+!    call flushifc(151)
+!  endif
+!endif
+!!---------------------------------------!
+!!    task 402: compute me and bare U    !
+!!---------------------------------------!
+!if (task.eq.402) then
+!  if (wproc1) call timestamp(151,txt='start task 402')
+!  do iq=ivq1,ivq2
+!    call genmegq(ivq0m_list(1,iq))
+!    call genubare(ivq0m_list(1,iq))
+!  enddo 
+!  call write_ubare
+!  if (wproc1) call timestamp(151,txt='stop task 402')
+!endif
+!
+!!------------------------------------------!
+!!    task 403: compute me, chi0 and chi    !
+!!------------------------------------------!
+!if (task.eq.403) then
+!  if (wproc1) call timestamp(151,txt='start task 403')
+!  do iq=ivq1,ivq2
+!    call genmegq(ivq0m_list(1,iq))
+!    call genchi0(ivq0m_list(1,iq))
+!  enddo 
+!  if (crpa) call write_uscrn
+!  if (wproc1) call timestamp(151,txt='stop task 403')
+!endif
 
 #ifdef _PAPI_
 call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
@@ -394,18 +364,15 @@ if (wproc1) then
   close(151)
 endif
 
-if (task.eq.400.or.task.eq.403) then
-  deallocate(wfsvmtloc)
-  deallocate(wfsvitloc)
-  deallocate(evecfvloc)
-  deallocate(evecsvloc)
-  deallocate(ngknr)
-  deallocate(igkignr)
-  deallocate(occsvnr)
-  deallocate(evalsvnr)   
-  if (wannier_megq) deallocate(wann_c)
-endif
-
+deallocate(wfsvmtloc)
+deallocate(wfsvitloc)
+deallocate(evecfvloc)
+deallocate(evecsvloc)
+deallocate(ngknr)
+deallocate(igkignr)
+deallocate(occsvnr)
+deallocate(evalsvnr)   
+if (wannier_megq) deallocate(wann_c)
 return
 end
 #endif
