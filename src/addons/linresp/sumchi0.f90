@@ -30,7 +30,7 @@ do i=1,nmegqblhloc(1,ikloc)
 ! default : include all interband transitions         
   l1=.true.
 ! for cRPA : don't include bands in energy window [crpa_e1,crpa_e2]
-  if (crpa) then
+  if (task.eq.401) then
     if (bndint(ist1,evalsvnr(ist1,ik),crpa_e1,crpa_e2).and. &
         bndint(ist2,evalsvnr(ist2,jk),crpa_e1,crpa_e2)) l1=.false.
   endif

@@ -1,5 +1,5 @@
 #ifdef _HDF5_
-subroutine genchi0(ivq0m)
+subroutine genchi(ivq0m)
 use modmain
 implicit none
 ! arguments
@@ -90,32 +90,6 @@ do ig=1,ngvecme
 !  endif
 enddo !ig
 
-! read matrix elements
-if (write_megq_file) then
-  call timer_start(1,reset=.true.)
-  if (wproc) then
-    write(150,*)
-    write(150,'("Reading matrix elements")')
-    call flushifc(150)
-  endif
-  call readmegqblh(qnm)
-  if (wannier_chi0_chi) call readmegqwan(qnm)
-  call timer_stop(1)
-  if (wproc) then
-    write(150,'("Done in ",F8.2," seconds")')timer_get_value(1)
-    write(150,*)
-    write(150,'("matrix elements were calculated for: ")')
-    write(150,'("  G-shells  : ",I4," to ", I4)')gshme1,gshme2
-    write(150,'("  G-vectors : ",I4," to ", I4)')gvecme1,gvecme2
-    call flushifc(150)
-  endif
-endif
-allocate(megqblh2(nmegqblhlocmax,ngvecme),stat=ierr)
-if (ierr.ne.0) then
-  write(*,'("Error allocating megqblh2")')
-  call pstop
-endif
-
 ! for response in Wannier bais
 if (wannier_chi0_chi) then
   if (wproc) then
@@ -171,62 +145,28 @@ if (wannier_chi0_chi) then
   enddo !ikloc
 endif !wannier_chi0_chi
 
-ie1=1
-
-allocate(chi0(ngvecme,ngvecme),stat=ierr)
-if (ierr.ne.0) then
-  write(*,'("Error allocating chi0")')
-  call pstop
-endif
-allocate(krnl(ngvecme,ngvecme),stat=ierr)
-if (ierr.ne.0) then
-  write(*,'("Error allocating krnl")')
-  call pstop
-endif
-if (screened_w.or.crpa) then
-  allocate(krnl_scr(ngvecme,ngvecme),stat=ierr)
-  if (ierr.ne.0) then
-    write(*,'("Error allocating krnl_scr")')
-    call pstop
-  endif
-  allocate(megqwan1(ngvecme,nwann),stat=ierr)
-  if (ierr.ne.0) then
-    write(*,'("Error allocating mmegqwan1")')
-    call pstop
-  endif
+allocate(chi0(ngvecme,ngvecme))
+allocate(krnl(ngvecme,ngvecme))
+if (task.eq.401) then
+  allocate(krnl_scr(ngvecme,ngvecme))
+  allocate(megqwan1(ngvecme,nwann))
   do n1=1,nwann
     megqwan1(:,n1)=megqwan(idxmegqwan(n1,n1,0,0,0),:)
   enddo
 endif
+allocate(megqblh2(nmegqblhlocmax,ngvecme))
 allocate(ixcft(ngvec))
 if (allocated(f_response)) deallocate(f_response)
 allocate(f_response(nf_response,lr_nw,nfxca))
 f_response=zzero
-
-fchi0=trim(qnm)//"_chi0.hdf5"
-if (mpi_grid_root((/dim_k,dim_b/)).and.write_chi0_file) then
-  call hdf5_create_file(trim(fchi0))
-  call hdf5_create_group(trim(fchi0),'/','iw')
-  do i=1,lr_nw
-    write(c8,'(I8.8)')i
-    call hdf5_create_group(trim(fchi0),'/iw',c8)
-  enddo
-endif
-call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 
 ! distribute nfxca between 2-nd dimension 
 nfxcloc=mpi_grid_map(nfxca,dim_b)
 ! distribute frequency points over 1-st dimension
 nwloc=mpi_grid_map(lr_nw,dim_k)
 
-if (.not.write_chi0_file) then
-  allocate(chi0loc(ngvecme,ngvecme,nwloc),stat=ierr)
-  if (ierr.ne.0) then
-    write(*,'("Error allocating chi0loc")')
-    call pstop
-  endif  
-  if (wannier_chi0_chi) allocate(chi0wanloc(nmegqwan,nmegqwan,nwloc))
-endif
+allocate(chi0loc(ngvecme,ngvecme,nwloc))
+if (wannier_chi0_chi) allocate(chi0wanloc(nmegqwan,nmegqwan,nwloc))
 
 if (wproc) then
   write(150,*)
@@ -242,7 +182,7 @@ call timer_reset(6)
 call timer_reset(7)
 call timer_reset(8)
 ! loop over energy points
-do iw=ie1,lr_nw
+do iw=1,lr_nw
   chi0=zzero
   if (wannier_chi0_chi) chi0wan_k=zzero
 ! sum over fraction of k-points
@@ -260,9 +200,7 @@ do iw=ie1,lr_nw
     root=(/j,0/))
   chi0=chi0/nkptnr/omega
 ! processor j saves chi0 to local array  
-  if (.not.write_chi0_file) then
-    if (mpi_grid_x(dim_k).eq.j) chi0loc(:,:,jwloc)=chi0(:,:)
-  endif
+  if (mpi_grid_x(dim_k).eq.j) chi0loc(:,:,jwloc)=chi0(:,:)
   call timer_stop(2)
 ! for response in Wannier basis
   if (wannier_chi0_chi) then
@@ -285,26 +223,9 @@ do iw=ie1,lr_nw
     chi0wan(:,:)=chi0wan(:,:)/nkptnr/omega
     if (megqwan_afm) chi0wan(:,:)=chi0wan(:,:)*2.d0
 ! processor j saves chi0wan to local array  
-    if (.not.write_chi0_file) then
-      if (mpi_grid_x(dim_k).eq.j) chi0wanloc(:,:,jwloc)=chi0wan(:,:)
-    endif
+    if (mpi_grid_x(dim_k).eq.j) chi0wanloc(:,:,jwloc)=chi0wan(:,:)
     call timer_stop(4)
   endif !wannier_chi0_chi
-! save chi0 or distribute it over processors  
-  if (write_chi0_file) then
-    call timer_start(8)
-    if (mpi_grid_x(dim_k).eq.j.and.mpi_grid_x(dim_b).eq.0) then
-      write(path,'("/iw/",I8.8)')iw
-      call hdf5_write(trim(fchi0),trim(path),'w',lr_w(iw))
-      call hdf5_write(trim(fchi0),trim(path),'chi0',chi0(1,1),&
-        dims=(/ngvecme,ngvecme/))
-      if (wannier_chi0_chi) then
-        call hdf5_write(trim(fchi0),trim(path),'chi0wan',chi0wan(1,1), &
-          dims=(/nmegqwan,nmegqwan/))
-      endif
-    endif
-    call timer_stop(8)
-  endif
   if (wproc) then
     open(160,file=trim(fstat),status='replace',form='formatted')
     write(160,'(I8)')iw
@@ -313,46 +234,44 @@ do iw=ie1,lr_nw
 enddo !iw
 call timer_stop(1)
 
-if (.not.write_chi0_file) then
-  do iwloc=1,nwloc
-    iw=mpi_grid_map(lr_nw,dim_k,loc=iwloc)
+do iwloc=1,nwloc
+  iw=mpi_grid_map(lr_nw,dim_k,loc=iwloc)
 ! broadcast chi0
-    call mpi_grid_bcast(chi0loc(1,1,iwloc),ngvecme*ngvecme,dims=(/dim_b/))
+  call mpi_grid_bcast(chi0loc(1,1,iwloc),ngvecme*ngvecme,dims=(/dim_b/))
 ! compute screened W and U  
-    if (crpa) then
-      call timer_start(5)
-      call genuscrn(iwloc,vcgq,chi0loc(1,1,iwloc),megqwan1,krnl_scr)
-      call timer_stop(5)
-    else
+  if (task.eq.401) then
+    call timer_start(5)
+    call genuscrn(iwloc,vcgq,chi0loc(1,1,iwloc),megqwan1,krnl_scr)
+    call timer_stop(5)
+  else
 ! compute response functions 
 ! loop over fxc
-      do ifxcloc=1,nfxcloc
-        ifxc=mpi_grid_map(nfxca,dim_b,loc=ifxcloc)
-        fxca=fxca0+(ifxc-1)*fxca1
+    do ifxcloc=1,nfxcloc
+      ifxc=mpi_grid_map(nfxca,dim_b,loc=ifxcloc)
+      fxca=fxca0+(ifxc-1)*fxca1
 ! prepare fxc kernel
-        krnl=zzero
-        if (lrtype.eq.0) then
-          do ig=1,ngvecme
-            if (fxctype.eq.1) then
-              krnl(ig,ig)=krnl(ig,ig)-fxca/2.d0
-            endif
-            if (fxctype.eq.2) then
-              krnl(ig,ig)=krnl(ig,ig)-fxca*vcgq(ig)**2
-            endif
-          enddo
-        endif !lrtype.eq.0 
-        call timer_start(6)
-        call solve_chi(vcgq,lr_w(iw),chi0loc(1,1,iwloc),krnl,krnl_scr,f_response(1,iw,ifxc))
-        call timer_stop(6)
-        if (wannier_chi0_chi.and.ifxc.eq.1) then
-          call timer_start(7)
-          call solve_chi_wan(vcgq,lr_w(iw),vcwan,chi0wanloc(1,1,iwloc),f_response(1,iw,ifxc))
-          call timer_stop(7)
-        endif !wannier_chi0_chi.and.ifxc.eq.1
-      enddo !ifxcloc
-    endif !crpa
-  enddo !iwloc
-endif !.not.write_chi0_file
+      krnl=zzero
+      if (lrtype.eq.0) then
+        do ig=1,ngvecme
+          if (fxctype.eq.1) then
+            krnl(ig,ig)=krnl(ig,ig)-fxca/2.d0
+          endif
+          if (fxctype.eq.2) then
+            krnl(ig,ig)=krnl(ig,ig)-fxca*vcgq(ig)**2
+          endif
+        enddo
+      endif !lrtype.eq.0 
+      call timer_start(6)
+      call solve_chi(vcgq,lr_w(iw),chi0loc(1,1,iwloc),krnl,krnl_scr,f_response(1,iw,ifxc))
+      call timer_stop(6)
+      if (wannier_chi0_chi.and.ifxc.eq.1) then
+        call timer_start(7)
+        call solve_chi_wan(vcgq,lr_w(iw),vcwan,chi0wanloc(1,1,iwloc),f_response(1,iw,ifxc))
+        call timer_stop(7)
+      endif !wannier_chi0_chi.and.ifxc.eq.1
+    enddo !ifxcloc
+  endif !crpa
+enddo !iwloc
 t1=timer_get_value(1)
 t2=timer_get_value(2)
 t3=timer_get_value(3)
@@ -360,7 +279,6 @@ t4=timer_get_value(4)
 t5=timer_get_value(5)
 t6=timer_get_value(6)
 t7=timer_get_value(7)
-t8=timer_get_value(8)
 if (wproc) then
   write(150,*)
   write(150,'("Total time per frequency point   : ",F8.2)')t1/lr_nw
@@ -370,11 +288,10 @@ if (wproc) then
   write(150,'("  Wannier basis part (chi0wan)   : ",F8.2)')t4/lr_nw 
   write(150,'("  Wannier basis part (crpa)      : ",F8.2)')t5/nwloc   
   write(150,'("  Wannier basis part (chi)       : ",F8.2)')t7/lr_nw
-  write(150,'("  Write chi0                     : ",F8.2)')t8/lr_nw  
   call flushifc(150)
 endif
 
-if (.not.write_chi0_file.and..not.crpa) then
+if (task.eq.400) then
   call mpi_grid_reduce(f_response(1,1,1),nf_response*lr_nw*nfxca,dims=(/dim_k,dim_b/))
   if (mpi_grid_root(dims=(/dim_k,dim_b/))) then
 ! write response functions to .dat file
@@ -399,26 +316,17 @@ if (wannier_chi0_chi) then
   deallocate(wann_cc)
   deallocate(wann_cc2)
 endif
-if (.not.write_chi0_file) then
-  deallocate(chi0loc)
-  if (wannier_chi0_chi) deallocate(chi0wanloc)
-endif
-if (crpa) then
+deallocate(chi0loc)
+if (wannier_chi0_chi) deallocate(chi0wanloc)
+if (task.eq.401) then
   deallocate(krnl_scr)
   deallocate(megqwan1)
 endif
-
-if (write_chi0_file) then
-  call genchi(ivq0m)
-endif
-
-30 continue
 if (wproc) then
   write(150,*)
   write(150,'("Done.")')
   call flushifc(150)
 endif
-
 return
 end
 
