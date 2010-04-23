@@ -1,36 +1,50 @@
-subroutine genubare(ivq0m)
+subroutine genubare(iq)
 use modmain
 implicit none
-integer, intent(in) :: ivq0m(3)
+integer, intent(in) :: iq
+integer ivq0m(3)
 real(8), allocatable :: vcgq(:)
 integer ig,ntloc,itloc,it,n1,n2
-real(8) vtc(3),vgq0c(3),gq0
+real(8) vtc(3),vgq0c(3),gq0,a0
 complex(8) expiqt
 
+ivq0m(:)=ivq0m_list(:,iq)
 ntloc=mpi_grid_map(ntr_uscrn,dim_b)
 
 ! setup 4Pi/|G+q|^2 array
 allocate(vcgq(ngvecme))
 do ig=1,ngvecme
-! generate G+q vectors  
-  vgq0c(:)=vgc(:,ig+gvecme1-1)+vq0rc(:)
-  gq0=dot_product(vgq0c,vgq0c)
-  if (ig.eq.1.and.ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
-    vcgq(ig)=0.d0
-    do n1=1,8
-      vgq0c(:)=q0gamma(:,n1)
-      gq0=dot_product(vgq0c,vgq0c)
-      vcgq(ig)=vcgq(ig)+0.125*(2*Pi)**3*a0gamma(n1)*fourpi/gq0
-    enddo
+  if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
+    if (ig.eq.1) then
+      vgq0c(:)=vgc(:,ig+gvecme1-1)+q0gamma(:,iq)
+      a0=a0gamma(iq)
+    else
+      vgq0c(:)=vgc(:,ig+gvecme1-1)
+      a0=0.125d0
+    endif      
   else
-    vcgq(ig)=fourpi/gq0
+    vgq0c(:)=vgc(:,ig+gvecme1-1)+vq0rc(:)
+    a0=1.d0
   endif
-enddo !ig
-vcgq(:)=vcgq(:)/omega/nkptnr
-
-if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
-  write(*,*)'gamma contribution to integral',vcgq(1)
-endif
+  gq0=dot_product(vgq0c,vgq0c)
+  vcgq(ig)=a0*fourpi/gq0
+enddo
+!
+!! generate G+q vectors  
+!  vgq0c(:)=vgc(:,ig+gvecme1-1)+vq0rc(:)
+!  gq0=dot_product(vgq0c,vgq0c)
+!  if (ig.eq.1.and.ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
+!    vcgq(ig)=0.d0
+!    do n1=1,8
+!      vgq0c(:)=q0gamma(:,n1)
+!      gq0=dot_product(vgq0c,vgq0c)
+!      vcgq(ig)=vcgq(ig)+0.125*(2*Pi)**3*a0gamma(n1)*fourpi/gq0
+!    enddo
+!  else
+!    vcgq(ig)=fourpi/gq0
+!  endif
+!enddo !ig
+!vcgq(:)=vcgq(:)/omega/nkptnr
 
 if (mpi_grid_x(dim_k).eq.0) then
   do itloc=1,ntloc
