@@ -11,7 +11,7 @@ nwloc=mpi_grid_map(lr_nw,dim_k)
 
 call mpi_grid_reduce(uscrnwan(1,1,1,1),nwann*nwann*ntr_uscrn*nwloc,&
   dims=(/dim_b,dim_q/))
-uscrnwan=ha2ev*uscrnwan/omega/nvq0
+uscrnwan=uscrnwan/omega/nkptnr
 
 if (mpi_grid_side(dims=(/dim_k/)).and.nwloc.gt.0) then
   write(fuscrn,'("uscrn",I4.4,".hdf")')mpi_grid_x(dim_k)

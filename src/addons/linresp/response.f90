@@ -30,9 +30,6 @@ logical, external :: wann_diel
 !                     x (3) q-points 
 !   (response) : (1) energy mesh x (2) number of fxc kernels x (3) q-points
 !
-! todo: more comments!!!
-!
-! TODO: code revision, (?) remove hdf5 IO
 
 if (lrtype.eq.1.and..not.spinpol) then
   write(*,*)

@@ -1,4 +1,4 @@
-subroutine getwfkq(ikstep,ngknr_jk,igkignr_jk,wfsvmt_jk,wfsvit_jk,wann_c_jk)
+subroutine getwfkq(ikstep,ngknr_jk,igkignr_jk,wfsvmt_jk,wfsvit_jk)
 use modmain
 use mod_nrkp
 implicit none
@@ -7,7 +7,6 @@ integer, intent(out) :: ngknr_jk
 integer, intent(out) :: igkignr_jk(ngkmax)
 complex(8), intent(out) :: wfsvmt_jk(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
 complex(8), intent(out) :: wfsvit_jk(ngkmax,nspinor,nstsv)
-complex(8), intent(out) :: wann_c_jk(nwann,nstsv,nkptnrloc)
 
 integer i,ik,jk,nkptnrloc1,jkloc,j,tag
 

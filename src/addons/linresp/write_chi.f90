@@ -98,33 +98,29 @@ if (wannier_chi0_chi) then
   write(160,'("#")')
   write(160,'("# Definition of columns")')
   write(160,'("#   1: energy            [eV]")')
-  write(160,'("#   2: -Re chi0_wann_full(Gq,Gq)  [1/eV/A^3]   ")')
-  write(160,'("#   3: -Im chi0_wann_full(Gq,Gq)  [1/eV/A^3]   ")')
+  write(160,'("#   2: -Re chi0_wann(Gq,Gq)       [1/eV/A^3]   ")')
+  write(160,'("#   3: -Im chi0_wann(Gq,Gq)       [1/eV/A^3]   ")')
   write(160,'("#   4: -Re chi_wann(Gq,Gq)        [1/eV/A^3]   ")')
   write(160,'("#   5: -Im chi_wann(Gq,Gq)        [1/eV/A^3]   ")')
-  write(160,'("#   6: -Re chi0_wann(Gq,Gq)       [1/eV/A^3]   ")')
-  write(160,'("#   7: -Im chi0_wann(Gq,Gq)       [1/eV/A^3]   ")')
-  write(160,'("#   8:  Re epsilon_eff                         ")')
-  write(160,'("#   9:  Im epsilon_eff                         ")')
-  write(160,'("#  10:  Re sigma [eV]                          ")')
-  write(160,'("#  11:  Im sigma [eV]                          ")')
-  write(160,'("#  12:  loss_function                          ")')
+  write(160,'("#   6:  Re epsilon_eff                         ")')
+  write(160,'("#   7:  Im epsilon_eff                         ")')
+  write(160,'("#   8:  Re sigma [eV]                          ")')
+  write(160,'("#   9:  Im sigma [eV]                          ")')
+  write(160,'("#  10:  loss_function                          ")')
 
   write(160,'("#")')
   allocate(func(12,lr_nw))
   do ie=1,lr_nw
     func(1,ie)=dreal(lr_w(ie))*ha2ev
-    func(2,ie)=-dreal(f_response(f_chi0_wann_full,ie,ifxc))/ha2ev/(au2ang)**3
-    func(3,ie)=-dimag(f_response(f_chi0_wann_full,ie,ifxc))/ha2ev/(au2ang)**3
+    func(2,ie)=-dreal(f_response(f_chi0_wann,ie,ifxc))/ha2ev/(au2ang)**3
+    func(3,ie)=-dimag(f_response(f_chi0_wann,ie,ifxc))/ha2ev/(au2ang)**3
     func(4,ie)=-dreal(f_response(f_chi_wann,ie,ifxc))/ha2ev/(au2ang)**3
     func(5,ie)=-dimag(f_response(f_chi_wann,ie,ifxc))/ha2ev/(au2ang)**3
-    func(6,ie)=-dreal(f_response(f_chi0_wann,ie,ifxc))/ha2ev/(au2ang)**3
-    func(7,ie)=-dimag(f_response(f_chi0_wann,ie,ifxc))/ha2ev/(au2ang)**3
-    func(8,ie)=dreal(f_response(f_epsilon_eff_wann,ie,ifxc))
-    func(9,ie)=dimag(f_response(f_epsilon_eff_wann,ie,ifxc))
-    func(10,ie)=dreal(f_response(f_sigma_wann,ie,ifxc))*ha2ev
-    func(11,ie)=dimag(f_response(f_sigma_wann,ie,ifxc))*ha2ev
-    func(12,ie)=-dimag(f_response(f_loss_wann,ie,ifxc))
+    func(6,ie)=dreal(f_response(f_epsilon_eff_wann,ie,ifxc))
+    func(7,ie)=dimag(f_response(f_epsilon_eff_wann,ie,ifxc))
+    func(8,ie)=dreal(f_response(f_sigma_wann,ie,ifxc))*ha2ev
+    func(9,ie)=dimag(f_response(f_sigma_wann,ie,ifxc))*ha2ev
+    func(10,ie)=-dimag(f_response(f_loss_wann,ie,ifxc))
     write(160,'(12G14.6)')func(1:12,ie)
   enddo
   deallocate(func)
