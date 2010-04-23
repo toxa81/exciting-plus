@@ -1,7 +1,9 @@
-subroutine genuscrn(iwloc,vcgq,chi0,megqwan1,vscr)
+subroutine genuscrn(iwloc,iq,ivq0m,vcgq,chi0,megqwan1,vscr)
 use modmain
 implicit none
 integer, intent(in) :: iwloc
+integer, intent(in) :: iq
+integer, intent(in) :: ivq0m(3)
 real(8), intent(in) :: vcgq(ngvecme)
 complex(8), intent(in) :: chi0(ngvecme,ngvecme)
 complex(8), intent(in) :: megqwan1(ngvecme,nwann)
@@ -57,9 +59,16 @@ if (crpa_scrn.eq.1.or.crpa_scrn.eq.2) then
   endif
   deallocate(zm1)
 endif
-  
-  
-  
+do ig1=1,ngvecme
+  if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
+    if (ig1.eq.1) then
+      vscr(ig1,ig1)=vscr(ig1,ig1)*a0gamma(iq)
+    else
+      vscr(ig1,ig1)=vscr(ig1,ig1)*0.125d0
+    endif      
+  endif
+enddo
+
 ! uscrn(n,n',T,w)=<W_n,W_n|\chi(w)|W_{n',T},W_{n',T}> = 
 !  \sum_{q,G,G'} megqwan^{*}_{n,G} \chi_{G,G'}(w) megqwan_{n',G'} exp^{-iqT}
 !  M1_{n,G'}(w)=\sum_{G} megqwan^{*}_{n,G} \chi_{G,G'}(w)
@@ -76,20 +85,6 @@ do itloc=1,ntloc
   call zgemm('N','N',nwann,nwann,ngvecme,expiqt,zm1,nwann,megqwan1,ngvecme,&
     zone,uscrnwan(1,1,it,iwloc),nwann)
 enddo      
-! compute screened u
-!do ig1=1,ngvecme
-!  do ig2=1,ngvecme
-!    do n1=1,nwann
-!      do n2=1,nwann
-!!        uscrnwan(n1,n2,ivtit_uscrn(0,0,0),iwloc)=uscrnwan(n1,n2,ivtit_uscrn(0,0,0),iwloc)+&
-!!          dconjg(megqwan(idxmegqwan(n1,n1,0,0,0),ig1))*vscr(ig1,ig2)*&
-!!          megqwan(idxmegqwan(n2,n2,0,0,0),ig2)
-!        uscrnwan(n1,n2,ivtit_uscrn(0,0,0),iwloc)=uscrnwan(n1,n2,ivtit_uscrn(0,0,0),iwloc)+&
-!          dconjg(megqwan1(ig1,n1))*vscr(ig1,ig2)*megqwan1(ig2,n2)
-!      enddo
-!    enddo
-!  enddo
-!enddo
 deallocate(epsilon,zm1)
 return 
 end

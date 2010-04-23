@@ -1,8 +1,7 @@
-subroutine genmegqwan(ikloc,wann_c_jk)
+subroutine genmegqwan(ikloc)
 use modmain
 implicit none
 integer, intent(in) :: ikloc
-complex(8), intent(in) :: wann_c_jk(nwann,nstsv,nkptnrloc)
 integer ik,i1,ibloc,xloc,ist1,ist2,itr,i,n1,n2,ig,n,j
 real(8) vtrc(3)
 complex(8) zt1

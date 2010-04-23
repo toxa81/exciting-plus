@@ -29,22 +29,6 @@ do ig=1,ngvecme
   gq0=dot_product(vgq0c,vgq0c)
   vcgq(ig)=a0*fourpi/gq0
 enddo
-!
-!! generate G+q vectors  
-!  vgq0c(:)=vgc(:,ig+gvecme1-1)+vq0rc(:)
-!  gq0=dot_product(vgq0c,vgq0c)
-!  if (ig.eq.1.and.ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
-!    vcgq(ig)=0.d0
-!    do n1=1,8
-!      vgq0c(:)=q0gamma(:,n1)
-!      gq0=dot_product(vgq0c,vgq0c)
-!      vcgq(ig)=vcgq(ig)+0.125*(2*Pi)**3*a0gamma(n1)*fourpi/gq0
-!    enddo
-!  else
-!    vcgq(ig)=fourpi/gq0
-!  endif
-!enddo !ig
-!vcgq(:)=vcgq(:)/omega/nkptnr
 
 if (mpi_grid_x(dim_k).eq.0) then
   do itloc=1,ntloc

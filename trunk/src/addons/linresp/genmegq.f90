@@ -1,4 +1,3 @@
-#ifdef _HDF5_
 subroutine genmegq(iq)
 use modmain
 use mod_nrkp
@@ -11,22 +10,18 @@ integer ivq0m(3)
 integer, allocatable :: igkignr_jk(:)
 complex(8), allocatable :: wfsvmt_jk(:,:,:,:,:)
 complex(8), allocatable :: wfsvit_jk(:,:,:)
-complex(8), allocatable :: wann_c_jk(:,:,:)
+!complex(8), allocatable :: wann_c_jk(:,:,:)
 integer ngknr_jk
-integer i,ikstep,sz,complete
+integer i,ikstep,sz
 integer nkstep,ist1,ist2,ikloc,ik
 real(8) t1,t2,t3,t4,t5,dn1
 integer lmaxexp,lmmaxexp
 integer np
-character*100 :: qnm,qdir,fout,fme,fu
-logical exist
+character*100 :: qnm,qdir,fout
 
 ! comment:
-! the subroutine computes <psi_{n,k}|e^{-i(G+q)x}|psi_{n',k+q}> 
-! 
-! switch write_megq_file controls the reading and writing of ME file
-! when we write ME we have two choices: write to single file or write
-!  to multiple files
+! the subroutine computes <psi_{n,k}|e^{-i(G+q)x}|psi_{n',k+q}>  and
+!  <W_n|e^{-i(G+q)x}|W_{n'T}> 
 
 ! maximum l for exponent expansion
 lmaxexp=lmaxvr+2
@@ -123,6 +118,7 @@ allocate(wfsvmt_jk(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
 allocate(wfsvit_jk(ngkmax,nspinor,nstsv))
 allocate(igkignr_jk(ngkmax))
 if (wannier_megq) then
+  if (allocated(wann_c_jk)) deallocate(wann_c_jk)
   allocate(wann_c_jk(nwann,nstsv,nkptnrloc))
 endif
 
@@ -133,11 +129,10 @@ call timer_reset(2)
 call timer_reset(3)
 call timer_reset(4)
 call timer_reset(5)
-goto 55
 do ikstep=1,nkstep
 ! transmit wave-functions
   call timer_start(1)
-  call getwfkq(ikstep,ngknr_jk,igkignr_jk,wfsvmt_jk,wfsvit_jk,wann_c_jk)
+  call getwfkq(ikstep,ngknr_jk,igkignr_jk,wfsvmt_jk,wfsvit_jk)
   call timer_stop(1)
 ! compute matrix elements  
   call timer_start(2)
@@ -148,12 +143,16 @@ do ikstep=1,nkstep
 ! add contribution from k-point to the matrix elements of e^{-i(G+q)x} in 
 !  the basis of Wannier functions
     if (wannier_megq) then
-      call genmegqwan(ikstep,wann_c_jk)
+      call genmegqwan(ikstep)
     endif !wannier
   endif !ikstep.le.nkptnrloc
   call timer_stop(2)
 enddo !ikstep
-! for G=q=0
+! for G=q=0: e^{iqx}=1+iqx
+! [x,H]=v=p/m
+! xH-Hx=p/m 
+! <nk|xH|n'k>-<nk|Hx|n'k>=<nk|p/m|n'k>= E_{n'k}<nk|x|n'k> - E_{nk}<nk|x|n'k>
+!  <nk|x|n'k>=<nk|p/m|n'k>/(E_{n'k}-E_{nk})
 if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
@@ -168,7 +167,6 @@ if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
     enddo
   enddo
 endif
-55 continue
 
 ! time for wave-functions send/recieve
 t1=timer_get_value(1)
@@ -205,28 +203,18 @@ if (wannier_megq) then
   call mpi_grid_reduce(megqwan(1,1),nmegqwan*ngvecme,dims=(/dim_k,dim_b/),&
     all=.true.)
   megqwan=megqwan/nkptnr
-  megqwan=zone
 endif
-
 deallocate(wfsvmt_jk)
 deallocate(wfsvit_jk)
 deallocate(igkignr_jk)
-if (wannier_megq) then
-  deallocate(wann_c_jk)
-endif
 deallocate(ngntuju)
 deallocate(igntuju)
 deallocate(gntuju)
-
 call mpi_grid_barrier((/dim_k,dim_b/))
-
-30 continue
 if (wproc) then
   write(150,*)
   write(150,'("Done.")')
   call flushifc(150)
 endif
-
 return
 end
-#endif

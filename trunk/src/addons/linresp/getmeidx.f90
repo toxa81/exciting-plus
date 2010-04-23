@@ -7,7 +7,7 @@ logical, intent(in) :: req
 
 integer i,ik,jk,ist1,ist2,ikloc,n
 logical laddme,ldocc
-logical l11,l12,l21,l22,le1,le2,lwann,le1w,le2w,l3
+logical l11,l12,l21,l22,le1,le2,lwann,le1w,le2w,l3,l4
 integer, allocatable :: wann_bnd(:,:)
 logical, external :: bndint
 logical, external :: wann_diel
@@ -52,9 +52,15 @@ do ikloc=1,nkptnrloc
         if (wann_diel().and.ldocc.and.l3) lwann=.true.
         if ((task.eq.401.or.task.eq.402).and.l3) lwann=.true.
       endif
+      l4=.false.
+! for response and cRPA we need bands in [e1,e2] interval 
+      if (task.eq.400.or.task.eq.401) then
+        if (ldocc.and.le1.and.le2) l4=.true.
+      endif
+! bands for matrix in Wannier basis
+      if (lwann) l4=.true.
       laddme=.false.
-      !if ((ldocc.or.lwann).and.(le1.and.le2)) then
-      if ((ldocc.and.le1.and.le2).or.lwann) then
+      if (l4) then
         if (.not.spinpol) then
           laddme=.true.
         else

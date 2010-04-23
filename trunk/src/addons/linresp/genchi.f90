@@ -134,10 +134,7 @@ if (wannier_chi0_chi) then
       do n=1,nmegqwan
         n1=imegqwan(1,n)
         n2=imegqwan(2,n)
-        ! for zgemm
-        wann_cc(i1,n,ikloc)=wann_c(n1,ist1,ikloc)*dconjg(wann_c(n2,ist2,ikloc+nkptnrloc))
-        ! for zgerc
-        !wann_cc(n,i1,ikloc)=wann_c(n1,ist1,ikloc)*dconjg(wann_c(n2,ist2,ikloc+nkptnrloc))
+        wann_cc(i1,n,ikloc)=wann_c(n1,ist1,ikloc)*dconjg(wann_c_jk(n2,ist2,ikloc))
       enddo
     enddo !i1
   enddo !ikloc
@@ -203,18 +200,13 @@ do iw=1,lr_nw
 ! for response in Wannier basis
   if (wannier_chi0_chi) then
     call timer_start(3)
-    do ikloc=1,nkptnrloc
-      if (nmegqblhwan(ikloc).gt.0) then
-        call sumchi0wan_k(ikloc,lr_w(iw),chi0wan_k(1,1,ikloc))
-      endif
-    enddo !ikloc
-    call timer_stop(3)
-    call timer_start(4)
-! compute ch0 matrix in Wannier basis
     chi0wan(:,:)=zzero
     do ikloc=1,nkptnrloc
+      if (nmegqblhwan(ikloc).gt.0) then
+        call genchi0wan_k(ikloc,lr_w(iw),chi0wan_k(1,1,ikloc))
+      endif
       chi0wan(:,:)=chi0wan(:,:)+mexp(:,:,ikloc)*chi0wan_k(:,:,ikloc)
-    enddo
+    enddo !ikloc
 ! sum chi0wan over all k-points
     call mpi_grid_reduce(chi0wan(1,1),nmegqwan*nmegqwan,dims=(/dim_k/),&
       root=(/j/))
@@ -222,10 +214,10 @@ do iw=1,lr_nw
     if (megqwan_afm) chi0wan(:,:)=chi0wan(:,:)*2.d0
 ! processor j saves chi0wan to local array  
     if (mpi_grid_x(dim_k).eq.j) chi0wanloc(:,:,jwloc)=chi0wan(:,:)
-    call timer_stop(4)
+    call timer_stop(3)
   endif !wannier_chi0_chi
   if (wproc) then
-    open(160,file=trim(fstat),status='replace',form='formatted')
+    open(160,file=trim(fstat),status="REPLACE",form="FORMATTED")
     write(160,'(I8)')iw
     close(160)
   endif
@@ -239,7 +231,7 @@ do iwloc=1,nwloc
 ! compute screened W and U  
   if (task.eq.401) then
     call timer_start(5)
-    call genuscrn(iwloc,vcgq,chi0loc(1,1,iwloc),megqwan1,krnl_scr)
+    call genuscrn(iwloc,iq,ivq0m,vcgq,chi0loc(1,1,iwloc),megqwan1,krnl_scr)
     call timer_stop(5)
   else
 ! compute response functions 
@@ -282,8 +274,7 @@ if (wproc) then
   write(150,'("Total time per frequency point   : ",F8.2)')t1/lr_nw
   write(150,'("  Bloch basis part (chi0)        : ",F8.2)')t2/lr_nw
   write(150,'("  Bloch basis part (chi)         : ",F8.2)')t6/lr_nw  
-  write(150,'("  Wannier basis part (chi0wan_k) : ",F8.2)')t3/lr_nw
-  write(150,'("  Wannier basis part (chi0wan)   : ",F8.2)')t4/lr_nw 
+  write(150,'("  Wannier basis part (chi0)      : ",F8.2)')t3/lr_nw
   write(150,'("  Wannier basis part (crpa)      : ",F8.2)')t5/nwloc   
   write(150,'("  Wannier basis part (chi)       : ",F8.2)')t7/lr_nw
   call flushifc(150)
