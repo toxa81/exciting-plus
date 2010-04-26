@@ -195,7 +195,6 @@ lr_e2=100.1d0
 wannier_lc=.false.
 megqwan_maxdist=0.1d0
 nwann_h=0
-crpa=.false.
 wannier_soft_eint_width=0.05 
 wannier_soft_eint_e1=-100.d0
 wannier_soft_eint_e2= 100.d0
@@ -205,6 +204,10 @@ lr_nw=200
 lr_w0=0.d0
 lr_w1=20.d0
 lr_eta=0.3d0
+lrtype=0
+nvq0=0
+gshme2=1
+
 
 !-------------------------------!
 !     read from exciting.in     !
@@ -917,12 +920,16 @@ case('mustar')
   read(50,*,err=20) mustar
 case('sqados')
   read(50,*,err=20) sqados(:)
-case('response')
-  read(50,*,err=20) nvq0,gshme2,lrtype
+case('response_q')
+  read(50,*,err=20) nvq0
   allocate(ivq0m_list(3,nvq0))
   do i=1,nvq0
     read(50,*,err=20) ivq0m_list(:,i)
   enddo
+case('response_gsh')
+  read(50,*,err=20) gshme2
+case('response_type')
+  read(50,*,err=20) lrtype
 case('response_w')
   read(50,*,err=20) lr_nw
   read(50,*,err=20) lr_w0,lr_w1,lr_eta
@@ -932,9 +939,7 @@ case('response_fxc')
   read(50,*,err=20) fxctype,nfxca,fxca0,fxca1
 case('response_options')
   read(50,*,err=20) scalar_chi
-  read(50,*,err=20) split_megq_file
   read(50,*,err=20) parallel_read
-  read(50,*,err=20) parallel_write  
 case('response_wann')
   read(50,*,err=20) wannier_chi0_chi
   read(50,*,err=20) megqwan_afm
@@ -1021,7 +1026,6 @@ case('clda')
   read(50,*,err=20)(clda_iorb(2,i),i=1,clda_norb)
   read(50,*,err=20)(clda_vorb(2,i),i=1,clda_norb)
 case('crpa')
-  read(50,*,err=20)crpa
   read(50,*,err=20)crpa_e1,crpa_e2
   read(50,*,err=20)crpa_scrn
 case('mpi_grid')

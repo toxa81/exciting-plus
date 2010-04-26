@@ -1054,10 +1054,6 @@ integer nmegqblhlocmax
 !   2-nd index : global index of pair of bands (n,n')
 !   3-rd index : k-point
 complex(8), allocatable :: megqblh(:,:,:)
-! matrix elements <nk|e^{-i(G+q)x}|n'k+q> in the Bloch basis
-!   1-st index : global index of pair of bands (n,n')
-!   2-nd index : G-vector
-!   3-rd index : k-point
 complex(8), allocatable :: megqblh2(:,:)
 ! pair of bands (n,n') for matrix elements <nk|e^{-i(G+q)x}|n'k+q> by global index
 !   1-st index :  1 -> n
@@ -1080,6 +1076,7 @@ integer nmegqblhwanmax
 integer, allocatable :: nmegqblhwan(:)
 integer, allocatable :: imegqblhwan(:,:)
 
+complex(8), allocatable :: wann_c_jk(:,:,:)
 complex(8), allocatable :: wann_cc(:,:,:)
 complex(8), allocatable :: wann_cc2(:,:)
 
@@ -1092,7 +1089,7 @@ complex(8), allocatable :: gntuju(:,:,:)
 
 
 
-! array for k and k+q stuff
+! array for k+q points
 !  1-st index: index of k-point in BZ
 !  2-nd index: 1: index of k'=k+q-K
 !              2: index of K-vector which brings k+q to first BZ
@@ -1105,36 +1102,28 @@ integer fxctype
 ! high-level switch: solve scalar equation for chi
 logical scalar_chi
 data scalar_chi/.false./
-! high-level switch: split file with matrix elements over k-points
-logical split_megq_file
-data split_megq_file/.false./
 ! high-level switch:: read files in parallel
 logical parallel_read
 data parallel_read/.true./
-! high-level switch:: write files in parallel (where it is possible)
-logical parallel_write
-data parallel_write/.true./
 ! high-level switch: compute chi0 and chi in Wannier functions basis
 logical wannier_chi0_chi 
 data wannier_chi0_chi/.false./
 ! low level switch: compute matrix elements of e^{i(G+q)x} in the basis of
 !   Wannier functions; depends on crpa and wannier_chi0_chi
 logical wannier_megq
-! low-level switch: write or not file with matrix elements; depends on task 
-logical write_megq_file
+data wannier_megq/.false./
 ! low level switch: compute screened W matrix; depends on crpa
 logical screened_w
 data screened_w/.false./
 logical screened_u
 data screened_u/.false./
-logical write_chi0_file
 
 real(8) q0gamma(3,8)
 real(8) a0gamma(8)
 
 real(8) megqwan_maxdist
 
-logical crpa
+!logical crpa
 real(8) crpa_e1,crpa_e2
 ! 0: W is computed from "symmetrized" dielectric function
 ! 1: W is computed from chi
@@ -1157,7 +1146,6 @@ integer, parameter :: f_sigma                = 10
 integer, parameter :: f_sigma_scalar         = 11
 integer, parameter :: f_loss                 = 12
 integer, parameter :: f_loss_scalar          = 13
-integer, parameter :: f_chi0_wann_full       = 14
 integer, parameter :: f_chi0_wann            = 15
 integer, parameter :: f_chi_wann             = 16
 integer, parameter :: f_epsilon_eff_wann     = 17
