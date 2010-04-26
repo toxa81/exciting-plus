@@ -21,8 +21,7 @@ if (vgq0l(1).lt.intgv(1,1).or.vgq0l(1).gt.intgv(1,2).or.&
     intgv(3,:)
   call pstop
 endif
-  
-  
+    
 gshq0=igishell(ivgig(vgq0l(1),vgq0l(2),vgq0l(3)))
 if (wproc) then
   write(150,*)
