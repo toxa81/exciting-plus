@@ -141,7 +141,9 @@ if (task.eq.0.or.task.eq.1.or.task.eq.22.or.task.eq.800.or.task.eq.100.or.&
   if (lmpi_grid) then
     grid_dim(1:2)=mpi_grid(1:2)
   endif
-else if (task.eq.400.or.task.eq.401.or.task.eq.402.or.task.eq.403) then
+else if (task.eq.400.or.task.eq.401.or.task.eq.402) then
+  i2=nvq0
+  if (i2.eq.0) i2=nkptnr
   allocate(grid_dim(3))
 ! overwrite default grid layout
   if (lmpi_grid) then
@@ -151,10 +153,10 @@ else if (task.eq.400.or.task.eq.401.or.task.eq.402.or.task.eq.403) then
       grid_dim=(/nproc,1,1/)
     else
       i1=nproc/nkptnr
-      if (i1.le.nvq0) then
+      if (i1.le.i2) then
         grid_dim=(/nkptnr,1,i1/)
       else
-        grid_dim=(/nkptnr,nproc/(nkptnr*nvq0),nvq0/)
+        grid_dim=(/nkptnr,nproc/(nkptnr*i2),i2/)
       endif
     endif
   endif
