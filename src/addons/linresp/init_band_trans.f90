@@ -1,9 +1,7 @@
 subroutine init_band_trans
 use modmain
 implicit none
-integer ikloc,ik,i,j,n1,n2,i1,i2,i3
-real(8) t1
-logical l1
+integer ikloc,i
 logical, external :: wann_diel
 
 ! get limits

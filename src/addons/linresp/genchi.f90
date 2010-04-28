@@ -23,9 +23,7 @@ integer i,iw,i1,i2,ikloc,n,j,ifxc
 integer ist1,ist2,nfxcloc,ifxcloc,nwloc,jwloc,iwloc
 integer it1(3),it2(3),it(3)
 integer ig
-integer ierr
-character*100 qnm,qdir,fout,fchi0,fstat,path
-character*8 c8
+character*100 qnm,qdir,fout,fstat
 integer ie1,n1,n2,ik
 real(8) fxca
 
@@ -34,7 +32,7 @@ real(8) vgq0c(3)
 real(8) gq0
 
 real(8) vtrc(3)
-real(8) t1,t2,t3,t4,t5,t6,t7,t8
+real(8) t1,t2,t3,t4,t5,t6,t7
 
 ivq0m(:)=ivq0m_list(:,iq)
 call getqdir(iq,ivq0m,qdir)
