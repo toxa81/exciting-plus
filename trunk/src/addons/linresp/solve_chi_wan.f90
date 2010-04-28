@@ -11,7 +11,7 @@ complex(8), allocatable :: mtrx1(:,:)
 complex(8), allocatable :: mtrx2(:,:)
 complex zt1,zt2
 
-integer i1,i2,n1,n2,i,j,it2,i3,ig,igq0
+integer i,j,igq0
 
 igq0=lr_igq0-gvecme1+1
 

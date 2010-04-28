@@ -2,7 +2,6 @@ subroutine write_ubare
 use modmain
 implicit none
 character*100 fubare
-character*8 c8
 character*3 c3
 integer it
 

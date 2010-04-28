@@ -2,7 +2,7 @@ subroutine genmegqwan(ikloc)
 use modmain
 implicit none
 integer, intent(in) :: ikloc
-integer ik,i1,ibloc,xloc,ist1,ist2,itr,i,n1,n2,ig,n,j
+integer ik,i1,ibloc,xloc,ist1,ist2,i,n1,n2,ig,j
 real(8) vtrc(3)
 complex(8) zt1
 ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)

@@ -1,8 +1,7 @@
 subroutine write_uscrn
 use modmain
 implicit none
-integer i,j,nwloc,it,iwloc,iw
-real(8) uavg
+integer nwloc,it,iwloc,iw
 character*100 fuscrn
 character*8 c8
 character*3 c3

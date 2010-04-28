@@ -5,7 +5,7 @@ implicit none
 integer i1,i2,i3,n
 real(8) vq0l_1(3),vq0l_2(3),vq0l_3(3)
 real(8) vq0c_1(3),vq0c_2(3),vq0c_3(3)
-real(8) q0mtrx(3,3),vq0c__1(3),vq0c__2(3)
+real(8) q0mtrx(3,3)
 
 vq0l_1=(/1,0,0/)/dble(ngridk(1))
 call r3mv(bvec,vq0l_1,vq0c_1)

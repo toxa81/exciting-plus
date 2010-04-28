@@ -11,12 +11,12 @@ real real_time,cpu_time,mflops
 integer*8 fp_ins
 #endif
 
-integer i,j,n,ik,ikloc,ik1,isym,idx0,iq,ig
+integer i,j,n,ik,ikloc,iq
 integer n1,nwloc
 logical l1
-integer sz,nvq0loc,iqloc,i1,i2,i3,ias,jas
+integer nvq0loc,iqloc,i1,i2,i3,ias,jas
 character*100 qnm
-real(8) w2,t1
+real(8) t1
 logical lgamma,wproc1,lpmat
 logical, external :: wann_diel
 

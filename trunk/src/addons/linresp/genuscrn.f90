@@ -13,7 +13,7 @@ complex(8), allocatable :: epsilon(:,:)
 complex(8), allocatable :: zm1(:,:)
 complex(8) expiqt
 real(8) vtc(3)
-integer ig1,ig2,n1,n2
+integer ig1,ig2
 integer ntloc,itloc,it
 
 allocate(epsilon(ngvecme,ngvecme))

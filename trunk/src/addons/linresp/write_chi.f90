@@ -10,7 +10,7 @@ real(8), allocatable :: func(:,:)
 real(8) fsum
 character*100 fname,qnm,qdir
 character*10 c1,c2,c3,c4,c5
-integer ie,i
+integer ie
 real(8) t1,t2
 
 fsum=0.d0
