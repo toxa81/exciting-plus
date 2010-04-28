@@ -13,10 +13,9 @@ complex(8), intent(in) :: wfsvit1(ngkmax,nspinor,nstsv)
 complex(8), intent(in) :: wfsvit2(ngkmax,nspinor,nstsv)
 
 integer wfsize
-integer ivg1(3),ivg2(3)
+integer ivg1(3)
 integer i,j,ik,jk,offs,igkq,n1,ispn1,ispn2,ist1,ist2,ic
 integer ig,ig1,ig2,io1,io2,lm1,lm2,ias,ifg,ir
-complex(8) zt1
 logical l1
 logical, allocatable :: lf1g(:)
 complex(8), allocatable :: a1(:)

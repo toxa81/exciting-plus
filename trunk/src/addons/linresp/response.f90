@@ -59,33 +59,14 @@ if (iproc.eq.0) call timestamp(6,'after init1')
 if (.not.mpi_grid_in()) return
 
 ! check if all q-vectors in BZ are required 
-! TODO: put to a separate file
 lgamma=.true.
 if (task.eq.401.or.task.eq.402) then
-  if (allocated(ivq0m_list)) deallocate(ivq0m_list)
-  nvq0=nkptnr-1
-  j=0  
-  if (lgamma) then
-    nvq0=nvq0+8
-    j=8
-  endif
-  allocate(ivq0m_list(3,nvq0))
-  ivq0m_list=0
-  do i1=0,ngridk(1)-1
-    do i2=0,ngridk(2)-1
-      do i3=0,ngridk(3)-1
-        if (.not.(i1.eq.0.and.i2.eq.0.and.i3.eq.0)) then
-          j=j+1
-          ivq0m_list(:,j)=(/i1,i2,i3/)
-        endif
-      enddo
-    enddo
-  enddo
+  call init_qbz(lgamma)
   nfxca=1
   fxca0=0.d0
   fxca1=0.d0
-  if (lgamma) call init_q0gamma
 endif
+
 ! check if momentum matrix is required
 lpmat=.false.
 do j=1,nvq0
@@ -275,70 +256,6 @@ do iqloc=1,nvq0loc
 enddo
 if (task.eq.401) call write_uscrn
 if (task.eq.402) call write_ubare
-
-!
-!!-----------------------------------------!
-!!    task 400: compute matrix elements    !
-!!-----------------------------------------!
-!if (task.eq.400) then
-!! calculate matrix elements
-!  call timer_start(10,reset=.true.)
-!  if (wproc1) call timestamp(151,txt='start genmegq')
-!  do iq=ivq1,ivq2
-!    call genmegq(ivq0m_list(1,iq))
-!  enddo
-!  call timer_stop(10)
-!  if (wproc1) call timestamp(151,txt='stop genmegq')
-!  if (wproc1) then
-!    write(151,*)
-!    write(151,'("Total time for matrix elements : ",F8.2," seconds")')timer_get_value(10)
-!    call flushifc(151)
-!  endif
-!endif
-!
-!!------------------------------!
-!!    task 401: compute chi0    !
-!!------------------------------!
-!if (task.eq.401) then
-!! calculate chi0
-!  call timer_start(11,reset=.true.)
-!  if (wproc1) call timestamp(151,txt='start genchi0')
-!  do iq=ivq1,ivq2
-!    call genchi0(ivq0m_list(1,iq))
-!  enddo
-!  call timer_stop(11)
-!  if (wproc1) call timestamp(151,txt='stop genchi0')
-!  if (wproc1) then
-!    write(151,*)
-!    write(151,'("Total time for chi0 : ",F8.2," seconds")')timer_get_value(11)
-!    call flushifc(151)
-!  endif
-!endif
-!!---------------------------------------!
-!!    task 402: compute me and bare U    !
-!!---------------------------------------!
-!if (task.eq.402) then
-!  if (wproc1) call timestamp(151,txt='start task 402')
-!  do iq=ivq1,ivq2
-!    call genmegq(ivq0m_list(1,iq))
-!    call genubare(ivq0m_list(1,iq))
-!  enddo 
-!  call write_ubare
-!  if (wproc1) call timestamp(151,txt='stop task 402')
-!endif
-!
-!!------------------------------------------!
-!!    task 403: compute me, chi0 and chi    !
-!!------------------------------------------!
-!if (task.eq.403) then
-!  if (wproc1) call timestamp(151,txt='start task 403')
-!  do iq=ivq1,ivq2
-!    call genmegq(ivq0m_list(1,iq))
-!    call genchi0(ivq0m_list(1,iq))
-!  enddo 
-!  if (crpa) call write_uscrn
-!  if (wproc1) call timestamp(151,txt='stop task 403')
-!endif
 
 #ifdef _PAPI_
 call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)

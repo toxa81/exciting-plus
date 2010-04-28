@@ -8,7 +8,6 @@ integer i1,i2,i3,n
 real(8) vol,x0,x1,y0,y1,z0,z1,t
 real(8), external :: r3mdet
 real(8) v000(3),v001(3),v010(3),v100(3),v011(3),v101(3),v110(3),v111(3)
-real(8) v1(3)
 
 vol=abs(r3mdet(qvec))
 n=100
@@ -40,10 +39,7 @@ do i1=0,n-1
     enddo
   enddo
 enddo
-!write(*,*)'qvec=',qvec
-!write(*,*)'vol=',vol
 t=t/(n**3)
-!write(*,*)'t=',t
 ! take half of the diagonal 
 q0(:)=0.5d0*(qvec(:,1)+qvec(:,2)+qvec(:,3))
 ! Let f(q)=1/q^2; we search for a0, shuch as
@@ -55,8 +51,8 @@ q0(:)=0.5d0*(qvec(:,1)+qvec(:,2)+qvec(:,3))
 ! a0 = (2Pi)^-3 \sum f(q_i) / N / f(q0)
 a0=dot_product(q0,q0)*t/(twopi**3)
 ! Now, instead of integral we are using q-sum (in cRPA and bare U)
-! by following substitution:
-! (2Pi)^-3 \int dq f(q) = 1/N_k/Omega \sum_q_i f(q_i)
+! by the following substitution:
+! (2Pi)^-3 \int dq f(q) => 1/N_k/Omega \sum_q_i f(q_i)
 ! we know that in the microcell around Gamma
 !  (2Pi)^-3 \int dq f(q) = vol*f(q0)*a0
 ! we will redifine a0 such as 1/N_k/Omega f(q0)*a0 = (2Pi)^-3 \int dq f(q)

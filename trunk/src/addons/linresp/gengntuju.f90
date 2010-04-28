@@ -4,7 +4,7 @@ implicit none
 ! arguments
 integer, intent(in) :: lmaxexp
 
-integer ig,is,ir,n,ias,i,io1,io2,l1,m1,lm1,l2,m2,lm2,l3,m3,lm3,ic
+integer ig,is,ir,n,ias,io1,io2,l1,m1,lm1,l2,m2,lm2,l3,m3,lm3,ic
 ! for parallel
 integer igloc,ngvecmeloc
 integer lmmaxexp
