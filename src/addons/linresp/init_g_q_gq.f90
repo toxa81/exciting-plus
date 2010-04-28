@@ -5,7 +5,7 @@ integer, intent(in) :: ivq0m(3)
 integer, intent(in) :: lmaxexp
 integer, intent(in) :: lmmaxexp
 integer vgq0l(3)
-integer i,j,ig
+integer i,ig
 
 ! q-vector in lattice coordinates
 do i=1,3

@@ -2,7 +2,7 @@ subroutine init_qbz(lgamma)
 use modmain
 implicit none
 logical, intent(in) :: lgamma
-integer j
+integer j,i1,i2,i3
 
 if (allocated(ivq0m_list)) deallocate(ivq0m_list)
 nvq0=nkptnr-1
@@ -24,5 +24,5 @@ do i1=0,ngridk(1)-1
   enddo
 enddo
 if (lgamma) call init_q0gamma
-end
 return
+end

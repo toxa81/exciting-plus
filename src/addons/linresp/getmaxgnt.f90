@@ -4,7 +4,7 @@ implicit none
 integer, intent(in) :: lmaxexp
 integer, intent(out) :: maxgnt
 integer l1,l2,l3,m1,m2,m3
-integer nrf1,nrf2,is,i,j
+integer nrf1,nrf2
 real(8), external :: gaunt
 real(8) t1
 ! estimate the maximum number of Gaunt-like coefficients 

@@ -7,7 +7,7 @@ logical, intent(in) :: req
 
 integer i,ik,jk,ist1,ist2,ikloc,n
 logical laddme,ldocc
-logical l11,l12,l21,l22,le1,le2,lwann,le1w,le2w,l3,l4
+logical l11,l12,l21,l22,le1,le2,lwann,l3,l4
 integer, allocatable :: wann_bnd(:,:)
 logical, external :: bndint
 logical, external :: wann_diel
