@@ -16,6 +16,9 @@ complex(8), allocatable :: krnl(:,:)
 complex(8), allocatable :: krnl_scr(:,:)
 complex(8), allocatable :: mexp(:,:,:)
 complex(8), allocatable :: megqwan1(:,:)
+complex(8), allocatable :: megqwan_tmp(:,:)
+integer, allocatable :: imegqwan_tmp(:,:)
+
 integer, external :: hash
 integer ivq0m(3)
 
@@ -86,11 +89,39 @@ do ig=1,ngvecme
   vcgq(ig)=sqrt(fourpi)/gq0
 enddo !ig
 
+! cutoff small matrix elements
+if (wannier_chi0_chi) then
+  allocate(megqwan_tmp(nmegqwan,ngvecme))
+  megqwan_tmp=zzero
+  allocate(imegqwan_tmp(5,nmegqwan))
+  imegqwan_tmp=0
+  j=0
+  do i=1,nmegqwan
+    if (abs(megqwan(i,lr_igq0)).gt.megqwan_cutoff) then
+      j=j+1
+      imegqwan_tmp(:,j)=imegqwan(:,i)
+      megqwan_tmp(j,:)=megqwan(i,:)
+    endif
+  enddo
+  nmegqwan=j
+  megqwan(:,:)=megqwan_tmp(:,:)
+  imegqwan(:,:)=imegqwan_tmp(:,:)
+  deallocate(megqwan_tmp)
+  deallocate(imegqwan_tmp)
+endif
+
 ! for response in Wannier bais
 if (wannier_chi0_chi) then
   if (wproc) then
     write(150,*)
     write(150,'("Wannier AFM : ",L1)')megqwan_afm
+    write(150,*)
+    write(150,'("Number of Wannier transitions after cutoff : ",I6)')nmegqwan
+    write(150,'("List of Wannier matrix elements (n n1 T me(G_q) SUM(me)) ")')
+    do i=1,nmegqwan
+      write(150,'(I4,4X,I4,4X,3I3,4X,2G18.10)')imegqwan(:,i),&
+        abs(megqwan(i,lr_igq0)),sum(abs(megqwan(i,:)))
+    enddo
   endif
   allocate(chi0wan(nmegqwan,nmegqwan))
   allocate(chi0wan_k(nmegqwan,nmegqwan,nkptnrloc))
@@ -161,11 +192,6 @@ nwloc=mpi_grid_map(lr_nw,dim_k)
 allocate(chi0loc(ngvecme,ngvecme,nwloc))
 if (wannier_chi0_chi) allocate(chi0wanloc(nmegqwan,nmegqwan,nwloc))
 
-if (wproc) then
-  write(150,*)
-  write(150,'("fisrt energy point : ",I4)')ie1
-  call flushifc(150)
-endif
 call timer_start(1,reset=.true.)
 call timer_reset(2)
 call timer_reset(3)

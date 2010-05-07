@@ -44,7 +44,7 @@ do ikloc=1,nkptnrloc
 !       in Wannier basis
       le1=bndint(ist1,evalsvnr(ist1,ik),lr_e1,lr_e2)
       le2=bndint(ist2,evalsvnr(ist2,jk),lr_e1,lr_e2)
-      ldocc=abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-12
+      ldocc=abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-6
       lwann=.false.
       if (wannier_megq) then
         l3=(wann_bnd(ist1,ik).ne.0.and.wann_bnd(ist2,jk).ne.0)

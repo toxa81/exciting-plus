@@ -121,7 +121,7 @@ if (wannier_chi0_chi) then
     func(8,ie)=dreal(f_response(f_sigma_wann,ie,ifxc))*ha2ev
     func(9,ie)=dimag(f_response(f_sigma_wann,ie,ifxc))*ha2ev
     func(10,ie)=-dimag(f_response(f_loss_wann,ie,ifxc))
-    write(160,'(12G14.6)')func(1:12,ie)
+    write(160,'(12G14.6)')func(1:10,ie)
   enddo
   deallocate(func)
 endif
