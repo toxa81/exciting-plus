@@ -13,6 +13,8 @@ integer, allocatable :: vtl(:,:)
 ! vector -> index map
 integer, allocatable :: ivtit(:,:,:)
 
+integer dim_t
+
 contains
 
 subroutine lfa_init(trmax_)
@@ -35,6 +37,7 @@ do i1=-trmax,trmax
     enddo
   enddo
 enddo
+dim_t=dim3
 return
 end subroutine
 
@@ -64,15 +67,15 @@ allocate(f2mt_tmp(lmmaxvr,nrmtmax,natmtot))
 allocate(f2ir_tmp(ngrtot))
 
 j=0
-ntstep=mpi_grid_map(ntr,dim2,x=j)
-ntrloc=mpi_grid_map(ntr,dim2)
+ntstep=mpi_grid_map(ntr,dim_t,x=j)
+ntrloc=mpi_grid_map(ntr,dim_t)
 do itstep=1,ntstep
   f2mt_tmp=zzero
   f2ir_tmp=zzero
-  do i=0,mpi_grid_size(dim2)-1
-    ntloc1=mpi_grid_map(ntr,dim2,x=i)
+  do i=0,mpi_grid_size(dim_t)-1
+    ntloc1=mpi_grid_map(ntr,dim_t,x=i)
     if (itstep.le.ntloc1) then
-      it=mpi_grid_map(ntr,dim2,x=i,loc=itstep)
+      it=mpi_grid_map(ntr,dim_t,x=i,loc=itstep)
       v1(:)=vtl(:,it)
       v2(:)=v1(:)-t(:)
       l1=.false.
@@ -81,20 +84,20 @@ do itstep=1,ntstep
           v2(3).ge.-trmax.and.v2(3).le.trmax) then
         jt=ivtit(v2(1),v2(2),v2(3))
         l1=.true.
-        jtloc=mpi_grid_map(ntr,dim2,glob=jt,x=j)
+        jtloc=mpi_grid_map(ntr,dim_t,glob=jt,x=j)
       endif
-      if (l1.and.mpi_grid_x(dim2).eq.j.and.mpi_grid_x(dim2).ne.i) then
-        tag=(itstep*mpi_grid_size(dim2)+i)*10
+      if (l1.and.mpi_grid_x(dim_t).eq.j.and.mpi_grid_x(dim_t).ne.i) then
+        tag=(itstep*mpi_grid_size(dim_t)+i)*10
         call mpi_grid_send(f2mt(1,1,1,jtloc),lmmaxvr*nrmtmax*natmtot,&
-          (/dim2/),(/i/),tag)
-        call mpi_grid_send(f2ir(1,jtloc),ngrtot,(/dim2/),(/i/),tag+1)
+          (/dim_t/),(/i/),tag)
+        call mpi_grid_send(f2ir(1,jtloc),ngrtot,(/dim_t/),(/i/),tag+1)
       endif
-      if (l1.and.mpi_grid_x(dim2).eq.i) then
+      if (l1.and.mpi_grid_x(dim_t).eq.i) then
         if (j.ne.i) then
-          tag=(itstep*mpi_grid_size(dim2)+i)*10
+          tag=(itstep*mpi_grid_size(dim_t)+i)*10
           call mpi_grid_recieve(f2mt_tmp(1,1,1),lmmaxvr*nrmtmax*natmtot,&
-            (/dim2/),(/j/),tag)
-          call mpi_grid_recieve(f2ir_tmp(1),ngrtot,(/dim2/),(/j/),tag+1)
+            (/dim_t/),(/j/),tag)
+          call mpi_grid_recieve(f2ir_tmp(1),ngrtot,(/dim_t/),(/j/),tag+1)
         else
           f2mt_tmp(:,:,:)=f2mt(:,:,:,jtloc)
           f2ir_tmp(:)=f2ir(:,jtloc)
@@ -106,9 +109,10 @@ do itstep=1,ntstep
     zprod=zprod+zfinp_(tsh,f1mt(1,1,1,itstep),f2mt_tmp,f1ir(1,itstep),&
       f2ir_tmp)
   endif
+  call mpi_grid_barrier(dims=(/dim_t/))
 enddo
 deallocate(f2mt_tmp,f2ir_tmp)
-call mpi_grid_reduce(zprod,dims=(/dim2/))
+call mpi_grid_reduce(zprod,dims=(/dim_t/))
 lfa_dotp=zprod
 return
 end function
@@ -128,7 +132,7 @@ complex(8), allocatable :: ft1(:,:,:)
 complex(8), allocatable :: ft2(:,:,:)
 integer itrloc,ntrloc
 
-ntrloc=mpi_grid_map(ntr,dim2)
+ntrloc=mpi_grid_map(ntr,dim_t)
 allocate(ft1(lmmaxvr,nrmtmax,natmtot))
 allocate(ft2(lmmaxvr,nrmtmax,natmtot))
 do itrloc=1,ntrloc
@@ -185,7 +189,7 @@ end subroutine
 !
 !integer ntrloc
 !
-!ntrloc=mpi_grid_map(ntr,dim2)
+!ntrloc=mpi_grid_map(ntr,dim_t)
 !
 !end subroutine
 

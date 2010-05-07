@@ -14,11 +14,11 @@ call init0
 !call init1
 call mpi_grid_initialize((/1/))
 
-scm(:,1)=(/2,0,0/)
-scm(:,2)=(/0,2,0/)
+scm(:,1)=(/0,2,0/)
+scm(:,2)=(/1,1,0/)
 scm(:,3)=(/0,0,1/)
 do i=1,3
-  sca(:,i)=scm(i,1)*avec(:,1)+scm(i,2)*avec(:,2)+scm(i,3)*avec(:,3)
+  sca(:,i)=scm(1,i)*avec(:,1)+scm(2,i)*avec(:,2)+scm(3,i)*avec(:,3)
 enddo
 nsc=int(abs(r3mdet(sca)/r3mdet(avec))+epslat)
 write(*,*)

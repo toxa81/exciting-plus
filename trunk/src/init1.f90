@@ -129,7 +129,7 @@ end if
 dim_k=dim1
 dim_b=dim2
 dim_q=dim3
-if (task.eq.0.or.task.eq.1.or.task.eq.22.or.task.eq.800.or.task.eq.100.or.&
+if (task.eq.0.or.task.eq.1.or.task.eq.22.or.task.eq.100.or.&
   task.eq.101.or.task.eq.63) then
   allocate(grid_dim(2))
   if (nproc.le.nkpt) then
@@ -141,7 +141,7 @@ if (task.eq.0.or.task.eq.1.or.task.eq.22.or.task.eq.800.or.task.eq.100.or.&
   if (lmpi_grid) then
     grid_dim(1:2)=mpi_grid(1:2)
   endif
-else if (task.eq.400.or.task.eq.401.or.task.eq.402) then
+else if (task.eq.400.or.task.eq.401.or.task.eq.402.or.task.eq.800) then
   i2=nvq0
   if (i2.eq.0) i2=nkptnr
   allocate(grid_dim(3))
