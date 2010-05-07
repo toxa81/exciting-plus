@@ -475,7 +475,7 @@ real(8) mommttot(3)
 !     APW and local-orbital variables     !
 !-----------------------------------------!
 ! maximum allowable APW order
-integer, parameter :: maxapword=3
+integer, parameter :: maxapword=6
 ! APW order
 integer apword(0:maxlapw,maxspecies)
 ! maximum of apword over all angular momenta and species
