@@ -10,7 +10,6 @@ integer ivq0m(3)
 integer, allocatable :: igkignr_jk(:)
 complex(8), allocatable :: wfsvmt_jk(:,:,:,:,:)
 complex(8), allocatable :: wfsvit_jk(:,:,:)
-!complex(8), allocatable :: wann_c_jk(:,:,:)
 integer ngknr_jk
 integer i,ikstep,sz
 integer nkstep,ist1,ist2,ikloc,ik
@@ -148,6 +147,7 @@ do ikstep=1,nkstep
   endif !ikstep.le.nkptnrloc
   call timer_stop(2)
 enddo !ikstep
+! TODO: check this formula!!!
 ! for G=q=0: e^{iqx}=1+iqx
 ! [x,H]=v=p/m
 ! xH-Hx=p/m 
