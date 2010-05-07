@@ -93,7 +93,7 @@ enddo !ig
 if (wannier_chi0_chi) then
   allocate(megqwan_tmp(nmegqwan,ngvecme))
   megqwan_tmp=zzero
-  allocate(imegqwan_tmp(5,nmegqwan))
+  allocate(imegqwan_tmp(5,nmegqwanmax))
   imegqwan_tmp=0
   j=0
   do i=1,nmegqwan
