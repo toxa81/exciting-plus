@@ -949,6 +949,7 @@ real(8), allocatable :: urfprod(:,:,:,:)
 ! number of radial functions for a given l
 integer, allocatable :: nrfl(:,:)
 integer, allocatable :: lm2l(:)
+integer, allocatable :: lm2m(:)
 integer, allocatable :: ias2is(:)
 integer, allocatable :: ias2ia(:)
 integer, allocatable :: ias2ic(:)
