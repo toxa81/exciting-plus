@@ -195,9 +195,9 @@ lr_e2=100.1d0
 wannier_lc=.false.
 megqwan_maxdist=0.1d0
 nwann_h=0
-wannier_soft_eint_width=0.05 
-wannier_soft_eint_e1=-100.d0
-wannier_soft_eint_e2= 100.d0
+!wannier_soft_eint_width=0.05 
+!wannier_soft_eint_e1=-100.d0
+!wannier_soft_eint_e2= 100.d0
 wannier_min_prjao=0.01d0
 ldisentangle=.false.
 lr_nw=200
@@ -993,8 +993,15 @@ case ('wannier_h')
 case ('wannier_min_prjao')
   read(50,*,err=20)wannier_min_prjao
 case ('wannier_soft_eint')
-  read(50,*,err=20)wannier_soft_eint_e1,wannier_soft_eint_e2,&
-    wannier_soft_eint_width
+  wannier_soft_eint=.true.
+  allocate(wannier_soft_eint_e1(wann_ntype))
+  allocate(wannier_soft_eint_e2(wann_ntype))
+  allocate(wannier_soft_eint_w1(wann_ntype))
+  allocate(wannier_soft_eint_w2(wann_ntype))
+  do i=1,wann_ntype
+    read(50,*,err=20)wannier_soft_eint_e1(i),wannier_soft_eint_e2(i),&
+      wannier_soft_eint_w1(i),wannier_soft_eint_w2(i)
+  enddo
 case('disentangle')
   read(50,*,err=20)ldisentangle
 case('bandrange')

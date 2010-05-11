@@ -35,8 +35,11 @@ do n=1,nwann
     do j=1,nstsv
       if (bndint(j,e(j),wann_eint(1,itype),wann_eint(2,itype))) then
         call genprjao(ias,lm,ispn,j,wfsvmt,prjao(n,j))
-        prjao(n,j)=prjao(n,j)*orbwt(e(j),wannier_soft_eint_e1, &
-          wannier_soft_eint_e2,wannier_soft_eint_width)
+        if (wannier_soft_eint) then
+          prjao(n,j)=prjao(n,j)*orbwt(e(j),wannier_soft_eint_e1(itype), &
+            wannier_soft_eint_e2(itype),wannier_soft_eint_w1(itype),&
+            wannier_soft_eint_w2(itype))
+        endif
       endif
     enddo
   else
@@ -54,8 +57,9 @@ do n=1,nwann
           call genprjao(ias,lm,ispn,j,wfsvmt,zt1)
 ! <psi_k(r)|g(r-T)>=<psi(r+T)|g(r)>=e^{-ikT}<psi(r)|g(r)>
           prjao(n,j)=prjao(n,j)+zt1*d1*exp(-zi*dot_product(vpc,tr))*&
-            orbwt(e(j),wannier_soft_eint_e1,wannier_soft_eint_e2,&
-              wannier_soft_eint_width)
+!         TODO: if (wannier_soft_eint) then
+            orbwt(e(j),wannier_soft_eint_e1(itype),wannier_soft_eint_e2(itype),&
+              wannier_soft_eint_w1(itype),wannier_soft_eint_w2(itype))
         endif
       enddo
     enddo !i
@@ -153,13 +157,14 @@ deallocate(s,sdiag,wann_u_mtrx_ort)
 return
 end
 
-real(8) function orbwt(e,e1,e2,de)
+real(8) function orbwt(e,e1,e2,w1,w2)
 implicit none
 real(8), intent(in) :: e
 real(8), intent(in) :: e1
 real(8), intent(in) :: e2
-real(8), intent(in) :: de
-orbwt=1.d0/(exp((e-e2)/de)+1.d0)+1.d0/(exp((-e+e1)/de)+1.d0)-1.d0
+real(8), intent(in) :: w1
+real(8), intent(in) :: w2
+orbwt=1.d0/(exp((e-e2)/w2)+1.d0)+1.d0/(exp((-e+e1)/w1)+1.d0)-1.d0
 if (orbwt.lt.1d-16) orbwt=0.d0 
 return
 end

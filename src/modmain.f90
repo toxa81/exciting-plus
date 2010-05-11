@@ -1181,13 +1181,11 @@ logical wannier
 integer wann_natom
 integer wann_norbgrp
 integer wann_ntype
-!logical wann_use_eint
 logical wann_add_poco
 integer, allocatable :: wann_norb(:)
 integer, allocatable :: wann_iorb(:,:,:)
 integer, allocatable :: wann_iprj(:,:)
 real(8), allocatable :: wann_eint(:,:)
-!integer, allocatable :: wann_nint(:,:)
 real(8), allocatable :: wann_v(:)
 
 integer nwann
@@ -1226,9 +1224,11 @@ integer nwann_h
 integer, allocatable :: iwann_h(:)
 
 logical wannier_soft_eint
-real(8) wannier_soft_eint_width
-real(8) wannier_soft_eint_e1
-real(8) wannier_soft_eint_e2
+data wannier_soft_eint/.false./
+real(8), allocatable :: wannier_soft_eint_w1(:)
+real(8), allocatable :: wannier_soft_eint_w2(:)
+real(8), allocatable :: wannier_soft_eint_e1(:)
+real(8), allocatable :: wannier_soft_eint_e2(:)
 real(8) wannier_min_prjao
 
 logical ldisentangle
