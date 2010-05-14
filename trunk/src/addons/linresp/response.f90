@@ -134,7 +134,6 @@ if (spinpol) then
   call mpi_grid_reduce(spinor_ud(1,1,1),2*nstsv*nkptnr,dims=(/dim_k/),all=.true.)
 endif  
 
-! TODO: put to separate file
 if (wannier_megq) then
   lall=(task.eq.401.or.task.eq.402)
   call getimegqwan(lall)
