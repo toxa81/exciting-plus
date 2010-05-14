@@ -945,6 +945,10 @@ case('response_wann')
   read(50,*,err=20) megqwan_afm
   read(50,*,err=20) megqwan_maxdist 
   read(50,*,err=20) megqwan_cutoff
+case('response_wann_include')
+  read(50,*,err=20) nwann_include
+  allocate(iwann_include(nwann_include))
+  read(50,*,err=20) (iwann_include(i),i=1,nwann_include)
 case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_add_poco

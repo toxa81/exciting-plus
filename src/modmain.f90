@@ -1076,6 +1076,10 @@ integer, allocatable :: imegqwan(:,:)
 integer, allocatable :: idxmegqwan(:,:,:,:,:)
 complex(8), allocatable :: megqwan(:,:)
 
+integer nwann_include
+data nwann_include/0/
+integer, allocatable :: iwann_include(:)
+
 integer nmegqblhwanmax
 integer, allocatable :: nmegqblhwan(:)
 integer, allocatable :: imegqblhwan(:,:)

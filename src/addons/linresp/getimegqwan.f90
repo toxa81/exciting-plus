@@ -2,9 +2,17 @@ subroutine getimegqwan(lall)
 use modmain
 implicit none
 logical, intent(in) :: lall
-integer n,n1,i,ias,jas
+integer n,n1,i,ias,jas,j,j1
 logical l1
 logical, external :: wann_diel
+
+if (nwann_include.eq.0) then
+  nwann_include=nwann
+  allocate(iwann_include(nwann))
+  do j=1,nwann
+    iwann_include(j)=j
+  enddo
+endif
 
 call getnghbr(megqwan_maxdist)
 ! get maximum possible number of WF transitions
@@ -23,10 +31,12 @@ enddo
 allocate(imegqwan(5,nmegqwanmax))
 imegqwan=0
 nmegqwan=0   
-do n=1,nwann
+do j=1,nwann_include
+  n=iwann_include(j)
   ias=iwann(1,n)
   do i=1,nnghbr(ias)
-    do n1=1,nwann
+    do j1=1,nwann_include
+      n1=iwann_include(j1)
       jas=iwann(1,n1)
       if (jas.eq.inghbr(1,i,ias)) then
         l1=.false.
