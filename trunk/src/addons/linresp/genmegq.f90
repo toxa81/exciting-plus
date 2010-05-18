@@ -1,8 +1,9 @@
-subroutine genmegq(iq)
+subroutine genmegq(iq,tout)
 use modmain
 use mod_nrkp
 implicit none
 integer, intent(in) :: iq
+logical, intent(in) :: tout
 
 ! q-vector in k-mesh coordinates
 integer ivq0m(3)
@@ -31,7 +32,7 @@ call getqdir(iq,ivq0m,qdir)
 call getqname(ivq0m,qnm)
 qnm=trim(qdir)//"/"//trim(qnm)
 wproc=.false.
-if (mpi_grid_root((/dim_k,dim_b/))) then
+if (mpi_grid_root((/dim_k,dim_b/)).and.tout) then
   wproc=.true.
   fout=trim(qnm)//"_ME.OUT"
   open(150,file=trim(fout),form='formatted',status='replace')

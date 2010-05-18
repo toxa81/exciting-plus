@@ -197,7 +197,7 @@ call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
 ! main loop over q-points
 do iqloc=1,nvq0loc
   iq=mpi_grid_map(nvq0,dim_q,loc=iqloc)
-  call genmegq(iq)
+  call genmegq(iq,.true.)
   if (task.eq.400.or.task.eq.401) call genchi(iq)
   if (task.eq.402) call genubare(iq)
 enddo
