@@ -101,7 +101,8 @@ if (wannier_chi0_chi) then
   imegqwan_tmp=0
   j=0
   do i=1,nmegqwan
-    if (abs(megqwan(i,lr_igq0)).gt.megqwan_cutoff) then
+    if (abs(megqwan(i,lr_igq0)).ge.megqwan_cutoff1.and.&
+        abs(megqwan(i,lr_igq0)).le.megqwan_cutoff2) then
       j=j+1
       imegqwan_tmp(:,j)=imegqwan(:,i)
       megqwan_tmp(j,:)=megqwan(i,:)

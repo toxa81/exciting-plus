@@ -1066,8 +1066,10 @@ integer, allocatable :: bmegqblh(:,:,:)
 logical megqwan_afm
 data megqwan_afm/.false./
 
-real(8) megqwan_cutoff
-data megqwan_cutoff/-0.1d0/
+real(8) megqwan_cutoff1
+real(8) megqwan_cutoff2
+data megqwan_cutoff1/-0.1d0/
+data megqwan_cutoff2/100.1d0/
 
 integer nmegqwanmax
 integer nmegqwan
