@@ -14,7 +14,7 @@ if (nwann_include.eq.0) then
   enddo
 endif
 
-call getnghbr(megqwan_maxdist)
+call getnghbr(megqwan_mindist,megqwan_maxdist)
 ! get maximum possible number of WF transitions
 nmegqwanmax=0
 do n=1,nwann

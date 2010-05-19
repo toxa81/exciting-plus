@@ -13,12 +13,19 @@ real(8) vtrc(3),t1,t2
 integer v1l(3)
 complex(8) expikt
 
+! arrays for Wannier functions
 complex(8), allocatable :: wanmt(:,:,:,:,:,:)
 complex(8), allocatable :: wanir(:,:,:,:)
-complex(8), allocatable :: rhowanmt(:,:,:,:,:)
-complex(8), allocatable :: rhowanir(:,:,:)
 complex(8), allocatable :: wanmt0(:,:,:,:,:)
 complex(8), allocatable :: wanir0(:,:,:)
+! Hartree potential of a Wanier state
+complex(8), allocatable :: vhwanmt(:,:,:,:,:)
+complex(8), allocatable :: vhwanir(:,:,:)
+
+complex(8), allocatable :: megqwan1(:,:,:) 
+
+complex(8), allocatable :: rhowanmt(:,:,:,:,:)
+complex(8), allocatable :: rhowanir(:,:,:)
 complex(8), allocatable :: identmt(:,:,:,:)
 complex(8), allocatable :: identir(:,:)
 complex(8), allocatable :: f1mt(:,:,:,:)
@@ -47,6 +54,8 @@ complex(8) z1,z2
 integer np
 real(8), allocatable :: vpl(:,:)
 real(8), allocatable :: fp(:)
+character*100 qnm
+
 
 ! mpi grid layout
 !          (3)
@@ -107,17 +116,41 @@ if (wproc) then
   call timestamp(151,'done with wavefunctions')
 endif
 
+! create q-directories
+if (mpi_grid_root()) then
+  call system("mkdir -p q")
+  do iq=1,nvq0
+    call getqdir(iq,ivq0m_list(:,iq),qnm)
+    call system("mkdir -p "//trim(qnm))
+  enddo
+endif
 wannier_megq=.true.
+all_wan_ibt=.true.
 ! distribute q-vectors along 3-rd dimention
 nvq0loc=mpi_grid_map(nvq0,dim_q)
+! distribute translations along 3-rd dimention
+ntrloc=mpi_grid_map(ntr,dim_t)
+
 ! main loop over q-points
 do iqloc=1,nvq0loc
   iq=mpi_grid_map(nvq0,dim_q,loc=iqloc)
   write(*,*)'iq=',iq
-  call genmegq(iq,.false.)
-  write(*,*)megqwan(idxmegqwan(1,1,0,0,0),1)
+  call genmegq(iq,.true.)
+! TODO: ngvecme is not known before genmegq. This way of allocation is
+!  not good looking
+  if (.not.allocated(megqwan1)) then
+    allocate(megqwan1(nwann,ngvecme,nvq0))
+    megqwan1=zzero
+  endif
+  do n=1,nwann
+    megqwan1(n,:,iq)=megqwan(idxmegqwan(n,n,0,0,0),:)
+  enddo
 enddo
 wproc=mpi_grid_root()
+call mpi_grid_reduce(megqwan1(1,1,1),nwann*ngvecme*nvq0,dims=(/dim_q/), &
+  all=.true.)
+  
+write(100+iproc,*)'megqwan1=',megqwan1
 
 !allocate(h0wan(nwann,nwann,ntr))
 !! compute <n,T=0|H^{LDA}|n',T'>
@@ -170,7 +203,6 @@ wproc=mpi_grid_root()
 !deallocate(evecsvloc)
 !deallocate(wann_c)
 
-ntrloc=mpi_grid_map(ntr,dim_t)
 !if (wproc) then
 !  write(151,*)
 !  write(151,'("Number of translations : ",I4)')ntr

@@ -943,7 +943,7 @@ case('response_options')
 case('response_wann')
   read(50,*,err=20) wannier_chi0_chi
   read(50,*,err=20) megqwan_afm
-  read(50,*,err=20) megqwan_maxdist 
+  read(50,*,err=20)  megqwan_mindist,megqwan_maxdist 
   read(50,*,err=20) megqwan_cutoff1,megqwan_cutoff2
 case('response_wann_include')
   read(50,*,err=20) nwann_include
