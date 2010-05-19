@@ -37,6 +37,7 @@ do ikloc=1,nkptnrloc
   i=0
   do ist1=1,nstsv
     do ist2=1,nstsv
+! TODO: more simple code here, currently it is not clear what is going on
 !   include transition between bands ist1 and ist2 when:
 !     1. difference of band occupation numbers in not zero and
 !       both bands ist1 and ist2 fall into energy interval
@@ -50,7 +51,7 @@ do ikloc=1,nkptnrloc
         l3=(wann_bnd(ist1,ik).ne.0.and.wann_bnd(ist2,jk).ne.0)
         if (.not.wann_diel().and.l3) lwann=.true.
         if (wann_diel().and.ldocc.and.l3) lwann=.true.
-        if ((task.eq.401.or.task.eq.402).and.l3) lwann=.true.
+        if (all_wan_ibt.and.l3) lwann=.true.
       endif
       l4=.false.
 ! for response and cRPA we need bands in [e1,e2] interval 

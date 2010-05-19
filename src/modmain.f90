@@ -1071,12 +1071,17 @@ real(8) megqwan_cutoff2
 data megqwan_cutoff1/-0.1d0/
 data megqwan_cutoff2/100.1d0/
 
+real(8) megqwan_mindist
+real(8) megqwan_maxdist
+
 integer nmegqwanmax
 integer nmegqwan
 integer megqwan_tlim(2,3)
 integer, allocatable :: imegqwan(:,:)
 integer, allocatable :: idxmegqwan(:,:,:,:,:)
 complex(8), allocatable :: megqwan(:,:)
+logical :: all_wan_ibt
+data all_wan_ibt/.false./
 
 integer nwann_include
 data nwann_include/0/
@@ -1130,8 +1135,6 @@ data screened_u/.false./
 
 real(8) q0gamma(3,8)
 real(8) a0gamma(8)
-
-real(8) megqwan_maxdist
 
 !logical crpa
 real(8) crpa_e1,crpa_e2

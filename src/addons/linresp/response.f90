@@ -16,7 +16,7 @@ integer nwloc
 integer nvq0loc,iqloc,i1,i2,i3
 character*100 qnm
 real(8) t1
-logical lgamma,wproc1,lpmat,lall
+logical lgamma,wproc1,lpmat
 logical, external :: wann_diel
 
 ! Task list:
@@ -135,8 +135,8 @@ if (spinpol) then
 endif  
 
 if (wannier_megq) then
-  lall=(task.eq.401.or.task.eq.402)
-  call getimegqwan(lall)
+  all_wan_ibt=(task.eq.401.or.task.eq.402)
+  call getimegqwan(all_wan_ibt)
   if (wproc1) then
     write(151,*)
     write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
