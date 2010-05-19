@@ -119,6 +119,7 @@ if (spinpol) then
 endif  
 if (wproc) then
   call timestamp(151,'done with wavefunctions')
+  call flushifc(151)
 endif
 ! get all Wannier transitions
 call getimegqwan(.true.)
