@@ -144,6 +144,7 @@ if (wannier_chi0_chi) then
         &"   me(G_q)=",G18.10)')imegqwan(1,i),trim(c3),imegqwan(2,i),&
           trim(c4),vtc,abs(megqwan(i,lr_igq0))
     enddo
+    call flushifc(150)
   endif
   allocate(chi0wan(nmegqwan,nmegqwan))
   allocate(chi0wan_k(nmegqwan,nmegqwan,nkptnrloc))
