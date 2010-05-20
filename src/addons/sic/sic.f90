@@ -101,7 +101,7 @@ if (wproc) then
   open(151,file='SIC.OUT',form='FORMATTED',status='REPLACE')
 endif
 
-call lfa_init(2)
+call lfa_init(3)
 call genwfnr(151,.true.)  
 call init_qbz(.true.)
 if (spinpol) then
@@ -149,25 +149,25 @@ nvq0loc=mpi_grid_map(nvq0,dim_q)
 ! distribute translations along 3-rd dimention
 ntrloc=mpi_grid_map(ntr,dim_t)
 ! loop over q-points
-do iqloc=1,nvq0loc
-  iq=mpi_grid_map(nvq0,dim_q,loc=iqloc)
-  call genmegq(iq,.false.)
-! TODO: ngvecme is not known before genmegq. This way of allocation does not
-!   look good
-  if (.not.allocated(megqwan1)) then
-    allocate(megqwan1(nwann,ngvecme,nvq0))
-    megqwan1=zzero
-  endif
-! save <n,T=0|e^{-i(G+q)r|n,T=0>
-  do n=1,nwann
-    megqwan1(n,:,iq)=megqwan(idxmegqwan(n,n,0,0,0),:)
-  enddo
-enddo
+!do iqloc=1,nvq0loc
+!  iq=mpi_grid_map(nvq0,dim_q,loc=iqloc)
+!  call genmegq(iq,.false.)
+!! TODO: ngvecme is not known before genmegq. This way of allocation does not
+!!   look good
+!  if (.not.allocated(megqwan1)) then
+!    allocate(megqwan1(nwann,ngvecme,nvq0))
+!    megqwan1=zzero
+!  endif
+!! save <n,T=0|e^{-i(G+q)r|n,T=0>
+!  do n=1,nwann
+!    megqwan1(n,:,iq)=megqwan(idxmegqwan(n,n,0,0,0),:)
+!  enddo
+!enddo
 if (wproc) then
   call timestamp(151,'done with q-vectors')
 endif
-call mpi_grid_reduce(megqwan1(1,1,1),nwann*ngvecme*nvq0,dims=(/dim_q/), &
-  all=.true.)
+!call mpi_grid_reduce(megqwan1(1,1,1),nwann*ngvecme*nvq0,dims=(/dim_q/), &
+!  all=.true.)
 ! deallocate unnecessary wave-functions
 deallocate(wfsvmtloc)
 deallocate(wfsvitloc)
@@ -207,24 +207,24 @@ allocate(pwir(ngrtot))
 ! generate Hartree potential
 allocate(vhwanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nwann))
 allocate(vhwanir(ngrtot,ntrloc,nwann))
-vhwanmt=zzero
-vhwanir=zzero
-do itloc=1,ntrloc
-  itr=mpi_grid_map(ntr,dim_t,loc=itloc)
-  do ig=1,ngvecme
-    do iq=1,nvq0
-      call genpw(vtl(1,itr),vgq0c(1,ig,iq),pwmt,pwir)
-      do n=1,nwann
-        vhwanmt(:,:,:,itloc,n)=vhwanmt(:,:,:,itloc,n)+&
-          megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwmt(:,:,:)
-        vhwanir(:,itloc,n)=vhwanir(:,itloc,n)+&
-          megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwir(:)
-      enddo
-    enddo
-  enddo
-enddo
-vhwanmt=vhwanmt/nkptnr/omega
-vhwanir=vhwanir/nkptnr/omega
+!vhwanmt=zzero
+!vhwanir=zzero
+!do itloc=1,ntrloc
+!  itr=mpi_grid_map(ntr,dim_t,loc=itloc)
+!  do ig=1,ngvecme
+!    do iq=1,nvq0
+!      call genpw(vtl(1,itr),vgq0c(1,ig,iq),pwmt,pwir)
+!      do n=1,nwann
+!        vhwanmt(:,:,:,itloc,n)=vhwanmt(:,:,:,itloc,n)+&
+!          megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwmt(:,:,:)
+!        vhwanir(:,itloc,n)=vhwanir(:,itloc,n)+&
+!          megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwir(:)
+!      enddo
+!    enddo
+!  enddo
+!enddo
+!vhwanmt=vhwanmt/nkptnr/omega
+!vhwanir=vhwanir/nkptnr/omega
 if (wproc) then
   call timestamp(151,'done with Hartree potential')
 endif
@@ -305,7 +305,7 @@ do ig=1,ngvecme
       pwir1(:,itloc)=pwir1(:,itloc)*wanir(:,itloc,1,1)    
     enddo
     zt1=lfa_dotp(.false.,(/0,0,0/),pwmt1,pwir1,wanmt(1,1,1,1,1,1),wanir(1,1,1,1))
-    write(*,*)'ig=',ig,'iq=',iq,'  ',megqwan1(1,ig,iq),zt1
+    write(*,*)'ig=',ig,'iq=',iq,'  ',zt1
   enddo
 enddo
 call pstop
