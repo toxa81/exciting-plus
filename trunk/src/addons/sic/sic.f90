@@ -11,7 +11,7 @@ integer n1,n2,ispn
 integer itr,ntrloc,it,jt,itloc,ir,m,ias
 real(8) vtrc(3),t1,t2
 integer v1l(3)
-complex(8) expikt
+complex(8) expikt,zt1
 
 real(8), allocatable :: vgq0c(:,:,:)
 real(8), allocatable :: vhgq0(:,:)
@@ -28,6 +28,8 @@ complex(8), allocatable :: vhwanir(:,:,:)
 ! plane-wave
 complex(8), allocatable :: pwmt(:,:,:)
 complex(8), allocatable :: pwir(:)
+complex(8), allocatable :: pwmt1(:,:,:,:)
+complex(8), allocatable :: pwir1(:,:)
 
 complex(8), allocatable :: megqwan1(:,:,:) 
 
@@ -99,7 +101,7 @@ if (wproc) then
   open(151,file='SIC.OUT',form='FORMATTED',status='REPLACE')
 endif
 
-call lfa_init(1)
+call lfa_init(2)
 call genwfnr(151,.true.)  
 call init_qbz(.true.)
 if (spinpol) then
@@ -226,7 +228,7 @@ vhwanir=vhwanir/nkptnr/omega
 if (wproc) then
   call timestamp(151,'done with Hartree potential')
 endif
-deallocate(vgq0c,vhgq0,pwmt,pwir,megqwan1)
+!deallocate(vgq0c,vhgq0,pwmt,pwir,megqwan1)
 ! generate Wannier functions on a mesh
 allocate(wanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
 allocate(wanir(ngrtot,ntrloc,nspinor,nwann))
@@ -283,6 +285,34 @@ if (wproc) then
   write(151,'("Maximum deviation from norm : ",F12.6)')t2
   call flushifc(151)
 endif
+
+
+! test
+allocate(pwmt1(lmmaxvr,nrmtmax,natmtot,ntrloc))
+allocate(pwir1(ngrtot,ntrloc))
+do n=1,nwann
+  do itloc=1,ntrloc
+    call lfa_sht('B',wanmt(1,1,1,itloc,1,n),wanmt(1,1,1,itloc,1,n))
+  enddo
+enddo
+do ig=1,ngvecme
+  do iq=1,nvq0
+    do itloc=1,ntrloc
+      itr=mpi_grid_map(ntr,dim_t,loc=itloc)
+      call genpw(vtl(1,itr),vgq0c(1,ig,iq),pwmt1(1,1,1,itloc),pwir1(1,itloc))
+      call lfa_sht('B',pwmt1(1,1,1,itloc),pwmt1(1,1,1,itloc))
+      pwmt1(:,:,:,itloc)=pwmt1(:,:,:,itloc)*wanmt(:,:,:,itloc,1,1)
+      pwir1(:,itloc)=pwir1(:,itloc)*wanir(:,itloc,1,1)    
+    enddo
+    zt1=lfa_dotp(.false.,(/0,0,0/),pwmt1,pwir1,wanmt(1,1,1,1,1,1),wanir(1,1,1,1))
+    write(*,*)'ig=',ig,'iq=',iq,'  ',megqwan1(1,ig,iq),zt1
+  enddo
+enddo
+call pstop
+
+
+
+
 ! convert to spherical coordinates
 do n=1,nwann
   do itloc=1,ntrloc

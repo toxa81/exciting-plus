@@ -24,7 +24,7 @@ character*100 :: qnm,qdir,fout
 !  <W_n|e^{-i(G+q)x}|W_{n'T}> 
 
 ! maximum l for exponent expansion
-lmaxexp=lmaxvr+2
+lmaxexp=lmaxvr
 lmmaxexp=(lmaxexp+1)**2
 ! q-vector in mesh coordinates
 ivq0m(:)=ivq0m_list(:,iq)
