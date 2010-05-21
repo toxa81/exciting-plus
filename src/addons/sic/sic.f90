@@ -5,13 +5,13 @@ use mod_nrkp
 use modxcifc
 implicit none
 
-integer i1,i2,i3,n
-integer ik,ikloc,ik1,j,ig,sz,i,isym
-integer n1,n2,ispn
-integer itr,ntrloc,it,jt,itloc,ir,m,ias
-real(8) vtrc(3),t1,t2
+integer n
+integer ik,ikloc,j,ig,sz,i
+integer n1,ispn
+integer itr,ntrloc,it,itloc,ir,m,ias
+real(8) t1,t2
 integer v1l(3)
-complex(8) expikt,zt1
+character*12 c1,c2
 
 real(8), allocatable :: vgq0c(:,:,:)
 real(8), allocatable :: vhgq0(:,:)
@@ -28,41 +28,17 @@ complex(8), allocatable :: vhwanir(:,:,:)
 ! plane-wave
 complex(8), allocatable :: pwmt(:,:,:)
 complex(8), allocatable :: pwir(:)
-complex(8), allocatable :: pwmt1(:,:,:,:)
-complex(8), allocatable :: pwir1(:,:)
 
 complex(8), allocatable :: megqwan1(:,:,:) 
 
-complex(8), allocatable :: rhowanmt(:,:,:,:,:)
-complex(8), allocatable :: rhowanir(:,:,:)
-complex(8), allocatable :: identmt(:,:,:,:)
-complex(8), allocatable :: identir(:,:)
-complex(8), allocatable :: f1mt(:,:,:,:)
-complex(8), allocatable :: f1ir(:,:)
-complex(8), allocatable :: f2mt(:,:,:)
-complex(8), allocatable :: f2ir(:)
-complex(8), allocatable :: rhokwanmt(:,:,:)
-complex(8), allocatable :: rhokwanir(:)
-complex(8), allocatable :: vckwanmt(:,:,:)
-complex(8), allocatable :: vckwanir(:)
-complex(8), allocatable :: vcwanmt(:,:,:,:,:)
-complex(8), allocatable :: vcwanir(:,:,:)
-real(8) spzn1(maxspecies)
+complex(8), allocatable :: rhowanmt(:,:,:)
+complex(8), allocatable :: rhowanir(:)
 complex(8), allocatable :: vsic(:)
-complex(8), allocatable :: ubare(:,:,:)
-complex(8), allocatable :: h0wan(:,:,:)
-complex(8), allocatable :: zm1(:,:,:)
 real(8), allocatable :: f3(:),f4(:)
 
 integer nvq0loc,iqloc,iq
 real(8), allocatable :: vx(:),vc(:)
-integer idm
-complex(8), allocatable :: ovlm(:,:,:)
-complex(8), external :: zfinp_
-complex(8) z1,z2
-integer np
-real(8), allocatable :: vpl(:,:)
-real(8), allocatable :: fp(:)
+complex(8) z1
 character*100 qnm
 
 
@@ -82,7 +58,6 @@ character*100 qnm
 call init0
 call init1
 if (.not.mpi_grid_in()) return
-wproc=mpi_grid_root()
 ! read the density and potentials from file
 call readstate
 ! find the new linearisation energies
@@ -97,13 +72,15 @@ call genurfprod
 if (mpi_grid_root()) call readfermi
 call mpi_grid_bcast(efermi)
 
+call lfa_init(1)
+call genwfnr(151,.true.)  
+call init_qbz(.true.)
+call getngvecme((/0,0,0/))
+
+wproc=mpi_grid_root()
 if (wproc) then
   open(151,file='SIC.OUT',form='FORMATTED',status='REPLACE')
 endif
-
-call lfa_init(3)
-call genwfnr(151,.true.)  
-call init_qbz(.true.)
 if (spinpol) then
   if (allocated(spinor_ud)) deallocate(spinor_ud)
   allocate(spinor_ud(2,nstsv,nkptnr))
@@ -125,15 +102,6 @@ if (wproc) then
 endif
 ! get all Wannier transitions
 call getimegqwan(.true.)
-!if (wproc) then
-!  write(151,*)
-!  write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
-!  write(151,'("List of Wannier transitions (n n1 T) ")')
-!  do i=1,nmegqwan
-!    write(151,'(I4,4X,I4,4X,3I3)')imegqwan(:,i)
-!  enddo
-!endif
-
 ! create q-directories
 !if (mpi_grid_root()) then
 !  call system("mkdir -p q")
@@ -148,26 +116,21 @@ all_wan_ibt=.true.
 nvq0loc=mpi_grid_map(nvq0,dim_q)
 ! distribute translations along 3-rd dimention
 ntrloc=mpi_grid_map(ntr,dim_t)
+allocate(megqwan1(nwann,ngvecme,nvq0))
 ! loop over q-points
-!do iqloc=1,nvq0loc
-!  iq=mpi_grid_map(nvq0,dim_q,loc=iqloc)
-!  call genmegq(iq,.false.)
-!! TODO: ngvecme is not known before genmegq. This way of allocation does not
-!!   look good
-!  if (.not.allocated(megqwan1)) then
-!    allocate(megqwan1(nwann,ngvecme,nvq0))
-!    megqwan1=zzero
-!  endif
-!! save <n,T=0|e^{-i(G+q)r|n,T=0>
-!  do n=1,nwann
-!    megqwan1(n,:,iq)=megqwan(idxmegqwan(n,n,0,0,0),:)
-!  enddo
-!enddo
+do iqloc=1,nvq0loc
+  iq=mpi_grid_map(nvq0,dim_q,loc=iqloc)
+  call genmegq(iq,.false.)
+! save <n,T=0|e^{-i(G+q)r|n,T=0>
+  do n=1,nwann
+    megqwan1(n,:,iq)=megqwan(idxmegqwan(n,n,0,0,0),:)
+  enddo
+enddo
 if (wproc) then
   call timestamp(151,'done with q-vectors')
 endif
-!call mpi_grid_reduce(megqwan1(1,1,1),nwann*ngvecme*nvq0,dims=(/dim_q/), &
-!  all=.true.)
+call mpi_grid_reduce(megqwan1(1,1,1),nwann*ngvecme*nvq0,dims=(/dim_q/), &
+  all=.true.)
 ! deallocate unnecessary wave-functions
 deallocate(wfsvmtloc)
 deallocate(wfsvitloc)
@@ -207,28 +170,28 @@ allocate(pwir(ngrtot))
 ! generate Hartree potential
 allocate(vhwanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nwann))
 allocate(vhwanir(ngrtot,ntrloc,nwann))
-!vhwanmt=zzero
-!vhwanir=zzero
-!do itloc=1,ntrloc
-!  itr=mpi_grid_map(ntr,dim_t,loc=itloc)
-!  do ig=1,ngvecme
-!    do iq=1,nvq0
-!      call genpw(vtl(1,itr),vgq0c(1,ig,iq),pwmt,pwir)
-!      do n=1,nwann
-!        vhwanmt(:,:,:,itloc,n)=vhwanmt(:,:,:,itloc,n)+&
-!          megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwmt(:,:,:)
-!        vhwanir(:,itloc,n)=vhwanir(:,itloc,n)+&
-!          megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwir(:)
-!      enddo
-!    enddo
-!  enddo
-!enddo
-!vhwanmt=vhwanmt/nkptnr/omega
-!vhwanir=vhwanir/nkptnr/omega
+vhwanmt=zzero
+vhwanir=zzero
+do itloc=1,ntrloc
+  itr=mpi_grid_map(ntr,dim_t,loc=itloc)
+  do ig=1,ngvecme
+    do iq=1,nvq0
+      call genpw(vtl(1,itr),vgq0c(1,ig,iq),pwmt,pwir)
+      do n=1,nwann
+        vhwanmt(:,:,:,itloc,n)=vhwanmt(:,:,:,itloc,n)+&
+          megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwmt(:,:,:)
+        vhwanir(:,itloc,n)=vhwanir(:,itloc,n)+&
+          megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwir(:)
+      enddo
+    enddo
+  enddo
+enddo
+vhwanmt=vhwanmt/nkptnr/omega
+vhwanir=vhwanir/nkptnr/omega
 if (wproc) then
   call timestamp(151,'done with Hartree potential')
 endif
-!deallocate(vgq0c,vhgq0,pwmt,pwir,megqwan1)
+deallocate(vgq0c,vhgq0,pwmt,pwir,megqwan1)
 ! generate Wannier functions on a mesh
 allocate(wanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
 allocate(wanir(ngrtot,ntrloc,nspinor,nwann))
@@ -265,6 +228,7 @@ if (wproc) then
   call timestamp(151,'done with Wannier functions')
 endif
 ! check orthonormality
+t1=0.d0
 t2=0.d0
 do i=1,nmegqwan
   n=imegqwan(1,i)
@@ -279,38 +243,39 @@ do i=1,nmegqwan
     z1=z1-zone
   endif
   t2=max(t2,abs(z1))
+  t1=t1+abs(z1)
 enddo
 if (wproc) then
   write(151,*)
   write(151,'("Maximum deviation from norm : ",F12.6)')t2
+  write(151,'("Average deviation from norm : ",F12.6)')t1/nmegqwan
   call flushifc(151)
 endif
 
 
 ! test
-allocate(pwmt1(lmmaxvr,nrmtmax,natmtot,ntrloc))
-allocate(pwir1(ngrtot,ntrloc))
-do n=1,nwann
-  do itloc=1,ntrloc
-    call lfa_sht('B',wanmt(1,1,1,itloc,1,n),wanmt(1,1,1,itloc,1,n))
-  enddo
-enddo
-do ig=1,ngvecme
-  do iq=1,nvq0
-    do itloc=1,ntrloc
-      itr=mpi_grid_map(ntr,dim_t,loc=itloc)
-      call genpw(vtl(1,itr),vgq0c(1,ig,iq),pwmt1(1,1,1,itloc),pwir1(1,itloc))
-      call lfa_sht('B',pwmt1(1,1,1,itloc),pwmt1(1,1,1,itloc))
-      pwmt1(:,:,:,itloc)=pwmt1(:,:,:,itloc)*wanmt(:,:,:,itloc,1,1)
-      pwir1(:,itloc)=pwir1(:,itloc)*wanir(:,itloc,1,1)    
-    enddo
-    zt1=lfa_dotp(.false.,(/0,0,0/),pwmt1,pwir1,wanmt(1,1,1,1,1,1),wanir(1,1,1,1))
-    write(*,*)'ig=',ig,'iq=',iq,'  ',zt1
-  enddo
-enddo
-call pstop
-
-
+!allocate(pwmt1(lmmaxvr,nrmtmax,natmtot,ntrloc))
+!allocate(pwir1(ngrtot,ntrloc))
+!do n=1,nwann
+!  do itloc=1,ntrloc
+!    call lfa_sht('B',wanmt(1,1,1,itloc,1,n),wanmt(1,1,1,itloc,1,n))
+!  enddo
+!enddo
+!do ig=1,ngvecme
+!  do iq=1,nvq0
+!    do itloc=1,ntrloc
+!      itr=mpi_grid_map(ntr,dim_t,loc=itloc)
+!      call genpw(vtl(1,itr),vgq0c(1,ig,iq),pwmt1(1,1,1,itloc),pwir1(1,itloc))
+!      call lfa_sht('B',pwmt1(1,1,1,itloc),pwmt1(1,1,1,itloc))
+!      pwmt1(:,:,:,itloc)=pwmt1(:,:,:,itloc)*wanmt(:,:,:,itloc,1,1)
+!      pwir1(:,itloc)=pwir1(:,itloc)*wanir(:,itloc,1,1)    
+!    enddo
+!    zt1=lfa_dotp(.false.,(/0,0,0/),pwmt1,pwir1,wanmt(1,1,1,1,1,1),wanir(1,1,1,1))
+!    if (wproc) write(*,*)'ig=',ig,'iq=',iq,'  ',zt1
+!  enddo
+!enddo
+!call mpi_grid_barrier
+!call pstop
 
 
 ! convert to spherical coordinates
@@ -320,6 +285,32 @@ do n=1,nwann
     call lfa_sht('B',vhwanmt(1,1,1,itloc,n),vhwanmt(1,1,1,itloc,n))  
   enddo
 enddo
+
+m=max(lmmaxvr,ngrtot)
+allocate(rhowanmt(lmmaxvr,nrmtmax,natmtot))
+allocate(rhowanir(ngrtot))
+allocate(vx(m),vc(m))
+allocate(f3(m),f4(m))
+! add XC potential to Coulomb
+do n=1,nwann
+  do itloc=1,ntrloc
+    rhowanmt(:,:,:)=dconjg(wanmt(:,:,:,itloc,1,n))*wanmt(:,:,:,itloc,1,n)
+    rhowanir(:)=dconjg(wanir(:,itloc,1,n))*wanir(:,itloc,1,n)
+    do ias=1,natmtot
+      do ir=1,nrmt(ias2is(ias))
+        call xcifc(xctype,n=lmmaxvr,rho=dreal(rhowanmt(:,ir,ias)),&
+          ex=f3,ec=f4,vx=vx,vc=vc)
+        vhwanmt(:,ir,ias,itloc,n)=vhwanmt(:,ir,ias,itloc,n)+vc(1:lmmaxvr)+&
+          vx(1:lmmaxvr)
+      enddo
+    enddo
+    call xcifc(xctype,n=ngrtot,rho=dreal(rhowanir(:)),ex=f3,ec=f4,&
+      vx=vx,vc=vc)
+    vhwanir(:,itloc,n)=vhwanir(:,itloc,n)+vc(1:ngrtot)+vx(1:ngrtot)
+  enddo
+enddo
+deallocate(vx,vc,f3,f4,rhowanmt,rhowanir)
+
 ! multiply potential by Wannier function
 do n=1,nwann
   do itloc=1,ntrloc
@@ -329,7 +320,7 @@ do n=1,nwann
 enddo
 
 allocate(vsic(nmegqwan))
-! compute matrix elements of sic potential
+! compute matrix elements of SIC potential
 ! vsic = <w_n|v_n|w_{n1,T}>
 do i=1,nmegqwan
   n=imegqwan(1,i)
@@ -341,8 +332,8 @@ enddo
 if (wproc) then
   write(151,*)
   write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
-  write(151,'("List of SIC potential matrix elements \
-    (n n1  T  <w_n|v_n|w_{n1,T}>)")')
+  write(151,'("Matrix elements of SIC potential \&
+    &(n n1  T  <w_n|v_n|w_{n1,T}>)")')
   do i=1,nmegqwan
     write(151,'(I4,4X,I4,4X,3I3,4X,2G18.10)')imegqwan(:,i),&
       dreal(vsic(i)),dimag(vsic(i))
@@ -361,36 +352,44 @@ if (wproc) then
   write(151,'("Maximum deviation from ""localization criterion"" : ",F12.6)')t2
   call flushifc(151)
 endif
-
-!allocate(rhowanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nwann))
-!allocate(rhowanir(ngrtot,ntrloc,nwann))
-!! convert to spherical coordinates
-!do n=1,nwann
-!  do itloc=1,ntrloc
-!    call lfa_sht('B',wanmt(1,1,1,itloc,1,n),wanmt(1,1,1,itloc,1,n))
-!    rhowanmt(:,:,:,itloc,n)=dconjg(wanmt(:,:,:,itloc,1,n))*wanmt(:,:,:,itloc,1,n)
-!    rhowanir(:,itloc,n)=dconjg(wanir(:,itloc,1,n))*wanir(:,itloc,1,n)
-!  enddo
-!enddo
-!
-!m=max(lmmaxvr,ngrtot)
-!allocate(vx(m),vc(m))
-!allocate(f3(m),f4(m))
-
-! add XC potential to Coulomb
-!do n=1,nwann
-!  do itloc=1,ntrloc
-!    do ias=1,natmtot
-!      do ir=1,nrmt(ias2is(ias))
-!        call xcifc(xctype,n=lmmaxvr,rho=dreal(rhowanmt(:,ir,ias,itloc,n)),ex=f3,ec=f4,vx=vx,vc=vc)
-!        vcwanmt(:,ir,ias,itloc,n)=vcwanmt(:,ir,ias,itloc,n)+vc(1:lmmaxvr)+vx(1:lmmaxvr)
-!      enddo
-!    enddo
-!    call xcifc(xctype,n=ngrtot,rho=dreal(rhowanir(:,itloc,n)),ex=f3,ec=f4,vx=vx,vc=vc)
-!    vcwanir(:,itloc,n)=vcwanir(:,itloc,n)+vc(1:ngrtot)+vx(1:ngrtot)
-!  enddo
-!enddo
-!deallocate(vx,vc,f3,f4)
+if (wproc) then
+  call hdf5_create_file("sic.hdf5")
+  call hdf5_create_group("sic.hdf5","/","vwan")
+  do n=1,nwann
+    write(c1,'("n",I4.4)')n
+    call hdf5_create_group("sic.hdf5","/vwan",trim(adjustl(c1)))
+    do it=1,ntr
+      write(c2,'("t",I4.4)')it
+      call hdf5_create_group("sic.hdf5","/vwan/"//trim(adjustl(c1)),&
+        trim(adjustl(c2)))
+    enddo
+  enddo
+  call hdf5_write("sic.hdf5","/","nmegqwan",nmegqwan)
+  call hdf5_write("sic.hdf5","/","imegqwan",imegqwan(1,1),(/5,nmegqwan/))
+  call hdf5_write("sic.hdf5","/","vsic",vsic(1),(/nmegqwan/))
+endif
+if (mpi_grid_side(dims=(/dim_t/))) then
+  do i=0,mpi_grid_size(dim_t)-1
+    if (mpi_grid_x(dim_t).eq.i) then
+      do itloc=1,ntrloc
+        itr=mpi_grid_map(ntr,dim_t,loc=itloc)
+        do n=1,nwann
+          write(c1,'("n",I4.4)')n
+          write(c2,'("t",I4.4)')itr
+          call hdf5_write("sic.hdf5","/vwan/"//trim(adjustl(c1))//"/"//&
+            trim(adjustl(c2)),"vwanmt",vhwanmt(1,1,1,itloc,n),&
+            (/lmmaxvr,nrmtmax,natmtot/))
+          call hdf5_write("sic.hdf5","/vwan/"//trim(adjustl(c1))//"/"//&
+            trim(adjustl(c2)),"vwanir",vhwanir(1,itloc,n),&
+            (/ngrtot/))
+        enddo
+      enddo
+    endif
+    call mpi_grid_barrier(dims=(/dim_t/))
+  enddo
+endif
+          
+          
 if (wproc) close(151)
 return
 end
