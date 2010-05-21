@@ -72,6 +72,9 @@ if (wannier.and.wann_add_poco) then
   call wann_seceqn(ikloc,evecsv)
   call genwann(ikloc,evecfv,evecsv)
 endif
+if (wannier) then
+  call seceqn_sic(ikloc,evecfv,evecsv)
+endif
 call timer_stop(t_seceqnsv)
 deallocate(apwalm)
 return
