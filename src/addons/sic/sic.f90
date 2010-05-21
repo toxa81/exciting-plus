@@ -311,11 +311,11 @@ do n=1,nwann
 enddo
 deallocate(vx,vc,f3,f4,rhowanmt,rhowanir)
 
-! multiply potential by Wannier function
+! multiply potential by Wannier function and change sign
 do n=1,nwann
   do itloc=1,ntrloc
-    vhwanmt(:,:,:,itloc,n)=vhwanmt(:,:,:,itloc,n)*wanmt(:,:,:,itloc,1,n)
-    vhwanir(:,itloc,n)=vhwanir(:,itloc,n)*wanir(:,itloc,1,n)
+    vhwanmt(:,:,:,itloc,n)=-vhwanmt(:,:,:,itloc,n)*wanmt(:,:,:,itloc,1,n)
+    vhwanir(:,itloc,n)=-vhwanir(:,itloc,n)*wanir(:,itloc,1,n)
   enddo
 enddo
 
