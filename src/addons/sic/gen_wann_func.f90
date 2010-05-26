@@ -1,20 +1,20 @@
-subroutine gen_wann_func(vtrl,ngknr,vgkcnr,igkignr,wanmt,wanir)
+subroutine gen_wann_func(vtrl,ngknr,vgkcnr,igkignr,wanmt_,wanir_)
 use modmain
 implicit none
 integer, intent(in) :: vtrl(3)
 integer, intent(in) :: ngknr(nkptnrloc)
 real(8), intent(in) :: vgkcnr(3,ngkmax,nkptnrloc)
 integer, intent(in) :: igkignr(ngkmax,nkptnrloc)
-complex(8), intent(out) :: wanmt(lmmaxvr,nrmtmax,natmtot,nspinor,nwann)
-complex(8), intent(out) :: wanir(ngrtot,nspinor,nwann)
+complex(8), intent(out) :: wanmt_(lmmaxvr,nrmtmax,natmtot,nspinor,nwann)
+complex(8), intent(out) :: wanir_(ngrtot,nspinor,nwann)
 integer ia,is,ias,ir,ir0,i1,i2,i3,ig,ikloc,ik
 integer io,lm,n,ispn,itmp(3)
 real(8) v2(3),v3(3),r0,vr0(3),vtrc(3)
 complex(8), allocatable :: zfir(:,:,:)
 complex(8) expikr
 logical, external :: vrinmt
-wanmt=zzero
-wanir=zzero
+wanmt_=zzero
+wanir_=zzero
 vtrc(:)=vtrl(1)*avec(:,1)+vtrl(2)*avec(:,2)+vtrl(3)*avec(:,3)
 ! muffin-tin part
 call timer_start(1)
@@ -28,7 +28,7 @@ do ias=1,natmtot
         do io=1,nrfl(lm2l(lm),is)
           do ispn=1,nspinor
             do n=1,nwann
-              wanmt(lm,ir,ias,ispn,n)=wanmt(lm,ir,ias,ispn,n)+&
+              wanmt_(lm,ir,ias,ispn,n)=wanmt_(lm,ir,ias,ispn,n)+&
                 expikr*wann_unkmt(lm,io,ias,ispn,n,ikloc)*&
                 urf(ir,lm2l(lm),io,ias)
             enddo !n
@@ -67,7 +67,7 @@ do ikloc=1,nkptnrloc
           expikr=exp(zi*dot_product(vkcnr(:,ik),v3(:)))
           do ispn=1,nspinor
             do n=1,nwann
-              wanir(ir,ispn,n)=wanir(ir,ispn,n)+expikr*zfir(ir,ispn,n)
+              wanir_(ir,ispn,n)=wanir_(ir,ispn,n)+expikr*zfir(ir,ispn,n)
             enddo !in
           enddo
         endif
@@ -75,11 +75,11 @@ do ikloc=1,nkptnrloc
     enddo
   enddo
 enddo
-wanir(:,:,:)=wanir(:,:,:)/sqrt(omega)/nkptnr
+wanir_(:,:,:)=wanir_(:,:,:)/sqrt(omega)/nkptnr
 call timer_stop(2)
-call mpi_grid_reduce(wanmt(1,1,1,1,1),lmmaxvr*nrmtmax*natmtot*nspinor*nwann,&
+call mpi_grid_reduce(wanmt_(1,1,1,1,1),lmmaxvr*nrmtmax*natmtot*nspinor*nwann,&
   dims=(/dim_k/),all=.true.)
-call mpi_grid_reduce(wanir(1,1,1),ngrtot*nspinor*nwann,dims=(/dim_k/),all=.true.)  
+call mpi_grid_reduce(wanir_(1,1,1),ngrtot*nspinor*nwann,dims=(/dim_k/),all=.true.)  
 deallocate(zfir)
 return
 end

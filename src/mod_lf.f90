@@ -1,13 +1,14 @@
 ! 
-! Lattice Function Algebra (lfa) 
+! local function (lf) algebra
 !
-module mod_lfa
+module mod_lf
 use modmain
 
 ! maximum lattice translation
 integer trmax
 ! total number of translations
 integer ntr
+integer ntrloc
 ! translation vectors in lattice coordinates
 integer, allocatable :: vtl(:,:)
 ! vector -> index map
@@ -17,9 +18,10 @@ integer dim_t
 
 contains
 
-subroutine lfa_init(trmax_)
+subroutine lf_init(trmax_,dim_t_)
 implicit none
 integer, intent(in) :: trmax_ 
+integer, intent(in) :: dim_t_
 integer i1,i2,i3,n
 trmax=trmax_
 ntr=(2*trmax+1)**3
@@ -37,11 +39,12 @@ do i1=-trmax,trmax
     enddo
   enddo
 enddo
-dim_t=dim3
+dim_t=dim_t_
+ntrloc=mpi_grid_map(ntr,dim_t)
 return
 end subroutine
 
-complex(8) function lfa_dotp(tsh,t,f1mt,f1ir,f2mt,f2ir)
+complex(8) function lf_dotlf(tsh,t,f1mt,f1ir,f2mt,f2ir)
 use modmain
 implicit none
 logical, intent(in) :: tsh
@@ -113,12 +116,41 @@ do itstep=1,ntstep
 enddo
 deallocate(f2mt_tmp,f2ir_tmp)
 call mpi_grid_reduce(zprod,dims=(/dim_t/))
-lfa_dotp=zprod
+lf_dotlf=zprod
+return
+end function
+
+! local function dot bloch function
+complex(8) function lf_dotblh(tsh,vpc,f1mt,f1ir,f2mt,f2ir)
+use modmain
+implicit none
+logical, intent(in) :: tsh
+real(8), intent(in) :: vpc(3)
+complex(8), intent(in) :: f1mt(lmmaxvr,nrmtmax,natmtot,*)
+complex(8), intent(in) :: f1ir(ngrtot,*)
+complex(8), intent(in) :: f2mt(lmmaxvr,nrmtmax,natmtot)
+complex(8), intent(in) :: f2ir(ngrtot)
+complex(8) zprod
+integer it,itloc
+real(8) vtc(3)
+complex(8), external :: zfinp_
+! <f|psi> = \int dr f^{*}(r) psi(r) =
+!   = \sum_R \int_{Omega} dr f^{*}(r+R) psi(r+R) = 
+!     \sum_R e^{ikR} \int_{Omega} dr f^{*}(r+R) psi(r)
+zprod=zzero
+do itloc=1,ntrloc
+  it=mpi_grid_map(ntr,dim_t,loc=itloc)
+  vtc(:)=vtl(1,it)*avec(:,1)+vtl(2,it)*avec(:,2)+vtl(3,it)*avec(:,3)
+  zprod=zprod+exp(zi*dot_product(vpc,vtc))*&
+    zfinp_(tsh,f1mt(1,1,1,itloc),f2mt,f1ir(1,itloc),f2ir)
+enddo
+call mpi_grid_reduce(zprod,dims=(/dim_t/))
+lf_dotblh=zprod
 return
 end function
 
 
-subroutine lfa_prod(f1mt,f1ir,f2mt,f2ir,f3mt,f3ir)
+subroutine lf_prod(f1mt,f1ir,f2mt,f2ir,f3mt,f3ir)
 use modmain
 implicit none
 complex(8), intent(in) :: f1mt(lmmaxvr,nrmtmax,natmtot,*)
@@ -136,8 +168,8 @@ ntrloc=mpi_grid_map(ntr,dim_t)
 allocate(ft1(lmmaxvr,nrmtmax,natmtot))
 allocate(ft2(lmmaxvr,nrmtmax,natmtot))
 do itrloc=1,ntrloc
-  call lfa_sht('B',f1mt(1,1,1,itrloc),ft1)
-  call lfa_sht('B',f2mt(1,1,1,itrloc),ft2)
+  call lf_sht('B',f1mt(1,1,1,itrloc),ft1)
+  call lf_sht('B',f2mt(1,1,1,itrloc),ft2)
   f3mt(:,:,:,itrloc)=dconjg(ft1(:,:,:))*ft2(:,:,:)
   f3ir(:,itrloc)=dconjg(f1ir(:,itrloc))*f2ir(:,itrloc)
 enddo
@@ -148,7 +180,7 @@ end subroutine
 
 
 
-subroutine lfa_sht(sht,fmt_in,fmt_out)
+subroutine lf_sht(sht,fmt_in,fmt_out)
 use modmain
 implicit none
 character, intent(in) :: sht
@@ -180,7 +212,7 @@ deallocate(f1)
 return
 end subroutine
 
-!subroutine lfa_write(fname,fmt,fir)
+!subroutine lf_write(fname,fmt,fir)
 !use modmain
 !implicit none
 !character*(*), intent(in) :: fname

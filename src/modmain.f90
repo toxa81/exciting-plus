@@ -1294,5 +1294,18 @@ integer clda_ispn(2)
 integer, allocatable :: clda_iorb(:,:)
 real(8), allocatable :: clda_vorb(:,:)
 
+!-------------!
+!      SIC    !
+!-------------!
+logical sic
+data sic/.false./
+integer lf_maxt
+data lf_maxt/1/
+complex(8), allocatable :: wanmt(:,:,:,:,:,:)
+complex(8), allocatable :: wanir(:,:,:,:)
+complex(8), allocatable :: vwanmt(:,:,:,:,:,:)
+complex(8), allocatable :: vwanir(:,:,:,:)
+
+
 end module
 

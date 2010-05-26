@@ -1,30 +1,28 @@
-subroutine sic
+subroutine genvsic
 use modmain
-use mod_lfa
+use mod_lf
 use mod_nrkp
 use modxcifc
 implicit none
 
 integer n
 integer ik,ikloc,j,ig,sz,i
-integer n1,ispn
-integer itr,ntrloc,it,itloc,ir,m,ias
+integer n1,n2,ispn
+integer itr,it,itloc,ir,m,ias
 real(8) t1,t2
 integer v1l(3)
-character*12 c1,c2
+character*12 c1,c2,c3
+character*100 path
 
 real(8), allocatable :: vgq0c(:,:,:)
 real(8), allocatable :: vhgq0(:,:)
 real(8) a0
 
 ! arrays for Wannier functions
-complex(8), allocatable :: wanmt(:,:,:,:,:,:)
-complex(8), allocatable :: wanir(:,:,:,:)
+!complex(8), allocatable :: wanmt(:,:,:,:,:,:)
+!complex(8), allocatable :: wanir(:,:,:,:)
 complex(8), allocatable :: wanmt0(:,:,:,:,:)
 complex(8), allocatable :: wanir0(:,:,:)
-! Hartree potential of a Wanier state
-complex(8), allocatable :: vhwanmt(:,:,:,:,:)
-complex(8), allocatable :: vhwanir(:,:,:)
 ! plane-wave
 complex(8), allocatable :: pwmt(:,:,:)
 complex(8), allocatable :: pwir(:)
@@ -34,13 +32,14 @@ complex(8), allocatable :: megqwan1(:,:,:)
 complex(8), allocatable :: rhowanmt(:,:,:)
 complex(8), allocatable :: rhowanir(:)
 complex(8), allocatable :: vsic(:)
+complex(8), allocatable :: h0wan(:),zm1(:,:,:)
 real(8), allocatable :: f3(:),f4(:)
 
 integer nvq0loc,iqloc,iq
 real(8), allocatable :: vx(:),vc(:)
-complex(8) z1
+complex(8) z1,expikt
 character*100 qnm
-
+real(8) vtrc(3)
 
 ! mpi grid layout
 !          (3)
@@ -72,7 +71,7 @@ call genurfprod
 if (mpi_grid_root()) call readfermi
 call mpi_grid_bcast(efermi)
 
-call lfa_init(1)
+call lf_init(lf_maxt,dim3)
 call genwfnr(151,.true.)  
 call init_qbz(.true.)
 call getngvecme((/0,0,0/))
@@ -102,6 +101,38 @@ if (wproc) then
 endif
 ! get all Wannier transitions
 call getimegqwan(.true.)
+! compute Fourier transform of <n,T=0|H^{LDA}|n',T'>
+allocate(zm1(nwann,nwann,nkptnrloc))
+zm1=zzero
+do ikloc=1,nkptnrloc
+  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+  do n1=1,nwann
+    do n2=1,nwann
+      do j=1,nstsv
+        zm1(n1,n2,ikloc)=zm1(n1,n2,ikloc)+dconjg(wann_c(n1,j,ikloc))*&
+          wann_c(n2,j,ikloc)*evalsvnr(j,ik)
+      enddo
+    enddo
+  enddo
+enddo 
+! compute <n,T=0|H^{LDA}|n',T'>
+allocate(h0wan(nmegqwan))
+h0wan=zzero
+do i=1,nmegqwan
+  n=imegqwan(1,i)
+  n1=imegqwan(2,i)
+  v1l(:)=imegqwan(3:5,i)
+  vtrc(:)=v1l(1)*avec(:,1)+v1l(2)*avec(:,2)+v1l(3)*avec(:,3)
+  do ikloc=1,nkptnrloc
+    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+    expikt=exp(-1.d0*zi*dot_product(vkcnr(:,ik),vtrc(:)))
+    h0wan(i)=h0wan(i)+expikt*zm1(n,n1,ikloc)
+  enddo
+enddo
+call mpi_grid_reduce(h0wan(1),nmegqwan,dims=(/dim_k/))
+h0wan(:)=h0wan(:)/nkptnr
+deallocate(zm1)
+
 ! create q-directories
 !if (mpi_grid_root()) then
 !  call system("mkdir -p q")
@@ -114,14 +145,12 @@ wannier_megq=.true.
 all_wan_ibt=.true.
 ! distribute q-vectors along 3-rd dimention
 nvq0loc=mpi_grid_map(nvq0,dim_q)
-! distribute translations along 3-rd dimention
-ntrloc=mpi_grid_map(ntr,dim_t)
 allocate(megqwan1(nwann,ngvecme,nvq0))
 ! loop over q-points
 do iqloc=1,nvq0loc
   iq=mpi_grid_map(nvq0,dim_q,loc=iqloc)
   call genmegq(iq,.false.)
-! save <n,T=0|e^{-i(G+q)r|n,T=0>
+! save <n,T=0|e^{-i(G+q)r}|n,T=0>
   do n=1,nwann
     megqwan1(n,:,iq)=megqwan(idxmegqwan(n,n,0,0,0),:)
   enddo
@@ -168,26 +197,26 @@ enddo !iq
 allocate(pwmt(lmmaxvr,nrmtmax,natmtot))
 allocate(pwir(ngrtot))
 ! generate Hartree potential
-allocate(vhwanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nwann))
-allocate(vhwanir(ngrtot,ntrloc,nwann))
-vhwanmt=zzero
-vhwanir=zzero
+allocate(vwanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
+allocate(vwanir(ngrtot,ntrloc,nspinor,nwann))
+vwanmt=zzero
+vwanir=zzero
 do itloc=1,ntrloc
   itr=mpi_grid_map(ntr,dim_t,loc=itloc)
   do ig=1,ngvecme
     do iq=1,nvq0
       call genpw(vtl(1,itr),vgq0c(1,ig,iq),pwmt,pwir)
       do n=1,nwann
-        vhwanmt(:,:,:,itloc,n)=vhwanmt(:,:,:,itloc,n)+&
+        vwanmt(:,:,:,itloc,1,n)=vwanmt(:,:,:,itloc,1,n)+&
           megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwmt(:,:,:)
-        vhwanir(:,itloc,n)=vhwanir(:,itloc,n)+&
+        vwanir(:,itloc,1,n)=vwanir(:,itloc,1,n)+&
           megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwir(:)
       enddo
     enddo
   enddo
 enddo
-vhwanmt=vhwanmt/nkptnr/omega
-vhwanir=vhwanir/nkptnr/omega
+vwanmt=vwanmt/nkptnr/omega
+vwanir=vwanir/nkptnr/omega
 if (wproc) then
   call timestamp(151,'done with Hartree potential')
 endif
@@ -236,7 +265,7 @@ do i=1,nmegqwan
   v1l(:)=imegqwan(3:5,i)
   z1=0
   do ispn=1,nspinor
-    z1=z1+lfa_dotp(.true.,v1l,wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n),&
+    z1=z1+lf_dotlf(.true.,v1l,wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n),&
       wanmt(1,1,1,1,ispn,n1),wanir(1,1,ispn,n1))
   enddo
   if (n.eq.n1.and.v1l(1).eq.0.and.v1l(2).eq.0.and.v1l(3).eq.0) then
@@ -258,7 +287,7 @@ endif
 !allocate(pwir1(ngrtot,ntrloc))
 !do n=1,nwann
 !  do itloc=1,ntrloc
-!    call lfa_sht('B',wanmt(1,1,1,itloc,1,n),wanmt(1,1,1,itloc,1,n))
+!    call lf_sht('B',wanmt(1,1,1,itloc,1,n),wanmt(1,1,1,itloc,1,n))
 !  enddo
 !enddo
 !do ig=1,ngvecme
@@ -266,11 +295,11 @@ endif
 !    do itloc=1,ntrloc
 !      itr=mpi_grid_map(ntr,dim_t,loc=itloc)
 !      call genpw(vtl(1,itr),vgq0c(1,ig,iq),pwmt1(1,1,1,itloc),pwir1(1,itloc))
-!      call lfa_sht('B',pwmt1(1,1,1,itloc),pwmt1(1,1,1,itloc))
+!      call lf_sht('B',pwmt1(1,1,1,itloc),pwmt1(1,1,1,itloc))
 !      pwmt1(:,:,:,itloc)=pwmt1(:,:,:,itloc)*wanmt(:,:,:,itloc,1,1)
 !      pwir1(:,itloc)=pwir1(:,itloc)*wanir(:,itloc,1,1)    
 !    enddo
-!    zt1=lfa_dotp(.false.,(/0,0,0/),pwmt1,pwir1,wanmt(1,1,1,1,1,1),wanir(1,1,1,1))
+!    zt1=lf_dotp(.false.,(/0,0,0/),pwmt1,pwir1,wanmt(1,1,1,1,1,1),wanir(1,1,1,1))
 !    if (wproc) write(*,*)'ig=',ig,'iq=',iq,'  ',zt1
 !  enddo
 !enddo
@@ -281,8 +310,10 @@ endif
 ! convert to spherical coordinates
 do n=1,nwann
   do itloc=1,ntrloc
-    call lfa_sht('B',wanmt(1,1,1,itloc,1,n),wanmt(1,1,1,itloc,1,n))
-    call lfa_sht('B',vhwanmt(1,1,1,itloc,n),vhwanmt(1,1,1,itloc,n))  
+    do ispn=1,nspinor
+      call lf_sht('B',wanmt(1,1,1,itloc,ispn,n),wanmt(1,1,1,itloc,ispn,n))
+    enddo
+    call lf_sht('B',vwanmt(1,1,1,itloc,1,n),vwanmt(1,1,1,itloc,1,n))  
   enddo
 enddo
 
@@ -296,38 +327,57 @@ do n=1,nwann
   do itloc=1,ntrloc
     rhowanmt(:,:,:)=dconjg(wanmt(:,:,:,itloc,1,n))*wanmt(:,:,:,itloc,1,n)
     rhowanir(:)=dconjg(wanir(:,itloc,1,n))*wanir(:,itloc,1,n)
+    if (spinpol) then
+      rhowanmt(:,:,:)=rhowanmt(:,:,:)+&
+        dconjg(wanmt(:,:,:,itloc,2,n))*wanmt(:,:,:,itloc,2,n)
+      rhowanir(:)=rhowanir(:)+&
+        dconjg(wanir(:,itloc,2,n))*wanir(:,itloc,2,n)
+    endif
     do ias=1,natmtot
       do ir=1,nrmt(ias2is(ias))
         call xcifc(xctype,n=lmmaxvr,rho=dreal(rhowanmt(:,ir,ias)),&
           ex=f3,ec=f4,vx=vx,vc=vc)
-        vhwanmt(:,ir,ias,itloc,n)=vhwanmt(:,ir,ias,itloc,n)+vc(1:lmmaxvr)+&
+        vwanmt(:,ir,ias,itloc,1,n)=vwanmt(:,ir,ias,itloc,1,n)+vc(1:lmmaxvr)+&
           vx(1:lmmaxvr)
       enddo
     enddo
     call xcifc(xctype,n=ngrtot,rho=dreal(rhowanir(:)),ex=f3,ec=f4,&
       vx=vx,vc=vc)
-    vhwanir(:,itloc,n)=vhwanir(:,itloc,n)+vc(1:ngrtot)+vx(1:ngrtot)
+    vwanir(:,itloc,1,n)=vwanir(:,itloc,1,n)+vc(1:ngrtot)+vx(1:ngrtot)
   enddo
 enddo
 deallocate(vx,vc,f3,f4,rhowanmt,rhowanir)
 
+if (spinpol) then
+  do n=1,nwann
+    vwanmt(:,:,:,:,2,n)=vwanmt(:,:,:,:,1,n)
+    vwanir(:,:,2,n)=vwanir(:,:,1,n)
+  enddo
+endif
+
 ! multiply potential by Wannier function and change sign
 do n=1,nwann
   do itloc=1,ntrloc
-    vhwanmt(:,:,:,itloc,n)=-vhwanmt(:,:,:,itloc,n)*wanmt(:,:,:,itloc,1,n)
-    vhwanir(:,itloc,n)=-vhwanir(:,itloc,n)*wanir(:,itloc,1,n)
+    do ispn=1,nspinor
+      vwanmt(:,:,:,itloc,ispn,n)=-vwanmt(:,:,:,itloc,ispn,n)*&
+        wanmt(:,:,:,itloc,ispn,n)
+      vwanir(:,itloc,ispn,n)=-vwanir(:,itloc,ispn,n)*wanir(:,itloc,ispn,n)
+    enddo
   enddo
 enddo
 
 allocate(vsic(nmegqwan))
+vsic=zzero
 ! compute matrix elements of SIC potential
 ! vsic = <w_n|v_n|w_{n1,T}>
 do i=1,nmegqwan
   n=imegqwan(1,i)
   n1=imegqwan(2,i)
   v1l(:)=imegqwan(3:5,i)
-  vsic(i)=lfa_dotp(.false.,v1l,vhwanmt(1,1,1,1,n),vhwanir(1,1,n),&
-    wanmt(1,1,1,1,1,n1),wanir(1,1,1,n1))
+  do ispn=1,nspinor
+    vsic(i)=vsic(i)+lf_dotlf(.false.,v1l,vwanmt(1,1,1,1,ispn,n),&
+      vwanir(1,1,ispn,n),wanmt(1,1,1,1,ispn,n1),wanir(1,1,ispn,n1))
+  enddo
 enddo
 if (wproc) then
   write(151,*)
@@ -345,52 +395,76 @@ do i=1,nmegqwan
   n=imegqwan(1,i)
   n1=imegqwan(2,i)
   v1l(:)=imegqwan(3:5,i)
-  t2=max(t2,abs(vsic(i)-dconjg(vsic(idxmegqwan(n1,n,-v1l(1),-v1l(2),-v1l(3))))))
+  j=idxmegqwan(n1,n,-v1l(1),-v1l(2),-v1l(3))
+  t2=max(t2,abs(vsic(i)-dconjg(vsic(j))))
 enddo
 if (wproc) then
   write(151,*)
   write(151,'("Maximum deviation from ""localization criterion"" : ",F12.6)')t2
+  write(151,*)
+  write(151,'("Diagonal matrix elements")')
+  write(151,'("   n    Re H_nn     Im H_nn     Re V_n      Im V_n")')
+  write(151,'(70("-"))')
+  do n=1,nwann
+    j=idxmegqwan(n,n,0,0,0)
+    write(151,'(I4,4F12.6)')n,dreal(h0wan(j)),dimag(h0wan(j)),&
+      dreal(vsic(j)),dimag(vsic(j))
+  enddo  
   call flushifc(151)
 endif
 if (wproc) then
   call hdf5_create_file("sic.hdf5")
-  call hdf5_create_group("sic.hdf5","/","vwan")
+  call hdf5_create_group("sic.hdf5","/","wann")
   do n=1,nwann
+    path="/wann"
     write(c1,'("n",I4.4)')n
-    call hdf5_create_group("sic.hdf5","/vwan",trim(adjustl(c1)))
-    do it=1,ntr
-      write(c2,'("t",I4.4)')it
-      call hdf5_create_group("sic.hdf5","/vwan/"//trim(adjustl(c1)),&
-        trim(adjustl(c2)))
+    call hdf5_create_group("sic.hdf5",path,trim(adjustl(c1)))   
+    path=trim(path)//"/"//trim(adjustl(c1))
+    do ispn=1,nspinor
+      write(c3,'("s",I4.4)')ispn
+      call hdf5_create_group("sic.hdf5",path,trim(adjustl(c3)))   
+      path=trim(path)//"/"//trim(adjustl(c3))      
+      do it=1,ntr
+        write(c2,'("t",I4.4)')it
+        call hdf5_create_group("sic.hdf5",path,trim(adjustl(c2)))
+      enddo
     enddo
   enddo
   call hdf5_write("sic.hdf5","/","nmegqwan",nmegqwan)
   call hdf5_write("sic.hdf5","/","imegqwan",imegqwan(1,1),(/5,nmegqwan/))
   call hdf5_write("sic.hdf5","/","vsic",vsic(1),(/nmegqwan/))
+  call hdf5_write("sic.hdf5","/","h0wan",h0wan(1),(/nmegqwan/))
 endif
 if (mpi_grid_side(dims=(/dim_t/))) then
   do i=0,mpi_grid_size(dim_t)-1
     if (mpi_grid_x(dim_t).eq.i) then
       do itloc=1,ntrloc
         itr=mpi_grid_map(ntr,dim_t,loc=itloc)
-        do n=1,nwann
-          write(c1,'("n",I4.4)')n
-          write(c2,'("t",I4.4)')itr
-          call hdf5_write("sic.hdf5","/vwan/"//trim(adjustl(c1))//"/"//&
-            trim(adjustl(c2)),"vwanmt",vhwanmt(1,1,1,itloc,n),&
-            (/lmmaxvr,nrmtmax,natmtot/))
-          call hdf5_write("sic.hdf5","/vwan/"//trim(adjustl(c1))//"/"//&
-            trim(adjustl(c2)),"vwanir",vhwanir(1,itloc,n),&
-            (/ngrtot/))
+        do ispn=1,nspinor
+          do n=1,nwann
+            write(c1,'("n",I4.4)')n
+            write(c2,'("t",I4.4)')itr
+            write(c3,'("s",I4.4)')ispn
+            path="/wann/"//trim(adjustl(c1))//"/"//trim(adjustl(c3))//"/"//&
+              trim(adjustl(c2))
+            call hdf5_write("sic.hdf5",path,"vwanmt",&
+              vwanmt(1,1,1,itloc,ispn,n),(/lmmaxvr,nrmtmax,natmtot/))
+            call hdf5_write("sic.hdf5",path,"vwanir",&
+              vwanir(1,itloc,ispn,n),(/ngrtot/))
+            call hdf5_write("sic.hdf5",path,"wanmt",&
+              wanmt(1,1,1,itloc,ispn,n),(/lmmaxvr,nrmtmax,natmtot/))
+            call hdf5_write("sic.hdf5",path,"wanir",&
+              wanir(1,itloc,ispn,n),(/ngrtot/))
+          enddo
         enddo
       enddo
     endif
     call mpi_grid_barrier(dims=(/dim_t/))
   enddo
 endif
-          
-          
 if (wproc) close(151)
+deallocate(h0wan,vsic)
+deallocate(wanmt,wanir,vwanmt,vwanir)
 return
 end
 
