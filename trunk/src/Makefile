@@ -15,7 +15,7 @@ include ../make.inc
 # Source files
 #-------------------------------------------------------------------------------
 SRC_modules = mod_mpi_grid.f90 mod_timer.f90 modtest.f90 mod_hdf5.f90 modmain.f90 \
- mod_nrkp.f90 mod_lfa.f90 modxcifc.f90 
+ mod_nrkp.f90 mod_lf.f90 modxcifc.f90 
 
 SRC_main = main.f90
 

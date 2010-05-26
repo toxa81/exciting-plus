@@ -122,6 +122,7 @@ if (wproc) then
   write(60,'("| Self-consistent loop started |")')
   write(60,'("+------------------------------+")')
 end if
+call readvwan
 do iscl=1,maxscl
   call timer_start(t_iter_tot,reset=.true.)
 ! reset all timers
