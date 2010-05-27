@@ -42,7 +42,7 @@ character*100 qnm
 real(8) vtrc(3)
 
 ! mpi grid layout
-!          (3)
+!          (2)
 !     +----+----+--> T-vectos 
 !     |    |    |
 !     +----+----+--
@@ -70,16 +70,16 @@ call genurfprod
 ! read Fermi energy
 if (mpi_grid_root()) call readfermi
 call mpi_grid_bcast(efermi)
-
-call lf_init(lf_maxt,dim3)
-call genwfnr(151,.true.)  
+wproc=.false.
+call lf_init(lf_maxt,dim2)
 call init_qbz(.true.)
 call getngvecme((/0,0,0/))
-
 wproc=mpi_grid_root()
 if (wproc) then
   open(151,file='SIC.OUT',form='FORMATTED',status='REPLACE')
 endif
+call genwfnr(151,.true.)  
+
 if (spinpol) then
   if (allocated(spinor_ud)) deallocate(spinor_ud)
   allocate(spinor_ud(2,nstsv,nkptnr))

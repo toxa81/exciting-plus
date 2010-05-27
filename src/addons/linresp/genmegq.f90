@@ -43,7 +43,6 @@ if (wproc) then
   write(150,'("Calculation of matrix elements:")')
   write(150,'("  <n,k|e^{-i(G+q)x}|n'',k+q>")')
 endif
-
 call timer_start(1,reset=.true.)
 ! initialize G, q and G+q vectors
 call init_g_q_gq(ivq0m,lmaxexp,lmmaxexp)
