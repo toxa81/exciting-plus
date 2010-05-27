@@ -14,6 +14,7 @@ real(8), allocatable :: jl(:,:)
 real(8), allocatable :: uju(:,:,:,:,:)
 real(8), allocatable :: gnt(:,:,:)
 real(8), external :: gaunt
+real(8), external :: rfinteg
 
 lmmaxexp=(lmaxexp+1)**2
 allocate(gnt(lmmaxexp,lmmaxvr,lmmaxvr))
@@ -62,8 +63,9 @@ do igloc=1,ngvecmeloc
                 fr(ir)=urf(ir,l1,io1,ias)*urf(ir,l2,io2,ias)*&
                   jl(ir,l3)*(spr(ir,is)**2)
               enddo !ir
-              call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
-              uju(l3,l1,l2,io1,io2)=gr(nrmt(is))
+              !call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
+              !uju(l3,l1,l2,io1,io2)=gr(nrmt(is))
+               uju(l3,l1,l2,io1,io2)=rfinteg(nrmt(is),spr(1,is),fr)
             enddo !io2
           enddo !io1
         enddo !l2

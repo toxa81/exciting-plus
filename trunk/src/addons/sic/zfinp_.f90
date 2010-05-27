@@ -35,8 +35,8 @@ complex(8), intent(in) :: zfir2(ngrtot)
 integer is,ia,ias,ir
 complex(8) zsum
 ! external functions
-complex(8) zfmtinp
-external zfmtinp
+complex(8) zfmtinp_
+external zfmtinp_
 zsum=0.d0
 ! interstitial contribution
 do ir=1,ngrtot
@@ -47,7 +47,7 @@ zsum=zsum*omega/dble(ngrtot)
 do is=1,nspecies
   do ia=1,natoms(is)
     ias=idxas(ia,is)
-    zsum=zsum+zfmtinp(tsh,lmaxvr,nrmt(is),spr(:,is),lmmaxvr,zfmt1(:,:,ias), &
+    zsum=zsum+zfmtinp_(tsh,lmaxvr,nrmt(is),spr(:,is),lmmaxvr,zfmt1(:,:,ias), &
      zfmt2(:,:,ias))
   end do
 end do
