@@ -114,7 +114,7 @@ do itask=1,ntasks
   case(703)
     call genrlm_lcs
   case(800)
-    call genvsic
+    call sic_gndstate
   case default
     write(*,*)
     write(*,'("Error(main): task not defined : ",I8)') task

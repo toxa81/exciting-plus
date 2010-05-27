@@ -127,8 +127,8 @@ end if
 !     parallel        !
 !---------------------!
 dim_k=dim1
-dim_b=dim2
-dim_q=dim3
+dim_q=dim2
+dim_b=dim3
 if (task.eq.0.or.task.eq.1.or.task.eq.22.or.task.eq.100.or.&
   task.eq.101.or.task.eq.63) then
   allocate(grid_dim(2))
@@ -149,14 +149,17 @@ else if (task.eq.400.or.task.eq.401.or.task.eq.402.or.task.eq.800) then
   if (lmpi_grid) then
     grid_dim=mpi_grid 
   else
+    grid_dim=(/1,1,1/)
     if (nproc.le.nkptnr) then
-      grid_dim=(/nproc,1,1/)
+      grid_dim(dim_k)=nproc
     else
+      grid_dim(dim_k)=nkptnr
       i1=nproc/nkptnr
       if (i1.le.i2) then
-        grid_dim=(/nkptnr,1,i1/)
+        grid_dim(dim_q)=i1
       else
-        grid_dim=(/nkptnr,nproc/(nkptnr*i2),i2/)
+        grid_dim(dim_q)=i2
+        grid_dim(dim_b)=nproc/(nkptnr*i2)
       endif
     endif
   endif

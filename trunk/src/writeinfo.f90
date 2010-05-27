@@ -76,6 +76,11 @@ case(300)
   write(fnum,'("+----------------------------------------------+")')
   write(fnum,'("| Reduced density matrix functional theory run |")')
   write(fnum,'("+----------------------------------------------+")')
+case(800)
+  write(fnum,*)
+  write(fnum,'("+----------------------+")')
+  write(fnum,'("| SIC ground state run |")')
+  write(fnum,'("+----------------------+")')
 case default
   write(*,*)
   write(*,'("Error(writeinfo): task not defined : ",I8)') task

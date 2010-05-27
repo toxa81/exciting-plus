@@ -25,9 +25,10 @@ integer lm,ias,is,ispn,ig,ir,io
 complex(8), allocatable :: hwan_k(:,:)
 complex(8), allocatable :: vwan_k(:,:)
 complex(8) expikt
-integer v1l(3),n1,j1
-real(8) vtrc(3)
-complex(8) zt1
+integer v1l(3),n1,j1,i3
+real(8) vtrc(3),v2(3),v3(3)
+complex(8) zt1,expikr
+complex(8), external :: zfinp_
 
 
 inquire(file="sic.hdf5",exist=exist)
@@ -96,7 +97,28 @@ do j=1,nstsv
       wfir(igfft(igkig(ig,1,ikloc)),ispn)=wfsvit(ig,ispn,j)
     enddo
     call zfftifc(3,ngrid,1,wfir(:,ispn))
+    wfir(:,ispn)=wfir(:,ispn)/sqrt(omega)
   enddo !ispn
+  ir=0
+  do i3=0,ngrid(3)-1
+    v2(3)=dble(i3)/dble(ngrid(3))
+    do i2=0,ngrid(2)-1
+      v2(2)=dble(i2)/dble(ngrid(2))
+      do i1=0,ngrid(1)-1
+        v2(1)=dble(i1)/dble(ngrid(1))
+        ir=ir+1
+        call r3mv(avec,v2,v3)
+        expikr=exp(zi*dot_product(vkc(:,ik),v3(:)))
+        wfir(ir,:)=expikr*wfir(ir,:)
+      enddo
+    enddo
+  enddo
+!  zt1=zzero
+!  do ispn=1,nspinor
+!    zt1=zt1+zfinp_(.false.,wfmt(1,1,1,ispn),wfmt(1,1,1,ispn),wfir(1,ispn),&
+!      wfir(1,ispn))
+!  enddo
+!  write(*,*)'zt1=',zt1
   do n=1,nwann
     do ispn=1,nspinor
       a1(n,j)=a1(n,j)+lf_dotblh(.false.,vkc(1,ik),vwanmt(1,1,1,1,ispn,n),&
@@ -107,15 +129,22 @@ do j=1,nstsv
   enddo
 enddo !j
 deallocate(wfsvmt,wfsvit,apwalm,wfmt,wfir)
-do n=1,nwann
-  do n1=1,nwann
-    zt1=zzero
-    do j=1,nstsv
-      zt1=zt1+dconjg(a2(n,j))*a2(n1,j)
-    enddo
-  write(*,*)n,n1,zt1
-  enddo
-enddo
+!a2=wann_c(:,:,ikloc)
+!do n=1,nwann
+!  write(*,*)'n=',n
+!  do j=1,nstsv
+!    write(*,*)'j=',j,'wf=',a2(n,j)
+!  enddo
+!enddo
+!do n=1,nwann
+!  do n1=1,nwann
+!    zt1=zzero
+!    do j=1,nstsv
+!      zt1=zt1+dconjg(a2(n,j))*a2(n1,j)
+!    enddo
+!  write(*,*)n,n1,zt1
+!  enddo
+!enddo
  
 allocate(hwan_k(nwann,nwann))
 allocate(vwan_k(nwann,nwann))
@@ -145,8 +174,7 @@ do j=1,nstsv
   do j1=1,nstsv
     do n=1,nwann
       do n1=1,nwann
-        z1(j,j1)=z1(j,j1)-hwan_k(n,n1)*wann_c(n,j,ikloc)*&
-          dconjg(wann_c(n1,j1,ikloc))
+        z1(j,j1)=z1(j,j1)-hwan_k(n,n1)*a2(n,j)*dconjg(a2(n1,j1))
       enddo
     enddo
   enddo
@@ -155,8 +183,7 @@ enddo
 do n=1,nwann
   do j=1,nstsv
     do j1=1,nstsv
-      z1(j,j1)=z1(j,j1)+wann_c(n,j,ikloc)*dconjg(wann_c(n,j1,ikloc))*&
-        (vn(n)+hnn(n))
+      z1(j,j1)=z1(j,j1)+a2(n,j)*dconjg(a2(n,j1))*(vn(n)+hnn(n))
     enddo
   enddo
 enddo
@@ -166,7 +193,7 @@ z5=zzero
 do j=1,nstsv
   do j1=1,nstsv
     do n=1,nwann
-      z5(j,j1)=z5(j,j1)+wann_c(n,j,ikloc)*a1(n,j1)
+      z5(j,j1)=z5(j,j1)+a2(n,j)*a1(n,j1)
     enddo
   enddo
 enddo
@@ -174,8 +201,7 @@ do j=1,nstsv
   do j1=1,nstsv
     do n=1,nwann
       do n1=1,nwann
-        z5(j,j1)=z5(j,j1)-vwan_k(n,n1)*wann_c(n,j,ikloc)*&
-          dconjg(wann_c(n1,j1,ikloc))
+        z5(j,j1)=z5(j,j1)-vwan_k(n,n1)*a2(n,j)*dconjg(a2(n1,j1))
       enddo
     enddo
   enddo
