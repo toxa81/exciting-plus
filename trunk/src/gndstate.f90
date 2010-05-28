@@ -44,6 +44,12 @@ wproc=mpi_grid_root()
 allocate(evalfv(nstfv,nspnfv,nkptloc))
 allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
 allocate(evecsvloc(nstsv,nstsv,nkptloc))
+if (sic) then
+  if (allocated(evalsv0)) deallocate(evalsv0)
+  allocate(evalsv0(nstsv,nkpt))
+  if (allocated(evecsv0loc)) deallocate(evecsv0loc)
+  allocate(evecsv0loc(nstsv,nstsv,nkptloc))
+endif
 ! no band disentanglement in ground state calculation
 ldisentangle=.false. 
 ! initialise OEP variables if required
@@ -412,9 +418,14 @@ if (mpi_grid_side(dims=(/dim_k/))) then
       do ikloc=1,nkptloc
         ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
         call putevalfv(ik,evalfv(1,1,ikloc))
-        call putevalsv(ik,evalsv(1,ik))
+        if (sic) then
+          call putevalsv(ik,evalsv0(1,ik))
+          call putevecsv(ik,evecsv0loc(1,1,ikloc))
+        else
+          call putevalsv(ik,evalsv(1,ik))
+          call putevecsv(ik,evecsvloc(1,1,ikloc))
+        endif
         call putevecfv(ik,evecfvloc(1,1,1,ikloc))
-        call putevecsv(ik,evecsvloc(1,1,ikloc))
         call putoccsv(ik,occsv(1,ik))
       end do
     end if

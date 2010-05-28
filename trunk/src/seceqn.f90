@@ -64,6 +64,10 @@ else
 ! solve the second-variational secular equation
   call seceqnsv(ikloc,apwalm,evalfv,evecfv,evecsv)
 end if
+if (sic) then
+  evalsv0(:,ik)=evalsv(:,ik)
+  evecsv0loc(:,:,ikloc)=evecsv(:,:)
+endif
 if (wannier) then
   call genwann(ikloc,evecfv,evecsv)
   if (ldisentangle) call disentangle(evalsv(1,ik),wann_c(1,1,ikloc),evecsv)

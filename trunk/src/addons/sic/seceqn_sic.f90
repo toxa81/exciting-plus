@@ -123,13 +123,13 @@ do j=1,nstsv
     do ispn=1,nspinor
       a1(n,j)=a1(n,j)+lf_dotblh(.false.,vkc(1,ik),vwanmt(1,1,1,1,ispn,n),&
         vwanir(1,1,ispn,n),wfmt(1,1,1,ispn),wfir(1,ispn))
-      a2(n,j)=a2(n,j)+lf_dotblh(.false.,vkc(1,ik),wanmt(1,1,1,1,ispn,n),&
-        wanir(1,1,ispn,n),wfmt(1,1,1,ispn),wfir(1,ispn))
+!      a2(n,j)=a2(n,j)+lf_dotblh(.false.,vkc(1,ik),wanmt(1,1,1,1,ispn,n),&
+!        wanir(1,1,ispn,n),wfmt(1,1,1,ispn),wfir(1,ispn))
     enddo
   enddo
 enddo !j
 deallocate(wfsvmt,wfsvit,apwalm,wfmt,wfir)
-!a2=wann_c(:,:,ikloc)
+a2=wann_c(:,:,ikloc)
 !do n=1,nwann
 !  write(*,*)'n=',n
 !  do j=1,nstsv

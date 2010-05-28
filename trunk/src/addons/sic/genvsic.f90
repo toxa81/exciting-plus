@@ -197,20 +197,24 @@ enddo !iq
 allocate(pwmt(lmmaxvr,nrmtmax,natmtot))
 allocate(pwir(ngrtot))
 ! generate Hartree potential
+if (allocated(vwanmt)) deallocate(vwanmt)
 allocate(vwanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
+if (allocated(vwanir)) deallocate(vwanir)
 allocate(vwanir(ngrtot,ntrloc,nspinor,nwann))
 vwanmt=zzero
 vwanir=zzero
-do itloc=1,ntrloc
-  itr=mpi_grid_map(ntr,dim_t,loc=itloc)
-  do ig=1,ngvecme
-    do iq=1,nvq0
-      call genpw(vtl(1,itr),vgq0c(1,ig,iq),pwmt,pwir)
+do ig=1,ngvecme
+  do iq=1,nvq0
+    call genpw((/0,0,0/),vgq0c(1,ig,iq),pwmt,pwir)
+    do itloc=1,ntrloc
+      itr=mpi_grid_map(ntr,dim_t,loc=itloc)
+      vtrc(:)=vtl(1,itr)*avec(:,1)+vtl(2,itr)*avec(:,2)+vtl(3,itr)*avec(:,3)
+      expikt=exp(zi*dot_product(vtrc(:),vgq0c(:,1,iq)))
       do n=1,nwann
         vwanmt(:,:,:,itloc,1,n)=vwanmt(:,:,:,itloc,1,n)+&
-          megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwmt(:,:,:)
+          megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwmt(:,:,:)*expikt
         vwanir(:,itloc,1,n)=vwanir(:,itloc,1,n)+&
-          megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwir(:)
+          megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwir(:)*expikt
       enddo
     enddo
   enddo
@@ -222,7 +226,9 @@ if (wproc) then
 endif
 deallocate(vgq0c,vhgq0,pwmt,pwir,megqwan1)
 ! generate Wannier functions on a mesh
+if (allocated(wanmt)) deallocate(wanmt)
 allocate(wanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
+if (allocated(wanir)) deallocate(wanir)
 allocate(wanir(ngrtot,ntrloc,nspinor,nwann))
 if (wproc) then
   sz=lmmaxvr*nrmtmax*natmtot+ngrtot
