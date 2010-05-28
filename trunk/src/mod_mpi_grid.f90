@@ -419,7 +419,11 @@ if (present(root_)) then
 else
   root_x=0
 endif
+#ifdef _MPI_
 call mpi_cart_rank(comm_,root_x,rootid_,ierr)
+#else
+rootid_=0
+#endif
 end subroutine
 
 
