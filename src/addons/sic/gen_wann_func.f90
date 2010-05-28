@@ -62,15 +62,13 @@ do ikloc=1,nkptnrloc
         v2(1)=dble(i1)/dble(ngrid(1))
         ir=ir+1
         call r3mv(avec,v2,v3)
-        if (.not.vrinmt(v3,is,ia,itmp,vr0,ir0,r0)) then
-          v3(:)=v3(:)+vtrc(:)
-          expikr=exp(zi*dot_product(vkcnr(:,ik),v3(:)))
-          do ispn=1,nspinor
-            do n=1,nwann
-              wanir_(ir,ispn,n)=wanir_(ir,ispn,n)+expikr*zfir(ir,ispn,n)
-            enddo !in
-          enddo
-        endif
+        v3(:)=v3(:)+vtrc(:)
+        expikr=exp(zi*dot_product(vkcnr(:,ik),v3(:)))
+        do ispn=1,nspinor
+          do n=1,nwann
+            wanir_(ir,ispn,n)=wanir_(ir,ispn,n)+expikr*zfir(ir,ispn,n)
+          enddo !in
+        enddo
       enddo
     enddo
   enddo

@@ -930,6 +930,9 @@ data lmpi_grid/.false./
 integer mpi_grid(3)
 complex(8), allocatable :: evecfvloc(:,:,:,:)
 complex(8), allocatable :: evecsvloc(:,:,:)
+complex(8), allocatable :: evecsv0loc(:,:,:)
+real(8), allocatable :: evalsv0(:,:)
+
 
 ! dimension for k-points 
 integer dim_k

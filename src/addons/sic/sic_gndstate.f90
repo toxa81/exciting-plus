@@ -7,7 +7,7 @@ integer iter
 !mpi_grid=(/1,1,1/)
 do iter=1,1
   if (iproc.eq.0) write(*,*)'SIC iteration ',iter
-  !call gndstate
+  call gndstate
   call genvsic
 enddo
 

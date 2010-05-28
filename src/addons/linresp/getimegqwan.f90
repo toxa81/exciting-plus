@@ -8,6 +8,7 @@ logical, external :: wann_diel
 
 if (nwann_include.eq.0) then
   nwann_include=nwann
+  if (allocated(iwann_include)) deallocate(iwann_include)
   allocate(iwann_include(nwann))
   do j=1,nwann
     iwann_include(j)=j
@@ -28,6 +29,7 @@ do n=1,nwann
     enddo
   enddo
 enddo
+if (allocated(imegqwan)) deallocate(imegqwan)
 allocate(imegqwan(5,nmegqwanmax))
 imegqwan=0
 nmegqwan=0   
@@ -60,6 +62,7 @@ megqwan_tlim(1,2)=minval(imegqwan(4,:))
 megqwan_tlim(2,2)=maxval(imegqwan(4,:))
 megqwan_tlim(1,3)=minval(imegqwan(5,:))
 megqwan_tlim(2,3)=maxval(imegqwan(5,:))
+if (allocated(idxmegqwan)) deallocate(idxmegqwan)
 allocate(idxmegqwan(nwann,nwann,megqwan_tlim(1,1):megqwan_tlim(2,1),&
   megqwan_tlim(1,2):megqwan_tlim(2,2),megqwan_tlim(1,3):megqwan_tlim(2,3)))
 idxmegqwan=-100
