@@ -15,31 +15,48 @@ real(8), allocatable :: wfc(:,:,:,:)
 character*100 st
 real(8) t1
 integer, allocatable :: bndf(:,:)
-  
-open(50,file='BNDCHR.OUT',form='formatted',status='old')
-read(50,*)lmmax,natmtot,nspinor,nstfv,nstsv,nkpt,nlines
+integer nspecies,ias1,is1,is
+character(256), allocatable :: spsymb(:)
+integer, allocatable :: natoms(:)
+integer, allocatable :: iasis(:)
+
+      
+open(50,file="BNDCHR.OUT",form="FORMATTED",status="OLD")
+read(50,*)lmmax,nspecies,natmtot,nspinor,nstfv,nstsv,nkpt,nlines
 read(50,*)efermi
 allocate(bndchr(lmmax,natmtot,nspinor,nstsv,nkpt))
 allocate(dpp1d(nkpt))
 allocate(e(nstsv,nkpt))
-allocate(w(nstsv,nkpt))
-allocate(orb(lmmax,natmtot))
-allocate(tmp(lmmax))
-      
+allocate(spsymb(nspecies))
+allocate(natoms(nspecies))
+allocate(iasis(natmtot))
+do is=1,nspecies
+  read(50,*)spsymb(is)
+  read(50,*)natoms(is)
+enddo
+do ias=1,natmtot
+  read(50,*)ias1,is1
+  iasis(ias1)=is1
+enddo      
 do ik=1,nkpt
   read(50,*)dpp1d(ik)
   read(50,*)(e(ist,ik),ist=1,nstsv)
   read(50,*)((((bndchr(lm,ias,ispn,ist,ik),lm=1,lmmax), &
                 ias=1,natmtot),ispn=1,nspinor),ist=1,nstsv)
 enddo
-read(50,*)wannier
-if (wannier) then
-  read(50,*)wf_dim
-  allocate(wfc(wf_dim,nstfv,nspinor,nkpt))
-  do ik=1,nkpt
-    read(50,*)((wfc(n,i,1,ik),n=1,wf_dim),i=1,nstfv)
-  enddo
-endif
+  
+allocate(w(nstsv,nkpt))
+allocate(orb(lmmax,natmtot))
+allocate(tmp(lmmax))
+      
+!read(50,*)wannier
+!if (wannier) then
+!  read(50,*)wf_dim
+!  allocate(wfc(wf_dim,nstfv,nspinor,nkpt))
+!  do ik=1,nkpt
+!    read(50,*)((wfc(n,i,1,ik),n=1,wf_dim),i=1,nstfv)
+!  enddo
+!endif
 close(50)
 
 write(*,'("Input bottom band : ")')
