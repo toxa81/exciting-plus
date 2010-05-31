@@ -156,12 +156,9 @@ do iqloc=1,nvq0loc
     megqwan1(n,:,iq)=megqwan(idxmegqwan(n,n,0,0,0),:)
   enddo
 enddo
-if (wproc) then
-  call timestamp(151,'done with q-vectors')
-endif
 call mpi_grid_reduce(megqwan1(1,1,1),nwann*ngvecme*nvq0,dims=(/dim_q/), &
   all=.true.)
-! deallocate unnecessary wave-functions
+! deallocate unnecessary arrays
 deallocate(wfsvmtloc)
 deallocate(wfsvitloc)
 deallocate(evecfvloc)
@@ -169,6 +166,9 @@ deallocate(evecsvloc)
 deallocate(wann_c)
 ! restore wproc
 wproc=mpi_grid_root()
+if (wproc) then
+  call timestamp(151,'done with q-vectors')
+endif
 ! generate G+q vectors   
 allocate(vgq0c(3,ngvecme,nvq0))
 allocate(vhgq0(ngvecme,nvq0))
@@ -204,7 +204,9 @@ if (allocated(vwanir)) deallocate(vwanir)
 allocate(vwanir(ngrtot,ntrloc,nspinor,nwann))
 vwanmt=zzero
 vwanir=zzero
-do ig=1,ngvecme
+ngvecmeloc=mpi_grid_map(ngvecme,dim_k)
+do igloc=1,ngvecmeloc
+  ig=mpi_grid_map(ngvecme,dim_k,loc=igloc)
   do iq=1,nvq0
     call genpw((/0,0,0/),vgq0c(1,ig,iq),pwmt,pwir)
     do itloc=1,ntrloc
@@ -218,6 +220,14 @@ do ig=1,ngvecme
           megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwir(:)*expikt
       enddo
     enddo
+  enddo
+enddo
+do n=1,nwann
+  do itloc=1,ntrloc
+    call mpi_grid_reduce(vwanmt(1,1,1,itloc,1,n),lmmaxvr*nrmtmax*natmtot,&
+      dims=(/dim_k/),all=.true.)
+    call mpi_grid_reduce(vwanir(1,itloc,1,n),ngrtot,dims=(/dim_k/),&
+      all=.true.)
   enddo
 enddo
 vwanmt=vwanmt/nkptnr/omega
@@ -387,9 +397,12 @@ do i=1,nmegqwan
   enddo
 enddo
 if (wproc) then
+  call timestamp(151,'done with matrix elements')
+endif
+if (wproc) then
   write(151,*)
   write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
-  write(151,'("Matrix elements of SIC potential \&
+  write(151,'("Matrix elements of SIC potential &
     &(n n1  T  <w_n|v_n|w_{n1,T}>)")')
   do i=1,nmegqwan
     write(151,'(I4,4X,I4,4X,3I3,4X,2G18.10)')imegqwan(:,i),&

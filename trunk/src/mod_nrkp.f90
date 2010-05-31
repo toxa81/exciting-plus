@@ -42,6 +42,7 @@ if (mpi_grid_root()) then
   enddo
 endif
 call mpi_grid_bcast(evalsv(1,1),nstsv*nkpt)
+if (allocated(evalsvnr)) deallocate(evalsvnr)
 allocate(evalsvnr(nstsv,nkptnr))
 evalsvnr=0.d0
 do ikloc=1,nkptnrloc
@@ -67,13 +68,21 @@ endif
 
 ! generate G+k vectors for entire BZ (this is required to compute 
 !   wave-functions at each k-point)
+if (allocated(vgklnr)) deallocate(vgklnr)
 allocate(vgklnr(3,ngkmax,nkptnrloc))
+if (allocated(vgkcnr)) deallocate(vgkcnr)
 allocate(vgkcnr(3,ngkmax,nkptnrloc))
+if (allocated(gknr)) deallocate(gknr)
 allocate(gknr(ngkmax,nkptnrloc))
+if (allocated(tpgknr)) deallocate(tpgknr)
 allocate(tpgknr(2,ngkmax,nkptnrloc))
+if (allocated(ngknr)) deallocate(ngknr)
 allocate(ngknr(nkptnrloc))
+if (allocated(sfacgknr)) deallocate(sfacgknr)
 allocate(sfacgknr(ngkmax,natmtot,nkptnrloc))
+if (allocated(igkignr)) deallocate(igkignr)
 allocate(igkignr(ngkmax,nkptnrloc))
+if (allocated(ylmgknr)) deallocate(ylmgknr)
 allocate(ylmgknr(lmmaxvr,ngkmax,nkptnrloc))
 do ikloc=1,nkptnrloc
   ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
@@ -84,11 +93,16 @@ do ikloc=1,nkptnrloc
     call genylm(lmaxvr,tpgknr(1,ig,ikloc),ylmgknr(1,ig,ikloc))
   enddo
 enddo
+if (allocated(wfsvmtloc)) deallocate(wfsvmtloc)
 allocate(wfsvmtloc(lmmaxvr,nrfmax,natmtot,nspinor,nstsv,nkptnrloc))
+if (allocated(wfsvitloc)) deallocate(wfsvitloc)
 allocate(wfsvitloc(ngkmax,nspinor,nstsv,nkptnrloc))
+if (allocated(evecfvloc)) deallocate(evecfvloc)
 allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptnrloc))
+if (allocated(evecsvloc)) deallocate(evecsvloc)
 allocate(evecsvloc(nstsv,nstsv,nkptnrloc))
 if (lpmat) then
+  if (allocated(pmat)) deallocate(pmat)
   allocate(pmat(3,nstsv,nstsv,nkptnrloc))
 endif
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
@@ -195,6 +209,7 @@ endif !wannier
 ! after optinal band disentanglement we can finally synchronize all eigen-values
 !   and compute band occupation numbers 
 call mpi_grid_reduce(evalsvnr(1,1),nstsv*nkptnr,dims=(/dim_k/),all=.true.)
+if (allocated(occsvnr)) deallocate(occsvnr)
 allocate(occsvnr(nstsv,nkptnr))
 call occupy2(nkptnr,wkptnr,evalsvnr,occsvnr)
 deallocate(apwalm)
