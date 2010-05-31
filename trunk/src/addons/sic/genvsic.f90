@@ -7,7 +7,7 @@ implicit none
 
 integer n
 integer ik,ikloc,j,ig,sz,i
-integer n1,n2,ispn
+integer n1,n2,ispn,ngvecmeloc,igloc
 integer itr,it,itloc,ir,m,ias
 real(8) t1,t2
 integer v1l(3)
