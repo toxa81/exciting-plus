@@ -146,6 +146,7 @@ all_wan_ibt=.true.
 ! distribute q-vectors along 3-rd dimention
 nvq0loc=mpi_grid_map(nvq0,dim_q)
 allocate(megqwan1(nwann,ngvecme,nvq0))
+megqwan1=zzero
 ! loop over q-points
 do iqloc=1,nvq0loc
   iq=mpi_grid_map(nvq0,dim_q,loc=iqloc)
