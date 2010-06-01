@@ -1046,6 +1046,8 @@ case('mpi_grid')
 case('sic')
   read(50,*,err=20)sic
   read(50,*,err=20)lf_maxt
+case('vhgqmax')
+  read(50,*,err=20)vhgqmax
 case('')
   goto 10
 case default
