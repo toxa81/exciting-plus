@@ -147,6 +147,7 @@ all_wan_ibt=.true.
 nvq0loc=mpi_grid_map(nvq0,dim_q)
 allocate(megqwan1(nwann,ngvecme,nvq0))
 megqwan1=zzero
+call timer_start(10,reset=.true.)
 ! loop over q-points
 do iqloc=1,nvq0loc
   iq=mpi_grid_map(nvq0,dim_q,loc=iqloc)
@@ -158,6 +159,7 @@ do iqloc=1,nvq0loc
 enddo
 call mpi_grid_reduce(megqwan1(1,1,1),nwann*ngvecme*nvq0,dims=(/dim_q/), &
   all=.true.)
+call timer_stop(10)
 ! deallocate unnecessary arrays
 deallocate(wfsvmtloc)
 deallocate(wfsvitloc)
@@ -167,7 +169,9 @@ deallocate(wann_c)
 ! restore wproc
 wproc=mpi_grid_root()
 if (wproc) then
-  call timestamp(151,'done with q-vectors')
+  !call timestamp(151,'done with q-vectors')
+  write(151,*)
+  write(151,'("time for q-vectors : ",F8.3)')timer_get_value(10)
 endif
 ! generate G+q vectors   
 allocate(vgq0c(3,ngvecme,nvq0))
@@ -205,6 +209,7 @@ allocate(vwanir(ngrtot,ntrloc,nspinor,nwann))
 vwanmt=zzero
 vwanir=zzero
 ngvecmeloc=mpi_grid_map(ngvecme,dim_k)
+call timer_start(1,reset=.true.)
 do igloc=1,ngvecmeloc
   ig=mpi_grid_map(ngvecme,dim_k,loc=igloc)
   do iq=1,nvq0
@@ -214,10 +219,16 @@ do igloc=1,ngvecmeloc
       vtrc(:)=vtl(1,itr)*avec(:,1)+vtl(2,itr)*avec(:,2)+vtl(3,itr)*avec(:,3)
       expikt=exp(zi*dot_product(vtrc(:),vgq0c(:,1,iq)))
       do n=1,nwann
-        vwanmt(:,:,:,itloc,1,n)=vwanmt(:,:,:,itloc,1,n)+&
-          megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwmt(:,:,:)*expikt
-        vwanir(:,itloc,1,n)=vwanir(:,itloc,1,n)+&
-          megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwir(:)*expikt
+        !vwanmt(:,:,:,itloc,1,n)=vwanmt(:,:,:,itloc,1,n)+&
+        !  megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwmt(:,:,:)*expikt
+        call zaxpy(lmmaxvr*nrmtmax*natmtot,&
+          megqwan1(n,ig,iq)*vhgq0(ig,iq)*expikt,pwmt(1,1,1),1,&
+          vwanmt(1,1,1,itloc,1,n),1)
+          
+        !vwanir(:,itloc,1,n)=vwanir(:,itloc,1,n)+&
+        !  megqwan1(n,ig,iq)*vhgq0(ig,iq)*pwir(:)*expikt
+        call zaxpy(ngrtot,megqwan1(n,ig,iq)*vhgq0(ig,iq)*expikt,&
+          pwir(1),1,vwanir(1,itloc,1,n),1)
       enddo
     enddo
   enddo
@@ -232,8 +243,11 @@ do n=1,nwann
 enddo
 vwanmt=vwanmt/nkptnr/omega
 vwanir=vwanir/nkptnr/omega
+call timer_stop(1)
 if (wproc) then
-  call timestamp(151,'done with Hartree potential')
+  !call timestamp(151,'done with Hartree potential')
+  write(151,*)
+  write(151,'("time for Hartree potential : ",F8.3)')timer_get_value(1)
 endif
 deallocate(vgq0c,vhgq0,pwmt,pwir,megqwan1)
 ! generate Wannier functions on a mesh
