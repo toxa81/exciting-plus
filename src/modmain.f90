@@ -1309,6 +1309,8 @@ complex(8), allocatable :: wanir(:,:,:,:)
 complex(8), allocatable :: vwanmt(:,:,:,:,:,:)
 complex(8), allocatable :: vwanir(:,:,:,:)
 
+real(8) vhgqmax
+data vhgqmax/3.d0/
 
 end module
 

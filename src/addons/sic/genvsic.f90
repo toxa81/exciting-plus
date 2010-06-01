@@ -13,9 +13,11 @@ real(8) t1,t2
 integer v1l(3)
 character*12 c1,c2,c3
 character*100 path
+logical l1
 
 real(8), allocatable :: vgq0c(:,:,:)
 real(8), allocatable :: vhgq0(:,:)
+real(8), allocatable :: gq0c(:,:)
 real(8) a0
 
 ! arrays for Wannier functions
@@ -169,16 +171,17 @@ deallocate(wann_c)
 ! restore wproc
 wproc=mpi_grid_root()
 if (wproc) then
-  !call timestamp(151,'done with q-vectors')
   write(151,*)
   write(151,'("time for q-vectors : ",F8.3)')timer_get_value(10)
 endif
 ! generate G+q vectors   
 allocate(vgq0c(3,ngvecme,nvq0))
+allocate(gq0c(ngvecme,nvq0))
 allocate(vhgq0(ngvecme,nvq0))
 do iq=1,nvq0
   vq0l(:)=1.d0*(ivq0m_list(:,iq))/ngridk(:)+1d-12
   call r3mv(bvec,vq0l,vq0c)
+  l1=.true.
   do ig=1,ngvecme
     if (ivq0m_list(1,iq).eq.0.and.&
         ivq0m_list(2,iq).eq.0.and.&
@@ -195,7 +198,18 @@ do iq=1,nvq0
       a0=1.d0
     endif
 ! setup 4Pi/|G+q|^2 array
-    vhgq0(ig,iq)=a0*fourpi/dot_product(vgq0c(:,ig,iq),vgq0c(:,ig,iq))
+    gq0c(ig,iq)=dot_product(vgq0c(:,ig,iq),vgq0c(:,ig,iq))
+    if (gq0c(ig,iq).gt.vhgqmax) then
+      if (ig.eq.ngvecme.and.l1) then
+        write(*,'("Warning! Not enough G-vectors!")')
+        write(*,'(" ig : ",I4)')ig
+        write(*,'(" iq : ",I4)')iq        
+      endif
+      vhgq0(ig,iq)=0.d0
+      l1=.false.
+    else
+      vhgq0(ig,iq)=a0*fourpi/gq0c(ig,iq)
+    endif
   enddo !ig
 enddo !iq
 ! allocate arrays for plane-wave
@@ -249,7 +263,7 @@ if (wproc) then
   write(151,*)
   write(151,'("time for Hartree potential : ",F8.3)')timer_get_value(1)
 endif
-deallocate(vgq0c,vhgq0,pwmt,pwir,megqwan1)
+deallocate(vgq0c,vhgq0,gq0c,pwmt,pwir,megqwan1)
 ! generate Wannier functions on a mesh
 if (allocated(wanmt)) deallocate(wanmt)
 allocate(wanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
@@ -354,29 +368,29 @@ allocate(rhowanir(ngrtot))
 allocate(vx(m),vc(m))
 allocate(f3(m),f4(m))
 ! add XC potential to Coulomb
-do n=1,nwann
-  do itloc=1,ntrloc
-    rhowanmt(:,:,:)=dconjg(wanmt(:,:,:,itloc,1,n))*wanmt(:,:,:,itloc,1,n)
-    rhowanir(:)=dconjg(wanir(:,itloc,1,n))*wanir(:,itloc,1,n)
-    if (spinpol) then
-      rhowanmt(:,:,:)=rhowanmt(:,:,:)+&
-        dconjg(wanmt(:,:,:,itloc,2,n))*wanmt(:,:,:,itloc,2,n)
-      rhowanir(:)=rhowanir(:)+&
-        dconjg(wanir(:,itloc,2,n))*wanir(:,itloc,2,n)
-    endif
-    do ias=1,natmtot
-      do ir=1,nrmt(ias2is(ias))
-        call xcifc(xctype,n=lmmaxvr,rho=dreal(rhowanmt(:,ir,ias)),&
-          ex=f3,ec=f4,vx=vx,vc=vc)
-        vwanmt(:,ir,ias,itloc,1,n)=vwanmt(:,ir,ias,itloc,1,n)+vc(1:lmmaxvr)+&
-          vx(1:lmmaxvr)
-      enddo
-    enddo
-    call xcifc(xctype,n=ngrtot,rho=dreal(rhowanir(:)),ex=f3,ec=f4,&
-      vx=vx,vc=vc)
-    vwanir(:,itloc,1,n)=vwanir(:,itloc,1,n)+vc(1:ngrtot)+vx(1:ngrtot)
-  enddo
-enddo
+!do n=1,nwann
+!  do itloc=1,ntrloc
+!    rhowanmt(:,:,:)=dconjg(wanmt(:,:,:,itloc,1,n))*wanmt(:,:,:,itloc,1,n)
+!    rhowanir(:)=dconjg(wanir(:,itloc,1,n))*wanir(:,itloc,1,n)
+!    if (spinpol) then
+!      rhowanmt(:,:,:)=rhowanmt(:,:,:)+&
+!        dconjg(wanmt(:,:,:,itloc,2,n))*wanmt(:,:,:,itloc,2,n)
+!      rhowanir(:)=rhowanir(:)+&
+!        dconjg(wanir(:,itloc,2,n))*wanir(:,itloc,2,n)
+!    endif
+!    do ias=1,natmtot
+!      do ir=1,nrmt(ias2is(ias))
+!        call xcifc(xctype,n=lmmaxvr,rho=dreal(rhowanmt(:,ir,ias)),&
+!          ex=f3,ec=f4,vx=vx,vc=vc)
+!        vwanmt(:,ir,ias,itloc,1,n)=vwanmt(:,ir,ias,itloc,1,n)+vc(1:lmmaxvr)+&
+!          vx(1:lmmaxvr)
+!      enddo
+!    enddo
+!    call xcifc(xctype,n=ngrtot,rho=dreal(rhowanir(:)),ex=f3,ec=f4,&
+!      vx=vx,vc=vc)
+!    vwanir(:,itloc,1,n)=vwanir(:,itloc,1,n)+vc(1:ngrtot)+vx(1:ngrtot)
+!  enddo
+!enddo
 deallocate(vx,vc,f3,f4,rhowanmt,rhowanir)
 
 if (spinpol) then

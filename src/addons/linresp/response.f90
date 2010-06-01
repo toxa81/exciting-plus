@@ -29,7 +29,10 @@ logical, external :: wann_diel
 !                     x (3) q-points 
 !   (response) : (1) energy mesh x (2) number of fxc kernels x (3) q-points
 !
-
+! TODO: for U(w) change number of G-vectors from G-shells to |G+q| cutoff  
+!
+! TODO: variable q0 is confusing -> change to q
+!
 if (lrtype.eq.1.and..not.spinpol) then
   write(*,*)
   write(*,'("Error(response): can''t do magnetic response for unpolarized ground state")')
