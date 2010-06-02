@@ -1,0 +1,64 @@
+
+! Copyright (C) 2007 J. K. Dewhurst, S. Sharma and E. K. U. Gross.
+! This file is distributed under the terms of the GNU General Public License.
+! See the file COPYING for license details.
+
+!BOP
+! !ROUTINE: rdmvaryc
+! !INTERFACE:
+subroutine rdmvaryc
+! !USES:
+use modrdm
+use modmain
+! !DESCRIPTION:
+!   Calculates new {\tt evecsv} from old by using the derivatives of the total
+!   energy w.r.t. {\tt evecsv}. A single step of steepest-descent is made.
+!
+! !REVISION HISTORY:
+!   Created 2009 (Sharma)
+!EOP
+!BOC
+implicit none
+! local variables
+integer ik,ist1,ist2
+real(8) t1
+complex(8) zt1
+! allocatable arrays
+complex(8), allocatable :: dedc(:,:,:)
+complex(8), allocatable :: evecsv(:,:)
+complex(8), allocatable :: evecsvt(:)
+! external functions
+real(8) dznrm2
+complex(8) zdotc
+external dznrm2,zdotc
+! compute and write non-local matrix elements of the type (i-jj-k)
+call rdmputvnl_ijjk
+! compute the derivative w.r.t. evecsv
+allocate(dedc(nstsv,nstsv,nkpt))
+call rdmdedc(dedc)
+allocate(evecsv(nstsv,nstsv))
+allocate(evecsvt(nstsv))
+do ik=1,nkpt
+! get the eigenvectors from file
+  call getevecsv(vkl(:,ik),evecsv)
+! calculate new evecsv
+  evecsv(:,:)=evecsv(:,:)-taurdmc*dedc(:,:,ik)
+! othogonalise evecsv (Gram-Schmidt)
+  do ist1=1,nstsv
+    evecsvt(:)=evecsv(:,ist1)
+    do ist2=1,ist1-1
+      zt1=zdotc(nstsv,evecsv(:,ist2),1,evecsv(:,ist1),1)
+      evecsvt(:)=evecsvt(:)-zt1*evecsv(:,ist2)
+    end do
+    t1=dznrm2(nstsv,evecsvt,1)
+    t1=1.d0/t1
+    evecsv(:,ist1)=t1*evecsvt(:)
+  end do
+! write new evecsv to file
+  call putevecsv(ik,evecsv)
+! end loop over k-points
+end do
+deallocate(dedc,evecsv,evecsvt)
+return
+end subroutine
+!EOC
