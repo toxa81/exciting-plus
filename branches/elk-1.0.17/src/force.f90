@@ -135,9 +135,9 @@ call symvect(.false.,forcecr)
 forceibs(:,:)=0.d0
 if (tfibs) then
   allocate(ffacg(ngvec,nspecies))
-! generate the step function form factors
+! generate the smooth step function form factors
   do is=1,nspecies
-    call genffacg(is,ffacg(:,is))
+    call genffacg(is,ngvec,ffacg(:,is))
   end do
 ! compute k-point dependent contribution to the IBS force
   do ikloc=1,nkptloc
@@ -157,14 +157,6 @@ if (tfibs) then
         forceibs(i,ias)=forceibs(i,ias)+t1
       end do
     end do
-  end do
-! generate the smooth step function form factors
-  do is=1,nspecies
-    call genffacg(is,ngvec,ffacg(:,is))
-  end do
-! compute k-point dependent contribution to the IBS force
-  do ik=1,nkpt
-    call forcek(ik,ffacg)
   end do
 ! symmetrise IBS force
   call symvect(.false.,forceibs)
