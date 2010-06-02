@@ -11,6 +11,7 @@ subroutine init1
 use modmain
 use modldapu
 use modtest
+use mod_addons_q
 ! !DESCRIPTION:
 !   Generates the $k$-point set and then allocates and initialises global
 !   variables which depend on the $k$-point set.
@@ -30,7 +31,6 @@ integer lm1,lm2,lm3
 real(8) vl(3),vc(3)
 real(8) boxl(3,4),t1
 real(8) ts0,ts1
-integer, allocatable :: sz(:)
 ! external functions
 complex(8) gauntyry
 external gauntyry
@@ -159,42 +159,7 @@ end if
 ! write the k-points to test file
 call writetest(910,'k-points (Cartesian)',nv=3*nkpt,tol=1.d-8,rva=vkc)
 
-!------------------------!
-!     parallel grid      !
-!------------------------!
-if (task.eq.0.or.task.eq.1.or.task.eq.22) then
-  i2=2
-  allocate(sz(i2))
-  if (nproc.le.nkpt) then
-    sz=(/nproc,1/)
-  else
-    i1=nproc/nkpt
-    sz=(/nkpt,i1/)
-  endif    
-else if (task.eq.400.or.task.eq.401.or.task.eq.402.or.task.eq.403) then
-  i2=3
-  allocate(sz(i2))
-  if (nproc.le.nkptnr) then
-    sz=(/nproc,1,1/)
-  else
-    i1=nproc/nkptnr
-    if (i1.le.nvq0) then
-      sz=(/nkptnr,1,i1/)
-    else
-      sz=(/nkptnr,nproc/(nkptnr*nvq0),nvq0/)
-    endif
-  endif
-else
-  i2=1
-  allocate(sz(i2))
-  sz=(/nproc/)
-endif  
-! overwrite default grid layout
-if (lmpigrid) then
-  sz(1:i2)=mpigrid(1:i2) 
-endif
-call mpi_grid_initialize(sz)
-deallocate(sz)
+call initmpigrid
 if (.not.mpi_grid_in()) return
 nkptloc=mpi_grid_map(nkpt,dim_k)
 nkptnrloc=mpi_grid_map(nkptnr,dim_k)
@@ -370,13 +335,13 @@ end do
 !      extra     !
 !----------------!
 call getatmcls
-if (allocated(nfr)) deallocate(nfr)
-allocate(nfr(0:lmaxvr,nspecies))
-call getnfr(lmaxvr)
+if (allocated(nufr)) deallocate(nufr)
+allocate(nufr(0:lmaxvr,nspecies))
+call getnufr(lmaxvr)
 if (allocated(ufr)) deallocate(ufr)
-allocate(ufr(nrmtmax,0:lmaxvr,nfrmax,natmcls))
+allocate(ufr(nrmtmax,0:lmaxvr,nufrmax,natmcls))
 if (allocated(ufrp)) deallocate(ufrp)
-allocate(ufrp(0:lmaxvr,nfrmax,nfrmax,natmcls))
+allocate(ufrp(0:lmaxvr,nufrmax,nufrmax,natmcls))
 
 !if (wannier) call wann_init
 
