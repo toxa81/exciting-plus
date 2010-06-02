@@ -5,6 +5,7 @@
 
 subroutine phonon
 use modmain
+use modqpt
 implicit none
 ! local variables
 integer is,js,ia,ja,ka,jas,kas

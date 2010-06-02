@@ -5,6 +5,7 @@
 
 subroutine readgamma(gq)
 use modmain
+use modqpt
 implicit none
 ! arguments
 real(8), intent(out) :: gq(3*natmtot,nqpt)

@@ -5,6 +5,7 @@
 
 subroutine dynrtoq(vpl,dynr,dynp)
 use modmain
+use modqpt
 implicit none
 ! arguments
 real(8), intent(in) :: vpl(3)

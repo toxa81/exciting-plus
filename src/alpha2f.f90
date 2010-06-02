@@ -6,6 +6,7 @@
 subroutine alpha2f
 use modmain
 use modtest
+use modqpt
 implicit none
 ! local variables
 integer n,ik,iq,i,j

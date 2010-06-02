@@ -9,6 +9,7 @@
 subroutine writewiq2
 ! !USES:
 use modmain
+use modqpt
 ! !DESCRIPTION:
 !   Outputs the integrals of $1/q^2$ in the small parallelepiped around each
 !   $q$-point to the file {\tt WIQ2.OUT}. Note that the integrals are calculated

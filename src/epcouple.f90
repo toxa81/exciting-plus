@@ -5,6 +5,7 @@
 
 subroutine epcouple
 use modmain
+use modqpt
 implicit none
 ! local variables
 integer is,ia,ias,js,ja,jas

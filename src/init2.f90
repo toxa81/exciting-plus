@@ -6,6 +6,7 @@
 subroutine init2
 use modmain
 use modrdm
+use modqpt
 implicit none
 ! local variables
 logical lsym(48)

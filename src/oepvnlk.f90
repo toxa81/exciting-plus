@@ -5,6 +5,7 @@
 
 subroutine oepvnlk(ikp,vnlcv,vnlvv)
 use modmain
+use modqpt
 implicit none
 ! arguments
 integer, intent(in) :: ikp

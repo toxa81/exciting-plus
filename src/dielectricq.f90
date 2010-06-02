@@ -5,6 +5,7 @@
 
 subroutine dielectricq
 use modmain
+use modqpt
 implicit none
 ! local variables
 integer iq,ik,jk,jkq

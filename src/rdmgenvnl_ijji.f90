@@ -10,6 +10,7 @@ subroutine rdmgenvnl_ijji(ikp,vnlijji)
 ! !USES:
 use modrdm
 use modmain
+use modqpt
 ! !INPUT/OUTPUT PARAMETERS:
 !   ikp     : k-point from non-reduced k-point set (in,integer)
 !   vnlijji : non-local Coulomb matrix elements (out,real(nstsv,nstsv,nkpt))

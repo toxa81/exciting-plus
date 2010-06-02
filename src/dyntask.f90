@@ -5,6 +5,7 @@
 
 subroutine dyntask(fnum,iq,is,ia,ip)
 use modmain
+use modqpt
 implicit none
 ! arguments
 integer, intent(in) :: fnum

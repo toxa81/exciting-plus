@@ -5,6 +5,7 @@
 
 subroutine phlwidth
 use modmain
+use modqpt
 implicit none
 ! local variables
 integer n,i,j,iq,iv

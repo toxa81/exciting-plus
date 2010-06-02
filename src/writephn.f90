@@ -5,6 +5,7 @@
 
 subroutine writephn
 use modmain
+use modqpt
 implicit none
 ! local variables
 integer n,iq,i,j,is,ia,ip
