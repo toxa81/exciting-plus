@@ -8,7 +8,7 @@ use modmain
 use modtest
 implicit none
 ! local variables
-integer ik,jk,ikq,ist,jst
+integer ik,jk,ikq,ist,jst,ikloc
 integer isym,n,nsk(3),iw
 real(8) vecqc(3),qc,vkql(3)
 real(8) v(3),wd,dw,w,t1
@@ -56,9 +56,10 @@ end do
 call genzqrmt(zqrmt)
 e(:,:,:)=0.d0
 f(:,:,:)=0.d0
+allocate(emat(nstsv,nstsv))
 ! begin parallel loop over non-reduced k-points
-do ik=1,nkptnr
-  allocate(emat(nstsv,nstsv))
+do ikloc=1,nkptnrloc
+  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
   write(*,'("Info(elnes): ",I6," of ",I6," k-points")') ik,nkptnr
 ! equivalent reduced k-point
   jk=ikmap(ivknr(1,ik),ivknr(2,ik),ivknr(3,ik))
@@ -78,33 +79,37 @@ do ik=1,nkptnr
       end do
     end if
   end do
-  deallocate(emat)
 end do
+deallocate(emat)
+call mpi_grid_reduce(e(1,1,1),nstsv*nstsv*nkptnr,dims=(/dim_k/))
+call mpi_grid_reduce(f(1,1,1),nstsv*nstsv*nkptnr,dims=(/dim_k/))
 ! number of subdivisions used for interpolation
 nsk(:)=max(ngrdos/ngridk(:),1)
 n=nstsv*nstsv
+if (mpi_grid_root()) then
 ! integrate over the Brillouin zone
-call brzint(nsmdos,ngridk,nsk,ikmapnr,nwdos,wdos,n,n,e,f,ddcs)
+  call brzint(nsmdos,ngridk,nsk,ikmapnr,nwdos,wdos,n,n,e,f,ddcs)
 ! q-vector in Cartesian coordinates
-call r3mv(bvec,vecql,vecqc)
-qc=sqrt(vecqc(1)**2+vecqc(2)**2+vecqc(3)**2)
-t1=2.d0/(omega*occmax)
-if (qc.gt.epslat) t1=t1/qc**4
-ddcs(:)=t1*ddcs(:)
-open(50,file='ELNES.OUT',action='WRITE',form='FORMATTED')
-wd=wdos(2)-wdos(1)
-dw=wd/dble(nwdos)
-do iw=1,nwdos
-  w=dw*dble(iw-1)+wdos(1)
-  write(50,'(2G18.10)') w,ddcs(iw)
-end do
-close(50)
-write(*,*)
-write(*,'("Info(elnes):")')
-write(*,'(" ELNES double differential cross-section written to ELNES.OUT")')
-write(*,*)
+  call r3mv(bvec,vecql,vecqc)
+  qc=sqrt(vecqc(1)**2+vecqc(2)**2+vecqc(3)**2)
+  t1=2.d0/(omega*occmax)
+  if (qc.gt.epslat) t1=t1/qc**4
+  ddcs(:)=t1*ddcs(:)
+  open(50,file='ELNES.OUT',action='WRITE',form='FORMATTED')
+  wd=wdos(2)-wdos(1)
+  dw=wd/dble(nwdos)
+  do iw=1,nwdos
+    w=dw*dble(iw-1)+wdos(1)
+    write(50,'(2G18.10)') w,ddcs(iw)
+  end do
+  close(50)
+  write(*,*)
+  write(*,'("Info(elnes):")')
+  write(*,'(" ELNES double differential cross-section written to ELNES.OUT")')
+  write(*,*)
 ! write ELNES distribution to test file
-call writetest(140,'ELNES cross-section',nv=nwdos,tol=1.d-2,rva=ddcs)
+  call writetest(140,'ELNES cross-section',nv=nwdos,tol=1.d-2,rva=ddcs)
+end if
 deallocate(e,f,ddcs,zqrmt)
 return
 end subroutine
