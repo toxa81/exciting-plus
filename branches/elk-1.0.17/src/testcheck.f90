@@ -4,6 +4,7 @@
 ! License. See the file COPYING for license details.
 
 subroutine testcheck
+use mod_mpi_grid
 implicit none
 ! local variables
 logical exist
@@ -11,6 +12,7 @@ integer i,j,k,n
 integer nv_,nv,vt_,vt,iv_,iv
 real(8) tol,rv_,rv,t1,t2
 character(256) fname_,fname,descr
+if (iproc.ne.0) return
 n=0
 do i=0,999
   write(fname_,'("TEST",I3.3,".OUT_")') i
