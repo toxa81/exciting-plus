@@ -28,7 +28,7 @@ real(8), intent(out) :: evalfv(nstfv,nspnfv)
 complex(8), intent(out) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(out) :: evecsv(nstsv,nstsv)
 ! local variables
-integer ispn,ik
+integer ispn,ik,ist
 ! allocatable arrays
 complex(8), allocatable :: apwalm(:,:,:,:,:)
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
