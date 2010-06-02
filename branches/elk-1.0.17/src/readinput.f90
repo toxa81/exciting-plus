@@ -12,6 +12,7 @@ use modmain
 use modldapu
 use modrdm
 use modtest
+use modqpt
 ! !DESCRIPTION:
 !   Reads in the input parameters from the file {\tt elk.in}. Also sets default
 !   values for the input parameters.

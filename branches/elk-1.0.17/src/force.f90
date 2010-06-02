@@ -79,7 +79,7 @@ use modtest
 !BOC
 implicit none
 ! local variables
-integer ik,is,ia,ias,nr,i,ikloc
+integer is,ia,ias,nr,i,ikloc
 real(8) sum,t1
 real(8) ts0,ts1
 ! allocatable arrays

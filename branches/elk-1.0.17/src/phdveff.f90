@@ -5,6 +5,7 @@
 
 subroutine phdveff(iph,iq,veffmtp,veffirp,dveffmt,dveffir)
 use modmain
+use modqpt
 implicit none
 ! arguments
 integer, intent(in) :: iph

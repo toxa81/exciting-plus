@@ -5,6 +5,7 @@
 
 subroutine exxengyk(ikp,evv,ecv)
 use modmain
+use modqpt
 implicit none
 ! arguments
 integer, intent(in) :: ikp

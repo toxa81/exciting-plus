@@ -5,6 +5,7 @@
 
 subroutine seceqnhf(ikp,evecsvp)
 use modmain
+use modqpt
 implicit none
 ! arguments
 integer, intent(in) :: ikp

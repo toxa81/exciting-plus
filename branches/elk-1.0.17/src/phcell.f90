@@ -5,6 +5,7 @@
 
 subroutine phcell(iph,dph,iq,is,ia,ip)
 use modmain
+use modqpt
 implicit none
 ! arguments
 integer, intent(in) :: iph

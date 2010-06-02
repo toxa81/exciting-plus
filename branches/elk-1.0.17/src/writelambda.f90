@@ -1,6 +1,7 @@
 
 subroutine writelambda(wq,gq)
 use modmain
+use modqpt
 implicit none
 ! arguments
 real(8), intent(in) :: wq(3*natmtot,nqpt)

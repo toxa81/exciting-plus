@@ -5,6 +5,7 @@
 
 subroutine exxengy
 use modmain
+use modqpt
 implicit none
 ! local variables
 integer is,ia,nrc,m1,m2

@@ -6,6 +6,7 @@
 subroutine phdos
 use modmain
 use modtest
+use modqpt
 implicit none
 ! local variables
 ! number of temperature values

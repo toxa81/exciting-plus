@@ -5,6 +5,7 @@
 
 subroutine genepmat(iq,vpl,dveffmt,dveffir,epmat)
 use modmain
+use modqpt
 implicit none
 ! arguments
 integer, intent(in) :: iq

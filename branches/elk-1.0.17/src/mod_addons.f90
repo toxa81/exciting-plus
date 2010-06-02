@@ -1,4 +1,4 @@
-module mod_extra
+module mod_addons
 
 ! number of atom classes (non-equivalent atoms)
 integer natmcls
@@ -12,6 +12,8 @@ integer, allocatable :: ias2is(:)
 integer, allocatable :: ias2ia(:)
 ! lm -> l mapping
 integer, allocatable :: lm2l(:)
+! lm -> m mapping
+integer, allocatable :: lm2m(:)
 ! maximum number of muffin-tin radial functions
 integer nfrmax
 ! muffin-tin radial functions
@@ -57,8 +59,6 @@ integer, allocatable :: inghbr(:,:,:)
 ! unit conversion
 real(8), parameter :: ha2ev=27.21138386d0
 real(8), parameter :: au2ang=0.5291772108d0
-
-!complex(8), allocatable :: veffir_zfft(:)
 
 !-----------------------!
 !      MPI parallel     !

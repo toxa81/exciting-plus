@@ -967,7 +967,7 @@ integer, dimension(:), intent(in) :: src
 integer, intent(in) :: tag
 ! local variables
 #ifdef _MPI_
-integer comm,src_rank,req,ierr
+integer comm,src_rank,ierr
 integer stat(MPI_STATUS_SIZE)
 #endif
 if (debug) then
@@ -981,7 +981,6 @@ endif
 comm=mpi_grid_get_comm(dims)
 call mpi_cart_rank(comm,src,src_rank,ierr)
 call mpi_recv(val,n,MPI_DOUBLE_COMPLEX,src_rank,tag,comm,stat,ierr)
-!call mpi_irecv(val,n,MPI_DOUBLE_COMPLEX,src_rank,tag,comm,req,ierr)
 #endif
 return
 end subroutine
@@ -1001,12 +1000,11 @@ integer, dimension(:), intent(in) :: src
 integer, intent(in) :: tag
 ! local variables
 #ifdef _MPI_
-integer comm,src_rank,req,ierr
+integer comm,src_rank,ierr
 integer stat(MPI_STATUS_SIZE)
 comm=mpi_grid_get_comm(dims)
 call mpi_cart_rank(comm,src,src_rank,ierr)
 call mpi_recv(val,n,MPI_INTEGER,src_rank,tag,comm,stat,ierr)
-!call mpi_irecv(val,n,MPI_INTEGER,src_rank,tag,comm,req,ierr)
 #endif
 return
 end subroutine
