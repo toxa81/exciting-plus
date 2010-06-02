@@ -5,8 +5,8 @@
 
 module modmain
 use mod_mpi_grid
-use mod_addons
 use mod_timer
+use mod_addons
 
 !----------------------------!
 !     lattice parameters     !

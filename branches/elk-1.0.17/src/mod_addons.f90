@@ -15,7 +15,7 @@ integer, allocatable :: lm2l(:)
 ! lm -> m mapping
 integer, allocatable :: lm2m(:)
 ! maximum number of muffin-tin radial functions
-integer nfrmax
+integer nufrmax
 ! muffin-tin radial functions
 !  1-st index: radial point (from 1 to nrmtmax)
 !  2-nd index: l (from 0 to lmaxvr)
@@ -31,23 +31,21 @@ real(8), allocatable :: ufrp(:,:,:,:)
 ! number of radial functions for a given l
 !  1-st index: l (from 0 to lmaxvr)
 !  2-nd index: atom species (from 1 to nspecies)
-integer, allocatable :: nfr(:,:)
-! number of atoms with local "coordinate" system (local orbital system is
-!  a better term because transformation of spherical harmonics is not a
-!  rotation but a more general unitary transformation)
-integer natlcs
+integer, allocatable :: nufr(:,:)
+! number of atoms with local point symmetry
+integer natlps
 ! transformation matrices for real spherical harmonics
-real(8), allocatable :: lcsrsh(:,:,:)
-! index of atom which has "local coordinate system"
-integer, allocatable :: iatlcs(:)
+real(8), allocatable :: lpsrsh(:,:,:)
+! index of atom which has local point symmetry
+integer, allocatable :: iatlps(:)
 ! complex to real spherical harmonic transformation
 complex(8), allocatable :: rylm(:,:)
 ! real to complex spherical harmonic transformation
 complex(8), allocatable :: yrlm(:,:)
-! complex to lcs real spherical harmonic transformation
-complex(8), allocatable :: rylm_lcs(:,:,:)
-! lcs real to complex spherical harmonic transformation
-complex(8), allocatable :: yrlm_lcs(:,:,:)
+! global complex to real lps spherical harmonic transformation
+complex(8), allocatable :: rylm_lps(:,:,:)
+! real lps to global complex spherical harmonic transformation
+complex(8), allocatable :: yrlm_lps(:,:,:)
 ! .true. if density matrix is computed instead of occupancy matrix
 logical ldensmtrx
 ! energy (or band) interval for bands for density matrix 
@@ -91,18 +89,16 @@ integer, parameter :: dim2=2
 integer, parameter :: dim_q=2
 ! dimension for interband transitions
 integer, parameter :: dim_b=3
-! number of q-vectors
-integer nvq0
-! list of q-vectors in k-mesh coordinates
-integer, allocatable :: ivq0m_list(:,:)
+!integer nvq0
+!integer, allocatable :: ivq0m_list(:,:)
 ! q-vector in lattice coordinates
-real(8) vq0l(3)
+!real(8) vq0l(3)
 ! q-vector in Cartesian coordinates
-real(8) vq0c(3)
+!real(8) vq0c(3)
 ! reduced q-vector in lattice coordinates
-real(8) vq0rl(3)
+!real(8) vq0rl(3)
 ! reduced q-vector in Cartesian coordinates
-real(8) vq0rc(3)
+!real(8) vq0rc(3)
 ! index of G-vector which brings q to first BZ
 integer lr_igq0
 ! first G-shell for matrix elements

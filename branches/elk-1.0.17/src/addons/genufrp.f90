@@ -7,8 +7,8 @@ do ic=1,natmcls
   ias=ic2ias(ic)
   is=ias2is(ias)
   do l=0,lmaxvr
-    do io1=1,nfr(l,is)
-      do io2=1,nfr(l,is)
+    do io1=1,nufr(l,is)
+      do io2=1,nufr(l,is)
         do ir=1,nrmt(is)
           fr(ir)=ufr(ir,l,io1,ic)*ufr(ir,l,io2,ic)*(spr(ir,is)**2)                                                        
         enddo
