@@ -1,5 +1,5 @@
 
-! Copyright (C) 2002-2005 J. K. Dewhurst, S. Sharma and C. Ambrosch-Draxl.
+! Copyright (C) 2002-2009 J. K. Dewhurst, S. Sharma and C. Ambrosch-Draxl.
 ! This file is distributed under the terms of the GNU General Public License.
 ! See the file COPYING for license details.
 
@@ -9,6 +9,8 @@
 subroutine writeinfo(fnum)
 ! !USES:
 use modmain
+use modldapu
+use modrdm
 ! !INPUT/OUTPUT PARAMETERS:
 !   fnum : unit specifier for INFO.OUT file (in,integer)
 ! !DESCRIPTION:
@@ -17,19 +19,18 @@ use modmain
 !
 ! !REVISION HISTORY:
 !   Created January 2003 (JKD)
+!   Updated with LDA+U quantities July 2009 (FC)
 !EOP
 !BOC
 implicit none
 ! arguments
 integer fnum
 ! local variables
-integer i,is,ia
+integer i,is,ia,k,l
 character(10) dat,tim
-real(8) t1
-write(fnum,'("+----------------------------------+")')
-write(fnum,'("| EXCITING version ",I1.1,".",I1.1,".",I3.3," started |")') &
- version
-write(fnum,'("+----------------------------------+")')
+write(fnum,'("+----------------------------+")')
+write(fnum,'("| Elk version ",I1.1,".",I1.1,".",I2.2," started |")') version
+write(fnum,'("+----------------------------+")')
 if (notelns.gt.0) then
   write(fnum,*)
   write(fnum,'("Notes :")')
@@ -76,11 +77,6 @@ case(300)
   write(fnum,'("+----------------------------------------------+")')
   write(fnum,'("| Reduced density matrix functional theory run |")')
   write(fnum,'("+----------------------------------------------+")')
-case(800)
-  write(fnum,*)
-  write(fnum,'("+----------------------+")')
-  write(fnum,'("| SIC ground state run |")')
-  write(fnum,'("+----------------------+")')
 case default
   write(*,*)
   write(*,'("Error(writeinfo): task not defined : ",I8)') task
@@ -100,14 +96,6 @@ write(fnum,'(3G18.10)') bvec(1,3),bvec(2,3),bvec(3,3)
 write(fnum,*)
 write(fnum,'("Unit cell volume      : ",G18.10)') omega
 write(fnum,'("Brillouin zone volume : ",G18.10)') (twopi**3)/omega
-t1=0.d0
-do is=1,nspecies
-  t1=t1+dble(natoms(is))*(4.d0/3.d0)*pi*(rmt(is)**3)
-enddo
-write(fnum,'("Muffin-tin volume     : ",G18.10)')t1
-write(fnum,'("Interstitial volume   : ",G18.10)')omega-t1
-
-
 if (autormt) then
   write(fnum,*)
   write(fnum,'("Automatic determination of muffin-tin radii")')
@@ -141,6 +129,9 @@ end if
 if (spinorb) then
   write(fnum,'(" spin-orbit coupling")')
 end if
+if (spincore) then
+  write(fnum,'(" spin-polarised core")')
+end if
 if (spinpol) then
   write(fnum,'(" global magnetic field (Cartesian) : ",3G18.10)') bfieldc
   if (ncmag) then
@@ -157,13 +148,16 @@ if (spinsprl) then
    +vqcss(2)**2+vqcss(3)**2)
 end if
 if (fixspin.ne.0) then
-  write(fnum,'(" fixed spin moment (FSM) calculation")')
+  write(fnum,'(" fixed spin moment (FSM) calculation, type : ",I4)') fixspin
+  if (fixspin.lt.0) then
+    write(fnum,'("  only moment direction is fixed")')
+  end if
 end if
-if ((fixspin.eq.1).or.(fixspin.eq.3)) then
+if ((abs(fixspin).eq.1).or.(abs(fixspin).eq.3)) then
   write(fnum,'("  fixing total moment to (Cartesian) :")')
   write(fnum,'("  ",3G18.10)') momfix
 end if
-if ((fixspin.eq.2).or.(fixspin.eq.3)) then
+if ((abs(fixspin).eq.2).or.(abs(fixspin).eq.3)) then
   write(fnum,'("  fixing local muffin-tin moments to (Cartesian) :")')
   do is=1,nspecies
     write(fnum,'("  species : ",I4," (",A,")")') is,trim(spsymb(is))
@@ -172,41 +166,59 @@ if ((fixspin.eq.2).or.(fixspin.eq.3)) then
     end do
   end do
 end if
+if (efieldpol) then
+  write(fnum,*)
+  write(fnum,'("Constant electric field applied across unit cell")')
+  write(fnum,'(" field strength : ",3G18.10)') efieldc
+end if
 write(fnum,*)
 write(fnum,'("Number of Bravais lattice symmetries : ",I4)') nsymlat
 write(fnum,'("Number of crystal symmetries         : ",I4)') nsymcrys
 write(fnum,*)
 if (autokpt) then
-  write(fnum,'("radius of sphere used to determine k-point grid density : ",&
+  write(fnum,'("Radius of sphere used to determine k-point grid density : ",&
    &G18.10)') radkpt
 end if
 write(fnum,'("k-point grid : ",3I6)') ngridk
 write(fnum,'("k-point offset : ",3G18.10)') vkloff
-if (reducek) then
-  write(fnum,'("k-point set is reduced with crystal symmetries")')
-else
+if (reducek.eq.0) then
   write(fnum,'("k-point set is not reduced")')
+else if (reducek.eq.1) then
+  write(fnum,'("k-point set is reduced with full crystal symmetry group")')
+else if (reducek.eq.2) then
+  write(fnum,'("k-point set is reduced with symmorphic symmetries only")')
+else
+  write(*,*)
+  write(*,'("Error(writeinfo): undefined k-point reduction type : ",I8)') &
+   reducek
+  write(*,*)
+  stop
 end if
 write(fnum,'("Total number of k-points : ",I8)') nkpt
 write(fnum,*)
-write(fnum,'("Smallest muffin-tin radius times maximum |G+k| : ",G18.10)') &
- rgkmax
+write(fnum,'("Muffin-tin radius times maximum |G+k| : ",G18.10)') rgkmax
 if ((isgkmax.ge.1).and.(isgkmax.le.nspecies)) then
-  write(fnum,'("Species with smallest (or selected) muffin-tin radius : ",&
-   &I4," (",A,")")') isgkmax,trim(spsymb(isgkmax))
+  write(fnum,'(" using radius of species ",I4," (",A,")")') isgkmax, &
+   trim(spsymb(isgkmax))
+else if (isgkmax.eq.-1) then
+  write(fnum,'(" using average radius")')
+else
+  write(fnum,'(" using smallest radius")')
 end if
 write(fnum,'("Maximum |G+k| for APW functions       : ",G18.10)') gkmax
+write(fnum,'("Maximum (1/2)|G+k|^2                  : ",G18.10)') 0.5d0*gkmax**2
 write(fnum,'("Maximum |G| for potential and density : ",G18.10)') gmaxvr
 write(fnum,'("Polynomial order for pseudocharge density : ",I4)') npsden
+write(fnum,'("Radial integration step length : ",I4)') lradstp
 write(fnum,*)
 write(fnum,'("G-vector grid sizes : ",3I6)') ngrid(1),ngrid(2),ngrid(3)
 write(fnum,'("Total number of G-vectors : ",I8)') ngvec
 write(fnum,*)
 write(fnum,'("Maximum angular momentum used for")')
-write(fnum,'(" APW functions                     : ",I4)') lmaxapw
-write(fnum,'(" computing H and O matrix elements : ",I4)') lmaxmat
-write(fnum,'(" potential and density             : ",I4)') lmaxvr
-write(fnum,'(" inner part of muffin-tin          : ",I4)') lmaxinr
+write(fnum,'(" APW functions                      : ",I4)') lmaxapw
+write(fnum,'(" potential and density              : ",I4)') lmaxvr
+write(fnum,'(" inner part of muffin-tin           : ",I4)') lmaxinr
+write(fnum,'(" H and O matrix elements outer loop : ",I4)') lmaxmat
 write(fnum,*)
 write(fnum,'("Total nuclear charge    : ",G18.10)') chgzn
 write(fnum,'("Total core charge       : ",G18.10)') chgcr
@@ -223,36 +235,69 @@ write(fnum,'("Total number of local-orbitals : ",I4)') nlotot
 write(fnum,*)
 if ((task.eq.5).or.(task.eq.6)) &
  write(fnum,'("Hartree-Fock calculation using Kohn-Sham states")')
-if (xctype.lt.0) then
+if (xctype(1).lt.0) then
   write(fnum,'("Optimised effective potential (OEP) and exact exchange (EXX)")')
   write(fnum,'(" Phys. Rev. B 53, 7024 (1996)")')
-  write(fnum,'("Correlation type : ",I4)') abs(xctype)
+  write(fnum,'("Correlation functional : ",3I6)') abs(xctype(1)),xctype(2:3)
   write(fnum,'(" ",A)') trim(xcdescr)
 else
-  write(fnum,'("Exchange-correlation type : ",I4)') xctype
+  write(fnum,'("Exchange-correlation functional : ",3I6)') xctype(:)
   write(fnum,'(" ",A)') trim(xcdescr)
 end if
-if (xcgrad.eq.1) write(fnum,'(" Generalised gradient approximation (GGA)")')
+if (xcgrad.ge.1) write(fnum,'(" Generalised gradient approximation (GGA)")')
 if (ldapu.ne.0) then
   write(fnum,*)
   write(fnum,'("LDA+U calculation")')
   if (ldapu.eq.1) then
     write(fnum,'(" fully localised limit (FLL)")')
+    write(fnum,'(" see Phys. Rev. B 52, R5467 (1995)")')
   else if (ldapu.eq.2) then
-    write(fnum,'(" around mean field (AFM)")')
+    write(fnum,'(" around mean field (AMF)")')
+    write(fnum,'(" see Phys. Rev. B 49, 14211 (1994)")')
   else if (ldapu.eq.3) then
-    write(fnum,'(" interpolation between FLL and AFM")')
+    write(fnum,'(" interpolation between FLL and AMF")')
+    write(fnum,'(" see Phys. Rev. B 67, 153106 (2003)")')
   else
     write(*,*)
     write(*,'("Error(writeinfo): ldapu not defined : ",I8)') ldapu
     write(*,*)
     stop
   end if
-  write(fnum,'(" see PRB 67, 153106 (2003) and PRB 52, R5467 (1995)")')
   do is=1,nspecies
-    if (llu(is).ge.0) then
-      write(fnum,'(" species : ",I4," (",A,")",", l = ",I2,", U = ",F12.8,&
-       &", J = ",F12.8)') is,trim(spsymb(is)),llu(is),ujlu(1,is),ujlu(2,is)
+    l=llu(is)
+    if (l.ge.0) then
+      if (inptypelu.eq.1) then
+        write(fnum,'(" species : ",I4," (",A,")",", l = ",I2,", U = ",F12.8, &
+         &", J = ",F12.8)') is,trim(spsymb(is)),llu(is),ujlu(1,is),ujlu(2,is)
+      else if (inptypelu.eq.2) then
+        write(fnum,'(" species : ",I4," (",A,")",", l = ",I2)') is, &
+         trim(spsymb(is)),llu(is)
+        write(fnum,'(" Slater integrals are provided as input")')
+        do k=0,2*l,2
+          write(fnum,'(" F^(",I1,") = ",F12.8)') k,flu(k,is)
+        end do
+      else if (inptypelu.eq.3) then
+        write(fnum,'(" species : ",I4," (",A,")",", l = ",I2)') is, &
+         trim(spsymb(is)),llu(is)
+        write(fnum,'(" Racah parameters are provided as input")')
+        do k=0,l
+          write(fnum,'(" E^(",I1,") = ",F12.8)') k,elu(k,is)
+        end do
+      else if (inptypelu.eq.4) then
+        write(fnum,'(" species : ",I4," (",A,")",", l = ",I2)') is, &
+         trim(spsymb(is)),llu(is)
+        write(fnum,'(" Slater integrals are calculated by means of &
+         &Yukawa potential")')
+        write(fnum,'(" Yukawa potential screening length (a.u^-1) : ",F12.8)') &
+         lambdalu(is)
+      else if(inptypelu.eq.5) then
+        write(fnum,'(" species : ",I4," (",A,")",", l = ",I2)') is, &
+         trim(spsymb(is)),llu(is)
+        write(fnum,'(" Slater integrals are calculated by means of &
+         &Yukawa potential")')
+        write(fnum,'(" Yukawa potential screening length corresponds to &
+         &U = ",F12.8)') ulufix(is)
+      end if
     end if
   end do
 end if
@@ -264,15 +309,21 @@ if (task.eq.300) then
   if (rdmxctype.eq.1) then
     write(fnum,'("  Hartree-Fock functional")')
   else if (rdmxctype.eq.2) then
-    write(fnum,'("  SDLG functional, exponent : ",G18.10)') rdmalpha
-  endif
+    write(fnum,'("  Power functional, exponent : ",G18.10)') rdmalpha
+  end if
 end if
 write(fnum,*)
-write(fnum,'("Smearing scheme :")')
+write(fnum,'("Smearing type : ",I4)') stype
 write(fnum,'(" ",A)') trim(sdescr)
-write(fnum,'("Smearing width : ",G18.10)') swidth
+if (autoswidth) then
+  write(fnum,'("Automatic determination of smearing width")')
+else
+  write(fnum,'("Smearing width : ",G18.10)') swidth
+  write(fnum,'("Effective electronic temperature (K) : ",G18.10)') swidth/kboltz
+end if
 write(fnum,*)
-write(fnum,'("Radial integration step length : ",I4)') lradstp
+write(fnum,'("Mixing type : ",I4)') mixtype
+write(fnum,'(" ",A)') trim(mixdescr)
 call flushifc(fnum)
 return
 end subroutine

@@ -9,6 +9,7 @@
 subroutine writestate
 ! !USES:
 use modmain
+use modldapu
 ! !DESCRIPTION:
 !   Writes the charge density, potentials and other relevant variables to the
 !   file {\tt STATE.OUT}. Note to developers: changes to the way the variables
@@ -55,10 +56,6 @@ end if
 if (ldapu.ne.0) then
   write(50) vmatlu
 end if
-if (spinpol) then
-  write(50)bfsmc
-  write(50)bfsmcmt
-endif
 close(50)
 return
 end subroutine

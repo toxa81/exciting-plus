@@ -21,9 +21,9 @@ call timer_start(t_seceqnfv_setup_h)
 call timer_start(t_seceqnfv_setup_h_mt)
 allocate(zv(ngp,lmmaxmat,apwordmax,natmtot))
 zv=zzero
-natmtotloc=mpi_grid_map(natmtot,2)
+natmtotloc=mpi_grid_map(natmtot,dim2)
 do iasloc=1,natmtotloc
-  ias=mpi_grid_map(natmtot,2,loc=iasloc)
+  ias=mpi_grid_map(natmtot,dim2,loc=iasloc)
   is=ias2is(ias)
   ia=ias2ia(ias)
   do l1=0,lmaxmat
@@ -63,7 +63,7 @@ do iasloc=1,natmtotloc
 enddo
 
 do iasloc=1,natmtotloc
-  ias=mpi_grid_map(natmtot,2,loc=iasloc)
+  ias=mpi_grid_map(natmtot,dim2,loc=iasloc)
   is=ias2is(ias)
   ia=ias2ia(ias)
 !----------------------!
@@ -139,7 +139,7 @@ do iasloc=1,natmtotloc
     end do
   end do
 enddo
-call mpi_grid_reduce(h(1,1),nmatp*nmatp,dims=(/2/))
+call mpi_grid_reduce(h(1,1),nmatp*nmatp,dims=(/dim2/))
 call timer_stop(t_seceqnfv_setup_h_mt)
 !---------------------!
 !     interstitial    !

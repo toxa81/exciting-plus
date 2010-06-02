@@ -13,8 +13,8 @@ use modmain
 !   Automatically determines the muffin-tin radii from the formula
 !   $$ R_i\propto 1+\zeta|Z_i|^{1/3}, $$
 !   where $Z_i$ is the atomic number of the $i$th species, $\zeta$ is a
-!   user-supplied constant ($\sim 0.625$). The parameter $\zeta$ is stored in
-!   {\tt rmtapm(1)} and the value which governs the distance between the
+!   user-supplied constant ($\sim 0.25$). The parameter $\zeta$ is stored in
+!   {\tt rmtapm(1)} and the value which governs the minimum distance between the
 !   muffin-tins is stored in {\tt rmtapm(2)}. When {\tt rmtapm(2)} $=1$, the
 !   closest muffin-tins will touch.
 !

@@ -8,8 +8,6 @@
 subroutine seceqn(ikloc,evalfv,evecfv,evecsv)
 ! !USES:
 use modmain
-use mod_mpi_grid
-use mod_timer
 ! !INPUT/OUTPUT PARAMETERS:
 !   ik     : k-point number (in,integer)
 !   evalfv : first-variational eigenvalues (out,real(nstfv))
@@ -30,13 +28,11 @@ real(8), intent(out) :: evalfv(nstfv,nspnfv)
 complex(8), intent(out) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(out) :: evecsv(nstsv,nstsv)
 ! local variables
-integer ispn
+integer ispn,ik
 ! allocatable arrays
 complex(8), allocatable :: apwalm(:,:,:,:,:)
-integer ik
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
-call timer_start(t_seceqnfv)
 ! loop over first-variational spins (nspnfv=2 for spin-spirals only)
 do ispn=1,nspnfv
 ! find the matching coefficients
@@ -45,41 +41,28 @@ do ispn=1,nspnfv
 ! solve the first-variational secular equation
   if (tseqit) then
 ! iteratively
-    call seceqnit(nmat(ispn,ik),ngk(ispn,ik),igkig(:,ispn,ikloc),&
-     vkl(:,ik),vgkl(:,:,ispn,ikloc),vgkc(:,:,ispn,ikloc), &
-     apwalm(:,:,:,:,ispn),evalfv(:,ispn),evecfv(:,:,ispn))
+    call seceqnit(nmat(ispn,ik),ngk(ispn,ik),igkig(:,ispn,ikloc),vkl(:,ik), &
+     vgkl(:,:,ispn,ikloc),vgkc(:,:,ispn,ikloc),apwalm(:,:,:,:,ispn), &
+     evalfv(:,ispn),evecfv(:,:,ispn))
   else
 ! directly
-    call seceqnfv(nmat(ispn,ik),ngk(ispn,ik),igkig(:,ispn,ikloc),&
-     vgkc(:,:,ispn,ikloc),apwalm(:,:,:,:,ispn),evalfv(:,ispn),&
-     evecfv(:,:,ispn),ik)
+    call seceqnfv(nmat(ispn,ik),ngk(ispn,ik),igkig(:,ispn,ikloc), &
+     vgkc(:,:,ispn,ikloc),apwalm(:,:,:,:,ispn),evalfv(:,ispn),evecfv(:,:,ispn))
   end if
 end do
-call timer_stop(t_seceqnfv)
-call timer_start(t_seceqnsv)
 if (spinsprl) then
 ! solve the spin-spiral second-variational secular equation
-  call seceqnss(ik,apwalm,evalfv,evecfv,evecsv)
+  call seceqnss(ikloc,apwalm,evalfv,evecfv,evecsv)
 else
 ! solve the second-variational secular equation
   call seceqnsv(ikloc,apwalm,evalfv,evecfv,evecsv)
 end if
-if (sic) then
-  evalsv0(:,ik)=evalsv(:,ik)
-  evecsv0loc(:,:,ikloc)=evecsv(:,:)
-endif
-if (wannier) then
-  call genwann(ikloc,evecfv,evecsv)
-  if (ldisentangle) call disentangle(evalsv(1,ik),wann_c(1,1,ikloc),evecsv)
-endif
-if (wannier.and.wann_add_poco) then
-  call wann_seceqn(ikloc,evecsv)
-  call genwann(ikloc,evecfv,evecsv)
-endif
-if (wannier) then
-  call seceqn_sic(ikloc,evecfv,evecsv)
-endif
-call timer_stop(t_seceqnsv)
+! apply scissor correction if required
+if (scissor.ne.0.d0) then
+  do ist=1,nstsv
+    if (evalsv(ist,ik).gt.efermi) evalsv(ist,ik)=evalsv(ist,ik)+scissor
+  end do
+end if
 deallocate(apwalm)
 return
 end subroutine

@@ -9,6 +9,7 @@
 subroutine findsymcrys
 ! !USES:
 use modmain
+use modtest
 ! !DESCRIPTION:
 !   Finds the complete set of symmetries which leave the crystal structure
 !   (including the magnetic fields) invariant. A crystal symmetry is of the
@@ -83,6 +84,8 @@ do ia=1,natoms(is)
 10 continue
   end do
 end do
+! no translations required when nosym is .true. (F. Cricchio)
+if (nosym) n=1
 eqatoms(:,:,:)=.false.
 nsymcrys=0
 ! loop over all possible translations
@@ -99,7 +102,7 @@ do i=1,n
     nsymcrys=nsymcrys+1
     if (nsymcrys.gt.maxsymcrys) then
       write(*,*)
-      write(*,'("Error(findsymcrys): too many symmetries")')
+      write(*,'("Error(findsymcrys): too many crystal symmetries")')
       write(*,'(" Adjust maxsymcrys in modmain and recompile code")')
       write(*,*)
       stop
@@ -117,6 +120,8 @@ do i=1,n
     end do
   end do
 end do
+! write number of crystal symmetries to test file
+call writetest(705,'number of crystal symmetries',iv=nsymcrys)
 deallocate(iea,vtl)
 return
 end subroutine

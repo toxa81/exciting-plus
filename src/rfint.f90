@@ -13,7 +13,7 @@ real(8), intent(in) :: rfir(ngrtot)
 integer is,ia,ias,ir
 real(8) sum
 ! automatic arrays
-real(8) fr(nrmtmax),gr(nrmtmax),cf(3,nrmtmax)
+real(8) fr(nrmtmax),gr(nrmtmax),cf(4,nrmtmax)
 sum=0.d0
 ! interstitial contribution
 do ir=1,ngrtot
@@ -28,7 +28,7 @@ do is=1,nspecies
       fr(ir)=rfmt(1,ir,ias)*spr(ir,is)**2
     end do
     call fderiv(-1,nrmt(is),spr(:,is),fr,gr,cf)
-    sum=sum+gr(nrmt(is))
+    sum=sum+fourpi*y00*gr(nrmt(is))
   end do
 end do
 rfint=sum

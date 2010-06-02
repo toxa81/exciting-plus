@@ -57,7 +57,7 @@ real(8), parameter :: c1=0.7071067811865475244d0
 real(8) t1,t2,t3
 complex(8) zt1
 ! automatic arrays
-real(8) ri(nr),f(nr),g1(nr),g2(nr),cf(3,nr)
+real(8) ri(nr),f(nr),g1(nr),g2(nr),cf(4,nr)
 ! external functions
 real(8) clebgor
 external clebgor

@@ -6,7 +6,7 @@
 !BOP
 ! !ROUTINE: forcek
 ! !INTERFACE:
-subroutine forcek(ik,ffacg)
+subroutine forcek(ikloc,ffacg)
 ! !USES:
 use modmain
 ! !DESCRIPTION:
@@ -20,12 +20,12 @@ use modmain
 !BOC
 implicit none
 ! arguments
-integer, intent(in) :: ik
+integer, intent(in) :: ikloc
 real(8), intent(in) :: ffacg(ngvec,nspecies)
 ! local variables
 integer np,ispn,jspn
 integer is,ia,ias,ist,jst
-integer i,j,k,l,iv(3),ig
+integer i,j,k,l,iv(3),ig,ik
 real(8) sum,t1
 complex(8) zt1,zt2
 complex(8) v(1)
@@ -47,6 +47,7 @@ complex(8), allocatable :: y(:)
 ! external functions
 complex(8) zdotc
 external zdotc
+ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 np=npmat(1,ik)
 if (spinsprl) np=max(np,npmat(2,ik))
 ! allocate local arrays
@@ -63,23 +64,25 @@ allocate(vo(nmatmax))
 allocate(ffv(nstfv,nstfv))
 allocate(y(nstfv))
 ! get the eigenvalues/vectors and occupancies from file
-call getevalfv(vkl(:,ik),evalfv)
-call getevecfv(vkl(:,ik),vgkl(:,:,:,ik),evecfv)
-call getevecsv(vkl(:,ik),evecsv)
-call getoccsv(vkl(:,ik),occsv(:,ik))
+if (mpi_grid_side(dims=(/dim_k/))) then
+  call getevalfv(vkl(:,ik),evalfv)
+  call getevecfv(vkl(:,ik),vgkl(:,:,:,ikloc),evecfv)
+  call getevecsv(vkl(:,ik),evecsv)
+  call getoccsv(vkl(:,ik),occsv(:,ik))
+endif
 ! begin loop over first-variational spin components
 do ispn=1,nspnfv
 ! find the matching coefficients
-  call match(ngk(ispn,ik),gkc(:,ispn,ik),tpgkc(:,:,ispn,ik), &
-   sfacgk(:,:,ispn,ik),apwalm)
+  call match(ngk(ispn,ik),gkc(:,ispn,ikloc),tpgkc(:,:,ispn,ikloc), &
+   sfacgk(:,:,ispn,ikloc),apwalm)
   do j=1,ngk(ispn,ik)
     k=((j-1)*j)/2
     do i=1,j
       k=k+1
-      iv(:)=ivg(:,igkig(i,ispn,ik))-ivg(:,igkig(j,ispn,ik))
+      iv(:)=ivg(:,igkig(i,ispn,ikloc))-ivg(:,igkig(j,ispn,ikloc))
       iv(:)=modulo(iv(:)-intgv(:,1),ngrid(:))+intgv(:,1)
       ijg(k)=ivgig(iv(1),iv(2),iv(3))
-      dp(k)=0.5d0*dot_product(vgkc(:,i,ispn,ik),vgkc(:,j,ispn,ik))
+      dp(k)=0.5d0*dot_product(vgkc(:,i,ispn,ikloc),vgkc(:,j,ispn,ikloc))
     end do
   end do
 ! loop over species and atoms
@@ -111,7 +114,7 @@ do ispn=1,nspnfv
           k=((j-1)*j)/2
           do i=1,ngk(ispn,ik)
             k=k+1
-            t1=vgkc(l,i,ispn,ik)
+            t1=vgkc(l,i,ispn,ikloc)
             dlh(k)=h(k)*t1
             dlo(k)=o(k)*t1
           end do

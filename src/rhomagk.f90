@@ -9,7 +9,6 @@
 subroutine rhomagk(ikloc,evecfv,evecsv)
 ! !USES:
 use modmain
-use mod_mpi_grid
 ! !INPUT/OUTPUT PARAMETERS:
 !   ik     : k-point number (in,integer)
 !   evecfv : first-variational eigenvectors (in,complex(nmatmax,nstfv,nspnfv))
@@ -39,22 +38,20 @@ integer, intent(in) :: ikloc
 complex(8), intent(in) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
 ! local variables
-integer nsd,ispn,jspn,is,ia,ias,ist
-integer ir,irc,itp,igk,ifg,i,j,n
-integer natmtotloc,iasloc,jloc,nstsvloc
+integer nsd,ispn,jspn,is,ia,ias,ist,nstsvloc,jloc
+integer ir,irc,itp,igk,ifg,i,j,n,ik,natmtotloc,iasloc
 real(8) wo,t1,t2,t3
 real(8) ts0,ts1
 complex(8) zq(2),zt1,zt2,zt3
+! automatic arrays
+logical done(nstfv,nspnfv)
 ! allocatable arrays
-logical, allocatable :: done(:,:)
 real(8), allocatable :: rfmt(:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:,:)
 complex(8), allocatable :: wfmt1(:,:)
 complex(8), allocatable :: wfmt2(:,:,:,:)
 complex(8), allocatable :: wfmt3(:,:,:)
 complex(8), allocatable :: zfft(:,:)
-!integer, external :: ikglob
-integer ik
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 call timesec(ts0)
 if (spinpol) then
@@ -66,24 +63,22 @@ if (spinpol) then
 else
   nsd=1
 end if
-allocate(done(nstfv,nspnfv))
+!----------------------------!
+!     muffin-tin density     !
+!----------------------------!
 allocate(rfmt(lmmaxvr,nrcmtmax,nsd))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
 allocate(wfmt1(lmmaxvr,nrcmtmax))
 if (tevecsv) allocate(wfmt2(lmmaxvr,nrcmtmax,nstfv,nspnfv))
 allocate(wfmt3(lmmaxvr,nrcmtmax,nspinor))
-allocate(zfft(ngrtot,nspinor))
 ! find the matching coefficients
 do ispn=1,nspnfv
   call match(ngk(ispn,ik),gkc(:,ispn,ikloc),tpgkc(:,:,ispn,ikloc), &
    sfacgk(:,:,ispn,ikloc),apwalm(:,:,:,:,ispn))
 end do
-!----------------------------!
-!     muffin-tin density     !
-!----------------------------!
-natmtotloc=mpi_grid_map(natmtot,2)
+natmtotloc=mpi_grid_map(natmtot,dim2)
 do iasloc=1,natmtotloc
-  ias=mpi_grid_map(natmtot,2,loc=iasloc)
+  ias=mpi_grid_map(natmtot,dim2,loc=iasloc)
   is=ias2is(ias)
   ia=ias2ia(ias)
   n=lmmaxvr*nrcmt(is)
@@ -111,7 +106,7 @@ do iasloc=1,natmtotloc
           do ist=1,nstfv
             i=i+1
             zt1=evecsv(i,j)
-            if (spinsprl) zt1=zt1*zq(ispn)
+            if (spinsprl.and.ssdph) zt1=zt1*zq(ispn)
             if (abs(dble(zt1))+abs(aimag(zt1)).gt.epsocc) then
               if (.not.done(ist,jspn)) then
                 call wavefmt(lradstp,lmaxvr,is,ia,ngk(jspn,ik), &
@@ -181,12 +176,15 @@ do iasloc=1,natmtotloc
     end if
   end do
 end do
+deallocate(rfmt,apwalm,wfmt1,wfmt3)
+if (tevecsv) deallocate(wfmt2)
 !------------------------------!
 !     interstitial density     !
 !------------------------------!
-nstsvloc=mpi_grid_map(nstsv,2)
+allocate(zfft(ngrtot,nspinor))
+nstsvloc=mpi_grid_map(nstsv,dim2)
 do jloc=1,nstsvloc
-  j=mpi_grid_map(nstsv,2,loc=jloc)
+  j=mpi_grid_map(nstsv,dim2,loc=jloc)
   wo=wkpt(ik)*occsv(j,ik)
   if (abs(wo).gt.epsocc) then
     t1=wo/omega
@@ -248,8 +246,7 @@ do jloc=1,nstsvloc
     end if
   end if
 end do
-deallocate(done,rfmt,apwalm,wfmt1,wfmt3,zfft)
-if (tevecsv) deallocate(wfmt2)
+deallocate(zfft)
 call timesec(ts1)
 timerho=timerho+ts1-ts0
 return

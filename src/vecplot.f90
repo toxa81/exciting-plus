@@ -32,6 +32,8 @@ real(8) vl1(3),vl2(3),vc1(3),vc2(3),vc3(3),vc4(3),t1
 ! allocatable arrays
 real(8), allocatable :: rvfmt(:,:,:,:)
 real(8), allocatable :: rvfir(:,:)
+! initialise universal variables
+call init0
 if ((task.eq.72).or.(task.eq.73).or.(task.eq.82).or.(task.eq.83)) then
   if (.not.spinpol) then
     write(*,*)
@@ -40,8 +42,6 @@ if ((task.eq.72).or.(task.eq.73).or.(task.eq.82).or.(task.eq.83)) then
     stop
   end if
 end if
-! initialise universal variables
-call init0
 ! read magnetisation from file
 call readstate
 allocate(rvfmt(lmmaxvr,nrmtmax,natmtot,3))

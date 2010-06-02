@@ -100,11 +100,11 @@ if (spinsprl) then
 end if
 ! the inverse of the spatial symmetry rotates k into p
 ilspl=isymlat(lspl)
-si(:,:)=symlat(:,:,ilspl)
+si(:,:)=dble(symlat(:,:,ilspl))
 !-----------------------------------------------!
 !     translate and rotate APW coefficients     !
 !-----------------------------------------------!
-allocate(evecfvt(nmatmax,nstfv))
+allocate(evecfvt(ngkmax,nstfv))
 do igk=1,ngk(1,ik)
   ig=igkig_(igk,1)
   v(:)=dble(ivg(:,ig))
@@ -112,6 +112,7 @@ do igk=1,ngk(1,ik)
   zt1=cmplx(cos(t1),sin(t1),8)
   evecfvt(igk,:)=zt1*evecfv(igk,:,1)
 end do
+! inverse rotation used because transformation is passive
 do igk=1,ngk(1,ik)
   call r3mtv(si,vgkl_(:,igk),v)
   do igp=1,ngk(1,ik)
@@ -123,15 +124,12 @@ do igk=1,ngk(1,ik)
   end do
 10 continue
 end do
+deallocate(evecfvt)
 !---------------------------------------------------------!
 !     translate and rotate local-orbital coefficients     !
 !---------------------------------------------------------!
-if (nlotot.le.0) goto 20
+if (nlotot.le.0) return
 allocate(zflm1(lolmmax,nstfv),zflm2(lolmmax,nstfv))
-! make a copy of the local-orbital coefficients
-do i=ngk(1,ik)+1,nmat(1,ik)
-  evecfvt(i,:)=evecfv(i,:,1)
-end do
 ! spatial rotation symmetry matrix in Cartesian coordinates
 sc(:,:)=symlatc(:,:,lspl)
 ! rotate k-point by inverse symmetry matrix
@@ -147,14 +145,14 @@ do is=1,nspecies
     zt1=cmplx(cos(t1),sin(t1),8)
     t1=twopi*dot_product(v(:),atposl(:,ia,is))
     zt1=zt1*cmplx(cos(t1),sin(t1),8)
-! rotate local orbitals
+! rotate local orbitals (active transformation)
     do ilo=1,nlorb(is)
       l=lorbl(ilo,is)
       zflm1(:,:)=0.d0
       do m=-l,l
         lm=idxlm(l,m)
         i=ngk(1,ik)+idxlo(lm,ilo,jas)
-        zflm1(lm,:)=evecfvt(i,:)
+        zflm1(lm,:)=evecfv(i,:,1)
       end do
       call rotzflm(sc,l,nstfv,lolmmax,zflm1,zflm2)
       do m=-l,l
@@ -166,8 +164,6 @@ do is=1,nspecies
   end do
 end do
 deallocate(zflm1,zflm2)
-20 continue
-deallocate(evecfvt)
 deallocate(vgkl_,igkig_)
 return
 end subroutine

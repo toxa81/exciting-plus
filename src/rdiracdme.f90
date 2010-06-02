@@ -6,8 +6,9 @@
 !BOP
 ! !ROUTINE: rdiracdme
 ! !INTERFACE:
-subroutine rdiracdme(m,kpa,e,np,nr,r,vr,nn,g0,g1,f0,f1)
+subroutine rdiracdme(sol,m,kpa,e,np,nr,r,vr,nn,g0,g1,f0,f1)
 ! !INPUT/OUTPUT PARAMETERS:
+!   sol : speed of light in atomic units (in,real)
 !   m   : order of energy derivative (in,integer)
 !   kpa : quantum number kappa (in,integer)
 !   e   : energy (in,real)
@@ -32,6 +33,7 @@ subroutine rdiracdme(m,kpa,e,np,nr,r,vr,nn,g0,g1,f0,f1)
 !BOC
 implicit none
 ! arguments
+real(8), intent(in) :: sol
 integer, intent(in) :: m
 integer, intent(in) :: kpa
 real(8), intent(in) :: e
@@ -61,10 +63,10 @@ if ((m.lt.0).or.(m.gt.6)) then
   stop
 end if
 if (m.eq.0) then
-  call rdiracint(m,kpa,e,np,nr,r,vr,nn,g0p,f0p,g0,g1,f0,f1)
+  call rdiracint(sol,m,kpa,e,np,nr,r,vr,nn,g0p,f0p,g0,g1,f0,f1)
 else
   do im=0,m
-    call rdiracint(im,kpa,e,np,nr,r,vr,nn,g0p,f0p,g0,g1,f0,f1)
+    call rdiracint(sol,im,kpa,e,np,nr,r,vr,nn,g0p,f0p,g0,g1,f0,f1)
     g0p(:)=g0(:)
     f0p(:)=f0(:)
   end do

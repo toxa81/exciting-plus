@@ -7,31 +7,30 @@ subroutine epcouple
 use modmain
 implicit none
 ! local variables
-integer is,ia,ias,ip
-integer js,ja,jas
-integer i,j,n,iv(3),isym
+integer is,ia,ias,js,ja,jas
+integer i,j,n,isym,ip,iv(3)
 integer iq,ik,jk,ikq
 integer ist,jst,ir,irc
 real(8) vkql(3),x
-real(8) t1,t2,t3,t4
+real(8) t1,t2,t3,t4,t5
 complex(8) zt1
 ! allocatable arrays
 real(8), allocatable :: wq(:,:)
 real(8), allocatable :: gq(:,:)
+real(8), allocatable :: evalfv(:,:)
+complex(8), allocatable :: evecfv(:,:,:)
+complex(8), allocatable :: evecsv(:,:)
 complex(8), allocatable :: dynq(:,:,:)
 complex(8), allocatable :: ev(:,:)
 complex(8), allocatable :: dveffmt(:,:,:,:)
 complex(8), allocatable :: dveffir(:,:)
 complex(8), allocatable :: zfmt(:,:,:)
 complex(8), allocatable :: gzfmt(:,:,:,:)
-complex(8), allocatable :: zflm(:)
 complex(8), allocatable :: zfir(:)
 complex(8), allocatable :: epmat(:,:,:)
-complex(8), allocatable :: gmq(:,:,:)
-complex(8), allocatable :: b(:,:)
 ! external functions
-real(8) sdelta,gaunt
-external sdelta,gaunt
+real(8) sdelta,stheta
+external sdelta,stheta
 ! initialise universal variables
 call init0
 call init1
@@ -52,36 +51,55 @@ allocate(wq(n,nqpt))
 allocate(gq(n,nqpt))
 allocate(dynq(n,n,nqpt))
 allocate(ev(n,n))
-allocate(dveffmt(lmmaxapw,nrcmtmax,natmtot,n))
+allocate(dveffmt(lmmaxvr,nrcmtmax,natmtot,n))
 allocate(dveffir(ngrtot,n))
 allocate(zfmt(lmmaxvr,nrcmtmax,natmtot))
 allocate(gzfmt(lmmaxvr,nrcmtmax,3,natmtot))
-allocate(zflm(lmmaxapw))
 allocate(zfir(ngrtot))
-allocate(gmq(n,n,nqpt))
-allocate(b(n,n))
 ! read in the density and potentials from file
 call readstate
-! read Fermi energy from file
+! read in the Fermi energy
 call readfermi
-! find the new linearisation energies
+! find the linearisation energies
 call linengy
+! set the speed of light >> 1
+solsc=sol*20.d0
+! new file extension for eigenvector files with c >> 1
+filext='_EP.OUT'
 ! generate the APW radial functions
 call genapwfr
 ! generate the local-orbital radial functions
 call genlofr
-! get the eigenvalues from file
-do ik=1,nkpt
-  call getevalsv(vkl(:,ik),evalsv(:,ik))
-end do
+! compute the overlap radial integrals
+call olprad
+! compute the Hamiltonian radial integrals
+call hmlrad
+! generate muffin-tin effective magnetic fields and s.o. coupling functions
+call genbeffmt
+! begin parallel loop over k-points
+  do ik=1,nkpt
+! every thread should allocate its own arrays
+    allocate(evalfv(nstfv,nspnfv))
+    allocate(evecfv(nmatmax,nstfv,nspnfv))
+    allocate(evecsv(nstsv,nstsv))
+! solve the first- and second-variational secular equations
+    call seceqn(ik,evalfv,evecfv,evecsv)
+! write the eigenvectors to file
+    call putevecfv(ik,evecfv)
+    call putevecsv(ik,evecsv)
+    deallocate(evalfv,evecfv,evecsv)
+  end do
+! reset the speed of light
+solsc=sol
 ! compute the occupancies and density of states at the Fermi energy
 call occupy
 ! read in the dynamical matrices
 call readdyn(dynq)
 ! apply the acoustic sum rule
 call sumrule(dynq)
-! compute the gradients of the effective potential for the rigid-ion term
+! loop over species
 do is=1,nspecies
+! loop over atoms
   do ia=1,natoms(is)
     ias=idxas(ia,is)
 ! convert potential to complex spherical harmonic expansion
@@ -90,6 +108,7 @@ do is=1,nspecies
       irc=irc+1
       call rtozflm(lmaxvr,veffmt(:,ir,ias),zfmt(:,irc,ias))
     end do
+! compute the gradients of the effective potential for the rigid-ion term
     call gradzfmt(lmaxvr,nrcmt(is),rcmt(:,is),lmmaxvr,nrcmtmax,zfmt(:,:,ias), &
      gzfmt(:,:,:,ias))
   end do
@@ -101,6 +120,8 @@ do iq=1,nqpt
   call dyndiag(dynq(:,:,iq),wq(:,iq),ev)
 ! loop over phonon branches
   do j=1,n
+! zero any negative frequencies
+    if (wq(j,iq).lt.0.d0) wq(j,iq)=0.d0
 ! find change effective potential for mode j
     dveffmt(:,:,:,j)=0.d0
     dveffir(:,j)=0.d0
@@ -129,8 +150,7 @@ do iq=1,nqpt
             do ja=1,natoms(js)
               jas=idxas(ja,js)
               do irc=1,nrcmt(js)
-                dveffmt(1:lmmaxvr,irc,jas,j)=dveffmt(1:lmmaxvr,irc,jas,j) &
-                 +zt1*zfmt(1:lmmaxvr,irc,jas)
+                dveffmt(:,irc,jas,j)=dveffmt(:,irc,jas,j)+zt1*zfmt(:,irc,jas)
               end do
             end do
           end do
@@ -140,18 +160,6 @@ do iq=1,nqpt
     end do
 ! multiply the interstitial potential with the characteristic function
     dveffir(:,j)=dveffir(:,j)*cfunir(:)
-! convert muffin-tin potential to spherical coordinates on the lmaxapw covering
-    zflm(:)=0.d0
-    do is=1,nspecies
-      do ia=1,natoms(is)
-        ias=idxas(ia,is)
-        do irc=1,nrcmt(is)
-          zflm(1:lmmaxvr)=dveffmt(1:lmmaxvr,irc,ias,j)
-          call zgemv('N',lmmaxapw,lmmaxapw,zone,zbshtapw,lmmaxapw,zflm,1, &
-           zzero,dveffmt(:,irc,ias,j),1)
-        end do
-      end do
-    end do
   end do
 ! zero the phonon linewidths array
   gq(:,iq)=0.d0
@@ -170,14 +178,21 @@ do iq=1,nqpt
 ! loop over second-variational states
     do ist=1,nstsv
       x=(evalsv(ist,ikq)-efermi)/swidth
-      t2=sdelta(stype,x)/swidth
+      t2=1.d0-stheta(stype,x)
 ! loop over phonon branches
       do i=1,n
+        x=(evalsv(ist,ikq)-efermi+wq(i,iq))/swidth
+        t3=1.d0-stheta(stype,x)
         do jst=1,nstsv
-          x=(evalsv(jst,jk)-efermi)/swidth
-          t3=sdelta(stype,x)/swidth
-          t4=dble(epmat(ist,jst,i))**2+aimag(epmat(ist,jst,i))**2
-          gq(i,iq)=gq(i,iq)+wq(i,iq)*t1*t2*t3*t4
+          if (wq(i,iq).gt.1.d-8) then
+            t4=(t2-t3)/wq(i,iq)
+          else
+            t4=0.d0
+          end if
+          x=(evalsv(jst,jk)-evalsv(ist,ikq)-wq(i,iq))/swidth
+          t4=t4*sdelta(stype,x)/swidth
+          t5=dble(epmat(ist,jst,i))**2+aimag(epmat(ist,jst,i))**2
+          gq(i,iq)=gq(i,iq)+wq(i,iq)*t1*t4*t5
         end do
       end do
     end do
@@ -186,12 +201,13 @@ do iq=1,nqpt
   end do
 ! end loop over phonon q-points
 end do
+filext='.OUT'
 ! write the phonon linewidths to file
 call writegamma(gq)
 ! write electron-phonon coupling constants to file
 call writelambda(wq,gq)
 deallocate(wq,gq,dynq,ev,dveffmt,dveffir)
-deallocate(zfmt,gzfmt,zflm,zfir,gmq,b)
+deallocate(zfmt,gzfmt,zfir)
 return
 end subroutine
 

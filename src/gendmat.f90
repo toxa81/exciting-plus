@@ -25,12 +25,12 @@ integer ispn,jspn,lmmax
 integer l,m1,m2,lm1,lm2
 integer i,j,n,ist,irc
 real(8) t1,t2
-complex(8) zt1
+complex(8) zq(2),zt1
 ! automatic arrays
+logical done(nstfv,nspnfv)
 real(8) fr1(nrcmtmax),fr2(nrcmtmax)
-real(8) gr(nrcmtmax),cf(3,nrcmtmax)
+real(8) gr(nrcmtmax),cf(4,nrcmtmax)
 ! allocatable arrays
-logical, allocatable :: done(:,:)
 complex(8), allocatable :: wfmt1(:,:,:,:)
 complex(8), allocatable :: wfmt2(:,:,:)
 if (lmin.lt.0) then
@@ -47,9 +47,14 @@ if (lmax.gt.lmaxapw) then
 end if
 lmmax=(lmax+1)**2
 ! allocate local arrays
-allocate(done(nstfv,nspnfv))
 allocate(wfmt1(lmmax,nrcmtmax,nstfv,nspnfv))
 allocate(wfmt2(lmmax,nrcmtmax,nspinor))
+! de-phasing factor for spin-spirals
+if (spinsprl) then
+  t1=-0.5d0*dot_product(vqcss(:),atposc(:,ia,is))
+  zq(1)=cmplx(cos(t1),sin(t1),8)
+  zq(2)=conjg(zq(1))
+end if
 ! zero the density matrix
 dmat(:,:,:,:,:)=0.d0
 n=lmmax*nrcmt(is)
@@ -69,6 +74,7 @@ do j=1,nstsv
       do ist=1,nstfv
         i=i+1
         zt1=evecsv(i,j)
+        if (spinsprl.and.ssdph) zt1=zt1*zq(ispn)
         if (abs(dble(zt1))+abs(aimag(zt1)).gt.epsocc) then
           if (.not.done(ist,jspn)) then
             call wavefmt(lradstp,lmax,is,ia,ngp(jspn),apwalm(:,:,:,:,jspn), &
@@ -113,7 +119,7 @@ do j=1,nstsv
   end do
 ! end loop over second-variational states
 end do
-deallocate(done,wfmt1,wfmt2)
+deallocate(wfmt1,wfmt2)
 return
 end subroutine
 

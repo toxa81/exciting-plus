@@ -5,6 +5,7 @@
 
 subroutine phdos
 use modmain
+use modtest
 implicit none
 ! local variables
 ! number of temperature values
@@ -30,7 +31,7 @@ n=3*natmtot
 allocate(wp(n))
 allocate(w(nwdos))
 allocate(gw(nwdos))
-allocate(f(nwdos),g(nwdos),cf(3,nwdos))
+allocate(f(nwdos),g(nwdos),cf(4,nwdos))
 allocate(dynq(n,n,nqpt))
 allocate(dynr(n,n,ngridq(1)*ngridq(2)*ngridq(3)))
 allocate(dynp(n,n))
@@ -171,6 +172,8 @@ end do
 close(50)
 write(*,'(" thermodynamic properties written to THERMO.OUT")')
 write(*,*)
+! write phonon DOS to test file
+call writetest(210,'phonon DOS',nv=nwdos,tol=1.d-2,rva=gw)
 deallocate(wp,w,gw,f,g,cf,dynq,dynr,dynp,ev)
 return
 end subroutine

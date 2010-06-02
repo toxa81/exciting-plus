@@ -9,18 +9,17 @@ implicit none
 ! arguments
 integer, intent(in) :: iq
 real(8), intent(in) :: vpl(3)
-complex(8), intent(in) :: dveffmt(lmmaxapw,nrcmtmax,natmtot,3*natmtot)
+complex(8), intent(in) :: dveffmt(lmmaxvr,nrcmtmax,natmtot,3*natmtot)
 complex(8), intent(in) :: dveffir(ngrtot,3*natmtot)
 complex(8), intent(out) :: epmat(nstsv,nstsv,3*natmtot)
 ! local variables
+integer lmax,lmmax
 integer is,ia,ias
-integer ngp,ngpq,igp,ifg
-integer nrc,irc,iv(3)
+integer ngp,ngpq,igp
+integer nrc,irc,ifg
 integer ist,jst,ispn
 integer i,j,k,l,m,n
-integer i1,i2,i3,ir
 real(8) vpc(3),vpql(3),vpqc(3)
-real(8) v1(3),v2(3),v3(3),t1
 complex(8) zt1
 ! allocatable arrays
 integer, allocatable :: igpig(:)
@@ -44,15 +43,18 @@ complex(8), allocatable :: evecsv2(:,:)
 complex(8), allocatable :: wfmt1(:,:)
 complex(8), allocatable :: wfmt2(:,:,:)
 complex(8), allocatable :: wfmt3(:,:)
+complex(8), allocatable :: zfmt1(:,:)
+complex(8), allocatable :: zfmt2(:,:)
 complex(8), allocatable :: zfir1(:)
 complex(8), allocatable :: zfir2(:)
-complex(8), allocatable :: zfir3(:)
 complex(8), allocatable :: zv(:)
 complex(8), allocatable :: epm(:,:,:)
 ! external functions
 complex(8) zfmtinp,zdotc
 external zfmtinp,zdotc
 n=3*natmtot
+lmax=min(lmaxmat,lmaxvr)
+lmmax=(lmax+1)**2
 ! allocate local arrays
 allocate(igpig(ngkmax))
 allocate(igpqig(ngkmax))
@@ -74,12 +76,13 @@ if (tevecsv) then
   allocate(evecsv1(nstsv,nstsv))
   allocate(evecsv2(nstsv,nstsv))
 end if
-allocate(wfmt1(lmmaxapw,nrcmtmax))
-allocate(wfmt2(lmmaxapw,nrcmtmax,nstfv))
-allocate(wfmt3(lmmaxapw,nrcmtmax))
+allocate(wfmt1(lmmaxvr,nrcmtmax))
+allocate(wfmt2(lmmaxvr,nrcmtmax,nstfv))
+allocate(wfmt3(lmmaxvr,nrcmtmax))
+allocate(zfmt1(lmmaxvr,nrcmtmax))
+allocate(zfmt2(lmmaxvr,nrcmtmax))
 allocate(zfir1(ngrtot))
 allocate(zfir2(ngrtot))
-allocate(zfir3(ngrtot))
 allocate(zv(ngkmax))
 allocate(epm(nstfv,nstfv,n))
 ! p-vector in Cartesian coordinates
@@ -94,8 +97,6 @@ call match(ngp,gpc,tpgpc,sfacgp,apwalm1)
 call getevecfv(vpl,vgpl,evecfv1)
 ! p+q-vector in lattice coordinates
 vpql(:)=vpl(:)+vql(:,iq)
-! map vector components to [0,1) interval
-call r3frac(epslat,vpql,iv)
 ! p+q-vector in Cartesian coordinates
 call r3mv(bvec,vpql,vpqc)
 ! generate the G+p+q-vectors
@@ -117,29 +118,30 @@ do is=1,nspecies
     ias=idxas(ia,is)
     do ist=1,nstfv
 ! calculate the wavefunction for k-point p+q
-      call wavefmt(lradstp,lmaxapw,is,ia,ngpq,apwalm2,evecfv2(:,ist),lmmaxapw, &
+      call wavefmt(lradstp,lmaxvr,is,ia,ngpq,apwalm2,evecfv2(:,ist),lmmaxvr, &
        wfmt1)
 ! convert from spherical harmonics to spherical coordinates
-      call zgemm('N','N',lmmaxapw,nrc,lmmaxapw,zone,zbshtapw,lmmaxapw,wfmt1, &
-       lmmaxapw,zzero,wfmt2(:,:,ist),lmmaxapw)
+      call zgemm('N','N',lmmaxvr,nrc,lmmaxvr,zone,zbshtvr,lmmaxvr,wfmt1, &
+       lmmaxvr,zzero,wfmt2(:,:,ist),lmmaxvr)
     end do
     do jst=1,nstfv
 ! calculate the wavefunction for k-point p
-      call wavefmt(lradstp,lmaxapw,is,ia,ngp,apwalm1,evecfv1(:,jst),lmmaxapw, &
+      call wavefmt(lradstp,lmaxvr,is,ia,ngp,apwalm1,evecfv1(:,jst),lmmaxvr, &
        wfmt1)
 ! convert from spherical harmonics to spherical coordinates
-      call zgemm('N','N',lmmaxapw,nrc,lmmaxapw,zone,zbshtapw,lmmaxapw,wfmt1, &
-       lmmaxapw,zzero,wfmt3,lmmaxapw)
-! loop over phonon branches
-      do i=1,n
-! multiply the wavefunction by the change in effective potential
+      call zgemm('N','N',lmmaxvr,nrc,lmmaxvr,zone,zbshtvr,lmmaxvr,wfmt1, &
+       lmmaxvr,zzero,wfmt3,lmmaxvr)
+      do ist=1,nstfv
+! multiply wavefunctions together in real-space
         do irc=1,nrc
-          wfmt1(:,irc)=wfmt3(:,irc)*dveffmt(:,irc,ias,i)
+          zfmt1(:,irc)=conjg(wfmt3(:,irc))*wfmt2(:,irc,ist)
         end do
-! add to the first-variational matrix elements
-        do ist=1,nstfv
-          epm(ist,jst,i)=epm(ist,jst,i)+zfmtinp(.false.,lmaxapw,nrc, &
-           rcmt(:,is),lmmaxapw,wfmt2(:,:,ist),wfmt1)
+! convert from spherical coordinates to spherical harmonics
+        call zgemm('N','N',lmmax,nrc,lmmaxvr,zone,zfshtvr,lmmaxvr,zfmt1, &
+         lmmaxvr,zzero,zfmt2,lmmaxvr)
+        do i=1,n
+          epm(ist,jst,i)=epm(ist,jst,i)+zfmtinp(.true.,lmax,nrc,rcmt(:,is), &
+           lmmaxvr,zfmt2,dveffmt(:,:,ias,i))
         end do
       end do
     end do
@@ -149,44 +151,25 @@ end do
 !--------------------------------------!
 !     interstitial matrix elements     !
 !--------------------------------------!
-! store G=q+p-p', where p' is the p+q-vector mapped to [0,1)
-v1(:)=vqc(:,iq)+vpc(:)-vpqc(:)
-! compute exp(i(q+p-p').r) for each r-vector on the grid
-ir=0
-do i3=0,ngrid(3)-1
-  v2(3)=dble(i3)/dble(ngrid(3))
-  do i2=0,ngrid(2)-1
-    v2(2)=dble(i2)/dble(ngrid(2))
-    do i1=0,ngrid(1)-1
-      v2(1)=dble(i1)/dble(ngrid(1))
-      ir=ir+1
-      call r3mv(avec,v2,v3)
-      t1=v1(1)*v3(1)+v1(2)*v3(2)+v1(3)*v3(3)
-      zfir1(ir)=cmplx(cos(t1),sin(t1),8)
-    end do
-  end do
-end do
 ! compute interstitial wavefunctions for k-point p
 do jst=1,nstfv
-  zfir2(:)=0.d0
+  zfir1(:)=0.d0
   do igp=1,ngp
     ifg=igfft(igpig(igp))
-    zfir2(ifg)=evecfv1(igp,jst)
+    zfir1(ifg)=evecfv1(igp,jst)
   end do
 ! Fourier transform wavefunction to real-space
-  call zfftifc(3,ngrid,1,zfir2)
-! multiply with the phase factor
-  zfir2(:)=zfir2(:)*zfir1(:)
+  call zfftifc(3,ngrid,1,zfir1)
 ! loop over phonon branches
   do i=1,n
 ! multiply the wavefunction with the change in effective potential
-    zfir3(:)=zfir2(:)*dveffir(:,i)
+    zfir2(:)=zfir1(:)*dveffir(:,i)
 ! Fourier transform to G-space
-    call zfftifc(3,ngrid,-1,zfir3)
+    call zfftifc(3,ngrid,-1,zfir2)
 ! store as wavefunction with G+p+q index
     do igp=1,ngpq
       ifg=igfft(igpqig(igp))
-      zv(igp)=zfir3(ifg)
+      zv(igp)=zfir2(ifg)
     end do
 ! add to the first-variational matrix elements
     do ist=1,nstfv
@@ -226,7 +209,7 @@ end if
 deallocate(igpig,igpqig,vgpl,vgpc,gpc,tpgpc,vgpql,vgpqc,gpqc,tpgpqc)
 deallocate(sfacgp,sfacgpq,apwalm1,apwalm2,evecfv1,evecfv2)
 if (tevecsv) deallocate(evecsv1,evecsv2)
-deallocate(wfmt1,wfmt2,wfmt3,zfir1,zfir2,zfir3,zv,epm)
+deallocate(wfmt1,wfmt2,wfmt3,zfmt1,zfmt2,zfir1,zfir2,zv,epm)
 return
 end subroutine
 

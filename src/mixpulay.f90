@@ -34,15 +34,12 @@ real(8), intent(inout) :: mu(n,maxsd)
 real(8), intent(inout) :: f(n,maxsd)
 real(8), intent(out) :: d
 ! local variables
-integer i,j,k,m,jc,jn,info
+integer jc,jn,i,j,k,m,info
 ! initial mixing parameter
-real(8), parameter :: beta=0.1d0
+real(8), parameter :: beta=0.5d0
 ! allocatable arrays
 integer, allocatable :: ipiv(:)
 real(8), allocatable :: alpha(:),a(:,:),work(:)
-! external functions
-real(8) ddot
-external ddot
 if (n.lt.1) then
   write(*,*)
   write(*,'("Error(mixpulay): n < 1 : ",I8)') n
@@ -61,22 +58,21 @@ if (iscl.le.1) then
   d=1.d0
   return
 end if
-! current index
-jc=mod(iscl-1,maxsd)+1
-! next index
-jn=mod(iscl,maxsd)+1
-if (iscl.le.2) then
-  nu(:)=beta*nu(:)+(1.d0-beta)*mu(:,1)
-  f(:,2)=nu(:)-mu(:,1)
-  mu(:,2)=nu(:)
-  if (maxsd.ge.3) mu(:,3)=0.d0
+if (iscl.le.maxsd) then
+  nu(:)=beta*nu(:)+(1.d0-beta)*mu(:,iscl-1)
+  f(:,iscl)=nu(:)-mu(:,iscl-1)
+  mu(:,iscl)=nu(:)
   d=0.d0
   do k=1,n
-    d=d+f(k,2)**2
+    d=d+f(k,iscl)**2
   end do
   d=sqrt(d/dble(n))
   return
 end if
+! current index
+jc=mod(iscl-1,maxsd)+1
+! next index
+jn=mod(iscl,maxsd)+1
 ! matrix size
 m=min(iscl,maxsd)+1
 allocate(ipiv(m),alpha(m),a(m,m),work(m))
@@ -91,7 +87,7 @@ d=sqrt(d/dble(n))
 a(:,:)=0.d0
 do i=1,m-1
   do j=i,m-1
-    a(i,j)=a(i,j)+ddot(n,f(:,i),1,f(:,j),1)
+    a(i,j)=a(i,j)+dot_product(f(:,i),f(:,j))
   end do
   a(i,m)=1.d0
 end do

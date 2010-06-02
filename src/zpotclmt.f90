@@ -46,61 +46,59 @@ integer l,m,lm,ir
 real(8), parameter :: fourpi=12.566370614359172954d0
 ! spherical harmonic for l=m=0
 real(8), parameter :: y00=0.28209479177387814347d0
-real(8) t1,t2,t3,t4,t5,t6,t7
+real(8) t1,t2,t3,t4
 ! automatic arrays
-real(8) ri(nr),rl(nr),ril1(nr),cf(3,nr),vn(nr)
-real(8) fr1(nr),fr2(nr),fr3(nr),fr4(nr)
-real(8) gr1(nr),gr2(nr),gr3(nr),gr4(nr)
-! initialise r^l and r^(-l-1)
+real(8) ri(nr),rl(4,nr),cf(4,nr)
+real(8) fr1(nr),fr2(nr),fr3(nr),fr4(nr),fr5(nr)
+! initialise r^l, r^(-l-1), r^(l+2) and r^(-l+1)
 do ir=1,nr
-  rl(ir)=1.d0
   ri(ir)=1.d0/r(ir)
-  ril1(ir)=ri(ir)
+  rl(1,ir)=1.d0
+  rl(2,ir)=ri(ir)
+  t1=fourpi*r(ir)
+  rl(3,ir)=t1*r(ir)
+  rl(4,ir)=t1
 end do
 lm=0
 do l=0,lmax
-  t1=fourpi/dble(2*l+1)
   do m=-l,l
     lm=lm+1
     do ir=1,nr
-      t2=rl(ir)*r(ir)**2
-      t3=ril1(ir)*r(ir)**2
-      t4=dble(zrhomt(lm,ir))
-      t5=aimag(zrhomt(lm,ir))
-      fr1(ir)=t2*t4
-      fr2(ir)=t2*t5
-      fr3(ir)=t3*t4
-      fr4(ir)=t3*t5
+      t1=dble(zrhomt(lm,ir))
+      t2=aimag(zrhomt(lm,ir))
+      fr1(ir)=t1*rl(3,ir)
+      fr2(ir)=t2*rl(3,ir)
+      fr3(ir)=t1*rl(4,ir)
+      fr4(ir)=t2*rl(4,ir)
     end do
-    call fderiv(-1,nr,r,fr1,gr1,cf)
-    call fderiv(-1,nr,r,fr2,gr2,cf)
-    call fderiv(-1,nr,r,fr3,gr3,cf)
-    call fderiv(-1,nr,r,fr4,gr4,cf)
-    t2=gr3(nr)
-    t3=gr4(nr)
+    call fderiv(-1,nr,r,fr1,fr5,cf)
+    call fderiv(-1,nr,r,fr2,fr1,cf)
+    call fderiv(-1,nr,r,fr3,fr2,cf)
+    call fderiv(-1,nr,r,fr4,fr3,cf)
+    t1=fr2(nr)
+    t2=fr3(nr)
     do ir=1,nr
-      t4=ril1(ir)
-      t5=rl(ir)
-      t6=t4*gr1(ir)+t5*(t2-gr3(ir))
-      t7=t4*gr2(ir)+t5*(t3-gr4(ir))
-      zvclmt(lm,ir)=t1*cmplx(t6,t7,8)
+      t3=rl(2,ir)*fr5(ir)+rl(1,ir)*(t1-fr2(ir))
+      t4=rl(2,ir)*fr1(ir)+rl(1,ir)*(t2-fr3(ir))
+      zvclmt(lm,ir)=cmplx(t3,t4,8)
     end do
   end do
-! update r^l and r^(-l-1)
   if (l.lt.lmax) then
+    t1=fourpi/dble(2*(l+1)+1)
     do ir=1,nr
-      rl(ir)=rl(ir)*r(ir)
-      ril1(ir)=ril1(ir)*ri(ir)
+      rl(1,ir)=rl(1,ir)*r(ir)
+      rl(2,ir)=rl(2,ir)*ri(ir)
+      t2=t1*r(ir)**2
+      rl(3,ir)=rl(1,ir)*t2
+      rl(4,ir)=rl(2,ir)*t2
     end do
   end if
 end do
 ! add the nuclear potential
 if (zn.ne.0.d0) then
-  call potnucl(ptnucl,nr,r,zn,vn)
+  call potnucl(ptnucl,nr,r,zn,fr1)
   t1=1.d0/y00
-  do ir=1,nr
-    zvclmt(1,ir)=zvclmt(1,ir)+t1*vn(ir)
-  end do
+  zvclmt(1,:)=zvclmt(1,:)+t1*fr1(:)
 end if
 return
 end subroutine

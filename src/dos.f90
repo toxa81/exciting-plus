@@ -9,6 +9,7 @@
 subroutine dos
 ! !USES:
 use modmain
+use modtest
 ! !DESCRIPTION:
 !   Produces a total and partial density of states (DOS) for plotting. The total
 !   DOS is written to the file {\tt TDOS.OUT} while the partial DOS is written
@@ -28,6 +29,7 @@ use modmain
 !
 ! !REVISION HISTORY:
 !   Created January 2004 (JKD)
+!   Parallelised and included sum over m, November 2009 (F. Cricchio)
 !EOP
 !BOC
 implicit none
@@ -41,11 +43,8 @@ real(8) v1(3),v2(3),v3(3)
 complex(8) su2(2,2),dm1(2,2),dm2(2,2)
 character(256) fname
 ! allocatable arrays
-real(8), allocatable :: e(:,:,:)
-real(8), allocatable :: f(:,:)
-real(8), allocatable :: w(:)
-real(8), allocatable :: g(:,:)
-real(8), allocatable :: gp(:)
+real(8), allocatable :: e(:,:,:),f(:,:),w(:)
+real(8), allocatable :: g(:,:),gp(:),gpl(:)
 ! low precision for band character array saves memory
 real(4), allocatable :: bc(:,:,:,:,:)
 real(8), allocatable :: elm(:,:)
@@ -67,17 +66,13 @@ allocate(f(nstsv,nkpt))
 allocate(w(nwdos))
 allocate(g(nwdos,nspinor))
 allocate(gp(nwdos))
+if (dosmsum) allocate(gpl(nwdos))
 allocate(bc(lmmax,nspinor,natmtot,nstsv,nkpt))
 if (lmirep) then
   allocate(elm(lmmax,natmtot))
   allocate(ulm(lmmax,lmmax,natmtot))
-  allocate(a(lmmax,lmmax))
 end if
-allocate(dmat(lmmax,lmmax,nspinor,nspinor,nstsv))
 allocate(sdmat(nspinor,nspinor,nstsv,nkpt))
-allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
-allocate(evecfv(nmatmax,nstfv,nspnfv))
-allocate(evecsv(nstsv,nstsv))
 ! read density and potentials from file
 call readstate
 ! read Fermi energy from file
@@ -90,9 +85,7 @@ call genapwfr
 call genlofr
 ! generate unitary matrices which convert the (l,m) basis into the irreducible
 ! representation basis of the symmetry group at each atomic site
-if (lmirep) then
-  call genlmirep(lmax,lmmax,elm,ulm)
-end if
+if (lmirep) call genlmirep(lmax,lmmax,elm,ulm)
 ! compute the SU(2) operator used for rotating the density matrix to the
 ! desired spin-quantisation axis
 v1(:)=sqados(:)
@@ -116,12 +109,19 @@ else
   th=-acos(v1(3))
   call axangsu2(v3,th,su2)
 end if
-! loop over k-points
+! begin parallel loop over k-points
 do ik=1,nkpt
+  allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
+  allocate(evecfv(nmatmax,nstfv,nspnfv))
+  allocate(evecsv(nstsv,nstsv))
+  allocate(dmat(lmmax,lmmax,nspinor,nspinor,nstsv))
+  allocate(a(lmmax,lmmax))
 ! get the eigenvalues/vectors from file
   call getevalsv(vkl(:,ik),evalsv(:,ik))
   call getevecfv(vkl(:,ik),vgkl(:,:,:,ik),evecfv)
   call getevecsv(vkl(:,ik),evecsv)
+! get the occupancies if required
+  if (dosocc) call getoccsv(vkl(:,ik),occsv(:,ik))
 ! find the matching coefficients
   do ispn=1,nspnfv
     call match(ngk(ispn,ik),gkc(:,ispn,ik),tpgkc(:,:,ispn,ik), &
@@ -177,6 +177,7 @@ do ik=1,nkpt
       call z2mmct(dm1,su2,sdmat(:,:,ist,ik))
     end do
   end if
+  deallocate(apwalm,evecfv,evecsv,dmat,a)
 end do
 ! generate energy grid
 dw=(wdos(2)-wdos(1))/dble(nwdos)
@@ -199,10 +200,9 @@ do ispn=1,nspinor
     do ist=1,nstsv
 ! subtract the Fermi energy
       e(ist,ik,ispn)=evalsv(ist,ik)-efermi
-! correction for scissors operator
-      if (e(ist,ik,ispn).gt.0.d0) e(ist,ik,ispn)=e(ist,ik,ispn)+scissor
 ! use diagonal of spin density matrix for weight
       f(ist,ik)=dble(sdmat(ispn,ispn,ist,ik))
+      if (dosocc) f(ist,ik)=f(ist,ik)*occsv(ist,ik)/occmax
     end do
   end do
   call brzint(nsmdos,ngridk,nsk,ikmap,nwdos,wdos,nstsv,nstsv,e(:,:,ispn),f, &
@@ -213,6 +213,8 @@ do ispn=1,nspinor
     write(50,'(2G18.10)') w(iw),t1*g(iw,ispn)
   end do
   write(50,'("     ")')
+! write the total DOS to test file
+  call writetest(10,'total DOS',nv=nwdos,tol=2.d-2,rva=g)
 end do
 close(50)
 !----------------------------!
@@ -230,23 +232,37 @@ do is=1,nspecies
         t1=-1.d0
       end if
       do l=0,lmax
+        if (dosmsum) gpl(:)=0.d0
         do m=-l,l
           lm=idxlm(l,m)
           do ik=1,nkpt
             do ist=1,nstsv
               f(ist,ik)=bc(lm,ispn,ias,ist,ik)
+              if (dosocc) f(ist,ik)=f(ist,ik)*occsv(ist,ik)/occmax
             end do
           end do
           call brzint(nsmdos,ngridk,nsk,ikmap,nwdos,wdos,nstsv,nstsv, &
            e(:,:,ispn),f,gp)
           gp(:)=occmax*gp(:)
+! subtract from interstitial DOS
+          g(:,ispn)=g(:,ispn)-gp(:)
+          if (dosmsum) then
+            gpl(:)=gpl(:)+gp(:)
+          else
+! write (l,m)-resolved DOS
+            do iw=1,nwdos
+              write(50,'(2G18.10)') w(iw),t1*gp(iw)
+            end do
+            write(50,'("     ")')
+          end if
+        end do
+! write l-resolved DOS
+        if (dosmsum) then
           do iw=1,nwdos
-            write(50,'(2G18.10)') w(iw),t1*gp(iw)
-! interstitial DOS
-            g(iw,ispn)=g(iw,ispn)-gp(iw)
+            write(50,'(2G18.10)') w(iw),t1*gpl(iw)
           end do
           write(50,'("     ")')
-        end do
+        end if
       end do
     end do
     close(50)
@@ -284,6 +300,7 @@ do ispn=1,nspinor
   do iw=1,nwdos
     write(50,'(2G18.10)') w(iw),t1*g(iw,ispn)
   end do
+  write(50,'("     ")')
 end do
 close(50)
 write(*,*)
@@ -292,6 +309,13 @@ write(*,'(" Total density of states written to TDOS.OUT")')
 write(*,*)
 write(*,'(" Partial density of states written to PDOS_Sss_Aaaaa.OUT")')
 write(*,'(" for all species and atoms")')
+if (dosmsum) then
+  write(*,'(" PDOS summed over m")')
+end if
+if (.not.tsqaz) then
+  write(*,*)
+  write(*,'(" Spin-quantisation axis : ",3G18.10)') sqados(:)
+end if
 if (lmirep) then
   write(*,*)
   write(*,'(" Eigenvalues of a random matrix in the (l,m) basis symmetrised")')
@@ -306,9 +330,9 @@ write(*,'(" Fermi energy is at zero in plot")')
 write(*,*)
 write(*,'(" DOS units are states/Hartree/unit cell")')
 write(*,*)
-deallocate(e,f,w,g,gp,bc)
-if (lmirep) deallocate(elm,ulm,a)
-deallocate(dmat,sdmat,apwalm,evecfv,evecsv)
+deallocate(e,f,w,g,gp,bc,sdmat)
+if (dosmsum) deallocate(gpl)
+if (lmirep) deallocate(elm,ulm)
 return
 end subroutine
 !EOC

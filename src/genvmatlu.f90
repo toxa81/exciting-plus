@@ -3,31 +3,32 @@
 ! This file is distributed under the terms of the GNU General Public License.
 ! See the file COPYING for license details.
 
+!BOP
+! !ROUTINE: genvmatlu
 subroutine genvmatlu
+! !USES:
 use modmain
+use modldapu
+! !DESCRIPTION:
+!   Calculate the LDA+U potential, see {\it Phys. Rev. B} {\bf 52}, 5467 (1995)
+!   and {\it Phys. Rev. B} {\bf 80}, 035121 (2009).
+!
+! !REVISION HISTORY:
+!   Created November 2007 (FC,FB,LN,JKD)
+!EOP
+!BOC
 ! local variables
-integer ias,lm
+integer ias
 real(8) t1,t2
 ! allocatable arrays
 real(8), allocatable :: enfll(:)
 complex(8), allocatable :: vmfll(:,:,:,:,:)
-! constrained LDA
-if (clda) then
-  vmatlu=0.d0
-  do lm=1,clda_norb
-    vmatlu(clda_iorb(1,lm),clda_iorb(1,lm),clda_ispn(1),clda_ispn(1),clda_iat(1))=&
-      clda_vorb(1,lm)
-    vmatlu(clda_iorb(2,lm),clda_iorb(2,lm),clda_ispn(2),clda_ispn(2),clda_iat(2))=&
-      clda_vorb(2,lm)
-  enddo
-  return
-endif
 ! fully localised limit (FLL) or around mean field (AFM)
 if ((ldapu.eq.1).or.(ldapu.eq.2)) then
   call genvmatlu_12
   return
 end if
-! interpolation between the two (PRB 67, 153106 (2003))
+! interpolation between the two [PRB 67, 153106 (2003)]
 if (ldapu.eq.3) then
   allocate(enfll(natmtot))
   allocate(vmfll(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
@@ -37,6 +38,8 @@ if (ldapu.eq.3) then
   enfll(:)=engyalu(:)
   ldapu=2
   call genvmatlu_12
+! read in the interpolation constant (alpha) if required
+  if (readalu) call readalphalu
 ! reset ldapu value
   ldapu=3
   do ias=1,natmtot
@@ -56,6 +59,8 @@ end subroutine
 
 subroutine genvmatlu_12
 use modmain
+use modldapu
+use modtest
 implicit none
 ! local variables
 integer is,ia,ias,ispn,jspn
@@ -81,11 +86,10 @@ do is=1,nspecies
   l=llu(is)
   if (l.lt.0) goto 10
   nm=2*l+1
-  u=ujlu(1,is)
-  j=ujlu(2,is)
-  if ((abs(u).lt.1.d-10).and.(abs(j).lt.1.d-10)) goto 10
 ! calculate the Coulomb matrix elements
-  call genveelu(l,u,j,lmaxlu,vee)
+! NOTE: u and j are calculated by genvee
+  call genveelu(is,l,u,j,vee)
+  if ((abs(u).lt.1.d-10).and.(abs(j).lt.1.d-10)) goto 10
 ! begin loop over atoms
   do ia=1,natoms(is)
     ias=idxas(ia,is)
@@ -196,7 +200,7 @@ do is=1,nspecies
 ! spin-polarised
         if (ncmag) then
 ! non-collinear case
-! correction to the energy 
+! correction to the energy
           edc=0.5d0*u*n*(n-1.d0)
           edc=edc-0.5d0*j*dble(dmt(1,1)*(dmt(1,1)-1.d0))
           edc=edc-0.5d0*j*dble(dmt(2,2)*(dmt(2,2)-1.d0))
@@ -214,7 +218,7 @@ do is=1,nspecies
           end do
         else
 ! collinear case
-! correction to the energy 
+! correction to the energy
           edc=0.5d0*u*n*(n-1.d0)
           edc=edc-0.5d0*j*dble(dmt(1,1)*(dmt(1,1)-1.d0))
           edc=edc-0.5d0*j*dble(dmt(2,2)*(dmt(2,2)-1.d0))
@@ -263,6 +267,12 @@ do is=1,nspecies
 end do
 ! symmetrise the potential
 call symdmat(lmaxlu,lmmaxlu,vmatlu)
+! write potential matrix to test file
+call writetest(800,'LDA+U energy for each atom',nv=natmtot,tol=1.d-4, &
+ rva=engyalu)
+! write U and J parameters to test file
+call writetest(810,'U and J parameters',nv=2*maxspecies,tol=1.d-4,rva=ujlu)
 return
 end subroutine
+!EOC
 

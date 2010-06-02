@@ -9,6 +9,8 @@
 subroutine init1
 ! !USES:
 use modmain
+use modldapu
+use modtest
 ! !DESCRIPTION:
 !   Generates the $k$-point set and then allocates and initialises global
 !   variables which depend on the $k$-point set.
@@ -19,15 +21,19 @@ use modmain
 !BOC
 implicit none
 ! local variables
-integer ik,is,ia,ias,io,ilo,ikloc
-integer i1,i2,i3,ispn,iv(3)
-integer l1,l2,l3,m1,m2,m3,lm1,lm2,lm3
-real(8) vl(3),vc(3),boxl(3,4)
+logical lsym(48)
+integer isym,is,ia,ias,ikloc
+integer ik,io,ilo,iv(3)
+integer i1,i2,i3,ispn
+integer l1,l2,l3,m1,m2,m3
+integer lm1,lm2,lm3
+real(8) vl(3),vc(3)
+real(8) boxl(3,4),t1
 real(8) ts0,ts1
+integer, allocatable :: sz(:)
 ! external functions
 complex(8) gauntyry
 external gauntyry
-integer, allocatable :: grid_dim(:)
 
 call timesec(ts0)
 
@@ -40,18 +46,34 @@ if (molecule) then
   vkloff(:)=0.d0
   autokpt=.false.
 end if
-! setup the default k-point box
-boxl(:,1)=vkloff(:)/dble(ngridk(:))
-boxl(:,2)=boxl(:,1); boxl(:,3)=boxl(:,1); boxl(:,4)=boxl(:,1)
-boxl(1,2)=boxl(1,2)+1.d0
-boxl(2,3)=boxl(2,3)+1.d0
-boxl(3,4)=boxl(3,4)+1.d0
-! k-point set and box for Fermi surface plots
-if ((task.eq.100).or.(task.eq.101)) then
-  ngridk(:)=np3d(:)
-  boxl(:,:)=vclp3d(:,:)
+! store the point group symmetries for reducing the k-point set
+if (reducek.eq.0) then
+  nsymkpt=1
+  symkpt(:,:,1)=symlat(:,:,1)
+else
+  lsym(:)=.false.
+  do isym=1,nsymcrys
+    if (reducek.eq.2) then
+! check symmetry is symmorphic if required
+      t1=abs(vtlsymc(1,isym))+abs(vtlsymc(2,isym))+abs(vtlsymc(3,isym))
+      if (t1.gt.epslat) goto 10
+! check also that the spin rotation is the same as the spatial rotation
+      if (spinpol) then
+        if (lspnsymc(isym).ne.lsplsymc(isym)) goto 10
+      end if
+    end if
+    lsym(lsplsymc(isym))=.true.
+10 continue
+  end do
+  nsymkpt=0
+  do isym=1,nsymlat
+    if (lsym(isym)) then
+      nsymkpt=nsymkpt+1
+      symkpt(:,:,nsymkpt)=symlat(:,:,isym)
+    end if
+  end do
 end if
-if ((task.eq.20).or.(task.eq.21).or.(task.eq.22)) then
+if ((task.eq.20).or.(task.eq.21)) then
 ! for band structure plots generate k-points along a line
   call connect(bvec,nvp1d,npp1d,vvlp1d,vplp1d,dvp1d,dpp1d)
   nkpt=npp1d
@@ -93,6 +115,17 @@ else
   if (autokpt) then
     ngridk(:)=int(radkpt/sqrt(avec(1,:)**2+avec(2,:)**2+avec(3,:)**2))+1
   end if
+! setup the default k-point box
+  boxl(:,1)=vkloff(:)/dble(ngridk(:))
+  boxl(:,2)=boxl(:,1); boxl(:,3)=boxl(:,1); boxl(:,4)=boxl(:,1)
+  boxl(1,2)=boxl(1,2)+1.d0
+  boxl(2,3)=boxl(2,3)+1.d0
+  boxl(3,4)=boxl(3,4)+1.d0
+! k-point set and box for Fermi surface plots
+  if ((task.eq.100).or.(task.eq.101).or.(task.eq.102)) then
+    ngridk(:)=np3d(:)
+    if (task.ne.102) boxl(:,:)=vclp3d(:,:)
+  end if
 ! allocate the reduced k-point set arrays
   if (allocated(ivk)) deallocate(ivk)
   allocate(ivk(3,ngridk(1)*ngridk(2)*ngridk(3)))
@@ -105,7 +138,8 @@ else
   if (allocated(ikmap)) deallocate(ikmap)
   allocate(ikmap(0:ngridk(1)-1,0:ngridk(2)-1,0:ngridk(3)-1))
 ! generate the reduced k-point set
-  call genppts(reducek,.false.,ngridk,boxl,nkpt,ikmap,ivk,vkl,vkc,wkpt)
+  call genppts(.false.,nsymkpt,symkpt,ngridk,epslat,bvec,boxl,nkpt,ikmap,ivk, &
+   vkl,vkc,wkpt)
 ! allocate the non-reduced k-point set arrays
   nkptnr=ngridk(1)*ngridk(2)*ngridk(3)
   if (allocated(ivknr)) deallocate(ivknr)
@@ -119,56 +153,48 @@ else
   if (allocated(ikmapnr)) deallocate(ikmapnr)
   allocate(ikmapnr(0:ngridk(1)-1,0:ngridk(2)-1,0:ngridk(3)-1))
 ! generate the non-reduced k-point set
-  call genppts(.false.,.false.,ngridk,boxl,nkptnr,ikmapnr,ivknr,vklnr,vkcnr, &
-   wkptnr)
+  call genppts(.false.,1,symkpt,ngridk,epslat,bvec,boxl,nkptnr,ikmapnr,ivknr, &
+   vklnr,vkcnr,wkptnr)
 end if
+! write the k-points to test file
+call writetest(910,'k-points (Cartesian)',nv=3*nkpt,tol=1.d-8,rva=vkc)
 
-!---------------------!
-!     parallel        !
-!---------------------!
-dim_k=dim1
-dim_q=dim2
-dim_b=dim3
-if (task.eq.0.or.task.eq.1.or.task.eq.22.or.task.eq.100.or.&
-  task.eq.101.or.task.eq.63) then
-  allocate(grid_dim(2))
+!------------------------!
+!     parallel grid      !
+!------------------------!
+if (task.eq.0.or.task.eq.1.or.task.eq.22) then
+  i2=2
+  allocate(sz(i2))
   if (nproc.le.nkpt) then
-    grid_dim=(/nproc,1/)
+    sz=(/nproc,1/)
   else
     i1=nproc/nkpt
-    grid_dim=(/nkpt,i1/)
+    sz=(/nkpt,i1/)
   endif    
-  if (lmpi_grid) then
-    grid_dim(1:2)=mpi_grid(1:2)
-  endif
-else if (task.eq.400.or.task.eq.401.or.task.eq.402.or.task.eq.800) then
-  i2=nvq0
-  if (i2.eq.0) i2=nkptnr
-  allocate(grid_dim(3))
-! overwrite default grid layout
-  if (lmpi_grid) then
-    grid_dim=mpi_grid 
+else if (task.eq.400.or.task.eq.401.or.task.eq.402.or.task.eq.403) then
+  i2=3
+  allocate(sz(i2))
+  if (nproc.le.nkptnr) then
+    sz=(/nproc,1,1/)
   else
-    grid_dim=(/1,1,1/)
-    if (nproc.le.nkptnr) then
-      grid_dim(dim_k)=nproc
+    i1=nproc/nkptnr
+    if (i1.le.nvq0) then
+      sz=(/nkptnr,1,i1/)
     else
-      grid_dim(dim_k)=nkptnr
-      i1=nproc/nkptnr
-      if (i1.le.i2) then
-        grid_dim(dim_q)=i1
-      else
-        grid_dim(dim_q)=i2
-        grid_dim(dim_b)=nproc/(nkptnr*i2)
-      endif
+      sz=(/nkptnr,nproc/(nkptnr*nvq0),nvq0/)
     endif
   endif
 else
-  allocate(grid_dim(1))
-  grid_dim=(/nproc/)
+  i2=1
+  allocate(sz(i2))
+  sz=(/nproc/)
 endif  
-call mpi_grid_initialize(grid_dim)
-deallocate(grid_dim)
+! overwrite default grid layout
+if (lmpigrid) then
+  sz(1:i2)=mpigrid(1:i2) 
+endif
+call mpi_grid_initialize(sz)
+deallocate(sz)
 if (.not.mpi_grid_in()) return
 nkptloc=mpi_grid_map(nkpt,dim_k)
 nkptnrloc=mpi_grid_map(nkptnr,dim_k)
@@ -176,18 +202,6 @@ nkptnrloc=mpi_grid_map(nkptnr,dim_k)
 !---------------------!
 !     G+k vectors     !
 !---------------------!
-! determine gkmax
-if ((isgkmax.ge.1).and.(isgkmax.le.nspecies)) then
-  gkmax=rgkmax/rmt(isgkmax)
-else
-  gkmax=rgkmax/2.d0
-end if
-if (2.d0*gkmax.gt.gmaxvr+epslat) then
-  write(*,*)
-  write(*,'("Error(init1): 2*gkmax > gmaxvr  ",2G18.10)') 2.d0*gkmax,gmaxvr
-  write(*,*)
-  stop
-end if
 ! find the maximum number of G+k-vectors
 call getngkmax
 ! allocate the G+k-vector arrays
@@ -280,6 +294,18 @@ allocate(apwdfr(apwordmax,0:lmaxapw,natmtot))
 if (allocated(lofr)) deallocate(lofr)
 allocate(lofr(nrmtmax,2,nlomax,natmtot))
 
+!-------------------------!
+!     LDA+U variables     !
+!-------------------------!
+if (ldapu.ne.0) then
+! allocate energy arrays to calculate Slater integrals with Yukawa potential
+  if (allocated(flue)) deallocate(flue)
+  allocate(flue(maxapword,0:lmaxapw,natmtot))
+! allocate radial functions to calculate Slater integrals with Yukawa potential
+  if (allocated(flufr)) deallocate(flufr)
+  allocate(flufr(nrmtmax,2,apwordmax,0:lmaxapw,natmtot))
+end if
+
 !------------------------------------!
 !     secular equation variables     !
 !------------------------------------!
@@ -290,27 +316,17 @@ if (allocated(nmat)) deallocate(nmat)
 allocate(nmat(nspnfv,nkpt))
 if (allocated(npmat)) deallocate(npmat)
 allocate(npmat(nspnfv,nkpt))
-nmat=0
-npmat=0
-do ikloc=1,nkptloc
-  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-  do ispn=1,nspnfv
-    nmat(ispn,ik)=ngk(ispn,ik)+nlotot
-! packed matrix sizes
-    npmat(ispn,ik)=nmat(ispn,ik)*(nmat(ispn,ik)+1)/2
-  end do
-end do
-call mpi_grid_reduce(nmat(1,1),nspnfv*nkpt,dims=(/dim_k/),all=.true.)
-call mpi_grid_reduce(npmat(1,1),nspnfv*nkpt,dims=(/dim_k/),all=.true.)
 nmatmax=0
 do ik=1,nkpt
   do ispn=1,nspnfv
+    nmat(ispn,ik)=ngk(ispn,ik)+nlotot
     nmatmax=max(nmatmax,nmat(ispn,ik))
-! the number of first-variational states should not exceed the matrix size 
+! packed matrix sizes
+    npmat(ispn,ik)=(nmat(ispn,ik)*(nmat(ispn,ik)+1))/2
+! the number of first-variational states should not exceed the matrix size
     nstfv=min(nstfv,nmat(ispn,ik))
   end do
 end do
-
 ! number of second-variational states
 nstsv=nstfv*nspinor
 ! allocate second-variational arrays
@@ -350,20 +366,19 @@ do l1=0,lmaxmat
   end do
 end do
 
-!-----------------!
-!      addons     !
-!-----------------!
-if (allocated(nrfl)) deallocate(nrfl)
-allocate(nrfl(0:lmaxvr,nspecies))
-call getnrfmax(lmaxvr)
-if (allocated(urf)) deallocate(urf)
-allocate(urf(nrmtmax,0:lmaxvr,nrfmax,natmtot))
-if (allocated(urfprod)) deallocate(urfprod)
-allocate(urfprod(0:lmaxvr,nrfmax,nrfmax,natmtot))
-
-if (wannier) call wann_init
-
+!----------------!
+!      extra     !
+!----------------!
 call getatmcls
+if (allocated(nfr)) deallocate(nfr)
+allocate(nfr(0:lmaxvr,nspecies))
+call getnfr(lmaxvr)
+if (allocated(ufr)) deallocate(ufr)
+allocate(ufr(nrmtmax,0:lmaxvr,nfrmax,natmcls))
+if (allocated(ufrp)) deallocate(ufrp)
+allocate(ufrp(0:lmaxvr,nfrmax,nfrmax,natmcls))
+
+!if (wannier) call wann_init
 
 call timesec(ts1)
 timeinit=timeinit+ts1-ts0

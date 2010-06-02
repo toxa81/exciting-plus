@@ -108,14 +108,15 @@ complex(8), intent(out) :: zrho0
 ! local variables
 integer is,ia,ias,l,m,lm
 integer ir,ig,ifg
-real(8) fpo,t1,t2,t3
-complex(8) zsum,zt1,zt2
+real(8) fpo,t1
+complex(8) zsum1,zsum2,zt1,zt2
 ! automatic arrays
 real(8) rmtl(0:lmaxvr+3,nspecies)
 real(8) rl(nrmax,0:lmaxvr)
 complex(8) vilm(lmmaxvr)
 complex(8) qmt(lmmaxvr,natmtot)
 complex(8) qi(lmmaxvr,natmtot)
+complex(8) zl(0:lmaxvr)
 complex(8) zrp(lmmaxvr)
 ! external functions
 real(8) factnm
@@ -156,17 +157,18 @@ call zfftifc(3,ngrid,-1,zvclir)
 ! find the multipole moments of the interstitial charge density
 qi(:,:)=0.d0
 do is=1,nspecies
+  do l=0,lmaxvr
+    zl(l)=fourpi*zil(l)*rmtl(l+3,is)
+  end do
   do ia=1,natoms(is)
     ias=idxas(ia,is)
     do ig=1,ngvec
       ifg=igfft(ig)
       if (gpc(ig).gt.epslat) then
-        zt1=fourpi*zvclir(ifg)*sfacgp(ig,ias)
-        t1=1.d0/(gpc(ig)*rmt(is))
+        zt1=zvclir(ifg)*sfacgp(ig,ias)/(gpc(ig)*rmt(is))
         lm=0
         do l=0,lmaxvr
-          t2=t1*rmtl(l+3,is)*jlgpr(l+1,ig,is)
-          zt2=t2*zt1*zil(l)
+          zt2=zt1*zl(l)*jlgpr(l+1,ig,is)
           do m=-l,l
             lm=lm+1
             qi(lm,ias)=qi(lm,ias)+zt2*conjg(ylmgp(lm,ig))
@@ -188,30 +190,31 @@ do is=1,nspecies
     do l=0,lmaxvr
 ! note the factor 2^N*N! is omitted because of reciprocal term in the
 ! form-factor
-      t1=factnm(2*(l+npsden)+3,2)/factnm(2*l+1,2)
+      t1=factnm(2*(l+npsden)+3,2)/(factnm(2*l+1,2)*rmtl(l,is))
+      zt1=t1*conjg(zil(l))
       do m=-l,l
         lm=lm+1
-        zrp(lm)=(qmt(lm,ias)-qi(lm,ias))*t1
+        zrp(lm)=zt1*(qmt(lm,ias)-qi(lm,ias))
       end do
     end do
 ! add the pseudocharge and real interstitial densities in G-space
     do ig=1,ngvec
       ifg=igfft(ig)
       if (gpc(ig).gt.epslat) then
-        zt1=fpo*conjg(sfacgp(ig,ias))
-        t1=gpc(ig)*rmt(is)
-        t2=t1**(npsden+1)
+        zsum1=0.d0
         lm=0
         do l=0,lmaxvr
           lm=lm+1
-          zsum=zrp(lm)*ylmgp(lm,ig)
+          zsum2=zrp(lm)*ylmgp(lm,ig)
           do m=-l+1,l
             lm=lm+1
-            zsum=zsum+zrp(lm)*ylmgp(lm,ig)
+            zsum2=zsum2+zrp(lm)*ylmgp(lm,ig)
           end do
-          t3=jlgpr(npsden+l+1,ig,is)/(t2*rmtl(l,is))
-          zvclir(ifg)=zvclir(ifg)+t3*zt1*zsum*conjg(zil(l))
+          zsum1=zsum1+jlgpr(npsden+l+1,ig,is)*zsum2
         end do
+        t1=gpc(ig)*rmt(is)
+        zt1=fpo*conjg(sfacgp(ig,ias))/(t1**(npsden+1))
+        zvclir(ifg)=zvclir(ifg)+zt1*zsum1
       else
         t1=fpo*y00/factnm(2*npsden+3,2)
         zvclir(ifg)=zvclir(ifg)+t1*zrp(1)
@@ -223,7 +226,7 @@ end do
 ifg=igfft(igp0)
 zrho0=zvclir(ifg)
 zvclir(ifg)=0.d0
-! solve Poissons's equation in G-space for the pseudocharge
+! solve Poisson's equation in G-space for the pseudocharge
 do ig=1,ngvec
   ifg=igfft(ig)
   if (gpc(ig).gt.epslat) then

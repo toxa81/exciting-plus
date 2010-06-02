@@ -9,6 +9,7 @@
 subroutine gengvec
 ! !USES:
 use modmain
+use modtest
 ! !DESCRIPTION:
 !   Generates a set of ${\bf G}$-vectors used for the Fourier transform of the
 !   charge density and potential and sorts them according to length. Integers
@@ -116,6 +117,8 @@ do ig=ngrtot,1,-1
   end if
 end do
 10 continue
+! write number of G-vectors to test file
+call writetest(900,'number of G-vectors',iv=ngvec)
 deallocate(idx,iar,rar)
 return
 end subroutine

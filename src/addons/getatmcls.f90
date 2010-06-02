@@ -18,12 +18,12 @@ do is=1,nspecies
     endif
   enddo
 enddo
-if (allocated(iatmcls)) deallocate(iatmcls)
-allocate(iatmcls(natmcls))
+if (allocated(ic2ias)) deallocate(ic2ias)
+allocate(ic2ias(natmcls))
 do i=1,natmcls
   do ias=1,natmtot
     if (ias2ic(ias).eq.i) then
-      iatmcls(i)=ias 
+      ic2ias(i)=ias 
       exit
     endif
   enddo

@@ -66,8 +66,15 @@ ngrtot0=ngrtot
 natoms(1:nspecies)=natoms0(1:nspecies)
 ! find a dynamical matrix to calculate
 call dyntask(80,iq,is,ia,ip)
+if (iq.eq.0) then
+  call readinput
+  return
+end if
 ! phonon dry run
-if (task.eq.201) goto 10
+if (task.eq.201) then
+  close(80)
+  goto 10
+end if
 ! check to see if mass is considered infinite
 if (spmass(is).le.0.d0) then
   do ip=1,3

@@ -28,7 +28,7 @@ integer is,ia,ias,ig,ifg
 real(8) x,t1,t2
 complex(8) zt1,zt2,zt3
 ! automatic arrays
-real(8) fr(spnrmax),gr(spnrmax),cf(3,spnrmax)
+real(8) fr(spnrmax),gr(spnrmax),cf(4,spnrmax)
 ! allocatable arrays
 real(8), allocatable :: jlgr(:,:)
 real(8), allocatable :: th(:,:)
@@ -60,13 +60,18 @@ do is=1,nspecies
   end do
   do ig=1,ngvec
     do ir=1,spnr(is)
+! spherical bessel function j_0(x)
       x=gc(ig)*spr(ir,is)
-      call sbessel(0,x,jlgr(0,1))
-      t1=sprho(ir,is)*jlgr(0,1)*spr(ir,is)**2
-      if (ir.lt.nrmt(is)) then
-        fr(ir)=th(ir,is)*t1
+      if (x.gt.1.d-6) then
+        t1=sin(x)/x
       else
-        fr(ir)=t1
+        t1=1.d0
+      end if
+      t2=t1*sprho(ir,is)*spr(ir,is)**2
+      if (ir.lt.nrmt(is)) then
+        fr(ir)=th(ir,is)*t2
+      else
+        fr(ir)=t2
       end if
     end do
     call fderiv(-1,spnr(is),spr(:,is),fr,gr,cf)

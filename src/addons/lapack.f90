@@ -1,34 +1,30 @@
-      subroutine invzge(A,ndim)
-      implicit none
+subroutine invzge(mtrx,ndim)
+implicit none
 ! passed var
-      integer ndim
-      complex*16 A(ndim,ndim)
+integer, intent(in) :: ndim
+complex(8), intent(out) :: mtrx(ndim,ndim)
 ! local var
-      integer lwork,nb,info
-      real*8 ,allocatable :: work(:)
-      integer ,allocatable :: ipiv(:)
-      integer, external :: ilaenv
-
-
-      nb = ilaenv(1,'zgetri','U',ndim,-1,-1,-1)
-      lwork = ndim * nb
-      allocate(work(2*lwork),ipiv(ndim))
-
-      call zgetrf(ndim,ndim,A,ndim,ipiv,info)
-      if(info.ne.0) then
-        write(*,*)'inverse_he_matrix: error factorization'
-	stop
-      endif
-
-      call zgetri(ndim,A,ndim,ipiv,work,lwork,info)
-      if(info.ne.0) then
-        write(*,*)'inverse_he_matrix: error inversion'
-	stop
-      endif
-
-      deallocate(work,ipiv)
-
-      end
+integer lwork,nb,info
+real*8 ,allocatable :: work(:)
+integer ,allocatable :: ipiv(:)
+integer, external :: ilaenv
+nb=ilaenv(1,'zgetri','U',ndim,-1,-1,-1)
+lwork=ndim*nb
+allocate(work(2*lwork),ipiv(ndim))
+call zgetrf(ndim,ndim,mtrx,ndim,ipiv,info)
+if (info.ne.0) then
+  write(*,*)
+  write(*,'("Error(invzge): error factorization")')
+  stop
+endif
+call zgetri(ndim,mtrx,ndim,ipiv,work,lwork,info)
+if (info.ne.0) then
+  write(*,*)
+  write(*,'("Error(invzge): error inversion")')
+  stop
+endif
+deallocate(work,ipiv)
+end
 
 subroutine invdsy(n,mtrx)
 implicit none
@@ -57,49 +53,40 @@ if (info.ne.0) then
   write(*,'("Warinig(invdsy) : inversion error")')
   write(*,*)
 endif
-
 deallocate(ipiv,work)
-
 return
 end
 
-      subroutine diagzhe(ndim,mtrx,evalue)
-      implicit   none
+subroutine diagzhe(ndim,mtrx,evalue)
+implicit none
+integer ,intent(in) :: ndim
+complex(8), intent(out) :: mtrx(ndim,ndim)
+real(8), intent(out) :: evalue(ndim)
+integer nb,lwork,inf
+real*8, allocatable :: work(:),rwork(:)
+integer, external :: ilaenv
 
-!---- passed var
-      integer       ,intent(in   ) :: ndim
-      complex*16    ,intent(inout) :: mtrx(ndim,ndim)
-      real*8        ,intent(out  ) :: evalue(ndim)
-
-!---- local var
-      integer                      :: nb,lwork,inf
-      real*8        ,allocatable   :: work(:),rwork(:)
-
-      integer       ,external      :: ilaenv
-
-      nb = ilaenv(1,'ZHETRD','U',ndim,-1,-1,-1)
-      lwork = (nb+1)*ndim
-      allocate(work(lwork*2))
-      allocate(rwork(3*ndim+2))
-      call zheev('V','U',ndim,mtrx,ndim,evalue,work,lwork,rwork,inf)
-      if( inf.ne.0 ) then
-        write(*,*)'DIAG_MTRX: Error finding eigenvectors.'
-        stop
-      endif
-      deallocate(work,rwork)
-
-      end
+nb=ilaenv(1,'ZHETRD','U',ndim,-1,-1,-1)
+lwork=(nb+1)*ndim
+allocate(work(lwork*2))
+allocate(rwork(3*ndim+2))
+call zheev('V','U',ndim,mtrx,ndim,evalue,work,lwork,rwork,inf)
+if (inf.ne.0) then
+  write(*,*)
+  write(*,'("Error(diagzhe): zheev returned : ",I4)')inf
+  stop
+endif
+deallocate(work,rwork)
+end
 
 subroutine diagdsy(n,mtrx,eval)
 implicit none
 integer, intent(in) :: n
 real(8), intent(inout) :: mtrx(n,n)
 real(8), intent(out) :: eval(n)
-
 integer lwork,info
 real(8), allocatable :: work(:)
 real(8) t1
-
 lwork=-1
 call dsyev('V','U',n,mtrx,n,eval,t1,lwork,info)
 lwork=int(t1)+1
@@ -111,7 +98,6 @@ if (info.ne.0) then
   write(*,*)
 endif
 deallocate(work)
-
 return
 end
 
@@ -142,7 +128,7 @@ if (info.ne.0) then
   write(*,*)
   write(*,'("Error(isqrtzhe): zheev failed")')
   write(*,*)
-  call pstop
+  stop
 endif
 
 ierr=0

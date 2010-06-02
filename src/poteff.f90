@@ -19,7 +19,7 @@ use modmain
 !BOC
 implicit none
 ! local variables
-integer is,ia,ias,ir,lm,lmmax
+integer is,ia,ias,ir
 real(8) ts0,ts1
 call timesec(ts0)
 ! compute the Coulomb potential
@@ -31,15 +31,13 @@ call potxc
 do is=1,nspecies
   do ia=1,natoms(is)
     ias=idxas(ia,is)
-    lmmax=lmmaxinr
-    do ir=1,nrmt(is)
-      if (ir.gt.nrmtinr(is)) lmmax=lmmaxvr
-      do lm=1,lmmax
-        veffmt(lm,ir,ias)=vclmt(lm,ir,ias)+vxcmt(lm,ir,ias)
-      end do
-      do lm=lmmax+1,lmmaxvr
-        veffmt(lm,ir,ias)=0.d0
-      end do
+    do ir=1,nrmtinr(is)
+      veffmt(1:lmmaxinr,ir,ias)=vclmt(1:lmmaxinr,ir,ias) &
+       +vxcmt(1:lmmaxinr,ir,ias)
+      veffmt(lmmaxinr:lmmaxvr,ir,ias)=0.d0
+    end do
+    do ir=nrmtinr(is)+1,nrmt(is)
+      veffmt(:,ir,ias)=vclmt(:,ir,ias)+vxcmt(:,ir,ias)
     end do
   end do
 end do
