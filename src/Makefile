@@ -23,8 +23,8 @@ include ../make.inc
 SRC_libxc = libxcifc_stub.f90
 include libxc.inc
 SRC_modules = mod_addons.f90 mod_addons_q.f90 mod_mpi_grid.f90 mod_timer.f90 \
-  modmain.f90 modqpt.f90 $(SRC_libxc) modxcifc.f90 modldapu.f90 modrdm.f90 modphonon.f90 \
-  modtest.f90
+  modmain.f90 modqpt.f90 mod_nrkp.f90 mod_hdf5.f90 $(SRC_libxc) modxcifc.f90 \
+  modldapu.f90 modrdm.f90 modphonon.f90 modtest.f90
 
 # main program
 SRC_main = main.f90
@@ -118,7 +118,7 @@ SRC_xc = \
   xc_pzca.f90 xc_pwca.f90 xc_pbe.f90 xc_am05.f90 xc_xalpha.f90 xc_wc06.f90 \
   x_wc06.f90 x_pbe.f90 c_pbe.f90 c_pbe_gcor.f90 xc_vbh.f90
   
-SRC_addons := $(shell ls addons/*.f90 addons/linresp/*.f90 addons/wann/*.f90)
+SRC_addons := $(shell ls addons/*.f90 addons/linresp/*.f90 addons/wann/*.f90 addons/expigqr/*.f90)
 
 SRC = $(SRC_modules) $(SRC_main) $(SRC_routines) $(SRC_lib) $(SRC_advanced) \
  $(SRC_phonon) $(SRC_optics) $(SRC_xc) $(SRC_LDAU) $(SRC_rdmft) $(SRC_pw) $(SRC_addons)
@@ -137,7 +137,7 @@ EXE = elk
 # Targets
 #-------------------------------------------------------------------------------
 elk:	$(OBJ)
-	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) $(LIB_LPK) $(LIB_FFT) $(LIB_XC) 
+	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) $(LIB_LPK) $(LIB_FFT) $(LIB_XC) $(LIB_SYS)
 
 blas:
 	cd BLAS; $(MAKE); cp blas.a ..

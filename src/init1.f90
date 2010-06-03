@@ -11,7 +11,6 @@ subroutine init1
 use modmain
 use modldapu
 use modtest
-use mod_addons_q
 ! !DESCRIPTION:
 !   Generates the $k$-point set and then allocates and initialises global
 !   variables which depend on the $k$-point set.
@@ -331,23 +330,13 @@ do l1=0,lmaxmat
   end do
 end do
 
-!----------------!
-!      extra     !
-!----------------!
-call getatmcls
-if (allocated(nufr)) deallocate(nufr)
-allocate(nufr(0:lmaxvr,nspecies))
-call getnufr(lmaxvr)
-if (allocated(ufr)) deallocate(ufr)
-allocate(ufr(nrmtmax,0:lmaxvr,nufrmax,natmcls))
-if (allocated(ufrp)) deallocate(ufrp)
-allocate(ufrp(0:lmaxvr,nufrmax,nufrmax,natmcls))
-
-!if (wannier) call wann_init
+!-----------------!
+!      addons     !
+!-----------------!
+call init3
 
 call timesec(ts1)
 timeinit=timeinit+ts1-ts0
-
 return
 end subroutine
 !EOC

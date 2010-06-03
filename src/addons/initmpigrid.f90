@@ -23,10 +23,10 @@ else if (task.eq.400.or.task.eq.401.or.task.eq.402.or.task.eq.403) then
     sz=(/nproc,1,1/)
   else
     i1=nproc/nkptnr
-    if (i1.le.nq) then
+    if (i1.le.nvq) then
       sz=(/nkptnr,1,i1/)
     else
-      sz=(/nkptnr,nproc/(nkptnr*nq),nq/)
+      sz=(/nkptnr,nproc/(nkptnr*nvq),nvq/)
     endif
   endif
 else

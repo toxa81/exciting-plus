@@ -157,9 +157,16 @@ complex(8), allocatable :: megqblh2(:,:)
 !   2-nd index : global index of pair of bands (n,n')
 !   3-rd index : k-point
 integer, allocatable :: bmegqblh(:,:,:)
-
 logical megqwan_afm
 data megqwan_afm/.false./
+
+real(8) megqwan_cutoff1
+real(8) megqwan_cutoff2
+data megqwan_cutoff1/-0.1d0/
+data megqwan_cutoff2/100.1d0/
+
+real(8) megqwan_mindist
+real(8) megqwan_maxdist
 
 integer nmegqwanmax
 integer nmegqwan
@@ -167,11 +174,18 @@ integer megqwan_tlim(2,3)
 integer, allocatable :: imegqwan(:,:)
 integer, allocatable :: idxmegqwan(:,:,:,:,:)
 complex(8), allocatable :: megqwan(:,:)
+logical :: all_wan_ibt
+data all_wan_ibt/.false./
+
+integer nwann_include
+data nwann_include/0/
+integer, allocatable :: iwann_include(:)
 
 integer nmegqblhwanmax
 integer, allocatable :: nmegqblhwan(:)
 integer, allocatable :: imegqblhwan(:,:)
 
+complex(8), allocatable :: wann_c_jk(:,:,:)
 complex(8), allocatable :: wann_cc(:,:,:)
 complex(8), allocatable :: wann_cc2(:,:)
 
@@ -225,8 +239,6 @@ logical screened_u
 data screened_u/.false./
 logical write_chi0_file
 
-real(8) megqwan_maxdist
-
 logical crpa
 real(8) crpa_e1,crpa_e2
 
@@ -261,14 +273,6 @@ complex(8), allocatable :: f_response(:,:,:)
 
 complex(8), allocatable :: uscrnwan(:,:,:)
 complex(8), allocatable :: ubarewan(:,:)
-
-
-
-
-
-
-
-
 
 !------------------!
 !     Wannier      !
@@ -311,7 +315,6 @@ real(8) bound3d(3,3)
 integer nrxyz(3)
 integer nwfplot
 integer firstwf
-integer iwfv
 logical wannier_lc
 integer nwann_lc
 integer, allocatable :: wann_iorb_lc(:,:,:)
@@ -321,12 +324,16 @@ integer nwann_h
 integer, allocatable :: iwann_h(:)
 
 logical wannier_soft_eint
-real(8) wannier_soft_eint_width
-real(8) wannier_soft_eint_e1
-real(8) wannier_soft_eint_e2
+data wannier_soft_eint/.false./
+real(8), allocatable :: wannier_soft_eint_w1(:)
+real(8), allocatable :: wannier_soft_eint_w2(:)
+real(8), allocatable :: wannier_soft_eint_e1(:)
+real(8), allocatable :: wannier_soft_eint_e2(:)
 real(8) wannier_min_prjao
 
 logical ldisentangle
+
+complex(8), allocatable :: veffir_zfft(:)
 
 !----------------!
 !      timer     !

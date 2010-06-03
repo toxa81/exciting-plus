@@ -13,6 +13,7 @@ use modldapu
 use modrdm
 use modtest
 use modqpt
+use mod_addons_q
 ! !DESCRIPTION:
 !   Reads in the input parameters from the file {\tt elk.in}. Also sets default
 !   values for the input parameters.
@@ -954,6 +955,14 @@ case('solscf')
   end if
 case('emaxelnes')
   read(50,*,err=20) emaxelnes
+case('vqm')
+  read(50,*,err=20) nvq
+  allocate(vqm(3,nvq))
+  do i=1,nvq
+    read(50,*,err=20) vqm(:,i)
+  end do
+case('gqmax')
+  read(50,*,err=20) gqmax
 case('')
   goto 10
 case default

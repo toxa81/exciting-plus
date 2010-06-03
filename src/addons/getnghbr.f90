@@ -1,6 +1,7 @@
-subroutine getnghbr(maxdist)
+subroutine getnghbr(mindist,maxdist)
 use modmain
 implicit none
+real(8), intent(in) :: mindist
 real(8), intent(in) :: maxdist
 
 integer i1,i2,i3,ias,ia,is,jas,ja,js,i,n
@@ -32,7 +33,7 @@ do ias=1,natmtot
 	      v1(:)=atposc(:,ja,js)+i1*avec(:,1)+i2*avec(:,2)+i3*avec(:,3)-&
 	        atposc(:,ia,is)
 	      d1=sqrt(v1(1)**2+v1(2)**2+v1(3)**2)
-          if (d1.le.maxdist) then
+          if (d1.ge.mindist.and.d1.le.maxdist) then
             nnghbr(ias)=nnghbr(ias)+1
             n=nnghbr(ias)
             inghbr(1,n,ias)=jas
