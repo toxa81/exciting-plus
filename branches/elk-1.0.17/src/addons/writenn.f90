@@ -4,7 +4,7 @@ implicit none
 integer i,ia,is,ias,ja,js,jas
 real(8) maxdist,dist,v1(3),v2(3),v3(3)
 maxdist=20.d0
-call getnghbr(maxdist)
+call getnghbr(0.d0,maxdist)
 open(50,file='NGHBR.OUT',status='replace',form='formatted')
 write(50,*)
 write(50,'("Radius of cluster of nearest neighbours : ",G18.10)')maxdist
