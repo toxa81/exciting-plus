@@ -963,6 +963,29 @@ case('vqm')
   end do
 case('gqmax')
   read(50,*,err=20) gqmax
+case('wannier')
+  read(50,*,err=20) wannier
+  read(50,*,err=20) wann_add_poco
+  read(50,*,err=20) wann_natom,wann_norbgrp,wann_ntype
+  allocate(wann_norb(wann_norbgrp))
+  allocate(wann_iorb(3,32,wann_norbgrp))
+  allocate(wann_eint(2,wann_ntype))
+  allocate(wann_v(wann_ntype))
+  do i=1,wann_norbgrp
+    read(50,*,err=20) wann_norb(i)
+    read(50,*,err=20) (wann_iorb(1,l,i),l=1,wann_norb(i))
+    read(50,*,err=20) (wann_iorb(2,l,i),l=1,wann_norb(i))
+    read(50,*,err=20) (wann_iorb(3,l,i),l=1,wann_norb(i))
+  enddo
+  wann_eint=0.d0
+  wann_v=0.d0
+  do i=1,wann_ntype
+      read(50,*,err=20) wann_eint(1,i),wann_eint(2,i),wann_v(i)
+  enddo
+  allocate(wann_iprj(2,wann_natom))
+  do i=1,wann_natom
+    read(50,*,err=20) wann_iprj(1,i), wann_iprj(2,i)
+  enddo
 case('')
   goto 10
 case default

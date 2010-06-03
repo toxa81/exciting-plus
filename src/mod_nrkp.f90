@@ -25,7 +25,7 @@ integer, intent(in) :: fout
 logical, intent(in) :: lpmat
 integer ik,ikloc,n,j,ik1,isym,ig,i,sz
 complex(8), allocatable :: apwalm(:,:,:,:)
-real(8) w2
+real(8) w2,t1
 logical, external :: wann_diel
 
 ! get energies of states in reduced part of BZ
@@ -236,6 +236,22 @@ if (wannier) then
     write(151,'("  Dielectric Wannier functions : ",L1)')wann_diel()
   endif
 endif
+
+if (spinpol) then
+  if (allocated(spinor_ud)) deallocate(spinor_ud)
+  allocate(spinor_ud(2,nstsv,nkptnr))
+  spinor_ud=0
+  do ikloc=1,nkptnrloc
+    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+    do j=1,nstsv
+      t1=sum(abs(evecsvloc(1:nstfv,j,ikloc)))
+      if (t1.gt.1d-10) spinor_ud(1,j,ik)=1
+      t1=sum(abs(evecsvloc(nstfv+1:nstsv,j,ikloc)))
+      if (t1.gt.1d-10) spinor_ud(2,j,ik)=1
+    enddo
+  enddo
+  call mpi_grid_reduce(spinor_ud(1,1,1),2*nstsv*nkptnr,dims=(/dim_k/),all=.true.)
+endif  
 
 end subroutine
 
