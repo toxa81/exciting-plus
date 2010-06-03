@@ -32,8 +32,13 @@ integer, allocatable :: igqig(:,:)
 ! 4*Pi/|G+q|^2 (Fourier transform of Hartree potential)
 real(8), allocatable :: vhgq(:,:)
 
-real(8) q0gamma(3,8)
-real(8) a0gamma(8)
+real(8), allocatable :: tpgq(:,:)
+complex(8), allocatable :: sfacgq(:,:)
+complex(8), allocatable :: ylmgq(:,:)
+
+integer nvq0
+real(8) vq0c(3,8)
+real(8) aq0(8)
 
 
 end module

@@ -1,7 +1,7 @@
 subroutine init3
 use modmain
 implicit none
-integer ia,is
+integer ia,is,lm,l,m
 if (allocated(rylm)) deallocate(rylm)
 allocate(rylm(16,16))
 if (allocated(yrlm)) deallocate(yrlm)
@@ -29,6 +29,16 @@ if (allocated(ufr)) deallocate(ufr)
 allocate(ufr(nrmtmax,0:lmaxvr,nufrmax,natmcls))
 if (allocated(ufrp)) deallocate(ufrp)
 allocate(ufrp(0:lmaxvr,nufrmax,nufrmax,natmcls))
+if (allocated(lm2l)) deallocate(lm2l)
+allocate(lm2l(lmmaxapw))
+if (allocated(lm2m)) deallocate(lm2m)
+allocate(lm2m(lmmaxapw))
+do l=0,lmaxapw
+  do m=-l,l
+    lm2l(idxlm(l,m))=l
+    lm2m(idxlm(l,m))=m
+  end do
+end do
 if (wannier) call wann_init
 return
 end

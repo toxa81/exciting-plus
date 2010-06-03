@@ -16,7 +16,7 @@ if (task.eq.0.or.task.eq.1.or.task.eq.22) then
     i1=nproc/nkpt
     sz=(/nkpt,i1/)
   endif    
-else if (task.eq.400.or.task.eq.401.or.task.eq.402.or.task.eq.403) then
+else if (task.eq.400.or.task.eq.401.or.task.eq.802.or.task.eq.403) then
   i2=3
   allocate(sz(i2))
   if (nproc.le.nkptnr) then

@@ -124,15 +124,15 @@ real(8) lr_e1_wan
 real(8) lr_e2_wan
 
 ! G+q vectors in Cart.coord.
-real(8), allocatable :: lr_vgq0c(:,:)
+!real(8), allocatable :: lr_vgq0c(:,:)
 ! length of G+q vectors
-real(8), allocatable :: lr_gq0(:)
+!real(8), allocatable :: lr_gq0(:)
 ! theta and phi angles of G+q vectors
-real(8), allocatable :: lr_tpgq0(:,:)
+!real(8), allocatable :: lr_tpgq0(:,:)
 ! sperical harmonics of G+q vectors
-complex(8), allocatable :: lr_ylmgq0(:,:)
+!complex(8), allocatable :: lr_ylmgq0(:,:)
 ! structure factor for G+q vectors
-complex(8), allocatable :: lr_sfacgq0(:,:)
+!complex(8), allocatable :: lr_sfacgq0(:,:)
 
 ! number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> in the Bloch basis
 !  for a given k-point
@@ -272,7 +272,8 @@ integer, parameter :: nf_response            = 19
 complex(8), allocatable :: f_response(:,:,:)
 
 complex(8), allocatable :: uscrnwan(:,:,:)
-complex(8), allocatable :: ubarewan(:,:)
+!complex(8), allocatable :: ubarewan(:,:)
+complex(8), allocatable :: ubarewan(:)
 
 !------------------!
 !     Wannier      !

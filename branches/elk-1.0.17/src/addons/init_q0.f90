@@ -1,5 +1,6 @@
-subroutine init_q0gamma
+subroutine init_q0
 use modmain
+use mod_addons_q
 implicit none
 
 integer i1,i2,i3,n
@@ -22,7 +23,7 @@ do i1=0,1
       q0mtrx(:,2)=(i2-0.5d0)*vq0c_2(:)
       q0mtrx(:,3)=(i3-0.5d0)*vq0c_3(:)
       n=n+1
-      call findq0(q0mtrx,q0gamma(1,n),a0gamma(n))
+      call findq0(q0mtrx,vq0c(1,n),aq0(n))
     enddo
   enddo
 enddo
