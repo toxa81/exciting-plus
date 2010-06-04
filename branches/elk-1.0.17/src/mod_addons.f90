@@ -81,6 +81,8 @@ integer, parameter :: dim_k=1
 ! auxiliary dimension for fine parallelization 
 integer, parameter :: dim2=2
 
+complex(8), allocatable :: evecsv0loc(:,:,:)
+real(8), allocatable :: evalsv0(:,:)
 
 !-------------------------!
 !     Linear response     !

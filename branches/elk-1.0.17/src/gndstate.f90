@@ -45,6 +45,12 @@ wproc=mpi_grid_root()
 allocate(evalfv(nstfv,nspnfv,nkptloc))
 allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
 allocate(evecsvloc(nstsv,nstsv,nkptloc))
+if (sic) then
+  if (allocated(evalsv0)) deallocate(evalsv0)
+  allocate(evalsv0(nstsv,nkpt))
+  if (allocated(evecsv0loc)) deallocate(evecsv0loc)
+  allocate(evecsv0loc(nstsv,nstsv,nkptloc))
+endif
 ! no band disentanglement in ground state calculation
 ldisentangle=.false. 
 ! initialise OEP variables if required
@@ -100,6 +106,7 @@ else
   call genveffig
   if (wproc) write(60,'("Density and potential initialised from atomic data")')
 end if
+call readvwan
 if (wproc) call flushifc(60)
 ! size of mixing vector
 n=lmmaxvr*nrmtmax*natmtot+ngrtot
@@ -420,11 +427,15 @@ if (mpi_grid_side(dims=(/dim_k/))) then
       do ikloc=1,nkptloc
         ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
         call putevalfv(ik,evalfv(1,1,ikloc))
-        call putevalsv(ik,evalsv(1,ik))
+        if (sic) then
+          call putevalsv(ik,evalsv0(1,ik))
+          call putevecsv(ik,evecsv0loc(1,1,ikloc))
+        else
+          call putevalsv(ik,evalsv(1,ik))
+          call putevecsv(ik,evecsvloc(1,1,ikloc))
+        endif
         call putevecfv(ik,evecfvloc(1,1,1,ikloc))
-        call putevecsv(ik,evecsvloc(1,1,ikloc))
         call putoccsv(ik,occsv(1,ik))
-        !if (wannier) call putwann(ikloc)
       end do
     end if
     call mpi_grid_barrier(dims=(/dim_k/))

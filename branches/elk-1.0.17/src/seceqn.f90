@@ -63,6 +63,12 @@ if (scissor.ne.0.d0) then
     if (evalsv(ist,ik).gt.efermi) evalsv(ist,ik)=evalsv(ist,ik)+scissor
   end do
 end if
+if (sic) then
+  evalsv0(:,ik)=evalsv(:,ik)
+  evecsv0loc(:,:,ikloc)=evecsv(:,:)
+  call seceqn_sic(ikloc,evecfv,evecsv)
+endif
+
 deallocate(apwalm)
 return
 end subroutine
