@@ -990,7 +990,10 @@ case('wannier_nn')
   read(50,*,err=20) megqwan_mindist,megqwan_maxdist
 case('mpigrid')
   lmpigrid=.true.
-  read(50,*,err=20)mpigrid(1),mpigrid(2),mpigrid(3)  
+  read(50,*,err=20) mpigrid(1),mpigrid(2),mpigrid(3) 
+case('sic')
+  read(50,*,err=20) sic
+  read(50,*,err=20) lf_maxt
 case('')
   goto 10
 case default
