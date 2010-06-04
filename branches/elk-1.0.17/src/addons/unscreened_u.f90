@@ -21,7 +21,7 @@ if (.not.wannier) then
   call pstop
 endif
 wannier_megq=.true.
-lgamma=.false.
+lgamma=.true.
 call init_qbz(lgamma,1)
 call init_q_gq
 ! create q-directories
@@ -58,16 +58,16 @@ if (mpi_grid_root()) then
   write(151,'("Total number of q-vectors        : ",I6)')nvq
   write(151,'("Total number of processors       : ",I6)')nproc
   write(151,'("MPI grid size                    : ",3I6)')mpi_grid_size
-  write(151,*)
-  write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
-  write(151,'("List of Wannier transitions (n n1 T) ")')
-  do i=1,nmegqwan
-    write(151,'(I4,4X,I4,4X,3I3)')imegqwan(:,i)
-  enddo
-  call timestamp(151)
-  write(151,*)
-  write(151,'("Translation limits : ",6I6)')megqwan_tlim(:,1), &
-    megqwan_tlim(:,2),megqwan_tlim(:,3)
+!  write(151,*)
+!  write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
+!  write(151,'("List of Wannier transitions (n n1 T) ")')
+!  do i=1,nmegqwan
+!    write(151,'(I4,4X,I4,4X,3I3)')imegqwan(:,i)
+!  enddo
+!  call timestamp(151)
+!  write(151,*)
+!  write(151,'("Translation limits : ",6I6)')megqwan_tlim(:,1), &
+!    megqwan_tlim(:,2),megqwan_tlim(:,3)
   call flushifc(151)
 endif
 lr_e1=100.1d0
@@ -94,13 +94,15 @@ do iqloc=1,nvqloc
   enddo
 enddo
 ubarewan=ubarewan/nkptnr/omega
-do i=1,nmegqwan
-  n=imegqwan(1,i)
-  n1=imegqwan(2,i)
-  v2=dble(imegqwan(3:5,i))
-  write(*,*)'n=',n,'n1=',n1,'t=',v2,'u=',ubarewan(i)
-enddo
 if (wproc1) then
+  write(151,*)
+  write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
+  write(151,'("   n       n''        T                     U_bare")')
+  write(151,'(65("-"))')
+  do i=1,nmegqwan
+    write(151,'(I4,4X,I4,4X,3I3,4X,2G18.10)')imegqwan(:,i),&
+      dreal(ubarewan(i)),dimag(ubarewan(i))
+  enddo
   close(151)
 endif
 

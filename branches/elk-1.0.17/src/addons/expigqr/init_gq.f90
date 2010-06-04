@@ -27,7 +27,7 @@ allocate(ylmgq(lmmaxexp,ngvecme))
 !write(*,*)
 !write(*,'("Error(init_gq): no G-vector to reduce q-vector to first BZ")')
 !v1=vqc(:,iq)+vgc(:,ig0q(iq))
-!write(*,'(" |G+q| : ",G18.10)')sqrt(v1(1)**2+v1(2)**2+v1(3)**2)
+!write(*,'(" |G0+q| : ",G18.10)')sqrt(v1(1)**2+v1(2)**2+v1(3)**2)
 !write(*,'(" gqmax : ",G18.10)')gqmax
 !write(*,*)
 !call pstop
