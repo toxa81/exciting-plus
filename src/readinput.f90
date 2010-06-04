@@ -986,6 +986,11 @@ case('wannier')
   do i=1,wann_natom
     read(50,*,err=20) wann_iprj(1,i), wann_iprj(2,i)
   enddo
+case('wannier_nn')
+  read(50,*,err=20) megqwan_mindist,megqwan_maxdist
+case('mpigrid')
+  lmpigrid=.true.
+  read(50,*,err=20)mpigrid(1),mpigrid(2),mpigrid(3)  
 case('')
   goto 10
 case default

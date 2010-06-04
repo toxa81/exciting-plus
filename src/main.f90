@@ -6,11 +6,12 @@
 ! main routine for the Elk code
 program main
 use modmain
+use mod_hdf5
 implicit none
 ! local variables
 integer itask
 call mpi_world_initialize
-!call hdf5_initialize
+call hdf5_initialize
 ! read input files
 call readinput
 ! perform the appropriate task
@@ -94,6 +95,8 @@ do itask=1,ntasks
     call testcheck
   case(802)
     call unscreened_u
+  case(810)
+    call sic_gndstate
   case default
     write(*,*)
     write(*,'("Error(main): task not defined : ",I8)') task
@@ -102,6 +105,8 @@ do itask=1,ntasks
   end select
   call mpi_world_barrier
 end do
+call hdf5_finalize
+call mpi_grid_finalize
 call mpi_world_finalize
 stop
 end program
