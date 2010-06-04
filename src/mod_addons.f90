@@ -89,26 +89,16 @@ integer, parameter :: dim2=2
 integer, parameter :: dim_q=2
 ! dimension for interband transitions
 integer, parameter :: dim_b=3
-!integer nvq0
-!integer, allocatable :: ivq0m_list(:,:)
-! q-vector in lattice coordinates
-!real(8) vq0l(3)
-! q-vector in Cartesian coordinates
-!real(8) vq0c(3)
-! reduced q-vector in lattice coordinates
-!real(8) vq0rl(3)
-! reduced q-vector in Cartesian coordinates
-!real(8) vq0rc(3)
 ! index of G-vector which brings q to first BZ
-integer lr_igq0
+!integer lr_igq0
 ! first G-shell for matrix elements
-integer gshme1
+!integer gshme1
 ! last G-shell for matrix elements
-integer gshme2
+!integer gshme2
 ! first G-vector for matrix elements
-integer gvecme1
+!integer gvecme1
 ! last G-vector for matrix elements
-integer gvecme2
+!integer gvecme2
 ! number of G-vectors for matrix elements
 integer ngvecme
 real(8) maxomega
@@ -122,17 +112,6 @@ integer lrtype
 real(8) lr_min_e12
 real(8) lr_e1_wan
 real(8) lr_e2_wan
-
-! G+q vectors in Cart.coord.
-!real(8), allocatable :: lr_vgq0c(:,:)
-! length of G+q vectors
-!real(8), allocatable :: lr_gq0(:)
-! theta and phi angles of G+q vectors
-!real(8), allocatable :: lr_tpgq0(:,:)
-! sperical harmonics of G+q vectors
-!complex(8), allocatable :: lr_ylmgq0(:,:)
-! structure factor for G+q vectors
-!complex(8), allocatable :: lr_sfacgq0(:,:)
 
 ! number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> in the Bloch basis
 !  for a given k-point
@@ -166,7 +145,9 @@ data megqwan_cutoff1/-0.1d0/
 data megqwan_cutoff2/100.1d0/
 
 real(8) megqwan_mindist
+data megqwan_mindist/-0.1d0/
 real(8) megqwan_maxdist
+data megqwan_maxdist/0.1d0/
 
 integer nmegqwanmax
 integer nmegqwan

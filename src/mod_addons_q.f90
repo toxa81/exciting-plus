@@ -17,6 +17,8 @@ real(8), allocatable :: vqc(:,:)
 ! cutoff for |G+q|
 real(8) gqmax
 data gqmax/2.d0/
+integer gqsh
+data gqsh/2/
 ! maximum number of G+q vectors
 integer ngqmax
 ! index of G0-vector, which brigs q-vector to first BZ
