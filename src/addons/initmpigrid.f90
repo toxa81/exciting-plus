@@ -2,43 +2,49 @@ subroutine initmpigrid
 use modmain
 use mod_addons_q
 implicit none
-integer, allocatable :: sz(:)
-integer i1,i2
+integer, allocatable :: d(:)
+integer i1,i2,nd
 !------------------------!
 !     parallel grid      !
 !------------------------!
 if (task.eq.0.or.task.eq.1.or.task.eq.22) then
-  i2=2
-  allocate(sz(i2))
+  nd=2
+  allocate(d(nd))
+  d=1
   if (nproc.le.nkpt) then
-    sz=(/nproc,1/)
+    d(dim_k)=nproc
   else
-    i1=nproc/nkpt
-    sz=(/nkpt,i1/)
+    d(dim_k)=nkpt
+    d(dim2)=nproc/nkpt
   endif    
-else if (task.eq.400.or.task.eq.401.or.task.eq.802.or.task.eq.810) then
-  i2=3
-  allocate(sz(i2))
+else if (task.eq.802.or.task.eq.810) then
+  i2=nvq
+  if (i2.eq.0) i2=nkptnr
+  nd=3
+  allocate(d(nd))
+  d=1
   if (nproc.le.nkptnr) then
-    sz=(/nproc,1,1/)
-  else
+    d(dim_k)=nproc
+  else  
+    d(dim_k)=nkptnr
     i1=nproc/nkptnr
-    if (i1.le.nvq) then
-      sz=(/nkptnr,1,i1/)
+    if (i1.le.i2) then
+      d(dim_q)=i1
     else
-      sz=(/nkptnr,nproc/(nkptnr*nvq),nvq/)
+      d(dim_q)=i2
+      d(dim_b)=nproc/(nkptnr*i2)
     endif
   endif
 else
-  i2=1
-  allocate(sz(i2))
-  sz=(/nproc/)
+  nd=1
+  allocate(d(nd))
+  d=nproc
 endif  
 ! overwrite default grid layout
 if (lmpigrid) then
-  sz(1:i2)=mpigrid(1:i2) 
+  d(1:nd)=mpigrid(1:nd) 
 endif
-call mpi_grid_initialize(sz)
-deallocate(sz)
+call mpi_grid_initialize(d)
+deallocate(d)
 return
 end
