@@ -9,7 +9,7 @@ implicit none
 
 integer n
 integer ik,ikloc,j,sz,i,itp
-integer n1,n2,ispn
+integer n1,n2,ispn,irloc,nrmtloc
 integer itr,it,itloc,ir,m,ias
 real(8) t1,t2
 integer v1l(3),lm1,lm2,lm3
@@ -30,6 +30,7 @@ real(8), allocatable :: rhowanir(:)
 complex(8), allocatable :: f1mt(:,:)
 complex(8), allocatable :: f2mt(:,:)
 complex(8), allocatable :: f3mt(:,:)
+complex(8), allocatable :: f4mt(:,:,:)
 
 complex(8), allocatable :: vsic(:)
 complex(8), allocatable :: h0wan(:),zm1(:,:,:)
@@ -190,12 +191,17 @@ m=max(ntp,ngrtot)
 allocate(rhowanir(ngrtot))
 allocate(f3(m),f4(m),f5(m))
 allocate(vx(m),vc(m))
+allocate(f4mt(lmmaxvr,nrmtmax,natmtot))
 ! add XC potential to Coulomb
 do n=1,nwann
   do itloc=1,ntrloc
+    f4mt=zzero
 ! muffin-tin part
     do ias=1,natmtot
-      do ir=1,nrmt(ias2is(ias))
+      nrmtloc=mpi_grid_map(nrmt(ias2is(ias)),dim_k)
+      !do ir=1,nrmt(ias2is(ias))
+      do irloc=1,nrmtloc
+        ir=mpi_grid_map(nrmt(ias2is(ias)),dim_k,loc=irloc)
 ! compute charge density on a sphere
         f5=0.d0
         do itp=1,ntp
@@ -216,11 +222,15 @@ do n=1,nwann
           do itp=1,ntp
             zt1=zt1+dconjg(ylm(lm,itp))*f5(itp)
           enddo
-          vwanmt(lm,ir,ias,itloc,1,n)=vwanmt(lm,ir,ias,itloc,1,n)+&
-            fourpi*zt1/ntp
-        enddo
-      enddo
-    enddo  
+          f4mt(lm,ir,ias)=fourpi*zt1/ntp
+          !vwanmt(lm,ir,ias,itloc,1,n)=vwanmt(lm,ir,ias,itloc,1,n)+&
+          !  fourpi*zt1/ntp
+        enddo !lm
+      enddo !irloc
+    enddo !ias
+    call mpi_grid_reduce(f4mt(1,1,1),lmmaxvr*nrmtmax*natmtot,dims=(/dim_k/),&
+      all=.true.)
+    vwanmt(:,:,:,itloc,1,n)=vwanmt(:,:,:,itloc,1,n)+f4mt(:,:,:)
     rhowanir(:)=dreal(dconjg(wanir(:,itloc,1,n))*wanir(:,itloc,1,n))
     if (spinpol) then
       rhowanir(:)=rhowanir(:)+&
@@ -230,7 +240,7 @@ do n=1,nwann
     vwanir(:,itloc,1,n)=vwanir(:,itloc,1,n)+vc(1:ngrtot)+vx(1:ngrtot)
   enddo
 enddo
-deallocate(vx,vc,f3,f4,rhowanir)
+deallocate(vx,vc,f3,f4,rhowanir,f4mt)
 call timer_stop(12)
 if (wproc) then
   write(151,'("time for XC potential : ",F8.3)')timer_get_value(12)
@@ -282,16 +292,6 @@ call timer_stop(13)
 if (wproc) then
   write(151,'("time for V*WF product : ",F8.3)')timer_get_value(13)
 endif
-
-! convert to spherical harmonics
-!do n=1,nwann
-!  do itloc=1,ntrloc
-!    do ispn=1,nspinor
-!      call lf_sht('F',vwanmt(1,1,1,itloc,ispn,n),vwanmt(1,1,1,itloc,ispn,n))
-!      call lf_sht('F',wanmt(1,1,1,itloc,ispn,n),wanmt(1,1,1,itloc,ispn,n))
-!    enddo
-!  enddo
-!enddo
 
 ! check orthonormality
 t1=0.d0
