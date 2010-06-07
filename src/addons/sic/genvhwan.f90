@@ -36,7 +36,7 @@ do iqloc=1,nvqloc
   call genmegq(iq,.false.)
 ! save <n,T=0|e^{-i(G+q)r}|n,T=0>
   do n=1,nwann
-    megqwan1(n,:,iq)=megqwan(idxmegqwan(n,n,0,0,0),:)
+    megqwan1(n,1:ngq(iq),iq)=megqwan(idxmegqwan(n,n,0,0,0),1:ngq(iq))
   enddo
 enddo
 call mpi_grid_reduce(megqwan1(1,1,1),nwann*ngqmax*nvq,dims=(/dim_q/), &
