@@ -8,36 +8,37 @@ use mod_hdf5
 implicit none
 
 integer n
-integer ik,ikloc,j,ig,sz,i
-integer n1,n2,ispn,ngvecmeloc,igloc,ngqloc
+integer ik,ikloc,j,sz,i,itp
+integer n1,n2,ispn
 integer itr,it,itloc,ir,m,ias
 real(8) t1,t2
-integer v1l(3)
+integer v1l(3),lm1,lm2,lm3
 character*12 c1,c2,c3
 character*100 path
-logical l1
+integer ntp
+real(8), allocatable :: tp(:,:)
+complex(8), allocatable :: ylm(:,:)
+complex(8) zt1
+real(8), external :: gaunt
 
 ! arrays for Wannier functions
 complex(8), allocatable :: wanmt0(:,:,:,:,:)
 complex(8), allocatable :: wanir0(:,:,:)
-! plane-wave
-complex(8), allocatable :: pwmt(:,:,:)
-complex(8), allocatable :: pwir(:)
 
-complex(8), allocatable :: megqwan1(:,:,:) 
-
-real(8), allocatable :: rhowanmt(:,:,:)
 real(8), allocatable :: rhowanir(:)
+!complex(8), allocatable :: f1mt(:,:,:)
+complex(8), allocatable :: f1mt(:,:)
+complex(8), allocatable :: f2mt(:,:)
+complex(8), allocatable :: f3mt(:,:)
+
 complex(8), allocatable :: vsic(:)
 complex(8), allocatable :: h0wan(:),zm1(:,:,:)
-real(8), allocatable :: f3(:),f4(:)
+real(8), allocatable :: f3(:),f4(:),f5(:)
 
-integer nvqloc,iqloc,iq
+integer lm
 real(8), allocatable :: vx(:),vc(:)
 complex(8) z1,expikt
-character*100 qnm
 real(8) vtrc(3)
-logical lgamma
 
 ! mpi grid layout
 !          (2)
@@ -69,12 +70,6 @@ call genufrp
 if (mpi_grid_root()) call readfermi
 call mpi_grid_bcast(efermi)
 
-lr_e1=100.1d0
-lr_e2=-100.1d0
-wannier_megq=.true.
-lgamma=.true.
-call init_qbz(lgamma,1)
-call init_q_gq
 call lf_init(lf_maxt,dim2)
 wproc=mpi_grid_root()
 if (wproc) then
@@ -119,92 +114,32 @@ enddo
 call mpi_grid_reduce(h0wan(1),nmegqwan,dims=(/dim_k/))
 h0wan(:)=h0wan(:)/nkptnr
 deallocate(zm1)
-!goto 20
-! create q-directories
-!if (mpi_grid_root()) then
-!  call system("mkdir -p q")
-!  do iq=1,nvq0
-!    call getqdir(iq,ivq0m_list(:,iq),qnm)
-!    call system("mkdir -p "//trim(qnm))
-!  enddo
-!endif
-! distribute q-vectors along 3-rd dimention
-nvqloc=mpi_grid_map(nvq,dim_q)
-allocate(megqwan1(nwann,ngqmax,nvq))
-megqwan1=zzero
-call timer_start(10,reset=.true.)
-! loop over q-points
-do iqloc=1,nvqloc
-  iq=mpi_grid_map(nvq,dim_q,loc=iqloc)
-  call genmegq(iq,.false.)
-! save <n,T=0|e^{-i(G+q)r}|n,T=0>
-  do n=1,nwann
-    megqwan1(n,:,iq)=megqwan(idxmegqwan(n,n,0,0,0),:)
-  enddo
-enddo
-call mpi_grid_reduce(megqwan1(1,1,1),nwann*ngqmax*nvq,dims=(/dim_q/), &
-  all=.true.)
-call timer_stop(10)
-! deallocate unnecessary arrays
-deallocate(wfsvmtloc)
-deallocate(wfsvitloc)
-deallocate(evecfvloc)
-deallocate(evecsvloc)
-deallocate(wann_c)
-! restore wproc
-wproc=mpi_grid_root()
-if (wproc) then
-  write(151,*)
-  write(151,'("time for q-vectors : ",F8.3)')timer_get_value(10)
-endif
-!20 continue
-! allocate arrays for plane-wave
-allocate(pwmt(lmmaxvr,nrmtmax,natmtot))
-allocate(pwir(ngrtot))
-! generate Hartree potential
+
+
 if (allocated(vwanmt)) deallocate(vwanmt)
 allocate(vwanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
 if (allocated(vwanir)) deallocate(vwanir)
 allocate(vwanir(ngrtot,ntrloc,nspinor,nwann))
 vwanmt=zzero
 vwanir=zzero
-call timer_start(1,reset=.true.)
-!goto 30
-do iq=1,nvq
-  ngqloc=mpi_grid_map(ngq(iq),dim_k)
-  do igloc=1,ngqloc
-    ig=mpi_grid_map(ngq(iq),dim_k,loc=igloc)
-    call genpw((/0,0,0/),vgqc(1,ig,iq),pwmt,pwir)
-    do itloc=1,ntrloc
-      itr=mpi_grid_map(ntr,dim_t,loc=itloc)
-      vtrc(:)=vtl(1,itr)*avec(:,1)+vtl(2,itr)*avec(:,2)+vtl(3,itr)*avec(:,3)
-      expikt=exp(zi*dot_product(vtrc(:),vqc(:,iq)))
-      do n=1,nwann
-        vwanmt(:,:,:,itloc,1,n)=vwanmt(:,:,:,itloc,1,n)+&
-          megqwan1(n,ig,iq)*vhgq(ig,iq)*pwmt(:,:,:)*expikt
-        vwanir(:,itloc,1,n)=vwanir(:,itloc,1,n)+&
-          megqwan1(n,ig,iq)*vhgq(ig,iq)*pwir(:)*expikt
-      enddo !n
-    enddo !itloc
-  enddo !igloc
-enddo !iq
-do n=1,nwann
-  do itloc=1,ntrloc
-    call mpi_grid_reduce(vwanmt(1,1,1,itloc,1,n),lmmaxvr*nrmtmax*natmtot,&
-      dims=(/dim_k/),all=.true.)
-    call mpi_grid_reduce(vwanir(1,itloc,1,n),ngrtot,dims=(/dim_k/),&
-      all=.true.)
-  enddo
-enddo
-vwanmt=vwanmt/nkptnr/omega
-vwanir=vwanir/nkptnr/omega
-call timer_stop(1)
+
+call genvhwan
+
+! restore wproc
+wproc=mpi_grid_root()
 if (wproc) then
   write(151,*)
-  write(151,'("time for Hartree potential : ",F8.3)')timer_get_value(1)
+  write(151,'("time for q-vectors : ",F8.3)')timer_get_value(10)
+  write(151,'("time for Hartree potential : ",F8.3)')timer_get_value(11)
 endif
-deallocate(pwmt,pwir,megqwan1)
-!30 continue
+
+! deallocate unnecessary arrays
+deallocate(wfsvmtloc)
+deallocate(wfsvitloc)
+deallocate(evecfvloc)
+deallocate(evecsvloc)
+deallocate(wann_c)
+
 ! generate Wannier functions on a mesh
 if (allocated(wanmt)) deallocate(wanmt)
 allocate(wanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
@@ -243,48 +178,63 @@ if (wproc) then
   call timestamp(151,'done with Wannier functions')
 endif
 
-! convert to spherical coordinates
-do n=1,nwann
-  do itloc=1,ntrloc
-    do ispn=1,nspinor
-      call lf_sht('B',wanmt(1,1,1,itloc,ispn,n),wanmt(1,1,1,itloc,ispn,n))
-    enddo
-    call lf_sht('B',vwanmt(1,1,1,itloc,1,n),vwanmt(1,1,1,itloc,1,n))  
-  enddo
+call timer_start(12,reset=.true.)
+ntp=1000
+allocate(tp(2,ntp))
+allocate(ylm(lmmaxvr,ntp))
+call sphcover(ntp,tp)
+do itp=1,ntp 
+  call genylm(lmaxvr,tp(1,itp),ylm(1,itp))
 enddo
-
-m=max(lmmaxvr,ngrtot)
-allocate(rhowanmt(lmmaxvr,nrmtmax,natmtot))
+m=max(ntp,ngrtot)
 allocate(rhowanir(ngrtot))
+allocate(f3(m),f4(m),f5(m))
 allocate(vx(m),vc(m))
-allocate(f3(m),f4(m))
 ! add XC potential to Coulomb
 do n=1,nwann
   do itloc=1,ntrloc
-    rhowanmt(:,:,:)=dreal(dconjg(wanmt(:,:,:,itloc,1,n))*&
-      wanmt(:,:,:,itloc,1,n))
+! muffin-tin part
+    do ias=1,natmtot
+      do ir=1,nrmt(ias2is(ias))
+! compute charge density on a sphere
+        f5=0.d0
+        do itp=1,ntp
+          do ispn=1,nspinor
+            zt1=zzero            
+            do lm=1,lmmaxvr
+              zt1=zt1+wanmt(lm,ir,ias,itloc,ispn,n)*ylm(lm,itp)
+            enddo
+            f5(itp)=f5(itp)+abs(zt1)**2
+          enddo
+        enddo !itp
+        call xcifc(xctype,n=ntp,rho=f5,ex=f3,ec=f4,vx=vx,vc=vc)
+! save XC potential
+        f5(1:ntp)=vx(1:ntp)+vc(1:ntp)
+! expand XC potential in spherical harmonics
+        do lm=1,lmmaxvr
+          zt1=zzero
+          do itp=1,ntp
+            zt1=zt1+dconjg(ylm(lm,itp))*f5(itp)
+          enddo
+          vwanmt(lm,ir,ias,itloc,1,n)=vwanmt(lm,ir,ias,itloc,1,n)+&
+            fourpi*zt1/ntp
+        enddo
+      enddo
+    enddo  
     rhowanir(:)=dreal(dconjg(wanir(:,itloc,1,n))*wanir(:,itloc,1,n))
     if (spinpol) then
-      rhowanmt(:,:,:)=rhowanmt(:,:,:)+&
-        dreal(dconjg(wanmt(:,:,:,itloc,2,n))*wanmt(:,:,:,itloc,2,n))
       rhowanir(:)=rhowanir(:)+&
         dreal(dconjg(wanir(:,itloc,2,n))*wanir(:,itloc,2,n))
     endif
-    do ias=1,natmtot
-      do ir=1,nrmt(ias2is(ias))
-        call xcifc(xctype,n=lmmaxvr,rho=rhowanmt(:,ir,ias),ex=f3,ec=f4,&
-          vx=vx,vc=vc)
-        vwanmt(:,ir,ias,itloc,1,n)=vwanmt(:,ir,ias,itloc,1,n)+vc(1:lmmaxvr)+&
-          vx(1:lmmaxvr)
-!        vwanmt(:,ir,ias,itloc,1,n)=vc(1:lmmaxvr)+vx(1:lmmaxvr)
-      enddo
-    enddo
     call xcifc(xctype,n=ngrtot,rho=rhowanir(:),ex=f3,ec=f4,vx=vx,vc=vc)
     vwanir(:,itloc,1,n)=vwanir(:,itloc,1,n)+vc(1:ngrtot)+vx(1:ngrtot)
-!    vwanir(:,itloc,1,n)=vc(1:ngrtot)+vx(1:ngrtot)
   enddo
 enddo
-deallocate(vx,vc,f3,f4,rhowanmt,rhowanir)
+deallocate(vx,vc,f3,f4,rhowanir)
+call timer_stop(12)
+if (wproc) then
+  write(151,'("time for XC potential : ",F8.3)')timer_get_value(12)
+endif
 
 if (spinpol) then
   do n=1,nwann
@@ -292,27 +242,56 @@ if (spinpol) then
     vwanir(:,:,2,n)=vwanir(:,:,1,n)
   enddo
 endif
-
+call timer_start(13,reset=.true.)
 ! multiply potential by Wannier function and change sign
+allocate(f1mt(nrmtmax,lmmaxvr))
+allocate(f2mt(nrmtmax,lmmaxvr))
+allocate(f3mt(nrmtmax,lmmaxvr))
 do n=1,nwann
   do itloc=1,ntrloc
-    do ispn=1,nspinor
-      vwanmt(:,:,:,itloc,ispn,n)=-vwanmt(:,:,:,itloc,ispn,n)*&
-        wanmt(:,:,:,itloc,ispn,n)
+    do ispn=1,nspinor     
+      do ias=1,natmtot
+        f3mt=zzero
+        do lm1=1,lmmaxvr
+          f1mt(:,lm1)=vwanmt(lm1,:,ias,itloc,ispn,n)
+          f2mt(:,lm1)=wanmt(lm1,:,ias,itloc,ispn,n)
+        enddo
+        do lm1=1,lmmaxvr
+          do lm2=1,lmmaxvr
+            do lm3=1,lmmaxvr
+              t1=gaunt(lm2l(lm3),lm2l(lm1),lm2l(lm2),&
+                       lm2m(lm3),lm2m(lm1),lm2m(lm2))
+              if (abs(t1).gt.1d-8) then
+                do ir=1,nrmt(ias2is(ias))
+                  f3mt(ir,lm3)=f3mt(ir,lm3)+f1mt(ir,lm1)*f2mt(ir,lm2)*t1
+                enddo
+              endif
+            enddo
+          enddo
+        enddo
+        do lm3=1,lmmaxvr
+          vwanmt(lm3,:,ias,itloc,ispn,n)=-f3mt(:,lm3)
+        enddo
+      enddo !ias
       vwanir(:,itloc,ispn,n)=-vwanir(:,itloc,ispn,n)*wanir(:,itloc,ispn,n)
-    enddo
-  enddo
-enddo
+    enddo !ispn
+  enddo !itloc
+enddo !n
+deallocate(f1mt,f2mt,f3mt)
+call timer_stop(13)
+if (wproc) then
+  write(151,'("time for V*WF product : ",F8.3)')timer_get_value(13)
+endif
 
 ! convert to spherical harmonics
-do n=1,nwann
-  do itloc=1,ntrloc
-    do ispn=1,nspinor
-      call lf_sht('F',vwanmt(1,1,1,itloc,ispn,n),vwanmt(1,1,1,itloc,ispn,n))
-      call lf_sht('F',wanmt(1,1,1,itloc,ispn,n),wanmt(1,1,1,itloc,ispn,n))
-    enddo
-  enddo
-enddo
+!do n=1,nwann
+!  do itloc=1,ntrloc
+!    do ispn=1,nspinor
+!      call lf_sht('F',vwanmt(1,1,1,itloc,ispn,n),vwanmt(1,1,1,itloc,ispn,n))
+!      call lf_sht('F',wanmt(1,1,1,itloc,ispn,n),wanmt(1,1,1,itloc,ispn,n))
+!    enddo
+!  enddo
+!enddo
 
 ! check orthonormality
 t1=0.d0
