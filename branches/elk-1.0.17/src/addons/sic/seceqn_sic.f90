@@ -25,6 +25,7 @@ complex(8), allocatable :: a1(:,:),a2(:,:)
 integer lm,ias,is,ispn,ig,ir,io
 complex(8), allocatable :: hwan_k(:,:)
 complex(8), allocatable :: vwan_k(:,:)
+complex(8), allocatable :: vwan_2_k(:,:)
 complex(8) expikt
 integer v1l(3),n1,j1,i3
 real(8) vtrc(3),v2(3),v3(3)
@@ -128,8 +129,11 @@ a2=wann_c(:,:,ikloc)
  
 allocate(hwan_k(nwann,nwann))
 allocate(vwan_k(nwann,nwann))
+allocate(vwan_2_k(nwann,nwann))
 hwan_k=zzero
 vwan_k=zzero
+vwan_2_k=zzero
+
 
 do i=1,nmegqwan
   n=imegqwan(1,i)
@@ -139,20 +143,21 @@ do i=1,nmegqwan
   expikt=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
   hwan_k(n,n1)=hwan_k(n,n1)+expikt*h0wan(i)
   vwan_k(n,n1)=vwan_k(n,n1)+expikt*vsic(i)
+  vwan_2_k(n1,n)=vwan_2_k(n1,n)+dconjg(expikt*vsic(i))
 enddo
-do n=1,nwann
-  do n1=1,nwann
-    if (abs(hwan_k(n,n1)-dconjg(hwan_k(n1,n))).gt.epsherm) then
-      write(*,*)
-      write(*,'("Warning : hwan_k is not hermitian")')
-    endif
-    if (abs(vwan_k(n,n1)-dconjg(vwan_k(n1,n))).gt.epsherm) then
-      write(*,*)
-      write(*,'("Warning : vwan_k is not hermitian")')
-      write(*,'(" difference : ",G18.10)')abs(vwan_k(n,n1)-dconjg(vwan_k(n1,n)))
-    endif
-  enddo
-enddo
+!do n=1,nwann
+!  do n1=1,nwann
+!    if (abs(hwan_k(n,n1)-dconjg(hwan_k(n1,n))).gt.epsherm) then
+!      write(*,*)
+!      write(*,'("Warning : hwan_k is not hermitian")')
+!    endif
+!    if (abs(vwan_k(n,n1)-dconjg(vwan_k(n1,n))).gt.epsherm) then
+!      write(*,*)
+!      write(*,'("Warning : vwan_k is not hermitian")')
+!      write(*,'(" difference : ",G18.10)')abs(vwan_k(n,n1)-dconjg(vwan_k(n1,n)))
+!    endif
+!  enddo
+!enddo
 
 z1=zzero
 do i=1,nstsv
@@ -182,7 +187,7 @@ z5=zzero
 do j=1,nstsv
   do j1=1,nstsv
     do n=1,nwann
-      z5(j,j1)=z5(j,j1)+a2(n,j)*a1(n,j1)
+      z5(j,j1)=z5(j,j1)+a2(n,j)*a1(n,j1)+dconjg(a1(n,j)*a2(n,j1))
     enddo
   enddo
 enddo
@@ -190,7 +195,8 @@ do j=1,nstsv
   do j1=1,nstsv
     do n=1,nwann
       do n1=1,nwann
-        z5(j,j1)=z5(j,j1)-vwan_k(n,n1)*a2(n,j)*dconjg(a2(n1,j1))
+        z5(j,j1)=z5(j,j1)-vwan_k(n,n1)*a2(n,j)*dconjg(a2(n1,j1))-&
+        vwan_2_k(n1,n)*a2(n1,j)*dconjg(a2(n,j1))
       enddo
     enddo
   enddo
@@ -198,7 +204,7 @@ enddo
 
 do j=1,nstsv
   do j1=1,nstsv
-    z1(j,j1)=z1(j,j1)+z5(j,j1)+dconjg(z5(j1,j))
+    z1(j,j1)=z1(j,j1)+z5(j,j1)
   enddo
 enddo
 
@@ -244,7 +250,7 @@ deallocate(z2,z5)
 deallocate(rwork)
 deallocate(work)
 deallocate(vsic,h0wan,vn,hnn)
-deallocate(hwan_k,vwan_k)
+deallocate(hwan_k,vwan_k,vwan_2_k)
 deallocate(a1,a2)
 
 call genwann(ikloc,evecfv,evecsv)
