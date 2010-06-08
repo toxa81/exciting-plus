@@ -149,6 +149,7 @@ do n=1,nwann
     if (abs(vwan_k(n,n1)-dconjg(vwan_k(n1,n))).gt.epsherm) then
       write(*,*)
       write(*,'("Warning : vwan_k is not hermitian")')
+      write(*,'(" difference : ",G18.10)')abs(vwan_k(n,n1)-dconjg(vwan_k(n1,n)))
     endif
   enddo
 enddo
