@@ -36,6 +36,13 @@ complex(8), allocatable :: vsic(:)
 complex(8), allocatable :: h0wan(:),zm1(:,:,:)
 real(8), allocatable :: f3(:),f4(:),f5(:)
 
+complex(8), allocatable :: wfmt(:,:,:,:)
+complex(8), allocatable :: wfir(:,:)
+complex(8), allocatable :: a2(:,:)
+real(8) v2(3),v3(3)
+complex(8) expikr
+integer i1,i2,i3,is,io,ig
+
 integer lm
 real(8), allocatable :: vx(:),vc(:)
 complex(8) z1,expikt
@@ -134,12 +141,6 @@ if (wproc) then
   write(151,'("time for Hartree potential : ",F8.3)')timer_get_value(11)
 endif
 
-! deallocate unnecessary arrays
-deallocate(wfsvmtloc)
-deallocate(wfsvitloc)
-deallocate(evecfvloc)
-deallocate(evecsvloc)
-deallocate(wann_c)
 
 ! generate Wannier functions on a mesh
 if (allocated(wanmt)) deallocate(wanmt)
@@ -178,6 +179,77 @@ endif
 if (wproc) then
   call timestamp(151,'done with Wannier functions')
 endif
+
+
+! test
+allocate(wfmt(lmmaxvr,nrmtmax,natmtot,nspinor))
+allocate(wfir(ngrtot,nspinor))
+allocate(a2(nwann,nstsv))
+t1=0.d0
+do ikloc=1,nkptnrloc
+  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+  a2=zzero
+  do j=1,nstsv
+    wfmt=zzero
+    wfir=zzero
+    do ispn=1,nspinor
+      do ias=1,natmtot
+        is=ias2is(ias)
+        do ir=1,nrmt(is)
+          do lm=1,lmmaxvr
+            do io=1,nufr(lm2l(lm),is)
+              wfmt(lm,ir,ias,ispn)=wfmt(lm,ir,ias,ispn)+&
+                ufr(ir,lm2l(lm),io,ias)*wfsvmtloc(lm,io,ias,ispn,j,ikloc)
+            enddo
+          enddo
+        enddo
+      enddo !ias
+      do ig=1,ngknr(ikloc)
+        wfir(igfft(igkignr(ig,ikloc)),ispn)=wfsvitloc(ig,ispn,j,ikloc)
+      enddo
+      call zfftifc(3,ngrid,1,wfir(:,ispn))
+      wfir(:,ispn)=wfir(:,ispn)/sqrt(omega)
+    enddo !ispn
+    ir=0
+    do i3=0,ngrid(3)-1
+      v2(3)=dble(i3)/dble(ngrid(3))
+      do i2=0,ngrid(2)-1
+        v2(2)=dble(i2)/dble(ngrid(2))
+        do i1=0,ngrid(1)-1
+          v2(1)=dble(i1)/dble(ngrid(1))
+          ir=ir+1
+          call r3mv(avec,v2,v3)
+          expikr=exp(zi*dot_product(vkcnr(:,ik),v3(:)))
+          wfir(ir,:)=expikr*wfir(ir,:)
+        enddo
+      enddo
+    enddo
+    do n=1,nwann
+      do ispn=1,nspinor
+        a2(n,j)=a2(n,j)+lf_dotblh(.true.,vkcnr(:,ik),wanmt(1,1,1,1,ispn,n),&
+          wanir(1,1,ispn,n),wfmt(1,1,1,ispn),wfir(1,ispn))
+      enddo
+    enddo
+  enddo !j
+  do n=1,nwann
+    do j=1,nstsv
+      t1=max(t1,abs(wann_c(n,j,ikloc)-dconjg(a2(n,j))))
+    enddo
+  enddo
+enddo !ikloc
+deallocate(wfmt,wfir,a2)
+call mpi_grid_reduce(t1,dims=(/dim_k/),op=op_max)
+if (wproc) then
+  write(151,*)
+  write(151,'("Maximum deviation from exact expansion : ",G18.10)')t1
+endif
+! deallocate unnecessary arrays
+deallocate(wfsvmtloc)
+deallocate(wfsvitloc)
+deallocate(evecfvloc)
+deallocate(evecsvloc)
+deallocate(wann_c)
+
 
 call timer_start(12,reset=.true.)
 ntp=1000
