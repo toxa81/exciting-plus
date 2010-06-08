@@ -1,4 +1,4 @@
-subroutine seceqn_sic(ikloc,evecfv,evecsv)
+subroutine sic_seceqn(ikloc,evecfv,evecsv)
 use modmain
 use mod_lf
 use mod_hdf5
@@ -9,54 +9,43 @@ complex(8), intent(in) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(inout) :: evecsv(nstsv,nstsv)
 ! local vars
 logical exist
-complex(8), allocatable :: z1(:,:),z2(:,:),z5(:,:)
+complex(8), allocatable :: hunif(:,:),z2(:,:)
 complex(8), allocatable :: work(:)
 real(8), allocatable :: rwork(:)
-complex(8), allocatable :: vsic(:)
-complex(8), allocatable :: h0wan(:)
-real(8), allocatable :: vn(:),hnn(:)
+real(8), allocatable :: vn(:),hn(:)
 integer i,n,ik,j,lwork,i1,i2,info
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: wfsvit(:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wfmt(:,:,:,:)
 complex(8), allocatable :: wfir(:,:)
-complex(8), allocatable :: a1(:,:),a2(:,:)
+complex(8), allocatable :: wvp(:,:),u(:,:)
 integer lm,ias,is,ispn,ig,ir,io
-complex(8), allocatable :: hwan_k(:,:)
-complex(8), allocatable :: vwan_k(:,:)
-complex(8), allocatable :: vwan_2_k(:,:)
+complex(8), allocatable :: hwank(:,:)
+complex(8), allocatable :: vwank_1(:,:)
+complex(8), allocatable :: vwank_2(:,:)
 complex(8) expikt
 integer v1l(3),n1,j1,i3
 real(8) vtrc(3),v2(3),v3(3)
 complex(8) zt1,expikr
-complex(8), external :: zfinp_
 real(8), parameter :: epsherm=1d-8
-
 
 inquire(file="sic.hdf5",exist=exist)
 if (.not.exist) return
 
-allocate(z1(nstsv,nstsv))
+allocate(hunif(nstsv,nstsv))
 allocate(z2(nstsv,nstsv))
 lwork=2*nstsv
 allocate(rwork(3*nstsv))
 allocate(work(lwork))
 
-call hdf5_read("sic.hdf5","/","nmegqwan",nmegqwan)
-if (.not.allocated(imegqwan)) allocate(imegqwan(5,nmegqwan))
-call hdf5_read("sic.hdf5","/","imegqwan",imegqwan(1,1),(/5,nmegqwan/))
-allocate(vsic(nmegqwan))
-allocate(h0wan(nmegqwan))
-call hdf5_read("sic.hdf5","/","vsic",vsic(1),(/nmegqwan/))
-call hdf5_read("sic.hdf5","/","h0wan",h0wan(1),(/nmegqwan/))
 allocate(vn(nwann))
-allocate(hnn(nwann))
+allocate(hn(nwann))
 do i=1,nmegqwan
   if ((imegqwan(1,i).eq.imegqwan(2,i)).and.imegqwan(3,i).eq.0.and.&
     imegqwan(4,i).eq.0.and.imegqwan(5,i).eq.0) then
-    vn(imegqwan(1,i))=dreal(vsic(i))
-    hnn(imegqwan(1,i))=dreal(h0wan(i))
+    vn(imegqwan(1,i))=dreal(vwan(i))
+    hn(imegqwan(1,i))=dreal(hwan(i))
   endif
 enddo
 
@@ -77,9 +66,10 @@ call genwfsvmt(lmaxvr,lmmaxvr,ngk(1,ik),evecfv,evecsv,apwalm,wfsvmt)
 ! generate wave functions in interstitial
 call genwfsvit(ngk(1,ik),evecfv,evecsv,wfsvit)
 
-allocate(a1(nwann,nstsv),a2(nwann,nstsv))
-a1=zzero
-a2=zzero
+! compute <W_n|V_n|\Psi_{jk}>
+allocate(wvp(nwann,nstsv),u(nwann,nstsv))
+wvp=zzero
+u=zzero
 do j=1,nstsv
   wfmt=zzero
   wfir=zzero
@@ -117,147 +107,161 @@ do j=1,nstsv
   enddo
   do n=1,nwann
     do ispn=1,nspinor
-      a1(n,j)=a1(n,j)+lf_dotblh(.true.,vkc(1,ik),vwanmt(1,1,1,1,ispn,n),&
+      wvp(n,j)=wvp(n,j)+lf_dotblh(.true.,vkc(1,ik),vwanmt(1,1,1,1,ispn,n),&
         vwanir(1,1,ispn,n),wfmt(1,1,1,ispn),wfir(1,ispn))
-!      a2(n,j)=a2(n,j)+lf_dotblh(.false.,vkc(1,ik),wanmt(1,1,1,1,ispn,n),&
-!        wanir(1,1,ispn,n),wfmt(1,1,1,ispn),wfir(1,ispn))
     enddo
   enddo
 enddo !j
 deallocate(wfsvmt,wfsvit,apwalm,wfmt,wfir)
-a2=wann_c(:,:,ikloc)
+u=wann_c(:,:,ikloc)
  
-allocate(hwan_k(nwann,nwann))
-allocate(vwan_k(nwann,nwann))
-allocate(vwan_2_k(nwann,nwann))
-hwan_k=zzero
-vwan_k=zzero
-vwan_2_k=zzero
-
-
+! compute H_{nn'}(k) and V_{nn'}(k)
+allocate(hwank(nwann,nwann))
+allocate(vwank_1(nwann,nwann))
+allocate(vwank_2(nwann,nwann))
+hwank=zzero
+vwank_1=zzero
+vwank_2=zzero
 do i=1,nmegqwan
   n=imegqwan(1,i)
   n1=imegqwan(2,i)
   v1l(:)=imegqwan(3:5,i)
   vtrc(:)=v1l(1)*avec(:,1)+v1l(2)*avec(:,2)+v1l(3)*avec(:,3)
   expikt=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
-  hwan_k(n,n1)=hwan_k(n,n1)+expikt*h0wan(i)
-  vwan_k(n,n1)=vwan_k(n,n1)+expikt*vsic(i)
-  vwan_2_k(n1,n)=vwan_2_k(n1,n)+dconjg(expikt*vsic(i))
+  hwank(n,n1)=hwank(n,n1)+expikt*hwan(i)
+  vwank_1(n,n1)=vwank_1(n,n1)+expikt*vwan(i)
+  vwank_2(n1,n)=vwank_2(n1,n)+dconjg(expikt*vwan(i))
 enddo
+
+! setup unified Hamiltonian
+hunif=zzero
+do j=1,nstsv
+! 1-st term : diagonal H^{LDA} 
+  hunif(j,j)=evalsv(j,ik) 
+  do j1=1,nstsv
+! 2-nd term : -\sum_{\alpha,\alpha'} P_{\alpha} H^{LDA} P_{\alpha'}
+    do n=1,nwann
+      do n1=1,nwann
+        hunif(j,j1)=hunif(j,j1)-hwank(n,n1)*u(n,j)*dconjg(u(n1,j1))
+      enddo
+    enddo
+! 3-rd and 4-th terms : \sum_{alpha} P_{\alpha} (H^{LDA}+V_{\alpha}) P_{\alpha}
+    do n=1,nwann
+      hunif(j,j1)=hunif(j,j1)+u(n,j)*dconjg(u(n,j1))*(hn(n)+vn(n))
+    enddo
+! 5-th and 6-th terms : \sum_{\alpha} P_{\alpha} V_{\alpha} Q + 
+!                       \sum_{\alpha} Q V_{\alpha} P_{\alpha} 
+    do n=1,nwann
+      hunif(j,j1)=hunif(j,j1)+u(n,j)*wvp(n,j1)+dconjg(wvp(n,j)*u(n,j1))
+      do n1=1,nwann
+        hunif(j,j1)=hunif(j,j1)-vwank_1(n,n1)*u(n,j)*dconjg(u(n1,j1))-&
+          vwank_2(n1,n)*u(n1,j)*dconjg(u(n,j1))
+      enddo
+    enddo
+  enddo !j1
+enddo !j
+
+
+
+!do i=1,nstsv
+!  hunif(i,i)=evalsv(i,ik)
+!enddo
+!
+!do j=1,nstsv
+!  do j1=1,nstsv
+!    do n=1,nwann
+!      do n1=1,nwann
+!        hunif(j,j1)=hunif(j,j1)-hwan_k(n,n1)*u(n,j)*dconjg(u(n1,j1))
+!      enddo
+!    enddo
+!  enddo
+!enddo
+!
 !do n=1,nwann
-!  do n1=1,nwann
-!    if (abs(hwan_k(n,n1)-dconjg(hwan_k(n1,n))).gt.epsherm) then
-!      write(*,*)
-!      write(*,'("Warning : hwan_k is not hermitian")')
-!    endif
-!    if (abs(vwan_k(n,n1)-dconjg(vwan_k(n1,n))).gt.epsherm) then
-!      write(*,*)
-!      write(*,'("Warning : vwan_k is not hermitian")')
-!      write(*,'(" difference : ",G18.10)')abs(vwan_k(n,n1)-dconjg(vwan_k(n1,n)))
-!    endif
+!  do j=1,nstsv
+!    do j1=1,nstsv
+!      hunif(j,j1)=hunif(j,j1)+u(n,j)*dconjg(u(n,j1))*(vn(n)+hnn(n))
+!    enddo
+!  enddo
+!enddo
+!
+!allocate(z5(nstsv,nstsv))
+!z5=zzero
+!do j=1,nstsv
+!  do j1=1,nstsv
+!    do n=1,nwann
+!      z5(j,j1)=z5(j,j1)+u(n,j)*a1(n,j1)+dconjg(a1(n,j)*u(n,j1))
+!    enddo
+!  enddo
+!enddo
+!do j=1,nstsv
+!  do j1=1,nstsv
+!    do n=1,nwann
+!      do n1=1,nwann
+!        z5(j,j1)=z5(j,j1)-vwan_k(n,n1)*u(n,j)*dconjg(u(n1,j1))-&
+!        vwan_2_k(n1,n)*u(n1,j)*dconjg(u(n,j1))
+!      enddo
+!    enddo
+!  enddo
+!enddo  
+!
+!do j=1,nstsv
+!  do j1=1,nstsv
+!    hunif(j,j1)=hunif(j,j1)+z5(j,j1)
 !  enddo
 !enddo
 
-z1=zzero
-do i=1,nstsv
-  z1(i,i)=evalsv(i,ik)
-enddo
-
+! check hermiticity
 do j=1,nstsv
   do j1=1,nstsv
-    do n=1,nwann
-      do n1=1,nwann
-        z1(j,j1)=z1(j,j1)-hwan_k(n,n1)*a2(n,j)*dconjg(a2(n1,j1))
-      enddo
-    enddo
-  enddo
-enddo
-
-do n=1,nwann
-  do j=1,nstsv
-    do j1=1,nstsv
-      z1(j,j1)=z1(j,j1)+a2(n,j)*dconjg(a2(n,j1))*(vn(n)+hnn(n))
-    enddo
-  enddo
-enddo
-
-allocate(z5(nstsv,nstsv))
-z5=zzero
-do j=1,nstsv
-  do j1=1,nstsv
-    do n=1,nwann
-      z5(j,j1)=z5(j,j1)+a2(n,j)*a1(n,j1)+dconjg(a1(n,j)*a2(n,j1))
-    enddo
-  enddo
-enddo
-do j=1,nstsv
-  do j1=1,nstsv
-    do n=1,nwann
-      do n1=1,nwann
-        z5(j,j1)=z5(j,j1)-vwan_k(n,n1)*a2(n,j)*dconjg(a2(n1,j1))-&
-        vwan_2_k(n1,n)*a2(n1,j)*dconjg(a2(n,j1))
-      enddo
-    enddo
-  enddo
-enddo  
-
-do j=1,nstsv
-  do j1=1,nstsv
-    z1(j,j1)=z1(j,j1)+z5(j,j1)
-  enddo
-enddo
-
-do j=1,nstsv
-  do j1=1,nstsv
-    if (abs(z1(j,j1)-dconjg(z1(j1,j))).gt.epsherm) then
+    if (abs(hunif(j,j1)-dconjg(hunif(j1,j))).gt.epsherm) then
       write(*,*)
-      write(*,'("Warning : unified Hamiltonian is not hermitian")')
+      write(*,'("Warning(sic_seceqn) : unified Hamiltonian is not hermitian")')
     endif
   enddo
 enddo
 
 if (ndmag.eq.1) then
 ! collinear: block diagonalise H
-  call zheev('V','U',nstfv,z1(1,1),nstsv,evalsv(1,ik),work,lwork,rwork,info)
+  call zheev('V','U',nstfv,hunif(1,1),nstsv,evalsv(1,ik),work,lwork,rwork,info)
   if (info.ne.0) goto 20
   i=nstfv+1
-  call zheev('V','U',nstfv,z1(i,i),nstsv,evalsv(i,ik),work,lwork,rwork,info)
+  call zheev('V','U',nstfv,hunif(i,i),nstsv,evalsv(i,ik),work,lwork,rwork,info)
   if (info.ne.0) goto 20
   do i=1,nstfv
     do j=1,nstfv
-      z1(i,j+nstfv)=0.d0
-      z1(i+nstfv,j)=0.d0
+      hunif(i,j+nstfv)=0.d0
+      hunif(i+nstfv,j)=0.d0
     end do
   end do
 else
 ! non-collinear or spin-unpolarised: full diagonalisation
-  call zheev('V','U',nstsv,z1,nstsv,evalsv(1,ik),work,lwork,rwork,info)
+  call zheev('V','U',nstsv,hunif,nstsv,evalsv(1,ik),work,lwork,rwork,info)
   if (info.ne.0) goto 20
 endif
 z2=zzero
 do i1=1,nstsv
   do i2=1,nstsv
     do j=1,nstsv
-      z2(i2,i1)=z2(i2,i1)+dconjg(z1(j,i1))*evecsv(i2,j)
+      z2(i2,i1)=z2(i2,i1)+dconjg(hunif(j,i1))*evecsv(i2,j)
     enddo
   enddo
 enddo
 evecsv=z2
 
-deallocate(z1)
-deallocate(z2,z5)
+deallocate(hunif)
+deallocate(z2)
 deallocate(rwork)
 deallocate(work)
-deallocate(vsic,h0wan,vn,hnn)
-deallocate(hwan_k,vwan_k,vwan_2_k)
-deallocate(a1,a2)
+deallocate(vn,hn)
+deallocate(hwank,vwank_1,vwank_2)
+deallocate(wvp,u)
 
 call genwann(ikloc,evecfv,evecsv)
 return
 20 continue
 write(*,*)
-write(*,'("Error(seceqn_sic): diagonalisation of the second-variational &
+write(*,'("Error(sic_seceqn): diagonalisation of the second-variational &
  &Hamiltonian failed")')
 write(*,'(" for k-point ",I8)') ik
 write(*,'(" ZHEEV returned INFO = ",I8)') info

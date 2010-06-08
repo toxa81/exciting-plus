@@ -1,4 +1,4 @@
-subroutine genvhwan
+subroutine sic_genvhart
 use modmain
 use mod_addons_q
 use mod_lf

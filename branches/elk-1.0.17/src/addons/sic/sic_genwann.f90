@@ -1,4 +1,4 @@
-subroutine gen_wann_func(vtrl,ngknr,vgkcnr,igkignr,wanmt_,wanir_)
+subroutine sic_genwann(vtrl,ngknr,vgkcnr,igkignr,wanmt_,wanir_)
 use modmain
 implicit none
 integer, intent(in) :: vtrl(3)
