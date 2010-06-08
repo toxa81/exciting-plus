@@ -145,7 +145,7 @@ do j=1,nstsv
         hunif(j,j1)=hunif(j,j1)-hwank(n,n1)*u(n,j)*dconjg(u(n1,j1))
       enddo
     enddo
-! 3-rd and 4-th terms : \sum_{alpha} P_{\alpha} (H^{LDA}+V_{\alpha}) P_{\alpha}
+! 3-rd and 4-th terms : \sum_{alpha} P_{\alpha} (H^{LDA}+V_{\alpha}) P_{\alpha})
     do n=1,nwann
       hunif(j,j1)=hunif(j,j1)+u(n,j)*dconjg(u(n,j1))*(hn(n)+vn(n))
     enddo

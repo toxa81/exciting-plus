@@ -39,10 +39,10 @@ if (mpi_grid_side(dims=(/dim_t/))) then
           (/lmmaxvr,nrmtmax,natmtot/))
         call hdf5_read("sic.hdf5",path,"vwanir",vwanir(1,itloc,ispn,n),&
           (/ngrtot/))
-       call hdf5_read("sic.hdf5",path,"wanmt",wanmt(1,1,1,itloc,ispn,n),&
-          (/lmmaxvr,nrmtmax,natmtot/))
-        call hdf5_read("sic.hdf5",path,"wanir",wanir(1,itloc,ispn,n),&
-          (/ngrtot/))
+!       call hdf5_read("sic.hdf5",path,"wanmt",wanmt(1,1,1,itloc,ispn,n),&
+!          (/lmmaxvr,nrmtmax,natmtot/))
+!        call hdf5_read("sic.hdf5",path,"wanir",wanir(1,itloc,ispn,n),&
+!          (/ngrtot/))
       enddo
     enddo
   enddo
