@@ -314,6 +314,7 @@ real(8), allocatable :: wannier_soft_eint_w2(:)
 real(8), allocatable :: wannier_soft_eint_e1(:)
 real(8), allocatable :: wannier_soft_eint_e2(:)
 real(8) wannier_min_prjao
+data wannier_min_prjao/-0.1d0/
 
 logical ldisentangle
 
