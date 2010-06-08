@@ -97,6 +97,8 @@ do itask=1,ntasks
     call unscreened_u
   case(810)
     call sic_gndstate
+  case(820)
+    call sic_bandstr
   case default
     write(*,*)
     write(*,'("Error(main): task not defined : ",I8)') task

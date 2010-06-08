@@ -72,7 +72,7 @@ else
     end if
   end do
 end if
-if ((task.eq.20).or.(task.eq.21)) then
+if ((task.eq.20).or.(task.eq.21).or.task.eq.820) then
 ! for band structure plots generate k-points along a line
   call connect(bvec,nvp1d,npp1d,vvlp1d,vplp1d,dvp1d,dpp1d)
   nkpt=npp1d
