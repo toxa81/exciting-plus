@@ -40,5 +40,6 @@ do l=0,lmaxapw
   end do
 end do
 if (wannier) call wann_init
+if (.not.wannier) sic=.false.
 return
 end

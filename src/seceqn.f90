@@ -74,7 +74,7 @@ endif
 if (sic) then
   evalsv0(:,ik)=evalsv(:,ik)
   evecsv0loc(:,:,ikloc)=evecsv(:,:)
-  call seceqn_sic(ikloc,evecfv,evecsv)
+  call sic_seceqn(ikloc,evecfv,evecsv)
 endif
 deallocate(apwalm)
 return

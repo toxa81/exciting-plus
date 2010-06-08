@@ -7,7 +7,7 @@ do iter=1,2
   if (iproc.eq.0) write(*,*)'SIC iteration ',iter
   call gndstate
   call mpi_world_barrier
-  call genvsic
+  call sic_genvwan
   call mpi_world_barrier
 enddo
 

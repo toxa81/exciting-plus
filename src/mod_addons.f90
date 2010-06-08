@@ -360,6 +360,8 @@ complex(8), allocatable :: wanmt(:,:,:,:,:,:)
 complex(8), allocatable :: wanir(:,:,:,:)
 complex(8), allocatable :: vwanmt(:,:,:,:,:,:)
 complex(8), allocatable :: vwanir(:,:,:,:)
+complex(8), allocatable :: hwan(:)
+complex(8), allocatable :: vwan(:)
 
 
 end module

@@ -106,7 +106,7 @@ else
   call genveffig
   if (wproc) write(60,'("Density and potential initialised from atomic data")')
 end if
-call readvwan
+if (sic) call sic_readvwan
 if (wproc) call flushifc(60)
 ! size of mixing vector
 n=lmmaxvr*nrmtmax*natmtot+ngrtot

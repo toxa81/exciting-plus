@@ -1,4 +1,4 @@
-subroutine readvwan
+subroutine sic_readvwan
 use modmain
 use mod_lf
 use mod_hdf5
@@ -10,6 +10,14 @@ logical exist
 
 inquire(file="sic.hdf5",exist=exist)
 if (.not.exist) return
+
+call hdf5_read("sic.hdf5","/","nmegqwan",nmegqwan)
+if (.not.allocated(imegqwan)) allocate(imegqwan(5,nmegqwan))
+call hdf5_read("sic.hdf5","/","imegqwan",imegqwan(1,1),(/5,nmegqwan/))
+allocate(vwan(nmegqwan))
+allocate(hwan(nmegqwan))
+call hdf5_read("sic.hdf5","/","vwan",vwan(1),(/nmegqwan/))
+call hdf5_read("sic.hdf5","/","hwan",hwan(1),(/nmegqwan/))
 
 call lf_init(lf_maxt,dim2)
 allocate(vwanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
