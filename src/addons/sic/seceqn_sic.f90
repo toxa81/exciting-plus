@@ -30,6 +30,7 @@ integer v1l(3),n1,j1,i3
 real(8) vtrc(3),v2(3),v3(3)
 complex(8) zt1,expikr
 complex(8), external :: zfinp_
+real(8), parameter :: epsherm=1d-8
 
 
 inquire(file="sic.hdf5",exist=exist)
@@ -93,7 +94,6 @@ do j=1,nstsv
         enddo
       enddo
     enddo !ias
-    !call lf_sht('B',wfmt(1,1,1,ispn),wfmt(1,1,1,ispn))
     do ig=1,ngk(1,ik)
       wfir(igfft(igkig(ig,1,ikloc)),ispn)=wfsvit(ig,ispn,j)
     enddo
@@ -114,12 +114,6 @@ do j=1,nstsv
       enddo
     enddo
   enddo
-!  zt1=zzero
-!  do ispn=1,nspinor
-!    zt1=zt1+zfinp_(.false.,wfmt(1,1,1,ispn),wfmt(1,1,1,ispn),wfir(1,ispn),&
-!      wfir(1,ispn))
-!  enddo
-!  write(*,*)'zt1=',zt1
   do n=1,nwann
     do ispn=1,nspinor
       a1(n,j)=a1(n,j)+lf_dotblh(.true.,vkc(1,ik),vwanmt(1,1,1,1,ispn,n),&
@@ -131,21 +125,6 @@ do j=1,nstsv
 enddo !j
 deallocate(wfsvmt,wfsvit,apwalm,wfmt,wfir)
 a2=wann_c(:,:,ikloc)
-!do n=1,nwann
-!  write(*,*)'n=',n
-!  do j=1,nstsv
-!    write(*,*)'j=',j,'wf=',a2(n,j)
-!  enddo
-!enddo
-!do n=1,nwann
-!  do n1=1,nwann
-!    zt1=zzero
-!    do j=1,nstsv
-!      zt1=zt1+dconjg(a2(n,j))*a2(n1,j)
-!    enddo
-!  write(*,*)n,n1,zt1
-!  enddo
-!enddo
  
 allocate(hwan_k(nwann,nwann))
 allocate(vwan_k(nwann,nwann))
@@ -161,10 +140,18 @@ do i=1,nmegqwan
   hwan_k(n,n1)=hwan_k(n,n1)+expikt*h0wan(i)
   vwan_k(n,n1)=vwan_k(n,n1)+expikt*vsic(i)
 enddo
-
-
-
-
+do n=1,nwann
+  do n1=1,nwann
+    if (abs(hwan_k(n,n1)-dconjg(hwan_k(n1,n))).gt.epsherm) then
+      write(*,*)
+      write(*,'("Warning : hwan_k is not hermitian")')
+    endif
+    if (abs(vwan_k(n,n1)-dconjg(vwan_k(n1,n))).gt.epsherm) then
+      write(*,*)
+      write(*,'("Warning : vwan_k is not hermitian")')
+    endif
+  enddo
+enddo
 
 z1=zzero
 do i=1,nstsv
@@ -211,6 +198,15 @@ enddo
 do j=1,nstsv
   do j1=1,nstsv
     z1(j,j1)=z1(j,j1)+z5(j,j1)+dconjg(z5(j1,j))
+  enddo
+enddo
+
+do j=1,nstsv
+  do j1=1,nstsv
+    if (abs(z1(j,j1)-dconjg(z1(j1,j))).gt.epsherm) then
+      write(*,*)
+      write(*,'("Warning : unified Hamiltonian is not hermitian")')
+    endif
   enddo
 enddo
 
