@@ -104,6 +104,7 @@ do ikloc=1,nkptnrloc
   enddo
 enddo 
 ! compute <n,T=0|H^{LDA}|n',T'>
+if (allocated(hwan)) deallocate(hwan)
 allocate(hwan(nmegqwan))
 hwan=zzero
 do i=1,nmegqwan
@@ -293,8 +294,6 @@ do n=1,nwann
             zt1=zt1+dconjg(ylm(lm,itp))*f5(itp)
           enddo
           f4mt(lm,ir,ias)=fourpi*zt1/ntp
-          !vwanmt(lm,ir,ias,itloc,1,n)=vwanmt(lm,ir,ias,itloc,1,n)+&
-          !  fourpi*zt1/ntp
         enddo !lm
       enddo !irloc
     enddo !ias
@@ -388,6 +387,7 @@ if (wproc) then
   call flushifc(151)
 endif
 
+if (allocated(vwan)) deallocate(vwan)
 allocate(vwan(nmegqwan))
 vwan=zzero
 ! compute matrix elements of SIC potential
