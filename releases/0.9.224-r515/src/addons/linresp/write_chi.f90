@@ -4,7 +4,7 @@ implicit none
 integer, intent(in) :: igq0
 integer, intent(in) :: ivq0m(3)
 complex(8), intent(in) :: chi_(7,nepts)
-complex(8), intent(in) :: epsilon_(5,nepts)
+complex(8), intent(in) :: epsilon_(6,nepts)
 real(8), intent(in) :: fxca
 
 real(8), allocatable :: func(:,:)
@@ -77,8 +77,12 @@ write(160,'("#  19: -Re chi0_wf(Gq,Gq)        [1/eV/A^3]    ")')
 write(160,'("#  20: -Im chi0_wf(Gq,Gq)        [1/eV/A^3]    ")')
 write(160,'("#  21: -Re chi_wf(Gq,Gq)         [1/eV/A^3]    ")')
 write(160,'("#  22: -Im chi_wf(Gq,Gq)         [1/eV/A^3]    ")')
+write(160,'("#  23:  Re epsilon_eff_wf              ")')
+write(160,'("#  24:  Im epsilon_eff_wf              ")')
+write(160,'("#  25:  loss_function                  ")')
+write(160,'("#  26:  loss_function_wf               ")')
 write(160,'("#")')
-allocate(func(22,nepts))
+allocate(func(26,nepts))
 do ie=1,nepts
   func(1,ie)=dreal(lr_w(ie))*ha2ev
   func(2,ie)=-dreal(chi_(1,ie))/ha2ev/(au2ang)**3
@@ -104,7 +108,11 @@ do ie=1,nepts
   func(20,ie)=-dimag(chi_(6,ie))/ha2ev/(au2ang)**3
   func(21,ie)=-dreal(chi_(7,ie))/ha2ev/(au2ang)**3
   func(22,ie)=-dimag(chi_(7,ie))/ha2ev/(au2ang)**3
-  write(160,'(22G14.6)')func(1:22,ie)
+  func(23,ie)=dreal(epsilon_(6,ie))
+  func(24,ie)=dimag(epsilon_(6,ie))
+  func(25,ie)=-imag(epsilon_(7,ie))
+  func(26,ie)=-imag(epsilon_(8,ie))
+  write(160,'(26G14.6)')func(1:26,ie)
 enddo
 deallocate(func)
 close(160)
