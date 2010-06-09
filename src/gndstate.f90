@@ -214,6 +214,7 @@ do iscl=1,maxscl
   endif
   call mpi_grid_bcast(swidth,dims=(/dim_k,dim2/))
   call mpi_grid_bcast(occsv(1,1),nstsv*nkpt,dims=(/dim_k,dim2/))
+  if (wannier) call wann_ene_occ  
 ! set the charge density and magnetisation to zero
   rhomt(:,:,:)=0.d0
   rhoir(:)=0.d0
@@ -440,6 +441,9 @@ if (mpi_grid_side(dims=(/dim_k/))) then
     end if
     call mpi_grid_barrier(dims=(/dim_k/))
   end do
+endif
+if (wproc) then
+  call write_wann_ene
 endif
 call mpi_grid_bcast(tstop)
 !-----------------------!

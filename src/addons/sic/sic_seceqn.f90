@@ -45,7 +45,7 @@ do i=1,nmegqwan
   if ((imegqwan(1,i).eq.imegqwan(2,i)).and.imegqwan(3,i).eq.0.and.&
     imegqwan(4,i).eq.0.and.imegqwan(5,i).eq.0) then
     vn(imegqwan(1,i))=dreal(vwan(i))
-    hn(imegqwan(1,i))=dreal(hwan(i))
+    !hn(imegqwan(1,i))=dreal(hwan(i))
   endif
 enddo
 
@@ -128,9 +128,18 @@ do i=1,nmegqwan
   v1l(:)=imegqwan(3:5,i)
   vtrc(:)=v1l(1)*avec(:,1)+v1l(2)*avec(:,2)+v1l(3)*avec(:,3)
   expikt=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
-  hwank(n,n1)=hwank(n,n1)+expikt*hwan(i)
+  !hwank(n,n1)=hwank(n,n1)+expikt*hwan(i)
   vwank_1(n,n1)=vwank_1(n,n1)+expikt*vwan(i)
   vwank_2(n1,n)=vwank_2(n1,n)+dconjg(expikt*vwan(i))
+enddo
+
+do n=1,nwann
+  do n1=1,nwann
+    do j=1,nstsv
+      hwank(n,n1)=hwank(n,n1)+&
+        dconjg(wann_c(n,j,ikloc))*wann_c(n1,j,ikloc)*evalsv(j,ik)
+    enddo
+  enddo
 enddo
 
 ! setup unified Hamiltonian
@@ -139,18 +148,21 @@ do j=1,nstsv
 ! 1-st term : diagonal H^{LDA} 
   hunif(j,j)=evalsv(j,ik) 
   do j1=1,nstsv
-! 2-nd term : -\sum_{\alpha,\alpha'} P_{\alpha} H^{LDA} P_{\alpha'}
+! 2-nd term : -\sum'_{\alpha,\alpha'} P_{\alpha} H^{LDA} P_{\alpha'}
     do n=1,nwann
       do n1=1,nwann
-        hunif(j,j1)=hunif(j,j1)-hwank(n,n1)*u(n,j)*dconjg(u(n1,j1))
+        if (n.ne.n1) then
+          hunif(j,j1)=hunif(j,j1)-hwank(n,n1)*u(n,j)*dconjg(u(n1,j1))
+        endif
       enddo
     enddo
-! 3-rd and 4-th terms : \sum_{alpha} P_{\alpha} (H^{LDA}+V_{\alpha}) P_{\alpha})
+! 3-rd term : \sum_{alpha} P_{\alpha} V_{\alpha} P_{\alpha})
     do n=1,nwann
-      hunif(j,j1)=hunif(j,j1)+u(n,j)*dconjg(u(n,j1))*(hn(n)+vn(n))
+      hunif(j,j1)=hunif(j,j1)+u(n,j)*dconjg(u(n,j1))*vn(n)
     enddo
-! 5-th and 6-th terms : \sum_{\alpha} P_{\alpha} V_{\alpha} Q + 
+! 4-th and 5-th terms : \sum_{\alpha} P_{\alpha} V_{\alpha} Q + 
 !                       \sum_{\alpha} Q V_{\alpha} P_{\alpha} 
+!   where Q=1-\sum_{\alpha'}P_{\alpha'}
     do n=1,nwann
       hunif(j,j1)=hunif(j,j1)+u(n,j)*wvp(n,j1)+dconjg(wvp(n,j)*u(n,j1))
       do n1=1,nwann
@@ -160,56 +172,6 @@ do j=1,nstsv
     enddo
   enddo !j1
 enddo !j
-
-
-
-!do i=1,nstsv
-!  hunif(i,i)=evalsv(i,ik)
-!enddo
-!
-!do j=1,nstsv
-!  do j1=1,nstsv
-!    do n=1,nwann
-!      do n1=1,nwann
-!        hunif(j,j1)=hunif(j,j1)-hwan_k(n,n1)*u(n,j)*dconjg(u(n1,j1))
-!      enddo
-!    enddo
-!  enddo
-!enddo
-!
-!do n=1,nwann
-!  do j=1,nstsv
-!    do j1=1,nstsv
-!      hunif(j,j1)=hunif(j,j1)+u(n,j)*dconjg(u(n,j1))*(vn(n)+hnn(n))
-!    enddo
-!  enddo
-!enddo
-!
-!allocate(z5(nstsv,nstsv))
-!z5=zzero
-!do j=1,nstsv
-!  do j1=1,nstsv
-!    do n=1,nwann
-!      z5(j,j1)=z5(j,j1)+u(n,j)*a1(n,j1)+dconjg(a1(n,j)*u(n,j1))
-!    enddo
-!  enddo
-!enddo
-!do j=1,nstsv
-!  do j1=1,nstsv
-!    do n=1,nwann
-!      do n1=1,nwann
-!        z5(j,j1)=z5(j,j1)-vwan_k(n,n1)*u(n,j)*dconjg(u(n1,j1))-&
-!        vwan_2_k(n1,n)*u(n1,j)*dconjg(u(n,j1))
-!      enddo
-!    enddo
-!  enddo
-!enddo  
-!
-!do j=1,nstsv
-!  do j1=1,nstsv
-!    hunif(j,j1)=hunif(j,j1)+z5(j,j1)
-!  enddo
-!enddo
 
 ! check hermiticity
 do j=1,nstsv

@@ -1,10 +1,9 @@
 subroutine sic_gndstate
 use modmain
 implicit none
-integer iter
 
-do iter=1,2
-  if (iproc.eq.0) write(*,*)'SIC iteration ',iter
+do iitersic=1,nitersic
+  if (iproc.eq.0) write(*,*)'SIC iteration ',iitersic
   call gndstate
   call mpi_world_barrier
   call sic_genvwan

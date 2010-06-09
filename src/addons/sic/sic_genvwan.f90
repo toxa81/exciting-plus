@@ -41,6 +41,10 @@ real(8) v2(3),v3(3)
 complex(8) expikr
 integer i1,i2,i3,is,io,ig
 
+complex(8), allocatable :: vwan_old(:)
+logical exist
+character*20 fname
+
 integer lm
 real(8), allocatable :: vx(:),vc(:)
 complex(8) z1,expikt
@@ -79,7 +83,8 @@ call mpi_grid_bcast(efermi)
 call lf_init(lf_maxt,dim2)
 wproc=mpi_grid_root()
 if (wproc) then
-  open(151,file='SIC.OUT',form='FORMATTED',status='REPLACE')
+  write(fname,'("SIC_",I2.2,".OUT")')iitersic
+  open(151,file=trim(adjustl(fname)),form="FORMATTED",status="REPLACE")
 endif
 call genwfnr(151,.false.)  
 if (wproc) then
@@ -90,37 +95,37 @@ endif
 all_wan_ibt=.true.
 call getimegqwan(all_wan_ibt)
 ! compute Fourier transform of <n,T=0|H^{LDA}|n',T'>
-allocate(zm1(nwann,nwann,nkptnrloc))
-zm1=zzero
-do ikloc=1,nkptnrloc
-  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-  do n1=1,nwann
-    do n2=1,nwann
-      do j=1,nstsv
-        zm1(n1,n2,ikloc)=zm1(n1,n2,ikloc)+dconjg(wann_c(n1,j,ikloc))*&
-          wann_c(n2,j,ikloc)*evalsvnr(j,ik)
-      enddo
-    enddo
-  enddo
-enddo 
-! compute <n,T=0|H^{LDA}|n',T'>
-if (allocated(hwan)) deallocate(hwan)
-allocate(hwan(nmegqwan))
-hwan=zzero
-do i=1,nmegqwan
-  n=imegqwan(1,i)
-  n1=imegqwan(2,i)
-  v1l(:)=imegqwan(3:5,i)
-  vtrc(:)=v1l(1)*avec(:,1)+v1l(2)*avec(:,2)+v1l(3)*avec(:,3)
-  do ikloc=1,nkptnrloc
-    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-    expikt=exp(-1.d0*zi*dot_product(vkcnr(:,ik),vtrc(:)))
-    hwan(i)=hwan(i)+expikt*zm1(n,n1,ikloc)
-  enddo
-enddo
-call mpi_grid_reduce(hwan(1),nmegqwan,dims=(/dim_k/))
-hwan(:)=hwan(:)/nkptnr
-deallocate(zm1)
+!allocate(zm1(nwann,nwann,nkptnrloc))
+!zm1=zzero
+!do ikloc=1,nkptnrloc
+!  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+!  do n1=1,nwann
+!    do n2=1,nwann
+!      do j=1,nstsv
+!        zm1(n1,n2,ikloc)=zm1(n1,n2,ikloc)+dconjg(wann_c(n1,j,ikloc))*&
+!          wann_c(n2,j,ikloc)*evalsvnr(j,ik)
+!      enddo
+!    enddo
+!  enddo
+!enddo 
+!! compute <n,T=0|H^{LDA}|n',T'>
+!if (allocated(hwan)) deallocate(hwan)
+!allocate(hwan(nmegqwan))
+!hwan=zzero
+!do i=1,nmegqwan
+!  n=imegqwan(1,i)
+!  n1=imegqwan(2,i)
+!  v1l(:)=imegqwan(3:5,i)
+!  vtrc(:)=v1l(1)*avec(:,1)+v1l(2)*avec(:,2)+v1l(3)*avec(:,3)
+!  do ikloc=1,nkptnrloc
+!    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+!    expikt=exp(-1.d0*zi*dot_product(vkcnr(:,ik),vtrc(:)))
+!    hwan(i)=hwan(i)+expikt*zm1(n,n1,ikloc)
+!  enddo
+!enddo
+!call mpi_grid_reduce(hwan(1),nmegqwan,dims=(/dim_k/))
+!hwan(:)=hwan(:)/nkptnr
+!deallocate(zm1)
 
 
 if (allocated(vwanmt)) deallocate(vwanmt)
@@ -136,6 +141,7 @@ call sic_genvhart
 wproc=mpi_grid_root()
 if (wproc) then
   write(151,*)
+  write(151,'("ngqmax : ",I4)')ngqmax
   write(151,'("time for q-vectors : ",F8.3)')timer_get_value(10)
   write(151,'("time for Hartree potential : ",F8.3)')timer_get_value(11)
 endif
@@ -179,69 +185,68 @@ if (wproc) then
   call timestamp(151,'done with Wannier functions')
 endif
 
-
 ! test
-allocate(wfmt(lmmaxvr,nrmtmax,natmtot,nspinor))
-allocate(wfir(ngrtot,nspinor))
-allocate(a2(nwann,nstsv))
-t1=0.d0
-do ikloc=1,nkptnrloc
-  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-  a2=zzero
-  do j=1,nstsv
-    wfmt=zzero
-    wfir=zzero
-    do ispn=1,nspinor
-      do ias=1,natmtot
-        is=ias2is(ias)
-        do ir=1,nrmt(is)
-          do lm=1,lmmaxvr
-            do io=1,nufr(lm2l(lm),is)
-              wfmt(lm,ir,ias,ispn)=wfmt(lm,ir,ias,ispn)+&
-                ufr(ir,lm2l(lm),io,ias)*wfsvmtloc(lm,io,ias,ispn,j,ikloc)
-            enddo
-          enddo
-        enddo
-      enddo !ias
-      do ig=1,ngknr(ikloc)
-        wfir(igfft(igkignr(ig,ikloc)),ispn)=wfsvitloc(ig,ispn,j,ikloc)
-      enddo
-      call zfftifc(3,ngrid,1,wfir(:,ispn))
-      wfir(:,ispn)=wfir(:,ispn)/sqrt(omega)
-    enddo !ispn
-    ir=0
-    do i3=0,ngrid(3)-1
-      v2(3)=dble(i3)/dble(ngrid(3))
-      do i2=0,ngrid(2)-1
-        v2(2)=dble(i2)/dble(ngrid(2))
-        do i1=0,ngrid(1)-1
-          v2(1)=dble(i1)/dble(ngrid(1))
-          ir=ir+1
-          call r3mv(avec,v2,v3)
-          expikr=exp(zi*dot_product(vkcnr(:,ik),v3(:)))
-          wfir(ir,:)=expikr*wfir(ir,:)
-        enddo
-      enddo
-    enddo
-    do n=1,nwann
-      do ispn=1,nspinor
-        a2(n,j)=a2(n,j)+lf_dotblh(.true.,vkcnr(:,ik),wanmt(1,1,1,1,ispn,n),&
-          wanir(1,1,ispn,n),wfmt(1,1,1,ispn),wfir(1,ispn))
-      enddo
-    enddo
-  enddo !j
-  do n=1,nwann
-    do j=1,nstsv
-      t1=max(t1,abs(wann_c(n,j,ikloc)-dconjg(a2(n,j))))
-    enddo
-  enddo
-enddo !ikloc
-deallocate(wfmt,wfir,a2)
-call mpi_grid_reduce(t1,dims=(/dim_k/),op=op_max)
-if (wproc) then
-  write(151,*)
-  write(151,'("Maximum deviation from exact expansion : ",G18.10)')t1
-endif
+!allocate(wfmt(lmmaxvr,nrmtmax,natmtot,nspinor))
+!allocate(wfir(ngrtot,nspinor))
+!allocate(a2(nwann,nstsv))
+!t1=0.d0
+!do ikloc=1,nkptnrloc
+!  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+!  a2=zzero
+!  do j=1,nstsv
+!    wfmt=zzero
+!    wfir=zzero
+!    do ispn=1,nspinor
+!      do ias=1,natmtot
+!        is=ias2is(ias)
+!        do ir=1,nrmt(is)
+!          do lm=1,lmmaxvr
+!            do io=1,nufr(lm2l(lm),is)
+!              wfmt(lm,ir,ias,ispn)=wfmt(lm,ir,ias,ispn)+&
+!                ufr(ir,lm2l(lm),io,ias)*wfsvmtloc(lm,io,ias,ispn,j,ikloc)
+!            enddo
+!          enddo
+!        enddo
+!      enddo !ias
+!      do ig=1,ngknr(ikloc)
+!        wfir(igfft(igkignr(ig,ikloc)),ispn)=wfsvitloc(ig,ispn,j,ikloc)
+!      enddo
+!      call zfftifc(3,ngrid,1,wfir(:,ispn))
+!      wfir(:,ispn)=wfir(:,ispn)/sqrt(omega)
+!    enddo !ispn
+!    ir=0
+!    do i3=0,ngrid(3)-1
+!      v2(3)=dble(i3)/dble(ngrid(3))
+!      do i2=0,ngrid(2)-1
+!        v2(2)=dble(i2)/dble(ngrid(2))
+!        do i1=0,ngrid(1)-1
+!          v2(1)=dble(i1)/dble(ngrid(1))
+!          ir=ir+1
+!          call r3mv(avec,v2,v3)
+!          expikr=exp(zi*dot_product(vkcnr(:,ik),v3(:)))
+!          wfir(ir,:)=expikr*wfir(ir,:)
+!        enddo
+!      enddo
+!    enddo
+!    do n=1,nwann
+!      do ispn=1,nspinor
+!        a2(n,j)=a2(n,j)+lf_dotblh(.true.,vkcnr(:,ik),wanmt(1,1,1,1,ispn,n),&
+!          wanir(1,1,ispn,n),wfmt(1,1,1,ispn),wfir(1,ispn))
+!      enddo
+!    enddo
+!  enddo !j
+!  do n=1,nwann
+!    do j=1,nstsv
+!      t1=max(t1,abs(wann_c(n,j,ikloc)-dconjg(a2(n,j))))
+!    enddo
+!  enddo
+!enddo !ikloc
+!deallocate(wfmt,wfir,a2)
+!call mpi_grid_reduce(t1,dims=(/dim_k/),op=op_max)
+!if (wproc) then
+!  write(151,*)
+!  write(151,'("Maximum deviation from exact expansion : ",G18.10)')t1
+!endif
 ! deallocate unnecessary arrays
 deallocate(wfsvmtloc)
 deallocate(wfsvitloc)
@@ -428,15 +433,29 @@ if (wproc) then
   write(151,'("Maximum deviation from ""localization criterion"" : ",F12.6)')t2
   write(151,*)
   write(151,'("Diagonal matrix elements")')
-  write(151,'("   n    Re H_nn     Im H_nn     Re V_n      Im V_n")')
+  write(151,'("   n    Re V_n      Im V_n")')
   write(151,'(70("-"))')
   do n=1,nwann
     j=idxmegqwan(n,n,0,0,0)
-    write(151,'(I4,4F12.6)')n,dreal(hwan(j)),dimag(hwan(j)),&
-      dreal(vwan(j)),dimag(vwan(j))
+    write(151,'(I4,4F12.6)')n,dreal(vwan(j)),dimag(vwan(j))
   enddo  
   call flushifc(151)
 endif
+if (wproc) then
+  inquire(file="sic.hdf5",exist=exist)
+  if (exist) then
+    allocate(vwan_old(nmegqwan))
+    call hdf5_read("sic.hdf5","/","vwan",vwan_old(1),(/nmegqwan/))
+    t1=0.d0
+    do i=1,nmegqwan
+      t1=t1+abs(vwan(i)-vwan_old(i))**2
+    enddo
+    t1=sqrt(t1/nmegqwan)
+    write(151,*)
+    write(151,'("SIC matrix elements RMS difference :",G18.10)')t1
+  endif
+endif
+
 if (wproc) then
   call hdf5_create_file("sic.hdf5")
   call hdf5_create_group("sic.hdf5","/","wann")
@@ -458,7 +477,7 @@ if (wproc) then
   call hdf5_write("sic.hdf5","/","nmegqwan",nmegqwan)
   call hdf5_write("sic.hdf5","/","imegqwan",imegqwan(1,1),(/5,nmegqwan/))
   call hdf5_write("sic.hdf5","/","vwan",vwan(1),(/nmegqwan/))
-  call hdf5_write("sic.hdf5","/","hwan",hwan(1),(/nmegqwan/))
+  !call hdf5_write("sic.hdf5","/","hwan",hwan(1),(/nmegqwan/))
 endif
 if (mpi_grid_side(dims=(/dim_t/))) then
   do i=0,mpi_grid_size(dim_t)-1
@@ -488,7 +507,7 @@ if (mpi_grid_side(dims=(/dim_t/))) then
   enddo
 endif
 if (wproc) close(151)
-deallocate(hwan,vwan)
+deallocate(vwan)
 deallocate(wanmt,wanir,vwanmt,vwanir)
 return
 end
