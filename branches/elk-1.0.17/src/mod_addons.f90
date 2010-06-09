@@ -292,7 +292,7 @@ complex(8), allocatable :: wann_p(:,:,:,:)
 real(8), allocatable :: wann_ene(:)
 real(8), allocatable :: wann_occ(:)
 
-complex(8), allocatable :: wf_v_mtrx(:,:,:,:,:)
+!complex(8), allocatable :: wf_v_mtrx(:,:,:,:,:)
 
 real(8) zero3d(3)
 real(8) bound3d(3,3)
@@ -360,8 +360,9 @@ complex(8), allocatable :: wanmt(:,:,:,:,:,:)
 complex(8), allocatable :: wanir(:,:,:,:)
 complex(8), allocatable :: vwanmt(:,:,:,:,:,:)
 complex(8), allocatable :: vwanir(:,:,:,:)
-complex(8), allocatable :: hwan(:)
+!complex(8), allocatable :: hwan(:)
 complex(8), allocatable :: vwan(:)
-
+integer nitersic
+integer iitersic
 
 end module
