@@ -1116,6 +1116,8 @@ real(8), allocatable :: wann_iorb_lcc(:,:)
 integer nwann_h
 integer, allocatable :: iwann_h(:)
 
+logical lwannier_plot_complex
+
 !----------------!
 !      timer     !
 !----------------!

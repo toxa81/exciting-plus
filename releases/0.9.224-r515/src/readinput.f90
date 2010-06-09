@@ -171,6 +171,7 @@ sqados(1:2)=0.d0
 sqados(3)=1.d0
 lrtype=0
 wannier=.false.
+lwannier_plot_complex=.false.
 natlcs=0
 dm_e1=-100.d0
 dm_e2=100.d0
@@ -986,6 +987,8 @@ case('wannier_plot')
   read(50,*,err=20)(nrxyz(i),i=1,3)
   read(50,*,err=20)nwfplot,firstwf
   read(50,*,err=20)iwfv
+case('wannier_plot_complex')
+  read(50,*,err=20)lwannier_plot_complex
 case('wannier_lc')
   read(50,*,err=20)wannier_lc
   read(50,*,err=20)nwann_lc
