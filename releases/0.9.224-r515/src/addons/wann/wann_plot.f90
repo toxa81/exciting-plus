@@ -129,8 +129,17 @@ if (iproc.eq.0) then
         write(70,504)(/x(2)*cos(alph),x(2)*sin(alph)/)/nrxyz(2)
         write(70,506)nrxyz(1),nrxyz(2)
       endif
-      write(70,408)1,nrtot
-      write(70,'(4G18.10)')(sum(abs(wf(:,n,ir))),ir=1,nrtot)
+      write(70,508)1,nrtot
+      if (lwannier_plot_complex) then
+        do ir=1,nrtot
+          write(70,'(2G18.10)') sum(dreal(wf(:,n,ir))), &
+                                sum(dimag(wf(:,n,ir)))
+!        write(70,'(2G18.10)')(sum(dreal(wf(:,n,ir))),ir=1,nrtot), &
+!                             (sum(dimag(wf(:,n,ir))),ir=1,nrtot)
+        enddo
+      else
+        write(70,'(4G18.10)')(sum(abs(wf(:,n,ir))),ir=1,nrtot)
+      endif
       write(70,412)
       close(70)
     enddo
@@ -225,6 +234,8 @@ endif
 502  format('origin ', 2f12.6)
 504  format('delta ', 2f12.6)
 506  format('object 2 class gridconnections counts ', 2i4)
+508  format('object 3 class array type float category complex rank 1 shape',i3, &
+       ' items ',i8,' data follows')
 return
 end
 
