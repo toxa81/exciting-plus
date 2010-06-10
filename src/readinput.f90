@@ -1043,11 +1043,6 @@ case('crpa')
 case('mpi_grid')
   lmpi_grid=.true.
   read(50,*,err=20)mpi_grid(1),mpi_grid(2),mpi_grid(3)
-case('sic')
-  read(50,*,err=20)sic
-  read(50,*,err=20)lf_maxt
-case('vhgqmax')
-  read(50,*,err=20)vhgqmax
 case('')
   goto 10
 case default

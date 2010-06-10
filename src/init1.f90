@@ -141,7 +141,7 @@ if (task.eq.0.or.task.eq.1.or.task.eq.22.or.task.eq.100.or.&
   if (lmpi_grid) then
     grid_dim(1:2)=mpi_grid(1:2)
   endif
-else if (task.eq.400.or.task.eq.401.or.task.eq.402.or.task.eq.800) then
+else if (task.eq.400.or.task.eq.401.or.task.eq.402) then
   i2=nvq0
   if (i2.eq.0) i2=nkptnr
   allocate(grid_dim(3))

@@ -7,12 +7,10 @@ real(8), allocatable :: vcgq(:)
 integer ig,ntloc,itloc,it,n1,n2
 real(8) vtc(3),vgq0c(3),gq0,a0
 complex(8) expiqt
-logical l1
 
 ivq0m(:)=ivq0m_list(:,iq)
 ntloc=mpi_grid_map(ntr_uscrn,dim_b)
 
-l1=.true.
 ! setup 4Pi/|G+q|^2 array
 allocate(vcgq(ngvecme))
 do ig=1,ngvecme
@@ -29,17 +27,7 @@ do ig=1,ngvecme
     a0=1.d0
   endif
   gq0=dot_product(vgq0c,vgq0c)
-  if (gq0.gt.vhgqmax) then
-    if (ig.eq.ngvecme.and.l1) then
-      write(*,'("Warning(genubare) : not enough G-vectors")')
-      write(*,'(" ig : ",I4)')ig
-      write(*,'(" iq : ",I4)')iq        
-    endif
-    vcgq(iq)=0.d0
-    l1=.false.
-  else
-    vcgq(ig)=a0*fourpi/gq0
-  endif
+  vcgq(ig)=a0*fourpi/gq0
 enddo
 
 if (mpi_grid_x(dim_k).eq.0) then
