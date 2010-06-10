@@ -68,7 +68,7 @@ do it=1,maxit
   if ((e1-e0).lt.epsocc) goto 10
 end do
 write(*,*)
-write(*,'("Error(occupy): could not find Fermi energy")')
+write(*,'("Error(occupy2): could not find Fermi energy")')
 write(*,*)
 call pstop
 10 continue

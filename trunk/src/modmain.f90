@@ -930,9 +930,6 @@ data lmpi_grid/.false./
 integer mpi_grid(3)
 complex(8), allocatable :: evecfvloc(:,:,:,:)
 complex(8), allocatable :: evecsvloc(:,:,:)
-complex(8), allocatable :: evecsv0loc(:,:,:)
-real(8), allocatable :: evalsv0(:,:)
-
 
 ! dimension for k-points 
 integer dim_k
@@ -1274,10 +1271,6 @@ integer, parameter :: t_rho_mag_tot=43
 integer, parameter :: t_pot=44
 integer, parameter :: t_dmat=45
 
-
-
-
-
 logical wproc
 
 ! number of nearest neighbours for each atom
@@ -1296,21 +1289,6 @@ integer clda_iat(2)
 integer clda_ispn(2)
 integer, allocatable :: clda_iorb(:,:)
 real(8), allocatable :: clda_vorb(:,:)
-
-!-------------!
-!      SIC    !
-!-------------!
-logical sic
-data sic/.false./
-integer lf_maxt
-data lf_maxt/1/
-complex(8), allocatable :: wanmt(:,:,:,:,:,:)
-complex(8), allocatable :: wanir(:,:,:,:)
-complex(8), allocatable :: vwanmt(:,:,:,:,:,:)
-complex(8), allocatable :: vwanir(:,:,:,:)
-
-real(8) vhgqmax
-data vhgqmax/3.d0/
 
 end module
 

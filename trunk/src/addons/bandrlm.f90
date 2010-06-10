@@ -51,15 +51,8 @@ allocate(bc(lmmax,natmtot,nspinor,nstsv,nkpt))
 allocate(evalfv(nstfv,nspnfv))
 allocate(evecfv(nmatmax,nstfv,nspnfv))
 allocate(evecsv(nstsv,nstsv))
-if (sic) then
-  if (allocated(evalsv0)) deallocate(evalsv0)
-  allocate(evalsv0(nstsv,nkpt))
-  if (allocated(evecsv0loc)) deallocate(evecsv0loc)
-  allocate(evecsv0loc(nstsv,nstsv,nkptloc))
-endif
 ! read density and potentials from file
 call readstate
-call readvwan
 ! read Fermi energy from file
 call readfermi
 ! find the new linearisation energies
