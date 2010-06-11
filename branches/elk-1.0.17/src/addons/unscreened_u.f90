@@ -58,16 +58,6 @@ if (mpi_grid_root()) then
   write(151,'("Total number of q-vectors        : ",I6)')nvq
   write(151,'("Total number of processors       : ",I6)')nproc
   write(151,'("MPI grid size                    : ",3I6)')mpi_grid_size
-!  write(151,*)
-!  write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
-!  write(151,'("List of Wannier transitions (n n1 T) ")')
-!  do i=1,nmegqwan
-!    write(151,'(I4,4X,I4,4X,3I3)')imegqwan(:,i)
-!  enddo
-!  call timestamp(151)
-!  write(151,*)
-!  write(151,'("Translation limits : ",6I6)')megqwan_tlim(:,1), &
-!    megqwan_tlim(:,2),megqwan_tlim(:,3)
   call flushifc(151)
 endif
 lr_e1=100.1d0
@@ -79,7 +69,7 @@ ubarewan=zzero
 ! main loop over q-points
 do iqloc=1,nvqloc
   iq=mpi_grid_map(nvq,dim_q,loc=iqloc)
-  call genmegq(iq,.true.)
+  call genmegq(iq,.true.,.false.)
   do i=1,nmegqwan
     n=imegqwan(1,i)
     n1=imegqwan(2,i)

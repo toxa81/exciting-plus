@@ -138,6 +138,7 @@ do n=1,nwann
     do j=1,nstsv
       hwank(n,n1)=hwank(n,n1)+&
         dconjg(wann_c(n,j,ikloc))*wann_c(n1,j,ikloc)*evalsv(j,ik)
+        !dconjg(wann_c(n1,j,ikloc))*wann_c(n,j,ikloc)*evalsv(j,ik)
     enddo
   enddo
 enddo
@@ -151,14 +152,14 @@ do j=1,nstsv
 ! 2-nd term : -\sum'_{\alpha,\alpha'} P_{\alpha} H^{LDA} P_{\alpha'}
     do n=1,nwann
       do n1=1,nwann
-        if (n.ne.n1) then
+!        if (n.ne.n1) then
           hunif(j,j1)=hunif(j,j1)-hwank(n,n1)*u(n,j)*dconjg(u(n1,j1))
-        endif
+!        endif
       enddo
     enddo
 ! 3-rd term : \sum_{alpha} P_{\alpha} V_{\alpha} P_{\alpha})
     do n=1,nwann
-      hunif(j,j1)=hunif(j,j1)+u(n,j)*dconjg(u(n,j1))*vn(n)
+      hunif(j,j1)=hunif(j,j1)+u(n,j)*dconjg(u(n,j1))*(vn(n)+wann_ene(n))
     enddo
 ! 4-th and 5-th terms : \sum_{\alpha} P_{\alpha} V_{\alpha} Q + 
 !                       \sum_{\alpha} Q V_{\alpha} P_{\alpha} 

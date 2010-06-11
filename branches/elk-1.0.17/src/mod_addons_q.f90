@@ -23,6 +23,7 @@ data gqsh/2/
 integer ngqmax
 ! index of G0-vector, which brigs q-vector to first BZ
 integer, allocatable :: ig0q(:)
+integer iig0q
 ! number of G+q vectors
 integer, allocatable :: ngq(:)
 ! G+q vectors in Cartesian coordinates
