@@ -91,26 +91,17 @@ real(8), allocatable :: evalsv0(:,:)
 integer, parameter :: dim_q=2
 ! dimension for interband transitions
 integer, parameter :: dim_b=3
-! index of G-vector which brings q to first BZ
-!integer lr_igq0
-! first G-shell for matrix elements
-!integer gshme1
-! last G-shell for matrix elements
-!integer gshme2
-! first G-vector for matrix elements
-!integer gvecme1
-! last G-vector for matrix elements
-!integer gvecme2
 ! number of G-vectors for matrix elements
 integer ngvecme
-real(8) maxomega
-real(8) domega
-real(8) lr_eta
-real(8) lr_e1,lr_e2
 ! type of linear response calculation
 !   0 : charge response
 !   1 : magnetic response
 integer lrtype
+data lrtype/0/
+real(8) lr_e1
+data lr_e1/-100.d0/
+real(8) lr_e2
+data lr_e2/100.d0/
 real(8) lr_min_e12
 real(8) lr_e1_wan
 real(8) lr_e2_wan
@@ -178,22 +169,41 @@ integer, allocatable :: ngntuju(:,:)
 integer(2), allocatable :: igntuju(:,:,:,:)
 complex(8), allocatable :: gntuju(:,:,:)
 
+complex(8), allocatable :: chi0loc(:,:,:)
+complex(8), allocatable :: chi0wanloc(:,:,:)
 
 
 
-! array for k and k+q stuff
+! array for k+q points
 !  1-st index: index of k-point in BZ
 !  2-nd index: 1: index of k'=k+q-K
 !              2: index of K-vector which brings k+q to first BZ
 integer, allocatable :: idxkq(:,:)
 ! number of energy-mesh points
-integer nepts
+integer lr_nw
+data lr_nw/201/
+! first energy point (eV)
+real(8) lr_w0
+data lr_w0/0.d0/
+! last energy point (eV)
+real(8) lr_w1
+data lr_w1/20.d0/
+! energy step
+real(8) lr_dw
 ! energy mesh
 complex(8), allocatable :: lr_w(:)
+! broadening parameter (eV)
+real(8) lr_eta
+data lr_eta/0.3d0/
+
 real(8) fxca0
+data fxca0/0.d0/
 real(8) fxca1
+data fxca1/0.d0/
 integer nfxca
+data nfxca/1/
 integer fxctype
+data fxctype/0/
 
 ! high-level switch: solve scalar equation for chi
 logical scalar_chi
@@ -244,15 +254,15 @@ integer, parameter :: f_sigma                = 10
 integer, parameter :: f_sigma_scalar         = 11
 integer, parameter :: f_loss                 = 12
 integer, parameter :: f_loss_scalar          = 13
-integer, parameter :: f_chi0_wann_full       = 14
-integer, parameter :: f_chi0_wann            = 15
-integer, parameter :: f_chi_wann             = 16
-integer, parameter :: f_epsilon_eff_wann     = 17
-integer, parameter :: f_sigma_wann           = 18
-integer, parameter :: f_loss_wann            = 19
+integer, parameter :: f_chi0_wann            = 14
+integer, parameter :: f_chi_wann             = 15
+integer, parameter :: f_epsilon_eff_wann     = 16
+integer, parameter :: f_sigma_wann           = 17
+integer, parameter :: f_loss_wann            = 18
 
-integer, parameter :: nf_response            = 19
+integer, parameter :: nf_response            = 18
 complex(8), allocatable :: f_response(:,:,:)
+
 
 complex(8), allocatable :: uscrnwan(:,:,:)
 !complex(8), allocatable :: ubarewan(:,:)

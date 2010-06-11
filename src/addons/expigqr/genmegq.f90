@@ -1,10 +1,11 @@
-subroutine genmegq(iq,tout)
+subroutine genmegq(iq,tout,tg0q)
 use modmain
 use mod_nrkp
 use mod_addons_q
 implicit none
 integer, intent(in) :: iq
 logical, intent(in) :: tout
+logical, intent(in) :: tg0q
 
 ! allocatable arrays
 integer, allocatable :: igkignr_jk(:)
@@ -42,7 +43,7 @@ if (wproc) then
 endif
 call timer_start(1,reset=.true.)
 ! initialize G+q vector arays
-call init_gq(iq,lmaxexp,lmmaxexp)
+call init_gq(iq,lmaxexp,lmmaxexp,tg0q)
 ! initialize k+q array
 call init_kq(iq)
 ! initialize interband transitions
