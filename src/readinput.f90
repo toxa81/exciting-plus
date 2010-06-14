@@ -58,8 +58,8 @@ gmaxvr=12.d0
 lmaxapw=8
 lmaxvr=7
 lmaxmat=5
-lmaxinr=2
-fracinr=0.25d0
+lmaxinr=7
+fracinr=0.d0
 npsden=9
 xctype(1)=3
 xctype(2)=0
@@ -159,7 +159,7 @@ nosource=.false.
 spinsprl=.false.
 ssdph=.true.
 vqlss(:)=0.d0
-nwrite=0
+nwrite=2
 tevecsv=.false.
 
 ! LDA+U defaults
