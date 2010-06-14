@@ -93,6 +93,14 @@ if (mpi_grid_root()) then
     write(50,'("     ")')
   end do
   close(50)
+  open(50,file='bands.dat',action='WRITE',form='FORMATTED')
+  do ist=1,nstsv
+    do ik=1,nkpt
+      write(50,'(2G18.10)') dpp1d(ik),(evalsv(ist,ik)-efermi)*ha2ev
+    end do
+    write(50,'("     ")')
+  end do
+  close(50)
   write(*,*)
   write(*,'("Info(bandrlm):")')
   write(*,'(" band structure plot written to BAND.OUT")')
@@ -104,6 +112,15 @@ if (mpi_grid_root()) then
       end do
       write(50,*)
     end do
+    close(50)
+    open(50,file='bands_wann.dat',action='WRITE',form='FORMATTED')
+    do ist=1,nwann
+      do ik=1,nkpt
+        write(50,'(2G18.10)') dpp1d(ik),(wann_e(ist,ik)-efermi)*ha2ev
+      end do
+      write(50,*)
+    end do
+    close(50)
   endif
   open(50,file='BNDCHR.OUT',action='WRITE',form='FORMATTED')
   write(50,*)lmmax,nspecies,natmtot,nspinor,nstfv,nstsv,nkpt,nvp1d
@@ -152,6 +169,15 @@ if (mpi_grid_root()) then
     write(50,'(2G18.10)') dvp1d(iv),emax
     write(50,'("     ")')
   end do
+  close(50)
+  open(50,file='bandlines.dat',action='WRITE',form='FORMATTED')
+  do iv=1,nvp1d
+    write(50,'(2G18.10)') dvp1d(iv),(emin-efermi)*ha2ev
+    write(50,'(2G18.10)') dvp1d(iv),(emax-efermi)*ha2ev
+    write(50,'("     ")')
+  end do
+  write(50,'(2G18.10)') dvp1d(1),0.d0
+  write(50,'(2G18.10)') dvp1d(nvp1d),0.d0
   close(50)
   write(*,*)
   write(*,'(" vertex location lines written to BANDLINES.OUT")')
