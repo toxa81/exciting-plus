@@ -102,7 +102,9 @@ do itask=1,ntasks
   case(820)
     call sic_bandstr
   case(822)
-    call bandrlm    
+    call bandrlm  
+  case(811)
+    call dosrlm      
   case default
     write(*,*)
     write(*,'("Error(main): task not defined : ",I8)') task

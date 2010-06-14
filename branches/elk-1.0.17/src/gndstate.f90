@@ -293,7 +293,7 @@ do iscl=1,maxscl
     write(60,*)
     write(60,'("Density of states at Fermi energy : ",G18.10)') fermidos
     write(60,'(" (states/Hartree/unit cell)")')
-    write(60,'("Estimated band gap : ",G18.10)') bandgap
+    write(60,'("Estimated band gap (eV) : ",G18.10)') bandgap*ha2ev
 ! write total energy to TOTENERGY.OUT and flush
     write(61,'(G22.12)') engytot
     call flushifc(61)
