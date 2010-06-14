@@ -103,7 +103,7 @@ vclp3d(3,4)=1.d0
 np3d(:)=20
 nwdos=500
 ngrdos=100
-nsmdos=0
+nsmdos=3
 wdos(1)=-0.5d0
 wdos(2)=0.5d0
 dosocc=.false.
@@ -966,6 +966,19 @@ case('gqmax')
 case('response_w')
   read(50,*,err=20) lr_nw
   read(50,*,err=20) lr_w0,lr_w1,lr_eta  
+case('response_bands')
+  read(50,*,err=20) lr_e1,lr_e2
+case('response_fxc')
+  read(50,*,err=20) fxctype,nfxca,fxca0,fxca1
+case('response_wann')
+  read(50,*,err=20) wannier_chi0_chi
+  read(50,*,err=20) megqwan_afm
+  read(50,*,err=20) megqwan_mindist,megqwan_maxdist 
+  read(50,*,err=20) megqwan_cutoff1,megqwan_cutoff2
+case('response_wann_include')
+  read(50,*,err=20) nwann_include
+  allocate(iwann_include(nwann_include))
+  read(50,*,err=20) (iwann_include(i),i=1,nwann_include)
 case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_add_poco
