@@ -30,7 +30,7 @@ do ias=1,natmtot
             do n=1,nwann
               wanmt_(lm,ir,ias,ispn,n)=wanmt_(lm,ir,ias,ispn,n)+&
                 expikr*wann_unkmt(lm,io,ias,ispn,n,ikloc)*&
-                ufr(ir,lm2l(lm),io,ias)
+                ufr(ir,lm2l(lm),io,ias2ic(ias))
             enddo !n
           enddo !ispn
         enddo !io

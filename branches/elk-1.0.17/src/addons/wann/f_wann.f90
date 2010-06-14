@@ -39,7 +39,7 @@ if (vrinmt(vrc1,is,ia,ntr,vr0,ir0,r0)) then
     do l=0,lmaxvr
       do j=1,nprad
         i=ir0+j-1
-        ya(j)=ufr(i,l,io,ias)
+        ya(j)=ufr(i,l,io,ias2ic(ias))
       end do
       ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
     enddo !l

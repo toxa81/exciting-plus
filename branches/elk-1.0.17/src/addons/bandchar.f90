@@ -59,7 +59,7 @@ do j=1,nstfv
             do io1=1,nufrmax
               do io2=1,nufrmax
                 bndchr(lm,ias,ispn,j+(ispn-1)*nstfv)=bndchr(lm,ias,ispn,j+(ispn-1)*nstfv) + &
-                  ufrp(l,io1,io2,ias)*dreal(dconjg(zt1(lm,io1))*zt1(lm,io2))/nsym1
+                  ufrp(l,io1,io2,ias2ic(ias))*dreal(dconjg(zt1(lm,io1))*zt1(lm,io2))/nsym1
               enddo
             enddo
 ! not tested: partial contribution from APW (io2=1) or lo (io2=2)
