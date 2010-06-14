@@ -203,7 +203,7 @@ endif
 !          do lm=1,lmmaxvr
 !            do io=1,nufr(lm2l(lm),is)
 !              wfmt(lm,ir,ias,ispn)=wfmt(lm,ir,ias,ispn)+&
-!                ufr(ir,lm2l(lm),io,ias)*wfsvmtloc(lm,io,ias,ispn,j,ikloc)
+!                ufr(ir,lm2l(lm),io,ias2ic(ias))*wfsvmtloc(lm,io,ias,ispn,j,ikloc)
 !            enddo
 !          enddo
 !        enddo

@@ -80,7 +80,7 @@ do j=1,nstsv
         do lm=1,lmmaxvr
           do io=1,nufr(lm2l(lm),is)
             wfmt(lm,ir,ias,ispn)=wfmt(lm,ir,ias,ispn)+&
-              ufr(ir,lm2l(lm),io,ias)*wfsvmt(lm,io,ias,ispn,j)
+              ufr(ir,lm2l(lm),io,ias2ic(ias))*wfsvmt(lm,io,ias,ispn,j)
           enddo
         enddo
       enddo

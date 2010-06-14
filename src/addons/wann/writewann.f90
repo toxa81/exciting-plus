@@ -70,7 +70,7 @@ do ikloc=1,nkptloc
           do lm=1,lmmaxvr
             do io=1,nufrmax
               wann_rf(lm,ir,ispn,n)=wann_rf(lm,ir,ispn,n)+&
-                ufr(ir,lm2l(lm),io,ias)*wann_unkmt(lm,io,ias,ispn,n,ikloc)
+                ufr(ir,lm2l(lm),io,ias2ic(ias))*wann_unkmt(lm,io,ias,ispn,n,ikloc)
             enddo
           enddo !lm
         enddo !ir
