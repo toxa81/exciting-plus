@@ -1,5 +1,4 @@
 subroutine bandchar(dosym,lmax,ikloc,evecfv,evecsv,ld,bndchr)
-! !USES:
 use modmain
 implicit none
 ! arguments
