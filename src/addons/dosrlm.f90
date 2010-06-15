@@ -143,7 +143,7 @@ if (wannier) then
     do ik=1,nkpt
       ikloc=mpi_grid_map(nkpt,dim_k,x=x0,glob=ik)
       if (mpi_grid_x(dim_k).eq.x0) then
-        do ist=1,nstfv
+        do ist=1,nstsv
           f(ist,ik)=abs(wann_c(n,ist,ikloc))**2
         end do
       endif
@@ -227,7 +227,7 @@ if (mpi_grid_root()) then
     write(50)nwann
     do n=1,nwann
       do iw=1,nwdos
-        write(50)doswan(iw,n)/ha2ev
+        write(50)occmax*doswan(iw,n)/ha2ev
       enddo
     enddo
   endif

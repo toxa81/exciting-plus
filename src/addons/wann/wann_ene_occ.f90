@@ -6,7 +6,6 @@ implicit none
 ! local variables
 real(8) t(2),w2
 integer n,i,ik,ispn,ias,lm1,lm2,l,j,n1,n2,m1,m2,ispn1,ispn2,ikloc
-!integer, external :: ikglob
 complex(8), allocatable :: wann_ene_m(:,:,:,:,:)
 complex(8), allocatable :: wann_occ_m(:,:,:,:,:)
 complex(8) z2
@@ -70,17 +69,20 @@ call mpi_grid_reduce(wann_ene_m(1,1,1,1,1),&
   lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,dims=(/dim_k/),side=.true.,all=.true.)
 ! convert from Rlm to Ylm basis
 do ias=1,natmtot
-  call unimtrxt(lmmaxlu,yrlm_lps(1,1,ias),wann_occ_m(1,1,1,1,ias))
-  call unimtrxt(lmmaxlu,yrlm_lps(1,1,ias),wann_ene_m(1,1,1,1,ias))
+  do ispn=1,nspinor
+    call unimtrxt(lmmaxlu,yrlm_lps(1,1,ias),wann_occ_m(1,1,ispn,ispn,ias))
+    call unimtrxt(lmmaxlu,yrlm_lps(1,1,ias),wann_ene_m(1,1,ispn,ispn,ias))
+  enddo
 enddo
 ! symmetrise matrix
 call symdmat(lmaxlu,lmmaxlu,wann_occ_m)
 call symdmat(lmaxlu,lmmaxlu,wann_ene_m)
 ! convert back to Rlm
 do ias=1,natmtot
-  call unimtrxt(lmmaxlu,rylm_lps(1,1,ias),wann_occ_m(1,1,1,1,ias))
-  call unimtrxt(lmmaxlu,rylm_lps(1,1,ias),wann_ene_m(1,1,1,1,ias))
-!  call unimtrxt(lmmaxlu,rylm_lps(1,1,ias),wf_v_mtrx(1,1,1,1,ias))
+  do ispn=1,nspinor
+    call unimtrxt(lmmaxlu,rylm_lps(1,1,ias),wann_occ_m(1,1,ispn,ispn,ias))
+    call unimtrxt(lmmaxlu,rylm_lps(1,1,ias),wann_ene_m(1,1,ispn,ispn,ias))
+  enddo
 enddo
 do n=1,nwann
   ias=iwann(1,n)
