@@ -140,24 +140,16 @@ EXE = elk
 elk:	$(OBJ)
 	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) $(LIB_LPK) $(LIB_FFT) $(LIB_XC) $(LIB_SYS)
 
-blas:
-	cd BLAS; $(MAKE); cp blas.a ..
-
-lapack:
-	cd LAPACK; $(MAKE); cp lapack.a ..
-
 fft:
 	cd fftlib; $(MAKE); cp fftlib.a ..
 
-all:	blas lapack fft elk
+all:	fft elk
 
 clean:
 	rm -f $(OBJ) *.mod *~ fort.* ifc* *.gcno gmon.out *.aux *.dvi *.log \
          elk.pdf *.tex *.toc $(EXE)
 
 cleanall:
-	cd BLAS; $(MAKE) clean
-	cd LAPACK; $(MAKE) clean
 	cd fftlib; $(MAKE) clean
 	$(MAKE) clean
 
@@ -179,14 +171,10 @@ RELEASE = ../release/elk
 release:
 	rm -rf $(RELEASE)
 	mkdir $(RELEASE)
-	cd BLAS; $(MAKE) clean
-	cd LAPACK; $(MAKE) clean
 	cd fftlib; $(MAKE) clean
 	cd eos; $(MAKE) clean
 	cd spacegroup; $(MAKE) clean
 	mkdir $(RELEASE)/src
-	cp -r BLAS $(RELEASE)/src
-	cp -r LAPACK $(RELEASE)/src
 	cp -r fftlib $(RELEASE)/src
 	cp -r eos $(RELEASE)/src
 	cp -r spacegroup $(RELEASE)/src

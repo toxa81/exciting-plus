@@ -59,9 +59,11 @@ call genlofr
 call olprad
 ! compute the Hamiltonian radial integrals
 call hmlrad
+! generate muffin-tin effective magnetic fields and s.o. coupling functions
+call genbeffmt
 ! get radial-muffint tin functions
 call getufr
-! get product of radia functions
+! get product of radial functions
 call genufrp  
 ! begin parallel loop over k-points
 bc=0.d0

@@ -34,7 +34,7 @@ call genapwfr
 call genlofr
 ! get radial-muffint tin functions
 call getufr
-! get product of radia functions
+! get product of radial functions
 call genufrp  
 
 lmax=min(3,lmaxapw)
@@ -156,7 +156,8 @@ endif
 
 if (mpi_grid_root()) then
 ! write total DOS
-  open(50,file='TDOS_EV.OUT',action='WRITE',form='FORMATTED')
+  open(50,file="TDOS.OUT",action="WRITE",form="FORMATTED")
+  open(51,file="tdos.dat",action="WRITE",form="FORMATTED")
   do ispn=1,nspinor
     if (ispn.eq.1) then
       t1=1.d0
@@ -164,11 +165,14 @@ if (mpi_grid_root()) then
       t1=-1.d0
     end if
     do iw=1,nwdos
-      write(50,'(2G18.10)') (w(iw)-efermi)*ha2ev,t1*tdos(iw,ispn)/ha2ev
+      write(50,'(2G18.10)') w(iw),t1*tdos(iw,ispn)
+      write(51,'(2G18.10)') (w(iw)-efermi)*ha2ev,t1*tdos(iw,ispn)/ha2ev
     end do
     write(50,'("     ")')
+    write(51,'("     ")')
   enddo
   close(50)
+  close(51)
 ! compute interstitial DOS
   idos=tdos
   do ispn=1,nspinor
@@ -179,7 +183,8 @@ if (mpi_grid_root()) then
     enddo
   enddo
 ! write interstitial DOS
-  open(50,file='IDOS_EV.OUT',action='WRITE',form='FORMATTED')
+  open(50,file="IDOS.OUT",action="WRITE",form="FORMATTED")
+  open(51,file="idos.dat",action="WRITE",form="FORMATTED")
   do ispn=1,nspinor
     if (ispn.eq.1) then
       t1=1.d0
@@ -187,13 +192,16 @@ if (mpi_grid_root()) then
       t1=-1.d0
     end if
     do iw=1,nwdos
-      write(50,'(2G18.10)') (w(iw)-efermi)*ha2ev,t1*idos(iw,ispn)/ha2ev
+      write(50,'(2G18.10)') w(iw),t1*idos(iw,ispn)
+      write(51,'(2G18.10)') (w(iw)-efermi)*ha2ev,t1*idos(iw,ispn)/ha2ev
     end do
     write(50,'("     ")')  
+    write(51,'("     ")')  
   end do
   close(50)
+  close(51)
 ! write partial DOS
-  open(50,file='PDOS.OUT',form='UNFORMATTED',status='REPLACE')
+  open(50,file="PDOS.OUT",form="UNFORMATTED",status="REPLACE")
   write(50)nspecies,natmtot,nspinor,lmax,lmmax,nwdos
   do is=1,nspecies
     write(50)spsymb(is)

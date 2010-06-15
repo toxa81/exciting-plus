@@ -71,7 +71,7 @@ call hmlrad
 call genbeffmt
 ! get radial-muffint tin functions
 call getufr
-! get product of radia functions
+! get product of radial functions
 call genufrp  
 emin=1.d5
 emax=-1.d5
