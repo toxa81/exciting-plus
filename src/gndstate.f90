@@ -186,7 +186,7 @@ do iscl=1,maxscl
   call hmlrad
 ! get radial-muffint tin functions
   call getufr
-! get product of radia functions
+! get product of radial functions
   call genufrp  
 ! generate muffin-tin effective magnetic fields and s.o. coupling functions
   call genbeffmt
@@ -257,7 +257,8 @@ do iscl=1,maxscl
 ! LDA+U
   if (ldapu.ne.0) then
 ! generate the LDA+U density matrix
-    call gendmatlu
+    !call gendmatlu
+    call gendmatrsh
 ! generate the LDA+U potential matrix
     call genvmatlu
 ! write the LDA+U matrices to file
