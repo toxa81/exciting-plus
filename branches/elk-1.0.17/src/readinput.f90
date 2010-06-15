@@ -1050,8 +1050,8 @@ end if
 ! read in atomic species data
 call readspecies
 ! delete TEST.OUT
-open(50,file='TEST.OUT')
-close(50,status='DELETE')
+!open(50,file='TEST.OUT')
+!close(50,status='DELETE')
 return
 end subroutine
 !EOC

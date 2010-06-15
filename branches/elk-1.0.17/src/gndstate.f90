@@ -261,9 +261,9 @@ do iscl=1,maxscl
 ! generate the LDA+U potential matrix
     call genvmatlu
 ! write the LDA+U matrices to file
-    call writeldapu
+    if (wproc) call writeldapu
 ! calculate and write tensor moments to file
-    if (tmomlu) then
+    if (tmomlu.and.wproc) then
       call tensmom(67)
       call flushifc(67)
     end if
