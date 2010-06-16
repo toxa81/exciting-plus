@@ -327,6 +327,7 @@ real(8) wannier_min_prjao
 data wannier_min_prjao/-0.1d0/
 
 logical ldisentangle
+data ldisentangle/.false./
 
 complex(8), allocatable :: veffir_zfft(:)
 
