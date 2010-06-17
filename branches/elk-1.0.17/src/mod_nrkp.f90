@@ -137,6 +137,17 @@ call mpi_grid_bcast(evecfvloc(1,1,1,1),nmatmax*nstfv*nspnfv*nkptnrloc,&
   dims=ortdims((/dim_k/)))
 call mpi_grid_bcast(evecsvloc(1,1,1),nstsv*nstsv*nkptnrloc,&
   dims=ortdims((/dim_k/)))
+call timer_stop(1)
+if (wproc.and.fout.gt.0) then
+  write(fout,'("Done in ",F8.2," seconds")')timer_get_value(1)
+  call flushifc(fout)
+endif
+call timer_start(1,reset=.true.)
+if (wproc.and.fout.gt.0) then
+  write(fout,*)
+  write(fout,'("Generating wave-functions")')
+  call flushifc(fout)
+endif
 ! transform eigen-vectors
 wfsvmtloc=zzero
 wfsvitloc=zzero
@@ -164,7 +175,7 @@ if (wproc.and.fout.gt.0) then
 endif
 ! generate Wannier function expansion coefficients
 if (wannier) then
-  !call timer_start(1,reset=.true.)
+  call timer_start(1,reset=.true.)
   if (allocated(wann_c)) deallocate(wann_c)
   allocate(wann_c(nwann,nstsv,nkptnrloc))
   if (allocated(wann_unkmt)) deallocate(wann_unkmt)
@@ -205,6 +216,7 @@ if (wannier) then
         evecsvloc(1,1,ikloc),wfsvitloc(1,1,1,ikloc))       
     endif    
   enddo !ikloc
+  call timer_stop(1)
 endif !wannier
 ! after optinal band disentanglement we can finally synchronize all eigen-values
 !   and compute band occupation numbers 
@@ -214,6 +226,7 @@ allocate(occsvnr(nstsv,nkptnr))
 call occupy2(nkptnr,wkptnr,evalsvnr,occsvnr)
 deallocate(apwalm)
 if (wannier) then
+  call timer_start(1)
 ! calculate Wannier function occupancies 
   wann_occ=0.d0
   do n=1,nwann
@@ -232,8 +245,11 @@ if (wannier) then
       write(151,'("    n : ",I4,"  occ : ",F8.6)')n,wann_occ(n)
     enddo
   endif
+  call timer_stop(1)
   if (wproc.and.fout.gt.0) then
     write(151,'("  Dielectric Wannier functions : ",L1)')wann_diel()
+    write(151,*)
+    write(fout,'("Done in ",F8.2," seconds")')timer_get_value(1)
   endif
 endif
 
