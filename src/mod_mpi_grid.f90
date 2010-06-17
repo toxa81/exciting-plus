@@ -1162,7 +1162,6 @@ subroutine pstop(ierr_)
 #ifdef _MPI_
 use mpi
 #endif
-!use mod_mpi_grid
 implicit none
 integer, optional, intent(in) :: ierr_
 integer ierr
@@ -1180,6 +1179,36 @@ if (allocated(mpi_grid_x)) &
   write(*,'("  coordinates of processor : ",10I8)')mpi_grid_x
 #ifdef _MPI_
 call mpi_abort(MPI_COMM_WORLD,ierr,ierr)
+call mpi_finalize(ierr)
+#endif
+stop
+return
+end subroutine
+
+!-----------------!
+!      bstop      !
+!-----------------!
+subroutine bstop(ierr_)
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+integer, optional, intent(in) :: ierr_
+integer ierr
+
+if (present(ierr_)) then
+  ierr=ierr_
+else
+  ierr=-1
+endif
+
+write(*,'("STOP execution")')
+write(*,'("  error code : ",I8)')ierr
+write(*,'("  global index of processor : ",I8)')iproc
+if (allocated(mpi_grid_x)) &
+  write(*,'("  coordinates of processor : ",10I8)')mpi_grid_x
+#ifdef _MPI_
+call mpi_grid_barrier()
 call mpi_finalize(ierr)
 #endif
 stop

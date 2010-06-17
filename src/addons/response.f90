@@ -44,7 +44,10 @@ if (wannier_chi0_chi) wannier_megq=.true.
 ! initialise universal variables
 call init0
 call init1
-if (.not.mpi_grid_in()) return
+if (.not.mpi_grid_in()) then
+  write(*,'("Info(response) processor ",I6," is not in grid")')iproc
+  return
+endif
 
 ! check if momentum matrix is required
 lpmat=.false.
@@ -90,6 +93,7 @@ if (mpi_grid_root()) call readfermi
 call mpi_grid_bcast(efermi)
 ! generate wave-functions for entire BZ
 call genwfnr(151,lpmat)
+
 if (wannier_megq) then
   all_wan_ibt=.false.
   call getimegqwan(all_wan_ibt)

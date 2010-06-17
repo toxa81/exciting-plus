@@ -13,16 +13,14 @@ complex(8), intent(out) :: wfsvmt(lmmax,nufrmax,natmtot,nspinor,nstsv)
 integer ispn,istfv,j
 complex(8), allocatable :: wffvmt(:,:,:,:)
 
-allocate(wffvmt(lmmax,nufrmax,natmtot,nstfv))
+allocate(wffvmt(nstfv,lmmax,nufrmax,natmtot))
 call genwffvmt(lmax,lmmax,ngp,evecfv,apwalm,wffvmt)
 ! calculate second-variational coefficients
 wfsvmt=zzero
 do j=1,nstsv
   do ispn=1,nspinor
-    do istfv=1,nstfv
-      wfsvmt(:,:,:,ispn,j)=wfsvmt(:,:,:,ispn,j)+&
-        evecsv(istfv+(ispn-1)*nstfv,j)*wffvmt(:,:,:,istfv)
-    enddo
+    call zgemv('T',nstfv,lmmax*nufrmax*natmtot,zone,wffvmt,nstfv,&
+      evecsv(1+(ispn-1)*nstfv,j),1,zzero,wfsvmt(1,1,1,ispn,j),1)
   enddo
 enddo
 deallocate(wffvmt)
