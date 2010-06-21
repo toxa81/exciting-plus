@@ -53,26 +53,25 @@ call init_gntuju(iq,lmaxexp)
 call timer_stop(1)
 if (wproc) then
   write(150,*)
-  !write(150,'("G-shell limits      : ",2I4)')gshme1,gshme2
-  !write(150,'("G-vector limits     : ",2I4)')gvecme1,gvecme2
-  write(150,'("number of G-vectors : ",I4)')ngvecme   
+  write(150,'("maximum |G+q| [1/a.u.]                        : ",G18.10)')gqmax  
+  write(150,'("number of G-vectors                           : ",I4)')ngvecme   
   write(150,*)
-  write(150,'("q-vector (lat.coord.)                        : ",&
+  write(150,'("q-vector (lat.coord.)                         : ",&
     & 3G18.10)')vqlnr(:,iq)
-  write(150,'("q-vector (Cart.coord.) [a.u.]                : ",&
+  write(150,'("q-vector (Cart.coord.) [1/a.u.]               : ",&
     & 3G18.10)')vqcnr(:,iq)
   t1=sqrt(vqcnr(1,iq)**2+vqcnr(2,iq)**2+vqcnr(3,iq)**2)
-  write(150,'("q-vector length [a.u.]                       : ",&
+  write(150,'("q-vector length [1/a.u.]                      : ",&
     & G18.10)')t1
-  write(150,'("q-vector length [1/A]                        : ",&
+  write(150,'("q-vector length [1/A]                         : ",&
     & G18.10)')t1/au2ang
-  write(150,'("G-vector to reduce q to first BZ (lat.coord.): ",&
+  write(150,'("G-vector to reduce q to first BZ (lat.coord.) : ",&
     & 3I4)')ivg(:,ig0q(iq))
-  write(150,'("index of G-vector                            : ",&
+  write(150,'("index of G-vector                             : ",&
     & I4)')ig0q(iq)
-  write(150,'("reduced q-vector (lat.coord.)                : ",&
+  write(150,'("reduced q-vector (lat.coord.)                 : ",&
     & 3G18.10)')vql(:,iq)
-  write(150,'("reduced q-vector (Cart.coord.) [a.u.]        : ",&
+  write(150,'("reduced q-vector (Cart.coord.) [1/a.u.]       : ",&
     & 3G18.10)')vqc(:,iq)
   write(150,*)
   write(150,'("Bloch functions band interval (N1,N2 or E1,E2) : ",2F8.3)')&
