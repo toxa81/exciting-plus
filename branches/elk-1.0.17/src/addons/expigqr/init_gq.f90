@@ -20,22 +20,24 @@ allocate(sfacgq(ngvecme,natmtot))
 if (allocated(ylmgq)) deallocate(ylmgq)
 allocate(ylmgq(lmmaxexp,ngvecme))
 ! check if we have enough G-shells to bring q-vector back to first BZ
-do ig=1,ngvecme
-  if (tg0q.and.igqig(ig,iq).eq.ig0q(iq)) then
-    iig0q=ig
-    goto 20
-  endif
-enddo
-write(*,*)
-write(*,'("Error(init_gq): no G-vector to reduce q-vector to first BZ")')
-v1=vqc(:,iq)+vgc(:,ig0q(iq))
-write(*,'(" q (mesh coord.) : ",3I6)')vqm(:,iq)
-write(*,'(" G0 : ",3I6)')ivg(:,ig0q(iq))
-write(*,'(" |G0+q| : ",G18.10)')sqrt(v1(1)**2+v1(2)**2+v1(3)**2)
-write(*,'(" gqmax : ",G18.10)')gqmax
-write(*,*)
-call pstop
-20 continue
+if (tg0q) then
+  do ig=1,ngvecme
+    if (igqig(ig,iq).eq.ig0q(iq)) then
+      iig0q=ig
+      goto 20
+    endif
+  enddo
+  write(*,*)
+  write(*,'("Error(init_gq): no G-vector to reduce q-vector to first BZ")')
+  v1=vqc(:,iq)+vgc(:,ig0q(iq))
+  write(*,'(" q (mesh coord.) : ",3I6)')vqm(:,iq)
+  write(*,'(" G0 : ",3I6)')ivg(:,ig0q(iq))
+  write(*,'(" |G0+q| : ",G18.10)')sqrt(v1(1)**2+v1(2)**2+v1(3)**2)
+  write(*,'(" gqmax : ",G18.10)')gqmax
+  write(*,*)
+  call pstop
+  20 continue
+endif
 
 ! generate spherical harmonics for G+q vectors
 do ig=1,ngvecme

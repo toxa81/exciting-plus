@@ -147,7 +147,7 @@ fft:
 all:	blas lapack fft elk
 
 clean:
-	rm -f *.o *.mod *~ fort.* ifc* *.gcno gmon.out *.aux *.dvi *.log \
+	rm -f $(OBJ) *.mod *~ fort.* ifc* *.gcno gmon.out *.aux *.dvi *.log \
          elk.pdf *.tex *.toc $(EXE)
 
 cleanall:

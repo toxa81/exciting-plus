@@ -250,6 +250,8 @@ if (wannier) then
     write(151,'("  Dielectric Wannier functions : ",L1)')wann_diel()
     write(151,*)
     write(fout,'("Done in ",F8.2," seconds")')timer_get_value(1)
+    call timestamp(fout)
+    call flushifc(fout)
   endif
 endif
 
