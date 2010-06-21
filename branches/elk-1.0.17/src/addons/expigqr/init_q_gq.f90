@@ -6,7 +6,7 @@ real(8) t0,t2
 integer iq,ig,i
 integer v1(3)
 real(8) v2(3)
-logical tgsh
+logical tgsh,tautogqmax
 
 if (allocated(vqlnr)) deallocate(vqlnr)
 allocate(vqlnr(3,nvq))
@@ -20,6 +20,16 @@ if (allocated(ig0q)) deallocate(ig0q)
 allocate(ig0q(nvq))
 
 tgsh=.false.
+tautogqmax=.true.
+
+if (tautogqmax) then
+  do iq=1,nvq
+    vqlnr(:,iq)=dble(vqm(:,iq))/ngridk(:)
+    call r3mv(bvec,vqlnr(:,iq),vqcnr(:,iq))
+    t2=sqrt(sum(vqcnr(:,iq)**2))+0.1d0
+    gqmax=max(gqmax,t2)
+  enddo
+endif
 
 t0=gqmax**2
 ngqmax=0
