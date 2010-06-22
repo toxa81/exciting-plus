@@ -59,9 +59,9 @@ if (lmaxmat.gt.lmaxapw) then
 end if
 ! index to (l,m) pairs
 if (allocated(idxlm)) deallocate(idxlm)
-allocate(idxlm(0:lmaxapw,-lmaxapw:lmaxapw))
+allocate(idxlm(0:50,-50:50))
 lm=0
-do l=0,lmaxapw
+do l=0,50
   do m=-l,l
     lm=lm+1
     idxlm(l,m)=lm
@@ -69,8 +69,8 @@ do l=0,lmaxapw
 end do
 ! array of i**l values
 if (allocated(zil)) deallocate(zil)
-allocate(zil(0:lmaxapw))
-do l=0,lmaxapw
+allocate(zil(0:50))
+do l=0,50
   zil(l)=zi**l
 end do
 

@@ -19,7 +19,6 @@ integer ivg1(3)
 integer i,j,ik,jk,offs,igkq,n1,ispn1,ispn2,ist1,ist2,ic
 integer ig,ig1,ig2,io1,io2,lm1,lm2,ias,ifg,ir
 logical l1
-logical, allocatable :: lf1g(:)
 complex(8), allocatable :: a1(:)
 complex(8), allocatable :: wftmp1(:,:)
 complex(8), allocatable :: wftmp2(:,:)
@@ -31,7 +30,6 @@ wfsize=lmmaxvr*nufrmax*natmtot+ngknr2
 allocate(wftmp1(wfsize,ngvecme))
 allocate(wftmp2(wfsize,nstsv))
 allocate(a1(ngrtot))
-allocate(lf1g(ngrtot))
 allocate(wfir1(ngrtot))
 
 ! global k-point
@@ -57,7 +55,6 @@ do ispn1=1,nspinor
     ist1=bmegqblh(1,i+offs,ikloc)
     wftmp1=zzero
     a1=zzero        
-    lf1g=.false.
     l1=.true.
     if (spinpol) then
       if (spinor_ud(ispn1,ist1,ik).eq.0) l1=.false.
@@ -124,7 +121,6 @@ enddo !ispn1
 deallocate(wftmp1)
 deallocate(wftmp2)
 deallocate(a1)
-deallocate(lf1g)
 deallocate(wfir1)
 
 return

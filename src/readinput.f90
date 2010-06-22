@@ -963,6 +963,8 @@ case('vqm')
   end do
 case('gqmax')
   read(50,*,err=20) gqmax
+case('gqsh')
+  read(50,*,err=20) gqsh
 case('response_w')
   read(50,*,err=20) lr_nw
   read(50,*,err=20) lr_w0,lr_w1,lr_eta  

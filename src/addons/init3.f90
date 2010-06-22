@@ -30,10 +30,10 @@ allocate(ufr(nrmtmax,0:lmaxvr,nufrmax,natmcls))
 if (allocated(ufrp)) deallocate(ufrp)
 allocate(ufrp(0:lmaxvr,nufrmax,nufrmax,natmcls))
 if (allocated(lm2l)) deallocate(lm2l)
-allocate(lm2l(lmmaxapw))
+allocate(lm2l(51**2))
 if (allocated(lm2m)) deallocate(lm2m)
-allocate(lm2m(lmmaxapw))
-do l=0,lmaxapw
+allocate(lm2m(51**2))
+do l=0,50
   do m=-l,l
     lm2l(idxlm(l,m))=l
     lm2m(idxlm(l,m))=m
