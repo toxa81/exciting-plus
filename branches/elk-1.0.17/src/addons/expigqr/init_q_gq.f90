@@ -19,7 +19,7 @@ allocate(vqc(3,nvq))
 if (allocated(ig0q)) deallocate(ig0q)
 allocate(ig0q(nvq))
 
-tgsh=.false.
+tgsh=.true.
 tautogqmax=.true.
 
 if (tautogqmax) then
