@@ -34,6 +34,8 @@ if (tg0q) then
   write(*,'(" G0 : ",3I6)')ivg(:,ig0q(iq))
   write(*,'(" |G0+q| : ",G18.10)')sqrt(v1(1)**2+v1(2)**2+v1(3)**2)
   write(*,'(" gqmax : ",G18.10)')gqmax
+  write(*,'(" gqsh : ",I4)')gqsh
+  write(*,'(" ngvecme: ",I4)')ngvecme    
   write(*,*)
   call pstop
   20 continue

@@ -11,7 +11,7 @@ integer ig,is,ir,n,ias,io1,io2,l1,m1,lm1,l2,m2,lm2,l3,m3,lm3,ic
 integer igloc,ngvecmeloc
 integer lmmaxexp
 complex(8) zt1
-real(8) fr(nrmtmax),gr(nrmtmax),cf(3,nrmtmax)
+real(8) fr(nrmtmax),gr(nrmtmax),cf(4,nrmtmax)
 real(8), allocatable :: jl(:,:)
 real(8), allocatable :: uju(:,:,:,:,:)
 real(8), allocatable :: gnt(:,:,:)
@@ -67,7 +67,7 @@ do igloc=1,ngvecmeloc
               enddo !ir
               !call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
               !uju(l3,l1,l2,io1,io2)=gr(nrmt(is))
-               uju(l3,l1,l2,io1,io2)=rfinteg(nrmt(is),spr(1,is),fr)
+              uju(l3,l1,l2,io1,io2)=rfinteg(nrmt(is),spr(1,is),fr)
             enddo !io2
           enddo !io1
         enddo !l2
@@ -84,7 +84,7 @@ do igloc=1,ngvecmeloc
 !     so we can conjugate the integral:
 !     \int d \Omega Y_{l_1 m_1} Y_{l_3 m_3} Y_{l_2 m_2}^{*} = gaunt(lm2,lm1,lm3)
 !  3) we can sum over lm3 index of a plane-wave expansion
-!  4) structure factor lr_sfacgq0 of a (G+q) plane wave is taken into 
+!  4) structure factor sfacgq of a (G+q) plane wave is taken into 
 !     account in genmegqblh subroutine; this allows to keep radial integrals
 !     for atom classes only (not for all atoms)
     do l1=0,lmaxvr

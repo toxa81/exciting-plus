@@ -32,6 +32,7 @@ if (tautogqmax) then
 endif
 
 t0=gqmax**2
+! find maximum number of G+q vectors
 ngqmax=0
 do iq=1,nvq
   vqlnr(:,iq)=dble(vqm(:,iq))/ngridk(:)
