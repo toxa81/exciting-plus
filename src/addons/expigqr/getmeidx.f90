@@ -11,7 +11,8 @@ logical l11,l12,l21,l22,le1,le2,lwann,l3,l4
 integer, allocatable :: wann_bnd(:,:)
 logical, external :: bndint
 logical, external :: wann_diel
-
+logical lall
+lall=.false.
 if (wannier_megq) then
   allocate(wann_bnd(nstsv,nkptnr))
   wann_bnd=0
@@ -56,7 +57,7 @@ do ikloc=1,nkptnrloc
       l4=.false.
       if (ldocc.and.le1.and.le2) l4=.true.
       if (lwann) l4=.true.
-      laddme=.false.
+      laddme=lall
       if (l4) then
         if (.not.spinpol) then
           laddme=.true.
