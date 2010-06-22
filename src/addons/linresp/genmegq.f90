@@ -147,6 +147,7 @@ do ikstep=1,nkstep
   endif !ikstep.le.nkptnrloc
   call timer_stop(2)
 enddo !ikstep
+call printmegqblh
 ! TODO: check this formula!!!
 ! for G=q=0: e^{iqx}=1+iqx
 ! [x,H]=v=p/m
