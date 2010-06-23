@@ -110,7 +110,7 @@ do ispn1=1,nspinor
     i=i+n1
     call timer_stop(5)
   enddo !while
-enddo !ispnn   
+enddo !ispn
 deallocate(wftmp1)
 deallocate(wftmp2)
 deallocate(wfir1)
