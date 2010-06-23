@@ -13,14 +13,13 @@ integer l,m1,lm1,io1
 ! |psi> is a spinor Bloch-function 
 ! |phi> is a valence local orbital
 ! 
-! Warning: current implementation is for the default APW+lo basis
 l=lm2l(lm)
 prjao=zzero
 do m1=-l,l
   lm1=idxlm(l,m1)
   do io1=1,nufrmax
     prjao=prjao+dconjg(wfsvmt(lm1,io1,ias,ispn,i))*&
-      ufrp(l,io1,2,ias2ic(ias))*rylm_lps(lm,lm1,ias)
+      ufrp(l,io1,apword(l,ias2is(ias))+1,ias2ic(ias))*rylm_lps(lm,lm1,ias)
   enddo !io1
 enddo !m
 return
