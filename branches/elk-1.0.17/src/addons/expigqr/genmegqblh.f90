@@ -9,7 +9,7 @@ integer, intent(in) :: ngknr1
 integer, intent(in) :: ngknr2
 integer, intent(in) :: igkignr1(ngkmax)
 integer, intent(in) :: igkignr2(ngkmax)
-complex(8), intent(in) :: wfsvmt1(lmmaxvr,nufrmax,natmtot,nspinor,nstsv)
+complex(8), intent(in) :: wfsvmt1(lmmaxvr*nufrmax,natmtot,nspinor,nstsv)
 complex(8), intent(in) :: wfsvmt2(lmmaxvr,nufrmax,natmtot,nspinor,nstsv)
 complex(8), intent(in) :: wfsvit1(ngkmax,nspinor,nstsv)
 complex(8), intent(in) :: wfsvit2(ngkmax,nspinor,nstsv)
@@ -17,19 +17,17 @@ complex(8), intent(in) :: wfsvit2(ngkmax,nspinor,nstsv)
 integer wfsize
 integer ivg1(3)
 integer i,j,ik,jk,offs,igkq,n1,ispn1,ispn2,ist1,ist2,ic
-integer ig,ig1,ig2,io1,io2,lm1,lm2,ias,ifg,ir
+integer ig,ig1,ig2,ias,ifg,ir
 logical l1
-complex(8), allocatable :: a1(:)
 complex(8), allocatable :: wftmp1(:,:)
 complex(8), allocatable :: wftmp2(:,:)
-complex(8) b1(lmmaxvr,nufrmax)
 complex(8), allocatable :: wfir1(:)
-
+integer(2) ignt(2,ngntujumax)
+complex(8) b1(lmmaxvr*nufrmax),b2(lmmaxvr*nufrmax)
 
 wfsize=lmmaxvr*nufrmax*natmtot+ngknr2
 allocate(wftmp1(wfsize,ngvecme))
 allocate(wftmp2(wfsize,nstsv))
-allocate(a1(ngrtot))
 allocate(wfir1(ngrtot))
 
 ! global k-point
@@ -54,7 +52,6 @@ do ispn1=1,nspinor
 ! left <bra| state (referred through local lindex+offset)
     ist1=bmegqblh(1,i+offs,ikloc)
     wftmp1=zzero
-    a1=zzero        
     l1=.true.
     if (spinpol) then
       if (spinor_ud(ispn1,ist1,ik).eq.0) l1=.false.
@@ -64,17 +61,14 @@ do ispn1=1,nspinor
 ! precompute muffint-tin part of \psi_1^{*}(r)*e^{-i(G+q)r}
         call timer_start(3)
         do ias=1,natmtot
-          b1=dconjg(wfsvmt1(:,:,ias,ispn1,ist1)*sfacgq(ig,ias))
+          b1=dconjg(wfsvmt1(:,ias,ispn1,ist1)*sfacgq(ig,ias))
           ic=ias2ic(ias)
+          ignt(:,:)=igntuju(:,:,ic,ig)
+          b2=zzero
           do j=1,ngntuju(ic,ig)
-            lm1=igntuju(1,j,ic,ig)
-            lm2=igntuju(2,j,ic,ig)
-            io1=igntuju(3,j,ic,ig)
-            io2=igntuju(4,j,ic,ig)
-            wftmp1(lm2+(io2-1)*lmmaxvr+(ias-1)*lmmaxvr*nufrmax,ig)= &
-              wftmp1(lm2+(io2-1)*lmmaxvr+(ias-1)*lmmaxvr*nufrmax,ig)+&
-              b1(lm1,io1)*gntuju(j,ic,ig)
-          enddo !j
+            b2(ignt(2,j))=b2(ignt(2,j))+b1(ignt(1,j))*gntuju(j,ic,ig)
+          enddo
+          wftmp1((ias-1)*lmmaxvr*nufrmax+1:ias*lmmaxvr*nufrmax,ig)=b2(:)
         enddo !ias
         call timer_stop(3)
       enddo !ig  
@@ -116,12 +110,9 @@ do ispn1=1,nspinor
     i=i+n1
     call timer_stop(5)
   enddo !while
-enddo !ispn1
-    
+enddo !ispnn   
 deallocate(wftmp1)
 deallocate(wftmp2)
-deallocate(a1)
 deallocate(wfir1)
-
 return
 end

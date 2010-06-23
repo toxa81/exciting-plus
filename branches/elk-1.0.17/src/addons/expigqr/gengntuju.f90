@@ -108,10 +108,12 @@ do igloc=1,ngvecmeloc
                   ngntuju(ic,ig)=ngntuju(ic,ig)+1
                   n=ngntuju(ic,ig)
                   gntuju(n,ic,ig)=zt1
-                  igntuju(1,n,ic,ig)=lm1
-                  igntuju(2,n,ic,ig)=lm2
-                  igntuju(3,n,ic,ig)=io1
-                  igntuju(4,n,ic,ig)=io2
+                  igntuju(1,n,ic,ig)=lm1+(io1-1)*lmmaxvr
+                  igntuju(2,n,ic,ig)=lm2+(io2-1)*lmmaxvr
+                  !igntuju(1,n,ic,ig)=lm1
+                  !igntuju(2,n,ic,ig)=lm2
+                  !igntuju(3,n,ic,ig)=io1
+                  !igntuju(4,n,ic,ig)=io2
                 endif
               enddo !io2
             enddo !io1
@@ -124,7 +126,7 @@ enddo !ig
 ! syncronize all values along auxiliary k-direction
 call mpi_grid_reduce(gntuju(1,1,1),ngntujumax*natmcls*ngvecme,dims=(/dim_k/),all=.true.)
 call mpi_grid_barrier(dims=(/dim_k/))
-call mpi_grid_reduce(igntuju(1,1,1,1),4*ngntujumax*natmcls*ngvecme,dims=(/dim_k/),all=.true.)
+call mpi_grid_reduce(igntuju(1,1,1,1),2*ngntujumax*natmcls*ngvecme,dims=(/dim_k/),all=.true.)
 call mpi_grid_barrier(dims=(/dim_k/))
 call mpi_grid_reduce(ngntuju(1,1),natmcls*ngvecme,dims=(/dim_k/),all=.true.)    
 call mpi_grid_barrier(dims=(/dim_k/))
