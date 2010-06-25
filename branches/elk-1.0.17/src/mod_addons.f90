@@ -99,9 +99,9 @@ integer ngvecme
 integer lrtype
 data lrtype/0/
 real(8) lr_e1
-data lr_e1/-100.d0/
+data lr_e1/-100.1d0/
 real(8) lr_e2
-data lr_e2/100.d0/
+data lr_e2/100.1d0/
 real(8) lr_min_e12
 real(8) lr_e1_wan
 real(8) lr_e2_wan
