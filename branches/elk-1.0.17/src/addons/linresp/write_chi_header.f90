@@ -11,6 +11,7 @@ if (lrtype.eq.0) write(fout,'("# charge density response")')
 if (lrtype.eq.1) write(fout,'("# magnetization density response")')
 write(fout,'("#")')
 write(fout,'("# Band interval (Ha)                 : ",2F8.2)')lr_e1,lr_e2
+write(fout,'("# Approximate number of transitions  : ",I8)')nmegqblhmax
 write(fout,'("#")')
 write(fout,'("# k-mesh division                    : ",3I4)') &
   ngridk(1),ngridk(2),ngridk(3)
@@ -28,8 +29,6 @@ write(fout,'("#   q-vector (Cart. coord.) [1/A]    : ",3F18.10)') &
   vqcnr(:,iq)/au2ang
 write(fout,'("#   q-vector length         [1/A]    : ",3F18.10)') t1/au2ang
 write(fout,'("# G-vector information               : ")')
-!write(fout,'("#   G-shells                         : ",2I4)')gshme1,gshme2
-!write(fout,'("#   G-vectors                        : ",2I4)')gvecme1,gvecme2
 write(fout,'("#   number of G-vectors              : ",2I4)')ngvecme
 write(fout,'("#   index of Gq vector               : ",I4)')ig0q(iq)
 if (lrtype.eq.0) then
