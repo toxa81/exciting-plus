@@ -22,7 +22,6 @@ logical l1
 complex(8), allocatable :: wftmp1(:,:)
 complex(8), allocatable :: wftmp2(:,:)
 complex(8), allocatable :: wfir1(:)
-integer(2) ignt(2,ngntujumax)
 complex(8) b1(lmmaxvr*nufrmax),b2(lmmaxvr*nufrmax)
 
 wfsize=lmmaxvr*nufrmax*natmtot+ngknr2
@@ -63,10 +62,10 @@ do ispn1=1,nspinor
         do ias=1,natmtot
           b1=dconjg(wfsvmt1(:,ias,ispn1,ist1)*sfacgq(ig,ias))
           ic=ias2ic(ias)
-          ignt(:,:)=igntuju(:,:,ic,ig)
           b2=zzero
           do j=1,ngntuju(ic,ig)
-            b2(ignt(2,j))=b2(ignt(2,j))+b1(ignt(1,j))*gntuju(j,ic,ig)
+            b2(igntuju(2,j,ic,ig))=b2(igntuju(2,j,ic,ig))+&
+              b1(igntuju(1,j,ic,ig))*gntuju(j,ic,ig)
           enddo
           wftmp1((ias-1)*lmmaxvr*nufrmax+1:ias*lmmaxvr*nufrmax,ig)=b2(:)
         enddo !ias
