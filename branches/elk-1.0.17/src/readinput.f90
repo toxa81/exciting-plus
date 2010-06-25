@@ -1018,6 +1018,13 @@ case ('wannier_soft_eint')
     read(50,*,err=20) wannier_soft_eint_e1(i),wannier_soft_eint_e2(i),&
       wannier_soft_eint_w1(i),wannier_soft_eint_w2(i)
   enddo  
+case('wannier_plot')
+  read(50,*,err=20)(zero3d(i),i=1,3)
+  read(50,*,err=20)(bound3d(i,1),i=1,3)
+  read(50,*,err=20)(bound3d(i,2),i=1,3)
+  read(50,*,err=20)(bound3d(i,3),i=1,3)
+  read(50,*,err=20)(nrxyz(i),i=1,3)
+  read(50,*,err=20)nwfplot,firstwf  
 case('mpigrid')
   lmpigrid=.true.
   read(50,*,err=20) mpigrid(1),mpigrid(2),mpigrid(3) 

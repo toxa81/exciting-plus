@@ -302,8 +302,6 @@ complex(8), allocatable :: wann_p(:,:,:,:)
 real(8), allocatable :: wann_ene(:)
 real(8), allocatable :: wann_occ(:)
 
-!complex(8), allocatable :: wf_v_mtrx(:,:,:,:,:)
-
 real(8) zero3d(3)
 real(8) bound3d(3,3)
 integer nrxyz(3)
@@ -328,8 +326,6 @@ data wannier_min_prjao/-0.1d0/
 
 logical ldisentangle
 data ldisentangle/.false./
-
-complex(8), allocatable :: veffir_zfft(:)
 
 !----------------!
 !      timer     !
