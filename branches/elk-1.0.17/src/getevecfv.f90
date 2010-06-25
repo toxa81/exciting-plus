@@ -104,7 +104,7 @@ si(:,:)=dble(symlat(:,:,ilspl))
 !-----------------------------------------------!
 !     translate and rotate APW coefficients     !
 !-----------------------------------------------!
-allocate(evecfvt(ngkmax,nstfv))
+allocate(evecfvt(nmatmax,nstfv))
 do igk=1,ngk(1,ik)
   ig=igkig_(igk,1)
   v(:)=dble(ivg(:,ig))
@@ -124,12 +124,13 @@ do igk=1,ngk(1,ik)
   end do
 10 continue
 end do
-deallocate(evecfvt)
 !---------------------------------------------------------!
 !     translate and rotate local-orbital coefficients     !
 !---------------------------------------------------------!
-if (nlotot.le.0) return
+if (nlotot.le.0) goto 20
 allocate(zflm1(lolmmax,nstfv),zflm2(lolmmax,nstfv))
+! make a copy of the local-orbital coefficients
+evecfvt(ngk(1,ik)+1:nmat(1,ik),:)=evecfv(ngk(1,ik)+1:nmat(1,ik),:,1)
 ! spatial rotation symmetry matrix in Cartesian coordinates
 sc(:,:)=symlatc(:,:,lspl)
 ! rotate k-point by inverse symmetry matrix
@@ -152,7 +153,7 @@ do is=1,nspecies
       do m=-l,l
         lm=idxlm(l,m)
         i=ngk(1,ik)+idxlo(lm,ilo,jas)
-        zflm1(lm,:)=evecfv(i,:,1)
+        zflm1(lm,:)=evecfvt(i,:)
       end do
       call rotzflm(sc,l,nstfv,lolmmax,zflm1,zflm2)
       do m=-l,l
@@ -164,6 +165,8 @@ do is=1,nspecies
   end do
 end do
 deallocate(zflm1,zflm2)
+20 continue
+deallocate(evecfvt)
 deallocate(vgkl_,igkig_)
 return
 end subroutine
