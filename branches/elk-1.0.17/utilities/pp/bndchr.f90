@@ -78,14 +78,6 @@ write(*,'("Band energy range : ",2F8.2," [",A,"]")')emin,emax,e_units
 write(*,'("Input energy interval (emin emax) [",A,"]")')e_units
 read(*,*)emin,emax
       
-spin=1
-if (nspinor.eq.2) then
-  write(*,'("Input spin direction (1 or 2)")')
-  read(*,*)spin
-endif
-
-      
-
 !l1=.false.
 !if (wannier) then
 !  write(*,*)'Do you want band character of WFs (T) or lm- orbitals (F)'
@@ -243,6 +235,8 @@ write(50,*)'set tics out'
 write(50,*)'set noxtics'
 write(50,*)'set nokey'
 write(50,'(" set yrange [",F12.6,":",F12.6,"]")')emin,emax      
+write(50,'(" set grid ytics")')
+write(50,'(" set ytics ",F12.6)')(emax-emin)/40
 write(50,'(" set xrange [",F12.6,":",F12.6,"]")')0.d0,dpp1d(nkpt)
 write(50,*)"set ylabel 'Energy (eV)'"
 write(50,*)"set output 'bnds.ps'"      
