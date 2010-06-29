@@ -2,17 +2,16 @@ program main
 implicit none
       
 integer lmmax,natmtot,nspinor,nstfv,nstsv,nkpt,nlines
-integer lm,ias,ispn,ist,ik,spin
+integer lm,ias,ispn,ist,ik
 real(4), allocatable :: bndchr(:,:,:,:,:)
 real(8), allocatable :: dpp1d(:),e(:,:),wt(:,:),lines(:,:)
-integer, allocatable :: orb(:,:,:),wf1(:),wf2(:)
+integer, allocatable :: orb(:,:,:)
 integer i,j,ist1,n,iin
-real(8) scale,emin,emax,wtmax,wmax1,efermi
+real(8) scale,emin,emax,wtmax,efermi
 real(8), parameter :: ha2ev = 27.21138386d0
-logical wannier,l1,unitsev
+logical wannier,l1
 integer nwann
 real(8), allocatable :: wann_c(:,:,:)
-character*100 str
 character*2 e_units
 character*20 strin
 integer nspecies,ias1,is1,is
@@ -77,14 +76,7 @@ emax=maxval(e(:,:))
 write(*,'("Band energy range : ",2F8.2," [",A,"]")')emin,emax,e_units
 write(*,'("Input energy interval (emin emax) [",A,"]")')e_units
 read(*,*)emin,emax
-      
-!l1=.false.
-!if (wannier) then
-!  write(*,*)'Do you want band character of WFs (T) or lm- orbitals (F)'
-!  read(*,*)l1
-!endif
-!if (l1) goto 20  
-!      
+     
 
 allocate(wt(nstsv,nkpt))
 wt=0.d0
@@ -116,32 +108,6 @@ call addorb(strin,orb,lmmax,nspinor,natmtot,iasis,spsymb)
 goto 22
 23 continue 
 
-!orb = 0
-!write(*,*)'Number of atoms: ',natmtot
-!do while (.true.)
-!  i = -1
-!  write(*,*)'Input atom number (/ to proceed):'
-!  read(*,*)i
-!  if (i.eq.-1) goto 10
-!  if (i.ge.1.and.i.le.natmtot) then
-!    tmp = 0
-!    write(*,*)'Input orbitals:'
-!    read(*,*)tmp
-!    do j = 1, lmmax
-!      if (tmp(j).ge.1.and.tmp(j).le.lmmax) then
-!        orb(tmp(j),i) = 1
-!      endif
-!    enddo
-!  endif
-!enddo
-
-!10  continue
-!do ias = 1, natmtot
-!  write(*,*)(orb(lm,ias),lm=1,lmmax)
-!enddo
-
-
-
 wt=0.d0
 do ispn=1,nspinor
   write(*,'("spin : ",I1)')ispn
@@ -156,46 +122,6 @@ do ispn=1,nspinor
     enddo
   enddo
 enddo
-
-!goto 30
-
-      
-!  20  continue
-  
-!      allocate(wf1(wf_dim),wf2(wf_dim))
-!      wf1=0
-!      wf2=0
-!      write(*,*)'Input WFs'
-!      read(*,*)wf2
-!      do i=1,wf_dim
-!        if (wf2(i).gt.0.and.wf2(i).le.wf_dim) wf1(wf2(i))=1
-!      enddo
-!      write(*,*)(wf1(i),i=1,wf_dim)
-!      
-!      ispn=1
-!      w=0.d0
-!      do ik = 1, nkpt
-!      do ist = 1, nstfv
-!      do n=1,wf_dim
-!        w(ist,ik)=w(ist,ik)+wfc(n,ist,ispn,ik)**2
-!      enddo
-!      enddo
-!      enddo
-!      wmax = maxval(w(:,:))
-!
-!      ispn=1
-!      w=0.d0
-!      do ik = 1, nkpt
-!      do ist = 1, nstfv
-!      do n=1,wf_dim
-!        w(ist,ik)=w(ist,ik)+wfc(n,ist,ispn,ik)**2*wf1(n)
-!      enddo
-!      enddo
-!      enddo
-!      
-!    30 continue
-      
-      
       
 scale=1.d0
 write(*,'("Input maximum line width [",A,"]")')e_units
@@ -206,8 +132,7 @@ open(51,file='BNDS1.DAT',form='formatted',status='replace')
 open(52,file='BNDS2.DAT',form='formatted',status='replace')
 open(53,file='BNDS3.DAT',form='formatted',status='replace')
 open(54,file='BNDS_xydy.DAT',form='formatted',status='replace')
-do ist=1,nstfv
-  ist1=ist+(spin-1)*nstfv
+do ist1=1,nstsv
   do ik=1,nkpt
     write(50,*)dpp1d(ik),e(ist1,ik)
     write(51,*)dpp1d(ik),e(ist1,ik)+scale*wt(ist1,ik)/2
@@ -240,9 +165,11 @@ write(50,'(" set ytics ",F12.6)')(emax-emin)/40
 write(50,'(" set xrange [",F12.6,":",F12.6,"]")')0.d0,dpp1d(nkpt)
 write(50,*)"set ylabel 'Energy (eV)'"
 write(50,*)"set output 'bnds.ps'"      
-write(50,'("plot ''BNDS.DAT'' with line 1, ''BNDS1.DAT'' with line 1, &
-           & ''BNDS2.DAT'' with line 1, ''BNDS3.DAT'' with line 1, &
-           & ''BNDS4.DAT'' with line 2")')
+write(50,'("plot ''BNDS.DAT'' with lines lt 1, ''BNDS_xydy.DAT'' &
+  &using 1:2:($3*4) with points lt 1 lc 1 pt 6 ps variable")')
+!write(50,'("plot ''BNDS.DAT'' with line lt 1, ''BNDS1.DAT'' with line lt 1, &
+!           & ''BNDS2.DAT'' with line lt 1, ''BNDS3.DAT'' with line lt 1, &
+!           & ''BNDS4.DAT'' with line lt 2")')
 close(50)      
 allocate(lines(4,nlines))
 open(50,file='BANDLINES.OUT',form='formatted',status='old')
