@@ -105,8 +105,10 @@ do itask=1,ntasks
     call bandrlm  
   case(811)
     call dosrlm  
-  case(861,862,863)
+  case(861,862)
     call wann_plot
+  case(863)
+    call wann_plot_3d
   case default
     write(*,*)
     write(*,'("Error(main): task not defined : ",I8)') task

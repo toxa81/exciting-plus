@@ -81,10 +81,7 @@ else
     t1=vgc(1,ig)*vrcnr(1)+vgc(2,ig)*vrcnr(2)+vgc(3,ig)*vrcnr(3)
     val_it=val_it+dble(rfit(ifg)*cmplx(cos(t1),sin(t1),8))
   end do
-  call mpi_grid_reduce(val_it,dims=(/dim_k/))
 endif
-if (mpi_grid_root()) then
-  val=val_mt+val_it
-endif
+val=val_mt+val_it
 return
 end subroutine

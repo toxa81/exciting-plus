@@ -12,6 +12,7 @@ integer i1,i2,i3,ir,n
 real(8), allocatable :: vr(:,:)
 real(8), allocatable :: veff(:)
 complex(8), allocatable :: zfft(:)
+real(8) t1
 character*40 fname
 real(8) x(2),alph,x0,dx
 logical, parameter :: wfprod=.false.
@@ -85,8 +86,12 @@ do ir=1,nrtot
     write(*,*)'r-point : ',ir,' out of ',nrtot
   endif
   call wann_val(vr(1,ir),wfval)
-  if (mpi_grid_root()) wf(:,:,ir)=wfval(:,:)
-  call rfval(vr(1,ir),lmaxvr,lmmaxvr,veffmt,zfft,veff(ir))
+  call mpi_grid_reduce(wfval(1,1),nspinor*nwfplot,dims=(/dim_k/))
+  if (mpi_grid_root()) wf(:,:,ir)=wfval(:,:)  
+  call rfval(vr(1,ir),lmaxvr,lmmaxvr,veffmt,zfft,t1)
+  call mpi_grid_reduce(t1,dims=(/dim_k/))
+  if (mpi_grid_root()) veff(ir)=t1
+  call mpi_grid_barrier()
 enddo
 
 if (mpi_grid_root()) then
