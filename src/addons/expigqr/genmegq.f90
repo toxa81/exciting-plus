@@ -11,9 +11,11 @@ logical, intent(in) :: tg0q
 integer, allocatable :: igkignr_jk(:)
 complex(8), allocatable :: wfsvmt_jk(:,:,:,:,:)
 complex(8), allocatable :: wfsvit_jk(:,:,:)
+complex(8), allocatable :: expkqt(:,:)
 integer ngknr_jk
-integer i,ikstep,sz
-integer nkstep,ist1,ist2,ikloc,ik
+integer i,ikstep,sz,j
+real(8) vtrc(3)
+integer nkstep,ik
 real(8) t1,t2,t3,t4,t5,dn1
 integer lmaxexp,lmmaxexp
 integer np
@@ -108,6 +110,15 @@ if (wannier_megq) then
   if (allocated(megqwan)) deallocate(megqwan)
   allocate(megqwan(nmegqwan,ngvecme))
   megqwan(:,:)=zzero
+  allocate(expkqt(nmegqwan,nkptnr))
+  do ik=1,nkptnr
+    do j=1,nmegqwan
+      vtrc(:)=avec(:,1)*imegqwan(3,j)+&
+              avec(:,2)*imegqwan(4,j)+&
+              avec(:,3)*imegqwan(5,j)
+      expkqt(j,ik)=exp(dcmplx(0.d0,-dot_product(vkcnr(:,ik)+vqc(:,iq),vtrc(:))))
+    enddo
+  enddo
 endif
 
 allocate(wfsvmt_jk(lmmaxvr,nufrmax,natmtot,nspinor,nstsv))
@@ -139,7 +150,7 @@ do ikstep=1,nkstep
 ! add contribution from k-point to the matrix elements of e^{-i(G+q)x} in 
 !  the basis of Wannier functions
     if (wannier_megq) then
-      call genmegqwan(ikstep,vqc(:,iq))
+      call genmegqwan(ikstep,expkqt)
     endif !wannier
   endif !ikstep.le.nkptnrloc
   call timer_stop(2)
@@ -209,6 +220,9 @@ deallocate(igkignr_jk)
 deallocate(ngntuju)
 deallocate(igntuju)
 deallocate(gntuju)
+if (wannier_megq) then
+  deallocate(expkqt)
+endif
 call mpi_grid_barrier((/dim_k,dim_b/))
 if (wproc) then
   write(150,*)
