@@ -64,7 +64,6 @@ else
   end do
   call timer_stop(2)
 endif
-val(:,:)=(zt1(:,:)+zt2(:,:))/nkptnr
-call mpi_grid_reduce(val(1,1),nspinor*nwfplot,dims=(/dim_k/))
+val(:,:)=cmplx((zt1(:,:)+zt2(:,:)))/nkptnr
 return
 end
