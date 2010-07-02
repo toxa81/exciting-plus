@@ -76,6 +76,10 @@ if (wannier_chi0_chi) then
     write(150,*)
     write(150,'("Wannier AFM : ",L1)')megqwan_afm
     write(150,*)
+    write(150,'("megqwan value cutoff (min,max) : ",2F12.6)')&
+      megqwan_cutoff1,megqwan_cutoff2
+    write(150,'("megqwan distance cutoff (min,max) : ",2F12.6)')&
+      megqwan_mindist,megqwan_maxdist
     write(150,'("Number of Wannier transitions after cutoff : ",I6)')nmegqwan
     write(150,'("List of Wannier transitions")')
     do i=1,nmegqwan
@@ -96,8 +100,9 @@ if (wannier_chi0_chi) then
       c4="("//trim(spsymb(ias2is(jas)))//trim(adjustl(c1))//"-"//&
         orb(lm2l(lm2)+1)//trim(adjustl(c2))//")"
       write(150,'(I4," ",A,"  -> ",I4," ",A,"    R=",3F12.6,&
-        &"   me(G_q)=",G18.10)')imegqwan(1,i),trim(c3),imegqwan(2,i),&
-          trim(c4),vtc,abs(megqwan(i,iig0q))
+        &"   D=",F12.6,"  |me(G0q)|=",G18.10)')imegqwan(1,i),&
+        trim(c3),imegqwan(2,i),trim(c4),vtc,sqrt(sum(vtc(:)**2)),&
+        abs(megqwan(i,iig0q))
     enddo
     call flushifc(150)
   endif
