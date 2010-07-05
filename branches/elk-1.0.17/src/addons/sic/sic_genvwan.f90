@@ -71,38 +71,27 @@ if (wproc) then
   write(fname,'("SIC_",I2.2,".OUT")')iitersic
   open(151,file=trim(adjustl(fname)),form="FORMATTED",status="REPLACE")
 endif
-call genwfnr(151,.false.)  
 if (wproc) then
-  call timestamp(151,'done with wavefunctions')
+  sz=lmmaxvr*nrmtmax*natmtot+ngrtot
+  sz=16*sz*ntrloc*nspinor*(2*nwann+2)/1024/1024
+  write(151,*)
+  write(151,'("Required memory for real-space arrays (MB) : ",I6)')sz
+  write(151,*)
   call flushifc(151)
 endif
+! generate wave-functions for all k-points in BZ
+call genwfnr(151,.false.)  
 ! get all Wannier transitions
 all_wan_ibt=.true.
 call getimegqwan(all_wan_ibt)
-
-! allocate arrays 
-if (wproc) then
-  sz=lmmaxvr*nrmtmax*natmtot+ngrtot
-  sz=16*sz*ntrloc*nspinor*(2*nwann)/1024/1024
-  write(151,*)
-  write(151,'("Size of real-space arrays (MB) : ",I6)')sz
-  write(151,*)
-  call flushifc(151)
-endif
-! Wannier functions
-if (allocated(wanmt)) deallocate(wanmt)
-allocate(wanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
-if (allocated(wanir)) deallocate(wanir)
-allocate(wanir(ngrtot,ntrloc,nspinor,nwann))
 ! potential of Wannier functions
 if (allocated(vwanmt)) deallocate(vwanmt)
 allocate(vwanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
+vwanmt=zzero
 if (allocated(vwanir)) deallocate(vwanir)
 allocate(vwanir(ngrtot,ntrloc,nspinor,nwann))
-
-! generate Hartree potential of Wannier functions
-vwanmt=zzero
 vwanir=zzero
+! generate Hartree potential of Wannier functions
 call sic_genvhart
 ! deallocate unnecessary arrays
 deallocate(wfsvmtloc)
@@ -125,6 +114,11 @@ if (spinpol) then
     vwanir(:,:,2,n)=vwanir(:,:,1,n)
   enddo
 endif
+! Wannier functions
+if (allocated(wanmt)) deallocate(wanmt)
+allocate(wanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
+if (allocated(wanir)) deallocate(wanir)
+allocate(wanir(ngrtot,ntrloc,nspinor,nwann))
 ! generate Wannier functions on a mesh
 call timer_reset(1)
 call timer_reset(2)
@@ -143,57 +137,10 @@ enddo !itr
 deallocate(wanmt0,wanir0)
 if (wproc) then
   write(151,*)
-  write(151,'("MT part : ",F8.3)')timer_get_value(1)
-  write(151,'("IT part : ",F8.3)')timer_get_value(2)
+  write(151,'("Wann MT part : ",F8.3)')timer_get_value(1)
+  write(151,'("Wann IT part : ",F8.3)')timer_get_value(2)
   call flushifc(151)
 endif
-if (wproc) then
-  call timestamp(151,'done with Wannier functions')
-endif
-! compute product V^{H}(r)*W(r)
-do n=1,nwann
-  do ispn=1,nspinor
-    call lf_prod(zone,vwanmt(1,1,1,1,ispn,n),vwanir(1,1,ispn,n),&
-      wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n),zzero,&
-      vwanmt(1,1,1,1,ispn,n),vwanir(1,1,ispn,n))
-  enddo
-enddo
-
-allocate(ehart(nwann))
-ehart=zzero
-allocate(exc(nwann))
-exc=zzero
-! compute <W_n|V^H|W_n>
-do n=1,nwann
-  do ispn=1,nspinor
-    ehart(n)=ehart(n)+lf_dotlf(.true.,(/0,0,0/),vwanmt(1,1,1,1,ispn,n),&
-      vwanir(1,1,ispn,n),wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n))
-  enddo
-enddo
-! XC part
-call timer_start(12,reset=.true.)
-call sic_genvxc(exc)
-call timer_stop(12)
-if (wproc) then
-  write(151,'("time for XC potential : ",F8.3)')timer_get_value(12)
-endif
-
-etot_sic=0.d0
-do n=1,nwann
-  etot_sic=etot_sic+dreal(ehart(n))+dreal(exc(n))
-enddo
-if (wproc) then
-  write(151,'(2X,"wann",T16,"E_n^{H}",T33,"E_n^{XC}")')
-  write(151,'(84("-"))')
-  do n=1,nwann
-    write(151,'(I4,4X,2G18.10,4X,2G18.10)')n,dreal(ehart(n)),dimag(ehart(n)),&
-      dreal(exc(n)),dimag(exc(n))
-  enddo
-  write(151,*)
-  write(151,'("Total energy correction : ",G18.10)')etot_sic
-  call flushifc(151)
-endif
-
 ! check orthonormality
 t1=0.d0
 t2=0.d0
@@ -216,6 +163,51 @@ if (wproc) then
   write(151,*)
   write(151,'("Maximum deviation from norm : ",F12.6)')t2
   write(151,'("Average deviation from norm : ",F12.6)')t1/nmegqwan
+  call flushifc(151)
+endif
+if (wproc) then
+  call timestamp(151,'done with Wannier functions')
+endif
+! compute product V^{H}(r)*W(r)
+do n=1,nwann
+  do ispn=1,nspinor
+    call lf_prod(zone,vwanmt(1,1,1,1,ispn,n),vwanir(1,1,ispn,n),&
+      wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n),zzero,&
+      vwanmt(1,1,1,1,ispn,n),vwanir(1,1,ispn,n))
+  enddo
+enddo
+! compute <W_n|V^H|W_n>
+allocate(ehart(nwann))
+ehart=zzero
+do n=1,nwann
+  do ispn=1,nspinor
+    ehart(n)=ehart(n)+lf_dotlf(.true.,(/0,0,0/),vwanmt(1,1,1,1,ispn,n),&
+      vwanir(1,1,ispn,n),wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n))
+  enddo
+enddo
+! XC part
+allocate(exc(nwann))
+exc=zzero
+call timer_start(12,reset=.true.)
+call sic_genvxc(exc)
+call timer_stop(12)
+if (wproc) then
+  write(151,'("time for XC potential : ",F8.3)')timer_get_value(12)
+endif
+
+etot_sic=0.d0
+do n=1,nwann
+  etot_sic=etot_sic+dreal(ehart(n))+dreal(exc(n))
+enddo
+if (wproc) then
+  write(151,'(2X,"wann",16X,"E_n^{H}",33X,"E_n^{XC}")')
+  write(151,'(84("-"))')
+  do n=1,nwann
+    write(151,'(I4,4X,2G18.10,4X,2G18.10)')n,dreal(ehart(n)),dimag(ehart(n)),&
+      dreal(exc(n)),dimag(exc(n))
+  enddo
+  write(151,*)
+  write(151,'("Total energy correction : ",G18.10)')etot_sic
   call flushifc(151)
 endif
 
@@ -260,11 +252,11 @@ if (wproc) then
   write(151,'("Maximum deviation from ""localization criterion"" : ",F12.6)')t2
   write(151,*)
   write(151,'("Diagonal matrix elements")')
-  write(151,'("   n    Re V_n      Im V_n")')
-  write(151,'(40("-"))')
+  write(151,'(2X,"wann",18X,"V_n")')
+  write(151,'(44("-"))')
   do n=1,nwann
     j=idxmegqwan(n,n,0,0,0)
-    write(151,'(I4,4F12.6)')n,dreal(vwan(j)),dimag(vwan(j))
+    write(151,'(I4,4X,2G18.10)')n,dreal(vwan(j)),dimag(vwan(j))
   enddo  
   call flushifc(151)
 endif
