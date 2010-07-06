@@ -146,6 +146,10 @@ write(153,'("imag part : ")')
 do i=1,size
   write(153,'(255F8.3)')(dimag(mtrx(i,j)),j=1,size)
 enddo
+write(153,'("absolute value : ")')
+do i=1,size
+  write(153,'(255F8.3)')(abs(mtrx(i,j)),j=1,size)
+enddo
 close(153)
 return
 end

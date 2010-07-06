@@ -41,5 +41,8 @@ do l=0,50
 end do
 if (wannier) call wann_init
 if (.not.wannier) sic=.false.
+if (allocated(evalsv0)) deallocate(evalsv0)
+allocate(evalsv0(nstsv,nkpt))
+etot_sic=0.d0
 return
 end

@@ -81,8 +81,10 @@ integer, parameter :: dim_k=1
 ! auxiliary dimension for fine parallelization 
 integer, parameter :: dim2=2
 
-complex(8), allocatable :: evecsv0loc(:,:,:)
+! lda second-variational eigen-values
 real(8), allocatable :: evalsv0(:,:)
+! lda second-variational eigen-vectors
+complex(8), allocatable :: evecsv0loc(:,:,:)
 
 !-------------------------!
 !     Linear response     !
@@ -371,5 +373,6 @@ complex(8), allocatable :: vwanir(:,:,:,:)
 complex(8), allocatable :: vwan(:)
 integer nitersic
 integer iitersic
+real(8) etot_sic
 
 end module

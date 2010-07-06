@@ -2,7 +2,6 @@
 ! local function (lf) algebra
 !
 module mod_lf
-use modmain
 
 ! maximum lattice translation
 integer trmax
@@ -19,6 +18,7 @@ integer dim_t
 contains
 
 subroutine lf_init(trmax_,dim_t_)
+use modmain
 implicit none
 integer, intent(in) :: trmax_ 
 integer, intent(in) :: dim_t_
@@ -150,31 +150,82 @@ return
 end function
 
 
-subroutine lf_prod(f1mt,f1ir,f2mt,f2ir,f3mt,f3ir)
+!subroutine lf_prod(f1mt,f1ir,f2mt,f2ir,f3mt,f3ir)
+!use modmain
+!implicit none
+!complex(8), intent(in) :: f1mt(lmmaxvr,nrmtmax,natmtot,*)
+!complex(8), intent(in) :: f1ir(ngrtot,*)
+!complex(8), intent(in) :: f2mt(lmmaxvr,nrmtmax,natmtot,*)
+!complex(8), intent(in) :: f2ir(ngrtot,*)
+!complex(8), intent(out) :: f3mt(lmmaxvr,nrmtmax,natmtot,*)
+!complex(8), intent(out) :: f3ir(ngrtot,*)
+!
+!complex(8), allocatable :: ft1(:,:,:)
+!complex(8), allocatable :: ft2(:,:,:)
+!integer itrloc,ntrloc
+!
+!ntrloc=mpi_grid_map(ntr,dim_t)
+!allocate(ft1(lmmaxvr,nrmtmax,natmtot))
+!allocate(ft2(lmmaxvr,nrmtmax,natmtot))
+!do itrloc=1,ntrloc
+!  call lf_sht('B',f1mt(1,1,1,itrloc),ft1)
+!  call lf_sht('B',f2mt(1,1,1,itrloc),ft2)
+!  f3mt(:,:,:,itrloc)=dconjg(ft1(:,:,:))*ft2(:,:,:)
+!  f3ir(:,itrloc)=dconjg(f1ir(:,itrloc))*f2ir(:,itrloc)
+!enddo
+!deallocate(ft1,ft2)
+!return 
+!end subroutine
+
+! compute f3(r)=alpha*f1(r)*f2(r)+beta*f3(r)
+subroutine lf_prod(alpha,f1mt,f1ir,f2mt,f2ir,beta,f3mt,f3ir)
 use modmain
 implicit none
+complex(8), intent(in) :: alpha
 complex(8), intent(in) :: f1mt(lmmaxvr,nrmtmax,natmtot,*)
 complex(8), intent(in) :: f1ir(ngrtot,*)
 complex(8), intent(in) :: f2mt(lmmaxvr,nrmtmax,natmtot,*)
 complex(8), intent(in) :: f2ir(ngrtot,*)
-complex(8), intent(out) :: f3mt(lmmaxvr,nrmtmax,natmtot,*)
-complex(8), intent(out) :: f3ir(ngrtot,*)
+complex(8), intent(in) :: beta
+complex(8), intent(inout) :: f3mt(lmmaxvr,nrmtmax,natmtot,*)
+complex(8), intent(inout) :: f3ir(ngrtot,*)
+integer lm1,lm2,lm3,ir,itloc,ias
+complex(8), allocatable :: f1mt_(:,:),f2mt_(:,:),f3mt_(:,:)
+real(8), external :: gaunt
+real(8) t1
 
-complex(8), allocatable :: ft1(:,:,:)
-complex(8), allocatable :: ft2(:,:,:)
-integer itrloc,ntrloc
+allocate(f1mt_(nrmtmax,lmmaxvr))
+allocate(f2mt_(nrmtmax,lmmaxvr))
+allocate(f3mt_(nrmtmax,lmmaxvr))
 
-ntrloc=mpi_grid_map(ntr,dim_t)
-allocate(ft1(lmmaxvr,nrmtmax,natmtot))
-allocate(ft2(lmmaxvr,nrmtmax,natmtot))
-do itrloc=1,ntrloc
-  call lf_sht('B',f1mt(1,1,1,itrloc),ft1)
-  call lf_sht('B',f2mt(1,1,1,itrloc),ft2)
-  f3mt(:,:,:,itrloc)=dconjg(ft1(:,:,:))*ft2(:,:,:)
-  f3ir(:,itrloc)=dconjg(f1ir(:,itrloc))*f2ir(:,itrloc)
-enddo
-deallocate(ft1,ft2)
-return 
+do itloc=1,ntrloc
+  do ias=1,natmtot
+    do lm1=1,lmmaxvr
+      f1mt_(:,lm1)=f1mt(lm1,:,ias,itloc)
+      f2mt_(:,lm1)=f2mt(lm1,:,ias,itloc)
+      f3mt_(:,lm1)=beta*f3mt(lm1,:,ias,itloc)
+    enddo
+    do lm1=1,lmmaxvr
+      do lm2=1,lmmaxvr
+        do lm3=1,lmmaxvr
+          t1=gaunt(lm2l(lm3),lm2l(lm1),lm2l(lm2),&
+                   lm2m(lm3),lm2m(lm1),lm2m(lm2))
+          if (abs(t1).gt.1d-8) then
+            do ir=1,nrmt(ias2is(ias))
+              f3mt_(ir,lm3)=f3mt_(ir,lm3)+alpha*f1mt_(ir,lm1)*f2mt_(ir,lm2)*t1
+            enddo
+          endif
+        enddo
+      enddo
+    enddo
+    do lm3=1,lmmaxvr
+      f3mt(lm3,:,ias,itloc)=f3mt_(:,lm3)
+    enddo
+  enddo !ias
+  f3ir(:,itloc)=alpha*f1ir(:,itloc)*f2ir(:,itloc)+beta*f3ir(:,itloc)
+enddo !itloc
+deallocate(f1mt_,f2mt_,f3mt_)
+return
 end subroutine
 
 

@@ -63,6 +63,7 @@ if (scissor.ne.0.d0) then
     if (evalsv(ist,ik).gt.efermi) evalsv(ist,ik)=evalsv(ist,ik)+scissor
   end do
 end if
+evalsv0(:,ik)=evalsv(:,ik)
 if (wannier) then
   call genwann(ikloc,evecfv,evecsv)
   if (ldisentangle) call disentangle(evalsv(1,ik),wann_c(1,1,ikloc),evecsv)
@@ -72,7 +73,6 @@ if (wannier) then
   endif
 endif
 if (sic) then
-  evalsv0(:,ik)=evalsv(:,ik)
   evecsv0loc(:,:,ikloc)=evecsv(:,:)
   call sic_seceqn(ikloc,evecfv,evecsv)
 endif

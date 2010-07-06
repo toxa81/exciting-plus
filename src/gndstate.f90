@@ -46,8 +46,6 @@ allocate(evalfv(nstfv,nspnfv,nkptloc))
 allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
 allocate(evecsvloc(nstsv,nstsv,nkptloc))
 if (sic) then
-  if (allocated(evalsv0)) deallocate(evalsv0)
-  allocate(evalsv0(nstsv,nkpt))
   if (allocated(evecsv0loc)) deallocate(evecsv0loc)
   allocate(evecsv0loc(nstsv,nstsv,nkptloc))
 endif
@@ -192,6 +190,7 @@ do iscl=1,maxscl
   call genbeffmt
 ! begin parallel loop over k-points
   evalsv=0.d0
+  evalsv0=0.d0
   do ikloc=1,nkptloc
 ! solve the first- and second-variational secular equations
     call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
@@ -199,6 +198,8 @@ do iscl=1,maxscl
 ! write the eigenvalues/vectors to file
   end do
   call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.,&
+    all=.true.)
+  call mpi_grid_reduce(evalsv0(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.,&
     all=.true.)
   if (wproc) then
 ! find the occupation numbers and Fermi energy
