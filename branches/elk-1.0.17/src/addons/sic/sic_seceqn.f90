@@ -59,8 +59,8 @@ allocate(wfir(ngrtot,nspinor))
 wfsvmt=zzero
 wfsvit=zzero
 ! get apw coeffs 
-call match(ngk(1,ik),gkc(:,1,ikloc),tpgkc(:,:,1,ikloc), &
- sfacgk(:,:,1,ikloc),apwalm)
+call match(ngk(1,ik),gkc(:,1,ikloc),tpgkc(:,:,1,ikloc),sfacgk(:,:,1,ikloc),&
+  apwalm)
 ! generate wave functions in muffin-tins
 call genwfsvmt(lmaxvr,lmmaxvr,ngk(1,ik),evecfv,evecsv,apwalm,wfsvmt)
 ! generate wave functions in interstitial
@@ -128,7 +128,6 @@ do i=1,nmegqwan
   v1l(:)=imegqwan(3:5,i)
   vtrc(:)=v1l(1)*avec(:,1)+v1l(2)*avec(:,2)+v1l(3)*avec(:,3)
   expikt=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
-  !hwank(n,n1)=hwank(n,n1)+expikt*hwan(i)
   vwank_1(n,n1)=vwank_1(n,n1)+expikt*vwan(i)
   vwank_2(n1,n)=vwank_2(n1,n)+dconjg(expikt*vwan(i))
 enddo
@@ -137,8 +136,7 @@ do n=1,nwann
   do n1=1,nwann
     do j=1,nstsv
       hwank(n,n1)=hwank(n,n1)+&
-        dconjg(wann_c(n,j,ikloc))*wann_c(n1,j,ikloc)*evalsv(j,ik)
-        !dconjg(wann_c(n1,j,ikloc))*wann_c(n,j,ikloc)*evalsv(j,ik)
+        dconjg(wann_c(n,j,ikloc))*wann_c(n1,j,ikloc)*evalsv0(j,ik)
     enddo
   enddo
 enddo
@@ -149,15 +147,16 @@ do j=1,nstsv
 ! 1-st term : diagonal H^{LDA} 
   hunif(j,j)=evalsv(j,ik) 
   do j1=1,nstsv
-! 2-nd term : -\sum'_{\alpha,\alpha'} P_{\alpha} H^{LDA} P_{\alpha'}
+! 2-nd term : -\sum'_{\alpha,\alpha'} P_{\alpha} H^{LDA} P_{\alpha'} = 
+!   -\sum_{\alpha,\alpha'} P_{\alpha} H^{LDA} P_{\alpha'} + 
+!   +\sum_{\alpha} P_{\alpha} H^{LDA} P_{\alpha}
     do n=1,nwann
       do n1=1,nwann
-!        if (n.ne.n1) then
-          hunif(j,j1)=hunif(j,j1)-hwank(n,n1)*u(n,j)*dconjg(u(n1,j1))
-!        endif
+        hunif(j,j1)=hunif(j,j1)-hwank(n,n1)*u(n,j)*dconjg(u(n1,j1))
       enddo
     enddo
 ! 3-rd term : \sum_{alpha} P_{\alpha} V_{\alpha} P_{\alpha})
+!  plus diagonal energy matrix element from 1-st term
     do n=1,nwann
       hunif(j,j1)=hunif(j,j1)+u(n,j)*dconjg(u(n,j1))*(vn(n)+wann_ene(n))
     enddo
@@ -220,7 +219,7 @@ deallocate(vn,hn)
 deallocate(hwank,vwank_1,vwank_2)
 deallocate(wvp,u)
 
-call genwann(ikloc,evecfv,evecsv)
+!call genwann(ikloc,evecfv,evecsv)
 return
 20 continue
 write(*,*)

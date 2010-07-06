@@ -7,12 +7,9 @@ use mod_addons_q
 use mod_hdf5
 implicit none
 
-integer n,sz,i,j,n1,ispn,itr,it,itloc
+integer n,sz,i,j,n1,ispn,itr,itloc
 real(8) t1,t2
 integer v1l(3)
-character*12 c1,c2,c3
-character*100 path
-real(8) etot_sic
 
 ! arrays for Wannier functions
 complex(8), allocatable :: wanmt0(:,:,:,:,:)
@@ -36,17 +33,6 @@ complex(8), allocatable :: ehart(:),exc(:)
 !     v
 !  k-points
 
-!
-! Workflow: 
-!  compute V_n^{H}(r)   
-!  compute W_n(r)
-!  compute V_n^{XC}(r)  
-!  compute B_n^{XC}(r)
-!  compute e_n^{XC}(r)
-!  compute E_n = <W_n|V_n^{H}|W_n> + <W_n|e_n^{XC}|W_n>
-!  compute V_n = V_n^{H}(r) + V_n^{XC}(r) + \sigma*B_n^{XC}(r)
-!  compute W_n*V_n
-
 ! initialise universal variables
 call init0
 call init1
@@ -61,9 +47,6 @@ call genapwfr
 call genlofr
 call getufr
 call genufrp
-! read Fermi energy
-if (mpi_grid_root()) call readfermi
-call mpi_grid_bcast(efermi)
 
 call lf_init(lf_maxt,dim2)
 wproc=mpi_grid_root()
@@ -168,20 +151,20 @@ endif
 if (wproc) then
   call timestamp(151,'done with Wannier functions')
 endif
-! compute product V^{H}(r)*W(r)
+! compute product -V^{H}(r)*W(r)
 do n=1,nwann
   do ispn=1,nspinor
-    call lf_prod(zone,vwanmt(1,1,1,1,ispn,n),vwanir(1,1,ispn,n),&
+    call lf_prod(-zone,vwanmt(1,1,1,1,ispn,n),vwanir(1,1,ispn,n),&
       wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n),zzero,&
       vwanmt(1,1,1,1,ispn,n),vwanir(1,1,ispn,n))
   enddo
 enddo
-! compute <W_n|V^H|W_n>
+! compute <W_n|V^H|W_n> = -1*<W_n|-V^H|W_n>
 allocate(ehart(nwann))
 ehart=zzero
 do n=1,nwann
   do ispn=1,nspinor
-    ehart(n)=ehart(n)+lf_dotlf(.true.,(/0,0,0/),vwanmt(1,1,1,1,ispn,n),&
+    ehart(n)=ehart(n)-lf_dotlf(.true.,(/0,0,0/),vwanmt(1,1,1,1,ispn,n),&
       vwanir(1,1,ispn,n),wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n))
   enddo
 enddo
@@ -239,17 +222,20 @@ if (wproc) then
   enddo
 endif
 
+t1=0.d0
 t2=0.d0
 do i=1,nmegqwan
   n=imegqwan(1,i)
   n1=imegqwan(2,i)
   v1l(:)=imegqwan(3:5,i)
   j=idxmegqwan(n1,n,-v1l(1),-v1l(2),-v1l(3))
+  t1=t1+abs(vwan(i)-dconjg(vwan(j)))
   t2=max(t2,abs(vwan(i)-dconjg(vwan(j))))
 enddo
 if (wproc) then
   write(151,*)
   write(151,'("Maximum deviation from ""localization criterion"" : ",F12.6)')t2
+  write(151,'("Average deviation from ""localization criterion"" : ",F12.6)')t1/nmegqwan
   write(151,*)
   write(151,'("Diagonal matrix elements")')
   write(151,'(2X,"wann",18X,"V_n")')
@@ -274,59 +260,8 @@ if (wproc) then
     write(151,'("SIC matrix elements RMS difference :",G18.10)')t1
   endif
 endif
-
-if (wproc) then
-  call hdf5_create_file("sic.hdf5")
-  call hdf5_create_group("sic.hdf5","/","wann")
-  do n=1,nwann
-    path="/wann"
-    write(c1,'("n",I4.4)')n
-    call hdf5_create_group("sic.hdf5",path,trim(adjustl(c1)))   
-    path=trim(path)//"/"//trim(adjustl(c1))
-    do ispn=1,nspinor
-      write(c3,'("s",I4.4)')ispn
-      call hdf5_create_group("sic.hdf5",path,trim(adjustl(c3)))   
-      path=trim(path)//"/"//trim(adjustl(c3))      
-      do it=1,ntr
-        write(c2,'("t",I4.4)')it
-        call hdf5_create_group("sic.hdf5",path,trim(adjustl(c2)))
-      enddo
-    enddo
-  enddo
-  call hdf5_write("sic.hdf5","/","nmegqwan",nmegqwan)
-  call hdf5_write("sic.hdf5","/","imegqwan",imegqwan(1,1),(/5,nmegqwan/))
-  call hdf5_write("sic.hdf5","/","vwan",vwan(1),(/nmegqwan/))
-  !call hdf5_write("sic.hdf5","/","hwan",hwan(1),(/nmegqwan/))
-endif
-if (mpi_grid_side(dims=(/dim_t/))) then
-  do i=0,mpi_grid_size(dim_t)-1
-    if (mpi_grid_x(dim_t).eq.i) then
-      do itloc=1,ntrloc
-        itr=mpi_grid_map(ntr,dim_t,loc=itloc)
-        do ispn=1,nspinor
-          do n=1,nwann
-            write(c1,'("n",I4.4)')n
-            write(c2,'("t",I4.4)')itr
-            write(c3,'("s",I4.4)')ispn
-            path="/wann/"//trim(adjustl(c1))//"/"//trim(adjustl(c3))//"/"//&
-              trim(adjustl(c2))
-            call hdf5_write("sic.hdf5",path,"vwanmt",&
-              vwanmt(1,1,1,itloc,ispn,n),(/lmmaxvr,nrmtmax,natmtot/))
-            call hdf5_write("sic.hdf5",path,"vwanir",&
-              vwanir(1,itloc,ispn,n),(/ngrtot/))
-!            call hdf5_write("sic.hdf5",path,"wanmt",&
-!              wanmt(1,1,1,itloc,ispn,n),(/lmmaxvr,nrmtmax,natmtot/))
-!            call hdf5_write("sic.hdf5",path,"wanir",&
-!              wanir(1,itloc,ispn,n),(/ngrtot/))
-          enddo
-        enddo
-      enddo
-    endif
-    call mpi_grid_barrier(dims=(/dim_t/))
-  enddo
-endif
+call sic_writevwan
 if (wproc) close(151)
-call bstop
 deallocate(vwan)
 deallocate(wanmt,wanir,vwanmt,vwanir)
 return

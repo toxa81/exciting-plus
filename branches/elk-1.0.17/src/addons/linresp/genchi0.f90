@@ -99,8 +99,8 @@ if (wannier_chi0_chi) then
       write(c2,'(I1)')lm2m(lm2)+lm2l(lm2)+1
       c4="("//trim(spsymb(ias2is(jas)))//trim(adjustl(c1))//"-"//&
         orb(lm2l(lm2)+1)//trim(adjustl(c2))//")"
-      write(150,'(I4," ",A,"  -> ",I4," ",A,"    R=",3F12.6,&
-        &"   D=",F12.6,"  |me(G0q)|=",G18.10)')imegqwan(1,i),&
+      write(150,'("i : ",I4,"   ",I4," ",A,"  -> ",I4," ",A,"    R=",3F12.6,&
+        &"   D=",F12.6,"  |me(G0q)|=",G18.10)')i,imegqwan(1,i),&
         trim(c3),imegqwan(2,i),trim(c4),vtc,sqrt(sum(vtc(:)**2)),&
         abs(megqwan(i,iig0q))
     enddo
@@ -198,6 +198,9 @@ do iw=1,lr_nw
     if (megqwan_afm) chi0wan(:,:)=chi0wan(:,:)*2.d0
 ! processor j saves chi0wan to local array  
     if (mpi_grid_x(dim_k).eq.j) chi0wanloc(:,:,jwloc)=chi0wan(:,:)
+!    if (iw.eq.120.and..true.) then
+!      call chi0wan_diag(chi0wan)
+!    endif
     call timer_stop(3)
   endif !wannier_chi0_chi
   if (wproc) then
