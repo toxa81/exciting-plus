@@ -69,6 +69,8 @@ call genufrp
 if (sic) then
   if (allocated(evecsv0loc)) deallocate(evecsv0loc)
   allocate(evecsv0loc(nstsv,nstsv,nkptloc))
+  call sic_readvwan
+  call read_wann_ene
 endif
 bc=0.d0
 evalsv=0.d0
