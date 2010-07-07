@@ -22,8 +22,7 @@ complex(8), allocatable :: wfir(:,:)
 complex(8), allocatable :: wvp(:,:),u(:,:)
 integer lm,ias,is,ispn,ig,ir,io
 complex(8), allocatable :: hwank(:,:)
-complex(8), allocatable :: vwank_1(:,:)
-complex(8), allocatable :: vwank_2(:,:)
+complex(8), allocatable :: vwank(:,:)
 complex(8) expikt
 integer v1l(3),n1,j1,i3
 real(8) vtrc(3),v2(3),v3(3)
@@ -45,7 +44,6 @@ do i=1,nmegqwan
   if ((imegqwan(1,i).eq.imegqwan(2,i)).and.imegqwan(3,i).eq.0.and.&
     imegqwan(4,i).eq.0.and.imegqwan(5,i).eq.0) then
     vn(imegqwan(1,i))=dreal(vwan(i))
-    !hn(imegqwan(1,i))=dreal(hwan(i))
   endif
 enddo
 
@@ -115,37 +113,33 @@ enddo !j
 deallocate(wfsvmt,wfsvit,apwalm,wfmt,wfir)
 u=wann_c(:,:,ikloc)
  
-! compute H_{nn'}(k) and V_{nn'}(k)
+! compute H_{nn'}(k)
 allocate(hwank(nwann,nwann))
-allocate(vwank_1(nwann,nwann))
-allocate(vwank_2(nwann,nwann))
 hwank=zzero
-vwank_1=zzero
-vwank_2=zzero
+do n=1,nwann
+  do n1=1,nwann
+    do j=1,nstsv
+      hwank(n,n1)=hwank(n,n1)+dconjg(u(n,j))*u(n1,j)*evalsv0(j,ik)
+    enddo
+  enddo
+enddo
+! compute V_{nn'}(k)
+allocate(vwank(nwann,nwann))
+vwank=zzero
 do i=1,nmegqwan
   n=imegqwan(1,i)
   n1=imegqwan(2,i)
   v1l(:)=imegqwan(3:5,i)
   vtrc(:)=v1l(1)*avec(:,1)+v1l(2)*avec(:,2)+v1l(3)*avec(:,3)
   expikt=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
-  vwank_1(n,n1)=vwank_1(n,n1)+expikt*vwan(i)
-  vwank_2(n1,n)=vwank_2(n1,n)+dconjg(expikt*vwan(i))
-enddo
-
-do n=1,nwann
-  do n1=1,nwann
-    do j=1,nstsv
-      hwank(n,n1)=hwank(n,n1)+&
-        dconjg(wann_c(n,j,ikloc))*wann_c(n1,j,ikloc)*evalsv0(j,ik)
-    enddo
-  enddo
+  vwank(n,n1)=vwank(n,n1)+expikt*vwan(i)
 enddo
 
 ! setup unified Hamiltonian
 hunif=zzero
 do j=1,nstsv
 ! 1-st term : diagonal H^{LDA} 
-  hunif(j,j)=evalsv(j,ik) 
+  hunif(j,j)=evalsv0(j,ik) 
   do j1=1,nstsv
 ! 2-nd term : -\sum'_{\alpha,\alpha'} P_{\alpha} H^{LDA} P_{\alpha'} = 
 !   -\sum_{\alpha,\alpha'} P_{\alpha} H^{LDA} P_{\alpha'} + 
@@ -156,18 +150,18 @@ do j=1,nstsv
       enddo
     enddo
 ! 3-rd term : \sum_{alpha} P_{\alpha} V_{\alpha} P_{\alpha})
-!  plus diagonal energy matrix element from 1-st term
+!  plus 4-th term: diagonal energy matrix element E_n
     do n=1,nwann
       hunif(j,j1)=hunif(j,j1)+u(n,j)*dconjg(u(n,j1))*(vn(n)+wann_ene(n))
     enddo
-! 4-th and 5-th terms : \sum_{\alpha} P_{\alpha} V_{\alpha} Q + 
+! 5-th term : \sum_{\alpha} P_{\alpha} V_{\alpha} Q + 
 !                       \sum_{\alpha} Q V_{\alpha} P_{\alpha} 
 !   where Q=1-\sum_{\alpha'}P_{\alpha'}
     do n=1,nwann
       hunif(j,j1)=hunif(j,j1)+u(n,j)*wvp(n,j1)+dconjg(wvp(n,j)*u(n,j1))
       do n1=1,nwann
-        hunif(j,j1)=hunif(j,j1)-vwank_1(n,n1)*u(n,j)*dconjg(u(n1,j1))-&
-          vwank_2(n1,n)*u(n1,j)*dconjg(u(n,j1))
+        hunif(j,j1)=hunif(j,j1)-vwank(n,n1)*u(n,j)*dconjg(u(n1,j1))-&
+          dconjg(vwank(n,n1))*u(n1,j)*dconjg(u(n,j1))
       enddo
     enddo
   enddo !j1
@@ -216,7 +210,7 @@ deallocate(z2)
 deallocate(rwork)
 deallocate(work)
 deallocate(vn,hn)
-deallocate(hwank,vwank_1,vwank_2)
+deallocate(hwank,vwank)
 deallocate(wvp,u)
 
 !call genwann(ikloc,evecfv,evecsv)
