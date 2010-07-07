@@ -178,6 +178,11 @@ do j=1,nstsv
 enddo
 
 if (ndmag.eq.1) then
+  do i=1,nstfv
+    do j=1,nstfv
+      hunif(i+nstfv,j+nstfv)=hunif(i,j)
+    end do
+  end do
 ! collinear: block diagonalise H
   call zheev('V','U',nstfv,hunif(1,1),nstsv,evalsv(1,ik),work,lwork,rwork,info)
   if (info.ne.0) goto 20

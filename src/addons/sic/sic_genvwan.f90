@@ -51,8 +51,7 @@ call genufrp
 call lf_init(lf_maxt,dim2)
 wproc=mpi_grid_root()
 if (wproc) then
-  write(fname,'("SIC_",I2.2,".OUT")')iitersic
-  open(151,file=trim(adjustl(fname)),form="FORMATTED",status="REPLACE")
+  open(151,file="SIC.OUT",form="FORMATTED",status="REPLACE")
 endif
 if (wproc) then
   sz=lmmaxvr*nrmtmax*natmtot+ngrtot
