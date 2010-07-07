@@ -27,7 +27,7 @@ if (tautogqmax) then
     vqlnr(:,iq)=dble(vqm(:,iq))/ngridk(:)
     call r3mv(bvec,vqlnr(:,iq),vqcnr(:,iq))
     t2=sqrt(sum(vqcnr(:,iq)**2))
-    gqmax=max(gqmax,t2*1.2)
+    gqmax=max(gqmax,t2*1.01)
   enddo
 endif
 
