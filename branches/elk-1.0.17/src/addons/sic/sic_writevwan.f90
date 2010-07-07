@@ -3,7 +3,7 @@ use modmain
 use mod_lf
 use mod_hdf5
 implicit none
-integer n,ispn,it,i,itr,itloc
+integer n,ispn,it,i,itloc
 character*12 c1,c2,c3
 character*100 path
 
@@ -14,14 +14,14 @@ if (wproc) then
     path="/wann"
     write(c1,'("n",I4.4)')n
     call hdf5_create_group("sic.hdf5",path,trim(adjustl(c1)))   
-    path=trim(path)//"/"//trim(adjustl(c1))
     do ispn=1,nspinor
-      write(c3,'("s",I4.4)')ispn
-      call hdf5_create_group("sic.hdf5",path,trim(adjustl(c3)))   
-      path=trim(path)//"/"//trim(adjustl(c3))      
+      path="/wann/"//trim(adjustl(c1))
+      write(c2,'("s",I4.4)')ispn
+      call hdf5_create_group("sic.hdf5",path,trim(adjustl(c2)))   
       do it=1,ntr
-        write(c2,'("t",I4.4)')it
-        call hdf5_create_group("sic.hdf5",path,trim(adjustl(c2)))
+        path="/wann/"//trim(adjustl(c1))//"/"//trim(adjustl(c2))      
+        write(c3,'("t",I4.4)')it
+        call hdf5_create_group("sic.hdf5",path,trim(adjustl(c3)))
       enddo
     enddo
   enddo
@@ -34,14 +34,14 @@ if (mpi_grid_side(dims=(/dim_t/))) then
   do i=0,mpi_grid_size(dim_t)-1
     if (mpi_grid_x(dim_t).eq.i) then
       do itloc=1,ntrloc
-        itr=mpi_grid_map(ntr,dim_t,loc=itloc)
+        it=mpi_grid_map(ntr,dim_t,loc=itloc)
         do ispn=1,nspinor
           do n=1,nwann
             write(c1,'("n",I4.4)')n
-            write(c2,'("t",I4.4)')itr
-            write(c3,'("s",I4.4)')ispn
-            path="/wann/"//trim(adjustl(c1))//"/"//trim(adjustl(c3))//"/"//&
-              trim(adjustl(c2))
+            write(c2,'("s",I4.4)')ispn
+            write(c3,'("t",I4.4)')it
+            path="/wann/"//trim(adjustl(c1))//"/"//trim(adjustl(c2))//"/"//&
+              trim(adjustl(c3))       
             call hdf5_write("sic.hdf5",path,"vwanmt",&
               vwanmt(1,1,1,itloc,ispn,n),(/lmmaxvr,nrmtmax,natmtot/))
             call hdf5_write("sic.hdf5",path,"vwanir",&
