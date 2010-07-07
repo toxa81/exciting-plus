@@ -70,6 +70,7 @@ do n=1,nwann
 !-----------------!
     natmtotloc=mpi_grid_map(natmtot,dim_k)
     do iasloc=1,natmtotloc
+      wfmt=zzero
       ias=mpi_grid_map(natmtot,dim_k,loc=iasloc)
 ! compute charge density on a sphere
 !   rho(tp,r)=|wf(tp,r)|^2
@@ -81,10 +82,10 @@ do n=1,nwann
       enddo
 ! compute XC potential and energy density
       if (spinpol) then
-        call xcifc(xctype,n=ntp*nrmtmax,rhoup=wfmt2(:,:,1),rhodn=wfmt2(:,:,2),&
-          ex=exmt_,ec=ecmt_,vxup=vxmt_(:,:,1),vxdn=vxmt_(:,:,2),vcup=vcmt_(:,:,1),&
-          vcdn=vcmt_(:,:,2))
-      else
+        call xcifc(xctype,n=ntp*nrmtmax,rhoup=wfmt2(1,1,1),rhodn=wfmt2(1,1,2),&
+          ex=exmt_,ec=ecmt_,vxup=vxmt_(1,1,1),vxdn=vxmt_(1,1,2),vcup=vcmt_(1,1,1),&
+          vcdn=vcmt_(1,1,2))
+     else
         call xcifc(xctype,n=ntp*nrmtmax,rho=wfmt2,ex=exmt_,ec=ecmt_,vx=vxmt_,vc=vcmt_)
       endif
 ! save XC potential
