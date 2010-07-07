@@ -949,6 +949,12 @@ case('response_wann')
   read(50,*,err=20) lwannresp
   read(50,*,err=20) lwannopt
   read(50,*,err=20) lr_maxtr
+case('response_wann_filter')
+  read(50,*,err=20) maxdistwfme
+  read(50,*,err=20) nwfch
+  do i=1,nwfch
+    read(50,*,err=20) wfch(1,i), wfch(2,i)
+  enddo
 case('wannier')
   read(50,*,err=20) wannier
 !  read(50,*,err=20) wann_use_eint

@@ -1115,8 +1115,16 @@ real(8), allocatable :: wann_iorb_lcc(:,:)
 
 integer nwann_h
 integer, allocatable :: iwann_h(:)
-
+! do we plot the wannier functions as complex?
 logical lwannier_plot_complex
+! maximum distance to compute response with wannier functions
+real(8) maxdistwfme
+! number of wannier channels to include in response
+integer nwfch
+! wannier function channels
+integer wfch(2,100)
+
+
 
 !----------------!
 !      timer     !

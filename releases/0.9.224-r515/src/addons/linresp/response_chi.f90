@@ -58,6 +58,8 @@ real(8) itrcart(3)
 real(8) itrcartd
 real(8) wftrcart(3)
 real(8) wftrcartd
+integer iwfch
+logical bKeep
 
 ! we need Bcx and magnetization from STATE.OUT
 if (lrtype.eq.1) call readstate
@@ -208,12 +210,67 @@ if (lwannresp) then
       deallocate(itrans)
     endif
   endif
+  !! provide a filter for wf "channels" from a array set in readinput.f90
+  ! loop over translations
+  do it1=1,ntr1
+    if (sum(abs(mewf2(:,it1,:))).gt.1d-8) then
+      ! get translation in cart. coordinates
+      itrcart(:)=avec(:,1)*itr1l(1,it1)+&
+                 avec(:,2)*itr1l(2,it1)+&
+                 avec(:,3)*itr1l(3,it1)
+      itrcartd=sqrt(itrcart(1)**2+itrcart(2)**2+itrcart(3)**2) 
+      ! loop over Wannier function matrix elements
+      do n=1,nwfme
+        if (sum(abs(mewf2(n,it1,:))).gt.1d-8) then
+          do is=1,nspecies
+            do ia=1,natoms(is)
+              ias=idxas(ia,is)
+              if (ias.eq.iwann(1,iwfme(1,n))) then
+                is1=is
+                ia1=ia
+              endif
+              if (ias.eq.iwann(1,iwfme(2,n))) then
+                is2=is
+                ia2=ia
+              endif
+            enddo
+          enddo
+          ! test WF1 and WF2 to see if this "channel" is allowed
+          bKeep=.false.
+          do iwfch=1,nwfch
+            if (((wfch(1,iwfch).eq.iwfme(1,n)).and.(wfch(2,iwfch).eq.iwfme(2,n))) &
+              .or.((wfch(1,iwfch).eq.iwfme(2,n)).and.(wfch(2,iwfch).eq.iwfme(1,n)))) then
+              write(*,*) iwfme(1,n),iwfme(2,n),wfch(1,iwfch),wfch(2,iwfch)
+              bKeep=.true.
+            endif
+          enddo
+          ! delete matrix elements if channel not found
+          if (.not.bKeep) then
+            do ig=1,ngvecme
+                mewf2(n,it1,ig)=zzero
+            enddo
+          endif
+          ! compute distance from WF1 to WF2
+          wftrcart(:)=atposc(:,ia1,is1)-(itrcart(:)+atposc(:,ia2,is2))
+          wftrcartd=sqrt(wftrcart(1)**2+wftrcart(2)**2+wftrcart(3)**2)
+          ! test distance against threshold
+          if (wftrcartd.gt.maxdistwfme) then
+            do ig=1,ngvecme
+                mewf2(n,it1,ig)=zzero
+            enddo
+          endif
+        endif
+      enddo !n
+    endif
+  enddo
   if (wproc) then
     write(150,*)
     write(150,'("Matrix elements in WF basis : ")')
     write(150,*)
+    ! loop over translations
     do it1=1,ntr1
       if (sum(abs(mewf2(:,it1,:))).gt.1d-8) then
+        ! get translation in cart. coordinates
         itrcart(:)=avec(:,1)*itr1l(1,it1)+&
                    avec(:,2)*itr1l(2,it1)+&
                    avec(:,3)*itr1l(3,it1)
@@ -221,6 +278,7 @@ if (lwannresp) then
         write(150,'("\n\ntranslation : ",3I4)')itr1l(:,it1)
         write(150,'("translation (cart) : ",3F12.6)')itrcart(:)
         write(150,'("distance (cart)    : ",F12.6)')itrcartd
+        ! loop over Wannier function matrix elements
         do n=1,nwfme
           if (sum(abs(mewf2(n,it1,:))).gt.1d-8) then
             do is=1,nspecies
@@ -236,6 +294,7 @@ if (lwannresp) then
                 endif
               enddo
             enddo
+            ! compute distance from WF1 to WF2
             wftrcart(:)=atposc(:,ia1,is1)-(itrcart(:)+atposc(:,ia2,is2))
             wftrcartd=sqrt(wftrcart(1)**2+wftrcart(2)**2+wftrcart(3)**2)
             write(150,'("  transition ",I4," between wfs : ",2I4)')&
