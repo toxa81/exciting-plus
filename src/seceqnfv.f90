@@ -90,22 +90,22 @@ else
 endif
 call timesec(ts1)
 timemat=timemat+ts1-ts0
-!do i=1,np
-!  zt1=h(i)
-!  zt1=dcmplx(int(dreal(zt1)*100000000)/100000000.d0, &
-!             int(dimag(zt1)*100000000)/100000000.d0)
-!  h(i)=zt1
-!  zt1=o(i)
-!  zt1=dcmplx(int(dreal(zt1)*100000000)/100000000.d0, &
-!             int(dimag(zt1)*100000000)/100000000.d0)
-!  o(i)=zt1
-!enddo
-!if (mpi_grid_root((/dim2/))) then
-!  write(fname,'("h_n",I2.2,"_k",I4.4".txt")')nproc,ik
-!  call wrmtrx(fname,nmatp,nmatp,h,nmatp)
-!  write(fname,'("o_n",I2.2,"_k",I4.4".txt")')nproc,ik
-!  call wrmtrx(fname,nmatp,nmatp,o,nmatp)
-!endif
+do i=1,np
+  zt1=h(i)
+  zt1=dcmplx(int(dreal(zt1)*100000000)/100000000.d0, &
+             int(dimag(zt1)*100000000)/100000000.d0)
+  h(i)=zt1
+  zt1=o(i)
+  zt1=dcmplx(int(dreal(zt1)*100000000)/100000000.d0, &
+             int(dimag(zt1)*100000000)/100000000.d0)
+  o(i)=zt1
+enddo
+if (mpi_grid_root((/dim2/))) then
+  write(fname,'("h_i",I2.2,"_n",I2.2,"_k",I4.4".txt")')iscl,nproc,ik
+  call wrmtrx(fname,nmatp,nmatp,h,nmatp)
+  write(fname,'("o_i",I2.2,"_n",I2.2,"_k",I4.4".txt")')iscl,nproc,ik
+  call wrmtrx(fname,nmatp,nmatp,o,nmatp)
+endif
 
 !------------------------------------!
 !     solve the secular equation     !
