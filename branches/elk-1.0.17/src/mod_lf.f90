@@ -144,7 +144,7 @@ do itloc=1,ntrloc
   zprod=zprod+exp(zi*dot_product(vpc,vtc))*&
     zfinp_(tsh,f1mt(1,1,1,itloc),f2mt,f1ir(1,itloc),f2ir)
 enddo
-call mpi_grid_reduce(zprod,dims=(/dim_t/),all=.true.)
+call mpi_grid_reduce(zprod,dims=(/dim_t/))
 lf_dotblh=zprod
 return
 end function

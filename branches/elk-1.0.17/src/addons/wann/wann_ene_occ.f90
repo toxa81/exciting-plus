@@ -22,8 +22,8 @@ do n=1,nwann
     enddo
   enddo
 enddo
-call mpi_grid_reduce(wann_ene(1),nwann,dims=(/dim_k/),side=.true.)
-call mpi_grid_reduce(wann_occ(1),nwann,dims=(/dim_k/),side=.true.)
+call mpi_grid_reduce(wann_ene(1),nwann,dims=(/dim_k/))
+call mpi_grid_reduce(wann_occ(1),nwann,dims=(/dim_k/))
 if (wproc.and.nosym) then
   write(60,*)
   write(60,'(" WF  energy (Ha)  occupancy ")')
@@ -64,9 +64,9 @@ do n1=1,nwann
   enddo
 enddo 
 call mpi_grid_reduce(wann_occ_m(1,1,1,1,1),&
-  lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,dims=(/dim_k/),side=.true.,all=.true.)
+  lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,dims=(/dim_k/),all=.true.)
 call mpi_grid_reduce(wann_ene_m(1,1,1,1,1),&
-  lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,dims=(/dim_k/),side=.true.,all=.true.)
+  lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,dims=(/dim_k/),all=.true.)
 ! convert from Rlm to Ylm basis
 do ias=1,natmtot
   do ispn=1,nspinor

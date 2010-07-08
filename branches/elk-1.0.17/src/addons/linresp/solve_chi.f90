@@ -130,32 +130,3 @@ f_response_(f_loss_scalar)=1.d0/f_response_(f_epsilon_eff_scalar)
 deallocate(epsilon,mtrx1,zm1,zm2)
 return
 end
-
-subroutine wrmtrx(name,size,mtrx)
-implicit none
-character*(*), intent(in) :: name
-integer, intent(in) :: size
-complex(8), intent(in) :: mtrx(size,size)
-integer i,j,fout
-
-if (name.eq."") then
-  fout=6
-else
-  fout=153
-  open(fout,file=trim(adjustl(name)),form='formatted',status='replace')
-endif
-write(fout,'("real part : ")')
-do i=1,size
-  write(fout,'(255F8.3)')(dreal(mtrx(i,j)),j=1,size)
-enddo
-write(fout,'("imag part : ")')
-do i=1,size
-  write(fout,'(255F8.3)')(dimag(mtrx(i,j)),j=1,size)
-enddo
-write(fout,'("absolute value : ")')
-do i=1,size
-  write(fout,'(255F8.3)')(abs(mtrx(i,j)),j=1,size)
-enddo
-if (fout.ne.6) close(fout)
-return
-end
