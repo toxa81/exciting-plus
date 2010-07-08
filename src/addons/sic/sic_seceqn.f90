@@ -12,7 +12,7 @@ logical exist
 complex(8), allocatable :: hunif(:,:),z2(:,:)
 complex(8), allocatable :: work(:)
 real(8), allocatable :: rwork(:)
-real(8), allocatable :: vn(:),hn(:)
+real(8), allocatable :: vn(:)
 integer i,n,ik,j,lwork,i1,i2,info
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: wfsvit(:,:,:)
@@ -28,26 +28,19 @@ integer v1l(3),n1,j1,i3
 real(8) vtrc(3),v2(3),v3(3)
 complex(8) zt1,expikr
 real(8), parameter :: epsherm=1d-8
+character*100 fname
 
 inquire(file="sic.hdf5",exist=exist)
 if (.not.exist) return
-
-allocate(hunif(nstsv,nstsv))
-allocate(z2(nstsv,nstsv))
-lwork=2*nstsv
-allocate(rwork(3*nstsv))
-allocate(work(lwork))
+ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 
 allocate(vn(nwann))
-allocate(hn(nwann))
 do i=1,nmegqwan
   if ((imegqwan(1,i).eq.imegqwan(2,i)).and.imegqwan(3,i).eq.0.and.&
     imegqwan(4,i).eq.0.and.imegqwan(5,i).eq.0) then
     vn(imegqwan(1,i))=dreal(vwan(i))
   endif
 enddo
-
-ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 
 allocate(wfsvmt(lmmaxvr,nufrmax,natmtot,nspinor,nstsv))
 allocate(wfsvit(ngkmax,nspinor,nstsv))
@@ -63,7 +56,6 @@ call match(ngk(1,ik),gkc(:,1,ikloc),tpgkc(:,:,1,ikloc),sfacgk(:,:,1,ikloc),&
 call genwfsvmt(lmaxvr,lmmaxvr,ngk(1,ik),evecfv,evecsv,apwalm,wfsvmt)
 ! generate wave functions in interstitial
 call genwfsvit(ngk(1,ik),evecfv,evecsv,wfsvit)
-
 ! compute <W_n|V_n|\Psi_{jk}>
 allocate(wvp(nwann,nstsv),u(nwann,nstsv))
 wvp=zzero
@@ -111,8 +103,7 @@ do j=1,nstsv
   enddo
 enddo !j
 deallocate(wfsvmt,wfsvit,apwalm,wfmt,wfir)
-u=wann_c(:,:,ikloc)
- 
+u=wann_c(:,:,ikloc) 
 ! compute H_{nn'}(k)
 allocate(hwank(nwann,nwann))
 hwank=zzero
@@ -135,7 +126,17 @@ do i=1,nmegqwan
   vwank(n,n1)=vwank(n,n1)+expikt*vwan(i)
 enddo
 
+!if (mpi_grid_root((/dim2/))) then
+!  write(fname,'("wvp_n",I2.2,"_k",I4.4".txt")')nproc,ik
+!  call wrmtrx(fname,nwann,nstsv,wvp,nwann)
+!  write(fname,'("hwank_n",I2.2,"_k",I4.4".txt")')nproc,ik
+!  call wrmtrx(fname,nwann,nwann,hwank,nwann)
+!  write(fname,'("vwank_n",I2.2,"_k",I4.4".txt")')nproc,ik
+!  call wrmtrx(fname,nwann,nwann,vwank,nwann)
+!endif
+
 ! setup unified Hamiltonian
+allocate(hunif(nstsv,nstsv))
 hunif=zzero
 do j=1,nstsv
 ! 1-st term : diagonal H^{LDA} 
@@ -177,48 +178,52 @@ do j=1,nstsv
   enddo
 enddo
 
-if (ndmag.eq.1) then
-  do i=1,nstfv
-    do j=1,nstfv
-      hunif(i+nstfv,j+nstfv)=hunif(i,j)
-    end do
-  end do
+if (mpi_grid_root((/dim2/))) then
+!  write(fname,'("hunif_n",I2.2,"_k",I4.4".txt")')nproc,ik
+!  call wrmtrx(fname,nstsv,nstsv,hunif,nstsv)
+  allocate(z2(nstsv,nstsv))
+  lwork=2*nstsv
+  allocate(rwork(3*nstsv))
+  allocate(work(lwork))
+  if (ndmag.eq.1) then
 ! collinear: block diagonalise H
-  call zheev('V','U',nstfv,hunif(1,1),nstsv,evalsv(1,ik),work,lwork,rwork,info)
-  if (info.ne.0) goto 20
-  i=nstfv+1
-  call zheev('V','U',nstfv,hunif(i,i),nstsv,evalsv(i,ik),work,lwork,rwork,info)
-  if (info.ne.0) goto 20
-  do i=1,nstfv
-    do j=1,nstfv
-      hunif(i,j+nstfv)=0.d0
-      hunif(i+nstfv,j)=0.d0
+    call zheev('V','U',nstfv,hunif(1,1),nstsv,evalsv(1,ik),work,lwork,rwork,info)
+    if (info.ne.0) goto 20
+    i=nstfv+1
+    call zheev('V','U',nstfv,hunif(i,i),nstsv,evalsv(i,ik),work,lwork,rwork,info)
+    if (info.ne.0) goto 20
+    do i=1,nstfv
+      do j=1,nstfv
+        hunif(i,j+nstfv)=0.d0
+        hunif(i+nstfv,j)=0.d0
+      end do
     end do
-  end do
-else
+  else
 ! non-collinear or spin-unpolarised: full diagonalisation
-  call zheev('V','U',nstsv,hunif,nstsv,evalsv(1,ik),work,lwork,rwork,info)
-  if (info.ne.0) goto 20
-endif
-z2=zzero
-do i1=1,nstsv
-  do i2=1,nstsv
-    do j=1,nstsv
-      z2(i2,i1)=z2(i2,i1)+dconjg(hunif(j,i1))*evecsv(i2,j)
+    call zheev('V','U',nstsv,hunif,nstsv,evalsv(1,ik),work,lwork,rwork,info)
+    if (info.ne.0) goto 20
+  endif
+  z2=zzero
+  do i1=1,nstsv
+    do i2=1,nstsv
+      do j=1,nstsv
+        z2(i2,i1)=z2(i2,i1)+dconjg(hunif(j,i1))*evecsv(i2,j)
+      enddo
     enddo
   enddo
-enddo
-evecsv=z2
-
+  evecsv=z2
+  deallocate(z2)
+  deallocate(rwork)
+  deallocate(work)
+!  write(fname,'("evectv_n",I2.2,"_k",I4.4".txt")')nproc,ik
+!  call wrmtrx(fname,nstsv,nstsv,evecsv,nstsv)  
+endif
+call mpi_grid_bcast(evecsv(1,1),nstsv*nstsv,dims=(/dim2/))
+call mpi_grid_bcast(evalsv(1,ik),nstsv,dims=(/dim2/))
 deallocate(hunif)
-deallocate(z2)
-deallocate(rwork)
-deallocate(work)
-deallocate(vn,hn)
+deallocate(vn)
 deallocate(hwank,vwank)
 deallocate(wvp,u)
-
-!call genwann(ikloc,evecfv,evecsv)
 return
 20 continue
 write(*,*)

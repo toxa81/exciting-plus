@@ -31,8 +31,6 @@ real(8) dv,etp,de,timetot
 real(8), allocatable :: v(:)
 real(8), allocatable :: work(:)
 real(8), allocatable :: evalfv(:,:,:)
-!complex(8), allocatable :: evecfv(:,:,:)
-!complex(8), allocatable :: evecsv(:,:)
 ! require forces for structural optimisation
 if ((task.eq.2).or.(task.eq.3)) tforce=.true.
 ! initialise global variables
@@ -195,12 +193,9 @@ do iscl=1,maxscl
 ! solve the first- and second-variational secular equations
     call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
       evecsvloc(1,1,ikloc))
-! write the eigenvalues/vectors to file
   end do
-  call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.,&
-    all=.true.)
-  call mpi_grid_reduce(evalsv0(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.,&
-    all=.true.)
+  call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),all=.true.)
+  call mpi_grid_reduce(evalsv0(1,1),nstsv*nkpt,dims=(/dim_k/),all=.true.)
   if (wproc) then
 ! find the occupation numbers and Fermi energy
     call occupy
@@ -227,28 +222,37 @@ do iscl=1,maxscl
     call rhomagk(ikloc,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc))
   end do
   call mpi_grid_reduce(rhomt(1,1,1),lmmaxvr*nrmtmax*natmtot,&
-    dims=(/dim_k,dim2/),all=.true.)
-  call mpi_grid_reduce(rhoir(1),ngrtot,dims=(/dim_k,dim2/),all=.true.)
+    dims=(/dim_k,dim2/))
+  call mpi_grid_reduce(rhoir(1),ngrtot,dims=(/dim_k,dim2/))
   if (spinpol) then
     call mpi_grid_reduce(magmt(1,1,1,1),lmmaxvr*nrmtmax*natmtot*ndmag,&
-      dims=(/dim_k,dim2/),all=.true.)
-    call mpi_grid_reduce(magir(1,1),ngrtot*ndmag,dims=(/dim_k,dim2/),&
-      all=.true.)
+      dims=(/dim_k,dim2/))
+    call mpi_grid_reduce(magir(1,1),ngrtot*ndmag,dims=(/dim_k,dim2/))
   endif
+  if (mpi_grid_root(dims=(/dim_k,dim2/))) then
 ! convert muffin-tin density/magnetisation to spherical harmonics
-  call rhomagsh
+    call rhomagsh
 ! symmetrise the density
-  call symrf(lradstp,rhomt,rhoir)
+    call symrf(lradstp,rhomt,rhoir)
 ! symmetrise the magnetisation
-  if (spinpol) call symrvf(lradstp,magmt,magir)
+    if (spinpol) call symrvf(lradstp,magmt,magir)
 ! convert the density from a coarse to a fine radial mesh
-  call rfmtctof(rhomt)
+    call rfmtctof(rhomt)
 ! convert the magnetisation from a coarse to a fine radial mesh
-  do idm=1,ndmag
-    call rfmtctof(magmt(:,:,:,idm))
-  end do
+    do idm=1,ndmag
+      call rfmtctof(magmt(:,:,:,idm))
+    end do
 ! add the core density to the total density
-  call addrhocr
+    call addrhocr
+  endif
+  call mpi_grid_bcast(rhomt(1,1,1),lmmaxvr*nrmtmax*natmtot,&
+    dims=(/dim_k,dim2/))
+  call mpi_grid_bcast(rhoir(1),ngrtot,dims=(/dim_k,dim2/))
+  if (spinpol) then
+    call mpi_grid_bcast(magmt(1,1,1,1),lmmaxvr*nrmtmax*natmtot*ndmag,&
+      dims=(/dim_k,dim2/))
+    call mpi_grid_bcast(magir(1,1),ngrtot*ndmag,dims=(/dim_k,dim2/))
+  endif
 ! calculate the charges
   call charge
 ! calculate the moments

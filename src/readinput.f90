@@ -29,6 +29,10 @@ integer i,l,k,iv,iostat
 real(8) sc,sc1,sc2,sc3
 real(8) solscf,v(3)
 character(256) block,str
+character*100 fname
+
+call getarg(1,fname)
+if (trim(adjustl(fname)).eq."") fname="elk.in"
 
 !------------------------!
 !     default values     !
@@ -205,7 +209,7 @@ emaxelnes=-1.2d0
 !--------------------------!
 !     read from elk.in     !
 !--------------------------!
-open(50,file='elk.in',action='READ',status='OLD',form='FORMATTED',iostat=iostat)
+open(50,file=trim(adjustl(fname)),action='READ',status='OLD',form='FORMATTED',iostat=iostat)
 if (iostat.ne.0) then
   write(*,*)
   write(*,'("Error(readinput): error opening elk.in")')

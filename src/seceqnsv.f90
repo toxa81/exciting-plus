@@ -260,33 +260,35 @@ do ispn=1,nspinor
     evecsv(i,i)=evecsv(i,i)+evalfv(ist)
   end do
 end do
+if (mpi_grid_root((/dim2/))) then
 ! diagonalise second-variational Hamiltonian
-allocate(rwork(3*nstsv))
-lwork=2*nstsv
-allocate(work(lwork))
-if (ndmag.eq.1) then
+  allocate(rwork(3*nstsv))
+  lwork=2*nstsv
+  allocate(work(lwork))
+  if (ndmag.eq.1) then
 ! collinear: block diagonalise H
-  call zheev('V','U',nstfv,evecsv,nstsv,evalsv(:,ik),work,lwork,rwork,info)
-  if (info.ne.0) goto 20
-  i=nstfv+1
-  call zheev('V','U',nstfv,evecsv(i,i),nstsv,evalsv(i,ik),work,lwork,rwork,info)
-  if (info.ne.0) goto 20
-  do i=1,nstfv
-    do j=1,nstfv
-      evecsv(i,j+nstfv)=0.d0
-      evecsv(i+nstfv,j)=0.d0
+    call zheev('V','U',nstfv,evecsv,nstsv,evalsv(:,ik),work,lwork,rwork,info)
+    if (info.ne.0) goto 20
+    i=nstfv+1
+    call zheev('V','U',nstfv,evecsv(i,i),nstsv,evalsv(i,ik),work,lwork,rwork,info)
+    if (info.ne.0) goto 20
+    do i=1,nstfv
+      do j=1,nstfv
+        evecsv(i,j+nstfv)=0.d0
+        evecsv(i+nstfv,j)=0.d0
+      end do
     end do
-  end do
-else
+  else
 ! non-collinear or spin-unpolarised: full diagonalisation
-  call zheev('V','U',nstsv,evecsv,nstsv,evalsv(:,ik),work,lwork,rwork,info)
-  if (info.ne.0) goto 20
-end if
-deallocate(rwork,work)
-call timesec(ts1)
-timesv=timesv+ts1-ts0
+    call zheev('V','U',nstsv,evecsv,nstsv,evalsv(:,ik),work,lwork,rwork,info)
+    if (info.ne.0) goto 20
+  end if
+  deallocate(rwork,work)
+endif
 call mpi_grid_bcast(evecsv(1,1),nstsv*nstsv,dims=(/dim2/))
 call mpi_grid_bcast(evalsv(1,ik),nstsv,dims=(/dim2/))
+call timesec(ts1)
+timesv=timesv+ts1-ts0
 return
 20 continue
 write(*,*)
@@ -295,5 +297,5 @@ write(*,'("Error(seceqnsv): diagonalisation of the second-variational &
 write(*,'(" for k-point ",I8)') ik
 write(*,'(" ZHEEV returned INFO = ",I8)') info
 write(*,*)
-call pstop
+call pstop    
 end subroutine
