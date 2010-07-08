@@ -38,6 +38,13 @@ case(3)
     return
   end if
   call mixander(iscl,beta0,n,v,work,work(3*n+1),work(6*n+1),dv)
+case(4)
+! adaptive linear mixing
+  if (nwork.le.0) then
+    nwork=4*n
+    return
+  end if
+  call mixadapt_(iscl,beta0,betamax,n,v,work,work(n+1),work(2*n+1),dv)
 case default
   write(*,*)
   write(*,'("Error(mixerifc): mtype not defined : ",I8)') mtype
@@ -53,7 +60,7 @@ implicit none
 integer, intent(in) :: mtype
 character(256), intent(out) :: mixdescr
 select case(mtype)
-case(1)
+case(1,4)
   mixdescr='Adaptive linear mixing'
 case(2)
   mixdescr='Pulay mixing, Chem. Phys. Lett. 73, 393 (1980)'
