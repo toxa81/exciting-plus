@@ -31,8 +31,9 @@ real(8) solscf,v(3)
 character(256) block,str
 character*100 fname
 
-call getarg(1,fname)
-if (trim(adjustl(fname)).eq."") fname="elk.in"
+!call getarg(1,fname)
+!if (trim(adjustl(fname)).eq."") fname="elk.in"
+fname="elk.in"
 
 !------------------------!
 !     default values     !

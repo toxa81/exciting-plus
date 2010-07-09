@@ -369,8 +369,10 @@ complex(8), allocatable :: wanmt(:,:,:,:,:,:)
 complex(8), allocatable :: wanir(:,:,:,:)
 complex(8), allocatable :: vwanmt(:,:,:,:,:,:)
 complex(8), allocatable :: vwanir(:,:,:,:)
-!complex(8), allocatable :: hwan(:)
 complex(8), allocatable :: vwan(:)
+complex(8), allocatable :: hwank(:,:,:,:)
+complex(8), allocatable :: vwank(:,:,:,:)
+real(8), allocatable :: sic_wann_ene(:)
 integer nitersic
 integer iitersic
 real(8) etot_sic

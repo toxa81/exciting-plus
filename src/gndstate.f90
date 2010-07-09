@@ -448,9 +448,6 @@ if (mpi_grid_side(dims=(/dim_k/))) then
     call mpi_grid_barrier(dims=(/dim_k/))
   end do
 endif
-if (wproc) then
-  call write_wann_ene
-endif
 call mpi_grid_bcast(tstop)
 !-----------------------!
 !     compute forces    !

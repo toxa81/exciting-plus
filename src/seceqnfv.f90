@@ -50,6 +50,7 @@ complex(8), allocatable :: h(:)
 complex(8), allocatable :: o(:)
 complex(8), allocatable :: work(:)
 complex(8) zt1
+complex(4) ct1
 character*100 fname
 logical, parameter :: packed=.false.
 integer, external :: ilaenv
@@ -90,23 +91,6 @@ else
 endif
 call timesec(ts1)
 timemat=timemat+ts1-ts0
-do i=1,np
-  zt1=h(i)
-  zt1=dcmplx(int(dreal(zt1)*100000000)/100000000.d0, &
-             int(dimag(zt1)*100000000)/100000000.d0)
-  h(i)=zt1
-  zt1=o(i)
-  zt1=dcmplx(int(dreal(zt1)*100000000)/100000000.d0, &
-             int(dimag(zt1)*100000000)/100000000.d0)
-  o(i)=zt1
-enddo
-if (mpi_grid_root((/dim2/))) then
-  write(fname,'("h_i",I2.2,"_n",I2.2,"_k",I4.4".txt")')iscl,nproc,ik
-  call wrmtrx(fname,nmatp,nmatp,h,nmatp)
-  write(fname,'("o_i",I2.2,"_n",I2.2,"_k",I4.4".txt")')iscl,nproc,ik
-  call wrmtrx(fname,nmatp,nmatp,o,nmatp)
-endif
-
 !------------------------------------!
 !     solve the secular equation     !
 !------------------------------------!
@@ -152,10 +136,6 @@ endif
 call mpi_grid_bcast(evecfv(1,1),nmatmax*nstfv,dims=(/dim2/))
 call mpi_grid_bcast(evalfv(1),nstfv,dims=(/dim2/))
 timefv=timefv+ts1-ts0
-!if (mpi_grid_root((/dim2/))) then
-!  write(fname,'("evecfv_n",I2.2,"_k",I4.4".txt")')nproc,ik
-!  call wrmtrx(fname,nmatp,nstfv,evecfv,nmatmax)
-!endif
 deallocate(h,o)
 return
 end subroutine
