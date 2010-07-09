@@ -43,6 +43,14 @@ if (wannier) call wann_init
 if (.not.wannier) sic=.false.
 if (allocated(evalsv0)) deallocate(evalsv0)
 allocate(evalsv0(nstsv,nkpt))
-etot_sic=0.d0
+if (sic) then
+  etot_sic=0.d0
+  if (allocated(hwank)) deallocate(hwank)
+  allocate(hwank(nwann,nwann,2,nkptloc))
+  hwank=zzero
+  if (allocated(vwank)) deallocate(vwank)
+  allocate(vwank(nwann,nwann,2,nkptloc))
+  vwank=zzero
+endif
 return
 end

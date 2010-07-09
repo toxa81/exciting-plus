@@ -21,8 +21,6 @@ complex(8), allocatable :: wfmt(:,:,:,:)
 complex(8), allocatable :: wfir(:,:)
 complex(8), allocatable :: wvp(:,:),u(:,:)
 integer lm,ias,is,ispn,ig,ir,io
-complex(8), allocatable :: hwank(:,:)
-complex(8), allocatable :: vwank(:,:)
 complex(8) expikt
 integer v1l(3),n1,j1,i3
 real(8) vtrc(3),v2(3),v3(3)
@@ -105,25 +103,28 @@ enddo !j
 deallocate(wfsvmt,wfsvit,apwalm,wfmt,wfir)
 u=wann_c(:,:,ikloc) 
 ! compute H_{nn'}(k)
-allocate(hwank(nwann,nwann))
-hwank=zzero
+hwank(:,:,2,ikloc)=hwank(:,:,1,ikloc)
+hwank(:,:,1,ikloc)=zzero
 do n=1,nwann
   do n1=1,nwann
     do j=1,nstsv
-      hwank(n,n1)=hwank(n,n1)+dconjg(u(n,j))*u(n1,j)*evalsv0(j,ik)
+      hwank(n,n1,1,ikloc)=hwank(n,n1,1,ikloc)+dconjg(u(n,j))*u(n1,j)*evalsv0(j,ik)
     enddo
   enddo
 enddo
+if (iscl.gt.2) then
+  hwank(:,:,1,ikloc)=0.2d0*hwank(:,:,1,ikloc)+0.8d0*hwank(:,:,2,ikloc)
+endif
 ! compute V_{nn'}(k)
-allocate(vwank(nwann,nwann))
-vwank=zzero
+vwank(:,:,2,ikloc)=vwank(:,:,1,ikloc)
+vwank(:,:,1,ikloc)=zzero
 do i=1,nmegqwan
   n=imegqwan(1,i)
   n1=imegqwan(2,i)
   v1l(:)=imegqwan(3:5,i)
   vtrc(:)=v1l(1)*avec(:,1)+v1l(2)*avec(:,2)+v1l(3)*avec(:,3)
   expikt=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
-  vwank(n,n1)=vwank(n,n1)+expikt*vwan(i)
+  vwank(n,n1,1,ikloc)=vwank(n,n1,1,ikloc)+expikt*vwan(i)
 enddo
 
 !if (mpi_grid_root((/dim2/))) then
@@ -147,13 +148,13 @@ do j=1,nstsv
 !   +\sum_{\alpha} P_{\alpha} H^{LDA} P_{\alpha}
     do n=1,nwann
       do n1=1,nwann
-        hunif(j,j1)=hunif(j,j1)-hwank(n,n1)*u(n,j)*dconjg(u(n1,j1))
+        hunif(j,j1)=hunif(j,j1)-hwank(n,n1,1,ikloc)*u(n,j)*dconjg(u(n1,j1))
       enddo
     enddo
 ! 3-rd term : \sum_{alpha} P_{\alpha} V_{\alpha} P_{\alpha})
 !  plus 4-th term: diagonal energy matrix element E_n
     do n=1,nwann
-      hunif(j,j1)=hunif(j,j1)+u(n,j)*dconjg(u(n,j1))*(vn(n)+wann_ene(n))
+      hunif(j,j1)=hunif(j,j1)+u(n,j)*dconjg(u(n,j1))*(vn(n)+sic_wann_ene(n))
     enddo
 ! 5-th term : \sum_{\alpha} P_{\alpha} V_{\alpha} Q + 
 !                       \sum_{\alpha} Q V_{\alpha} P_{\alpha} 
@@ -161,8 +162,8 @@ do j=1,nstsv
     do n=1,nwann
       hunif(j,j1)=hunif(j,j1)+u(n,j)*wvp(n,j1)+dconjg(wvp(n,j)*u(n,j1))
       do n1=1,nwann
-        hunif(j,j1)=hunif(j,j1)-vwank(n,n1)*u(n,j)*dconjg(u(n1,j1))-&
-          dconjg(vwank(n,n1))*u(n1,j)*dconjg(u(n,j1))
+        hunif(j,j1)=hunif(j,j1)-vwank(n,n1,1,ikloc)*u(n,j)*dconjg(u(n1,j1))-&
+          dconjg(vwank(n,n1,1,ikloc))*u(n1,j)*dconjg(u(n,j1))
       enddo
     enddo
   enddo !j1
@@ -179,8 +180,6 @@ do j=1,nstsv
 enddo
 
 if (mpi_grid_root((/dim2/))) then
-!  write(fname,'("hunif_n",I2.2,"_k",I4.4".txt")')nproc,ik
-!  call wrmtrx(fname,nstsv,nstsv,hunif,nstsv)
   allocate(z2(nstsv,nstsv))
   lwork=2*nstsv
   allocate(rwork(3*nstsv))
@@ -215,14 +214,11 @@ if (mpi_grid_root((/dim2/))) then
   deallocate(z2)
   deallocate(rwork)
   deallocate(work)
-!  write(fname,'("evectv_n",I2.2,"_k",I4.4".txt")')nproc,ik
-!  call wrmtrx(fname,nstsv,nstsv,evecsv,nstsv)  
 endif
 call mpi_grid_bcast(evecsv(1,1),nstsv*nstsv,dims=(/dim2/))
 call mpi_grid_bcast(evalsv(1,ik),nstsv,dims=(/dim2/))
 deallocate(hunif)
 deallocate(vn)
-deallocate(hwank,vwank)
 deallocate(wvp,u)
 return
 20 continue

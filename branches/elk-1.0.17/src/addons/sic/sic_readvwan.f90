@@ -18,6 +18,9 @@ if (allocated(vwan)) deallocate(vwan)
 allocate(vwan(nmegqwan))
 call hdf5_read("sic.hdf5","/","vwan",vwan(1),(/nmegqwan/))
 call hdf5_read("sic.hdf5","/","etot_sic",etot_sic)
+if (allocated(sic_wann_ene)) deallocate(sic_wann_ene)
+allocate(sic_wann_ene(nwann))
+call hdf5_read("sic.hdf5","/","wann_ene",sic_wann_ene(1),(/nwann/))
 
 call lf_init(lf_maxt,dim2)
 allocate(vwanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
@@ -50,6 +53,5 @@ do itloc=1,ntrloc
     enddo
   enddo
 enddo
-call read_wann_ene
 return
 end

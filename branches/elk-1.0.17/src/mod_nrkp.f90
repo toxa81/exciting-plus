@@ -229,16 +229,19 @@ if (wannier) then
   call timer_start(1)
 ! calculate Wannier function occupancies 
   wann_occ=0.d0
+  wann_ene=0.d0
   do n=1,nwann
     do ikloc=1,nkptnrloc
       ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
       do j=1,nstsv
         w2=dreal(dconjg(wann_c(n,j,ikloc))*wann_c(n,j,ikloc))
         wann_occ(n)=wann_occ(n)+w2*occsvnr(j,ik)/nkptnr
+        wann_ene(n)=wann_ene(n)+w2*evalsvnr(j,ik)/nkptnr
       enddo
     enddo
   enddo
   call mpi_grid_reduce(wann_occ(1),nwann,dims=(/dim_k/),all=.true.)
+  call mpi_grid_reduce(wann_ene(1),nwann,dims=(/dim_k/),all=.true.)
   if (wproc.and.fout.gt.0) then
     write(151,'("  Wannier function occupation numbers : ")')
     do n=1,nwann
