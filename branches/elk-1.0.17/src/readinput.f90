@@ -25,7 +25,7 @@ use mod_addons_q
 implicit none
 ! local variables
 integer is,js,ia,ias
-integer i,l,k,iv,iostat
+integer i,l,k,iv,iostat,lm1,lm2,j
 real(8) sc,sc1,sc2,sc3
 real(8) solscf,v(3)
 character(256) block,str
@@ -960,6 +960,20 @@ case('solscf')
   end if
 case('emaxelnes')
   read(50,*,err=20) emaxelnes
+case('lps')
+  read(50,*,err=20) natlps
+  allocate(lpsrsh(16,16,natlps))
+  allocate(iatlps(natlps))
+  lpsrsh=0.d0
+  do i=1,natlps
+    do j=1,16
+      lpsrsh(j,j,i)=1.d0
+    enddo
+    read(50,*,err=20) iatlps(i),l
+    do lm1=l**2+1,(l+1)**2
+      read(50,*,err=20)(lpsrsh(lm1,lm2,i),lm2=l**2+1,(l+1)**2)
+    enddo
+  enddo   
 case('vqm')
   read(50,*,err=20) nvq
   allocate(vqm(3,nvq))
