@@ -175,6 +175,8 @@ if (wproc) then
   write(151,'("time for XC potential : ",F8.3)')timer_get_value(12)
 endif
 etot_sic=0.d0
+ehart(:)=-1.d0*ehart(:)
+exc(:)=-1.d0*exc(:)
 do n=1,nwann
   etot_sic=etot_sic+dreal(ehart(n))+dreal(exc(n))
 enddo
