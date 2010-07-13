@@ -367,12 +367,13 @@ integer lf_maxt
 data lf_maxt/1/
 complex(8), allocatable :: wanmt(:,:,:,:,:,:)
 complex(8), allocatable :: wanir(:,:,:,:)
-complex(8), allocatable :: vwanmt(:,:,:,:,:,:)
-complex(8), allocatable :: vwanir(:,:,:,:)
+real(8), allocatable :: vwanmt(:,:,:,:,:,:)
+real(8), allocatable :: vwanir(:,:,:,:)
+complex(8), allocatable :: vwanmt_(:,:,:,:,:,:)
+complex(8), allocatable :: vwanir_(:,:,:,:)
 complex(8), allocatable :: vwan(:)
-complex(8), allocatable :: hwank(:,:,:,:)
-complex(8), allocatable :: vwank(:,:,:,:)
 real(8), allocatable :: sic_wann_ene(:)
+complex(8), allocatable :: hmltsv(:,:)
 integer nitersic
 integer iitersic
 real(8) etot_sic

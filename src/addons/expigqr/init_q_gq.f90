@@ -20,7 +20,7 @@ if (allocated(ig0q)) deallocate(ig0q)
 allocate(ig0q(nvq))
 
 tgsh=.false.
-tautogqmax=.true.
+tautogqmax=.false.
 
 if (tautogqmax) then
   do iq=1,nvq

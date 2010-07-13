@@ -1,15 +1,14 @@
-subroutine sic_genwann(vtrl,ngknr,vgkcnr,igkignr,wanmt_,wanir_)
+subroutine sic_genwann(vtrl,ngknr,igkignr,wanmt_,wanir_)
 use modmain
 implicit none
 integer, intent(in) :: vtrl(3)
 integer, intent(in) :: ngknr(nkptnrloc)
-real(8), intent(in) :: vgkcnr(3,ngkmax,nkptnrloc)
 integer, intent(in) :: igkignr(ngkmax,nkptnrloc)
 complex(8), intent(out) :: wanmt_(lmmaxvr,nrmtmax,natmtot,nspinor,nwann)
 complex(8), intent(out) :: wanir_(ngrtot,nspinor,nwann)
-integer ia,is,ias,ir,ir0,i1,i2,i3,ig,ikloc,ik
-integer io,lm,n,ispn,itmp(3)
-real(8) v2(3),v3(3),r0,vr0(3),vtrc(3)
+integer is,ias,ir,i1,i2,i3,ig,ikloc,ik
+integer io,lm,n,ispn
+real(8) v2(3),v3(3),vtrc(3)
 complex(8), allocatable :: zfir(:,:,:)
 complex(8) expikr
 logical, external :: vrinmt
@@ -77,7 +76,8 @@ wanir_(:,:,:)=wanir_(:,:,:)/sqrt(omega)/nkptnr
 call timer_stop(2)
 call mpi_grid_reduce(wanmt_(1,1,1,1,1),lmmaxvr*nrmtmax*natmtot*nspinor*nwann,&
   dims=(/dim_k/),all=.true.)
-call mpi_grid_reduce(wanir_(1,1,1),ngrtot*nspinor*nwann,dims=(/dim_k/),all=.true.)  
+call mpi_grid_reduce(wanir_(1,1,1),ngrtot*nspinor*nwann,&
+  dims=(/dim_k/),all=.true.)  
 deallocate(zfir)
 return
 end

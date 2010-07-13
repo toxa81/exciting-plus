@@ -7,7 +7,7 @@ integer i1,i2,nd
 !------------------------!
 !     parallel grid      !
 !------------------------!
-if (task.eq.0.or.task.eq.1.or.task.eq.22..or.task.eq.20.or.task.eq.820.or.task.eq.822) then
+if (task.eq.0.or.task.eq.1.or.task.eq.22..or.task.eq.20.or.task.eq.822) then
   nd=2
   allocate(d(nd))
   d=1
@@ -17,7 +17,7 @@ if (task.eq.0.or.task.eq.1.or.task.eq.22..or.task.eq.20.or.task.eq.820.or.task.e
     d(dim_k)=nkpt
     d(dim2)=nproc/nkpt
   endif    
-else if (task.eq.800.or.task.eq.801.or.task.eq.802.or.task.eq.810) then
+else if (task.eq.800.or.task.eq.801.or.task.eq.802.or.task.eq.810.or.task.eq.809) then
   i2=nvq
   if (i2.eq.0) i2=nkptnr
   nd=3

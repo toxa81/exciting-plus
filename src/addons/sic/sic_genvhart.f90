@@ -1,16 +1,48 @@
-subroutine sic_genvhart
+subroutine sic_genvhart(vhwanmt,vhwanir)
 use modmain
 use mod_addons_q
 use mod_lf
 implicit none
-integer nvqloc,iqloc,iq,n,ngqloc,igloc,itr,itloc,ig
+complex(8), intent(out) :: vhwanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nwann)
+complex(8), intent(out) :: vhwanir(ngrtot,ntrloc,nwann)
+integer nvqloc,iqloc,iq,n,ngqloc,igloc,itr,itloc,ig,l,m1,m2
 real(8) vtrc(3)
 complex(8), allocatable ::megqwan1(:,:,:)
 complex(8), allocatable :: pwmt(:,:,:)
 complex(8), allocatable :: pwir(:)
+complex(8), allocatable :: ylmtorlm(:,:)
 complex(8) expikt
 logical lgamma
+allocate(ylmtorlm(lmmaxvr,lmmaxvr))
 
+!b[m1_, m2_] := 
+! If[m1 == 0, 1, 
+!  If[m1 < 0 && m2 < 0, -I/Sqrt[2], 
+!   If[m1 < 0 && m2 > 0, (-1)^m2*I/Sqrt[2], 
+!    If[m1 > 0 && m2 < 0, (-1)^m1/Sqrt[2], 
+!     If[m1 > 0 && m2 > 0, 1/Sqrt[2]]]]]]
+!a[m1_, m2_] := If[Abs[m1] == Abs[m2], b[m1, m2], 0]
+!R[l_, m_, t_, p_] := 
+! Sum[a[m, m1]*SphericalHarmonicY[l, m1, t, p], {m1, -l, l}]
+ylmtorlm=zzero
+do l=0,lmaxvr
+  do m1=-l,l
+    do m2=-l,l
+      if (abs(m1).eq.abs(m2)) then
+        if (m1.eq.0) ylmtorlm(idxlm(l,m1),idxlm(l,m1))=zone
+        if (m1.lt.0.and.m2.lt.0) ylmtorlm(idxlm(l,m1),idxlm(l,m2))=-zi/sqrt(2.d0)
+        if (m1.lt.0.and.m2.gt.0) ylmtorlm(idxlm(l,m1),idxlm(l,m2))=(-1)**m2*zi/sqrt(2.d0)        
+        if (m1.gt.0.and.m2.lt.0) ylmtorlm(idxlm(l,m1),idxlm(l,m2))=(-1)**m1/sqrt(2.d0)        
+        if (m1.gt.0.and.m2.gt.0) ylmtorlm(idxlm(l,m1),idxlm(l,m2))=1.d0/sqrt(2.d0)        
+      endif
+    enddo
+  enddo
+enddo
+! R_{L}=\sum_{L'} M_{L,L'} Y_{L'} so Y_{L}=\sum_{L'} (M^{-1})_{L,L'} Y_{L'}
+call invzge(ylmtorlm,lmmaxvr)
+
+vhwanmt=zzero
+vhwanir=zzero
 lr_e1=100.1d0
 lr_e2=-100.1d0
 wannier_megq=.true.
@@ -51,15 +83,15 @@ do iq=1,nvq
   ngqloc=mpi_grid_map(ngq(iq),dim_k)
   do igloc=1,ngqloc
     ig=mpi_grid_map(ngq(iq),dim_k,loc=igloc)
-    call genpw((/0,0,0/),vgqc(1,ig,iq),pwmt,pwir)
+    call genpw((/0,0,0/),vgqc(1,ig,iq),pwmt,pwir,ylmtorlm)
     do itloc=1,ntrloc
       itr=mpi_grid_map(ntr,dim_t,loc=itloc)
       vtrc(:)=vtl(1,itr)*avec(:,1)+vtl(2,itr)*avec(:,2)+vtl(3,itr)*avec(:,3)
       expikt=exp(zi*dot_product(vtrc(:),vqc(:,iq)))
       do n=1,nwann
-        vwanmt(:,:,:,itloc,1,n)=vwanmt(:,:,:,itloc,1,n)+&
+        vhwanmt(:,:,:,itloc,n)=vhwanmt(:,:,:,itloc,n)+&
           megqwan1(n,ig,iq)*vhgq(ig,iq)*pwmt(:,:,:)*expikt
-        vwanir(:,itloc,1,n)=vwanir(:,itloc,1,n)+&
+        vhwanir(:,itloc,n)=vhwanir(:,itloc,n)+&
           megqwan1(n,ig,iq)*vhgq(ig,iq)*pwir(:)*expikt
       enddo !n
     enddo !itloc
@@ -67,15 +99,15 @@ do iq=1,nvq
 enddo !iq
 do n=1,nwann
   do itloc=1,ntrloc
-    call mpi_grid_reduce(vwanmt(1,1,1,itloc,1,n),lmmaxvr*nrmtmax*natmtot,&
+    call mpi_grid_reduce(vhwanmt(1,1,1,itloc,n),lmmaxvr*nrmtmax*natmtot,&
       dims=(/dim_k/),all=.true.)
-    call mpi_grid_reduce(vwanir(1,itloc,1,n),ngrtot,dims=(/dim_k/),&
+    call mpi_grid_reduce(vhwanir(1,itloc,n),ngrtot,dims=(/dim_k/),&
       all=.true.)
   enddo
 enddo
-vwanmt=vwanmt/nkptnr/omega
-vwanir=vwanir/nkptnr/omega
+vhwanmt=vhwanmt/nkptnr/omega
+vhwanir=vhwanir/nkptnr/omega
 call timer_stop(11)
-deallocate(pwmt,pwir,megqwan1)
+deallocate(pwmt,pwir,megqwan1,ylmtorlm)
 return
 end

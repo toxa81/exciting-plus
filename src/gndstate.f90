@@ -193,7 +193,7 @@ do iscl=1,maxscl
 ! solve the first- and second-variational secular equations
     call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
       evecsvloc(1,1,ikloc))
-  end do
+  end do  
   call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),all=.true.)
   call mpi_grid_reduce(evalsv0(1,1),nstsv*nkpt,dims=(/dim_k/),all=.true.)
   if (wproc) then
@@ -538,6 +538,12 @@ if (wproc) then
   if (tmomlu) close(67)
 endif
 deallocate(v,work)
+deallocate(evalfv)
+deallocate(evecfvloc)
+deallocate(evecsvloc)
+if (sic) then
+  deallocate(evecsv0loc)
+endif
 return
 end subroutine
 !EOC
