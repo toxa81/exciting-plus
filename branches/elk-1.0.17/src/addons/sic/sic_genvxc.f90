@@ -7,11 +7,12 @@ complex(8), intent(out) :: exc(nwann)
 integer ntp,itp,lm,n,itloc,ias,iasloc,natmtotloc,ispn
 real(8), allocatable :: tp(:,:)
 complex(8), allocatable :: ylm(:,:)
-complex(8), allocatable :: ylmc(:,:)
-complex(8), allocatable :: vxcwanmt(:,:,:,:,:)
-complex(8), allocatable :: vxcwanir(:,:,:)
-complex(8), allocatable :: excwanmt(:,:,:,:,:)
-complex(8), allocatable :: excwanir(:,:,:)
+real(8) rlm(lmmaxvr)
+real(8), allocatable :: rlmc(:,:)
+real(8), allocatable :: vxcwanmt(:,:,:,:,:)
+real(8), allocatable :: vxcwanir(:,:,:)
+real(8), allocatable :: excwanmt(:,:,:,:)
+real(8), allocatable :: excwanir(:,:)
 complex(8), allocatable :: wfmt(:,:)
 real(8), allocatable :: wfmt2(:,:,:)
 real(8), allocatable :: wfir2(:,:)
@@ -23,27 +24,28 @@ real(8), allocatable :: vxmt_(:,:,:)
 real(8), allocatable :: vxir_(:,:)
 real(8), allocatable :: vcmt_(:,:,:)
 real(8), allocatable :: vcir_(:,:)
-complex(8), allocatable :: zvxcmt(:,:,:)
-complex(8), allocatable :: zexcmt(:,:)
+real(8), allocatable :: vxcmt_(:,:,:)
+real(8), allocatable :: excmt_(:,:)
 real(8), external :: gaunt
 
 ! XC part of Wannier function potential
 allocate(vxcwanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor))
 allocate(vxcwanir(ngrtot,ntrloc,nspinor))
 ! XC energy density of Wannier function
-allocate(excwanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor))
-allocate(excwanir(ngrtot,ntrloc,nspinor))
+allocate(excwanmt(lmmaxvr,nrmtmax,natmtot,ntrloc))
+allocate(excwanir(ngrtot,ntrloc))
 
 ! make dens mesh of (theta,phi) points on the sphere
 ntp=1000
 allocate(tp(2,ntp))
 allocate(ylm(lmmaxvr,ntp))
-allocate(ylmc(ntp,lmmaxvr))
+allocate(rlmc(ntp,lmmaxvr))
 call sphcover(ntp,tp)
 do itp=1,ntp 
   call genylm(lmaxvr,tp(1,itp),ylm(1,itp))
+  call genrlm(lmaxvr,tp(1,itp),rlm)  
   do lm=1,lmmaxvr
-    ylmc(itp,lm)=dconjg(ylm(lm,itp))*fourpi/ntp
+    rlmc(itp,lm)=rlm(lm)*fourpi/ntp
   enddo
 enddo
 allocate(wfmt(ntp,nrmtmax))
@@ -53,17 +55,17 @@ allocate(exmt_(ntp,nrmtmax))
 allocate(exir_(ngrtot))
 allocate(ecmt_(ntp,nrmtmax))
 allocate(ecir_(ngrtot))
-allocate(zexcmt(ntp,nrmtmax))
+allocate(excmt_(ntp,nrmtmax))
 allocate(vxmt_(ntp,nrmtmax,nspinor))
 allocate(vxir_(ngrtot,nspinor))
 allocate(vcmt_(ntp,nrmtmax,nspinor))
 allocate(vcir_(ngrtot,nspinor))
-allocate(zvxcmt(ntp,nrmtmax,nspinor))
+allocate(vxcmt_(ntp,nrmtmax,nspinor))
 do n=1,nwann
-  vxcwanmt=zzero
-  vxcwanir=zzero
-  excwanmt=zzero
-  excwanir=zzero
+  vxcwanmt=0.d0
+  vxcwanir=0.d0
+  excwanmt=0.d0
+  excwanir=0.d0
   do itloc=1,ntrloc
 !-----------------!
 ! muffin-tin part !
@@ -90,27 +92,26 @@ do n=1,nwann
       endif
 ! save XC potential
       do ispn=1,nspinor
-        zvxcmt(:,:,ispn)=dcmplx(vxmt_(:,:,ispn)+vcmt_(:,:,ispn),0.d0)
+        vxcmt_(:,:,ispn)=vxmt_(:,:,ispn)+vcmt_(:,:,ispn)
       enddo
 ! save XC energy
-      zexcmt(:,:)=dcmplx(exmt_(:,:)+ecmt_(:,:),0.d0)
+      excmt_(:,:)=exmt_(:,:)+ecmt_(:,:)
 ! expand XC potential in spherical harmonics
-!     R_lm(r)= 4Pi/ntp \sum_{tp}Y_{lm}^{*}(tp) * f(tp,r)   
+!     f_lm(r)= 4Pi/ntp \sum_{tp}R_{lm}^{*}(tp) * f(tp,r)   
       do ispn=1,nspinor
-        call zgemm('T','N',lmmaxvr,nrmt(ias2is(ias)),ntp,zone,ylmc,ntp,&
-          zvxcmt(1,1,ispn),ntp,zzero,vxcwanmt(1,1,ias,itloc,ispn),lmmaxvr)
+        call dgemm('T','N',lmmaxvr,nrmt(ias2is(ias)),ntp,1.d0,rlmc,ntp,&
+          vxcmt_(1,1,ispn),ntp,0.d0,vxcwanmt(1,1,ias,itloc,ispn),lmmaxvr)
       enddo
 ! expand XC energy in spherical harmonics
-      call zgemm('T','N',lmmaxvr,nrmt(ias2is(ias)),ntp,zone,ylmc,ntp,&
-        zexcmt,ntp,zzero,excwanmt(1,1,ias,itloc,1),lmmaxvr)
+      call dgemm('T','N',lmmaxvr,nrmt(ias2is(ias)),ntp,1.d0,rlmc,ntp,&
+        excmt_,ntp,zzero,excwanmt(1,1,ias,itloc),lmmaxvr)
     enddo !iasloc
     do ispn=1,nspinor
       call mpi_grid_reduce(vxcwanmt(1,1,1,itloc,ispn),lmmaxvr*nrmtmax*natmtot,&
         dims=(/dim_k/),all=.true.)
     enddo
-    call mpi_grid_reduce(excwanmt(1,1,1,itloc,1),lmmaxvr*nrmtmax*natmtot,&
+    call mpi_grid_reduce(excwanmt(1,1,1,itloc),lmmaxvr*nrmtmax*natmtot,&
       dims=(/dim_k/),all=.true.)
-    if (spinpol) excwanmt(:,:,:,itloc,2)=excwanmt(:,:,:,itloc,1)
 !-------------------!
 ! interstitial part !
 !-------------------!
@@ -124,27 +125,22 @@ do n=1,nwann
       call xcifc(xctype,n=ngrtot,rho=wfir2,ex=exir_,ec=ecir_,vx=vxir_,vc=vcir_)
     endif
     do ispn=1,nspinor
-      vxcwanir(:,itloc,ispn)=dcmplx(vxir_(:,ispn)+vcir_(:,ispn),0.d0)
+      vxcwanir(:,itloc,ispn)=vxir_(:,ispn)+vcir_(:,ispn)
     enddo
-    excwanir(:,itloc,1)=dcmplx(exir_(:)+ecir_(:),0.d0)
-    if (spinpol) excwanir(:,itloc,2)=excwanir(:,itloc,1)
+    excwanir(:,itloc)=exir_(:)+ecir_(:)
   enddo !itloc
   do ispn=1,nspinor
-    call lf_prod(-zone,vxcwanmt(1,1,1,1,ispn),vxcwanir(1,1,ispn),&
-      wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n),zone,&
-      vwanmt(1,1,1,1,ispn,n),vwanir(1,1,ispn,n))
-    call lf_prod(zone,excwanmt(1,1,1,1,ispn),excwanir(1,1,ispn),&
-      wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n),zzero,&
-      excwanmt(1,1,1,1,ispn),excwanir(1,1,ispn))  
-  enddo  
+    vwanmt(:,:,:,:,ispn,n)=vwanmt(:,:,:,:,ispn,n)+vxcwanmt(:,:,:,:,ispn)
+    vwanir(:,:,ispn,n)=vwanir(:,:,ispn,n)+vxcwanir(:,:,ispn)
+  enddo
   do ispn=1,nspinor
-    exc(n)=exc(n)+lf_dotlf(.true.,(/0,0,0/),excwanmt(1,1,1,1,ispn),&
-      excwanir(1,1,ispn),wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n))
+    exc(n)=exc(n)+lf_intgr_zdz(wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n),&
+      excwanmt,excwanir,(/0,0,0/),wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n))
   enddo
 enddo
 deallocate(tp)
 deallocate(ylm)
-deallocate(ylmc)
+deallocate(rlmc)
 deallocate(wfmt)
 deallocate(wfmt2)
 deallocate(wfir2)
@@ -152,12 +148,12 @@ deallocate(exmt_)
 deallocate(exir_)
 deallocate(ecmt_)
 deallocate(ecir_)
-deallocate(zexcmt)
+deallocate(excmt_)
 deallocate(vxmt_)
 deallocate(vxir_)
 deallocate(vcmt_)
 deallocate(vcir_)
-deallocate(zvxcmt)
+deallocate(vxcmt_)
 deallocate(vxcwanmt)
 deallocate(vxcwanir)
 deallocate(excwanmt)

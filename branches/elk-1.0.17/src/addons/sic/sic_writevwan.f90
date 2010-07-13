@@ -44,9 +44,9 @@ if (mpi_grid_side(dims=(/dim_t/))) then
             path="/wann/"//trim(adjustl(c1))//"/"//trim(adjustl(c2))//"/"//&
               trim(adjustl(c3))       
             call hdf5_write("sic.hdf5",path,"vwanmt",&
-              vwanmt(1,1,1,itloc,ispn,n),(/lmmaxvr,nrmtmax,natmtot/))
+              vwanmt_(1,1,1,itloc,ispn,n),(/lmmaxvr,nrmtmax,natmtot/))
             call hdf5_write("sic.hdf5",path,"vwanir",&
-              vwanir(1,itloc,ispn,n),(/ngrtot/))
+              vwanir_(1,itloc,ispn,n),(/ngrtot/))
           enddo
         enddo
       enddo

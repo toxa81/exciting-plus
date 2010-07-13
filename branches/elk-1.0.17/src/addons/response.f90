@@ -146,10 +146,9 @@ if (wproc1) then
   close(151)
 endif
 
-deallocate(wfsvmtloc)
-deallocate(wfsvitloc)
-deallocate(evecfvloc)
-deallocate(evecsvloc)
+deallocate(wfsvmtnrloc)
+deallocate(wfsvitnrloc)
+if (wannier) deallocate(wanncnrloc)
 deallocate(ngknr)
 deallocate(igkignr)
 deallocate(occsvnr)

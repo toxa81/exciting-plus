@@ -145,8 +145,8 @@ do ikstep=1,nkstep
   call timer_start(2)
   if (ikstep.le.nkptnrloc) then
     call genmegqblh(iq,ikstep,ngknr(ikstep),ngknr_jk,igkignr(1,ikstep),&
-      igkignr_jk,wfsvmtloc(1,1,1,1,1,ikstep),wfsvmt_jk,&
-      wfsvitloc(1,1,1,ikstep),wfsvit_jk)
+      igkignr_jk,wfsvmtnrloc(1,1,1,1,1,ikstep),wfsvmt_jk,&
+      wfsvitnrloc(1,1,1,ikstep),wfsvit_jk)
 ! add contribution from k-point to the matrix elements of e^{-i(G+q)x} in 
 !  the basis of Wannier functions
     if (wannier_megq) then

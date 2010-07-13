@@ -40,14 +40,14 @@ do i=0,mpi_grid_size(dim_k)-1
     if (mpi_grid_x(dim_k).eq.j.and.mpi_grid_x(dim_k).ne.i) then
 ! send to i
       tag=(ikstep*mpi_grid_size(dim_k)+i)*10
-      call mpi_grid_send(wfsvmtloc(1,1,1,1,1,jkloc),&
+      call mpi_grid_send(wfsvmtnrloc(1,1,1,1,1,jkloc),&
         lmmaxvr*nufrmax*natmtot*nspinor*nstsv,(/dim_k/),(/i/),tag)
-      call mpi_grid_send(wfsvitloc(1,1,1,jkloc),ngkmax*nspinor*nstsv,&
+      call mpi_grid_send(wfsvitnrloc(1,1,1,jkloc),ngkmax*nspinor*nstsv,&
         (/dim_k/),(/i/),tag+1)
       call mpi_grid_send(ngknr(jkloc),1,(/dim_k/),(/i/),tag+2)
       call mpi_grid_send(igkignr(1,jkloc),ngkmax,(/dim_k/),(/i/),tag+3)
       if (wannier_megq) then
-        call mpi_grid_send(wann_c(1,1,jkloc),nwann*nstsv,(/dim_k/),(/i/),tag+4)
+        call mpi_grid_send(wanncnrloc(1,1,jkloc),nwann*nstsv,(/dim_k/),(/i/),tag+4)
       endif
     endif
     if (mpi_grid_x(dim_k).eq.i) then
@@ -66,11 +66,11 @@ do i=0,mpi_grid_size(dim_k)-1
         endif
       else
 ! local copy
-        wfsvmt_jk(:,:,:,:,:)=wfsvmtloc(:,:,:,:,:,jkloc)
-        wfsvit_jk(:,:,:)=wfsvitloc(:,:,:,jkloc)
+        wfsvmt_jk(:,:,:,:,:)=wfsvmtnrloc(:,:,:,:,:,jkloc)
+        wfsvit_jk(:,:,:)=wfsvitnrloc(:,:,:,jkloc)
         ngknr_jk=ngknr(jkloc)
         igkignr_jk(:)=igkignr(:,jkloc)
-        if (wannier_megq) wann_c_jk(:,:,ikstep)=wann_c(:,:,jkloc)
+        if (wannier_megq) wann_c_jk(:,:,ikstep)=wanncnrloc(:,:,jkloc)
       endif
     endif
   endif   

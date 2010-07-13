@@ -1,11 +1,12 @@
 ! this subroutine generates e^{ig(r+T)} 
-subroutine genpw(vtl,vgpc,pwmt,pwir)
+subroutine genpw(vtl,vgpc,pwmt,pwir,ylmtorlm)
 use modmain
 implicit none
 integer, intent(in) :: vtl(3)
 real(8), intent(in) :: vgpc(3)
 complex(8), intent(out) :: pwmt(lmmaxvr,nrmtmax,natmtot)
 complex(8), intent(out) :: pwir(ngrtot)
+complex(8), intent(in) :: ylmtorlm(lmmaxvr,lmmaxvr)
 real(8) :: vtrc(3) 
 real(8) gpc
 real(8) tpgp(2)
@@ -13,8 +14,9 @@ complex(8) ylmgp(lmmaxvr)
 integer ias,is,ia,lm
 real(8) jl(0:lmaxvr)
 complex(8) zt1
-integer ir,i1,i2,i3
+integer ir,i1,i2,i3,lm1,lm2
 real(8) v2(3),v3(3)
+complex(8) zt2(lmmaxvr)
 
 pwmt=zzero
 pwir=zzero
@@ -34,6 +36,19 @@ do ias=1,natmtot
     do lm=1,lmmaxvr
       pwmt(lm,ir,ias)=zt1*(zi**lm2l(lm))*jl(lm2l(lm))*dconjg(ylmgp(lm))
     enddo
+  enddo
+enddo
+! Y_{m}=\sum_{m'} yrlm_{m,m'} R_{m'}
+do ias=1,natmtot
+  is=ias2is(ias)
+  do ir=1,nrmt(is)
+    zt2=zzero
+    do lm1=1,lmmaxvr
+      do lm2=1,lmmaxvr
+        zt2(lm1)=zt2(lm1)+ylmtorlm(lm2,lm1)*pwmt(lm2,ir,ias)
+      enddo
+    enddo
+    pwmt(:,ir,ias)=zt2(:)
   enddo
 enddo
 ir=0

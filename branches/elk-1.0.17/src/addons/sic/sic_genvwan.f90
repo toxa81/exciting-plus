@@ -6,21 +6,17 @@ use modxcifc
 use mod_addons_q
 use mod_hdf5
 implicit none
-
 integer n,sz,i,j,n1,ispn,itr,itloc
 real(8) t1,t2
 integer v1l(3)
-
-! arrays for Wannier functions
+complex(8), allocatable :: vhwanmt(:,:,:,:,:)
+complex(8), allocatable :: vhwanir(:,:,:)
 complex(8), allocatable :: wanmt0(:,:,:,:,:)
 complex(8), allocatable :: wanir0(:,:,:)
-
 complex(8), allocatable :: vwan_old(:)
-logical exist
-character*20 fname
-
-complex(8) z1
 complex(8), allocatable :: ehart(:),exc(:)
+complex(8) z1
+logical exist
 
 ! mpi grid layout
 !          (2)
@@ -48,7 +44,6 @@ call genlofr
 call getufr
 call genufrp
 
-call lf_init(lf_maxt,dim2)
 wproc=mpi_grid_root()
 if (wproc) then
   open(151,file="SIC.OUT",form="FORMATTED",status="REPLACE")
@@ -61,26 +56,27 @@ if (wproc) then
   write(151,*)
   call flushifc(151)
 endif
+
 ! generate wave-functions for all k-points in BZ
 call genwfnr(151,.false.)  
 ! get all Wannier transitions
 all_wan_ibt=.true.
 call getimegqwan(all_wan_ibt)
-! potential of Wannier functions
-if (allocated(vwanmt)) deallocate(vwanmt)
 allocate(vwanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
-vwanmt=zzero
-if (allocated(vwanir)) deallocate(vwanir)
 allocate(vwanir(ngrtot,ntrloc,nspinor,nwann))
+vwanmt=zzero
 vwanir=zzero
+!-------------------!
+! Hartree potential !
+!-------------------!
+allocate(vhwanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nwann))
+allocate(vhwanir(ngrtot,ntrloc,nwann))
 ! generate Hartree potential of Wannier functions
-call sic_genvhart
+call sic_genvhart(vhwanmt,vhwanir)
 ! deallocate unnecessary arrays
-deallocate(wfsvmtloc)
-deallocate(wfsvitloc)
-deallocate(evecfvloc)
-deallocate(evecsvloc)
-deallocate(wann_c)
+deallocate(wfsvmtnrloc)
+deallocate(wfsvitnrloc)
+deallocate(wanncnrloc)
 ! restore wproc
 wproc=mpi_grid_root()
 if (wproc) then
@@ -88,18 +84,21 @@ if (wproc) then
   write(151,'("ngqmax : ",I4)')ngqmax
   write(151,'("time for q-vectors : ",F8.3)')timer_get_value(10)
   write(151,'("time for Hartree potential : ",F8.3)')timer_get_value(11)
+  write(151,'("average imaginary part (mt,ir) : ",2G18.10)') &
+    sum(abs(dimag(vhwanmt)))/lmmaxvr/nrmtmax/natmtot/ntrloc/nwann,&
+    sum(abs(dimag(vhwanir)))/ngrtot/ntrloc/nwann
 endif
-! both components of spinor wave-function feel the same Coulomb potential
-if (spinpol) then
-  do n=1,nwann
-    vwanmt(:,:,:,:,2,n)=vwanmt(:,:,:,:,1,n)
-    vwanir(:,:,2,n)=vwanir(:,:,1,n)
+do n=1,nwann
+  do ispn=1,nspinor
+    vwanmt(:,:,:,:,ispn,n)=dreal(vhwanmt(:,:,:,:,n))
+    vwanir(:,:,ispn,n)=dreal(vhwanir(:,:,n))
   enddo
-endif
-! Wannier functions
-if (allocated(wanmt)) deallocate(wanmt)
+enddo
+deallocate(vhwanmt,vhwanir)
+!-------------------!
+! Wannier functions !
+!-------------------!
 allocate(wanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
-if (allocated(wanir)) deallocate(wanir)
 allocate(wanir(ngrtot,ntrloc,nspinor,nwann))
 ! generate Wannier functions on a mesh
 call timer_reset(1)
@@ -108,7 +107,7 @@ allocate(wanmt0(lmmaxvr,nrmtmax,natmtot,nspinor,nwann))
 allocate(wanir0(ngrtot,nspinor,nwann))
 do itloc=1,ntrloc
   itr=mpi_grid_map(ntr,dim_t,loc=itloc)
-  call sic_genwann(vtl(1,itr),ngknr,vgkcnr,igkignr,wanmt0,wanir0)
+  call sic_genwann(vtl(1,itr),ngknr,igkignr,wanmt0,wanir0)
   do ispn=1,nspinor
     do n=1,nwann
       wanmt(:,:,:,itloc,ispn,n)=wanmt0(:,:,:,ispn,n)
@@ -117,6 +116,8 @@ do itloc=1,ntrloc
   enddo !ispn
 enddo !itr
 deallocate(wanmt0,wanir0)
+deallocate(wann_unkmt)
+deallocate(wann_unkit)
 if (wproc) then
   write(151,*)
   write(151,'("Wann MT part : ",F8.3)')timer_get_value(1)
@@ -150,24 +151,21 @@ endif
 if (wproc) then
   call timestamp(151,'done with Wannier functions')
 endif
-! compute product -V^{H}(r)*W(r)
-do n=1,nwann
-  do ispn=1,nspinor
-    call lf_prod(-zone,vwanmt(1,1,1,1,ispn,n),vwanir(1,1,ispn,n),&
-      wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n),zzero,&
-      vwanmt(1,1,1,1,ispn,n),vwanir(1,1,ispn,n))
-  enddo
-enddo
-! compute <W_n|V^H|W_n> = -1*<W_n|-V^H|W_n>
+!------------------------------!
+! Hartree energy <W_n|V^H|W_n> !
+!------------------------------!
 allocate(ehart(nwann))
 ehart=zzero
 do n=1,nwann
   do ispn=1,nspinor
-    ehart(n)=ehart(n)-lf_dotlf(.true.,(/0,0,0/),vwanmt(1,1,1,1,ispn,n),&
-      vwanir(1,1,ispn,n),wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n))
+    ehart(n)=ehart(n)+lf_intgr_zdz(wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n),&
+      vwanmt(1,1,1,1,ispn,n),vwanir(1,1,ispn,n),(/0,0,0/),wanmt(1,1,1,1,ispn,n),&
+      wanir(1,1,ispn,n))
   enddo
 enddo
-! XC part
+!-------------------------!
+! XC potential and energy !
+!-------------------------!
 allocate(exc(nwann))
 exc=zzero
 call timer_start(12,reset=.true.)
@@ -176,7 +174,6 @@ call timer_stop(12)
 if (wproc) then
   write(151,'("time for XC potential : ",F8.3)')timer_get_value(12)
 endif
-
 etot_sic=0.d0
 do n=1,nwann
   etot_sic=etot_sic+dreal(ehart(n))+dreal(exc(n))
@@ -192,7 +189,16 @@ if (wproc) then
   write(151,'("Total energy correction : ",G18.10)')etot_sic
   call flushifc(151)
 endif
-
+!----------------------------------!
+! matrix elements of SIC potential !
+!----------------------------------!
+do n=1,nwann
+  do ispn=1,nspinor
+    call lf_mult_zd(-zone,wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n), &
+      vwanmt(1,1,1,1,ispn,n),vwanir(1,1,ispn,n),vwanmt_(1,1,1,1,ispn,n),&
+      vwanir_(1,1,ispn,n))    
+  enddo
+enddo
 if (allocated(vwan)) deallocate(vwan)
 allocate(vwan(nmegqwan))
 vwan=zzero
@@ -202,9 +208,9 @@ do i=1,nmegqwan
   n=imegqwan(1,i)
   n1=imegqwan(2,i)
   v1l(:)=imegqwan(3:5,i)
-  do ispn=1,nspinor
-    vwan(i)=vwan(i)+lf_dotlf(.true.,v1l,vwanmt(1,1,1,1,ispn,n),&
-      vwanir(1,1,ispn,n),wanmt(1,1,1,1,ispn,n1),wanir(1,1,ispn,n1))
+  do ispn=1,nspinor    
+    vwan(i)=vwan(i)+lf_intgr_zz(vwanmt_(1,1,1,1,ispn,n),vwanir_(1,1,ispn,n),&
+      v1l,wanmt(1,1,1,1,ispn,n1),wanir(1,1,ispn,n1))
   enddo
 enddo
 if (wproc) then
@@ -257,12 +263,16 @@ if (wproc) then
     t1=sqrt(t1/nmegqwan)
     write(151,*)
     write(151,'("SIC matrix elements RMS difference :",G18.10)')t1
+    deallocate(vwan_old)
   endif
 endif
 call sic_writevwan
 if (wproc) close(151)
 deallocate(vwan)
-deallocate(wanmt,wanir,vwanmt,vwanir)
+deallocate(ehart)
+deallocate(exc)
+deallocate(vwanmt,vwanir)
+deallocate(wanmt,wanir)
 return
 end
 

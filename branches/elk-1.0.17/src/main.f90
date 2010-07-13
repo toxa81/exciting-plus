@@ -97,10 +97,10 @@ do itask=1,ntasks
     call response
   case(802)
     call unscreened_u
+  case(809)
+    call sic_genvwan 
   case(810)
     call sic_gndstate
-  case(820)
-    call sic_bandstr
   case(822)
     call bandrlm  
   case(811)

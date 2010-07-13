@@ -1,5 +1,6 @@
 subroutine init3
 use modmain
+use mod_lf
 implicit none
 integer ia,is,lm,l,m
 if (allocated(rylm)) deallocate(rylm)
@@ -45,12 +46,13 @@ if (allocated(evalsv0)) deallocate(evalsv0)
 allocate(evalsv0(nstsv,nkpt))
 if (sic) then
   etot_sic=0.d0
-  if (allocated(hwank)) deallocate(hwank)
-  allocate(hwank(nwann,nwann,2,nkptloc))
-  hwank=zzero
-  if (allocated(vwank)) deallocate(vwank)
-  allocate(vwank(nwann,nwann,2,nkptloc))
-  vwank=zzero
+  call lf_init(lf_maxt,dim2)
+  if (allocated(vwanmt_)) deallocate(vwanmt_)
+  allocate(vwanmt_(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
+  if (allocated(vwanir_)) deallocate(vwanir_)  
+  allocate(vwanir_(ngrtot,ntrloc,nspinor,nwann))
+  if (allocated(hmltsv)) deallocate(hmltsv)
+  allocate(hmltsv(nstsv,nstsv))
 endif
 return
 end

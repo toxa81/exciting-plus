@@ -1,5 +1,6 @@
 subroutine genmegqwan(ikloc,expkqt)
 use modmain
+use mod_nrkp
 implicit none
 integer, intent(in) :: ikloc
 complex(8), intent(in) :: expkqt(nmegqwan,nkptnr)
@@ -15,7 +16,7 @@ do i1=1,nmegqblhwan(ikloc)
     do j=1,nmegqwan
       n1=imegqwan(1,j)
       n2=imegqwan(2,j)
-      zt2=dconjg(wann_c(n1,ist1,ikloc))*wann_c_jk(n2,ist2,ikloc)*expkqt(j,ik)
+      zt2=dconjg(wanncnrloc(n1,ist1,ikloc))*wann_c_jk(n2,ist2,ikloc)*expkqt(j,ik)
       do ig=1,ngvecme
         megqwan(j,ig)=megqwan(j,ig)+zt2*megqblh(ibloc,ig,ikloc)
       enddo !ig      

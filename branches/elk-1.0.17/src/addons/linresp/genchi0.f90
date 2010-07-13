@@ -1,6 +1,7 @@
 subroutine genchi0(iq)
 use modmain
 use mod_addons_q
+use mod_nrkp
 implicit none
 ! arguments
 integer, intent(in) :: iq
@@ -135,7 +136,7 @@ if (wannier_chi0_chi) then
       do n=1,nmegqwan
         n1=imegqwan(1,n)
         n2=imegqwan(2,n)
-        wann_cc(i1,n,ikloc)=wann_c(n1,ist1,ikloc)*dconjg(wann_c_jk(n2,ist2,ikloc))
+        wann_cc(i1,n,ikloc)=wanncnrloc(n1,ist1,ikloc)*dconjg(wann_c_jk(n2,ist2,ikloc))
       enddo
     enddo !i1
   enddo !ikloc
