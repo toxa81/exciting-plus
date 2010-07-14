@@ -174,11 +174,11 @@ call timer_stop(12)
 if (wproc) then
   write(151,'("time for XC potential : ",F8.3)')timer_get_value(12)
 endif
-etot_sic=0.d0
+sic_etot_correction=0.d0
 ehart(:)=-1.d0*ehart(:)
 exc(:)=-1.d0*exc(:)
 do n=1,nwann
-  etot_sic=etot_sic+dreal(ehart(n))+dreal(exc(n))
+  sic_etot_correction=sic_etot_correction+dreal(ehart(n))+dreal(exc(n))
 enddo
 if (wproc) then
   write(151,'(2X,"wann",16X,"E_n^{H}",33X,"E_n^{XC}")')
@@ -188,7 +188,7 @@ if (wproc) then
       dreal(exc(n)),dimag(exc(n))
   enddo
   write(151,*)
-  write(151,'("Total energy correction : ",G18.10)')etot_sic
+  write(151,'("Total energy correction : ",G18.10)')sic_etot_correction
   call flushifc(151)
 endif
 !----------------------------------!

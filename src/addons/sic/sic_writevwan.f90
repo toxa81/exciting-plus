@@ -28,7 +28,7 @@ if (wproc) then
   call hdf5_write("sic.hdf5","/","nmegqwan",nmegqwan)
   call hdf5_write("sic.hdf5","/","imegqwan",imegqwan(1,1),(/5,nmegqwan/))
   call hdf5_write("sic.hdf5","/","vwan",vwan(1),(/nmegqwan/))
-  call hdf5_write("sic.hdf5","/","etot_sic",etot_sic)
+  call hdf5_write("sic.hdf5","/","sic_etot_correction",sic_etot_correction)
   call hdf5_write("sic.hdf5","/","wann_ene",wann_ene(1),(/nwann/))
 endif
 if (mpi_grid_side(dims=(/dim_t/))) then

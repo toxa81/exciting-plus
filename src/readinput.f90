@@ -966,6 +966,10 @@ case('vqm')
   do i=1,nvq
     read(50,*,err=20) vqm(:,i)
   end do
+case('vq0c')
+  nvq0=1
+  read(50,*,err=20) vq0c(:,1)
+  aq0(1)=1.d0/sum(vq0c(:,1)**2)
 case('gqmax')
   read(50,*,err=20) gqmax
 case('gqsh')

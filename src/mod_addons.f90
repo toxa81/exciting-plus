@@ -373,9 +373,11 @@ complex(8), allocatable :: vwanmt_(:,:,:,:,:,:)
 complex(8), allocatable :: vwanir_(:,:,:,:)
 complex(8), allocatable :: vwan(:)
 real(8), allocatable :: sic_wann_ene(:)
-complex(8), allocatable :: hmltsv(:,:)
+complex(8), allocatable :: hmltsv(:,:,:)
 integer nitersic
 integer iitersic
-real(8) etot_sic
+real(8) sic_etot_correction
+data sic_etot_correction/0.d0/
+real(8) engytot0
 
 end module

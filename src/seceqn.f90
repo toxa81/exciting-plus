@@ -74,7 +74,6 @@ if (wannier) then
 endif
 if (sic) then
   evecsv0loc(:,:,ikloc)=evecsv(:,:)
-  call sic_seceqn(ikloc,evecfv,evecsv)
 endif
 deallocate(apwalm)
 return

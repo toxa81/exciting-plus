@@ -91,7 +91,7 @@ do n1=1,nwann
   do n2=1,nwann
     do j=1,nstsv
       hwank(n1,n2)=hwank(n1,n2)+&
-        dconjg(wann_c(n1,j,ikloc))*wann_c(n2,j,ikloc)*evalsv(j,ik)
+        dconjg(wann_c(n1,j,ikloc))*wann_c(n2,j,ikloc)*evalsv0(j,ik)
     enddo
   enddo
 enddo
@@ -119,7 +119,7 @@ enddo
 ! setup unified Hamiltonian
 allocate(hunif(nstsv,nstsv))
 ! 1-st term: LDA Hamiltonian itself
-hunif=hmltsv(:,:)
+hunif=hmltsv(:,:,ikloc)
 do j1=1,nstfv
 do ispn1=1,nspinor
   jst1=j1+(ispn1-1)*nstfv

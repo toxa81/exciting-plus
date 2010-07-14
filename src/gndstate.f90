@@ -26,10 +26,10 @@ implicit none
 logical exist
 integer ik,is,ia,idm,i,ikloc
 integer n,nwork
-real(8) dv,etp,de,timetot
+real(8) dv,dv_sic,etp,de,timetot
 ! allocatable arrays
-real(8), allocatable :: v(:)
-real(8), allocatable :: work(:)
+real(8), allocatable :: v(:),v_sic(:)
+real(8), allocatable :: work(:),work_sic(:)
 real(8), allocatable :: evalfv(:,:,:)
 ! require forces for structural optimisation
 if ((task.eq.2).or.(task.eq.3)) tforce=.true.
@@ -110,10 +110,12 @@ if (spinpol) n=n*(1+ndmag)
 if (ldapu.ne.0) n=n+2*lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot
 ! allocate mixing arrays
 allocate(v(n))
+if (sic) allocate(v_sic(n))
 ! determine the size of the mixer work array
 nwork=-1
 call mixerifc(mixtype,n,v,dv,nwork,v)
 allocate(work(nwork))
+if (sic) allocate(work_sic(nwork))
 ! set stop flag
 tstop=.false.
 10 continue
@@ -293,6 +295,14 @@ do iscl=1,maxscl
   end if
 ! compute the energy components
   call energy
+! now we have LDA energy
+  engytot0=engytot
+  if (sic) then
+! self-interation corrected total energy
+    engytot=engytot+sic_etot_correction
+! self-interation corrected charge density and effective potential
+    call sic_seceqn(n,v_sic,nwork,work_sic,dv_sic)
+  endif
 ! output energy components
   if (wproc) then
     call writeengy(60)
