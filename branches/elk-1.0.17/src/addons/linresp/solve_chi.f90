@@ -6,7 +6,6 @@ integer, intent(in) :: iq
 complex(8), intent(in) :: w
 complex(8), intent(in) :: chi0m(ngvecme,ngvecme)
 complex(8), intent(inout) :: krnl(ngvecme,ngvecme)
-!complex(8), intent(out) :: krnl_scr(ngvecme,ngvecme)
 complex(8), intent(out) :: f_response_(nf_response)
 ! local variables
 complex(8), allocatable :: epsilon(:,:)

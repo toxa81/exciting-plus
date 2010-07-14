@@ -45,14 +45,14 @@ if (.not.wannier) sic=.false.
 if (allocated(evalsv0)) deallocate(evalsv0)
 allocate(evalsv0(nstsv,nkpt))
 if (sic) then
-  etot_sic=0.d0
+  sic_etot_correction=0.d0
   call lf_init(lf_maxt,dim2)
   if (allocated(vwanmt_)) deallocate(vwanmt_)
   allocate(vwanmt_(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
   if (allocated(vwanir_)) deallocate(vwanir_)  
   allocate(vwanir_(ngrtot,ntrloc,nspinor,nwann))
   if (allocated(hmltsv)) deallocate(hmltsv)
-  allocate(hmltsv(nstsv,nstsv))
+  allocate(hmltsv(nstsv,nstsv,nkptloc))
 endif
 return
 end

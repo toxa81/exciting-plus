@@ -95,6 +95,5 @@ do iq=1,nvq
     endif
   enddo !ig
 enddo    
-
 return
 end

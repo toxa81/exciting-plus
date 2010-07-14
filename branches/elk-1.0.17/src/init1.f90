@@ -274,7 +274,7 @@ end if
 !     secular equation variables     !
 !------------------------------------!
 ! number of first-variational states
-nstfv=int(chgval/2.d0)+nempty+1
+nstfv=int(chgval/2.d0)+nempty
 ! overlap and Hamiltonian matrix sizes
 if (allocated(nmat)) deallocate(nmat)
 allocate(nmat(nspnfv,nkpt))

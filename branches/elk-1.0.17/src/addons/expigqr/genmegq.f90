@@ -15,7 +15,7 @@ complex(8), allocatable :: expkqt(:,:)
 integer ngknr_jk
 integer i,ikstep,sz,j
 real(8) vtrc(3)
-integer nkstep,ik
+integer nkstep,ik,ist1,ist2,ikloc
 real(8) t1,t2,t3,t4,t5,dn1
 integer lmaxexp,lmmaxexp
 integer np
@@ -163,20 +163,20 @@ enddo !ikstep
 ! xH-Hx=p/m 
 ! <nk|xH|n'k>-<nk|Hx|n'k>=<nk|p/m|n'k>= E_{n'k}<nk|x|n'k> - E_{nk}<nk|x|n'k>
 !  <nk|x|n'k>=<nk|p/m|n'k>/(E_{n'k}-E_{nk})
-!if (all(vqm(:,iq).eq.0)) then
-!  do ikloc=1,nkptnrloc
-!    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-!    megqblh(:,1,ikloc)=zzero
-!    do i=1,nmegqblhloc(1,ikloc)
-!      ist1=bmegqblh(1,i+nmegqblhloc(2,ikloc),ikloc)
-!      ist2=bmegqblh(2,i+nmegqblhloc(2,ikloc),ikloc)
-!      if (ist1.eq.ist2) megqblh(i,1,ikloc)=zone
-!      megqblh(i,1,ikloc)=megqblh(i,1,ikloc)-&
-!        dot_product(q0gamma(:,iq),pmat(:,ist1,ist2,ikloc))/&
-!        (evalsvnr(ist1,ik)-evalsvnr(ist2,ik)+swidth)          
-!    enddo
-!  enddo
-!endif
+if (all(vqm(:,iq).eq.0).and.allocated(pmat)) then
+  do ikloc=1,nkptnrloc
+    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+    megqblh(:,1,ikloc)=zzero
+    do i=1,nmegqblhloc(1,ikloc)
+      ist1=bmegqblh(1,i+nmegqblhloc(2,ikloc),ikloc)
+      ist2=bmegqblh(2,i+nmegqblhloc(2,ikloc),ikloc)
+      if (ist1.eq.ist2) megqblh(i,1,ikloc)=zone
+      megqblh(i,1,ikloc)=megqblh(i,1,ikloc)-&
+        dot_product(vq0c(:,1),pmat(:,ist1,ist2,ikloc))/&
+        (evalsvnr(ist1,ik)-evalsvnr(ist2,ik)+1d-10)          
+    enddo
+  enddo
+endif
 
 ! time for wave-functions send/recieve
 t1=timer_get_value(1)

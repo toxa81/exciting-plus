@@ -94,7 +94,6 @@ if (mpi_grid_root()) call readfermi
 call mpi_grid_bcast(efermi)
 ! generate wave-functions for entire BZ
 call genwfnr(151,lpmat)
-
 if (wannier_megq) then
   all_wan_ibt=.false.
   call getimegqwan(all_wan_ibt)
