@@ -97,6 +97,8 @@ do itask=1,ntasks
     call response
   case(802)
     call unscreened_u
+  case(804)
+    call genscell
   case(809)
     call sic_genvwan 
   case(810)
