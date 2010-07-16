@@ -13,7 +13,7 @@ integer*8 fp_ins
 real(8) t1
 #endif
 integer i,j,iq
-integer nvqloc,iqloc
+integer nvqloc,iqloc,ist,ik
 character*100 qnm
 logical wproc1,lpmat
 logical, external :: wann_diel
@@ -94,6 +94,21 @@ if (mpi_grid_root()) call readfermi
 call mpi_grid_bcast(efermi)
 ! generate wave-functions for entire BZ
 call genwfnr(151,lpmat)
+!if (mpi_grid_root()) then
+!  open(180,file='EIGVALNR.OUT',form='formatted',status='replace')
+!  write(180,'(I6," : nkptnr")') nkptnr
+!  write(180,'(I6," : nstsv")') nstsv
+!  do ik=1,nkptnr
+!    write(180,*)
+!    write(180,'(I6,4G18.10," : k-point, vkl, wkpt")') ik,vklnr(:,ik),wkptnr(ik)
+!    write(180,'(" (state, eigenvalue and occupancy below)")')
+!    do ist=1,nstsv
+!      write(180,'(I6,2G18.10)') ist,evalsvnr(ist,ik),occsvnr(ist,ik)
+!    end do
+!    write(180,*)
+!  end do
+!  close(180)
+!endif
 if (wannier_megq) then
   all_wan_ibt=.false.
   call getimegqwan(all_wan_ibt)
