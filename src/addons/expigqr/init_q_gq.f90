@@ -85,9 +85,22 @@ do iq=1,nvq
       gq(ngq(iq),iq)=sqrt(t2)
       vgqc(:,ngq(iq),iq)=v2(:)
       igqig(ngq(iq),iq)=ig
-      if (all(vqm(:,iq).eq.0).and.ig.eq.1) then
+      if (all(vqm(:,iq).eq.0)) then
+! for unscreened U case and optical limit of response
         if (nvq0.eq.1) then
-          vhgq(ngq(iq),iq)=fourpi*aq0(1)
+          if (ig.eq.1) then
+            vhgq(ngq(iq),iq)=fourpi*aq0(1)
+          else
+            vhgq(ngq(iq),iq)=fourpi/t2
+          endif
+        endif
+! for screened U case 
+        if (nvq0.eq.8) then
+          if (ig.eq.1) then
+            vhgq(ngq(iq),iq)=fourpi/dot_product(vq0c(:,iq),vq0c(:,iq))
+          else
+            vhgq(ngq(iq),iq)=fourpi/t2
+          endif
         endif
       else
         vhgq(ngq(iq),iq)=fourpi/t2

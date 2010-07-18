@@ -1055,6 +1055,8 @@ case('sic')
   read(50,*,err=20) sic
   read(50,*,err=20) lf_maxt
   read(50,*,err=20) nitersic
+case('crpa')
+  read(50,*,err=20) crpa_e1,crpa_e2
 case('')
   goto 10
 case default

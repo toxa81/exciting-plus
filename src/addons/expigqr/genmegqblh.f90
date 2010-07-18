@@ -76,7 +76,7 @@ do ispn1=1,nspinor
       wfir1=zzero
       do ig1=1,ngknr1
         ifg=igfft(igkignr1(ig1))
-        wfir1(ifg)=dconjg(wfsvit1(ig1,ispn1,ist1))
+        wfir1(ifg)=wfsvit1(ig1,ispn1,ist1)
       enddo
       call zfftifc(3,ngrid,1,wfir1)
       do ir=1,ngrtot
@@ -85,9 +85,10 @@ do ispn1=1,nspinor
       call zfftifc(3,ngrid,-1,wfir1)
       do ig=1,ngvecme
         do ig2=1,ngknr2
+! G1=G2-G-Gkq
           ivg1(:)=ivg(:,igkignr2(ig2))-ivg(:,igqig(ig,iq))-ivg(:,igkq)
           ifg=igfft(ivgig(ivg1(1),ivg1(2),ivg1(3)))
-          wftmp1(lmmaxvr*nufrmax*natmtot+ig2,ig)=wfir1(ifg)
+          wftmp1(lmmaxvr*nufrmax*natmtot+ig2,ig)=dconjg(wfir1(ifg))
         enddo
       enddo
       call timer_stop(4)      

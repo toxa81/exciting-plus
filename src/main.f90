@@ -95,6 +95,8 @@ do itask=1,ntasks
     call testcheck
   case(800)
     call response
+  case(801)
+    call crpa
   case(802)
     call unscreened_u
   case(804)

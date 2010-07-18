@@ -14,7 +14,7 @@ character, parameter :: orb(4)=(/'s','p','d','f'/)
 integer i,iw,j,ifxc
 integer nfxcloc,ifxcloc,nwloc,iwloc
 integer ig
-character*100 qnm,qdir,fout,fstat
+character*100 qnm,qdir,fout
 real(8) fxca
 
 real(8) t1,t2,t3,t4,t5,t6,t7
@@ -27,7 +27,6 @@ if (mpi_grid_root((/dim_k,dim_b/))) then
   wproc=.true.
   fout=trim(qnm)//"_CHI.OUT"
   open(150,file=trim(fout),form="FORMATTED",status="REPLACE")
-  fstat=trim(qnm)//"_chi0_stat.txt"
 endif
 
 if (wproc) then

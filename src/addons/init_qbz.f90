@@ -33,6 +33,7 @@ do i1=0,ngridk(1)-1
   enddo
 enddo
 if (lgamma) call init_q0
+! for unscreened U 
 if (nvq0.eq.1) then
   t1=0.d0
   do j=1,8
