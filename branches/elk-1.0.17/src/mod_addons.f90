@@ -228,14 +228,16 @@ logical wannier_megq
 ! low-level switch: write or not file with matrix elements; depends on task 
 logical write_megq_file
 ! low level switch: compute screened W matrix; depends on crpa
-logical screened_w
-data screened_w/.false./
-logical screened_u
-data screened_u/.false./
+!logical screened_w
+!data screened_w/.false./
+!logical screened_u
+!data screened_u/.false./
 logical write_chi0_file
 
-logical crpa
+!logical crpa
 real(8) crpa_e1,crpa_e2
+data crpa_e1/100.1d0/
+data crpa_e2/-100.1d0/
 
 integer, allocatable :: spinor_ud(:,:,:)
 
@@ -265,9 +267,7 @@ integer, parameter :: f_loss_wann            = 18
 integer, parameter :: nf_response            = 18
 complex(8), allocatable :: f_response(:,:,:)
 
-
-complex(8), allocatable :: uscrnwan(:,:,:)
-!complex(8), allocatable :: ubarewan(:,:)
+complex(8), allocatable :: uscrnwan(:,:)
 complex(8), allocatable :: ubarewan(:)
 
 !------------------!
