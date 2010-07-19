@@ -1,9 +1,9 @@
 include ../../make.inc
-F90_OPTS=-O3 -fast -fastsse -Mpreprocess -Munroll -Minfo=all -D_HDF5_ ${HDF5_FLIB}
+F90_OPTS_SERIAL=$(subst -D_MPI_,,$(F90_OPTS))
 
 .SUFFIXES: .o .f90
 .f90.o:
-	$(F90) $(F90_OPTS) -c -o $(*F).o $<
+	$(F90) $(F90_OPTS_SERIAL) -c -o $(*F).o $<
 
 all: pp_u
 
