@@ -997,13 +997,7 @@ case('response_fxc')
   read(50,*,err=20) fxctype,nfxca,fxca0,fxca1
 case('response_wann')
   read(50,*,err=20) wannier_chi0_chi
-  read(50,*,err=20) megqwan_afm
-  read(50,*,err=20) megqwan_mindist,megqwan_maxdist 
-  read(50,*,err=20) megqwan_cutoff1,megqwan_cutoff2
-case('response_wann_include')
-  read(50,*,err=20) nwann_include
-  allocate(iwann_include(nwann_include))
-  read(50,*,err=20) (iwann_include(i),i=1,nwann_include)
+  read(50,*,err=20) wannier_chi0_afm
 case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_add_poco
@@ -1027,8 +1021,6 @@ case('wannier')
   do i=1,wann_natom
     read(50,*,err=20) wann_iprj(1,i), wann_iprj(2,i)
   enddo
-case('wannier_nn')
-  read(50,*,err=20) megqwan_mindist,megqwan_maxdist
 case ('wannier_min_prjao')
   read(50,*,err=20) wannier_min_prjao
 case ('wannier_soft_eint')
@@ -1048,6 +1040,14 @@ case('wannier_plot')
   read(50,*,err=20)(bound3d(i,3),i=1,3)
   read(50,*,err=20)(nrxyz(i),i=1,3)
   read(50,*,err=20)nwfplot,firstwf  
+case('megqwan_dist')
+  read(50,*,err=20) megqwan_mindist,megqwan_maxdist
+case('megqwan_cutoff')
+  read(50,*,err=20) megqwan_cutoff1,megqwan_cutoff2
+case('megqwan_include')
+  read(50,*,err=20) nwann_include
+  allocate(iwann_include(nwann_include))
+  read(50,*,err=20) (iwann_include(i),i=1,nwann_include)
 case('mpigrid')
   lmpigrid=.true.
   read(50,*,err=20) mpigrid(1),mpigrid(2),mpigrid(3) 
@@ -1057,6 +1057,8 @@ case('sic')
   read(50,*,err=20) nitersic
 case('crpa')
   read(50,*,err=20) crpa_e1,crpa_e2
+case('disentangle')
+  read(50,*,err=20) ldisentangle  
 case('')
   goto 10
 case default

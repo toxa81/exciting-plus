@@ -122,16 +122,11 @@ endif
 call timer_start(1,reset=.true.)
 ! read eigen-vectors
 if (mpi_grid_side(dims=(/dim_k/))) then
-  do i=0,mpi_grid_size(dim_k)-1
-    if (i.eq.mpi_grid_x(dim_k)) then
-      do ikloc=1,nkptnrloc
-        ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-        call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfvnrloc(1,1,1,ikloc))
-        call getevecsv(vklnr(1,ik),evecsvnrloc(1,1,ikloc))
-      enddo !ikloc
-    endif
-    if (.not.parallel_read) call mpi_grid_barrier(dims=(/dim_k/))
-  enddo
+  do ikloc=1,nkptnrloc
+    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+    call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfvnrloc(1,1,1,ikloc))
+    call getevecsv(vklnr(1,ik),evecsvnrloc(1,1,ikloc))
+  enddo !ikloc
 endif !mpi_grid_side(dims=(/dim_k/)
 call mpi_grid_barrier
 call mpi_grid_bcast(evecfvnrloc(1,1,1,1),nmatmax*nstfv*nspnfv*nkptnrloc,&
