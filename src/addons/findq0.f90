@@ -50,8 +50,8 @@ q0(:)=0.5d0*(qvec(:,1)+qvec(:,2)+qvec(:,3))
 ! (2Pi)^-3 \sum f(q_i) vol/N = vol*f(q0)*a0
 ! a0 = (2Pi)^-3 \sum f(q_i) / N / f(q0)
 a0=dot_product(q0,q0)*t/(twopi**3)
-! Now, instead of integral we are using q-sum (in cRPA and bare U)
-! by the following substitution:
+! Now, instead of integral we are doing the q-sum (in cRPA and bare U)
+! with the following substitution:
 ! (2Pi)^-3 \int dq f(q) => 1/N_k/Omega \sum_q_i f(q_i)
 ! we know that in the microcell around Gamma
 !  (2Pi)^-3 \int dq f(q) = vol*f(q0)*a0

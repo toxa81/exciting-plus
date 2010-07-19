@@ -55,13 +55,15 @@ call zgemm('N','N',ngvecme,ngvecme,ngvecme,zone,krnl,ngvecme,epsilon,ngvecme,&
   zone,vscrn,ngvecme)
 
 if (all(vqm(:,iq).eq.0)) then
-  do ig=1,ngvecme
-    if (igqig(ig,iq).eq.1) then
-      vscrn(ig,ig)=vscrn(ig,ig)*aq0(iq)
-    else
-      vscrn(ig,ig)=vscrn(ig,ig)*0.125d0
-    endif      
-  enddo !ig
+  do ig1=1,ngvecme
+    do ig2=1,ngvecme
+      if (igqig(ig1,iq).eq.1.and.ig1.eq.ig2) then
+        vscrn(ig1,ig1)=vscrn(ig1,ig1)*aq0(iq)
+      else
+        vscrn(ig1,ig2)=vscrn(ig1,ig2)*0.125d0
+      endif
+    enddo !ig2      
+  enddo !ig1
 endif
 deallocate(epsilon,vcgq)
 deallocate(krnl,chi)
