@@ -75,7 +75,7 @@ endif
 if (wannier_chi0_chi) then
   if (wproc) then
     write(150,*)
-    write(150,'("Wannier AFM : ",L1)')megqwan_afm
+    write(150,'("Wannier chi0 AFM : ",L1)')wannier_chi0_afm
     write(150,*)
     write(150,'("megqwan value cutoff (min,max) : ",2F12.6)')&
       megqwan_cutoff1,megqwan_cutoff2
@@ -196,7 +196,7 @@ do iw=1,lr_nw
     call mpi_grid_reduce(chi0wan(1,1),nmegqwan*nmegqwan,dims=(/dim_k/),&
       root=(/j/))
     chi0wan(:,:)=chi0wan(:,:)/nkptnr/omega
-    if (megqwan_afm) chi0wan(:,:)=chi0wan(:,:)*2.d0
+    if (wannier_chi0_afm) chi0wan(:,:)=chi0wan(:,:)*2.d0
 ! processor j saves chi0wan to local array  
     if (mpi_grid_x(dim_k).eq.j) chi0wanloc(:,:,jwloc)=chi0wan(:,:)
 !    if (iw.eq.120.and..true.) then

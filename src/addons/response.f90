@@ -36,7 +36,7 @@ if (nvq.eq.0) then
   call pstop
 endif   
 if (.not.wannier) wannier_chi0_chi=.false.
-if (.not.spinpol) megqwan_afm=.false.
+if (.not.spinpol) wannier_chi0_afm=.false.
 if (wannier_chi0_chi) wannier_megq=.true.
 
 ! this is enough for matrix elements

@@ -105,12 +105,12 @@ data lr_e1/-100.1d0/
 real(8) lr_e2
 data lr_e2/100.1d0/
 real(8) lr_min_e12
-real(8) lr_e1_wan
-real(8) lr_e2_wan
 
 ! number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> in the Bloch basis
 !  for a given k-point
 integer, allocatable :: nmegqblh(:)
+! local number of interband transitions (each processor along dim_b does 
+!  it's local fraction of transitions)
 integer, allocatable :: nmegqblhloc(:,:)
 ! maximum number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> over all k-points
 integer nmegqblhmax
@@ -131,12 +131,10 @@ complex(8), allocatable :: megqblh2(:,:)
 !   2-nd index : global index of pair of bands (n,n')
 !   3-rd index : k-point
 integer, allocatable :: bmegqblh(:,:,:)
-logical megqwan_afm
-data megqwan_afm/.false./
 
 real(8) megqwan_cutoff1
-real(8) megqwan_cutoff2
 data megqwan_cutoff1/-0.1d0/
+real(8) megqwan_cutoff2
 data megqwan_cutoff2/100.1d0/
 
 real(8) megqwan_mindist
@@ -174,8 +172,6 @@ complex(8), allocatable :: gntuju(:,:,:)
 complex(8), allocatable :: chi0loc(:,:,:)
 complex(8), allocatable :: chi0wanloc(:,:,:)
 
-
-
 ! array for k+q points
 !  1-st index: index of k-point in BZ
 !  2-nd index: 1: index of k'=k+q-K
@@ -207,42 +203,25 @@ data nfxca/1/
 integer fxctype
 data fxctype/0/
 
-! high-level switch: solve scalar equation for chi
-logical scalar_chi
-data scalar_chi/.false./
-! high-level switch: split file with matrix elements over k-points
-logical split_megq_file
-data split_megq_file/.false./
-! high-level switch:: read files in parallel
-logical parallel_read
-data parallel_read/.true./
-! high-level switch:: write files in parallel (where it is possible)
-logical parallel_write
-data parallel_write/.true./
 ! high-level switch: compute chi0 and chi in Wannier functions basis
 logical wannier_chi0_chi 
 data wannier_chi0_chi/.false./
+! high-level switch: .true. if chi0 should be multiplied by 2
+logical wannier_chi0_afm
+data wannier_chi0_afm/.false./
+
 ! low level switch: compute matrix elements of e^{i(G+q)x} in the basis of
 !   Wannier functions; depends on crpa and wannier_chi0_chi
 logical wannier_megq
 ! low-level switch: write or not file with matrix elements; depends on task 
 logical write_megq_file
-! low level switch: compute screened W matrix; depends on crpa
-!logical screened_w
-!data screened_w/.false./
-!logical screened_u
-!data screened_u/.false./
-logical write_chi0_file
 
-!logical crpa
+! for cRPA: exclude interval of interband transitions 
 real(8) crpa_e1,crpa_e2
 data crpa_e1/100.1d0/
 data crpa_e2/-100.1d0/
 
 integer, allocatable :: spinor_ud(:,:,:)
-
-real(8), allocatable :: lr_occsvnr(:,:)
-real(8), allocatable :: lr_evalsvnr(:,:)
 
 ! indices of response functions in global array f_response(:,:,:)
 integer, parameter :: f_chi0                 = 1
