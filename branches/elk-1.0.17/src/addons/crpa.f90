@@ -2,14 +2,16 @@ subroutine crpa
 use modmain
 use mod_addons_q
 use mod_nrkp
+use mod_hdf5
 implicit none
 integer iq,ig,i,n,n1
 integer nvqloc,iqloc
 real(8) v2(3),vtc(3)
 logical lgamma,wproc1
-character*100 qnm
+character*100 qnm,fuscrn
 complex(8) zt1
-integer nwloc
+integer nwloc,iwloc,iw
+character*8 c8
 
 call init0
 call init1
@@ -81,7 +83,29 @@ do iqloc=1,nvqloc
   call genchi0(iq)
   call genuscrn(iq)
 enddo
-uscrnwan=uscrnwan/nkptnr/omega
+call mpi_grid_reduce(uscrnwan(1,1),nmegqwan*nwloc,dims=(/dim_b,dim_q/))
+uscrnwan=uscrnwan/omega/nkptnr
+if (mpi_grid_side(dims=(/dim_k/)).and.nwloc.gt.0) then
+  write(fuscrn,'("uscrn",I4.4,".hdf")')mpi_grid_x(dim_k)
+  call hdf5_create_file(trim(fuscrn))
+  call hdf5_create_group(trim(fuscrn),"/","iwloc")
+  call hdf5_create_group(trim(fuscrn),"/","parameters")
+  call hdf5_write(fuscrn,"/parameters","nwann",nwann)
+  call hdf5_write(fuscrn,"/parameters","nw",lr_nw)
+  call hdf5_write(fuscrn,"/parameters","nwloc",nwloc)
+  call hdf5_write(fuscrn,"/parameters","x",mpi_grid_x(dim_k))
+  call hdf5_write(fuscrn,"/parameters","size",mpi_grid_size(dim_k))
+  call hdf5_write(fuscrn,"/parameters","nmegqwan",nmegqwan)
+  call hdf5_write(fuscrn,"/parameters","imegqwan",imegqwan(1,1),(/5,nmegqwan/))  
+  do iwloc=1,nwloc
+    iw=mpi_grid_map(lr_nw,dim_k,loc=iwloc)
+    write(c8,'(I8.8)')iwloc
+    call hdf5_create_group(trim(fuscrn),"/iwloc",c8)
+    call hdf5_write(fuscrn,"/iwloc/"//c8,"iw",iw)
+    call hdf5_write(fuscrn,"/iwloc/"//c8,"w",dreal(lr_w(iw)))
+    call hdf5_write(fuscrn,"/iwloc/"//c8,"uscrn",uscrnwan(1,iwloc),(/nmegqwan/))
+  enddo
+endif
 if (wproc1) then
   write(151,*)
   write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
@@ -93,6 +117,7 @@ if (wproc1) then
   enddo
   close(151)
 endif
-
+deallocate(lr_w)
+deallocate(uscrnwan)
 return
 end
