@@ -1,5 +1,5 @@
 include ../../make.inc
-F90_OPTS=-O2 -Wall -cpp -D_HDF5_ -I/Users/anton/local/include
+F90_OPTS=-O3 -fast -fastsse -Mpreprocess -Munroll -Minfo=all -D_HDF5_ ${HDF5_FLIB}
 
 .SUFFIXES: .o .f90
 .f90.o:
