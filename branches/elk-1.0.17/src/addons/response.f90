@@ -39,8 +39,9 @@ if (.not.wannier) wannier_chi0_chi=.false.
 if (.not.spinpol) wannier_chi0_afm=.false.
 if (wannier_chi0_chi) wannier_megq=.true.
 
-! this is enough for matrix elements
-!lmaxvr=5
+#ifdef _PAPI_
+call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
+#endif
 
 ! initialise universal variables
 call init0
@@ -136,9 +137,6 @@ enddo
 call init_q_gq
 ! distribute q-vectors along 3-rd dimention
 nvqloc=mpi_grid_map(nvq,dim_q)
-#ifdef _PAPI_
-call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
-#endif
 do iqloc=1,nvqloc
   iq=mpi_grid_map(nvq,dim_q,loc=iqloc)
   call genmegq(iq,.true.,.true.)

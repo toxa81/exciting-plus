@@ -4,6 +4,13 @@ use mod_addons_q
 use mod_nrkp
 use mod_hdf5
 implicit none
+#ifdef _PAPI_
+integer ierr
+include 'f90papi.h'
+real real_time,cpu_time,mflops
+integer*8 fp_ins
+real(8) t1
+#endif
 integer iq,ig,i,n,n1
 integer nvqloc,iqloc
 real(8) v2(3),vtc(3)
@@ -13,6 +20,9 @@ complex(8) zt1
 integer nwloc,iwloc,iw
 character*8 c8
 
+#ifdef _PAPI_
+call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
+#endif
 call init0
 call init1
 if (.not.mpi_grid_in()) return
@@ -84,6 +94,20 @@ do iqloc=1,nvqloc
   call genchi0(iq)
   call genuscrn(iq)
 enddo
+#ifdef _PAPI_
+call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
+t1=dble(mflops)
+call mpi_grid_reduce(t1)
+#endif
+if (wproc1) then
+  write(151,*)
+#ifdef _PAPI_
+  write(151,'("Average performance (Gflops/proc) : ",F15.3)')t1/mpi_grid_nproc/1000.d0
+#endif  
+  write(151,'("Done.")')
+  close(151)
+endif
+
 call mpi_grid_reduce(uscrnwan(1,1),nmegqwan*nwloc,dims=(/dim_b,dim_q/))
 uscrnwan=uscrnwan/omega/nkptnr
 if (mpi_grid_side(dims=(/dim_k/)).and.nwloc.gt.0) then
