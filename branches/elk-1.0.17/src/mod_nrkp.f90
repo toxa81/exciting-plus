@@ -106,6 +106,14 @@ if (lpmat) then
   if (allocated(pmat)) deallocate(pmat)
   allocate(pmat(3,nstsv,nstsv,nkptnrloc))
 endif
+if (wannier) then
+  if (allocated(wanncnrloc)) deallocate(wanncnrloc)
+  allocate(wanncnrloc(nwann,nstsv,nkptnrloc))
+  if (allocated(wann_unkmt)) deallocate(wann_unkmt)
+  allocate(wann_unkmt(lmmaxvr,nufrmax,natmtot,nspinor,nwann,nkptnrloc))
+  if (allocated(wann_unkit)) deallocate(wann_unkit)
+  allocate(wann_unkit(ngkmax,nspinor,nwann,nkptnrloc))
+endif
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 if (wproc.and.fout.gt.0) then
   sz=lmmaxvr*nufrmax*natmtot*nstsv*nspinor
@@ -155,6 +163,17 @@ do ikloc=1,nkptnrloc
 ! generate wave functions in muffin-tins
   call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfvnrloc(1,1,1,ikloc), &
     evecsvnrloc(1,1,ikloc),apwalm,wfsvmtnrloc(1,1,1,1,1,ikloc))
+  if (wannier) then
+    call genwann_c(ik,vkcnr(:,ik),evalsvnr(1,ik),wfsvmtnrloc(1,1,1,1,1,ikloc),&
+      wanncnrloc(1,1,ikloc))   
+    if (ldisentangle) then
+! disentangle bands
+      call disentangle(evalsvnr(1,ik),wanncnrloc(1,1,ikloc),&
+        evecsvnrloc(1,1,ikloc))
+      call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfvnrloc(1,1,1,ikloc), &
+        evecsvnrloc(1,1,ikloc),apwalm,wfsvmtnrloc(1,1,1,1,1,ikloc))
+    endif
+  endif
 ! generate wave functions in interstitial
   call genwfsvit(ngknr(ikloc),evecfvnrloc(1,1,1,ikloc), &
     evecsvnrloc(1,1,ikloc),wfsvitnrloc(1,1,1,ikloc))
@@ -172,8 +191,6 @@ endif
 ! generate Wannier function expansion coefficients
 if (wannier) then
   call timer_start(1,reset=.true.)
-  if (allocated(wanncnrloc)) deallocate(wanncnrloc)
-  allocate(wanncnrloc(nwann,nstsv,nkptnrloc))
   if (allocated(wann_unkmt)) deallocate(wann_unkmt)
   allocate(wann_unkmt(lmmaxvr,nufrmax,natmtot,nspinor,nwann,nkptnrloc))
   if (allocated(wann_unkit)) deallocate(wann_unkit)
@@ -186,9 +203,6 @@ if (wannier) then
     call flushifc(fout)
   endif !wproc
   do ikloc=1,nkptnrloc
-    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-    call genwann_c(ik,vkcnr(:,ik),evalsvnr(1,ik),wfsvmtnrloc(1,1,1,1,1,ikloc),&
-      wanncnrloc(1,1,ikloc))  
     do n=1,nwann
       do j=1,nstsv
         wann_unkmt(:,:,:,:,n,ikloc)=wann_unkmt(:,:,:,:,n,ikloc) + &
@@ -197,20 +211,6 @@ if (wannier) then
           wfsvitnrloc(:,:,j,ikloc)*wanncnrloc(n,j,ikloc)
       enddo
     enddo
-    if (ldisentangle) then
-! disentangle bands
-      call disentangle(evalsvnr(1,ik),wanncnrloc(1,1,ikloc),evecsvnrloc(1,1,ikloc))
-! recompute wave functions
-! get apw coeffs 
-      call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),        &
-        sfacgknr(1,1,ikloc),apwalm)
-! generate wave functions in muffin-tins
-      call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfvnrloc(1,1,1,ikloc), &
-        evecsvnrloc(1,1,ikloc),apwalm,wfsvmtnrloc(1,1,1,1,1,ikloc))
-! generate wave functions in interstitial
-      call genwfsvit(ngknr(ikloc),evecfvnrloc(1,1,1,ikloc), &
-        evecsvnrloc(1,1,ikloc),wfsvitnrloc(1,1,1,ikloc))       
-    endif    
   enddo !ikloc
   call timer_stop(1)
 endif !wannier
