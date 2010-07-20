@@ -47,10 +47,10 @@ call zgemm('N','N',ngvecme,ngvecme,ngvecme,zone,epsilon,ngvecme,chi0,&
   ngvecme,zzero,chi,ngvecme)
 ! compute screened Coulomb potential: vscr=vbare+vbare*chi*vbare
 vscrn=krnl
-! compute zm2=chi*v
+! compute tmp=chi*v
 call zgemm('N','N',ngvecme,ngvecme,ngvecme,zone,chi,ngvecme,krnl,ngvecme,&
   zzero,epsilon,ngvecme)
-! compute krnl_scr=v*zm2
+! compute vscrn=v+v*tmp
 call zgemm('N','N',ngvecme,ngvecme,ngvecme,zone,krnl,ngvecme,epsilon,ngvecme,&
   zone,vscrn,ngvecme)
 

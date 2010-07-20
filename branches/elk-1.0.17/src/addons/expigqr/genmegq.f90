@@ -156,13 +156,17 @@ do ikstep=1,nkstep
   call timer_stop(2)
 enddo !ikstep
 
-! TODO: check this formula!!!
-! TODO: move to a separate file
 ! for G=q=0: e^{iqx}=1+iqx
-! [x,H]=v=p/m
-! xH-Hx=p/m 
-! <nk|xH|n'k>-<nk|Hx|n'k>=<nk|p/m|n'k>= E_{n'k}<nk|x|n'k> - E_{nk}<nk|x|n'k>
-!  <nk|x|n'k>=<nk|p/m|n'k>/(E_{n'k}-E_{nk})
+! from "Formalism of Bnad Theory" by E.I. Blount:
+!   v=p/m
+!   v=-i/\hbar [x,H]
+! -i(xH-Hx)=p 
+! xH-Hx=ip
+! <nk|xH|n'k>-<nk|Hx|n'k>=E_{n'k}<nk|x|n'k>-E_{nk}<nk|x|n'k>
+! <nk|x|n'k>*(E_{n'k}-E_{nk})=i<nk|p|n'k>
+! <nk|x|n'k>=i<nk|p|n'k>/(E_{n'k}-E_{nk})
+! <nk|e^{iqx}|n'k>=<nk|1+iqx|n'k>=\delta_{nn'}+iq<nk|x|n'k>
+! <nk|e^{iqx}|n'k>=\delta_{nn'}-q*<nk|p|n'k>/(E_{n'k}-E_{nk})
 if (all(vqm(:,iq).eq.0).and.allocated(pmat)) then
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
@@ -175,7 +179,7 @@ if (all(vqm(:,iq).eq.0).and.allocated(pmat)) then
           if (ist1.eq.ist2) megqblh(i,ig,ikloc)=zone
           megqblh(i,ig,ikloc)=megqblh(i,ig,ikloc)-&
             dot_product(vq0c(:,iq),pmat(:,ist1,ist2,ikloc))/&
-            (evalsvnr(ist1,ik)-evalsvnr(ist2,ik)+1d-10)          
+            (evalsvnr(ist2,ik)-evalsvnr(ist1,ik)+1d-10)          
         enddo
       endif
     enddo
