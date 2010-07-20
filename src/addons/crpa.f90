@@ -58,6 +58,7 @@ if (mpi_grid_root()) then
   write(151,'("MPI grid size                    : ",3I6)')mpi_grid_size
   call flushifc(151)
 endif
+wproc=wproc1
 ! generate wave-functions for entire BZ
 call genwfnr(151,.true.)
 all_wan_ibt=.true.
