@@ -19,14 +19,12 @@ character*100 qnm,fuscrn
 complex(8) zt1
 integer nwloc,iwloc,iw
 character*8 c8
-
 #ifdef _PAPI_
 call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
 #endif
 call init0
 call init1
 if (.not.mpi_grid_in()) return
-
 if (.not.wannier) then
   write(*,*)
   write(*,'("Error(crpa): Wannier functions are off")')
@@ -86,7 +84,6 @@ nwloc=mpi_grid_map(lr_nw,dim_k)
 nvqloc=mpi_grid_map(nvq,dim_q)
 allocate(uscrnwan(nmegqwan,nwloc))
 uscrnwan=zzero
-
 ! main loop over q-points
 do iqloc=1,nvqloc
   iq=mpi_grid_map(nvq,dim_q,loc=iqloc)
@@ -94,22 +91,17 @@ do iqloc=1,nvqloc
   call genchi0(iq)
   call genuscrn(iq)
 enddo
+call mpi_grid_reduce(uscrnwan(1,1),nmegqwan*nwloc,dims=(/dim_b,dim_q/))
+uscrnwan=uscrnwan/omega/nkptnr
 #ifdef _PAPI_
 call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
 t1=dble(mflops)
 call mpi_grid_reduce(t1)
-#endif
 if (wproc1) then
   write(151,*)
-#ifdef _PAPI_
   write(151,'("Average performance (Gflops/proc) : ",F15.3)')t1/mpi_grid_nproc/1000.d0
-#endif  
-  write(151,'("Done.")')
-  close(151)
 endif
-
-call mpi_grid_reduce(uscrnwan(1,1),nmegqwan*nwloc,dims=(/dim_b,dim_q/))
-uscrnwan=uscrnwan/omega/nkptnr
+#endif
 if (mpi_grid_side(dims=(/dim_k/)).and.nwloc.gt.0) then
   write(fuscrn,'("uscrn",I4.4,".hdf")')mpi_grid_x(dim_k)
   call hdf5_create_file(trim(fuscrn))
@@ -140,6 +132,8 @@ if (wproc1) then
     write(151,'(I4,4X,I4,4X,3I3,4X,2G18.10)')imegqwan(:,i),&
       dreal(uscrnwan(i,1)),dimag(uscrnwan(i,1))
   enddo
+  write(151,*)  
+  write(151,'("Done.")')
   close(151)
 endif
 deallocate(lr_w)
