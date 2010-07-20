@@ -29,11 +29,6 @@ integer xctype_(3),xcgrad_
 integer is
 ! allocatable arrays
 real(8), allocatable :: rwf(:,:,:)
-! allocate global species charge density and potential arrays
-if (allocated(sprho)) deallocate(sprho)
-allocate(sprho(spnrmax,nspecies))
-if (allocated(spvr)) deallocate(spvr)
-allocate(spvr(spnrmax,nspecies))
 ! use LDA (xctype=3) to setup atomic densities
 xctype_(1)=3; xctype_(2)=0; xctype_(3)=0
 xcgrad_=0

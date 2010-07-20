@@ -336,6 +336,11 @@ call gencfun
 !if (.not.(task.eq.800.or.task.eq.801.or.task.eq.802)) then
 !  call allatoms
 !endif
+! allocate global species charge density and potential arrays
+if (allocated(sprho)) deallocate(sprho)
+allocate(sprho(spnrmax,nspecies))
+if (allocated(spvr)) deallocate(spvr)
+allocate(spvr(spnrmax,nspecies))
 ! allocate core state eigenvalue array and set to default
 if (allocated(evalcr)) deallocate(evalcr)
 allocate(evalcr(spnstmax,natmtot))
