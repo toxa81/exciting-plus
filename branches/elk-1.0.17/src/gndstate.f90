@@ -97,6 +97,7 @@ else if (task.eq.200) then
   call phveff
   if (wproc) write(60,'("Supercell potential constructed from STATE.OUT")')
 else
+  call allatoms
   call rhoinit
   call poteff
   call genveffig

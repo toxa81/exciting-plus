@@ -333,9 +333,9 @@ call gencfun
 !     atoms and cores     !
 !-------------------------!
 ! solve the Kohn-Sham-Dirac equations for all atoms
-if (.not.(task.eq.800.or.task.eq.801.or.task.eq.802)) then
-  call allatoms
-endif
+!if (.not.(task.eq.800.or.task.eq.801.or.task.eq.802)) then
+!  call allatoms
+!endif
 ! allocate core state eigenvalue array and set to default
 if (allocated(evalcr)) deallocate(evalcr)
 allocate(evalcr(spnstmax,natmtot))
