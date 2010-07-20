@@ -45,11 +45,6 @@ call genufrp
 ! read Fermi energy
 if (mpi_grid_root()) call readfermi
 call mpi_grid_bcast(efermi)
-! generate wave-functions for entire BZ
-call genwfnr(151,.false.)
-all_wan_ibt=.true.
-call getimegqwan(all_wan_ibt)
-
 wproc1=.false.
 if (mpi_grid_root()) then
   wproc1=.true.
@@ -60,6 +55,12 @@ if (mpi_grid_root()) then
   write(151,'("MPI grid size                    : ",3I6)')mpi_grid_size
   call flushifc(151)
 endif
+wproc=wproc1
+! generate wave-functions for entire BZ
+call genwfnr(151,.false.)
+all_wan_ibt=.true.
+call getimegqwan(all_wan_ibt)
+
 ! distribute q-vectors along 3-rd dimention
 nvqloc=mpi_grid_map(nvq,dim_q)
 allocate(ubarewan(nmegqwan))
