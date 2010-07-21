@@ -1,10 +1,13 @@
-subroutine printmegqblh
+subroutine printmegqblh(iq)
 use modmain
 implicit none
+integer, intent(in) :: iq
 integer i,ig,ikloc,ik
 integer ist1,ist2
+character*100 fname
+write(fname,'("MEGQBLH_iq_",I4.4,".OUT")')iq
 if (iproc.eq.0) then
-  open(200,file="MEGQBLH.OUT",form="FORMATTED",status="REPLACE")
+  open(200,file=trim(adjustl(fname)),form="FORMATTED",status="REPLACE")
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
     write(200,'("ikloc : ",I4,"  idxkq : ",2I4)')ikloc,idxkq(:,ik)

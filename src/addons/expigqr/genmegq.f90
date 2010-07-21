@@ -185,8 +185,7 @@ if (all(vqm(:,iq).eq.0).and.allocated(pmat)) then
     enddo
   enddo
 endif
-!call printmegqblh
-
+!call printmegqblh(iq)
 ! time for wave-functions send/recieve
 t1=timer_get_value(1)
 call mpi_grid_reduce(t1,dims=(/dim_k,dim_b/))
