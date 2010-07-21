@@ -64,7 +64,6 @@ if (mpi_grid_root()) then
     call system("mkdir -p "//trim(qnm))
   enddo
 endif
-
 wproc1=.false.
 if (mpi_grid_root()) then
   wproc1=.true.
