@@ -32,7 +32,7 @@ if (.not.wannier) then
   call pstop
 endif
 wannier_megq=.true.
-lgamma=.true.
+lgamma=.false.
 call init_qbz(lgamma,8)
 call init_q_gq
 ! create q-directories
@@ -68,7 +68,7 @@ if (mpi_grid_root()) then
 endif
 wproc=wproc1
 ! generate wave-functions for entire BZ
-call genwfnr(151,.true.)
+call genwfnr(151,lgamma)
 !if (mpi_grid_root()) then
 !  open(180,file='EIGVALNR.OUT',form='formatted',status='replace')
 !  write(180,'(I6," : nkptnr")') nkptnr
