@@ -32,7 +32,7 @@ if (.not.wannier) then
   call pstop
 endif
 wannier_megq=.true.
-lgamma=.false.
+lgamma=.true.
 call init_qbz(lgamma,8)
 call init_q_gq
 ! create q-directories
