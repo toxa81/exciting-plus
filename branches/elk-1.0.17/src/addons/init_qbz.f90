@@ -34,7 +34,7 @@ do i1=0,ngridk(1)-1
 enddo
 if (lgamma) call init_q0
 ! for unscreened U 
-if (nvq0.eq.1) then
+if (lgamma.and.nvq0.eq.1) then
   t1=0.d0
   do j=1,8
     t1=t1+aq0(j)/dot_product(vq0c(:,j),vq0c(:,j))
