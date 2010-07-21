@@ -24,9 +24,9 @@ use modmain
 implicit none
 integer, intent(in) :: fout
 logical, intent(in) :: lpmat
-integer ik,ikloc,n,j,ik1,isym,ig,i,sz
+integer ik,ikloc,n,j,ik1,isym,ig,i
 complex(8), allocatable :: apwalm(:,:,:,:)
-real(8) w2,t1
+real(8) w2,t1,sz
 logical, external :: wann_diel
 complex(8), allocatable :: evecfvnrloc(:,:,:,:)
 complex(8), allocatable :: evecsvnrloc(:,:,:)
@@ -96,6 +96,28 @@ do ikloc=1,nkptnrloc
     call genylm(lmaxvr,tpgknr(1,ig,ikloc),ylmgknr(1,ig,ikloc))
   enddo
 enddo
+if (wproc.and.fout.gt.0) then
+! eigen-vectors
+  sz=dble(nmatmax*nstfv*nspnfv)+dble(nstsv*nstsv)
+! wave-functions
+  sz=sz+dble(lmmaxvr*nufrmax*natmtot*nstsv*nspinor)+dble(ngkmax*nstsv*nspinor)
+! wannier functions
+  if (wannier) then
+    sz=sz+dble(nwann*nstsv)+dble(lmmaxvr*nufrmax*natmtot*nspinor*nwann)+&
+      dble(ngkmax*nspinor*nwann)
+  endif
+! momentum operator matrix
+  if (lpmat) then
+    sz=sz+dble(3*nstsv*nstsv)
+  endif
+  sz=16.d0*sz*nkptnrloc/1024/1024
+  write(fout,*)
+  write(fout,'("Size of wave-function arrays (MB) : ",F10.2)')sz
+  write(fout,*)
+  write(fout,'("Reading eigen-vectors")')
+  call flushifc(fout)
+endif
+call mpi_grid_barrier()
 if (allocated(wfsvmtnrloc)) deallocate(wfsvmtnrloc)
 allocate(wfsvmtnrloc(lmmaxvr,nufrmax,natmtot,nspinor,nstsv,nkptnrloc))
 if (allocated(wfsvitnrloc)) deallocate(wfsvitnrloc)
@@ -115,18 +137,6 @@ if (wannier) then
   allocate(wann_unkit(ngkmax,nspinor,nwann,nkptnrloc))
 endif
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-if (wproc.and.fout.gt.0) then
-  sz=lmmaxvr*nufrmax*natmtot*nstsv*nspinor
-  sz=sz+ngkmax*nstsv*nspinor
-  sz=sz+nmatmax*nstfv*nspnfv
-  sz=sz+nstsv*nstsv
-  sz=16*sz*nkptnrloc/1024/1024
-  write(fout,*)
-  write(fout,'("Size of wave-function arrays (MB) : ",I6)')sz
-  write(fout,*)
-  write(fout,'("Reading eigen-vectors")')
-  call flushifc(fout)
-endif
 call timer_start(1,reset=.true.)
 ! read eigen-vectors
 if (mpi_grid_side(dims=(/dim_k/))) then
@@ -268,6 +278,9 @@ if (spinpol) then
   enddo
   call mpi_grid_reduce(spinor_ud(1,1,1),2*nstsv*nkptnr,dims=(/dim_k/),all=.true.)
 endif  
+if (wproc.and.fout.gt.0) then
+  write(151,'("Done.")')
+endif
 deallocate(evecfvnrloc,evecsvnrloc)
 end subroutine
 

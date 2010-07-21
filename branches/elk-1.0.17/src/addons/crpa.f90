@@ -11,7 +11,7 @@ real real_time,cpu_time,mflops
 integer*8 fp_ins
 real(8) t1
 #endif
-integer iq,ig,i,n,n1
+integer iq,ig,i,n,n1,ist,ik
 integer nvqloc,iqloc
 real(8) v2(3),vtc(3)
 logical lgamma,wproc1
@@ -69,6 +69,21 @@ endif
 wproc=wproc1
 ! generate wave-functions for entire BZ
 call genwfnr(151,.true.)
+!if (mpi_grid_root()) then
+!  open(180,file='EIGVALNR.OUT',form='formatted',status='replace')
+!  write(180,'(I6," : nkptnr")') nkptnr
+!  write(180,'(I6," : nstsv")') nstsv
+!  do ik=1,nkptnr
+!    write(180,*)
+!    write(180,'(I6,4G18.10," : k-point, vkl, wkpt")') ik,vklnr(:,ik),wkptnr(ik)
+!    write(180,'(" (state, eigenvalue and occupancy below)")')
+!    do ist=1,nstsv
+!      write(180,'(I6,2G18.10)') ist,evalsvnr(ist,ik),occsvnr(ist,ik)
+!    end do
+!    write(180,*)
+!  end do
+!  close(180)
+!endif
 all_wan_ibt=.true.
 call getimegqwan(all_wan_ibt)
 ! setup energy mesh
