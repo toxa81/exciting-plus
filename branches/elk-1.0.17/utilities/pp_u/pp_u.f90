@@ -9,7 +9,7 @@ real(8), allocatable :: w(:)
 complex(8), allocatable :: uscrn(:)
 
 complex(8), allocatable :: uscrn_(:,:,:)
-complex(8), allocatable :: zf(:)
+complex(8) zf(2)
 real(8) t1,uavg
 character*8 c8
 logical exist
@@ -19,6 +19,7 @@ integer nwann_
 integer, allocatable :: iwann_(:)
 integer nmegqwan
 integer, allocatable :: imegqwan(:,:)
+integer, allocatable :: iwm(:,:)
 call hdf5_initialize
 
 open(150,file="pp_u.in",form="FORMATTED",status="OLD")
@@ -27,6 +28,8 @@ read(150,*)nwann_
 allocate(iwann_(nwann_))
 read(150,*)iwann_
 close(150)
+
+allocate(iwm(nwann_,nwann_))
 
 
 
@@ -43,7 +46,18 @@ if (exist) then
   allocate(uscrn(nmegqwan))
   allocate(uscrn_(nwann_,nwann_,nw))
   uscrn_=dcmplx(0.d0,0.d0)
-  
+! create i -> {nn'T} mapping
+  do i=1,nmegqwan
+    do n1=1,nwann_
+      do n2=1,nwann_
+        if (iwann_(n1).eq.imegqwan(1,i).and.&
+            iwann_(n2).eq.imegqwan(2,i).and.&
+            all(vtl_(:).eq.imegqwan(3:5,i))) then
+            iwm(n1,n2)=i
+        endif
+      enddo
+    enddo
+  enddo
   do n=0,size-1
     write(fname,'("uscrn",I4.4,".hdf")')n
     inquire(file=trim(fname),exist=exist)
@@ -54,22 +68,15 @@ if (exist) then
         call hdf5_read(fname,"/iwloc/"//c8,"iw",iw)
         call hdf5_read(fname,"/iwloc/"//c8,"w",w(iw))
         call hdf5_read(fname,"/iwloc/"//c8,"uscrn",uscrn(1),(/nmegqwan/))
-        do i=1,nmegqwan
-          do n1=1,nwann_
-            do n2=1,nwann_
-              if (iwann_(n1).eq.imegqwan(1,i).and.&
-                  iwann_(n2).eq.imegqwan(2,i).and.&
-                  all(vtl_(:).eq.imegqwan(3:5,i))) then
-                uscrn_(n1,n2,iw)=uscrn(i)*ha2ev
-              endif
-            enddo
+        do n1=1,nwann_
+          do n2=1,nwann_
+            uscrn_(n1,n2,iw)=uscrn(iwm(n1,n2))*ha2ev
           enddo
-        enddo !i
+        enddo
       enddo
     endif
   enddo
   
-  allocate(zf(2))    
   open(150,file="cRPA.dat",status="REPLACE",form="FORMATTED")
   write(150,'("# Wannier functions : ",100I4)')iwann_
   write(150,'("#")')
