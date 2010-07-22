@@ -155,7 +155,7 @@ do ikstep=1,nkstep
   endif !ikstep.le.nkptnrloc
   call timer_stop(2)
 enddo !ikstep
-
+!call printmegqblh(iq)
 ! for G=q=0: e^{iqx}=1+iqx
 ! from "Formalism of Bnad Theory" by E.I. Blount:
 !   v=p/m
@@ -167,7 +167,7 @@ enddo !ikstep
 ! <nk|x|n'k>=i<nk|p|n'k>/(E_{n'k}-E_{nk})
 ! <nk|e^{iqx}|n'k>=<nk|1+iqx|n'k>=\delta_{nn'}+iq<nk|x|n'k>
 ! <nk|e^{iqx}|n'k>=\delta_{nn'}-q*<nk|p|n'k>/(E_{n'k}-E_{nk})
-if (all(vqm(:,iq).eq.0).and.allocated(pmat)) then
+if (all(vqm(:,iq).eq.0).and.allocated(pmatnrloc)) then
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
     do ig=1,ngvecme
@@ -176,10 +176,12 @@ if (all(vqm(:,iq).eq.0).and.allocated(pmat)) then
         do i=1,nmegqblhloc(1,ikloc)
           ist1=bmegqblh(1,i+nmegqblhloc(2,ikloc),ikloc)
           ist2=bmegqblh(2,i+nmegqblhloc(2,ikloc),ikloc)
+          t1=evalsvnr(ist2,ik)-evalsvnr(ist1,ik)
           if (ist1.eq.ist2) megqblh(i,ig,ikloc)=zone
-          megqblh(i,ig,ikloc)=megqblh(i,ig,ikloc)-&
-            dot_product(vq0c(:,iq),pmat(:,ist1,ist2,ikloc))/&
-            (evalsvnr(ist2,ik)-evalsvnr(ist1,ik)+1d-10)          
+          if (abs(t1).gt.1d-8) then
+            megqblh(i,ig,ikloc)=megqblh(i,ig,ikloc)-&
+              dot_product(vq0c(:,iq),pmatnrloc(:,ist1,ist2,ikloc))/t1          
+          endif
         enddo
       endif
     enddo
