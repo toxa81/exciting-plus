@@ -14,7 +14,7 @@ real(8) t1
 integer iq,ig,i,n,n1,ist,ik
 integer nvqloc,iqloc
 real(8) v2(3),vtc(3)
-logical lgamma,wproc1
+logical wproc1
 character*100 qnm,fuscrn
 complex(8) zt1
 integer nwloc,iwloc,iw
@@ -32,8 +32,7 @@ if (.not.wannier) then
   call pstop
 endif
 wannier_megq=.true.
-lgamma=.true.
-call init_qbz(lgamma,8)
+call init_qbz(tq0bz,8)
 call init_q_gq
 ! create q-directories
 if (mpi_grid_root()) then
@@ -68,22 +67,7 @@ if (mpi_grid_root()) then
 endif
 wproc=wproc1
 ! generate wave-functions for entire BZ
-call genwfnr(151,lgamma)
-!if (mpi_grid_root()) then
-!  open(180,file='EIGVALNR.OUT',form='formatted',status='replace')
-!  write(180,'(I6," : nkptnr")') nkptnr
-!  write(180,'(I6," : nstsv")') nstsv
-!  do ik=1,nkptnr
-!    write(180,*)
-!    write(180,'(I6,4G18.10," : k-point, vkl, wkpt")') ik,vklnr(:,ik),wkptnr(ik)
-!    write(180,'(" (state, eigenvalue and occupancy below)")')
-!    do ist=1,nstsv
-!      write(180,'(I6,2G18.10)') ist,evalsvnr(ist,ik),occsvnr(ist,ik)
-!    end do
-!    write(180,*)
-!  end do
-!  close(180)
-!endif
+call genwfnr(151,tq0bz)
 all_wan_ibt=.true.
 call getimegqwan(all_wan_ibt)
 ! setup energy mesh

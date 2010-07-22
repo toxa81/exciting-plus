@@ -37,7 +37,7 @@ enddo
 nwloc=mpi_grid_map(lr_nw,dim_k)
 do iwloc=1,nwloc
   iw=mpi_grid_map(lr_nw,dim_k,loc=iwloc)
-  call genvscrn(iq,chi0loc(1,1,iwloc),krnl,vscrn,epsilon,chi)
+  call genvscrn(iq,iw,chi0loc(1,1,iwloc),krnl,vscrn,epsilon,chi)
   call zgemm('C','N',nwann,ngvecme,ngvecme,zone,megqwan1,ngvecme,&
     vscrn,ngvecme,zzero,zm2,nwann)
   call zgemm('N','N',nwann,nwann,ngvecme,zone,zm2,nwann,megqwan1,ngvecme,&
