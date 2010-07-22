@@ -143,6 +143,9 @@ elk:	$(OBJ)
 fft:
 	cd fftlib; $(MAKE); cp fftlib.a ..
 
+lib:
+	libtool -static -o libelk.a $(OBJ)
+	
 all:	fft elk
 
 clean:
