@@ -13,7 +13,6 @@ use modldapu
 use modrdm
 use modtest
 use modqpt
-use mod_addons_q
 ! !DESCRIPTION:
 !   Reads in the input parameters from the file {\tt elk.in}. Also sets default
 !   values for the input parameters.
@@ -974,34 +973,6 @@ case('lps')
       read(50,*,err=20)(lpsrsh(lm1,lm2,i),lm2=l**2+1,(l+1)**2)
     enddo
   enddo 
-case('vqm')
-  read(50,*,err=20) nvq
-  allocate(vqm(3,nvq))
-  do i=1,nvq
-    read(50,*,err=20) vqm(:,i)
-  end do
-case('tq0bz')
-  read(50,*,err=20) tq0bz
-case('vq0c')
-  nvq0=1
-  read(50,*,err=20) vq0c(:,1)
-  aq0(1)=1.d0/sum(vq0c(:,1)**2)
-case('gqmax')
-  read(50,*,err=20) gqmax
-case('gqsh')
-  read(50,*,err=20) gqsh
-case('chi0_include_bands')
-  read(50,*,err=20) chi0_include_bands(:)
-case('chi0_exclude_bands')
-  read(50,*,err=20) chi0_exclude_bands(:)  
-case('response_w')
-  read(50,*,err=20) lr_nw
-  read(50,*,err=20) lr_w0,lr_w1,lr_eta  
-case('response_fxc')
-  read(50,*,err=20) fxctype,nfxca,fxca0,fxca1
-case('response_wann')
-  read(50,*,err=20) wannier_chi0_chi
-  read(50,*,err=20) wannier_chi0_afm
 case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_add_poco
@@ -1044,21 +1015,9 @@ case('wannier_plot')
   read(50,*,err=20)(bound3d(i,3),i=1,3)
   read(50,*,err=20)(nrxyz(i),i=1,3)
   read(50,*,err=20)nwfplot,firstwf  
-case('megqwan_dist')
-  read(50,*,err=20) megqwan_mindist,megqwan_maxdist
-case('megqwan_cutoff')
-  read(50,*,err=20) megqwan_cutoff1,megqwan_cutoff2
-case('megqwan_include')
-  read(50,*,err=20) nwann_include
-  allocate(iwann_include(nwann_include))
-  read(50,*,err=20) (iwann_include(i),i=1,nwann_include)
 case('mpigrid')
   lmpigrid=.true.
   read(50,*,err=20) mpigrid(1),mpigrid(2),mpigrid(3) 
-case('sic')
-  read(50,*,err=20) sic
-  read(50,*,err=20) lf_maxt
-  read(50,*,err=20) nitersic
 case('disentangle')
   read(50,*,err=20) ldisentangle  
 case('')

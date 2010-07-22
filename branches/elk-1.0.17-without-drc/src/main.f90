@@ -93,20 +93,10 @@ do itask=1,ntasks
     call writetensmom
   case(500)
     call testcheck
-  case(800)
-    call response
-  case(801)
-    call crpa
-  case(802)
-    call unscreened_u
   case(804)
     call genscell
   case(805)
     call genwfdrc
-  case(809)
-    call sic_genvwan 
-  case(810)
-    call sic_gndstate
   case(822)
     call bandrlm  
   case(811)

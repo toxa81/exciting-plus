@@ -22,7 +22,7 @@ include ../make.inc
 # modules
 SRC_libxc = libxcifc_stub.f90
 include libxc.inc
-SRC_modules = mod_addons.f90 mod_addons_q.f90 mod_mpi_grid.f90 mod_timer.f90 \
+SRC_modules = mod_addons.f90 mod_mpi_grid.f90 mod_timer.f90 \
   modmain.f90 modqpt.f90 mod_nrkp.f90 mod_hdf5.f90 $(SRC_libxc) modxcifc.f90 \
   modldapu.f90 modrdm.f90 modphonon.f90 modtest.f90 mod_lf.f90
 
