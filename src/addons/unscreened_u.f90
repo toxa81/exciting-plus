@@ -6,7 +6,7 @@ implicit none
 integer iq,ig,i,n,n1
 integer nvqloc,iqloc
 real(8) v2(3),vtc(3)
-logical lgamma,wproc1
+logical wproc1
 character*100 qnm
 complex(8) zt1
 
@@ -21,8 +21,7 @@ if (.not.wannier) then
   call pstop
 endif
 wannier_megq=.true.
-lgamma=.true.
-call init_qbz(lgamma,1)
+call init_qbz(tq0bz,1)
 call init_q_gq
 ! create q-directories
 if (mpi_grid_root()) then
