@@ -1,21 +1,10 @@
 tasks
+  0
   400
   401
   402
   403
 
-! for WF plot
-!tasks
-!  1
-!  363
-!
-maxscl
-  1
-nosym
- .true.
-
-  
-    
 nempty
   20
 
