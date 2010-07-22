@@ -23,8 +23,9 @@ do i=1,nmegqblhloc(1,ikloc)
 ! default : include all interband transitions         
   l1=.true.
 ! cRPA case : don't include bands in energy window [crpa_e1,crpa_e2]
-  if (bndint(ist1,evalsvnr(ist1,ik),crpa_e1,crpa_e2).and. &
-      bndint(ist2,evalsvnr(ist2,jk),crpa_e1,crpa_e2)) l1=.false.
+  if (bndint(ist1,evalsvnr(ist1,ik),chi0_exclude_bands(1),&
+      chi0_exclude_bands(2)).and.bndint(ist2,evalsvnr(ist2,jk),&
+      chi0_exclude_bands(1),chi0_exclude_bands(2))) l1=.false.
   if (l1) then
     if (abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-10) then
       wt(i)=(occsvnr(ist1,ik)-occsvnr(ist2,jk))/(evalsvnr(ist1,ik) - &

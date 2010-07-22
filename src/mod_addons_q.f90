@@ -39,6 +39,9 @@ real(8), allocatable :: tpgq(:,:)
 complex(8), allocatable :: sfacgq(:,:)
 complex(8), allocatable :: ylmgq(:,:)
 
+! true if Gamma point included in the integration over Brillouin zone
+logical tq0bz
+data tq0bz/.true./
 integer nvq0
 real(8) vq0c(3,8)
 real(8) aq0(8)

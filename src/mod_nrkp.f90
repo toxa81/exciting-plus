@@ -12,10 +12,11 @@ complex(8), allocatable :: ylmgknr(:,:,:)
 complex(8), allocatable :: wfsvmtnrloc(:,:,:,:,:,:)
 complex(8), allocatable :: wfsvitnrloc(:,:,:,:)
 complex(8), allocatable :: wanncnrloc(:,:,:)
-complex(8), allocatable :: pmat(:,:,:,:)
+complex(8), allocatable :: pmatnrloc(:,:,:,:)
 
 real(8), allocatable :: evalsvnr(:,:)
 real(8), allocatable :: occsvnr(:,:)
+integer, allocatable :: spinor_ud(:,:,:)
 
 contains
 
@@ -125,8 +126,8 @@ allocate(wfsvitnrloc(ngkmax,nspinor,nstsv,nkptnrloc))
 allocate(evecfvnrloc(nmatmax,nstfv,nspnfv,nkptnrloc))
 allocate(evecsvnrloc(nstsv,nstsv,nkptnrloc))
 if (lpmat) then
-  if (allocated(pmat)) deallocate(pmat)
-  allocate(pmat(3,nstsv,nstsv,nkptnrloc))
+  if (allocated(pmatnrloc)) deallocate(pmatnrloc)
+  allocate(pmatnrloc(3,nstsv,nstsv,nkptnrloc))
 endif
 if (wannier) then
   if (allocated(wanncnrloc)) deallocate(wanncnrloc)
@@ -136,7 +137,6 @@ if (wannier) then
   if (allocated(wann_unkit)) deallocate(wann_unkit)
   allocate(wann_unkit(ngkmax,nspinor,nwann,nkptnrloc))
 endif
-allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 call timer_start(1,reset=.true.)
 ! read eigen-vectors
 if (mpi_grid_side(dims=(/dim_k/))) then
@@ -162,9 +162,11 @@ if (wproc.and.fout.gt.0) then
   write(fout,'("Generating wave-functions")')
   call flushifc(fout)
 endif
+allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 ! transform eigen-vectors
 wfsvmtnrloc=zzero
 wfsvitnrloc=zzero
+if (ldisentangle) tevecsv=.true.
 do ikloc=1,nkptnrloc
   ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
 ! get apw coeffs 
@@ -189,9 +191,11 @@ do ikloc=1,nkptnrloc
     evecsvnrloc(1,1,ikloc),wfsvitnrloc(1,1,1,ikloc))
   if (lpmat) then
     call genpmat(ngknr(ikloc),igkignr(1,ikloc),vgkcnr(1,1,ikloc),&
-      apwalm,evecfvnrloc(1,1,1,ikloc),evecsvnrloc(1,1,ikloc),pmat(1,1,1,ikloc))
+      apwalm,evecfvnrloc(1,1,1,ikloc),evecsvnrloc(1,1,ikloc),&
+      pmatnrloc(1,1,1,ikloc))
   endif    
 enddo !ikloc
+deallocate(apwalm)
 call timer_stop(1)
 if (wproc.and.fout.gt.0) then
   write(fout,'("Done in ",F8.2," seconds")')timer_get_value(1)
@@ -230,7 +234,21 @@ call mpi_grid_reduce(evalsvnr(1,1),nstsv*nkptnr,dims=(/dim_k/),all=.true.)
 if (allocated(occsvnr)) deallocate(occsvnr)
 allocate(occsvnr(nstsv,nkptnr))
 call occupy2(nkptnr,wkptnr,evalsvnr,occsvnr)
-deallocate(apwalm)
+if (mpi_grid_root()) then
+  open(180,file='EIGVALNR.OUT',form='formatted',status='replace')
+  write(180,'(I6," : nkptnr")') nkptnr
+  write(180,'(I6," : nstsv")') nstsv
+  do ik=1,nkptnr
+    write(180,*)
+    write(180,'(I6,4G18.10," : k-point, vkl, wkpt")') ik,vklnr(:,ik),wkptnr(ik)
+    write(180,'(" (state, eigenvalue and occupancy below)")')
+    do i=1,nstsv
+      write(180,'(I6,2G18.10)')i,evalsvnr(i,ik),occsvnr(i,ik)
+    end do
+    write(180,*)
+  end do
+  close(180)
+endif
 if (wannier) then
   call timer_start(1)
 ! calculate Wannier function occupancies 

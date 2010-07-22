@@ -100,11 +100,6 @@ integer ngvecme
 !   1 : magnetic response
 integer lrtype
 data lrtype/0/
-real(8) lr_e1
-data lr_e1/-100.1d0/
-real(8) lr_e2
-data lr_e2/100.1d0/
-real(8) lr_min_e12
 
 ! number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> in the Bloch basis
 !  for a given k-point
@@ -131,6 +126,13 @@ complex(8), allocatable :: megqblh2(:,:)
 !   2-nd index : global index of pair of bands (n,n')
 !   3-rd index : k-point
 integer, allocatable :: bmegqblh(:,:,:)
+
+real(8) chi0_include_bands(2)
+data chi0_include_bands/-100.1d0,100.1d0/
+real(8) chi0_exclude_bands(2)
+data chi0_include_bands/100.1d0,-100.1d0/
+
+real(8) lr_min_e12
 
 real(8) megqwan_cutoff1
 data megqwan_cutoff1/-0.1d0/
@@ -213,15 +215,6 @@ data wannier_chi0_afm/.false./
 ! low level switch: compute matrix elements of e^{i(G+q)x} in the basis of
 !   Wannier functions; depends on crpa and wannier_chi0_chi
 logical wannier_megq
-! low-level switch: write or not file with matrix elements; depends on task 
-logical write_megq_file
-
-! for cRPA: exclude interval of interband transitions 
-real(8) crpa_e1,crpa_e2
-data crpa_e1/100.1d0/
-data crpa_e2/-100.1d0/
-
-integer, allocatable :: spinor_ud(:,:,:)
 
 ! indices of response functions in global array f_response(:,:,:)
 integer, parameter :: f_chi0                 = 1

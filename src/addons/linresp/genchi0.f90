@@ -46,6 +46,10 @@ if (wproc) then
   write(150,'("  energy step     [eV] : ", F9.4)')lr_dw
   write(150,'("  eta             [eV] : ", F9.4)')lr_eta
   write(150,*)  
+  write(150,'("Included band interval (Ha)        : ",2F8.2)')&
+    chi0_include_bands(1),chi0_include_bands(2)
+  write(150,'("Excluded band interval (Ha)        : ",2F8.2)')&
+    chi0_exclude_bands(1),chi0_exclude_bands(2) 
   call flushifc(150)
 endif
   
