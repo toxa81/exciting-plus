@@ -17,14 +17,14 @@ call genapwfr
 call genlofr
 call getufr
 call genufrp
-call genwfnr(151,tq0bz)
+call genwfnr(-1,tq0bz)
+
+fname="wfnrkp.hdf5"
 if (mpi_grid_root()) then
-  fname="wfnrkp.hdf5"
   call hdf5_create_file(fname)
   call hdf5_create_group(fname,"/","parameters")
   call hdf5_create_group(fname,"/","kpoints")
 endif
-
 if (mpi_grid_side(dims=(/dim_k/))) then
   do i=0,mpi_grid_size(dim_k)-1
     if (mpi_grid_x(dim_k).eq.i) then
@@ -43,6 +43,10 @@ if (mpi_grid_side(dims=(/dim_k/))) then
         if (allocated(pmatnrloc)) then
           call hdf5_write(fname,"/kpoints/"//trim(kname),"pmat",&
             pmatnrloc(1,1,1,ikloc),(/3,nstsv,nstsv/))
+        endif
+        if (wannier) then
+          call hdf5_write(fname,"/kpoints/"//trim(kname),"wannc",&
+            wanncnrloc(1,1,ikloc),(/nwann,nstsv/))          
         endif
       enddo
     endif

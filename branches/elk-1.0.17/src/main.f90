@@ -101,6 +101,8 @@ do itask=1,ntasks
     call unscreened_u
   case(804)
     call genscell
+  case(805)
+    call genwfdrc
   case(809)
     call sic_genvwan 
   case(810)

@@ -980,6 +980,8 @@ case('vqm')
   do i=1,nvq
     read(50,*,err=20) vqm(:,i)
   end do
+case('tq0bz')
+  read(50,*,err=20) tq0bz
 case('vq0c')
   nvq0=1
   read(50,*,err=20) vq0c(:,1)
@@ -988,11 +990,13 @@ case('gqmax')
   read(50,*,err=20) gqmax
 case('gqsh')
   read(50,*,err=20) gqsh
+case('chi0_include_bands')
+  read(50,*,err=20) chi0_include_bands(:)
+case('chi0_exclude_bands')
+  read(50,*,err=20) chi0_exclude_bands(:)  
 case('response_w')
   read(50,*,err=20) lr_nw
   read(50,*,err=20) lr_w0,lr_w1,lr_eta  
-case('response_bands')
-  read(50,*,err=20) lr_e1,lr_e2
 case('response_fxc')
   read(50,*,err=20) fxctype,nfxca,fxca0,fxca1
 case('response_wann')
@@ -1055,8 +1059,6 @@ case('sic')
   read(50,*,err=20) sic
   read(50,*,err=20) lf_maxt
   read(50,*,err=20) nitersic
-case('crpa')
-  read(50,*,err=20) crpa_e1,crpa_e2
 case('disentangle')
   read(50,*,err=20) ldisentangle  
 case('')

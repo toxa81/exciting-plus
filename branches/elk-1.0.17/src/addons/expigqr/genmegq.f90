@@ -77,7 +77,7 @@ if (wproc) then
     & 3G18.10)')vqc(:,iq)
   write(150,*)
   write(150,'("Bloch functions band interval (N1,N2 or E1,E2) : ",2F8.3)')&
-    lr_e1,lr_e2
+    chi0_include_bands(1),chi0_include_bands(2)
   write(150,*)
   write(150,'("Minimal energy transition (eV) : ",F12.6)')lr_min_e12*ha2ev    
   write(150,*)

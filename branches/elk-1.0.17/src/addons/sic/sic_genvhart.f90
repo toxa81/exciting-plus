@@ -12,7 +12,6 @@ complex(8), allocatable :: pwmt(:,:,:)
 complex(8), allocatable :: pwir(:)
 complex(8), allocatable :: ylmtorlm(:,:)
 complex(8) expikt
-logical lgamma
 allocate(ylmtorlm(lmmaxvr,lmmaxvr))
 
 !b[m1_, m2_] := 
@@ -43,11 +42,8 @@ call invzge(ylmtorlm,lmmaxvr)
 
 vhwanmt=zzero
 vhwanir=zzero
-lr_e1=100.1d0
-lr_e2=-100.1d0
 wannier_megq=.true.
-lgamma=.true.
-call init_qbz(lgamma,1)
+call init_qbz(tq0bz,1)
 call init_q_gq
 ! create q-directories
 !if (mpi_grid_root()) then

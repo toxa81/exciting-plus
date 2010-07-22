@@ -44,8 +44,10 @@ do ikloc=1,nkptnrloc
 !       both bands ist1 and ist2 fall into energy interval
 !     2. this bands are necessary to compute matrix elements
 !       in Wannier basis
-      le1=bndint(ist1,evalsvnr(ist1,ik),lr_e1,lr_e2)
-      le2=bndint(ist2,evalsvnr(ist2,jk),lr_e1,lr_e2)
+      le1=bndint(ist1,evalsvnr(ist1,ik),chi0_include_bands(1),&
+        chi0_include_bands(2))
+      le2=bndint(ist2,evalsvnr(ist2,jk),chi0_include_bands(1),&
+        chi0_include_bands(2))
       ldocc=abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-6
       lwann=.false.
       if (wannier_megq) then
