@@ -1,7 +1,6 @@
 subroutine genwfdrc
 use modmain
 use mod_nrkp
-use mod_addons_q
 use mod_hdf5
 implicit none
 character*100 fname
@@ -17,7 +16,7 @@ call genapwfr
 call genlofr
 call getufr
 call genufrp
-call genwfnr(-1,tq0bz)
+call genwfnr(-1,.true.)
 
 fname="wfnrkp.hdf5"
 if (mpi_grid_root()) then
