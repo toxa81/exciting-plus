@@ -132,8 +132,8 @@ if (iproc.eq.0) then
       write(70,508)1,nrtot
       if (lwannier_plot_complex) then
         do ir=1,nrtot
-          write(70,'(2G18.10)') sum(dreal(wf(:,n,ir))), &
-                                sum(dimag(wf(:,n,ir)))
+          write(70,'(2G18.10)') sum(real(wf(:,n,ir))), &
+                                sum(imag(wf(:,n,ir)))
 !        write(70,'(2G18.10)')(sum(dreal(wf(:,n,ir))),ir=1,nrtot), &
 !                             (sum(dimag(wf(:,n,ir))),ir=1,nrtot)
         enddo
