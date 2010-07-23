@@ -103,6 +103,8 @@ do itask=1,ntasks
     call genscell
   case(805)
     call genwfdrc
+  case(806)
+    call writebz
   case(809)
     call sic_genvwan 
   case(810)
