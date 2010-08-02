@@ -105,6 +105,8 @@ do itask=1,ntasks
     call genwfdrc
   case(806)
     call writebz
+  case(807,808)
+    call writewann
   case(809)
     call sic_genvwan 
   case(810)

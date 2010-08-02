@@ -47,8 +47,6 @@ if (sic) then
   if (allocated(evecsv0loc)) deallocate(evecsv0loc)
   allocate(evecsv0loc(nstsv,nstsv,nkptloc))
 endif
-! no band disentanglement in ground state calculation
-ldisentangle=.false. 
 ! initialise OEP variables if required
 if (xctype(1).lt.0) call init2
 if (wproc) then

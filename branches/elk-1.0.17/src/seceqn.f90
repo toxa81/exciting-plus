@@ -66,7 +66,6 @@ end if
 evalsv0(:,ik)=evalsv(:,ik)
 if (wannier) then
   call genwann(ikloc,evecfv,evecsv)
-  if (ldisentangle) call disentangle(evalsv(1,ik),wann_c(1,1,ikloc),evecsv)
   if (wann_add_poco) then
     call wann_seceqn(ikloc,evecsv)
     call genwann(ikloc,evecfv,evecsv)

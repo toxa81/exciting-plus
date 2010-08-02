@@ -35,6 +35,7 @@ call linengy
 call genapwfr
 ! generate the local-orbital radial functions
 call genlofr
+call getufr
 if (mpi_grid_root()) then
   open(50,file='PMAT.OUT')
   close(50,status='DELETE')

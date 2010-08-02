@@ -20,56 +20,10 @@ integer, allocatable :: spinor_ud(:,:,:)
 
 contains
 
-subroutine genwfnr(fout,lpmat)
+subroutine gengknr
 use modmain
 implicit none
-integer, intent(in) :: fout
-logical, intent(in) :: lpmat
-integer ik,ikloc,n,j,ik1,isym,ig,i
-complex(8), allocatable :: apwalm(:,:,:,:)
-real(8) w2,t1,sz
-logical, external :: wann_diel
-complex(8), allocatable :: evecfvnrloc(:,:,:,:)
-complex(8), allocatable :: evecsvnrloc(:,:,:)
-
-! get energies of states in reduced part of BZ
-call timer_start(3,reset=.true.)
-if (wproc.and.fout.gt.0) then
-  write(fout,*)
-  write(fout,'("Reading energies of states")')
-  call flushifc(fout)
-endif
-if (mpi_grid_root()) then
-! read from IBZ
-  do ik=1,nkpt
-    call getevalsv(vkl(1,ik),evalsv(1,ik))
-  enddo
-endif
-call mpi_grid_bcast(evalsv(1,1),nstsv*nkpt)
-if (allocated(evalsvnr)) deallocate(evalsvnr)
-allocate(evalsvnr(nstsv,nkptnr))
-evalsvnr=0.d0
-do ikloc=1,nkptnrloc
-  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-  call findkpt(vklnr(1,ik),isym,ik1) 
-  evalsvnr(:,ik)=evalsv(:,ik1)
-enddo
-call timer_stop(3)
-if (wproc.and.fout.gt.0) then
-  write(fout,'("Done in ",F8.2," seconds")')timer_get_value(3)
-  call timestamp(fout)
-  call flushifc(fout)
-endif
-!if (wproc.and.fout.gt.0) then
-!  write(fout,*)
-!  write(fout,'("non-reduced to reduced k-point mapping")')
-!  do ik=1,nkptnr
-!    call findkpt(vklnr(1,ik),isym,ik1)
-!    write(fout,'(" ik : ",I4,", vklnr(ik) : ",3F10.6,", jk : ",I4,&
-!      &", vkl(jk) : ",3F10.6)')ik,vklnr(:,ik),ik1,vkl(:,ik1)
-!  enddo
-!endif
-
+integer ik,ikloc,ig
 ! generate G+k vectors for entire BZ (this is required to compute 
 !   wave-functions at each k-point)
 if (allocated(vgklnr)) deallocate(vgklnr)
@@ -97,6 +51,59 @@ do ikloc=1,nkptnrloc
     call genylm(lmaxvr,tpgknr(1,ig,ikloc),ylmgknr(1,ig,ikloc))
   enddo
 enddo
+return
+end subroutine
+
+subroutine genwfnr(fout,lpmat)
+use modmain
+implicit none
+integer, intent(in) :: fout
+logical, intent(in) :: lpmat
+integer ik,ikloc,n,j,ik1,isym,ig,i
+complex(8), allocatable :: apwalm(:,:,:,:)
+real(8) w2,t1,sz
+logical, external :: wann_diel
+complex(8), allocatable :: evecfvnrloc(:,:,:,:)
+complex(8), allocatable :: evecsvnrloc(:,:,:)
+
+! get energies of states in reduced part of BZ
+call timer_start(3,reset=.true.)
+if (wproc.and.fout.gt.0) then
+  write(fout,*)
+  write(fout,'("Reading energies of states")')
+  if (fout.ne.6) call flushifc(fout)
+endif
+if (mpi_grid_root()) then
+! read from IBZ
+  do ik=1,nkpt
+    call getevalsv(vkl(1,ik),evalsv(1,ik))
+  enddo
+endif
+call mpi_grid_bcast(evalsv(1,1),nstsv*nkpt)
+if (allocated(evalsvnr)) deallocate(evalsvnr)
+allocate(evalsvnr(nstsv,nkptnr))
+evalsvnr=0.d0
+do ikloc=1,nkptnrloc
+  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+  call findkpt(vklnr(1,ik),isym,ik1) 
+  evalsvnr(:,ik)=evalsv(:,ik1)
+enddo
+call timer_stop(3)
+if (wproc.and.fout.gt.0) then
+  write(fout,'("Done in ",F8.2," seconds")')timer_get_value(3)
+  call timestamp(fout)
+  if (fout.ne.6) call flushifc(fout)
+endif
+!if (wproc.and.fout.gt.0) then
+!  write(fout,*)
+!  write(fout,'("non-reduced to reduced k-point mapping")')
+!  do ik=1,nkptnr
+!    call findkpt(vklnr(1,ik),isym,ik1)
+!    write(fout,'(" ik : ",I4,", vklnr(ik) : ",3F10.6,", jk : ",I4,&
+!      &", vkl(jk) : ",3F10.6)')ik,vklnr(:,ik),ik1,vkl(:,ik1)
+!  enddo
+!endif
+call gengknr
 if (wproc.and.fout.gt.0) then
 ! eigen-vectors
   sz=dble(nmatmax*nstfv*nspnfv)+dble(nstsv*nstsv)
@@ -116,7 +123,7 @@ if (wproc.and.fout.gt.0) then
   write(fout,'("Size of wave-function arrays (MB) : ",F10.2)')sz
   write(fout,*)
   write(fout,'("Reading eigen-vectors")')
-  call flushifc(fout)
+  if (fout.ne.6) call flushifc(fout)
 endif
 call mpi_grid_barrier()
 if (allocated(wfsvmtnrloc)) deallocate(wfsvmtnrloc)
@@ -154,13 +161,13 @@ call mpi_grid_bcast(evecsvnrloc(1,1,1),nstsv*nstsv*nkptnrloc,&
 call timer_stop(1)
 if (wproc.and.fout.gt.0) then
   write(fout,'("Done in ",F8.2," seconds")')timer_get_value(1)
-  call flushifc(fout)
+  if (fout.ne.6) call flushifc(fout)
 endif
 call timer_start(1,reset=.true.)
 if (wproc.and.fout.gt.0) then
   write(fout,*)
   write(fout,'("Generating wave-functions")')
-  call flushifc(fout)
+  if (fout.ne.6) call flushifc(fout)
 endif
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 ! transform eigen-vectors
@@ -200,7 +207,7 @@ call timer_stop(1)
 if (wproc.and.fout.gt.0) then
   write(fout,'("Done in ",F8.2," seconds")')timer_get_value(1)
   call timestamp(fout)
-  call flushifc(fout)
+  if (fout.ne.6) call flushifc(fout)
 endif
 ! generate Wannier function expansion coefficients
 if (wannier) then
@@ -214,7 +221,7 @@ if (wannier) then
   if (wproc.and.fout.gt.0) then
     write(fout,*)
     write(fout,'("Generating Wannier functions")')
-    call flushifc(fout)
+    if (fout.ne.6) call flushifc(fout)
   endif !wproc
   do ikloc=1,nkptnrloc
     do n=1,nwann
@@ -267,18 +274,18 @@ if (wannier) then
   call mpi_grid_reduce(wann_occ(1),nwann,dims=(/dim_k/),all=.true.)
   call mpi_grid_reduce(wann_ene(1),nwann,dims=(/dim_k/),all=.true.)
   if (wproc.and.fout.gt.0) then
-    write(151,'("  Wannier function occupation numbers : ")')
+    write(fout,'("  Wannier function occupation numbers : ")')
     do n=1,nwann
-      write(151,'("    n : ",I4,"  occ : ",F8.6)')n,wann_occ(n)
+      write(fout,'("    n : ",I4,"  occ : ",F8.6)')n,wann_occ(n)
     enddo
   endif
   call timer_stop(1)
   if (wproc.and.fout.gt.0) then
-    write(151,'("  Dielectric Wannier functions : ",L1)')wann_diel()
-    write(151,*)
+    write(fout,'("  Dielectric Wannier functions : ",L1)')wann_diel()
+    write(fout,*)
     write(fout,'("Done in ",F8.2," seconds")')timer_get_value(1)
     call timestamp(fout)
-    call flushifc(fout)
+    if (fout.ne.6) call flushifc(fout)
   endif
 endif
 if (spinpol) then
@@ -297,7 +304,7 @@ if (spinpol) then
   call mpi_grid_reduce(spinor_ud(1,1,1),2*nstsv*nkptnr,dims=(/dim_k/),all=.true.)
 endif  
 if (wproc.and.fout.gt.0) then
-  write(151,'("Done.")')
+  write(fout,'("Done.")')
 endif
 deallocate(evecfvnrloc,evecsvnrloc)
 end subroutine
