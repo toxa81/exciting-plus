@@ -79,7 +79,10 @@ do ikloc=1,nkptloc
   write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ik,nkpt
 ! solve the first- and second-variational secular equations
   call seceqn(ikloc,evalfv,evecfv,evecsv)
-  if (wannier) call genwann_h(ikloc)
+  if (wannier) then
+    if (ldisentangle) call disentangle(evalsv(1,ik),wann_c(1,1,ikloc),evecsv)
+    call genwann_h(ikloc)
+  endif
 ! compute the band characters if required
   call bandchar(.true.,lmax,ikloc,evecfv,evecsv,lmmax,bc(1,1,1,1,ik))
 ! end loop over k-points

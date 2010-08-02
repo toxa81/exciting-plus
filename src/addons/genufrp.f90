@@ -6,7 +6,7 @@ integer is,ias,l,io1,io2,ir,ic
 do ic=1,natmcls
   ias=ic2ias(ic)
   is=ias2is(ias)
-  do l=0,lmaxvr
+  do l=0,lmaxapw
     do io1=1,nufr(l,is)
       do io2=1,nufr(l,is)
         do ir=1,nrmt(is)

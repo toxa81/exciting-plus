@@ -1,12 +1,12 @@
 subroutine genwfdrc
 use modmain
 use mod_nrkp
-use mod_addons_q
 use mod_hdf5
 implicit none
 character*100 fname
 character*20 kname,gname
 integer ikloc,ik,i
+integer f
 
 call init0
 call init1
@@ -17,12 +17,19 @@ call genapwfr
 call genlofr
 call getufr
 call genufrp
-call genwfnr(-1,tq0bz)
+wproc=mpi_grid_root()
+call genwfnr(6,.true.)
 
 fname="wfnrkp.hdf5"
 if (mpi_grid_root()) then
   call hdf5_create_file(fname)
   call hdf5_create_group(fname,"/","parameters")
+  f=0
+  if (wannier) f=1
+  call hdf5_write(fname,"/parameters","wannier",f)
+  f=0
+  if (allocated(pmatnrloc)) f=1
+  call hdf5_write(fname,"/parameters","pmat",f)
   call hdf5_create_group(fname,"/","kpoints")
 endif
 if (mpi_grid_side(dims=(/dim_k/))) then
@@ -47,6 +54,10 @@ if (mpi_grid_side(dims=(/dim_k/))) then
         if (wannier) then
           call hdf5_write(fname,"/kpoints/"//trim(kname),"wannc",&
             wanncnrloc(1,1,ikloc),(/nwann,nstsv/))          
+        endif
+        if (spinpol) then
+          call hdf5_write(fname,"/kpoints/"//trim(kname),"spinor_ud",&
+            spinor_ud(1,1,ik),(/2,nstsv/))
         endif
       enddo
     endif

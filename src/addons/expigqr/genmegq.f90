@@ -147,11 +147,6 @@ do ikstep=1,nkstep
     call genmegqblh(iq,ikstep,ngknr(ikstep),ngknr_jk,igkignr(1,ikstep),&
       igkignr_jk,wfsvmtnrloc(1,1,1,1,1,ikstep),wfsvmt_jk,&
       wfsvitnrloc(1,1,1,ikstep),wfsvit_jk)
-! add contribution from k-point to the matrix elements of e^{-i(G+q)x} in 
-!  the basis of Wannier functions
-    if (wannier_megq) then
-      call genmegqwan(ikstep,expkqt)
-    endif !wannier
   endif !ikstep.le.nkptnrloc
   call timer_stop(2)
 enddo !ikstep
@@ -188,6 +183,17 @@ if (all(vqm(:,iq).eq.0).and.allocated(pmatnrloc)) then
   enddo
 endif
 !call printmegqblh(iq)
+if (wannier_megq) then
+  do ikloc=1,nkptnrloc
+! add contribution from k-point to the matrix elements of e^{-i(G+q)x} in 
+!  the basis of Wannier functions
+    call genmegqwan(ikloc,expkqt)
+  enddo
+! sum over all k-points and interband transitions to get <n,T=0|e^{-i(G+q)x}|n',T'>
+  call mpi_grid_reduce(megqwan(1,1),nmegqwan*ngvecme,dims=(/dim_k,dim_b/),&
+    all=.true.)
+  megqwan=megqwan/nkptnr
+endif
 ! time for wave-functions send/recieve
 t1=timer_get_value(1)
 call mpi_grid_reduce(t1,dims=(/dim_k,dim_b/))
@@ -217,12 +223,6 @@ if (wproc) then
   write(150,'("    multiply wave-functions        : ",F8.2)')t5/np
   write(150,'("Speed (me/sec/proc)                : ",F10.2)')dn1/t2
   call flushifc(150)
-endif
-if (wannier_megq) then
-! sum over all k-points and interband transitions to get <n,T=0|e^{-i(G+q)x}|n',T'>
-  call mpi_grid_reduce(megqwan(1,1),nmegqwan*ngvecme,dims=(/dim_k,dim_b/),&
-    all=.true.)
-  megqwan=megqwan/nkptnr
 endif
 deallocate(wfsvmt_jk)
 deallocate(wfsvit_jk)
