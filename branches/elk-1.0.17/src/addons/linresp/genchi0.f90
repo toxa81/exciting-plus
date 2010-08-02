@@ -13,9 +13,6 @@ complex(8), allocatable :: mexp(:,:,:)
 !complex(8), allocatable :: megqwan1(:,:)
 complex(8), allocatable :: megqwan_tmp(:,:)
 integer, allocatable :: imegqwan_tmp(:,:)
-character*10 c1,c2,c3,c4
-character, parameter :: orb(4)=(/'s','p','d','f'/)
-integer lm1,lm2,ias,jas
 
 integer i,iw,i1,i2,ikloc,n,j
 integer ist1,ist2,nfxcloc,nwloc,jwloc,iwloc
@@ -86,30 +83,10 @@ if (wannier_chi0_chi) then
     write(150,'("megqwan distance cutoff (min,max) : ",2F12.6)')&
       megqwan_mindist,megqwan_maxdist
     write(150,'("Number of Wannier transitions after cutoff : ",I6)')nmegqwan
-    write(150,'("List of Wannier transitions")')
-    do i=1,nmegqwan
-      ias=iwann(1,imegqwan(1,i))
-      lm1=iwann(2,imegqwan(1,i))
-      jas=iwann(1,imegqwan(2,i))
-      lm2=iwann(2,imegqwan(2,i))
-      vtc(:)=avec(:,1)*imegqwan(3,i)+avec(:,2)*imegqwan(4,i)+&
-             avec(:,3)*imegqwan(5,i)  
-      vtc(:)=vtc(:)+atposc(:,ias2ia(jas),ias2is(jas))-&
-        atposc(:,ias2ia(ias),ias2is(ias))       
-      write(c1,'(I6)')ias2ia(ias)
-      write(c2,'(I1)')lm2m(lm1)+lm2l(lm1)+1
-      c3="("//trim(spsymb(ias2is(ias)))//trim(adjustl(c1))//"-"//&
-        orb(lm2l(lm1)+1)//trim(adjustl(c2))//")"
-      write(c1,'(I6)')ias2ia(jas)
-      write(c2,'(I1)')lm2m(lm2)+lm2l(lm2)+1
-      c4="("//trim(spsymb(ias2is(jas)))//trim(adjustl(c1))//"-"//&
-        orb(lm2l(lm2)+1)//trim(adjustl(c2))//")"
-      write(150,'("i : ",I4,"   ",I4," ",A,"  -> ",I4," ",A,"    R=",3F12.6,&
-        &"   D=",F12.6,"  |me(G0q)|=",G18.10)')i,imegqwan(1,i),&
-        trim(c3),imegqwan(2,i),trim(c4),vtc,sqrt(sum(vtc(:)**2)),&
-        abs(megqwan(i,iig0q))
-    enddo
-    call flushifc(150)
+    write(150,*)
+    write(150,'("<n|e^{-iqx}|n''T> where q-vector is not reduced")')    
+    write(150,'(65("-"))')    
+    call printwanntrans(150,megqwan(1,iig0q))
   endif
   allocate(chi0wan(nmegqwan,nmegqwan))
   allocate(chi0wan_k(nmegqwan,nmegqwan,nkptnrloc))
@@ -167,10 +144,9 @@ call timer_reset(7)
 call timer_reset(8)
 ! loop over energy points
 do iw=1,lr_nw
-  chi0=zzero
-  if (wannier_chi0_chi) chi0wan_k=zzero
 ! sum over fraction of k-points
   call timer_start(2)
+  chi0=zzero
   do ikloc=1,nkptnrloc
     if (nmegqblhloc(1,ikloc).gt.0) then
 ! for each k-point : sum over interband transitions
@@ -189,7 +165,8 @@ do iw=1,lr_nw
 ! for response in Wannier basis
   if (wannier_chi0_chi) then
     call timer_start(3)
-    chi0wan(:,:)=zzero
+    chi0wan_k=zzero
+    chi0wan=zzero
     do ikloc=1,nkptnrloc
       if (nmegqblhwan(ikloc).gt.0) then
         call genchi0wan_k(ikloc,lr_w(iw),chi0wan_k(1,1,ikloc))

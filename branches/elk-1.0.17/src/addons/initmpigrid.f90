@@ -7,7 +7,8 @@ integer i1,i2,nd
 !------------------------!
 !     parallel grid      !
 !------------------------!
-if (task.eq.0.or.task.eq.1.or.task.eq.22..or.task.eq.20.or.task.eq.822.or.task.eq.805) then
+if (task.eq.0.or.task.eq.1.or.task.eq.22..or.task.eq.20.or.task.eq.822.or.&
+    task.eq.805.or.task.eq.807.or.task.eq.808) then
   nd=2
   allocate(d(nd))
   d=1

@@ -3,7 +3,7 @@ use modmain
 use mod_addons_q
 implicit none
 integer, intent(in) :: iq
-integer iwloc,nwloc,iw,n,n1,i,ig
+integer iwloc,nwloc,iw,n,n1,i,ig,nmegqwanloc,iloc
 real(8) v2(3),vtc(3)
 complex(8), allocatable :: vscrn(:,:)
 complex(8), allocatable :: megqwan1(:,:)
@@ -35,26 +35,21 @@ do n=1,nwann
 enddo
 ! distribute frequency points over 1-st dimension
 nwloc=mpi_grid_map(lr_nw,dim_k)
+! distribute Wannier transitions over 3-rd dimension
+nmegqwanloc=mpi_grid_map(nmegqwan,dim_b)
 do iwloc=1,nwloc
   iw=mpi_grid_map(lr_nw,dim_k,loc=iwloc)
+! broadcast chi0
+  call mpi_grid_bcast(chi0loc(1,1,iwloc),ngvecme*ngvecme,dims=(/dim_b/))
   call genvscrn(iq,iw,chi0loc(1,1,iwloc),krnl,vscrn,epsilon,chi)
   call zgemm('C','N',nwann,ngvecme,ngvecme,zone,megqwan1,ngvecme,&
     vscrn,ngvecme,zzero,zm2,nwann)
   call zgemm('N','N',nwann,nwann,ngvecme,zone,zm2,nwann,megqwan1,ngvecme,&
     zzero,zm1,nwann)
-  do i=1,nmegqwan
+  do iloc=1,nmegqwanloc
+    i=mpi_grid_map(nmegqwan,dim_b,loc=iloc)
     n=imegqwan(1,i)
     n1=imegqwan(2,i)
-!    v2=dble(imegqwan(3:5,i))
-!    call r3mv(avec,v2,vtc)
-!    zt1=zzero
-!    do ig1=1,ngvecme
-!      do ig2=1,ngvecme
-!        zt1=zt1+dconjg(megqwan1(ig1,n))*vscrn(ig1,ig2)*&
-!          megqwan1(ig2,n1)
-!      enddo
-!    enddo
-!    uscrnwan(i,iwloc)=uscrnwan(i,iwloc)+zt1*exp(-zi*dot_product(vqc(:,iq),vtc))
     uscrnwan(i,iwloc)=uscrnwan(i,iwloc)+zm1(n,n1)*expiqt(i)
   enddo
 enddo

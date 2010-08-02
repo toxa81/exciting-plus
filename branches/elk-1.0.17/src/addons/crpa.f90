@@ -19,9 +19,7 @@ character*100 qnm,fuscrn
 complex(8) zt1
 integer nwloc,iwloc,iw
 character*8 c8
-#ifdef _PAPI_
-call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
-#endif
+logical exist
 call init0
 call init1
 if (.not.mpi_grid_in()) return
@@ -66,8 +64,20 @@ if (mpi_grid_root()) then
   call flushifc(151)
 endif
 wproc=wproc1
+inquire(file="wfnrkp.hdf5",exist=exist)
+if (exist) then
+  call timer_start(1,reset=.true.)
+  call drc_read_wf
+  call timer_stop(1)
+  if (wproc1) then
+    write(151,*)
+    write(151,'("drc_read_wf done in ",F8.2," seconds")')timer_get_value(1)
+    call flushifc(151)
+  endif
+else
 ! generate wave-functions for entire BZ
-call genwfnr(151,tq0bz)
+  call genwfnr(151,tq0bz)
+endif
 all_wan_ibt=.true.
 call getimegqwan(all_wan_ibt)
 ! setup energy mesh
@@ -83,6 +93,9 @@ nwloc=mpi_grid_map(lr_nw,dim_k)
 nvqloc=mpi_grid_map(nvq,dim_q)
 allocate(uscrnwan(nmegqwan,nwloc))
 uscrnwan=zzero
+#ifdef _PAPI_
+call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
+#endif
 ! main loop over q-points
 do iqloc=1,nvqloc
   iq=mpi_grid_map(nvq,dim_q,loc=iqloc)
@@ -90,7 +103,7 @@ do iqloc=1,nvqloc
   call genchi0(iq)
   call genuscrn(iq)
 enddo
-call mpi_grid_reduce(uscrnwan(1,1),nmegqwan*nwloc,dims=(/dim_b,dim_q/))
+call mpi_grid_reduce(uscrnwan(1,1),nmegqwan*nwloc,dims=(/dim_q,dim_b/))
 uscrnwan=uscrnwan/omega/nkptnr
 #ifdef _PAPI_
 call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
@@ -106,13 +119,15 @@ if (mpi_grid_side(dims=(/dim_k/)).and.nwloc.gt.0) then
   call hdf5_create_file(trim(fuscrn))
   call hdf5_create_group(trim(fuscrn),"/","iwloc")
   call hdf5_create_group(trim(fuscrn),"/","parameters")
-  call hdf5_write(fuscrn,"/parameters","nwann",nwann)
+  call hdf5_write(fuscrn,"/parameters","nwann",nwann)  
   call hdf5_write(fuscrn,"/parameters","nw",lr_nw)
   call hdf5_write(fuscrn,"/parameters","nwloc",nwloc)
   call hdf5_write(fuscrn,"/parameters","x",mpi_grid_x(dim_k))
   call hdf5_write(fuscrn,"/parameters","size",mpi_grid_size(dim_k))
   call hdf5_write(fuscrn,"/parameters","nmegqwan",nmegqwan)
   call hdf5_write(fuscrn,"/parameters","imegqwan",imegqwan(1,1),(/5,nmegqwan/))  
+  call hdf5_write(fuscrn,"/parameters","ngq",ngq(1))
+  call hdf5_write(fuscrn,"/parameters","ngridk",ngridk(1),(/3/))
   do iwloc=1,nwloc
     iw=mpi_grid_map(lr_nw,dim_k,loc=iwloc)
     write(c8,'(I8.8)')iwloc
@@ -125,12 +140,10 @@ endif
 if (wproc1) then
   write(151,*)
   write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
-  write(151,'("   n       n''        T                   U_scrn(w=0)")')
+  write(151,*)
+  write(151,'("screened U_{n,n''T}(w=0)")')    
   write(151,'(65("-"))')
-  do i=1,nmegqwan
-    write(151,'(I4,4X,I4,4X,3I3,4X,2G18.10)')imegqwan(:,i),&
-      dreal(uscrnwan(i,1)),dimag(uscrnwan(i,1))
-  enddo
+    call printwanntrans(151,uscrnwan(1,1))
   write(151,*)  
   write(151,'("Done.")')
   close(151)

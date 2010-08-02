@@ -3,11 +3,25 @@ use modmain
 use modldapu
 use mod_mpi_grid
 implicit none
+complex(8), allocatable :: wann_ene_m(:,:,:,:,:)
+complex(8), allocatable :: wann_occ_m(:,:,:,:,:)
+allocate(wann_ene_m(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
+allocate(wann_occ_m(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
+call wann_ene_occ_(wann_ene_m,wann_occ_m)
+deallocate(wann_ene_m,wann_occ_m)
+return
+end
+
+subroutine wann_ene_occ_(wann_ene_m,wann_occ_m)
+use modmain
+use modldapu
+use mod_mpi_grid
+implicit none
+complex(8), intent(inout) :: wann_ene_m(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot)
+complex(8), intent(inout) :: wann_occ_m(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot)
 ! local variables
 real(8) t(2),w2
 integer n,i,ik,ispn,ias,lm1,lm2,l,j,n1,n2,m1,m2,ispn1,ispn2,ikloc
-complex(8), allocatable :: wann_ene_m(:,:,:,:,:)
-complex(8), allocatable :: wann_occ_m(:,:,:,:,:)
 complex(8) z2
 
 wann_ene=0.d0
@@ -33,8 +47,6 @@ if (wproc.and.nosym) then
   enddo
 endif
 
-allocate(wann_ene_m(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
-allocate(wann_occ_m(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
 wann_occ_m=zzero
 wann_ene_m=zzero
 ! generate occupancy matrix in WF basis for collinear (!!!) case only
@@ -146,7 +158,6 @@ if (wproc) then
     enddo !l
   enddo !i
 endif
-deallocate(wann_ene_m,wann_occ_m)
 return
 end
   

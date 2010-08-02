@@ -24,12 +24,12 @@ do is=1,nspecies
 end do
 call getatmcls
 if (allocated(nufr)) deallocate(nufr)
-allocate(nufr(0:lmaxvr,nspecies))
-call getnufr(lmaxvr)
+allocate(nufr(0:lmaxapw,nspecies))
+call getnufr(lmaxapw)
 if (allocated(ufr)) deallocate(ufr)
-allocate(ufr(nrmtmax,0:lmaxvr,nufrmax,natmcls))
+allocate(ufr(nrmtmax,0:lmaxapw,nufrmax,natmcls))
 if (allocated(ufrp)) deallocate(ufrp)
-allocate(ufrp(0:lmaxvr,nufrmax,nufrmax,natmcls))
+allocate(ufrp(0:lmaxapw,nufrmax,nufrmax,natmcls))
 if (allocated(lm2l)) deallocate(lm2l)
 allocate(lm2l(51**2))
 if (allocated(lm2m)) deallocate(lm2m)
