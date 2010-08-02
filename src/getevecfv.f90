@@ -88,7 +88,10 @@ if (nspnfv.ne.nspnfv_) then
 end if
 ! if p = k then return
 t1=abs(vpl(1)-vkl(1,ik))+abs(vpl(2)-vkl(2,ik))+abs(vpl(3)-vkl(3,ik))
-if (t1.lt.epslat) return
+if (t1.lt.epslat) then
+  deallocate(vgkl_,igkig_)
+  return
+end if
 allocate(evecfvt(nmatmax,nstfv))
 ! index to spatial rotation in lattice point group
 lspl=lsplsymc(isym)
