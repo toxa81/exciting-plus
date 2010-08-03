@@ -33,6 +33,10 @@ enddo
 do n=1,nwann
   megqwan1(:,n)=megqwan(idxmegqwan(n,n,0,0,0),:)
 enddo
+! restore matrix element at q=0 (it was changed at genmegq to take optical limit)
+if (all(vqm(:,iq).eq.0)) then
+  megqwan1(iig0q,:)=zone
+endif
 ! distribute frequency points over 1-st dimension
 nwloc=mpi_grid_map(lr_nw,dim_k)
 ! distribute Wannier transitions over 3-rd dimension
