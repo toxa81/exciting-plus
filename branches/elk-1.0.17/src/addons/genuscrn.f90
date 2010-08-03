@@ -35,7 +35,9 @@ do n=1,nwann
 enddo
 ! restore matrix element at q=0 (it was changed at genmegq to take optical limit)
 if (all(vqm(:,iq).eq.0)) then
-  megqwan1(iig0q,:)=zone
+  do ig=1,ngq(iq)
+    if (igqig(ig,iq).eq.1) megqwan1(ig,:)=zone
+  enddo
 endif
 ! distribute frequency points over 1-st dimension
 nwloc=mpi_grid_map(lr_nw,dim_k)
