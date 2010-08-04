@@ -22,6 +22,7 @@ character*8 c8
 logical exist
 call init0
 call init1
+if (iproc.eq.0) call timestamp(6,"done init")
 if (.not.mpi_grid_in()) return
 if (.not.wannier) then
   write(*,*)
