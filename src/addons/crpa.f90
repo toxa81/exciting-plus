@@ -22,7 +22,7 @@ character*8 c8
 logical exist
 call init0
 call init1
-if (iproc.eq.0) call timestamp(6,"done init")
+if (iproc.eq.0) call timestamp(6,"[crpa] done init")
 if (.not.mpi_grid_in()) return
 if (.not.wannier) then
   write(*,*)
@@ -145,7 +145,8 @@ if (wproc1) then
   write(151,'("screened U_{n,n''T}(w=0)")')    
   write(151,'(65("-"))')
     call printwanntrans(151,uscrnwan(1,1))
-  write(151,*)  
+  call timestamp(151)
+  write(151,*) 
   write(151,'("Done.")')
   close(151)
 endif
