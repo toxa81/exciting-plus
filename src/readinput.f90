@@ -1061,6 +1061,10 @@ case('sic')
   read(50,*,err=20) nitersic
 case('disentangle')
   read(50,*,err=20) ldisentangle  
+case('scvl')
+  read(50,*,err=20) scvl(:,1)
+  read(50,*,err=20) scvl(:,2)
+  read(50,*,err=20) scvl(:,3)  
 case('')
   goto 10
 case default
