@@ -11,9 +11,11 @@ implicit none
 ! local variables
 integer itask
 call mpi_world_initialize
+if (iproc.eq.0) call timestamp(6,"done mpi_world_initialize")
 call hdf5_initialize
 ! read input files
 call readinput
+if (iproc.eq.0) call timestamp(6,"done readinput")
 ! perform the appropriate task
 do itask=1,ntasks
   task=tasks(itask)
