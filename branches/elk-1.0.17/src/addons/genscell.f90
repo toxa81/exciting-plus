@@ -1,7 +1,6 @@
 subroutine genscell
 use modmain
 implicit none
-integer scm(3,3)
 real(8) sca(3,3),scainv(3,3)
 integer i,i1,i2,i3,ia,is
 real(8) v1(3),v2(3)
@@ -14,11 +13,8 @@ call init0
 !call init1
 call mpi_grid_initialize((/1/))
 
-scm(:,1)=(/1,1,0/)
-scm(:,2)=(/1,0,1/)
-scm(:,3)=(/0,1,1/)
 do i=1,3
-  sca(:,i)=scm(1,i)*avec(:,1)+scm(2,i)*avec(:,2)+scm(3,i)*avec(:,3)
+  sca(:,i)=scvl(1,i)*avec(:,1)+scvl(2,i)*avec(:,2)+scvl(3,i)*avec(:,3)
 enddo
 nsc=int(abs(r3mdet(sca)/r3mdet(avec))+epslat)
 write(*,*)

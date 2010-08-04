@@ -182,7 +182,7 @@ if (all(vqm(:,iq).eq.0).and.allocated(pmatnrloc)) then
     enddo
   enddo
 endif
-!call printmegqblh(iq)
+!call printmegqblh(iq+100)
 if (wannier_megq) then
   do ikloc=1,nkptnrloc
 ! add contribution from k-point to the matrix elements of e^{-i(G+q)x} in 

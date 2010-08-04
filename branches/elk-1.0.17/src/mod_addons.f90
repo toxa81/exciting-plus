@@ -57,6 +57,8 @@ integer, allocatable :: inghbr(:,:,:)
 ! unit conversion
 real(8), parameter :: ha2ev=27.21138386d0
 real(8), parameter :: au2ang=0.5291772108d0
+! super-cell vectors in lattice coordinates
+integer scvl(3,3)
 
 !-----------------------!
 !      MPI parallel     !
