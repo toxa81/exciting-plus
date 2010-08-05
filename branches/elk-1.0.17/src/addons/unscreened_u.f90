@@ -41,9 +41,6 @@ call genapwfr
 call genlofr
 call getufr
 call genufrp
-! read Fermi energy
-if (mpi_grid_root()) call readfermi
-call mpi_grid_bcast(efermi)
 wproc1=.false.
 if (mpi_grid_root()) then
   wproc1=.true.
