@@ -15,7 +15,7 @@ real(8) t1
 integer i,j,iq
 integer nvqloc,iqloc,ist,ik
 character*100 qnm
-logical wproc1,lpmat
+logical wproc1,exist,lpmat
 logical, external :: wann_diel
 ! MPI grid:
 !   (matrix elements) : (1) k-points x (2) q-points x 
@@ -50,7 +50,6 @@ if (.not.mpi_grid_in()) then
   write(*,'("Info(response) processor ",I6," is not in grid")')iproc
   return
 endif
-
 ! check if momentum matrix is required
 lpmat=.false.
 do j=1,nvq
@@ -89,11 +88,20 @@ call genapwfr
 call genlofr
 call getufr
 call genufrp
-! read Fermi energy
-if (mpi_grid_root()) call readfermi
-call mpi_grid_bcast(efermi)
+inquire(file="wfnrkp.hdf5",exist=exist)
+if (exist) then
+  call timer_start(1,reset=.true.)
+  call drc_read_wf
+  call timer_stop(1)
+  if (wproc1) then
+    write(151,*)
+    write(151,'("drc_read_wf done in ",F8.2," seconds")')timer_get_value(1)
+    call flushifc(151)
+  endif
+else
 ! generate wave-functions for entire BZ
-call genwfnr(151,lpmat)
+  call genwfnr(151,lpmat)
+endif
 if (wannier_megq) then
   all_wan_ibt=.false.
   call getimegqwan(all_wan_ibt)

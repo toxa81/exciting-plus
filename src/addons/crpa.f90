@@ -11,12 +11,10 @@ real real_time,cpu_time,mflops
 integer*8 fp_ins
 real(8) t1
 #endif
-integer iq,ig,i,n,n1,ist,ik
+integer iq,i
 integer nvqloc,iqloc
-real(8) v2(3),vtc(3)
 logical wproc1
 character*100 qnm,fuscrn
-complex(8) zt1
 integer nwloc,iwloc,iw
 character*8 c8
 logical exist
@@ -51,9 +49,6 @@ call genapwfr
 call genlofr
 call getufr
 call genufrp
-! read Fermi energy
-if (mpi_grid_root()) call readfermi
-call mpi_grid_bcast(efermi)
 wproc1=.false.
 if (mpi_grid_root()) then
   wproc1=.true.
