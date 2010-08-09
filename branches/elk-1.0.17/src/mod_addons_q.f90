@@ -19,6 +19,8 @@ real(8) gqmax
 data gqmax/2.d0/
 integer gqsh
 data gqsh/2/
+logical tgqsh
+data tgqsh/.false./
 ! maximum number of G+q vectors
 integer ngqmax
 ! index of G0-vector, which brigs q-vector to first BZ

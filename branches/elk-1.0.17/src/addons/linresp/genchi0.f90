@@ -144,6 +144,7 @@ call timer_reset(7)
 call timer_reset(8)
 ! loop over energy points
 do iw=1,lr_nw
+  call timer_start(10,reset=.true.)
 ! sum over fraction of k-points
   call timer_start(2)
   chi0=zzero
@@ -185,9 +186,11 @@ do iw=1,lr_nw
 !    endif
     call timer_stop(3)
   endif !wannier_chi0_chi
+  call timer_stop(10)
   if (wproc) then
     open(160,file=trim(fstat),status="REPLACE",form="FORMATTED")
     write(160,'(I8)')iw
+    write(160,'(F8.2)')timer_get_value(10)   
     close(160)
   endif
 enddo !iw
