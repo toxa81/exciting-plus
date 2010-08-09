@@ -990,6 +990,8 @@ case('gqmax')
   read(50,*,err=20) gqmax
 case('gqsh')
   read(50,*,err=20) gqsh
+case('tgqsh')
+  read(50,*,err=20) tgqsh 
 case('chi0_include_bands')
   read(50,*,err=20) chi0_include_bands(:)
 case('chi0_exclude_bands')

@@ -6,7 +6,7 @@ real(8) t0,t2
 integer iq,ig,i
 integer v1(3)
 real(8) v2(3)
-logical tgsh,tautogqmax
+logical tautogqmax
 
 if (allocated(vqlnr)) deallocate(vqlnr)
 allocate(vqlnr(3,nvq))
@@ -19,7 +19,6 @@ allocate(vqc(3,nvq))
 if (allocated(ig0q)) deallocate(ig0q)
 allocate(ig0q(nvq))
 
-tgsh=.false.
 tautogqmax=.true.
 
 if (tautogqmax) then
@@ -61,7 +60,7 @@ do iq=1,nvq
   enddo
   ngqmax=max(ngqmax,i)
 enddo
-if (tgsh) then
+if (tgqsh) then
   call getngvecme
   ngqmax=ngvecme
 endif
@@ -80,7 +79,7 @@ do iq=1,nvq
   do ig=1,ngvec
     v2(:)=vgc(:,ig)+vqc(:,iq)
     t2=v2(1)**2+v2(2)**2+v2(3)**2
-    if ((.not.tgsh.and.t2.le.t0).or.(tgsh.and.ig.le.ngvecme)) then
+    if ((.not.tgqsh.and.t2.le.t0).or.(tgqsh.and.ig.le.ngvecme)) then
       ngq(iq)=ngq(iq)+1
       gq(ngq(iq),iq)=sqrt(t2)
       vgqc(:,ngq(iq),iq)=v2(:)
