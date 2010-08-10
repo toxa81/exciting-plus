@@ -11,7 +11,7 @@ integer ig,is,ir,n,ias,io1,io2,l1,m1,lm1,l2,m2,lm2,l3,m3,lm3,ic
 integer igloc,ngvecmeloc
 integer lmmaxexp
 complex(8) zt1
-real(8) fr(nrmtmax),gr(nrmtmax),cf(4,nrmtmax)
+real(8) fr(nrmtmax) !,gr(nrmtmax),cf(4,nrmtmax)
 real(8), allocatable :: jl(:,:)
 real(8), allocatable :: uju(:,:,:,:,:)
 real(8), allocatable :: gnt(:,:,:)
@@ -124,20 +124,20 @@ do igloc=1,ngvecmeloc
   enddo !ic
 enddo !ig
 ! syncronize all values along auxiliary k-direction
-call mpi_grid_reduce(gntuju(1,1,1),ngntujumax*natmcls*ngvecme,dims=(/dim_k/),all=.true.)
-call mpi_grid_barrier(dims=(/dim_k/))
-call mpi_grid_reduce(igntuju(1,1,1,1),2*ngntujumax*natmcls*ngvecme,dims=(/dim_k/),all=.true.)
-call mpi_grid_barrier(dims=(/dim_k/))
-call mpi_grid_reduce(ngntuju(1,1),natmcls*ngvecme,dims=(/dim_k/),all=.true.)    
-call mpi_grid_barrier(dims=(/dim_k/))
-!do ig=1,ngvecme
-!  call mpi_grid_reduce(gntuju(1,1,ig),ngntujumax*natmcls,dims=(/dim_k/),&
-!    all=.true.)
-!  call mpi_grid_reduce(igntuju(1,1,1,ig),4*ngntujumax*natmcls,dims=(/dim_k/),&
-!    all=.true.)
-!  call mpi_grid_reduce(ngntuju(1,ig),natmcls,dims=(/dim_k/),all=.true.)    
-!  call mpi_grid_barrier(dims=(/dim_k/))
-!enddo
+!call mpi_grid_reduce(gntuju(1,1,1),ngntujumax*natmcls*ngvecme,dims=(/dim_k/),all=.true.)
+!call mpi_grid_barrier(dims=(/dim_k/))
+!call mpi_grid_reduce(igntuju(1,1,1,1),2*ngntujumax*natmcls*ngvecme,dims=(/dim_k/),all=.true.)
+!call mpi_grid_barrier(dims=(/dim_k/))
+!call mpi_grid_reduce(ngntuju(1,1),natmcls*ngvecme,dims=(/dim_k/),all=.true.)    
+!call mpi_grid_barrier(dims=(/dim_k/))
+do ig=1,ngvecme
+  call mpi_grid_reduce(gntuju(1,1,ig),ngntujumax*natmcls,dims=(/dim_k/),&
+    all=.true.)
+  call mpi_grid_reduce(igntuju(1,1,1,ig),2*ngntujumax*natmcls,dims=(/dim_k/),&
+    all=.true.)
+  call mpi_grid_reduce(ngntuju(1,ig),natmcls,dims=(/dim_k/),all=.true.)    
+  call mpi_grid_barrier(dims=(/dim_k/))
+enddo
 deallocate(jl)
 deallocate(uju)
 deallocate(gnt)
