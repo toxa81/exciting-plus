@@ -184,6 +184,7 @@ if (all(vqm(:,iq).eq.0).and.allocated(pmatnrloc)) then
 endif
 !call printmegqblh(iq+100)
 if (wannier_megq) then
+  call timer_start(6,reset=.true.)
   do ikloc=1,nkptnrloc
 ! add contribution from k-point to the matrix elements of e^{-i(G+q)x} in 
 !  the basis of Wannier functions
@@ -193,6 +194,11 @@ if (wannier_megq) then
   call mpi_grid_reduce(megqwan(1,1),nmegqwan*ngvecme,dims=(/dim_k,dim_b/),&
     all=.true.)
   megqwan=megqwan/nkptnr
+  call timer_stop(6)
+  if (wproc) then
+    write(150,*)
+    write(150,'("Time for megqwan : ",F8.2)')timer_get_value(6)
+  endif
 endif
 ! time for wave-functions send/recieve
 t1=timer_get_value(1)
