@@ -81,7 +81,8 @@ do ikloc=1,nkptloc
   call seceqn(ikloc,evalfv,evecfv,evecsv)
   if (wannier) then
     if (ldisentangle) call disentangle(evalsv(1,ik),wann_c(1,1,ikloc),evecsv)
-    call genwann_h(ikloc)
+    call genwann_h(.true.,evalsv(1,ik),wann_c(1,1,ikloc),&
+      wann_h(1,1,ik),wann_e(1,ik))
   endif
 ! compute the band characters if required
   call bandchar(.true.,lmax,ikloc,evecfv,evecsv,lmmax,bc(1,1,1,1,ik))
