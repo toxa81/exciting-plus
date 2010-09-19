@@ -173,6 +173,7 @@ if (wannier_megq) then
   call timer_start(6,reset=.true.)
 ! compute matrix elements of e^{-i(G+q)x} in the basis of Wannier functions
   call genmegqwan(iq)
+  call printmegqwan(iq)
 ! sum over all k-points and interband transitions to get <n,T=0|e^{-i(G+q)x}|n',T'>
   call mpi_grid_reduce(megqwan(1,1),nmegqwan*ngvecme,dims=(/dim_k,dim_b/),&
     all=.true.)
