@@ -11,7 +11,6 @@ F77_OPTS =
 LIB_SYS =
 LIB_LPK = lapack.a blas.a
 LIB_FFT = fftlib.a
-LIB_XC =
 
 include ../make.inc
 
@@ -20,10 +19,17 @@ include ../make.inc
 #-------------------------------------------------------------------------------
 
 # modules
-SRC_libxc = libxcifc_stub.f90
-include libxc.inc
+#-------------------------------------------------------------------------------
+SRC_libxc = libxcifc_stub.f90                                                                               
+# To install libxc first download and compile the library, and then copy libxc.a
+# to this directory. Then uncomment the following lines and run 'make clean'
+# followed by 'make'.
+#LIB_XC = libxc.a
+#SRC_libxc = libxc_funcs.f90 libxc.f90 libxcifc.f90
+#-------------------------------------------------------------------------------
+
 SRC_modules = mod_addons.f90 mod_addons_q.f90 mod_mpi_grid.f90 mod_timer.f90 \
-  modmain.f90 modqpt.f90 mod_nrkp.f90 mod_hdf5.f90 $(SRC_libxc) modxcifc.f90 \
+  mod_papi.f90 modmain.f90 modqpt.f90 mod_nrkp.f90 mod_hdf5.f90 $(SRC_libxc) modxcifc.f90 \
   modldapu.f90 modrdm.f90 modphonon.f90 modtest.f90 mod_lf.f90
 
 # main program
