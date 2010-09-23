@@ -1067,6 +1067,18 @@ case('scvl')
   read(50,*,err=20) scvl(:,1)
   read(50,*,err=20) scvl(:,2)
   read(50,*,err=20) scvl(:,3)  
+case('papi')
+  do i=1,maxpapievents
+    read(50,'(A256)') papievent(i)
+    if (trim(papievent(i)).eq.'') then
+      npapievents=i-1
+      goto 10
+    end if
+  end do
+  write(*,*)
+  write(*,'("Error(readinput): too many papi events")')
+  write(*,*)
+  stop
 case('')
   goto 10
 case default

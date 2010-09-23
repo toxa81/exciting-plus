@@ -354,4 +354,12 @@ real(8) sic_etot_correction
 data sic_etot_correction/0.d0/
 real(8) engytot0
 
+!--------------!
+!      PAPI    !
+!--------------!
+integer, parameter :: maxpapievents=16
+character*256 :: papievent(maxpapievents)
+integer :: npapievents
+data npapievents/0/
+
 end module
