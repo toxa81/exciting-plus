@@ -15,6 +15,7 @@ if (iproc.eq.0) call timestamp(6,"[main] done mpi_world_initialize")
 call hdf5_initialize
 ! read input files
 call readinput
+call papi_initialize(npapievents,papievent)
 if (iproc.eq.0) call timestamp(6,"[main] done readinput")
 ! perform the appropriate task
 do itask=1,ntasks
@@ -129,6 +130,7 @@ do itask=1,ntasks
   end select
   call mpi_world_barrier
 end do
+call papi_finalize
 call hdf5_finalize
 call mpi_grid_finalize
 call mpi_world_finalize
