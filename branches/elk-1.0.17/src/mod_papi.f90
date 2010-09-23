@@ -1,95 +1,104 @@
 module mod_papi
 use mod_mpi_grid
-!integer, parameter :: papi_nset=100
-!integer(8) :: papi_eventset_values(10,papi_nset)
-!real(8) :: papi_flops(papi_nset)
 
-integer, parameter :: papi_ncounter=4
-integer, parameter :: papi_ntimer=100
+integer, parameter :: papi_ntimers=100
+integer :: papi_ncounters
 integer :: papi_eventset
-integer(8) :: papi_timer(2,papi_ntimer)
-integer(8) :: papi_counter(papi_ncounter,2,papi_ntimer)
+integer(8) :: papi_timer(2,papi_ntimers)
+integer(8), allocatable :: papi_counter(:,:,:)
+character*256, allocatable :: papi_events(:)
+integer clockrate
 
 contains
 
 !-----------------!
 ! papi_initialize !
 !-----------------!
-subroutine papi_initialize
-#ifdef _PAPI_
+subroutine papi_initialize(nevents,events)
 implicit none
+#ifdef _PAPI_
 include 'f90papi.h'
-integer check
+#endif
+! arguments
+integer, intent(in) :: nevents
+character*(*), intent(in) :: events(*)
+#ifdef _PAPI_
+! local variables
+integer check,eventcode,i
 check=PAPI_VER_CURRENT
 call PAPIF_library_init(check)
 if (check.ne.PAPI_VER_CURRENT) then
   write(*,'("Error: PAPI library version is out of date")')
   call pstop
 endif
-call papi_start_set
-papi_timer=0
-papi_counter=0
-#endif
-papi_flops=-1000000.d0
-end subroutine
-
-!---------------!
-! papi_finalize !
-!---------------!
-subroutine papi_finalize
-#ifdef _PAPI_
-implicit none
-include 'f90papi.h'
-!call papi_stop_set
-call PAPIF_shutdown 
-#endif
-end subroutine
-
-!----------------!
-! papi_start_set !
-!----------------!
-subroutine papi_start_set
-#ifdef _PAPI_
-implicit none
-include 'f90papi.h'
-integer check,eventcode
-
+call PAPIF_get_clockrate(clockrate)
+! get number of hardware counters
+call PAPIF_num_counters(papi_ncounters)
+! take minimum value
+papi_ncounters=min(nevents,papi_ncounters)
+allocate(papi_counter(papi_ncounters,2,papi_ntimers))
+allocate(papi_events(papi_ncounters))
+! create set of counters
 papi_eventset=PAPI_NULL
 call PAPIF_create_eventset(papi_eventset,check)
 if (check.ne.PAPI_OK) then
   write(*,'("Error: PAPIF_create_eventset returned : ",I6)')check
   call pstop
 endif
-
-eventcode=PAPI_FP_OPS
-call PAPIF_add_event(papi_eventset,eventcode,check)
-if (check.ne.PAPI_OK) then
-  write(*,'("Error: PAPIF_add_event returned : ",I6)')check
-  call pstop
-endif
-!call PAPIF_get_real_usec(papi_eventset_values(1,iset),check)
+do i=1,papi_ncounters
+  papi_events(i)=trim(adjustl(events(i)))
+  call PAPIF_event_name_to_code(trim(adjustl(events(i))),eventcode,check)
+  if (check.ne.PAPI_OK) then
+    write(*,'("Error: PAPIF_event_name_to_code : ",I6)')check
+    write(*,'("  event name : ",A)')trim(adjustl(events(i)))
+    call pstop
+  endif
+  call PAPIF_add_event(papi_eventset,eventcode,check)  
+  if (check.ne.PAPI_OK) then
+    write(*,'("Error: PAPIF_add_event returned : ",I6)')check
+    call pstop
+  endif
+enddo
+! start counters
 call PAPIF_start(papi_eventset,check)
 if (check.ne.PAPI_OK) then
   write(*,'("Error: PAPIF_start returned : ",I6)')check
   call pstop
 endif
+papi_timer=0
+papi_counter=0
+#endif
+end subroutine
+
+!---------------!
+! papi_finalize !
+!---------------!
+subroutine papi_finalize
+implicit none
+#ifdef _PAPI_
+include 'f90papi.h'
+call PAPIF_shutdown 
 #endif
 end subroutine
 
 !------------------!
 ! papi_timer_start !
 !------------------!
-subroutine papi_timer_start(n)
-#ifdef _PAPI_
+subroutine papi_timer_start(n,reset)
 implicit none
+#ifdef _PAPI_
 include 'f90papi.h'
+#endif
+! arguments
 integer, intent(in) :: n
 logical, optional, intent(in) :: reset
+#ifdef _PAPI_
 integer check
 if (present(reset)) then
   if (reset) call papi_timer_reset(n)
 endif
-call PAPIF_get_real_usec(papi_timer(1,n),check)
+!call PAPIF_get_real_usec(papi_timer(1,n),check)
+call PAPIF_get_real_cyc(papi_timer(1,n),check)
 call PAPIF_read(papi_eventset,papi_counter(1,1,n),check)
 if (check.ne.PAPI_OK) then
   write(*,'("Error: PAPIF_read returned : ",I6)')check
@@ -102,22 +111,26 @@ end subroutine
 ! papi_timer_stop !
 !-----------------!
 subroutine papi_timer_stop(n)
-#ifdef _PAPI_
 implicit none
+#ifdef _PAPI_
 include 'f90papi.h'
+#endif
+! arguments
 integer, intent(in) :: n
+#ifdef _PAPI_
 integer check,i
-integer(8) counter0(papi_ncounter)
+integer(8) counter0(papi_ncounters)
 integer(8) time0
-call PAPIF_get_real_usec(time0,check)
 call PAPIF_read(papi_eventset,counter0,check)
+!call PAPIF_get_real_usec(time0,check)
+call PAPIF_get_real_cyc(time0,check)
 if (check.ne.PAPI_OK) then
   write(*,'("Error: PAPIF_read returned : ",I6)')check
   call pstop
 endif
 papi_timer(2,n)=papi_timer(2,n)+time0-papi_timer(1,n)
-do i=1,papi_ncounter
-  papi_counter(2,i,n)=papi_counter(2,i,n)+counter0(i)-papi_counter(1,i,n)
+do i=1,papi_ncounters
+  papi_counter(i,2,n)=papi_counter(i,2,n)+counter0(i)-papi_counter(i,1,n)
 enddo
 #endif
 end subroutine
@@ -126,49 +139,79 @@ end subroutine
 ! papi_timer_reset !
 !------------------!
 subroutine papi_timer_reset(n)
-#ifdef _PAPI_
 implicit none
+#ifdef _PAPI_
 include 'f90papi.h'
+#endif
+! arguments
 integer, intent(in) :: n
+#ifdef _PAPI_
 papi_timer(:,n)=0
 papi_counter(:,:,n)=0
 #endif
 end subroutine
 
-real(8) function papi_timer_get_value(i,n)
+subroutine papi_report(fout,values,comment)
 implicit none
-integer, intent(in) :: i
+integer, intent(in) :: fout
+integer*8, intent(in) :: values(0:papi_ncounters)
+character*(*), intent(in) :: comment
+#ifdef _PAPI_
+! local variables
+integer i
+integer(8) cycles
+real(8) time
+integer(8) fp_ops,l1_dca,l1_dcm
+
+fp_ops=-1
+l1_dca=-1
+l1_dcm=-1
+cycles=values(0)
+time=cycles/(clockrate*1.0d6)
+write(fout,'(60("-"))')
+if (trim(adjustl(comment)).ne."") then
+  write(fout,'(A)')trim(adjustl(comment))
+  write(fout,'(60("-"))')
+endif
+write(fout,'("approx. time (seconds) : ",F12.6)')time
+write(fout,'("cycles : ",I20)')cycles
+do i=1,papi_ncounters
+  write(fout,'(A," : ",I20)')trim(adjustl(papi_events(i))),values(i)
+  if (trim(adjustl(papi_events(i))).eq."PAPI_FP_OPS") fp_ops=values(i)
+  if (trim(adjustl(papi_events(i))).eq."PAPI_L1_DCA") l1_dca=values(i)
+  if (trim(adjustl(papi_events(i))).eq."PAPI_L1_DCM") l1_dcm=values(i)
+enddo
+write(fout,'(60("-"))')
+if (fp_ops.ge.0) then
+  write(fout,'("Computational intensity (ops/cycle) : ",F8.4)')dble(fp_ops)/cycles
+  write(fout,'("Performance (GFlops) : ",F16.4)')dble(fp_ops)/time/1.0d9  
+endif
+if (l1_dca.ge.0.and.l1_dcm.ge.0) then
+  write(fout,'("D1 cache hit,miss ratio (%) : ",2F8.4)')100.d0*dble(l1_dca)/(l1_dca+l1_dcm),&
+    100.d0*dble(l1_dcm)/(l1_dca+l1_dcm)
+  if (l1_dcm.gt.0) then 
+    write(fout,'("D1 cache utilization (hits/miss) : ",G18.10)')dble(l1_dca)/l1_dcm
+  endif
+endif
+write(fout,'(60("-"))')
+#endif
+return
+end subroutine
+
+subroutine papi_timer_read(n,values)
+implicit none
 integer, intent(in) :: n
-real(8) t1,t2
-t2=papi_timer(2,n)/1.0d6
-t1=papi_counter(i,2,n)/t2
-papi_timer_get_value=t1
-end function
+integer(8), intent(out) :: values(0:papi_ncounters)
+#ifdef _PAPI_
+integer i
+values(0)=papi_timer(2,n)
+do i=1,papi_ncounters
+  values(i)=papi_counter(i,2,n)
+enddo
+#endif
+return
+end subroutine
 
-!---------------!
-! papi_stop_set !
-!---------------!
-!subroutine papi_stop_set
-!#ifdef _PAPI_
-!implicit none
-!include 'f90papi.h'
-!integer check
-!call PAPIF_stop(papi_eventset,papi_eventset_values(3,iset),check)
-!if (check.ne.PAPI_OK) then
-!  write(*,'("Error: PAPIF_stop returned : ",I6)')check
-!  call pstop
-!endif
-!call PAPIF_get_real_usec(papi_eventset_values(2,iset),check)
-!tottime=(papi_eventset_values(2,iset)-papi_eventset_values(1,iset))/1.0d6
-!papi_flops(iset)=papi_eventset_values(3,iset)/tottime
-!#endif
-!end subroutine
-
-!real(8) function papi_mflops(iset)
-!implicit none
-!integer, intent(in) :: iset
-!papi_mflops=papi_flops(iset)/1.0d6
-!end function
-!
 
 end module
+

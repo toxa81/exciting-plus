@@ -7,6 +7,7 @@ module modmain
 use mod_mpi_grid
 use mod_timer
 use mod_addons
+use mod_papi
 
 !----------------------------!
 !     lattice parameters     !
