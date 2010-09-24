@@ -90,8 +90,9 @@ nvqloc=mpi_grid_map(nvq,dim_q)
 allocate(uscrnwan(nmegqwan,nwloc))
 uscrnwan=zzero
 #ifdef _PAPI_
-call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
+!call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
 #endif
+!call papi_start_set(1)
 ! main loop over q-points
 do iqloc=1,nvqloc
   iq=mpi_grid_map(nvq,dim_q,loc=iqloc)
@@ -101,13 +102,18 @@ do iqloc=1,nvqloc
 enddo
 call mpi_grid_reduce(uscrnwan(1,1),nmegqwan*nwloc,dims=(/dim_q,dim_b/))
 uscrnwan=uscrnwan/omega/nkptnr
+!call papi_stop_set(1)
 #ifdef _PAPI_
-call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
+!call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
 t1=dble(mflops)
 call mpi_grid_reduce(t1)
 if (wproc1) then
   write(151,*)
   write(151,'("Average performance (Gflops/proc) : ",F15.3)')t1/mpi_grid_nproc/1000.d0
+  !t1=papi_mflops(1)
+  !if (t1.ge.0.d0) then
+  !  write(151,'("Average performance (Gflops/proc) : ",F15.3)')t1/mpi_grid_nproc/1000.d0
+  !endif
 endif
 #endif
 if (mpi_grid_side(dims=(/dim_k/)).and.nwloc.gt.0) then

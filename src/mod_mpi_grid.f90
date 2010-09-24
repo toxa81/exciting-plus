@@ -35,7 +35,7 @@ end interface
 interface mpi_grid_reduce
   module procedure mpi_grid_reduce_i,mpi_grid_reduce_d, &
     mpi_grid_reduce_z,mpi_grid_reduce_f,mpi_grid_reduce_i2,&
-    mpi_grid_reduce_c
+    mpi_grid_reduce_c,mpi_grid_reduce_i8
 end interface
 
 interface mpi_grid_send
@@ -669,6 +669,45 @@ if (lallreduce) then
   call mpi_allreduce(val,tmp,length,MPI_INTEGER2,reduceop,comm,ierr)
 else
   call mpi_reduce(val,tmp,length,MPI_INTEGER2,reduceop,rootid,comm,ierr)
+endif
+call memcopy(tmp,val,length*sz)
+deallocate(tmp)
+#endif
+return
+end subroutine
+
+!-----------------------------!
+!      mpi_grid_reduce_i8     !
+!-----------------------------!
+subroutine mpi_grid_reduce_i8(val,n,dims,side,all,op,root)
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+! arguments
+integer(8), intent(inout) :: val
+integer, optional, intent(in) :: n
+integer, optional, dimension(:), intent(in) :: dims
+logical, optional, intent(in) :: side
+logical, optional, intent(in) :: all
+integer, optional, intent(in) :: op
+integer, optional, dimension(:), intent(in) :: root
+! local variables
+integer comm,rootid,ierr,sz
+logical lreduce,lallreduce
+integer length,reduceop
+integer(8), allocatable :: tmp(:)
+#ifdef _MPI_
+call mpi_grid_reduce_common(n_=n,dims_=dims,side_=side,all_=all,op_=op,&
+  root_=root,lreduce_=lreduce,lallreduce_=lallreduce,length_=length,&
+  reduceop_=reduceop,comm_=comm,rootid_=rootid)
+sz=sizeof(val)
+if (.not.lreduce) return
+allocate(tmp(length))
+if (lallreduce) then
+  call mpi_allreduce(val,tmp,length,MPI_INTEGER8,reduceop,comm,ierr)
+else
+  call mpi_reduce(val,tmp,length,MPI_INTEGER8,reduceop,rootid,comm,ierr)
 endif
 call memcopy(tmp,val,length*sz)
 deallocate(tmp)

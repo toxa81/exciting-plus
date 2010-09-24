@@ -12,6 +12,7 @@ real real_time,cpu_time,mflops
 integer*8 fp_ins
 real(8) t1
 #endif
+integer*8, allocatable :: hw_values(:)
 integer i,j,iq
 integer nvqloc,iqloc,ist,ik
 character*100 qnm
@@ -39,8 +40,10 @@ if (.not.wannier) wannier_chi0_chi=.false.
 if (.not.spinpol) wannier_chi0_afm=.false.
 if (wannier_chi0_chi) wannier_megq=.true.
 
+allocate(hw_values(0:papi_ncounters))
+call papi_timer_start(1)
 #ifdef _PAPI_
-call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
+!call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
 #endif
 
 ! initialise universal variables
@@ -135,18 +138,37 @@ do iqloc=1,nvqloc
   call genchi0(iq)
   call genchi(iq)
 enddo
+call papi_timer_stop(1)
+call papi_timer_read(1,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"total")
+
+call papi_timer_read(2,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"setup wt array")
+
+call papi_timer_read(3,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"setup megqblh2 array")
+
+call papi_timer_read(4,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"main call to zgemm")
+
+
 #ifdef _PAPI_
-call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
-t1=dble(mflops)
-call mpi_grid_reduce(t1)
+!call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
+!t1=dble(mflops)
+!call mpi_grid_reduce(t1)
 #endif
 
 if (wproc1) then
   write(151,*)
 #ifdef _PAPI_
-  write(151,'("Average performance (Gflops/proc) : ",F15.3)')t1/mpi_grid_nproc/1000.d0
+!  write(151,'("Average performance (Gflops/proc) : ",F15.3)')t1/mpi_grid_nproc/1000.d0
 #endif  
   write(151,'("Done.")')
+  call timestamp(151)
   close(151)
 endif
 

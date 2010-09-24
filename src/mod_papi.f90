@@ -59,15 +59,24 @@ do i=1,papi_ncounters
     call pstop
   endif
 enddo
+papi_timer=0
+papi_counter=0
+if (papi_ncounters.eq.0) return
 ! start counters
 call PAPIF_start(papi_eventset,check)
 if (check.ne.PAPI_OK) then
   write(*,'("Error: PAPIF_start returned : ",I6)')check
   call pstop
 endif
-papi_timer=0
-papi_counter=0
 #endif
+end subroutine
+
+subroutine proc_load(a,b,c)
+implicit none
+real(8), intent(in) :: a
+real(8), intent(in) :: b
+real(8), intent(out) :: c
+c=c+a*b
 end subroutine
 
 !---------------!
@@ -99,6 +108,7 @@ if (present(reset)) then
 endif
 !call PAPIF_get_real_usec(papi_timer(1,n),check)
 call PAPIF_get_real_cyc(papi_timer(1,n),check)
+if (papi_ncounters.eq.0) return
 call PAPIF_read(papi_eventset,papi_counter(1,1,n),check)
 if (check.ne.PAPI_OK) then
   write(*,'("Error: PAPIF_read returned : ",I6)')check
@@ -121,12 +131,14 @@ integer, intent(in) :: n
 integer check,i
 integer(8) counter0(papi_ncounters)
 integer(8) time0
-call PAPIF_read(papi_eventset,counter0,check)
 !call PAPIF_get_real_usec(time0,check)
 call PAPIF_get_real_cyc(time0,check)
-if (check.ne.PAPI_OK) then
-  write(*,'("Error: PAPIF_read returned : ",I6)')check
-  call pstop
+if (papi_ncounters.ne.0) then
+  call PAPIF_read(papi_eventset,counter0,check)
+  if (check.ne.PAPI_OK) then
+    write(*,'("Error: PAPIF_read returned : ",I6)')check
+    call pstop
+  endif
 endif
 papi_timer(2,n)=papi_timer(2,n)+time0-papi_timer(1,n)
 do i=1,papi_ncounters
@@ -169,10 +181,8 @@ l1_dcm=-1
 cycles=values(0)
 time=cycles/(clockrate*1.0d6)
 write(fout,'(60("-"))')
-if (trim(adjustl(comment)).ne."") then
-  write(fout,'(A)')trim(adjustl(comment))
-  write(fout,'(60("-"))')
-endif
+write(fout,'("PAPI report : ",A)')trim(adjustl(comment))
+write(fout,'(60("-"))')
 write(fout,'("approx. time (seconds) : ",F12.6)')time
 write(fout,'("cycles : ",I20)')cycles
 do i=1,papi_ncounters
@@ -182,6 +192,7 @@ do i=1,papi_ncounters
   if (trim(adjustl(papi_events(i))).eq."PAPI_L1_DCM") l1_dcm=values(i)
 enddo
 write(fout,'(60("-"))')
+write(fout,'("Derived metrics:")')
 if (fp_ops.ge.0) then
   write(fout,'("Computational intensity (ops/cycle) : ",F8.4)')dble(fp_ops)/cycles
   write(fout,'("Performance (GFlops) : ",F16.4)')dble(fp_ops)/time/1.0d9  
