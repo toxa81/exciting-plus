@@ -20,12 +20,12 @@ include ../make.inc
 
 # modules
 #-------------------------------------------------------------------------------
-#SRC_libxc = libxcifc_stub.f90                                                                               
+SRC_libxc = libxcifc_stub.f90                                                                               
 # To install libxc first download and compile the library, and then copy libxc.a
 # to this directory. Then uncomment the following lines and run 'make clean'
 # followed by 'make'.
-LIB_XC = libxc.a
-SRC_libxc = libxc_funcs.f90 libxc.f90 libxcifc.f90
+#LIB_XC = libxc.a
+#SRC_libxc = libxc_funcs.f90 libxc.f90 libxcifc.f90
 #-------------------------------------------------------------------------------
 
 SRC_modules = mod_addons.f90 mod_addons_q.f90 mod_mpi_grid.f90 mod_timer.f90 \
