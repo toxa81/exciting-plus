@@ -183,7 +183,7 @@ time=cycles/(clockrate*1.0d6)
 write(fout,'(60("-"))')
 write(fout,'("PAPI report : ",A)')trim(adjustl(comment))
 write(fout,'(60("-"))')
-write(fout,'("approx. time (seconds) : ",F12.6)')time
+write(fout,'("approx. time (seconds) : ",G18.10)')time
 write(fout,'("cycles : ",I20)')cycles
 do i=1,papi_ncounters
   write(fout,'(A," : ",I20)')trim(adjustl(papi_events(i))),values(i)
@@ -195,7 +195,7 @@ write(fout,'(60("-"))')
 write(fout,'("Derived metrics:")')
 if (fp_ops.ge.0) then
   write(fout,'("Computational intensity (ops/cycle) : ",F8.4)')dble(fp_ops)/cycles
-  write(fout,'("Performance (GFlops) : ",F16.4)')dble(fp_ops)/time/1.0d9  
+  write(fout,'("Performance (GFlops) : ",F8.4)')dble(fp_ops)/time/1.0d9  
 endif
 if (l1_dca.ge.0.and.l1_dcm.ge.0) then
   write(fout,'("D1 cache hit,miss ratio (%) : ",2F8.4)')100.d0*dble(l1_dca)/(l1_dca+l1_dcm),&
