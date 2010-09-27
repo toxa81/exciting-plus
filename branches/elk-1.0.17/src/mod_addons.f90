@@ -362,4 +362,15 @@ character*256 :: papievent(maxpapievents)
 integer :: npapievents
 data npapievents/0/
 
+integer, parameter :: pt_resp_tot=1
+integer, parameter :: pt_megq=2
+integer, parameter :: pt_megqblh=3
+integer, parameter :: pt_megqblh2=4
+integer, parameter :: pt_chi0_zgemm=5
+integer, parameter :: pt_chi0=6
+integer, parameter :: pt_chi=7
+
+
+
+
 end module
