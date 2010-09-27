@@ -13,6 +13,9 @@ complex(8), intent(out) :: chi(ngvecme,ngvecme)
 ! local variables
 !real(8), allocatable :: vcgq(:)
 integer ig,ig1,ig2
+
+call papi_timer_start(pt_vscrn)
+
 ! compute screened Coulomb potential using "symmetrized" dielectric function
 !allocate(vcgq(ngvecme))
 !do ig=1,ngvecme
@@ -58,5 +61,8 @@ if (all(vqm(:,iq).eq.0)) then
     enddo !ig2      
   enddo !ig1
 endif
+
+call papi_timer_stop(pt_vscrn)
+
 return
 end

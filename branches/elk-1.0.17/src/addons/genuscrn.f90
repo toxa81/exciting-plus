@@ -13,6 +13,9 @@ complex(8), allocatable :: zm2(:,:)
 complex(8), allocatable :: krnl(:,:)
 complex(8), allocatable :: epsilon(:,:)
 complex(8), allocatable :: chi(:,:)
+
+call papi_timer_start(pt_uscrn)
+
 allocate(vscrn(ngvecme,ngvecme))
 allocate(megqwan1(ngvecme,nwann))                                                                                                     
 allocate(expiqt(nmegqwan))
@@ -59,5 +62,8 @@ deallocate(expiqt)
 deallocate(zm1)
 deallocate(zm2)
 deallocate(krnl,epsilon,chi)
+
+call papi_timer_stop(pt_uscrn)
+
 return
 end

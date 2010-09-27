@@ -18,6 +18,7 @@ character*100 qnm,fuscrn
 integer nwloc,iwloc,iw
 character*8 c8
 logical exist
+integer*8, allocatable :: hw_values(:)
 call init0
 call init1
 if (iproc.eq.0) call timestamp(6,"[crpa] done init")
@@ -28,6 +29,8 @@ if (.not.wannier) then
   write(*,*)
   call pstop
 endif
+allocate(hw_values(0:papi_ncounters))
+call papi_timer_start(pt_crpa_tot1)
 wannier_megq=.true.
 call init_qbz(tq0bz,8)
 call init_q_gq
@@ -92,7 +95,7 @@ uscrnwan=zzero
 #ifdef _PAPI_
 !call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
 #endif
-!call papi_start_set(1)
+call papi_timer_start(pt_crpa_tot2)
 ! main loop over q-points
 do iqloc=1,nvqloc
   iq=mpi_grid_map(nvq,dim_q,loc=iqloc)
@@ -102,20 +105,59 @@ do iqloc=1,nvqloc
 enddo
 call mpi_grid_reduce(uscrnwan(1,1),nmegqwan*nwloc,dims=(/dim_q,dim_b/))
 uscrnwan=uscrnwan/omega/nkptnr
-!call papi_stop_set(1)
+call papi_timer_stop(pt_crpa_tot2)
+call papi_timer_stop(pt_crpa_tot1)
 #ifdef _PAPI_
 !call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
-t1=dble(mflops)
-call mpi_grid_reduce(t1)
-if (wproc1) then
-  write(151,*)
-  write(151,'("Average performance (Gflops/proc) : ",F15.3)')t1/mpi_grid_nproc/1000.d0
+!t1=dble(mflops)
+!call mpi_grid_reduce(t1)
+!if (wproc1) then
+!  write(151,*)
+  !write(151,'("Average performance (Gflops/proc) : ",F15.3)')t1/mpi_grid_nproc/1000.d0
   !t1=papi_mflops(1)
   !if (t1.ge.0.d0) then
   !  write(151,'("Average performance (Gflops/proc) : ",F15.3)')t1/mpi_grid_nproc/1000.d0
   !endif
-endif
+!endif
 #endif
+
+call papi_timer_read(pt_crpa_tot1,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"pt_crpa_tot1")
+
+call papi_timer_read(pt_crpa_tot2,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"pt_crpa_tot2")
+
+call papi_timer_read(pt_megq,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"pt_megq")
+
+call papi_timer_read(pt_megqblh,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"pt_megqblh")
+
+call papi_timer_read(pt_megqblh2,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"pt_megqblh2")
+
+call papi_timer_read(pt_chi0_zgemm,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"pt_chi0_zgemm")
+
+call papi_timer_read(pt_chi0,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"pt_chi0")
+
+call papi_timer_read(pt_uscrn,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"pt_uscrn")
+
+call papi_timer_read(pt_vscrn,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"pt_vscrn")
+
+
 if (mpi_grid_side(dims=(/dim_k/)).and.nwloc.gt.0) then
   write(fuscrn,'("uscrn",I4.4,".hdf")')mpi_grid_x(dim_k)
   call hdf5_create_file(trim(fuscrn))
