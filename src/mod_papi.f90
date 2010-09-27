@@ -24,7 +24,9 @@ integer, intent(in) :: nevents
 character*(*), intent(in) :: events(*)
 #ifdef _PAPI_
 ! local variables
-integer check,eventcode,i
+integer check,eventcode,i,ierr
+character*256 errstr
+
 check=PAPI_VER_CURRENT
 call PAPIF_library_init(check)
 if (check.ne.PAPI_VER_CURRENT) then
@@ -56,6 +58,8 @@ do i=1,papi_ncounters
   call PAPIF_add_event(papi_eventset,eventcode,check)  
   if (check.ne.PAPI_OK) then
     write(*,'("Error: PAPIF_add_event returned : ",I6)')check
+    call PAPIF_perror(check,errstr,ierr)
+    write(*,'(" Error string : : ",A)')trim(adjustl(errstr))   
     call pstop
   endif
 enddo
