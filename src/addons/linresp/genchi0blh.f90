@@ -12,7 +12,6 @@ integer i,ist1,ist2,offs,ik,jk,ig
 complex(8), allocatable :: wt(:)
 logical, external :: bndint
 ! 
-call papi_timer_start(2)
 ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
 jk=idxkq(1,ik)
 offs=nmegqblhloc(2,ikloc)
@@ -34,17 +33,16 @@ do i=1,nmegqblhloc(1,ikloc)
     endif
   endif
 enddo !i
-call papi_timer_stop(2)
-call papi_timer_start(3)
+call papi_timer_start(pt_megqblh2)
 do ig=1,ngvecme
   megqblh2(:,ig)=dconjg(megqblh(:,ig,ikloc))*wt(:)
 enddo
-call papi_timer_stop(3)
-call papi_timer_start(4)
+call papi_timer_stop(pt_megqblh2)
+call papi_timer_start(pt_chi0_zgemm)
 call zgemm('T','N',ngvecme,ngvecme,nmegqblhloc(1,ikloc),zone,&
   megqblh(1,1,ikloc),nmegqblhlocmax,megqblh2(1,1),nmegqblhlocmax,&
   zone,chi0w(1,1),ngvecme)
-call papi_timer_stop(4)
+call papi_timer_stop(pt_chi0_zgemm)
 deallocate(wt)
 return
 end

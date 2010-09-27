@@ -34,6 +34,8 @@ if (mpi_grid_root((/dim_k,dim_b/))) then
   fstat=trim(qnm)//"_chi0_stat.txt"
 endif
 
+call papi_timer_start(pt_chi0)
+
 if (wproc) then
   write(150,*)
   write(150,'("Calculation of chi0")')
@@ -205,6 +207,8 @@ if (wproc) then
   write(150,'("  Wannier basis part (chi0)      : ",F8.2)')t3/lr_nw
   call flushifc(150)
 endif
+
+call papi_timer_stop(pt_chi0)
 
 call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 

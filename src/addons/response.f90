@@ -41,7 +41,7 @@ if (.not.spinpol) wannier_chi0_afm=.false.
 if (wannier_chi0_chi) wannier_megq=.true.
 
 allocate(hw_values(0:papi_ncounters))
-call papi_timer_start(1)
+call papi_timer_start(pt_resp_tot)
 #ifdef _PAPI_
 !call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
 #endif
@@ -138,23 +138,35 @@ do iqloc=1,nvqloc
   call genchi0(iq)
   call genchi(iq)
 enddo
-call papi_timer_stop(1)
-call papi_timer_read(1,hw_values)
-call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
-if (wproc1) call papi_report(151,hw_values,"total")
+call papi_timer_stop(pt_resp_tot)
 
-call papi_timer_read(2,hw_values)
+call papi_timer_read(pt_resp_tot,hw_values)
 call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
-if (wproc1) call papi_report(151,hw_values,"setup wt array")
+if (wproc1) call papi_report(151,hw_values,"pt_resp_tot")
 
-call papi_timer_read(3,hw_values)
+call papi_timer_read(pt_megq,hw_values)
 call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
-if (wproc1) call papi_report(151,hw_values,"setup megqblh2 array")
+if (wproc1) call papi_report(151,hw_values,"pt_megq")
 
-call papi_timer_read(4,hw_values)
+call papi_timer_read(pt_megqblh,hw_values)
 call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
-if (wproc1) call papi_report(151,hw_values,"main call to zgemm")
+if (wproc1) call papi_report(151,hw_values,"pt_megqblh")
 
+call papi_timer_read(pt_megqblh2,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"pt_megqblh2")
+
+call papi_timer_read(pt_chi0_zgemm,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"pt_chi0_zgemm")
+
+call papi_timer_read(pt_chi0,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"pt_chi0")
+
+call papi_timer_read(pt_chi,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"pt_chi")
 
 #ifdef _PAPI_
 !call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
