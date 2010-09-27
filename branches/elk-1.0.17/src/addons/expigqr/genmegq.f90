@@ -19,6 +19,7 @@ integer lmaxexp,lmmaxexp
 integer np
 character*100 :: qnm,qdir,fout
 
+call papi_timer_start(pt_megq)
 ! comment:
 ! the subroutine computes <psi_{n,k}|e^{-i(G+q)x}|psi_{n',k+q}>  and
 !  <W_n|e^{-i(G+q)x}|W_{n'T}> 
@@ -220,6 +221,7 @@ deallocate(igkignr_jk)
 deallocate(ngntuju)
 deallocate(igntuju)
 deallocate(gntuju)
+call papi_timer_stop(pt_megq)
 call mpi_grid_barrier((/dim_k,dim_b/))
 if (wproc) then
   write(150,*)

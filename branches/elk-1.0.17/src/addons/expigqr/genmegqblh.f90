@@ -30,6 +30,8 @@ allocate(wftmp1(wfsize,ngvecme))
 allocate(wftmp2(wfsize,nstsv))
 allocate(wfir1(ngrtot))
 
+call papi_timer_start(pt_megqblh)
+
 ! global k-point
 ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
 ! jk=k+q-G_q
@@ -115,5 +117,8 @@ enddo !ispn
 deallocate(wftmp1)
 deallocate(wftmp2)
 deallocate(wfir1)
+
+call papi_timer_stop(pt_megqblh)
+
 return
 end

@@ -52,6 +52,8 @@ if (wproc) then
   write(150,*)  
   call flushifc(150)
 endif
+
+call papi_timer_start(pt_chi)
   
 ! for response in Wannier bais
 if (wannier_chi0_chi) then
@@ -138,6 +140,8 @@ if (mpi_grid_root(dims=(/dim_k,dim_b/))) then
     call write_chi(iq,vqm(1,iq),ifxc)
   enddo
 endif
+
+call papi_timer_stop(pt_chi)
 
 call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 
