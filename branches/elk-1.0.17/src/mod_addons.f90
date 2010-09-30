@@ -359,8 +359,9 @@ real(8) engytot0
 !--------------!
 integer, parameter :: maxpapievents=16
 character*256 :: papievent(maxpapievents)
+data papievent(1)/"PAPI_FP_OPS"/
 integer :: npapievents
-data npapievents/0/
+data npapievents/1/
 
 integer, parameter :: pt_resp_tot=1
 integer, parameter :: pt_megq=2
