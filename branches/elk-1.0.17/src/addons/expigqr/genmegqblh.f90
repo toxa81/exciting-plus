@@ -59,9 +59,10 @@ do ispn1=1,nspinor
       if (spinor_ud(ispn1,ist1,ik).eq.0) l1=.false.
     endif
     if (l1) then
+      call timer_start(3)
+      call papi_timer_start(pt_megqblh_mt)
       do ig=1,ngvecme
 ! precompute muffint-tin part of \psi_1^{*}(r)*e^{-i(G+q)r}
-        call timer_start(3)
         do ias=1,natmtot
           b1=dconjg(wfsvmt1(:,ias,ispn1,ist1)*sfacgq(ig,ias))
           ic=ias2ic(ias)
@@ -72,9 +73,11 @@ do ispn1=1,nspinor
           enddo
           wftmp1((ias-1)*lmmaxvr*nufrmax+1:ias*lmmaxvr*nufrmax,ig)=b2(:)
         enddo !ias
-        call timer_stop(3)
       enddo !ig  
+      call timer_stop(3)
+      call papi_timer_stop(pt_megqblh_mt)
 ! interstitial part
+      call papi_timer_start(pt_megqblh_it)
       call timer_start(4)
       wfir1=zzero
       do ig1=1,ngknr1
@@ -95,6 +98,7 @@ do ispn1=1,nspinor
         enddo
       enddo
       call timer_stop(4)      
+      call papi_timer_stop(pt_megqblh_it)
     endif !l1
     call timer_start(5)
     n1=0

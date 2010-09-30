@@ -137,6 +137,14 @@ call papi_timer_read(pt_megqblh,hw_values)
 call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
 if (wproc1) call papi_report(151,hw_values,"pt_megqblh")
 
+call papi_timer_read(pt_megqblh_mt,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"pt_megqblh_mt")
+
+call papi_timer_read(pt_megqblh_it,hw_values)
+call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
+if (wproc1) call papi_report(151,hw_values,"pt_megqblh_it")
+
 call papi_timer_read(pt_megqblh2,hw_values)
 call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
 if (wproc1) call papi_report(151,hw_values,"pt_megqblh2")
