@@ -373,6 +373,8 @@ integer, parameter :: pt_crpa_tot1=8
 integer, parameter :: pt_crpa_tot2=9
 integer, parameter :: pt_uscrn=10
 integer, parameter :: pt_vscrn=11
+integer, parameter :: pt_megqblh_mt=12
+integer, parameter :: pt_megqblh_it=13
 
 
 
