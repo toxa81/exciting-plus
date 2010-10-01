@@ -1,13 +1,11 @@
-! this subroutine generates e^{ig(r+T)} 
-subroutine genpw(vtl,vgpc,pwmt,pwir,ylmtorlm)
+! this subroutine generates e^{igr} 
+subroutine genpw(vgpc,pwmt,pwir,ylmtorlm)
 use modmain
 implicit none
-integer, intent(in) :: vtl(3)
 real(8), intent(in) :: vgpc(3)
 complex(8), intent(out) :: pwmt(lmmaxvr,nrmtmax,natmtot)
 complex(8), intent(out) :: pwir(ngrtot)
 complex(8), intent(in) :: ylmtorlm(lmmaxvr,lmmaxvr)
-real(8) :: vtrc(3) 
 real(8) gpc
 real(8) tpgp(2)
 complex(8) ylmgp(lmmaxvr)
@@ -20,7 +18,6 @@ complex(8) zt2(lmmaxvr)
 
 pwmt=zzero
 pwir=zzero
-vtrc(:)=vtl(1)*avec(:,1)+vtl(2)*avec(:,2)+vtl(3)*avec(:,3)
 ! get spherical coordinates and length of G+q
 call sphcrd(vgpc,gpc,tpgp)
 ! generate spherical harmonics for G+q
@@ -29,7 +26,7 @@ call genylm(lmaxvr,tpgp,ylmgp)
 do ias=1,natmtot
   is=ias2is(ias)
   ia=ias2ia(ias)
-  zt1=fourpi*exp(zi*dot_product(vgpc,atposc(:,ia,is)+vtrc(:)))
+  zt1=fourpi*exp(zi*dot_product(vgpc,atposc(:,ia,is)))
   do ir=1,nrmt(is)
 ! generate Bessel functions j_l(|G+q|x)
     call sbessel(lmaxvr,gpc*spr(ir,is),jl)
@@ -60,7 +57,7 @@ do i3=0,ngrid(3)-1
       v2(1)=dble(i1)/dble(ngrid(1))
       call r3mv(avec,v2,v3)
       ir=ir+1
-      pwir(ir)=exp(zi*dot_product(vgpc,v3(:)+vtrc(:))) 
+      pwir(ir)=exp(zi*dot_product(vgpc,v3(:))) 
     enddo
   enddo
 enddo

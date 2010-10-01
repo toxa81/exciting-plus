@@ -339,13 +339,11 @@ logical sic
 data sic/.false./
 integer lf_maxt
 data lf_maxt/1/
-complex(8), allocatable :: wanmt(:,:,:,:,:,:)
-complex(8), allocatable :: wanir(:,:,:,:)
-real(8), allocatable :: vwanmt(:,:,:,:,:,:)
-real(8), allocatable :: vwanir(:,:,:,:)
-complex(8), allocatable :: vwanmt_(:,:,:,:,:,:)
-complex(8), allocatable :: vwanir_(:,:,:,:)
-complex(8), allocatable :: vwan(:)
+! product of a Wannier function with it's potential
+complex(8), allocatable :: wvmt(:,:,:,:,:,:)
+complex(8), allocatable :: wvir(:,:,:,:)
+! matrix elements of Wannier potential <W_{n0}|V_{n0}|W_{n'T}>
+complex(8), allocatable :: vwanme(:)
 real(8), allocatable :: sic_wann_ene(:)
 complex(8), allocatable :: hmltsv(:,:,:)
 integer nitersic
@@ -381,9 +379,5 @@ integer, parameter :: pt_uscrn=10
 integer, parameter :: pt_vscrn=11
 integer, parameter :: pt_megqblh_mt=12
 integer, parameter :: pt_megqblh_it=13
-
-
-
-
 
 end module

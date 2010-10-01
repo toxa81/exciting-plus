@@ -84,5 +84,12 @@ do i=1,ntr
 enddo
 dim_t=dim2
 ntrloc=mpi_grid_map(ntr,dim_t)
+sic_etot_correction=0.d0
+if (allocated(wvmt)) deallocate(wvmt)
+allocate(wvmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
+if (allocated(wvir)) deallocate(wvir)  
+allocate(wvir(ngrtot,ntrloc,nspinor,nwann))
+if (allocated(hmltsv)) deallocate(hmltsv)
+allocate(hmltsv(nstsv,nstsv,nkptloc))
 return
 end

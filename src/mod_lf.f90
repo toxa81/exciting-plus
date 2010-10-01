@@ -21,34 +21,7 @@ integer dim_t
 
 contains
 
-subroutine lf_init(trmax_,dim_t_)
-use modmain
-implicit none
-integer, intent(in) :: trmax_ 
-integer, intent(in) :: dim_t_
-integer i1,i2,i3,n
-trmax=trmax_
-ntr=(2*trmax+1)**3
-if (allocated(vtl)) deallocate(vtl)
-allocate(vtl(3,ntr))
-if (allocated(ivtit)) deallocate(ivtit)
-allocate(ivtit(-trmax:trmax,-trmax:trmax,-trmax:trmax))
-n=0
-do i1=-trmax,trmax
-  do i2=-trmax,trmax
-    do i3=-trmax,trmax
-      n=n+1
-      vtl(:,n)=(/i1,i2,i3/)
-      ivtit(i1,i2,i3)=n
-    enddo
-  enddo
-enddo
-dim_t=dim_t_
-ntrloc=mpi_grid_map(ntr,dim_t)
-return
-end subroutine
-
-complex(8) function lf_dotlf(tsh,t,f1mt,f1ir,f2mt,f2ir)
+complex(8) function lf_dot_ll(tsh,t,f1mt,f1ir,f2mt,f2ir)
 use modmain
 implicit none
 logical, intent(in) :: tsh
@@ -124,9 +97,40 @@ do itstep=1,ntstep
 enddo
 deallocate(f2mt_tmp,f2ir_tmp)
 call mpi_grid_reduce(zprod,dims=(/dim_t/))
-lf_dotlf=zprod
+lf_dot_ll=zprod
 return
 end function
+
+
+! local function dot bloch function
+complex(8) function lf_dot_lb(tsh,vpc,f1mt,f1ir,f2mt,f2ir)
+use modmain
+implicit none
+logical, intent(in) :: tsh
+real(8), intent(in) :: vpc(3)
+complex(8), intent(in) :: f1mt(lmmaxvr,nrmtmax,natmtot,*)
+complex(8), intent(in) :: f1ir(ngrtot,*)
+complex(8), intent(in) :: f2mt(lmmaxvr,nrmtmax,natmtot)
+complex(8), intent(in) :: f2ir(ngrtot)
+complex(8) zprod
+integer it,itloc
+real(8) vtc(3)
+complex(8), external :: zfinp_
+! <f|psi> = \int dr f^{*}(r) psi(r) =
+!   = \sum_R \int_{Omega} dr f^{*}(r+R) psi(r+R) = 
+!     \sum_R e^{ikR} \int_{Omega} dr f^{*}(r+R) psi(r)
+zprod=zzero
+do itloc=1,ntrloc
+  it=mpi_grid_map(ntr,dim_t,loc=itloc)
+  vtc(:)=vtl(1,it)*avec(:,1)+vtl(2,it)*avec(:,2)+vtl(3,it)*avec(:,3)
+  zprod=zprod+exp(zi*dot_product(vpc,vtc))*&
+    zfinp_(tsh,f1mt(1,1,1,itloc),f2mt,f1ir(1,itloc),f2ir)
+enddo
+call mpi_grid_reduce(zprod,dims=(/dim_t/),all=.true.)
+lf_dot_lb=zprod
+return
+end function
+
 
 complex(8) function intgr_zdz(f1mt,f1ir,f2mt,f2ir,f3mt,f3ir)
 use modmain
@@ -232,12 +236,14 @@ do itstep=1,ntstep
       v1(:)=vtl(:,it)
       v2(:)=v1(:)-t(:)
       l1=.false.
-      if (v2(1).ge.-trmax.and.v2(1).le.trmax.and.&
-          v2(2).ge.-trmax.and.v2(2).le.trmax.and.&
-          v2(3).ge.-trmax.and.v2(3).le.trmax) then
+      if (v2(1).ge.tlim(1,1).and.v2(1).le.tlim(2,1).and.&
+          v2(2).ge.tlim(1,2).and.v2(2).le.tlim(2,2).and.&
+          v2(3).ge.tlim(1,3).and.v2(3).le.tlim(2,3)) then
         jt=ivtit(v2(1),v2(2),v2(3))
-        l1=.true.
-        jtloc=mpi_grid_map(ntr,dim_t,glob=jt,x=j)
+        if (jt.ne.-1) then
+          l1=.true.
+          jtloc=mpi_grid_map(ntr,dim_t,glob=jt,x=j)
+        endif
       endif
       if (l1.and.mpi_grid_x(dim_t).eq.j.and.mpi_grid_x(dim_t).ne.i) then
         tag=(itstep*mpi_grid_size(dim_t)+i)*10
@@ -397,34 +403,6 @@ end function
 
 
 
-! local function dot bloch function
-complex(8) function lf_dotblh(tsh,vpc,f1mt,f1ir,f2mt,f2ir)
-use modmain
-implicit none
-logical, intent(in) :: tsh
-real(8), intent(in) :: vpc(3)
-complex(8), intent(in) :: f1mt(lmmaxvr,nrmtmax,natmtot,*)
-complex(8), intent(in) :: f1ir(ngrtot,*)
-complex(8), intent(in) :: f2mt(lmmaxvr,nrmtmax,natmtot)
-complex(8), intent(in) :: f2ir(ngrtot)
-complex(8) zprod
-integer it,itloc
-real(8) vtc(3)
-complex(8), external :: zfinp_
-! <f|psi> = \int dr f^{*}(r) psi(r) =
-!   = \sum_R \int_{Omega} dr f^{*}(r+R) psi(r+R) = 
-!     \sum_R e^{ikR} \int_{Omega} dr f^{*}(r+R) psi(r)
-zprod=zzero
-do itloc=1,ntrloc
-  it=mpi_grid_map(ntr,dim_t,loc=itloc)
-  vtc(:)=vtl(1,it)*avec(:,1)+vtl(2,it)*avec(:,2)+vtl(3,it)*avec(:,3)
-  zprod=zprod+exp(zi*dot_product(vpc,vtc))*&
-    zfinp_(tsh,f1mt(1,1,1,itloc),f2mt,f1ir(1,itloc),f2ir)
-enddo
-call mpi_grid_reduce(zprod,dims=(/dim_t/),all=.true.)
-lf_dotblh=zprod
-return
-end function
 
 
 !subroutine lf_prod(f1mt,f1ir,f2mt,f2ir,f3mt,f3ir)
@@ -544,8 +522,8 @@ subroutine lf_write(fname,fmt,fir)
 use modmain
 implicit none
 character*(*), intent(in) :: fname
-real(8), intent(in) :: fmt(lmmaxvr,nrmtmax,natmtot,*)
-real(8), intent(in) :: fir(ngrtot,*)
+complex(8), intent(in) :: fmt(lmmaxvr,nrmtmax,natmtot,*)
+complex(8), intent(in) :: fir(ngrtot,*)
 
 integer it,itloc,i1,i2,i3,ir,i,is,ia,itr(3),ir0
 real(8) vtrc(3),v2(3),v3(3),vrc0(3),r0
@@ -569,7 +547,7 @@ do itloc=1,ntrloc
         l1=vrinmt(v3,is,ia,itr,vrc0,ir0,r0)        
         v3(:)=v3(:)+vtrc(:)
         if (abs(fir(ir,itloc)).gt.1d-10) then
-          write(160,'(4G16.8)')v3,fir(ir,itloc)
+          write(160,'(4G16.8)')v3,abs(fir(ir,itloc))
           i=i+1
         endif
       enddo

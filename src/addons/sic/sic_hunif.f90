@@ -37,7 +37,7 @@ allocate(vn(nwann))
 do i=1,nmegqwan
   if ((imegqwan(1,i).eq.imegqwan(2,i)).and.imegqwan(3,i).eq.0.and.&
     imegqwan(4,i).eq.0.and.imegqwan(5,i).eq.0) then
-    vn(imegqwan(1,i))=dreal(vwan(i))
+    vn(imegqwan(1,i))=dreal(vwanme(i))
   endif
 enddo
 
@@ -78,8 +78,8 @@ do ist=1,nstfv
   enddo
   do n=1,nwann
     do ispn=1,nspinor
-      wanvblh(n,ist,ispn)=lf_dotblh(.true.,vkc(1,ik),vwanmt_(1,1,1,1,ispn,n),&
-        vwanir_(1,1,ispn,n),wfmt,wfir)
+      wanvblh(n,ist,ispn)=lf_dot_lb(.true.,vkc(1,ik),wvmt(1,1,1,1,ispn,n),&
+        wvir(1,1,ispn,n),wfmt,wfir)
     enddo
   enddo
 enddo !ist
@@ -104,7 +104,7 @@ do i=1,nmegqwan
   vtrl(:)=imegqwan(3:5,i)
   vtrc(:)=vtrl(1)*avec(:,1)+vtrl(2)*avec(:,2)+vtrl(3)*avec(:,3)
   expikt=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
-  vwank(n1,n2)=vwank(n1,n2)+expikt*vwan(i)
+  vwank(n1,n2)=vwank(n1,n2)+expikt*vwanme(i)
 enddo
 
 !if (mpi_grid_root((/dim2/))) then

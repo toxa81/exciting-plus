@@ -27,7 +27,7 @@ if (wproc) then
   enddo
   call hdf5_write("sic.hdf5","/","nmegqwan",nmegqwan)
   call hdf5_write("sic.hdf5","/","imegqwan",imegqwan(1,1),(/5,nmegqwan/))
-  call hdf5_write("sic.hdf5","/","vwan",vwan(1),(/nmegqwan/))
+  call hdf5_write("sic.hdf5","/","vwan",vwanme(1),(/nmegqwan/))
   call hdf5_write("sic.hdf5","/","sic_etot_correction",sic_etot_correction)
   call hdf5_write("sic.hdf5","/","wann_ene",wann_ene(1),(/nwann/))
 endif
@@ -43,10 +43,10 @@ if (mpi_grid_side(dims=(/dim_t/))) then
             write(c3,'("t",I4.4)')it
             path="/wann/"//trim(adjustl(c1))//"/"//trim(adjustl(c2))//"/"//&
               trim(adjustl(c3))       
-            call hdf5_write("sic.hdf5",path,"vwanmt",&
-              vwanmt_(1,1,1,itloc,ispn,n),(/lmmaxvr,nrmtmax,natmtot/))
-            call hdf5_write("sic.hdf5",path,"vwanir",&
-              vwanir_(1,itloc,ispn,n),(/ngrtot/))
+            call hdf5_write("sic.hdf5",path,"wvmt",&
+              wvmt(1,1,1,itloc,ispn,n),(/lmmaxvr,nrmtmax,natmtot/))
+            call hdf5_write("sic.hdf5",path,"wvir",&
+              wvir(1,itloc,ispn,n),(/ngrtot/))
           enddo
         enddo
       enddo

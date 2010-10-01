@@ -1,8 +1,10 @@
-subroutine sic_genvxc(exc)
+subroutine sic_genvxc(wanmt,wanir,exc)
 use modmain
 use mod_lf
 use modxcifc
 implicit none
+complex(8), intent(in) :: wanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann)
+complex(8), intent(in) :: wanir(ngrtot,ntrloc,nspinor,nwann)
 complex(8), intent(out) :: exc(nwann)
 integer ntp,itp,lm,n,itloc,ias,iasloc,natmtotloc,ispn
 real(8), allocatable :: tp(:,:)
@@ -130,8 +132,8 @@ do n=1,nwann
     excwanir(:,itloc)=exir_(:)+ecir_(:)
   enddo !itloc
   do ispn=1,nspinor
-    vwanmt(:,:,:,:,ispn,n)=vwanmt(:,:,:,:,ispn,n)+vxcwanmt(:,:,:,:,ispn)
-    vwanir(:,:,ispn,n)=vwanir(:,:,ispn,n)+vxcwanir(:,:,ispn)
+    wvmt(:,:,:,:,ispn,n)=wvmt(:,:,:,:,ispn,n)+vxcwanmt(:,:,:,:,ispn)
+    wvir(:,:,ispn,n)=wvir(:,:,ispn,n)+vxcwanir(:,:,ispn)
   enddo
   do ispn=1,nspinor
     exc(n)=exc(n)+lf_intgr_zdz(wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n),&
