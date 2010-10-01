@@ -354,6 +354,11 @@ real(8) sic_etot_correction
 data sic_etot_correction/0.d0/
 real(8) engytot0
 
+real(8) wann_r_cutoff
+data wann_r_cutoff/6.0/
+integer, allocatable :: wann_r_nnghbr(:)
+integer, allocatable :: wann_r_inghbr(:,:,:)
+
 !--------------!
 !      PAPI    !
 !--------------!

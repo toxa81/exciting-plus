@@ -8,10 +8,14 @@ integer trmax
 ! total number of translations
 integer ntr
 integer ntrloc
+! maximum number of translation vectors
+integer, parameter :: maxvtl=1000
 ! translation vectors in lattice coordinates
 integer, allocatable :: vtl(:,:)
 ! vector -> index map
 integer, allocatable :: ivtit(:,:,:)
+! translation limits along each lattice vector
+integer tlim(2,3)
 
 integer dim_t
 
@@ -59,7 +63,7 @@ complex(8), allocatable :: f2ir_tmp(:)
 complex(8) zprod
 integer ispn,it,jt,v1(3),v2(3),j,ntstep,ntrloc,itstep,ntloc1
 integer jtloc,i,tag
-logical l1
+logical l1,l2
 complex(8), external :: zfinp_
 
 ! compute <f1_0|f2_T>=\int_{-\inf}^{\inf} f1^{*}(r)f2(r-T)dr = 
@@ -75,6 +79,7 @@ ntrloc=mpi_grid_map(ntr,dim_t)
 do itstep=1,ntstep
   f2mt_tmp=zzero
   f2ir_tmp=zzero
+  l2=.false.
   do i=0,mpi_grid_size(dim_t)-1
     ntloc1=mpi_grid_map(ntr,dim_t,x=i)
     if (itstep.le.ntloc1) then
@@ -82,12 +87,14 @@ do itstep=1,ntstep
       v1(:)=vtl(:,it)
       v2(:)=v1(:)-t(:)
       l1=.false.
-      if (v2(1).ge.-trmax.and.v2(1).le.trmax.and.&
-          v2(2).ge.-trmax.and.v2(2).le.trmax.and.&
-          v2(3).ge.-trmax.and.v2(3).le.trmax) then
+      if (v2(1).ge.tlim(1,1).and.v2(1).le.tlim(2,1).and.&
+          v2(2).ge.tlim(1,2).and.v2(2).le.tlim(2,2).and.&
+          v2(3).ge.tlim(1,3).and.v2(3).le.tlim(2,3)) then
         jt=ivtit(v2(1),v2(2),v2(3))
-        l1=.true.
-        jtloc=mpi_grid_map(ntr,dim_t,glob=jt,x=j)
+        if (jt.ne.-1) then
+          l1=.true.
+          jtloc=mpi_grid_map(ntr,dim_t,glob=jt,x=j)
+        endif
       endif
       if (l1.and.mpi_grid_x(dim_t).eq.j.and.mpi_grid_x(dim_t).ne.i) then
         tag=(itstep*mpi_grid_size(dim_t)+i)*10
@@ -96,6 +103,7 @@ do itstep=1,ntstep
         call mpi_grid_send(f2ir(1,jtloc),ngrtot,(/dim_t/),(/i/),tag+1)
       endif
       if (l1.and.mpi_grid_x(dim_t).eq.i) then
+        l2=.true.
         if (j.ne.i) then
           tag=(itstep*mpi_grid_size(dim_t)+i)*10
           call mpi_grid_recieve(f2mt_tmp(1,1,1),lmmaxvr*nrmtmax*natmtot,&
@@ -108,7 +116,7 @@ do itstep=1,ntstep
       endif
     endif
   enddo !
-  if (itstep.le.ntrloc) then
+  if (itstep.le.ntrloc.and.l2) then
     zprod=zprod+zfinp_(tsh,f1mt(1,1,1,itstep),f2mt_tmp,f1ir(1,itstep),&
       f2ir_tmp)
   endif
@@ -532,18 +540,45 @@ deallocate(f1)
 return
 end subroutine
 
-!subroutine lf_write(fname,fmt,fir)
-!use modmain
-!implicit none
-!character*(*), intent(in) :: fname
-!complex(8), intent(in) :: fmt(lmmaxvr,nrmtmax,natmtot,*)
-!complex(8), intent(in) :: fir(ngrtot,*)
-!
-!integer ntrloc
-!
-!ntrloc=mpi_grid_map(ntr,dim_t)
-!
-!end subroutine
+subroutine lf_write(fname,fmt,fir)
+use modmain
+implicit none
+character*(*), intent(in) :: fname
+real(8), intent(in) :: fmt(lmmaxvr,nrmtmax,natmtot,*)
+real(8), intent(in) :: fir(ngrtot,*)
+
+integer it,itloc,i1,i2,i3,ir,i,is,ia,itr(3),ir0
+real(8) vtrc(3),v2(3),v3(3),vrc0(3),r0
+logical l1
+logical, external :: vrinmt
+
+open(160,file=trim(adjustl(fname)),status="REPLACE",form="FORMATTED")
+i=0
+do itloc=1,ntrloc
+  it=mpi_grid_map(ntr,dim_t,loc=itloc)
+  vtrc(:)=vtl(1,it)*avec(:,1)+vtl(2,it)*avec(:,2)+vtl(3,it)*avec(:,3)
+  ir=0
+  do i3=0,ngrid(3)-1
+    v2(3)=dble(i3)/dble(ngrid(3))
+    do i2=0,ngrid(2)-1
+      v2(2)=dble(i2)/dble(ngrid(2))
+      do i1=0,ngrid(1)-1
+        v2(1)=dble(i1)/dble(ngrid(1))
+        ir=ir+1
+        call r3mv(avec,v2,v3)
+        l1=vrinmt(v3,is,ia,itr,vrc0,ir0,r0)        
+        v3(:)=v3(:)+vtrc(:)
+        if (abs(fir(ir,itloc)).gt.1d-10) then
+          write(160,'(4G16.8)')v3,fir(ir,itloc)
+          i=i+1
+        endif
+      enddo
+    enddo
+  enddo
+enddo
+write(*,*)'points=',i
+close(160)
+end subroutine
 
 
 end module
