@@ -44,15 +44,6 @@ if (wannier) call wann_init
 if (.not.wannier) sic=.false.
 if (allocated(evalsv0)) deallocate(evalsv0)
 allocate(evalsv0(nstsv,nkpt))
-if (sic) then
-  sic_etot_correction=0.d0
-  call lf_init(lf_maxt,dim2)
-  if (allocated(vwanmt_)) deallocate(vwanmt_)
-  allocate(vwanmt_(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
-  if (allocated(vwanir_)) deallocate(vwanir_)  
-  allocate(vwanir_(ngrtot,ntrloc,nspinor,nwann))
-  if (allocated(hmltsv)) deallocate(hmltsv)
-  allocate(hmltsv(nstsv,nstsv,nkptloc))
-endif
+if (sic) call sic_init
 return
 end
