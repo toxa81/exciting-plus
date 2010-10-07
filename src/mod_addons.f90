@@ -242,6 +242,7 @@ integer, parameter :: nf_response            = 18
 complex(8), allocatable :: f_response(:,:,:)
 
 complex(8), allocatable :: uscrnwan(:,:)
+complex(8), allocatable :: jscrnwan(:,:)
 complex(8), allocatable :: ubarewan(:)
 
 !------------------!
