@@ -91,7 +91,9 @@ nwloc=mpi_grid_map(lr_nw,dim_k)
 ! distribute q-vectors along 3-rd dimention
 nvqloc=mpi_grid_map(nvq,dim_q)
 allocate(uscrnwan(nmegqwan,nwloc))
+allocate(jscrnwan(nmegqwan,nwloc))
 uscrnwan=zzero
+jscrnwan=zzero
 #ifdef _PAPI_
 !call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
 #endif
@@ -104,7 +106,9 @@ do iqloc=1,nvqloc
   call genuscrn(iq)
 enddo
 call mpi_grid_reduce(uscrnwan(1,1),nmegqwan*nwloc,dims=(/dim_q,dim_b/))
+call mpi_grid_reduce(jscrnwan(1,1),nmegqwan*nwloc,dims=(/dim_q,dim_b/))
 uscrnwan=uscrnwan/omega/nkptnr
+jscrnwan=jscrnwan/omega/nkptnr
 call papi_timer_stop(pt_crpa_tot2)
 call papi_timer_stop(pt_crpa_tot1)
 #ifdef _PAPI_
@@ -187,6 +191,7 @@ if (mpi_grid_side(dims=(/dim_k/)).and.nwloc.gt.0) then
     call hdf5_write(fuscrn,"/iwloc/"//c8,"iw",iw)
     call hdf5_write(fuscrn,"/iwloc/"//c8,"w",dreal(lr_w(iw)))
     call hdf5_write(fuscrn,"/iwloc/"//c8,"uscrn",uscrnwan(1,iwloc),(/nmegqwan/))
+    call hdf5_write(fuscrn,"/iwloc/"//c8,"jscrn",jscrnwan(1,iwloc),(/nmegqwan/))
   enddo
 endif
 if (wproc1) then
@@ -196,6 +201,11 @@ if (wproc1) then
   write(151,'("screened U_{n,n''T}(w=0)")')    
   write(151,'(65("-"))')
     call printwanntrans(151,uscrnwan(1,1))
+  call timestamp(151)
+  write(151,*)
+  write(151,'("screened J_{n,n''T}(w=0)")')    
+  write(151,'(65("-"))')
+    call printwanntrans(151,jscrnwan(1,1))
   call timestamp(151)
   write(151,*) 
   write(151,'("Done.")')
