@@ -1,10 +1,12 @@
-subroutine sic_genvxc(wanmt,wanir,exc)
+subroutine sic_genvxc(wanmt,wanir,vhxcmt,vhxcir,exc)
 use modmain
 use mod_lf
 use modxcifc
 implicit none
 complex(8), intent(in) :: wanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann)
 complex(8), intent(in) :: wanir(ngrtot,ntrloc,nspinor,nwann)
+real(8), intent(out) :: vhxcmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann)
+real(8), intent(out) :: vhxcir(ngrtot,ntrloc,nspinor,nwann)
 complex(8), intent(out) :: exc(nwann)
 integer ntp,itp,lm,n,itloc,ias,iasloc,natmtotloc,ispn
 real(8), allocatable :: tp(:,:)
@@ -106,7 +108,7 @@ do n=1,nwann
       enddo
 ! expand XC energy in spherical harmonics
       call dgemm('T','N',lmmaxvr,nrmt(ias2is(ias)),ntp,1.d0,rlmc,ntp,&
-        excmt_,ntp,zzero,excwanmt(1,1,ias,itloc),lmmaxvr)
+        excmt_,ntp,0.d0,excwanmt(1,1,ias,itloc),lmmaxvr)
     enddo !iasloc
     do ispn=1,nspinor
       call mpi_grid_reduce(vxcwanmt(1,1,1,itloc,ispn),lmmaxvr*nrmtmax*natmtot,&
@@ -132,14 +134,14 @@ do n=1,nwann
     excwanir(:,itloc)=exir_(:)+ecir_(:)
   enddo !itloc
   do ispn=1,nspinor
-    wvmt(:,:,:,:,ispn,n)=wvmt(:,:,:,:,ispn,n)+vxcwanmt(:,:,:,:,ispn)
-    wvir(:,:,ispn,n)=wvir(:,:,ispn,n)+vxcwanir(:,:,ispn)
+    vhxcmt(:,:,:,:,ispn,n)=vhxcmt(:,:,:,:,ispn,n)+vxcwanmt(:,:,:,:,ispn)
+    vhxcir(:,:,ispn,n)=vhxcir(:,:,ispn,n)+vxcwanir(:,:,ispn)
   enddo
   do ispn=1,nspinor
     exc(n)=exc(n)+lf_intgr_zdz(wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n),&
       excwanmt,excwanir,(/0,0,0/),wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n))
   enddo
-enddo
+enddo !n
 deallocate(tp)
 deallocate(ylm)
 deallocate(rlmc)

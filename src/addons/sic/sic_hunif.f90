@@ -78,7 +78,7 @@ do ist=1,nstfv
   enddo
   do n=1,nwann
     do ispn=1,nspinor
-      wanvblh(n,ist,ispn)=lf_dot_lb(.true.,vkc(1,ik),wvmt(1,1,1,1,ispn,n),&
+      wanvblh(n,ist,ispn)=lf_dot_blh(.true.,vkc(1,ik),wvmt(1,1,1,1,ispn,n),&
         wvir(1,1,ispn,n),wfmt,wfir)
     enddo
   enddo
@@ -131,29 +131,29 @@ do ispn1=1,nspinor
 !   +\sum_{\alpha} P_{\alpha} H^{LDA} P_{\alpha}
     do n1=1,nwann
       do n2=1,nwann
-        hunif(jst1,jst2)=hunif(jst1,jst2)-hwank(n1,n2)*wann_ufv(n1,j1,ispn1)*&
-          dconjg(wann_ufv(n2,j2,ispn2))
+       ! hunif(jst1,jst2)=hunif(jst1,jst2)-hwank(n1,n2)*wann_ufv(n1,j1,ispn1)*&
+       !   dconjg(wann_ufv(n2,j2,ispn2))
       enddo
     enddo
 ! 3-rd term : \sum_{alpha} P_{\alpha} V_{\alpha} P_{\alpha})
 !  plus 4-th term: diagonal energy matrix element E_n
     do n=1,nwann
       hunif(jst1,jst2)=hunif(jst1,jst2)+wann_ufv(n,j1,ispn1)*&
-        dconjg(wann_ufv(n,j2,ispn2))*(vn(n)+sic_wann_ene(n))
+        dconjg(wann_ufv(n,j2,ispn2))*(vn(n)) !+sic_wann_ene(n))
     enddo
 ! 5-th term : \sum_{\alpha} P_{\alpha} V_{\alpha} Q + 
 !                       \sum_{\alpha} Q V_{\alpha} P_{\alpha} 
 !   where Q=1-\sum_{\alpha'}P_{\alpha'}
     do n=1,nwann
-      hunif(jst1,jst2)=hunif(jst1,jst2)+&
-        wann_ufv(n,j1,ispn1)*wanvblh(n,j2,ispn2)+&
-        dconjg(wanvblh(n,j1,ispn1)*wann_ufv(n,j2,ispn2))
+     ! hunif(jst1,jst2)=hunif(jst1,jst2)+&
+     !   wann_ufv(n,j1,ispn1)*wanvblh(n,j2,ispn2)+&
+     !   dconjg(wanvblh(n,j1,ispn1)*wann_ufv(n,j2,ispn2))
     enddo
     do n1=1,nwann
       do n2=1,nwann
-        hunif(jst1,jst2)=hunif(jst1,jst2)-&
-          vwank(n1,n2)*wann_ufv(n1,j1,ispn1)*dconjg(wann_ufv(n2,j2,ispn2))-&
-          dconjg(vwank(n1,n2))*wann_ufv(n2,j1,ispn1)*dconjg(wann_ufv(n1,j2,ispn2))
+      !  hunif(jst1,jst2)=hunif(jst1,jst2)-&
+      !    vwank(n1,n2)*wann_ufv(n1,j1,ispn1)*dconjg(wann_ufv(n2,j2,ispn2))-&
+      !    dconjg(vwank(n1,n2))*wann_ufv(n2,j1,ispn1)*dconjg(wann_ufv(n1,j2,ispn2))
       enddo
     enddo
   enddo !ispn2

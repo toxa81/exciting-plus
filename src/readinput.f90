@@ -1059,7 +1059,6 @@ case('mpigrid')
   read(50,*,err=20) mpigrid(1),mpigrid(2),mpigrid(3) 
 case('sic')
   read(50,*,err=20) sic
-  read(50,*,err=20) lf_maxt
   read(50,*,err=20) nitersic
 case('disentangle')
   read(50,*,err=20) ldisentangle  
