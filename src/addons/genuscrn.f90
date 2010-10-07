@@ -3,7 +3,7 @@ use modmain
 use mod_addons_q
 implicit none
 integer, intent(in) :: iq
-integer iwloc,nwloc,iw,n,n1,i,ig,nmegqwanloc,iloc
+integer iwloc,nwloc,iw,n,n1,i,ig,ig1,nmegqwanloc,iloc
 real(8) v2(3),vtc(3)
 complex(8), allocatable :: vscrn(:,:)
 complex(8), allocatable :: megqwan1(:,:)
@@ -54,8 +54,14 @@ do iwloc=1,nwloc
     n=imegqwan(1,i)
     n1=imegqwan(2,i)
     uscrnwan(i,iwloc)=uscrnwan(i,iwloc)+zm1(n,n1)*expiqt(i)
-  enddo
-enddo
+    do ig=1,ngvecme
+      do ig1=1,ngvecme
+        jscrnwan(i,iwloc)=jscrnwan(i,iwloc)+dconjg(megqwan(idxmegqwan(n,n1,0,0,0),ig))*&
+          vscrn(ig,ig1)*megqwan(idxmegqwan(n,n1,0,0,0),ig1)
+      enddo
+    enddo
+  enddo !iloc
+enddo !iwloc
 deallocate(megqwan1)
 deallocate(chi0loc)
 deallocate(expiqt)
