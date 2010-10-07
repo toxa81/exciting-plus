@@ -7,8 +7,8 @@ integer, intent(in) :: igkignr(ngkmax,nkptnrloc)
 complex(8), intent(out) :: wanmt_(lmmaxvr,nrmtmax,natmtot,nspinor,nwann)
 complex(8), intent(out) :: wanir_(ngrtot,nspinor,nwann)
 integer is,ias,ir,i1,i2,i3,ig,ikloc,ik,l
-integer io,lm,n,ispn,jas
-real(8) v2(3),v3(3),vtrc(3),v4(3)
+integer io,lm,n,ispn,jas,nt(3),ia,ir0
+real(8) v2(3),v3(3),vtrc(3),v4(3),vrc0(3),r0
 complex(8), allocatable :: zfir(:,:,:)
 complex(8), allocatable :: zkr(:)
 complex(8) expikr,zt1
@@ -102,6 +102,9 @@ do i3=0,ngrid(3)-1
       ir=ir+1
       call r3mv(avec,v2,v3)
       v3(:)=v3(:)+vtrc(:)
+      !if (vrinmt(v3,is,ia,nt,vrc0,ir0,r0)) then
+      !  wanir_(ir,:,:)=zzero
+      !endif
       do n=1,nwann
         v4(:)=v3(:)-atposc(:,ias2ia(iwann(1,n)),ias2is(iwann(1,n)))
         if (sqrt(sum(v4(:)**2)).gt.wann_r_cutoff) then

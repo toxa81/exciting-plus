@@ -27,7 +27,7 @@ if (wproc) then
   enddo
   call hdf5_write("sic.hdf5","/","nmegqwan",nmegqwan)
   call hdf5_write("sic.hdf5","/","imegqwan",imegqwan(1,1),(/5,nmegqwan/))
-  call hdf5_write("sic.hdf5","/","vwan",vwanme(1),(/nmegqwan/))
+  call hdf5_write("sic.hdf5","/","vwanme",vwanme(1),(/nmegqwan/))
   call hdf5_write("sic.hdf5","/","sic_etot_correction",sic_etot_correction)
   call hdf5_write("sic.hdf5","/","wann_ene",wann_ene(1),(/nwann/))
 endif

@@ -337,8 +337,6 @@ integer, parameter :: t_dmat=45
 !-------------!
 logical sic
 data sic/.false./
-integer lf_maxt
-data lf_maxt/1/
 ! product of a Wannier function with it's potential
 complex(8), allocatable :: wvmt(:,:,:,:,:,:)
 complex(8), allocatable :: wvir(:,:,:,:)
