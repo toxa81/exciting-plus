@@ -76,6 +76,14 @@ enddo
 dim_t=dim2
 ntrloc=mpi_grid_map(ntr,dim_t)
 sic_etot_correction=0.d0
+if (mpi_grid_root()) then
+  write(*,*)
+  write(*,'("[sic_init] total number of translations : ",I3)')ntr
+  write(*,'("[sic_init] local number of translations : ",I3)')ntrloc
+  write(*,'("[sic_init] size of Wannier function arrays : ",I6," Mb")') &
+    int(2*16.d0*(lmmaxvr*nrmtmax*natmtot+ngrtot)*ntrloc*nspinor*nwann/1048576.d0)
+endif
+call mpi_grid_barrier()
 if (allocated(wvmt)) deallocate(wvmt)
 allocate(wvmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
 wvmt=zzero
