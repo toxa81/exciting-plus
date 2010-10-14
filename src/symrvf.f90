@@ -13,8 +13,7 @@ use modmain
 !   lrstp : radial step length (in,integer)
 !   rvfmt : real muffin-tin vector field
 !           (in,real(lmmaxvr,nrmtmax,natmtot,ndmag))
-!   rvfir : real interstitial vector field
-!           (in,real(ngrtot,ndmag))
+!   rvfir : real interstitial vector field (in,real(ngrtot,ndmag))
 ! !DESCRIPTION:
 !   Symmetrises a vector field defined over the entire unit cell using the full
 !   set of crystal symmetries. If a particular symmetry involves rotating atom
@@ -46,12 +45,12 @@ real(8) sc(3,3),v(3),t1
 logical done(natmmax)
 ! allocatable arrays
 real(8), allocatable :: rvfmt1(:,:,:,:),rvfmt2(:,:,:)
-allocate(rvfmt1(lmmaxvr,nrmtmax,natmmax,ndmag))
-allocate(rvfmt2(lmmaxvr,nrmtmax,ndmag))
-t1=1.d0/dble(nsymcrys)
 !-------------------------!
 !     muffin-tin part     !
 !-------------------------!
+allocate(rvfmt1(lmmaxvr,nrmtmax,natmmax,ndmag))
+allocate(rvfmt2(lmmaxvr,nrmtmax,ndmag))
+t1=1.d0/dble(nsymcrys)
 do is=1,nspecies
 ! make copy of vector field for all atoms of current species
   do i=1,ndmag
@@ -88,15 +87,9 @@ do is=1,nspecies
 ! non-collinear case
           do ir=1,nrmt(is),lrstp
             do lm=1,lmmaxvr
-              v(1)=sc(1,1)*rvfmt2(lm,ir,1) &
-                  +sc(1,2)*rvfmt2(lm,ir,2) &
-                  +sc(1,3)*rvfmt2(lm,ir,3)
-              v(2)=sc(2,1)*rvfmt2(lm,ir,1) &
-                  +sc(2,2)*rvfmt2(lm,ir,2) &
-                  +sc(2,3)*rvfmt2(lm,ir,3)
-              v(3)=sc(3,1)*rvfmt2(lm,ir,1) &
-                  +sc(3,2)*rvfmt2(lm,ir,2) &
-                  +sc(3,3)*rvfmt2(lm,ir,3)
+              v(:)=sc(:,1)*rvfmt2(lm,ir,1) &
+                  +sc(:,2)*rvfmt2(lm,ir,2) &
+                  +sc(:,3)*rvfmt2(lm,ir,3)
               rvfmt(lm,ir,ias,:)=rvfmt(lm,ir,ias,:)+v(:)
             end do
           end do
@@ -139,9 +132,7 @@ do is=1,nspecies
             do ir=1,nrmt(is),lrstp
               do lm=1,lmmaxvr
                 v(:)=rvfmt(lm,ir,jas,:)
-                rvfmt(lm,ir,jas,1)=sc(1,1)*v(1)+sc(1,2)*v(2)+sc(1,3)*v(3)
-                rvfmt(lm,ir,jas,2)=sc(2,1)*v(1)+sc(2,2)*v(2)+sc(2,3)*v(3)
-                rvfmt(lm,ir,jas,3)=sc(3,1)*v(1)+sc(3,2)*v(2)+sc(3,3)*v(3)
+                rvfmt(lm,ir,jas,:)=sc(:,1)*v(1)+sc(:,2)*v(2)+sc(:,3)*v(3)
               end do
             end do
           else
@@ -159,11 +150,11 @@ do is=1,nspecies
     end if
   end do
 end do
+deallocate(rvfmt1,rvfmt2)
 !---------------------------!
 !     interstitial part     !
 !---------------------------!
 call symrvfir(ngvec,rvfir)
-deallocate(rvfmt1,rvfmt2)
 return
 end subroutine
 !EOC

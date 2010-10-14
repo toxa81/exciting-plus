@@ -5,6 +5,7 @@
 
 subroutine dynqtor(dynq,dynr)
 use modmain
+use modqpt
 implicit none
 ! arguments
 complex(8), intent(in) :: dynq(3*natmtot,3*natmtot,nqpt)

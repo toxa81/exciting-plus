@@ -5,6 +5,7 @@
 
 subroutine phdveff(iph,iq,veffmtp,veffirp,dveffmt,dveffir)
 use modmain
+use modqpt
 implicit none
 ! arguments
 integer, intent(in) :: iph
@@ -41,7 +42,7 @@ do is=1,nspecies
       ja=ja+1
       jas=jas+1
 ! important: the muffin-tin potential should have an *explicit* phase exp(iq.r)
-      t1=-dot_product(vqc(:,iq),atposc(:,ja,is))
+      t1=-dot_product(vqc(:,iq),vphcell(:,i))
       zt2=zt1*cmplx(cos(t1),sin(t1),8)
 ! loop over radial points
       irc=0

@@ -27,6 +27,7 @@ subroutine sumrule(dynq)
 !EOP
 !BOC
 use modmain
+use modqpt
 implicit none
 ! arguments
 complex(8), intent(inout) :: dynq(3*natmtot,3*natmtot,nqpt)

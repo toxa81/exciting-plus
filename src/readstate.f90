@@ -9,7 +9,7 @@
 subroutine readstate
 ! !USES:
 use modmain
-use mod_mpi_grid 
+use modldapu
 ! !DESCRIPTION:
 !   Reads in the charge density and other relevant variables from the file
 !   {\tt STATE.OUT}. Checks for version and parameter compatibility.
@@ -22,7 +22,7 @@ implicit none
 ! local variables
 logical spinpol_
 integer iostat
-integer is,ia,ias,lmmax,lm,ir,jr,ierr
+integer is,ia,ias,lmmax,lm,ir,jr
 integer idm,ngm,i1,i2,i3,j1,j2,j3
 integer version_(3),nspecies_,lmmaxvr_
 integer natoms_,nrmt_(maxspecies),nrmtmax_
@@ -46,7 +46,6 @@ real(8), allocatable :: bxcmt_(:,:,:,:)
 real(8), allocatable :: bxcir_(:,:)
 complex(8), allocatable :: veffig_(:)
 complex(8), allocatable :: vmatlu_(:,:,:,:,:)
-if (mpi_grid_root()) then
 open(50,file='STATE'//trim(filext),action='READ',form='UNFORMATTED', &
  status='OLD',iostat=iostat)
 if (iostat.ne.0) then
@@ -151,10 +150,6 @@ if ((ldapu.ne.0).and.(ldapu_.ne.0)) then
   end if
   deallocate(vmatlu_)
 end if
-if (spinpol.and.spinpol_) then
-  read(50)bfsmc
-  read(50)bfsmcmt
-endif
 close(50)
 !---------------------------!
 !     muffin-tin arrays     !
@@ -255,29 +250,6 @@ end if
 deallocate(mapir,spr_,rhomt_,rhoir_,vclmt_,vclir_)
 deallocate(vxcmt_,vxcir_,veffmt_,veffir_,veffig_)
 if (spinpol_) deallocate(magmt_,magir_,bxcmt_,bxcir_)
-endif !mpi_grid_root
-call mpi_grid_bcast(rhomt(1,1,1),lmmaxvr*nrmtmax*natmtot)
-call mpi_grid_bcast(rhoir(1),ngrtot)
-call mpi_grid_bcast(vclmt(1,1,1),lmmaxvr*nrmtmax*natmtot)
-call mpi_grid_bcast(vclir(1),ngrtot)
-call mpi_grid_bcast(vxcmt(1,1,1),lmmaxvr*nrmtmax*natmtot)
-call mpi_grid_bcast(vxcir(1),ngrtot)
-call mpi_grid_bcast(veffmt(1,1,1),lmmaxvr*nrmtmax*natmtot)
-call mpi_grid_bcast(veffir(1),ngrtot)
-call mpi_grid_bcast(veffig(1),ngvec)
-if (spinpol) then
-  call mpi_grid_bcast(magmt(1,1,1,1),lmmaxvr*nrmtmax*natmtot*ndmag)
-  call mpi_grid_bcast(magir(1,1),ngrtot*ndmag)
-  call mpi_grid_bcast(bxcmt(1,1,1,1),lmmaxvr*nrmtmax*natmtot*ndmag)
-  call mpi_grid_bcast(bxcir(1,1),ngrtot*ndmag)
-endif
-if (ldapu.ne.0) then
-  call mpi_grid_bcast(vmatlu(1,1,1,1,1),lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot)
-endif
-if (spinpol) then
-  call mpi_grid_bcast(bfsmc(1),3)
-  call mpi_grid_bcast(bfsmcmt(1,1,1),3*maxatoms*maxspecies)
-endif
 return
 end subroutine
 !EOC

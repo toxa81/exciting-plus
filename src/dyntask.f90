@@ -5,6 +5,7 @@
 
 subroutine dyntask(fnum,iq,is,ia,ip)
 use modmain
+use modqpt
 implicit none
 ! arguments
 integer, intent(in) :: fnum
@@ -14,10 +15,6 @@ integer, intent(out) :: ia
 integer, intent(out) :: ip
 ! local variables
 logical exist
-ip=1
-is=1
-ia=1
-iq=1
 do ip=1,3
   do is=1,nspecies
     do ia=1,natoms(is)
@@ -32,9 +29,11 @@ do ip=1,3
     end do
   end do
 end do
+filext='.OUT'
+iq=0;ia=0;is=0;ip=0
 write(*,*)
 write(*,'("Info(dyntask): Nothing more to do")')
 write(*,*)
-stop
 return
 end subroutine
+

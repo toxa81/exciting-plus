@@ -1,5 +1,6 @@
 subroutine write_chi(iq,ivq0m,ifxc)
 use modmain
+use mod_addons_q
 implicit none
 integer, intent(in) :: iq
 integer, intent(in) :: ivq0m(3)
@@ -25,9 +26,10 @@ fxca=fxca0+(ifxc-1)*fxca1
 call getqdir(iq,ivq0m,qdir)
 call getqname(ivq0m,qnm)
 qnm=trim(qdir)//"/"//trim(qnm)
+t1=sqrt(vqcnr(1,iq)**2+vqcnr(2,iq)**2+vqcnr(3,iq)**2)/au2ang
 write(c2,'(F7.3)')fxca
 write(c3,'(I8)')ngvecme
-write(c4,'(F6.3)')sqrt(vq0c(1)**2+vq0c(2)**2+vq0c(3)**2)/au2ang
+write(c4,'(F6.3)')t1
 write(c5,'(F5.3)')lr_eta
 
 if (lrtype.eq.0) then
@@ -37,7 +39,7 @@ else
   fname=trim(qnm)//"_A"//c2//"_s"//c1//".dat"
 endif
 open(160,file=trim(fname),form='formatted',status='replace')
-call write_chi_header(160,lr_igq0,ivq0m,fxca)
+call write_chi_header(160,iq,fxca)
 write(160,'("#")')
 write(160,'("# f-sum rule : ",G18.10)')fsum
 write(160,'("# 2*Pi^2*rho_avg : ",G18.10)')2*pi*pi*(chgval/omega)
@@ -94,7 +96,7 @@ if (wannier_chi0_chi) then
     fname=trim(qnm)//"_A"//c2//"_s"//c1//".dat"
   endif
   open(160,file=trim(fname),form='formatted',status='replace')
-  call write_chi_header(160,lr_igq0,ivq0m,fxca)
+  call write_chi_header(160,iq,fxca)
   write(160,'("#")')
   write(160,'("# Definition of columns")')
   write(160,'("#   1: energy            [eV]")')

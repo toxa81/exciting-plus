@@ -9,6 +9,8 @@
 subroutine genwiq2
 ! !USES:
 use modmain
+use modtest
+use modqpt
 ! !DESCRIPTION:
 !   The Fock matrix elements
 !   $$ V^{\rm NL}_{ij{\bf k}}\equiv\sum_{l{\bf k'}}\int
@@ -94,6 +96,8 @@ do iq=1,nqpt
 ! extrapolate the volume element to zero with a polynomial
   wiq2(iq)=polynom(0,np,xa,ya,c,0.d0)
 end do
+! write wiq2 to test file
+call writetest(800,'1/q^2 weights (wiq2)',nv=nqpt,tol=1.d-8,rva=wiq2)
 return
 end subroutine
 !EOC

@@ -47,13 +47,10 @@ integer, intent(out) :: iea(natmmax,nspecies,48)
 ! local variables
 integer isym,jsym,jsym0,jsym1
 integer is,ia,ja,iv(3),md
-real(8) sl(3,3),v(3),t1
+real(8) sl(3,3),sc(3,3),v(3),t1
 ! automatic arrays
 integer jea(natmmax,nspecies)
 real(8) apl3(3,natmmax)
-! external functions
-real(8) r3taxi
-external r3taxi
 nsym=0
 ! loop over lattice symmetries (spatial rotations)
 do isym=1,nsymlat
@@ -73,7 +70,7 @@ do isym=1,nsymlat
       call r3frac(epslat,v,iv)
 ! check if atomic positions are invariant
       do ia=1,natoms(is)
-        t1=r3taxi(apl3(:,ia),v)
+        t1=abs(apl3(1,ia)-v(1))+abs(apl3(2,ia)-v(2))+abs(apl3(3,ia)-v(3))
         if (t1.lt.epslat) then
 ! equivalent atom index
           jea(ia,is)=ja
@@ -102,10 +99,10 @@ do isym=1,nsymlat
     do jsym=jsym0,jsym1
 ! determinant of the symmetry matrix
       md=symlatd(jsym)
+      sc(:,:)=dble(md)*symlatc(:,:,jsym)
 ! rotate global field and check invariance using proper part of symmetry matrix
-      call r3mv(symlatc(:,:,jsym),bfieldc,v)
-      v(:)=v(:)*dble(md)
-      t1=r3taxi(bfieldc,v)
+      v(:)=sc(:,1)*bfieldc0(1)+sc(:,2)*bfieldc0(2)+sc(:,3)*bfieldc0(3)
+      t1=abs(bfieldc0(1)-v(1))+abs(bfieldc0(2)-v(2))+abs(bfieldc0(3)-v(3))
 ! if not invariant try a different global spin rotation
       if (t1.gt.epslat) goto 20
 ! rotate muffin-tin magnetic fields and check invariance
@@ -113,9 +110,12 @@ do isym=1,nsymlat
         do ia=1,natoms(is)
 ! equivalent atom
           ja=jea(ia,is)
-          call r3mv(symlatc(:,:,jsym),bfcmt(:,ja,is),v)
-          v(:)=v(:)*dble(md)
-          t1=r3taxi(bfcmt(:,ia,is),v)
+          v(:)=sc(:,1)*bfcmt0(1,ja,is) &
+              +sc(:,2)*bfcmt0(2,ja,is) &
+              +sc(:,3)*bfcmt0(3,ja,is)
+          t1=abs(bfcmt0(1,ia,is)-v(1)) &
+            +abs(bfcmt0(2,ia,is)-v(2)) &
+            +abs(bfcmt0(3,ia,is)-v(3))
 ! if not invariant try a different global spin rotation
           if (t1.gt.epslat) goto 20
         end do

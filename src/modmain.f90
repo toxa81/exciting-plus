@@ -1,12 +1,13 @@
 
-! Copyright (C) 2002-2008 J. K. Dewhurst, S. Sharma and C. Ambrosch-Draxl.
+! Copyright (C) 2002-2009 J. K. Dewhurst, S. Sharma and C. Ambrosch-Draxl.
 ! This file is distributed under the terms of the GNU General Public License.
 ! See the file COPYING for license details.
 
 module modmain
 use mod_mpi_grid
 use mod_timer
-use mod_hdf5
+use mod_addons
+use mod_papi
 
 !----------------------------!
 !     lattice parameters     !
@@ -178,24 +179,40 @@ real(8) bfsmcmt(3,maxatoms,maxspecies)
 real(8) taufsm
 ! second-variational spinor dimension (1 or 2)
 integer nspinor
-! external magnetic field in each muffin-tin in lattice coordinates
-real(8) bflmt(3,maxatoms,maxspecies)
-! external magnetic field in each muffin-tin in Cartesian coordinates
-real(8) bfcmt(3,maxatoms,maxspecies)
-! global external magnetic field in lattice coordinates
-real(8) bfieldl(3)
 ! global external magnetic field in Cartesian coordinates
 real(8) bfieldc(3)
+! initial field
+real(8) bfieldc0(3)
+! external magnetic field in each muffin-tin in Cartesian coordinates
+real(8) bfcmt(3,maxatoms,maxspecies)
+! initial field
+real(8) bfcmt0(3,maxatoms,maxspecies)
 ! external magnetic fields are multiplied by reducebf after each iteration
 real(8) reducebf
-! spinsprl if .true. if a spin-spiral is to be calculated
+! spinsprl is .true. if a spin-spiral is to be calculated
 logical spinsprl
+! ssdph is .true. if the muffin-tin spin-spiral magnetisation is de-phased
+logical ssdph
 ! number of spin-dependent first-variational functions per state
 integer nspnfv
 ! spin-spiral q-vector in lattice coordinates
 real(8) vqlss(3)
 ! spin-spiral q-vector in Cartesian coordinates
 real(8) vqcss(3)
+
+!---------------------------------------------!
+!     electric field and vector potential     !
+!---------------------------------------------!
+! efieldpol is .true. if a polarising constant electric field is applied
+logical efieldpol
+! electric field vector in Cartesian coordinates
+real(8) efieldc(3)
+! electric field vector in lattice coordinates
+real(8) efieldl(3)
+! afieldpol is .true. if a polarising constant vector potential is applied
+logical afieldpol
+! vector potential which couples to paramagnetic current
+real(8) afieldc(3)
 
 !----------------------------!
 !     symmetry variables     !
@@ -266,8 +283,6 @@ complex(8), allocatable :: sfacg(:,:)
 complex(8), allocatable :: cfunig(:)
 ! real-space characteristic function: 0 inside the muffin-tins and 1 outside
 real(8), allocatable :: cfunir(:)
-! damping coefficient for characteristic function
-real(8) cfdamp
 
 !-------------------------------!
 !     k-point set variables     !
@@ -282,8 +297,15 @@ integer ngridk(3)
 integer nkpt
 ! k-point offset
 real(8) vkloff(3)
-! reducek is .true. if k-points are to be reduced (with crystal symmetries)
-logical reducek
+! type of reduction to perform on k-point set
+!  0 : no reduction
+!  1 : reduce with full crystal symmetry group
+!  2 : reduce with symmorphic symmetries only
+integer reducek
+! number of point group symmetries used for k-point reduction
+integer nsymkpt
+! point group symmetry matrices used for k-point reduction
+integer symkpt(3,3,48)
 ! locations of k-points on integer grid
 integer, allocatable :: ivk(:,:)
 ! k-points in lattice coordinates
@@ -337,43 +359,13 @@ real(8), allocatable :: tpgkc(:,:,:,:)
 ! structure factor for the G+k-vectors
 complex(8), allocatable :: sfacgk(:,:,:,:)
 
-!-------------------------------!
-!     q-point set variables     !
-!-------------------------------!
-! q-point grid sizes
-integer ngridq(3)
-! total number of q-points
-integer nqpt
-! reduceq is .true. if q-points are to be reduced (with crystal symmetries)
-logical reduceq
-! locations of q-points on integer grid
-integer, allocatable :: ivq(:,:)
-! map from non-reduced grid to reduced set
-integer, allocatable :: iqmap(:,:,:)
-! q-points in lattice coordinates
-real(8), allocatable :: vql(:,:)
-! q-points in Cartesian coordinates
-real(8), allocatable :: vqc(:,:)
-! q-point weights
-real(8), allocatable :: wqpt(:)
-! weights associated with the integral of 1/q^2
-real(8), allocatable :: wiq2(:)
-
 !-----------------------------------------------------!
 !     spherical harmonic transform (SHT) matrices     !
 !-----------------------------------------------------!
-! real backward SHT matrix for lmaxapw
-real(8), allocatable :: rbshtapw(:,:)
-! real forward SHT matrix for lmmaxapw
-real(8), allocatable :: rfshtapw(:,:)
 ! real backward SHT matrix for lmaxvr
 real(8), allocatable :: rbshtvr(:,:)
 ! real forward SHT matrix for lmaxvr
 real(8), allocatable :: rfshtvr(:,:)
-! complex backward SHT matrix for lmaxapw
-complex(8), allocatable :: zbshtapw(:,:)
-! complex forward SHT matrix for lmaxapw
-complex(8), allocatable :: zfshtapw(:,:)
 ! complex backward SHT matrix for lmaxvr
 complex(8), allocatable :: zbshtvr(:,:)
 ! complex forward SHT matrix for lmaxvr
@@ -383,9 +375,9 @@ complex(8), allocatable :: zfshtvr(:,:)
 !     potential and density variables     !
 !-----------------------------------------!
 ! exchange-correlation functional type
-integer xctype
+integer xctype(3)
 ! exchange-correlation functional description
-character(256) xcdescr
+character(512) xcdescr
 ! exchange-correlation functional spin treatment
 integer xcspin
 ! exchange-correlation functional density gradient treatment
@@ -412,6 +404,10 @@ real(8), allocatable :: vxcir(:)
 real(8), allocatable :: bxcmt(:,:,:,:)
 ! interstitial exchange-correlation magnetic field
 real(8), allocatable :: bxcir(:,:)
+! muffin-tin effective magnetic field in spherical coordinates
+real(8), allocatable :: beffmt(:,:,:,:)
+! spin-orbit coupling radial function
+real(8), allocatable :: socfr(:,:)
 ! nosource is .true. if the field is to be made source-free
 logical nosource
 ! muffin-tin effective potential
@@ -430,10 +426,15 @@ real(8), allocatable :: ecmt(:,:,:)
 real(8), allocatable :: ecir(:)
 ! type of mixing to use for the potential
 integer mixtype
-! adaptive mixing parameters
+! mixing type description
+character(256) mixdescr
+! adaptive mixing parameter
 real(8) beta0
-real(8) betainc
-real(8) betadec
+real(8) betamax
+! muffin-tin paramagnetic current
+real(8), allocatable :: jcmt(:,:,:,:)
+! interstitial paramagnetic current
+real(8), allocatable :: jcir(:,:)
 
 !-------------------------------------!
 !     charge and moment variables     !
@@ -475,7 +476,7 @@ real(8) mommttot(3)
 !     APW and local-orbital variables     !
 !-----------------------------------------!
 ! maximum allowable APW order
-integer, parameter :: maxapword=6
+integer, parameter :: maxapword=3
 ! APW order
 integer apword(0:maxlapw,maxspecies)
 ! maximum of apword over all angular momenta and species
@@ -522,6 +523,15 @@ logical lorbve(maxlorbord,maxlorb,maxspecies)
 real(8), allocatable :: lofr(:,:,:,:)
 ! energy step size for locating the band energy
 real(8) deband
+! band energy search tolerance
+real(8) epsband
+! minimum default linearisation energy over all APWs and local-orbitals
+real(8) e0min
+! if autolinengy is .true. then the fixed linearisation energies are set to the
+! Fermi energy minus dlefe
+logical autolinengy
+! difference between linearisation and Fermi energies when autolinengy is .true.
+real(8) dlefe
 
 !-------------------------------------------!
 !     overlap and Hamiltonian variables     !
@@ -569,6 +579,10 @@ integer stype
 character(256) sdescr
 ! smearing width
 real(8) swidth
+! autoswidth is .true. if the smearing width is to be determined automatically
+logical autoswidth
+! effective mass used in smearing width formula
+real(8) mstar
 ! maximum allowed occupancy (1 or 2)
 real(8) occmax
 ! convergence tolerance for occupancies
@@ -577,12 +591,14 @@ real(8) epsocc
 real(8), allocatable :: occsv(:,:)
 ! Fermi energy for second-variational states
 real(8) efermi
+! scissor correction applied to the eigenvalues
+real(8) scissor
 ! density of states at the Fermi energy
 real(8) fermidos
+! estimated band gap
+real(8) bandgap
 ! error tolerance for the first-variational eigenvalues
 real(8) evaltol
-! minimum allowed eigenvalue
-real(8) evalmin
 ! second-variational eigenvalues
 real(8), allocatable :: evalsv(:,:)
 ! tevecsv is .true. if second-variational eigenvectors are calculated
@@ -602,7 +618,13 @@ real(8), allocatable :: evalcr(:,:)
 ! radial wavefunctions for core states
 real(8), allocatable :: rwfcr(:,:,:,:)
 ! radial charge density for core states
-real(8), allocatable :: rhocr(:,:)
+real(8), allocatable :: rhocr(:,:,:)
+! frozencr is .true. if the core states are fixed to the atomic states
+logical frozencr
+! spincore is .true. if the core is to be treated as spin-polarised
+logical spincore
+! number of core spin-channels
+integer nspncr
 
 !--------------------------!
 !     energy variables     !
@@ -637,8 +659,10 @@ real(8) engybmt
 real(8) engyx
 ! correlation energy
 real(8) engyc
-! compensating background charge energy
-real(8) engycbc
+! electronic entropy
+real(8) entrpy
+! entropic contribution to free energy
+real(8) engyts
 ! total energy
 real(8) engytot
 
@@ -691,8 +715,10 @@ integer ngrdos
 integer nsmdos
 ! energy interval for DOS/optics function
 real(8) wdos(2)
-! scissors correction
-real(8) scissor
+! dosocc is .true. if the DOS is to be weighted by the occupancy
+logical dosocc
+! dosmsum is .true. if the partial DOS is to be summed over m
+logical dosmsum
 ! number of optical matrix components required
 integer noptcomp
 ! required optical matrix components
@@ -710,6 +736,8 @@ real(8) sqados(3)
 ! q-vector in lattice coordinates for calculating the matrix elements
 ! < i,k+q | exp(iq.r) | j,k >
 real(8) vecql(3)
+! maximum initial-state energy allowed in ELNES transitions
+real(8) emaxelnes
 
 !-------------------------------------!
 !     1D/2D/3D plotting variables     !
@@ -756,29 +784,6 @@ complex(8), allocatable :: zvxir(:)
 complex(8), allocatable :: zbxmt(:,:,:,:)
 complex(8), allocatable :: zbxir(:,:)
 
-!-------------------------!
-!     LDA+U variables     !
-!-------------------------!
-! type of LDA+U to use (0: none)
-integer ldapu
-! maximum angular momentum
-integer, parameter :: lmaxlu=3
-integer, parameter :: lmmaxlu=(lmaxlu+1)**2
-! angular momentum for each species
-integer llu(maxspecies)
-! U and J values for each species
-real(8) ujlu(2,maxspecies)
-! LDA+U density matrix
-complex(8), allocatable :: dmatlu(:,:,:,:,:)
-! LDA+U potential matrix in (l,m) basis
-complex(8), allocatable :: vmatlu(:,:,:,:,:)
-! LDA+U energy for each atom
-real(8), allocatable :: engyalu(:)
-! interpolation constant alpha for each atom (PRB 67, 153106 (2003))
-real(8), allocatable :: alphalu(:)
-! energy from the LDA+U correction
-real(8) engylu
-
 !--------------------------!
 !     phonon variables     !
 !--------------------------!
@@ -809,34 +814,6 @@ integer nphwrt
 real(8), allocatable :: vqlwrt(:,:)
 ! Coulomb pseudopotential
 real(8) mustar
-
-!-------------------------------------------------------------!
-!     reduced density matrix functional (RDMFT) variables     !
-!-------------------------------------------------------------!
-! non-local matrix elements for varying occupation numbers
-real(8), allocatable :: vnlrdm(:,:,:,:)
-! Coulomb potential matrix elements
-complex(8), allocatable :: vclmat(:,:,:)
-! derivative of kinetic energy w.r.t. natural orbital coefficients
-complex(8), allocatable :: dkdc(:,:,:)
-! step size for occupation numbers
-real(8) taurdmn
-! step size for natural orbital coefficients
-real(8) taurdmc
-! xc functional
-integer rdmxctype
-! maximum number of self-consistent loops
-integer rdmmaxscl
-! maximum number of iterations for occupation number optimisation
-integer maxitn
-! maximum number of iteration for natural orbital optimisation
-integer maxitc
-! exponent for the functional
-real(8) rdmalpha
-! temperature
-real(8) rdmtemp
-! entropy
-real(8) rdmentrpy
 
 !--------------------------!
 !     timing variables     !
@@ -882,13 +859,19 @@ data sigmat / (0.d0,0.d0), (1.d0,0.d0), (1.d0,0.d0), (0.d0,0.d0), &
               (1.d0,0.d0), (0.d0,0.d0), (0.d0,0.d0),(-1.d0,0.d0) /
 ! Boltzmann constant in Hartree/kelvin (CODATA 2006)
 real(8), parameter :: kboltz=3.166815343d-6
+! speed of light in atomic units (=1/alpha) (CODATA 2006)
+real(8), parameter :: sol=137.035999679d0
+! scaled speed of light
+real(8) solsc
+! electron g-factor (CODATA 2006)
+real(8), parameter :: gfacte=2.0023193043622d0
 
 !---------------------------------!
 !     miscellaneous variables     !
 !---------------------------------!
 ! code version
 integer version(3)
-data version / 0,9,224 /
+data version / 1,0,17 /
 ! maximum number of tasks
 integer, parameter :: maxtasks=40
 ! number of tasks
@@ -901,7 +884,7 @@ integer task
 logical tstop
 ! tlast is .true. if self-consistent loop is on the last iteration
 logical tlast
-! number of iterations after which STATE.OUT is written
+! number of self-consistent loops after which STATE.OUT is written
 integer nwrite
 ! filename extension for files generated by gndstate
 character(256) filext
@@ -915,380 +898,6 @@ integer, parameter :: maxnlns=20
 integer notelns
 ! notes to include in INFO.OUT
 character(80) notes(maxnlns)
-
-!-----------------------!
-!      MPI parallel     !
-!-----------------------!
-integer, parameter :: dim1=1
-integer, parameter :: dim2=2
-integer, parameter :: dim3=3
-
-integer nkptloc
-integer nkptnrloc
-logical lmpi_grid
-data lmpi_grid/.false./
-integer mpi_grid(3)
-complex(8), allocatable :: evecfvloc(:,:,:,:)
-complex(8), allocatable :: evecsvloc(:,:,:)
-
-! dimension for k-points 
-integer dim_k
-! dimension for q-vectors
-integer dim_q
-! dimension for interband transitions
-integer dim_b
-
-
-!------------------!
-!      addons      !
-!------------------!
-! coefficient-based represenatation of second-variational states
-integer nrfmax
-real(8), allocatable :: urf(:,:,:,:)
-real(8), allocatable :: urfprod(:,:,:,:)
-! number of radial functions for a given l
-integer, allocatable :: nrfl(:,:)
-integer, allocatable :: lm2l(:)
-integer, allocatable :: lm2m(:)
-integer, allocatable :: ias2is(:)
-integer, allocatable :: ias2ia(:)
-integer, allocatable :: ias2ic(:)
-! for local coordinate system
-integer natlcs
-real(8), allocatable :: lcsrsh(:,:,:)
-integer, allocatable :: iatlcs(:)
-logical ldensmtrx
-real(8) dm_e1,dm_e2
-! real <-> complex spherical harmonic transformation
-! complex to real
-complex(8), allocatable :: rylm(:,:)
-! real to complex
-complex(8), allocatable :: yrlm(:,:)
-! complex to lcs real
-complex(8), allocatable :: rylm_lcs(:,:,:)
-! lcs real to complex
-complex(8), allocatable :: yrlm_lcs(:,:,:)
-! band range for task 64
-integer bndranglow, bndranghi
-
-complex(8), allocatable :: veffir_zfft(:)
-
-! number of atom classes (non-equivalent atoms)
-integer natmcls
-! i-th class -> ias mapping
-integer, allocatable :: iatmcls(:)
-
-
-
-! unit conversion
-real(8), parameter :: ha2ev=27.21138386d0
-real(8), parameter :: au2ang=0.5291772108d0
-
-!-------------------------!
-!     Linear response     !
-!-------------------------!
-! number of q-vectors
-integer nvq0
-! list of q-vectors in k-mesh coordinates
-integer, allocatable :: ivq0m_list(:,:)
-! q-vector in lattice coordinates
-real(8) vq0l(3)
-! q-vector in Cartesian coordinates
-real(8) vq0c(3)
-! reduced q-vector in lattice coordinates
-real(8) vq0rl(3)
-! reduced q-vector in Cartesian coordinates
-real(8) vq0rc(3)
-! index of G-vector which brings q to first BZ
-integer lr_igq0
-! first G-shell for matrix elements
-integer gshme1
-! last G-shell for matrix elements
-integer gshme2
-! first G-vector for matrix elements
-integer gvecme1
-! last G-vector for matrix elements
-integer gvecme2
-! number of G-vectors for matrix elements
-integer ngvecme
-
-! number of energy-mesh points
-!integer nepts
-integer lr_nw
-real(8) lr_w0
-real(8) lr_w1
-real(8) lr_dw
-! energy mesh
-complex(8), allocatable :: lr_w(:)
-!real(8) maxomega
-!real(8) domega
-real(8) lr_eta
-
-
-real(8) lr_e1,lr_e2
-! type of linear response calculation
-!   0 : charge response
-!   1 : magnetic response
-integer lrtype
-real(8) lr_min_e12
-
-! G+q vectors in Cart.coord.
-real(8), allocatable :: lr_vgq0c(:,:)
-! length of G+q vectors
-real(8), allocatable :: lr_gq0(:)
-! theta and phi angles of G+q vectors
-real(8), allocatable :: lr_tpgq0(:,:)
-! sperical harmonics of G+q vectors
-complex(8), allocatable :: lr_ylmgq0(:,:)
-! structure factor for G+q vectors
-complex(8), allocatable :: lr_sfacgq0(:,:)
-
-! number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> in the Bloch basis
-!  for a given k-point
-integer, allocatable :: nmegqblh(:)
-integer, allocatable :: nmegqblhloc(:,:)
-! maximum number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> over all k-points
-integer nmegqblhmax
-integer nmegqblhlocmax
-! matrix elements <nk|e^{-i(G+q)x}|n'k+q> in the Bloch basis
-!   1-st index : G-vector
-!   2-nd index : global index of pair of bands (n,n')
-!   3-rd index : k-point
-complex(8), allocatable :: megqblh(:,:,:)
-complex(8), allocatable :: megqblh2(:,:)
-! pair of bands (n,n') for matrix elements <nk|e^{-i(G+q)x}|n'k+q> by global index
-!   1-st index :  1 -> n
-!                 2 -> n'
-!   2-nd index : global index of pair of bands (n,n')
-!   3-rd index : k-point
-integer, allocatable :: bmegqblh(:,:,:)
-
-logical megqwan_afm
-data megqwan_afm/.false./
-
-real(8) megqwan_cutoff1
-real(8) megqwan_cutoff2
-data megqwan_cutoff1/-0.1d0/
-data megqwan_cutoff2/100.1d0/
-
-real(8) megqwan_mindist
-real(8) megqwan_maxdist
-
-integer nmegqwanmax
-integer nmegqwan
-integer megqwan_tlim(2,3)
-integer, allocatable :: imegqwan(:,:)
-integer, allocatable :: idxmegqwan(:,:,:,:,:)
-complex(8), allocatable :: megqwan(:,:)
-logical :: all_wan_ibt
-data all_wan_ibt/.false./
-
-integer nwann_include
-data nwann_include/0/
-integer, allocatable :: iwann_include(:)
-
-integer nmegqblhwanmax
-integer, allocatable :: nmegqblhwan(:)
-integer, allocatable :: imegqblhwan(:,:)
-
-complex(8), allocatable :: wann_c_jk(:,:,:)
-complex(8), allocatable :: wann_cc(:,:,:)
-complex(8), allocatable :: wann_cc2(:,:)
-
-
-integer ngntujumax
-integer, allocatable :: ngntuju(:,:)
-integer(2), allocatable :: igntuju(:,:,:,:)
-complex(8), allocatable :: gntuju(:,:,:)
-
-
-
-
-! array for k+q points
-!  1-st index: index of k-point in BZ
-!  2-nd index: 1: index of k'=k+q-K
-!              2: index of K-vector which brings k+q to first BZ
-integer, allocatable :: idxkq(:,:)
-real(8) fxca0
-real(8) fxca1
-integer nfxca
-integer fxctype
-
-! high-level switch: solve scalar equation for chi
-logical scalar_chi
-data scalar_chi/.false./
-! high-level switch:: read files in parallel
-logical parallel_read
-data parallel_read/.true./
-! high-level switch: compute chi0 and chi in Wannier functions basis
-logical wannier_chi0_chi 
-data wannier_chi0_chi/.false./
-! low level switch: compute matrix elements of e^{i(G+q)x} in the basis of
-!   Wannier functions; depends on crpa and wannier_chi0_chi
-logical wannier_megq
-data wannier_megq/.false./
-! low level switch: compute screened W matrix; depends on crpa
-logical screened_w
-data screened_w/.false./
-logical screened_u
-data screened_u/.false./
-
-real(8) q0gamma(3,8)
-real(8) a0gamma(8)
-
-!logical crpa
-real(8) crpa_e1,crpa_e2
-! 0: W is computed from "symmetrized" dielectric function
-! 1: W is computed from chi
-! 2: W is computed from chi but without bare Coulomb part
-integer crpa_scrn
-
-integer, allocatable :: spinor_ud(:,:,:)
-
-! indices of response functions in global array f_response(:,:,:)
-integer, parameter :: f_chi0                 = 1
-integer, parameter :: f_chi                  = 2
-integer, parameter :: f_chi_scalar           = 3
-integer, parameter :: f_chi_pseudo_scalar    = 4
-integer, parameter :: f_epsilon_matrix_GqGq  = 5
-integer, parameter :: f_epsilon_scalar_GqGq  = 6
-integer, parameter :: f_inv_epsilon_inv_GqGq = 7
-integer, parameter :: f_epsilon_eff          = 8
-integer, parameter :: f_epsilon_eff_scalar   = 9
-integer, parameter :: f_sigma                = 10
-integer, parameter :: f_sigma_scalar         = 11
-integer, parameter :: f_loss                 = 12
-integer, parameter :: f_loss_scalar          = 13
-integer, parameter :: f_chi0_wann            = 15
-integer, parameter :: f_chi_wann             = 16
-integer, parameter :: f_epsilon_eff_wann     = 17
-integer, parameter :: f_sigma_wann           = 18
-integer, parameter :: f_loss_wann            = 19
-
-integer, parameter :: nf_response            = 19
-complex(8), allocatable :: f_response(:,:,:)
-
-integer maxtr_uscrn
-integer ntr_uscrn
-integer, allocatable :: vtl_uscrn(:,:)
-integer, allocatable :: ivtit_uscrn(:,:,:)
-complex(8), allocatable :: uscrnwan(:,:,:,:)
-complex(8), allocatable :: ubarewan(:,:,:)
-
-
-
-
-
-
-
-
-
-!------------------!
-!     Wannier      !
-!------------------!
-logical wannier
-integer wann_natom
-integer wann_norbgrp
-integer wann_ntype
-logical wann_add_poco
-integer, allocatable :: wann_norb(:)
-integer, allocatable :: wann_iorb(:,:,:)
-integer, allocatable :: wann_iprj(:,:)
-real(8), allocatable :: wann_eint(:,:)
-real(8), allocatable :: wann_v(:)
-
-integer nwann
-integer, allocatable :: iwann(:,:)
-integer, allocatable :: nwannias(:)
-  
-! expansion coefficients of Wannier functions over spinor Bloch eigen-functions  
-complex(8), allocatable :: wann_c(:,:,:)
-! Bloch-sums of WF
-complex(8), allocatable :: wann_unkmt(:,:,:,:,:,:)
-complex(8), allocatable :: wann_unkit(:,:,:,:)
-
-! H(k) in WF basis
-complex(8), allocatable :: wann_h(:,:,:)
-! e(k) of WF H(k) (required for band-sctructure plot only)
-real(8), allocatable :: wann_e(:,:)
-! momentum operator in WF basis
-complex(8), allocatable :: wann_p(:,:,:,:)
-
-real(8), allocatable :: wann_ene(:)
-real(8), allocatable :: wann_occ(:)
-
-complex(8), allocatable :: wf_v_mtrx(:,:,:,:,:)
-
-real(8) zero3d(3)
-real(8) bound3d(3,3)
-integer nrxyz(3)
-integer nwfplot
-integer firstwf
-logical wannier_lc
-integer nwann_lc
-integer, allocatable :: wann_iorb_lc(:,:,:)
-real(8), allocatable :: wann_iorb_lcc(:,:)
-
-integer nwann_h
-integer, allocatable :: iwann_h(:)
-
-logical wannier_soft_eint
-data wannier_soft_eint/.false./
-real(8), allocatable :: wannier_soft_eint_w1(:)
-real(8), allocatable :: wannier_soft_eint_w2(:)
-real(8), allocatable :: wannier_soft_eint_e1(:)
-real(8), allocatable :: wannier_soft_eint_e2(:)
-real(8) wannier_min_prjao
-
-logical ldisentangle
-
-!----------------!
-!      timer     !
-!----------------!
-integer, parameter :: t_iter_tot=2
-integer, parameter :: t_init=10
-
-integer, parameter :: t_seceqn=18
-integer, parameter :: t_seceqnfv=19
-integer, parameter :: t_seceqnfv_setup=20
-integer, parameter :: t_seceqnfv_setup_h=21
-integer, parameter :: t_seceqnfv_setup_h_mt=22
-integer, parameter :: t_seceqnfv_setup_h_it=23
-integer, parameter :: t_seceqnfv_setup_o=24
-integer, parameter :: t_seceqnfv_setup_o_mt=25
-integer, parameter :: t_seceqnfv_setup_o_it=26
-integer, parameter :: t_seceqnfv_diag=27
-
-integer, parameter :: t_seceqnsv=30
-integer, parameter :: t_svhmlt_setup=31
-integer, parameter :: t_svhmlt_diag=32
-integer, parameter :: t_svhmlt_tot=33
-
-integer, parameter :: t_apw_rad=40
-integer, parameter :: t_rho_mag_sum=41
-integer, parameter :: t_rho_mag_sym=42
-integer, parameter :: t_rho_mag_tot=43
-integer, parameter :: t_pot=44
-integer, parameter :: t_dmat=45
-
-logical wproc
-
-! number of nearest neighbours for each atom
-integer, allocatable :: nnghbr(:)
-! list of nearest neighbours
-integer, allocatable :: inghbr(:,:,:)
-
-
-!-----------------------!
-!      constrain LDA    !
-!-----------------------!
-logical clda
-logical clda_rlmlcs
-integer clda_norb
-integer clda_iat(2)
-integer clda_ispn(2)
-integer, allocatable :: clda_iorb(:,:)
-real(8), allocatable :: clda_vorb(:,:)
 
 end module
 

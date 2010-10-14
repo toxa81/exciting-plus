@@ -1,5 +1,5 @@
 #! /bin/sh
-# Setup script for the EXCITING Code
+# Setup script for the Elk Code
 
 # generic values
 MAKE="make"
@@ -54,7 +54,7 @@ GETSYS ()
     F77_OPTS=$F90_OPTS
   elif [ "$SYS" = 3 ] ; then
     F90="ifort"
-    F90_OPTS="-O3 -ip -unroll -prefetch -scalar_rep -w90"
+    F90_OPTS="-O3 -ip -unroll -scalar_rep -w90"
     F77=$F90
     F77_OPTS=$F90_OPTS
   elif [ "$SYS" = 4 ] ; then
@@ -152,6 +152,6 @@ echo
 echo "You can now edit the compiler options in \"make.inc\" for optimal"
 echo "performance on your system as well as enabling OpenMP parallelisation."
 echo
-echo "Then run \"make\" to compile code."
+echo "Then run \"make\" to compile the code."
 echo
 

@@ -8,14 +8,14 @@ complex(4), allocatable :: wf(:,:,:)
 complex(4), allocatable :: wfval(:,:)
 complex(4), allocatable :: wfp(:)
 integer i,nrtot
-integer i1,i2,i3,ir,n,m
+integer i1,i2,i3,ir,n
 real(8), allocatable :: vr(:,:)
 real(8), allocatable :: veff(:)
-complex(8), allocatable :: zfft_vir(:)
+complex(8), allocatable :: zfft(:)
+real(8) t1
 character*40 fname
-real(8) x(2),alph,t1,x0,dx
+real(8) x(2),alph,x0,dx
 logical, parameter :: wfprod=.false.
-integer ikloc
 
 call init0
 call init1
@@ -34,24 +34,23 @@ call linengy
 call genapwfr
 ! generate the local-orbital radial functions
 call genlofr
-
-call geturf
-call genurfprod
+call getufr
+call genufrp
 
 call genwfnr(-1,.false.)
 
-if (task.eq.361) then
+if (task.eq.861) then
   nrtot=nrxyz(1)
   nrxyz(2)=1
   nrxyz(3)=1
   orig(:)=zero3d(:)-(bound3d(:,1))/2.d0
 endif
-if (task.eq.362) then
+if (task.eq.862) then
   nrtot=nrxyz(1)*nrxyz(2)
   nrxyz(3)=1
   orig(:)=zero3d(:)-(bound3d(:,1)+bound3d(:,2))/2.d0
 endif
-if (task.eq.363) then
+if (task.eq.863) then
   nrtot=nrxyz(1)*nrxyz(2)*nrxyz(3)
   orig(:)=zero3d(:)-(bound3d(:,1)+bound3d(:,2)+bound3d(:,3))/2.d0
 endif
@@ -78,30 +77,32 @@ do i1=0,nrxyz(1)-1
 enddo
 
 ! Fourier transform potential to G-space
-allocate(zfft_vir(ngrtot))
-zfft_vir(:)=veffir(:)
-call zfftifc(3,ngrid,-1,zfft_vir)
+allocate(zfft(ngrtot))
+zfft(:)=veffir(:)
+call zfftifc(3,ngrid,-1,zfft)
 
 do ir=1,nrtot
   if (mod(ir,nrxyz(2)*nrxyz(3)).eq.0.and.mpi_grid_root()) then
     write(*,*)'r-point : ',ir,' out of ',nrtot
   endif
   call wann_val(vr(1,ir),wfval)
-  if (mpi_grid_root()) wf(:,:,ir)=wfval(:,:)
-  call f_veff_p(vr(1,ir),veffmt,zfft_vir,t1)
+  call mpi_grid_reduce(wfval(1,1),nspinor*nwfplot,dims=(/dim_k/))
+  if (mpi_grid_root()) wf(:,:,ir)=wfval(:,:)  
+  call rfval(vr(1,ir),lmaxvr,lmmaxvr,veffmt,zfft,t1)
+  call mpi_grid_reduce(t1,dims=(/dim_k/))
   if (mpi_grid_root()) veff(ir)=t1
   call mpi_grid_barrier()
 enddo
 
 if (mpi_grid_root()) then
-  if (task.eq.362) then
+  if (task.eq.862) then
     x(1)=sqrt(bound3d(1,1)**2+bound3d(2,1)**2+bound3d(3,1)**2)
     x(2)=sqrt(bound3d(1,2)**2+bound3d(2,2)**2+bound3d(3,2)**2)
     alph=dot_product(bound3d(:,1),bound3d(:,2))/x(1)/x(2)
     alph=acos(alph)
   endif
 
-  if (task.eq.361) then
+  if (task.eq.861) then
     x0=-sqrt(sum(bound3d(:,1)**2))/2.d0
     dx=sqrt(sum(bound3d(:,1)**2))/nrxyz(1)
     do n=1,nwfplot
@@ -118,18 +119,18 @@ if (mpi_grid_root()) then
     enddo
     close(70)
   endif  
-  if (task.eq.362.or.task.eq.363) then
+  if (task.eq.862.or.task.eq.863) then
     do n=1,nwfplot
       write(fname,'("wf_",I3.3,".dx")')n+firstwf-1
       open(70,file=trim(fname),status="REPLACE",form="FORMATTED")
-      if (task.eq.362) then
+      if (task.eq.862) then
         write(70,'("object 1 class gridpositions counts",2I4)')nrxyz(1),nrxyz(2)
         write(70,'("origin ",2G18.10)')(/0.d0, 0.d0/)
         write(70,'("delta ",2G18.10)')(/x(1),0.d0/)/nrxyz(1)
         write(70,'("delta ",2G18.10)')(/x(2)*cos(alph),x(2)*sin(alph)/)/nrxyz(2)
         write(70,'("object 2 class gridconnections counts",2I4)')nrxyz(1),nrxyz(2)
       endif
-      if (task.eq.363) then
+      if (task.eq.863) then
         write(70,'("object 1 class gridpositions counts",3I4)')nrxyz(1),nrxyz(2),nrxyz(3)
         write(70,'("origin ",3G18.10)')orig(:)
         do i=1,3
@@ -151,14 +152,14 @@ if (mpi_grid_root()) then
     enddo !n
     fname="veff.dx"
     open(70,file=trim(fname),status="REPLACE",form="FORMATTED")
-    if (task.eq.362) then
+    if (task.eq.862) then
       write(70,'("object 1 class gridpositions counts",2I4)')nrxyz(1),nrxyz(2)
       write(70,'("origin ",2G18.10)')(/0.d0, 0.d0/)
       write(70,'("delta ",2G18.10)')(/x(1),0.d0/)/nrxyz(1)
       write(70,'("delta ",2G18.10)')(/x(2)*cos(alph),x(2)*sin(alph)/)/nrxyz(2)
       write(70,'("object 2 class gridconnections counts",2I4)')nrxyz(1),nrxyz(2)
     endif
-    if (task.eq.363) then
+    if (task.eq.863) then
       write(70,'("object 1 class gridpositions counts",3I4)')nrxyz(1),nrxyz(2),nrxyz(3)
       write(70,'("origin ",3G18.10)')orig(:)
       do i=1,3

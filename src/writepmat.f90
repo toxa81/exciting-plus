@@ -20,9 +20,9 @@ use modmain
 implicit none
 ! local variables
 integer ik,recl,ikloc,i
+complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: evecfv(:,:)
 complex(8), allocatable :: evecsv(:,:)
-complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: pmat(:,:,:,:)
 ! initialise universal variables
 call init0
@@ -35,6 +35,7 @@ call linengy
 call genapwfr
 ! generate the local-orbital radial functions
 call genlofr
+call getufr
 if (mpi_grid_root()) then
   open(50,file='PMAT.OUT')
   close(50,status='DELETE')

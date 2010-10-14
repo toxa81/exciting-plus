@@ -13,6 +13,19 @@ integer orb_l(lmmax)
 integer orb_s(nspinor)
 integer orb_a(natmtot)
 
+! TODO:
+!  Input in the A,O,S (atom, orbital, spin) format
+!  A is a number or a string
+!  O is a number or a string
+!  S is a number
+!  ,,    : all states
+!  ,,1   : spin up
+!  ,,2   : spin down
+!  ,d,1  : all d's of all atoms spin 1
+!  ,2,   : y states of all atoms of all spins
+!  2,,   : all states of atom No.2
+!  Fe,d, : all d states of all Fe atoms
+
 orb_l=0
 orb_s=0
 orb_a=0

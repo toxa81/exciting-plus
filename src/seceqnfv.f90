@@ -6,10 +6,9 @@
 !BOP
 ! !ROUTINE: seceqnfv
 ! !INTERFACE:
-subroutine seceqnfv(nmatp,ngp,igpig,vgpc,apwalm,evalfv,evecfv,ik)
+subroutine seceqnfv(ik,nmatp,ngp,igpig,vgpc,apwalm,evalfv,evecfv)
 ! !USES:
 use modmain
-use mod_timer
 ! !INPUT/OUTPUT PARAMETERS:
 !   nmatp  : order of overlap and Hamiltonian matrices (in,integer)
 !   ngp    : number of G+k-vectors for augmented plane waves (in,integer)
@@ -30,6 +29,7 @@ use mod_timer
 !BOC
 implicit none
 ! arguments
+integer, intent(in) :: ik
 integer, intent(in) :: nmatp
 integer, intent(in) :: ngp
 integer, intent(in) :: igpig(ngkmax)
@@ -37,92 +37,81 @@ real(8), intent(in) :: vgpc(3,ngkmax)
 complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 real(8), intent(out) :: evalfv(nstfv)
 complex(8), intent(out) :: evecfv(nmatmax,nstfv)
-integer, intent(in) :: ik
 ! local variables
 integer is,ia,i,m,np,info,nb,lwork
-real(8) vl,vu
+real(8) v(1),vl,vu
 real(8) ts0,ts1
 ! allocatable arrays
 integer, allocatable :: iwork(:)
 integer, allocatable :: ifail(:)
 real(8), allocatable :: w(:)
 real(8), allocatable :: rwork(:)
-complex(8), allocatable :: v(:)
 complex(8), allocatable :: h(:)
 complex(8), allocatable :: o(:)
 complex(8), allocatable :: work(:)
+complex(8) zt1
+complex(4) ct1
+character*100 fname
 logical, parameter :: packed=.false.
-logical, parameter :: lwrite_hmlt_ovl=.false.
 integer, external :: ilaenv
-
 if (packed) then
   np=(nmatp*(nmatp+1))/2
 else
   np=nmatp*nmatp
 endif  
-allocate(iwork(5*nmatp))
-allocate(ifail(nmatp))
-allocate(w(nmatp))
-allocate(rwork(7*nmatp))
-allocate(v(1))
-allocate(h(np))
-allocate(o(np))
-if (packed) then 
-  allocate(work(2*nmatp))
-else
-  nb=ilaenv(1,'ZHETRD','U',nmatp,-1,-1,-1)
-  lwork=(nb+1)*nmatp
-  allocate(work(lwork))
-endif 
-!----------------------------------------!
-!     Hamiltonian and overlap set up     !
-!----------------------------------------!
+!-----------------------------------------------!
+!     Hamiltonian and overlap matrix set up     !
+!-----------------------------------------------!
 call timesec(ts0)
-call timer_start(t_seceqnfv_setup)
-! set the matrices to zero
+allocate(h(np),o(np))
 h(:)=zzero
 o(:)=zzero
 if (packed) then
-! muffin-tin contributions
+! Hamiltonian
   do is=1,nspecies
     do ia=1,natoms(is)
       call hmlaa(.false.,is,ia,ngp,apwalm,v,h)
       call hmlalo(.false.,is,ia,ngp,apwalm,v,h)
       call hmllolo(.false.,is,ia,ngp,v,h)
+    end do
+  end do
+  call hmlistl(.false.,ngp,igpig,vgpc,v,h)
+! overlap
+  do is=1,nspecies
+    do ia=1,natoms(is)
       call olpaa(.false.,is,ia,ngp,apwalm,v,o)
       call olpalo(.false.,is,ia,ngp,apwalm,v,o)
       call olplolo(.false.,is,ia,ngp,v,o)
     end do
   end do
-! interstitial contributions
-  call hmlistl(.false.,ngp,igpig,vgpc,v,h)
   call olpistl(.false.,ngp,igpig,v,o)
 else
   call sethml(ngp,nmatp,vgpc,igpig,apwalm,h)
   call setovl(ngp,nmatp,igpig,apwalm,o)
-  if (lwrite_hmlt_ovl) then
-    if (ik.eq.1) then
-      open(200,file='ho.dat',form='unformatted',status='replace')
-      write(200)h,o
-      close(200)
-    endif
-  endif
 endif
 call timesec(ts1)
-call timer_stop(t_seceqnfv_setup)
 timemat=timemat+ts1-ts0
 !------------------------------------!
 !     solve the secular equation     !
 !------------------------------------!
-if (mpi_grid_root((/2/))) then
+if (mpi_grid_root((/dim2/))) then
   call timesec(ts0)
-  call timer_start(t_seceqnfv_diag)
-  vl=0.d0
-  vu=0.d0
+  allocate(iwork(5*nmatp))
+  allocate(ifail(nmatp))
+  allocate(w(nmatp))
+  allocate(rwork(7*nmatp))
+  if (packed) then 
+    allocate(work(2*nmatp))
+  else
+    nb=ilaenv(1,'ZHETRD','U',nmatp,-1,-1,-1)
+    lwork=(nb+1)*nmatp
+    allocate(work(lwork))
+  endif 
+  evecfv=zzero
+  ! LAPACK 3.x call
   if (packed) then
-  ! LAPACK 3.0 call
-    call zhpgvx(1,'V','I','U',nmatp,h,o,vl,vu,1,nstfv,evaltol,m,w,evecfv,&
-     nmatmax,work,rwork,iwork,ifail,info)
+    call zhpgvx(1,'V','I','U',nmatp,h,o,vl,vu,1,nstfv,evaltol,m,w,evecfv,nmatmax, &
+     work,rwork,iwork,ifail,info)
   else
     call zhegvx(1,'V','I','U',nmatp,h,nmatp,o,nmatp,vl,vu,1,nstfv,evaltol,&
      m,w,evecfv,nmatmax,work,lwork,rwork,iwork,ifail,info)
@@ -139,15 +128,15 @@ if (mpi_grid_root((/2/))) then
       write(*,'(" Order of overlap matrix : ",I8)') nmatp
       write(*,*)
     end if
-    stop
+    call pstop
   end if
   call timesec(ts1)
-  timefv=timefv+ts1-ts0
-  call timer_stop(t_seceqnfv_diag)
+  deallocate(iwork,ifail,w,rwork,work)
 endif
-call mpi_grid_bcast(evecfv(1,1),nmatmax*nstfv,dims=(/2/))
-call mpi_grid_bcast(evalfv(1),nstfv,dims=(/2/))
-deallocate(iwork,ifail,w,rwork,v,h,o,work)
+call mpi_grid_bcast(evecfv(1,1),nmatmax*nstfv,dims=(/dim2/))
+call mpi_grid_bcast(evalfv(1),nstfv,dims=(/dim2/))
+timefv=timefv+ts1-ts0
+deallocate(h,o)
 return
 end subroutine
 !EOC

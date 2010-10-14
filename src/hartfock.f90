@@ -29,8 +29,8 @@ if (spinpol) open(63,file='MOMENT'//trim(filext),action='WRITE', &
 ! open FORCEMAX.OUT if required
 if (tforce) open(64,file='FORCEMAX'//trim(filext),action='WRITE', &
  form='FORMATTED')
-! open DENERGY.OUT
-open(65,file='DENERGY'//trim(filext),action='WRITE',form='FORMATTED')
+! open DTOTENERGY.OUT
+open(66,file='DTOTENERGY'//trim(filext),action='WRITE',form='FORMATTED')
 ! write out general information to INFO.OUT
 call writeinfo(60)
 ! read the charge density and potentials from file
@@ -107,9 +107,11 @@ do iscl=1,maxscl
     call getevecfv(vkl(:,ik),vgkl(:,:,:,ik),evecfv)
     call getevecsv(vkl(:,ik),evecsv)
 ! add to the density and magnetisation
-    call rhovalk(ik,evecfv,evecsv)
+    call rhomagk(ik,evecfv,evecsv)
     deallocate(evecfv,evecsv)
   end do
+! convert muffin-tin density/magnetisation to spherical harmonics
+  call rhomagsh
 ! symmetrise the density
   call symrf(lradstp,rhomt,rhoir)
 ! symmetrise the magnetisation
@@ -153,17 +155,17 @@ do iscl=1,maxscl
   if (tlast) goto 20
 ! compute the change in total energy and check for convergence
   if (iscl.ge.2) then
-    de=abs(engytot-etp)/(abs(engytot)+1.d0)
+    de=abs(engytot-etp)
     write(60,*)
-    write(60,'("Relative change in total energy (target) : ",G18.10,&
-     &" (",G18.10,")")') de,epsengy
+    write(60,'("Absolute change in total energy (target) : ",G18.10," (",&
+     &G18.10,")")') de,epsengy
     if (de.lt.epsengy) then
       write(60,*)
       write(60,'("Energy convergence target achieved")')
       tlast=.true.
     end if
-    write(65,'(G18.10)') de
-    call flushifc(65)
+    write(66,'(G18.10)') de
+    call flushifc(66)
   end if
   etp=engytot
 ! check for STOP file
@@ -225,19 +227,19 @@ if ((.not.tstop).and.(task.eq.6)) then
       write(60,'(I4," : ",3F14.8)') ia,atposl(:,ia,is)
     end do
   end do
-! add blank line to TOTENERGY.OUT, FERMIDOS.OUT, MOMENT.OUT and DENERGY.OUT
+! add blank line to TOTENERGY.OUT, FERMIDOS.OUT, MOMENT.OUT and DTOTENERGY.OUT
   write(61,*)
   write(62,*)
   if (spinpol) write (63,*)
-  write(65,*)
+  write(66,*)
 ! begin new self-consistent loop with updated positions
   goto 10
 end if
 30 continue
 write(60,*)
-write(60,'("+----------------------------------+")')
-write(60,'("| EXCITING version ",I1.1,".",I1.1,".",I3.3," stopped |")') version
-write(60,'("+----------------------------------+")')
+write(60,'("+----------------------------+")')
+write(60,'("| Elk version ",I1.1,".",I1.1,".",I2.2," stopped |")') version
+write(60,'("+----------------------------+")')
 ! close the INFO.OUT file
 close(60)
 ! close the TOTENERGY.OUT file
@@ -248,8 +250,8 @@ close(62)
 if (spinpol) close(63)
 ! close the FORCEMAX.OUT file
 if (tforce) close(64)
-! close the DENERGY.OUT file
-close(65)
+! close the DTOTENERGY.OUT file
+close(66)
 return
 end subroutine
 

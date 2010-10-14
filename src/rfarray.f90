@@ -17,7 +17,7 @@ real(8), intent(out) :: fp(np)
 ! local variables
 integer ia,is,ias,ip,iv(3)
 integer i1,i2,i3,ir0,ir,np2
-integer l,m,lm,ig,ifg,i,j,nploc,iploc
+integer l,m,lm,ig,ifg,i,j
 real(8) rmt2,r,tp(2),sum,t1,t2
 real(8) v1(3),v2(3),v3(3),v4(3),v5(3)
 ! automatic arrays
@@ -34,11 +34,8 @@ np2=nprad/2
 ! Fourier transform rfir to G-space
 zfft(:)=rfir(:)
 call zfftifc(3,ngrid,-1,zfft)
-fp=0.d0
-nploc=mpi_grid_map(np,dim_k)
 ! begin loop over all points
-do iploc=1,nploc
-  ip=mpi_grid_map(np,dim_k,loc=iploc)
+do ip=1,np
   v2(:)=vpl(:,ip)
   call r3frac(epslat,v2,iv)
 ! convert point to Cartesian coordinates
@@ -100,7 +97,6 @@ do iploc=1,nploc
 10 continue
   fp(ip)=sum
 end do
-call mpi_grid_reduce(fp(1),np,dims=(/dim_k/))
 deallocate(rlm,zfft)
 return
 end subroutine

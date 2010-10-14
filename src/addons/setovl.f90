@@ -16,9 +16,9 @@ integer iv(3)
 
 call timer_start(t_seceqnfv_setup_o)
 call timer_start(t_seceqnfv_setup_o_mt)
-natmtotloc=mpi_grid_map(natmtot,2)
+natmtotloc=mpi_grid_map(natmtot,dim2)
 do iasloc=1,natmtotloc
-  ias=mpi_grid_map(natmtot,2,loc=iasloc)
+  ias=mpi_grid_map(natmtot,dim2,loc=iasloc)
   is=ias2is(ias)
   ia=ias2ia(ias)
 !----------------------!
@@ -67,7 +67,7 @@ do iasloc=1,natmtotloc
     end do
   end do
 enddo
-call mpi_grid_reduce(o(1,1),nmatp*nmatp,dims=(/2/))
+call mpi_grid_reduce(o(1,1),nmatp*nmatp,dims=(/dim2/))
 call timer_stop(t_seceqnfv_setup_o_mt)
 call timer_start(t_seceqnfv_setup_o_it)
 !---------------------!

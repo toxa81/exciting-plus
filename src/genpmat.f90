@@ -38,109 +38,136 @@ complex(8), intent(in) :: evecsv(nstsv,nstsv)
 complex(8), intent(out) :: pmat(3,nstsv,nstsv)
 ! local variables
 integer ispn,is,ia,ist,jst
-integer i,j,k,l,igp,ifg,ir
-complex(8) zsum,zt1,zv(3)
+integer i,j,k,l,igp,ifg,ir,ias,lm,ic,io,wfsz
+complex(8) zt1,zt2,zsum,zv(3)
+real(8) t1,t2
 ! allocatable arrays
-complex(8), allocatable :: wfmt(:,:,:)
-complex(8), allocatable :: gwfmt(:,:,:,:)
-complex(8), allocatable :: wfir(:,:)
-complex(8), allocatable :: gwfir(:,:,:)
+complex(8), allocatable :: wfmt(:,:)
+complex(8), allocatable :: gwfmt(:,:,:)
+complex(8), allocatable :: gwfir(:)
 complex(8), allocatable :: pm(:,:,:)
-! external functions
-complex(8) zfmtinp
-external zfmtinp
-allocate(wfmt(lmmaxapw,nrcmtmax,nstfv))
-allocate(gwfmt(lmmaxapw,nrcmtmax,3,nstfv))
-allocate(wfir(ngrtot,nstfv))
-allocate(gwfir(ngrtot,3,nstfv))
-allocate(pm(3,nstfv,nstfv))
-! set the momentum matrix elements to zero
+complex(8), allocatable :: wffvmt(:,:,:,:)
+complex(8), allocatable :: wffvmt1(:,:,:,:)
+complex(8), allocatable :: wftmp1(:,:)
+complex(8), allocatable :: wftmp2(:,:)
+complex(8), allocatable :: zm1(:,:)
+complex(8), allocatable :: zm2(:,:)
+complex(8), allocatable :: zv1(:,:)
+
+allocate(wffvmt(nstfv,lmmaxapw,nufrmax,natmtot))
+allocate(wffvmt1(lmmaxapw,nufrmax,natmtot,nstfv))
+call genwffvmt(lmaxapw,lmmaxapw,ngp,evecfv,apwalm,wffvmt)
+do ist=1,nstfv
+  wffvmt1(:,:,:,ist)=wffvmt(ist,:,:,:)
+enddo
+deallocate(wffvmt)
+
+wfsz=lmmaxapw*nufrmax*natmtot+ngp
+allocate(pm(nstfv,nstfv,3))
 pm(:,:,:)=0.d0
-! calculate momentum matrix elements in the muffin-tin
-do is=1,nspecies
-  do ia=1,natoms(is)
-    do ist=1,nstfv
+allocate(wfmt(lmmaxapw,nrmtmax))
+allocate(gwfmt(lmmaxapw,nrmtmax,3))
+allocate(gwfir(ngrtot))
+allocate(wftmp1(wfsz,nstfv))
+allocate(wftmp2(wfsz,3))
+allocate(zv1(nstfv,3))
+! loop over |ket> states 
+do ist=1,nstfv
+  wftmp1=zzero
+  wftmp2=zzero
+! muffin-tin part of \grad |ket>
+  do ias=1,natmtot
+    is=ias2is(ias)
+    ia=ias2ia(ias)
+    ic=ias2ic(ias)
 ! calculate the wavefunction
-      call wavefmt(lradstp,lmaxapw,is,ia,ngp,apwalm,evecfv(:,ist),lmmaxapw, &
-       wfmt(:,:,ist))
+    call wavefmt(1,lmaxapw,is,ia,ngp,apwalm,evecfv(:,ist),lmmaxapw,wfmt)
 ! calculate the gradient
-      call gradzfmt(lmaxapw,nrcmt(is),rcmt(:,is),lmmaxapw,nrcmtmax, &
-       wfmt(:,:,ist),gwfmt(:,:,:,ist))
-    end do
-    do ist=1,nstfv
-      do jst=ist,nstfv
-        do i=1,3
-          zt1=zfmtinp(.true.,lmaxapw,nrcmt(is),rcmt(:,is),lmmaxapw, &
-           wfmt(:,:,ist),gwfmt(:,:,i,jst))
-          pm(i,ist,jst)=pm(i,ist,jst)+zt1
-        end do
-      end do
-    end do
-  end do
-end do
-! calculate momemntum matrix elements in the interstitial region
-wfir(:,:)=0.d0
-gwfir(:,:,:)=0.d0
-do ist=1,nstfv
-  do igp=1,ngp
-    ifg=igfft(igpig(igp))
-    zt1=evecfv(igp,ist)
-    wfir(ifg,ist)=zt1
-! calculate the gradient
+    call gradzfmt(lmaxapw,nrmt(is),spr(:,is),lmmaxapw,nrmtmax,wfmt,gwfmt)
     do i=1,3
-      gwfir(ifg,i,ist)=zi*vgpc(i,igp)*zt1
-    end do
-  end do
-! Fourier transform the wavefunction to real-space
-  call zfftifc(3,ngrid,1,wfir(:,ist))
+      do lm=1,lmmaxapw
+        l=lm2l(lm)
+        do io=1,nufr(l,is)
+          zsum=zzero
+          ir=1
+          zt1=gwfmt(lm,ir,i)*ufr(ir,l,io,ic)*(spr(ir,is)**2)
+          do ir=2,nrmt(is)
+            zt2=gwfmt(lm,ir,i)*ufr(ir,l,io,ic)*(spr(ir,is)**2)
+            zsum=zsum+0.5d0*(zt2+zt1)*(spr(ir,is)-spr(ir-1,is))
+            zt1=zt2
+          enddo
+          wftmp2((ias-1)*nufrmax*lmmaxapw+(io-1)*lmmaxapw+lm,i)=zsum
+        enddo !io
+      enddo !lm
+    enddo !i
+  enddo !ias
+! interstitial part of \grad |ket>
   do i=1,3
-    call zfftifc(3,ngrid,1,gwfir(:,i,ist))
-  end do
-end do
-! find the overlaps
-do ist=1,nstfv
-  do jst=ist,nstfv
-    do i=1,3
-      zsum=0.d0
-      do ir=1,ngrtot
-        zsum=zsum+cfunir(ir)*conjg(wfir(ir,ist))*gwfir(ir,i,jst)
-      end do
-      zt1=zsum/dble(ngrtot)
-      pm(i,ist,jst)=pm(i,ist,jst)+zt1
+    gwfir=zzero
+    do igp=1,ngp
+      ifg=igfft(igpig(igp))
+      zt1=evecfv(igp,ist)
+! calculate the gradient, i.e. multiply by i(G+p)
+      gwfir(ifg)=vgpc(i,igp)*cmplx(-dimag(zt1),dreal(zt1),8)
+    end do !igp
+! Fourier transform gradient to real-space, multiply by step function
+!  and transform back to G-space
+    call zfftifc(3,ngrid,1,gwfir)
+    do ir=1,ngrtot
+      gwfir(ir)=gwfir(ir)*cfunir(ir)
     end do
-  end do
+    call zfftifc(3,ngrid,-1,gwfir)
+    do igp=1,ngp
+      wftmp2(natmtot*nufrmax*lmmaxapw+igp,i)=gwfir(igfft(igpig(igp)))
+    end do
+  end do !i
+! collect <ket| states
+  do jst=1,ist
+! muffin tin part
+    call memcopy(wffvmt1(1,1,1,jst),wftmp1(1,jst),natmtot*nufrmax*lmmaxapw*16)
+! interstitial part
+    call memcopy(evecfv(1,jst),wftmp1(natmtot*nufrmax*lmmaxapw+1,jst),ngp*16)
+  enddo !jst
+  call zgemm('C','N',ist,3,wfsz,zone,wftmp1,wfsz,wftmp2,wfsz,zzero,zv1,nstfv)
+  do jst=1,ist
+    do i=1,3
+      pm(jst,ist,i)=zv1(jst,i)
+    enddo
+  enddo
 end do
+deallocate(wfmt,gwfmt,wffvmt1,wftmp1,wftmp2,zv1)
+deallocate(gwfir)
 ! multiply by -i and set lower triangular part
 do ist=1,nstfv
   do jst=ist,nstfv
-    pm(:,ist,jst)=-zi*pm(:,ist,jst)
-    pm(:,jst,ist)=conjg(pm(:,ist,jst))
+    pm(ist,jst,:)=-zi*pm(ist,jst,:)
+    pm(jst,ist,:)=conjg(pm(ist,jst,:))
   end do
 end do
 ! compute the second-variational momentum matrix elements
 if (tevecsv) then
-  do i=1,nstsv
-    do j=1,nstsv
-      zv(:)=0.d0
-      k=0
-      do ispn=1,nspinor
-        do ist=1,nstfv
-          k=k+1
-          l=(ispn-1)*nstfv
-          do jst=1,nstfv
-            l=l+1
-            zt1=conjg(evecsv(k,i))*evecsv(l,j)
-            zv(:)=zv(:)+zt1*pm(:,ist,jst)
-          end do
-        end do
-      end do
-      pmat(:,i,j)=zv(:)
-    end do
-  end do
+  pmat=zzero
+  allocate(zm1(nstsv,nstfv))
+  allocate(zm2(nstsv,nstsv))
+  do i=1,3
+    do ispn=1,nspinor
+      call zgemm('C','N',nstsv,nstfv,nstfv,zone,evecsv((ispn-1)*nstfv+1,1),&
+        nstsv,pm(1,1,i),nstfv,zzero,zm1,nstsv)
+      call zgemm('N','N',nstsv,nstsv,nstfv,zone,zm1,nstsv,&
+        evecsv((ispn-1)*nstfv+1,1),nstsv,zzero,zm2,nstsv)
+      pmat(i,:,:)=pmat(i,:,:)+zm2(:,:)
+    enddo
+  enddo
+  deallocate(zm1)
+  deallocate(zm2)
 else
-  pmat(:,:,:)=pm(:,:,:)
+  do ist=1,nstfv
+    do jst=1,nstfv
+      pmat(:,ist,jst)=pm(ist,jst,:)
+    enddo
+  enddo
 end if
-deallocate(wfmt,gwfmt,wfir,gwfir,pm)
+deallocate(pm)
 return
 end subroutine
 !EOC

@@ -6,10 +6,12 @@
 !BOP
 ! !ROUTINE: atom
 ! !INTERFACE:
-subroutine atom(ptnucl,zn,nst,n,l,k,occ,xctype,xcgrad,np,nr,r,eval,rho,vr,rwf)
+subroutine atom(sol,ptnucl,zn,nst,n,l,k,occ,xctype,xcgrad,np,nr,r,eval,rho,vr, &
+ rwf)
 ! !USES:
 use modxcifc
 ! !INPUT/OUTPUT PARAMETERS:
+!   sol    : speed of light in atomic units (in,real)
 !   ptnucl : .true. if the nucleus is a point particle (in,logical)
 !   zn     : nuclear charge (in,real)
 !   nst    : number of states to solve for (in,integer)
@@ -17,7 +19,7 @@ use modxcifc
 !   l      : quantum number l of each state (in,integer(nst))
 !   k      : quantum number k (l or l+1) of each state (in,integer(nst))
 !   occ    : occupancy of each state (inout,real(nst))
-!   xctype : exchange-correlation type (in,integer)
+!   xctype : exchange-correlation type (in,integer(3))
 !   xcgrad : 1 for GGA functional, 0 otherwise (in,integer)
 !   np     : order of predictor-corrector polynomial (in,integer)
 !   nr     : number of radial mesh points (in,integer)
@@ -44,6 +46,7 @@ use modxcifc
 !BOC
 implicit none
 ! arguments
+real(8), intent(in) :: sol
 logical, intent(in) :: ptnucl
 real(8), intent(in) :: zn
 integer, intent(in) :: nst
@@ -51,7 +54,7 @@ integer, intent(in) :: n(nst)
 integer, intent(in) :: l(nst)
 integer, intent(in) :: k(nst)
 real(8), intent(inout) :: occ(nst)
-integer, intent(in) :: xctype
+integer, intent(in) :: xctype(3)
 integer, intent(in) :: xcgrad
 integer, intent(in) :: np
 integer, intent(in) :: nr
@@ -63,8 +66,6 @@ real(8), intent(out) :: rwf(nr,2,nst)
 integer, parameter :: maxscl=200
 integer ir,ist,iscl
 real(8), parameter :: fourpi=12.566370614359172954d0
-! fine-structure constant
-real(8), parameter :: alpha=1.d0/137.03599911d0
 ! potential convergence tolerance
 real(8), parameter :: eps=1.d-6
 real(8) sum,dv,dvp,ze,beta,t1
@@ -92,7 +93,7 @@ if (nr.lt.np) then
 end if
 ! allocate local arrays
 allocate(vn(nr),vh(nr),ex(nr),ec(nr),vx(nr),vc(nr),vrp(nr))
-allocate(ri(nr),fr1(nr),fr2(nr),gr1(nr),gr2(nr),cf(3,nr))
+allocate(ri(nr),fr1(nr),fr2(nr),gr1(nr),gr2(nr),cf(4,nr))
 if (xcgrad.eq.1) then
   allocate(grho(nr),g2rho(nr),g3rho(nr))
 end if
@@ -114,16 +115,16 @@ vrp(:)=0.d0
 beta=0.5d0
 ! initialise eigenvalues to relativistic values (minus the rest mass energy)
 do ist=1,nst
-  t1=sqrt(dble(k(ist)**2)-(zn*alpha)**2)
+  t1=sqrt(dble(k(ist)**2)-(zn/sol)**2)
   t1=(dble(n(ist)-abs(k(ist)))+t1)**2
-  t1=1.d0+((zn*alpha)**2)/t1
-  eval(ist)=(1.d0/alpha**2)/sqrt(t1)-1.d0/alpha**2
+  t1=1.d0+((zn/sol)**2)/t1
+  eval(ist)=sol**2/sqrt(t1)-sol**2
 end do
 ! start of self-consistent loop
 do iscl=1,maxscl
 ! solve the Dirac equation for each state
   do ist=1,nst
-    call rdirac(n(ist),l(ist),k(ist),np,nr,r,vr,eval(ist),rwf(:,1,ist), &
+    call rdirac(sol,n(ist),l(ist),k(ist),np,nr,r,vr,eval(ist),rwf(:,1,ist), &
      rwf(:,2,ist))
   end do
 ! compute the charge density

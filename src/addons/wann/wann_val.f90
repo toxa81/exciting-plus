@@ -11,7 +11,7 @@ integer ntr(3),n
 integer is,ia,ias,ir0,io,lm,ig,i,j,l,ispn,ik
 real(8) ya(nprad),c(nprad),tp(2)
 real(8) vr0(3),t1,r0,tr(3)
-real(8) ur(0:lmaxvr,nrfmax)
+real(8) ur(0:lmaxvr,nufrmax)
 complex(8) ylm(lmmaxvr)
 complex(8) zt1(nspinor,nwfplot),zt2(nspinor,nwfplot),zt3
 integer ikloc
@@ -26,11 +26,11 @@ if (vrinmt(r,is,ia,ntr,vr0,ir0,r0)) then
   call sphcrd(vr0,t1,tp)
   call genylm(lmaxvr,tp,ylm)
   tr(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
-  do io=1,nrfmax
+  do io=1,nufrmax
     do l=0,lmaxvr
       do j=1,nprad
         i=ir0+j-1
-        ya(j)=urf(i,l,io,ias)
+        ya(j)=ufr(i,l,io,ias2ic(ias))
       end do
       ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
     enddo !l
@@ -40,7 +40,7 @@ if (vrinmt(r,is,ia,ntr,vr0,ir0,r0)) then
     zt3=exp(zi*dot_product(vkcnr(:,ik),tr(:)))
     do n=1,nwfplot
       do ispn=1,nspinor
-        do io=1,nrfmax
+        do io=1,nufrmax
           do lm=1,lmmaxvr
             zt1(ispn,n)=zt1(ispn,n)+zt3*wann_unkmt(lm,io,ias,ispn,n+firstwf-1,ikloc)* &
               ur(lm2l(lm),io)*ylm(lm)
@@ -64,7 +64,6 @@ else
   end do
   call timer_stop(2)
 endif
-val(:,:)=(zt1(:,:)+zt2(:,:))/nkptnr
-call mpi_grid_reduce(val(1,1),nspinor*nwfplot,dims=(/dim_k/))
+val(:,:)=cmplx((zt1(:,:)+zt2(:,:)))/nkptnr
 return
 end

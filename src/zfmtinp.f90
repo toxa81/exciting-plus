@@ -48,16 +48,15 @@ real(8), parameter :: fourpi=12.566370614359172954d0
 real(8) t1,t2
 complex(8) zt1
 ! automatic arrays
-real(8) fr1(nr),fr2(nr),gr(nr),cf(3,nr)
+real(8) fr1(nr),fr2(nr),gr(nr),cf(4,nr)
 ! external functions
 complex(8) zdotc
 external zdotc
 lmmax=(lmax+1)**2
 do ir=1,nr
-  t1=r(ir)**2
-  zt1=zdotc(lmmax,zfmt1(:,ir),1,zfmt2(:,ir),1)
-  fr1(ir)=t1*dble(zt1)
-  fr2(ir)=t1*aimag(zt1)
+  zt1=zdotc(lmmax,zfmt1(:,ir),1,zfmt2(:,ir),1)*(r(ir)**2)
+  fr1(ir)=dble(zt1)
+  fr2(ir)=aimag(zt1)
 end do
 call fderiv(-1,nr,r,fr1,gr,cf)
 t1=gr(nr)
@@ -68,4 +67,5 @@ if (.not.tsh) zfmtinp=zfmtinp*fourpi/dble(lmmax)
 return
 end function
 !EOC
+
 

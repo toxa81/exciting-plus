@@ -9,9 +9,14 @@
 subroutine readinput
 ! !USES:
 use modmain
+use modldapu
+use modrdm
+use modtest
+use modqpt
+use mod_addons_q
 ! !DESCRIPTION:
-!   Reads in the input parameters from the file {\tt exciting.in}. Also sets
-!   default values for the input parameters.
+!   Reads in the input parameters from the file {\tt elk.in}. Also sets default
+!   values for the input parameters.
 !
 ! !REVISION HISTORY:
 !   Created September 2002 (JKD)
@@ -19,11 +24,16 @@ use modmain
 !BOC
 implicit none
 ! local variables
-integer is,js,ia,ja,ias
-integer i,l,iv,iostat,j,lm1,lm2,n
+integer is,js,ia,ias,j,lm1,lm2
+integer i,l,k,iv,iostat
 real(8) sc,sc1,sc2,sc3
-real(8) vacuum,v(3),t1,t2
-character(256) str,bname
+real(8) solscf,v(3)
+character(256) block,str
+character*100 fname
+
+!call getarg(1,fname)
+!if (trim(adjustl(fname)).eq."") fname="elk.in"
+fname="elk.in"
 
 !------------------------!
 !     default values     !
@@ -45,42 +55,40 @@ ngridk(:)=1
 vkloff(:)=0.d0
 autokpt=.false.
 radkpt=40.0
-reducek=.true.
+reducek=1
 ngridq(:)=1
-reduceq=.true.
+reduceq=1
 rgkmax=7.d0
 gmaxvr=12.d0
 lmaxapw=8
 lmaxvr=7
 lmaxmat=5
-!lmaxinr=2
 lmaxinr=7
-!fracinr=0.25d0
 fracinr=0.d0
 npsden=9
-xctype=3
+xctype(1)=3
+xctype(2)=0
+xctype(3)=0
 stype=0
-swidth=0.001d0
+swidth=0.01d0
+autoswidth=.false.
+mstar=10.d0
 epsocc=1.d-8
 epschg=1.d-3
-nempty=5
+nempty=6
 maxscl=200
 mixtype=1
-beta0=0.2d0
-betainc=1.1d0
-betadec=0.6d0
+beta0=0.05d0
+betamax=1.d0
 epspot=1.d-6
-epsengy=1.d-7
+epsengy=1.d-4
 epsforce=5.d-4
-cfdamp=0.d0
 molecule=.false.
-vacuum=10.d0
 nspecies=0
 natoms(:)=0
 atposl(:,:,:)=0.d0
 atposc(:,:,:)=0.d0
-bfcmt(:,:,:)=0.d0
-bflmt(:,:,:)=0.d0
+bfcmt0(:,:,:)=0.d0
 sppath='./'
 scrpath='./'
 nvp1d=2
@@ -100,10 +108,12 @@ vclp3d(3,4)=1.d0
 np3d(:)=20
 nwdos=500
 ngrdos=100
-nsmdos=0
+nsmdos=3
 wdos(1)=-0.5d0
 wdos(2)=0.5d0
-lmirep=.false.
+dosocc=.false.
+dosmsum=.false.
+lmirep=.true.
 spinpol=.false.
 spinorb=.false.
 tau0atm=0.2d0
@@ -116,15 +126,19 @@ noptcomp=1
 optcomp(:,1)=1
 usegdft=.false.
 intraband=.false.
-evaltol=1.d-8
-evalmin=-4.5d0
+evaltol=-1.d0
 deband=0.0025d0
-bfieldc(:)=0.d0
+epsband=1.d-6
+autolinengy=.false.
+dlefe=-0.1d0
+bfieldc0(:)=0.d0
+efieldc(:)=0.d0
+afieldc(:)=0.d0
 fixspin=0
 momfix(:)=0.d0
 mommtfix(:,:,:)=0.d0
 taufsm=0.01d0
-autormt=.true.
+autormt=.false.
 rmtapm(1)=0.25d0
 rmtapm(2)=0.95d0
 isgkmax=-1
@@ -139,8 +153,8 @@ tforce=.false.
 tfibs=.true.
 maxitoep=120
 tauoep(1)=1.d0
-tauoep(2)=0.2d0
-tauoep(3)=1.5d0
+tauoep(2)=0.75d0
+tauoep(3)=1.25d0
 nkstlist=1
 kstlist(:,1)=1
 vklem(:)=0.d0
@@ -148,12 +162,25 @@ deltaem=0.025d0
 ndspem=1
 nosource=.false.
 spinsprl=.false.
+ssdph=.true.
 vqlss(:)=0.d0
 nwrite=2
 tevecsv=.false.
+
+! LDA+U defaults
 ldapu=0
+inptypelu=1
 llu(:)=-1
 ujlu(:,:)=0.d0
+flu(:,:)=0.d0
+elu(:,:)=0.d0
+lambdalu(:)=0.d0
+ulufix(:)=0.d0
+lambdalu0(:)=0.d0
+tmomlu=.false.
+readalu=.false.
+
+! reduced density matrix functional theory (RMDFT) defaults
 rdmxctype=2
 rdmmaxscl=1
 maxitn=250
@@ -161,7 +188,10 @@ maxitc=10
 taurdmn=1.d0
 taurdmc=0.5d0
 rdmalpha=0.7d0
+rdmbeta=0.25d0
 rdmtemp=0.d0
+wrtvnlijji=.true.
+
 reducebf=1.d0
 ptnucl=.true.
 tseqit=.false.
@@ -171,63 +201,30 @@ vecql(:)=0.d0
 mustar=0.15d0
 sqados(1:2)=0.d0
 sqados(3)=1.d0
-lrtype=0
-wannier=.false.
-natlcs=0
-dm_e1=-100.d0
-dm_e2=100.d0
-ldensmtrx=.false.
-fxctype=0
-nfxca=1
-gshme1=1
-fxca0=0.d0
-fxca1=0.d0
-zero3d=(/0.d0,0.d0,0.d0/)
-bound3d=0.d0
-bound3d(1,1)=10.d0
-bound3d(2,2)=10.d0
-bound3d(3,3)=10.d0
-nrxyz=(/100,100,100/)
-nwfplot=1
-firstwf=1
-lr_e1=-100.1d0
-lr_e2=100.1d0
-wannier_lc=.false.
-megqwan_maxdist=0.1d0
-nwann_h=0
-!wannier_soft_eint_width=0.05 
-!wannier_soft_eint_e1=-100.d0
-!wannier_soft_eint_e2= 100.d0
-wannier_min_prjao=0.01d0
-ldisentangle=.false.
-lr_nw=200
-lr_w0=0.d0
-lr_w1=20.d0
-lr_eta=0.3d0
-lrtype=0
-nvq0=0
-gshme2=1
+test=.false.
+frozencr=.false.
+spincore=.false.
+solscf=1.d0
+emaxelnes=-1.2d0
 
-
-!-------------------------------!
-!     read from exciting.in     !
-!-------------------------------!
-open(50,file='exciting.in',action='READ',status='OLD',form='FORMATTED', &
- iostat=iostat)
+!--------------------------!
+!     read from elk.in     !
+!--------------------------!
+open(50,file=trim(adjustl(fname)),action='READ',status='OLD',form='FORMATTED',iostat=iostat)
 if (iostat.ne.0) then
   write(*,*)
-  write(*,'("Error(readinput): error opening exciting.in")')
+  write(*,'("Error(readinput): error opening elk.in")')
   write(*,*)
   stop
 end if
 10 continue
-read(50,*,end=30) bname
+read(50,*,end=30) block
 ! check for a comment
-if ((scan(trim(bname),'!').eq.1).or.(scan(trim(bname),'#').eq.1)) goto 10
-select case(trim(bname))
+if ((scan(trim(block),'!').eq.1).or.(scan(trim(block),'#').eq.1)) goto 10
+select case(trim(block))
 case('tasks')
   do i=1,maxtasks
-    read(50,'(A80)') str
+    read(50,'(A256)',err=20) str
     if (trim(str).eq.'') then
       if (i.eq.1) then
         write(*,*)
@@ -251,6 +248,8 @@ case('tasks')
   write(*,'("Error(readinput): too many tasks")')
   write(*,*)
   stop
+case('species')
+  call genspecies(50)
 case('avec')
   read(50,*,err=20) avec(:,1)
   read(50,*,err=20) avec(:,2)
@@ -371,7 +370,9 @@ case('spinpol')
 case('spinorb')
   read(50,*,err=20) spinorb
 case('xctype')
-  read(50,*,err=20) xctype
+  read(50,'(A256)',err=20) str
+  str=trim(str)//' 0 0'
+  read(str,*,err=20) xctype
 case('stype')
   read(50,*,err=20) stype
 case('swidth')
@@ -380,6 +381,16 @@ case('swidth')
     write(*,*)
     write(*,'("Error(readinput): swidth too small or negative : ",G18.10)') &
      swidth
+    write(*,*)
+    stop
+  end if
+case('autoswidth')
+  read(50,*,err=20) autoswidth
+case('mstar')
+  read(50,*,err=20) mstar
+  if (mstar.le.0.d0) then
+    write(*,*)
+    write(*,'("Error(readinput): mstar <= 0 : ",G18.10)') mstar
     write(*,*)
     stop
   end if
@@ -417,20 +428,11 @@ case('beta0')
     write(*,*)
     stop
   end if
-case('betainc')
-  read(50,*,err=20) betainc
-  if (betainc.lt.1.d0) then
+case('betamax')
+  read(50,*,err=20) betamax
+  if ((betamax.lt.0.d0).or.(betamax.gt.1.d0)) then
     write(*,*)
-    write(*,'("Error(readinput): betainc < 1 : ",G18.10)') betainc
-    write(*,*)
-    stop
-  end if
-case('betadec')
-  read(50,*,err=20) betadec
-  if ((betadec.le.0.d0).or.(betadec.gt.1.d0)) then
-    write(*,*)
-    write(*,'("Error(readinput): betadec should be in (0,1] : ",G18.10)') &
-     betadec
+    write(*,'("Error(readinput): betmax not in [0,1] : ",G18.10)') betamax
     write(*,*)
     stop
   end if
@@ -448,14 +450,6 @@ case('epsengy')
   read(50,*,err=20) epsengy
 case('epsforce')
   read(50,*,err=20) epsforce
-case('cfdamp')
-  read(50,*,err=20) cfdamp
-  if (cfdamp.lt.0.d0) then
-    write(*,*)
-    write(*,'("Error(readinput): cfdamp < 0 : ",G18.10)') cfdamp
-    write(*,*)
-    stop
-  end if
 case('sppath')
   read(50,*,err=20) sppath
   sppath=adjustl(sppath)
@@ -463,14 +457,6 @@ case('scrpath')
   read(50,*,err=20) scrpath
 case('molecule')
   read(50,*,err=20) molecule
-case('vacuum')
-  read(50,*,err=20) vacuum
-  if (vacuum.lt.0.d0) then
-    write(*,*)
-    write(*,'("Error(readinput): vacuum < 0 : ",G18.10)') vacuum
-    write(*,*)
-    stop
-  end if
 case('atoms')
   read(50,*,err=20) nspecies
   if (nspecies.le.0) then
@@ -506,7 +492,9 @@ case('atoms')
       stop
     end if
     do ia=1,natoms(is)
-      read(50,*,err=20) atposl(:,ia,is),bfcmt(:,ia,is)
+      read(50,'(A256)',err=20) str
+      str=trim(str)//' 0.0 0.0 0.0'
+      read(str,*,err=20) atposl(:,ia,is),bfcmt0(:,ia,is)
     end do
   end do
 case('plot1d')
@@ -578,6 +566,10 @@ case('dos')
     write(*,*)
     stop
   end if
+case('dosocc')
+  read(50,*,err=20) dosocc
+case('dosmsum')
+  read(50,*,err=20) dosmsum
 case('lmirep')
   read(50,*,err=20) lmirep
 case('tau0atm')
@@ -612,7 +604,7 @@ case('scissor')
   read(50,*,err=20) scissor
 case('optcomp')
   do i=1,27
-    read(50,'(A80)') str
+    read(50,'(A256)',err=20) str
     if (trim(str).eq.'') then
       if (i.eq.1) then
         write(*,*)
@@ -651,14 +643,6 @@ case('intraband')
   read(50,*,err=20) intraband
 case('evaltol')
   read(50,*,err=20) evaltol
-  if (evaltol.le.0.d0) then
-    write(*,*)
-    write(*,'("Error(readinput): evaltol <= 0 : ",G18.10)') evaltol
-    write(*,*)
-    stop
-  end if
-case('evalmin')
-  read(50,*,err=20) evalmin
 case('deband')
   read(50,*,err=20) deband
   if (deband.lt.0.d0) then
@@ -667,15 +651,31 @@ case('deband')
     write(*,*)
     stop
   end if
+case('epsband')
+  read(50,*,err=20) epsband
+  if (epsband.le.0.d0) then
+    write(*,*)
+    write(*,'("Error(readinput): epsband <= 0 : ",G18.10)') epsband
+    write(*,*)
+    stop
+  end if
+case('autolinengy')
+  read(50,*,err=20) autolinengy
+case('dlefe')
+  read(50,*,err=20) dlefe
 case('bfieldc')
-  read(50,*,err=20) bfieldc
+  read(50,*,err=20) bfieldc0
+case('efieldc')
+  read(50,*,err=20) efieldc
+case('afieldc')
+  read(50,*,err=20) afieldc
 case('fixspin')
   read(50,*,err=20) fixspin
 case('momfix')
   read(50,*,err=20) momfix
 case('mommtfix')
   do ias=1,maxspecies*maxatoms
-    read(50,'(A80)') str
+    read(50,'(A256)',err=20) str
     if (trim(str).eq.'') goto 10
     read(str,*,iostat=iostat) is,ia,mommtfix(:,ia,is)
     if (iostat.ne.0) then
@@ -764,7 +764,7 @@ case('tauoep')
   end if
 case('kstlist')
   do i=1,maxkst
-    read(50,'(A80)') str
+    read(50,'(A256)',err=20) str
     if (trim(str).eq.'') then
       if (i.eq.1) then
         write(*,*)
@@ -805,6 +805,8 @@ case('nosource')
   read(50,*,err=20) nosource
 case('spinsprl')
   read(50,*,err=20) spinsprl
+case('ssdph')
+  read(50,*,err=20) ssdph
 case('vqlss')
   read(50,*,err=20) vqlss
 case('nwrite')
@@ -812,11 +814,21 @@ case('nwrite')
 case('tevecsv')
   read(50,*,err=20) tevecsv
 case('lda+u')
-  read(50,*) ldapu
+  read(50,*,err=20) ldapu,inptypelu
   do is=1,maxspecies
-    read(50,'(A80)') str
+    read(50,'(A256)',err=20) str
     if (trim(str).eq.'') goto 10
-    read(str,*,iostat=iostat) js,l,t1,t2
+    if (inptypelu.eq.1) then
+      read(str,*,iostat=iostat) js,l,ujlu(1:2,js)
+    else if (inptypelu.eq.2) then
+      read(str,*,iostat=iostat) js,l,(flu(k,js),k=0,2*l,2)
+    else if (inptypelu.eq.3) then
+      read(str,*,iostat=iostat) js,l,(elu(k,js),k=0,l)
+    else if (inptypelu.eq.4) then
+      read(str,*,iostat=iostat) js,l,lambdalu(js)
+    else if (inptypelu.eq.5) then
+      read(str,*,iostat=iostat) js,l,ulufix(js)
+    end if
     if (iostat.ne.0) then
       write(*,*)
       write(*,'("Error(readinput): error reading LDA+U parameters")')
@@ -826,7 +838,7 @@ case('lda+u')
     end if
     if ((js.le.0).or.(js.ge.maxspecies)) then
       write(*,*)
-      write(*,'("Error(readinput): invalid species number in lda+u block : ",&
+      write(*,'("Error(readinput): invalid species number in lda+u block : ", &
        &I8)') js
       write(*,*)
       stop
@@ -838,9 +850,11 @@ case('lda+u')
       stop
     end if
     llu(js)=l
-    ujlu(1,js)=t1
-    ujlu(2,js)=t2
   end do
+case('tmomlu')
+  read(50,*,err=20) tmomlu
+case('readalu')
+  read(50,*,err=20) readalu
 case('rdmxctype')
   read(50,*,err=20) rdmxctype
 case('rdmmaxscl')
@@ -878,6 +892,14 @@ case('rdmalpha')
     write(*,*)
     stop
   end if
+case('rdmbeta')
+  read(50,*,err=20) rdmbeta
+  if ((rdmbeta.le.0.d0).or.(rdmbeta.ge.1.d0)) then
+    write(*,*)
+    write(*,'("Error(readinput): rdmbeta not in (0,1) : ",G18.10)') rdmbeta
+    write(*,*)
+    stop
+  end if
 case('rdmtemp')
   read(50,*,err=20) rdmtemp
   if (rdmtemp.lt.0.d0) then
@@ -886,6 +908,8 @@ case('rdmtemp')
     write(*,*)
     stop
   end if
+case('wrtvnlijji')
+  read(50,*,err=20) wrtvnlijji
 case('reducebf')
   read(50,*,err=20) reducebf
   if ((reducebf.lt.0.d0).or.(reducebf.gt.1.d0)) then
@@ -920,35 +944,66 @@ case('mustar')
   read(50,*,err=20) mustar
 case('sqados')
   read(50,*,err=20) sqados(:)
-case('response_q')
-  read(50,*,err=20) nvq0
-  allocate(ivq0m_list(3,nvq0))
-  do i=1,nvq0
-    read(50,*,err=20) ivq0m_list(:,i)
-  enddo
-case('response_gsh')
-  read(50,*,err=20) gshme2
-case('response_type')
-  read(50,*,err=20) lrtype
+case('test')
+  read(50,*,err=20) test
+case('frozencr')
+  read(50,*,err=20) frozencr
+case('spincore')
+  read(50,*,err=20) spincore
+case('solscf')
+  read(50,*,err=20) solscf
+  if (solscf.lt.0.d0) then
+    write(*,*)
+    write(*,'("Error(readinput): solscf < 0 : ",G18.10)') solscf
+    write(*,*)
+    stop
+  end if
+case('emaxelnes')
+  read(50,*,err=20) emaxelnes
+case('lps')
+  read(50,*,err=20) natlps
+  allocate(lpsrsh(16,16,natlps))
+  allocate(iatlps(natlps))
+  lpsrsh=0.d0
+  do i=1,natlps
+    do j=1,16
+      lpsrsh(j,j,i)=1.d0
+    enddo
+    read(50,*,err=20) iatlps(i),l
+    do lm1=l**2+1,(l+1)**2
+      read(50,*,err=20)(lpsrsh(lm1,lm2,i),lm2=l**2+1,(l+1)**2)
+    enddo
+  enddo 
+case('vqm')
+  read(50,*,err=20) nvq
+  allocate(vqm(3,nvq))
+  do i=1,nvq
+    read(50,*,err=20) vqm(:,i)
+  end do
+case('tq0bz')
+  read(50,*,err=20) tq0bz
+case('vq0c')
+  nvq0=1
+  read(50,*,err=20) vq0c(:,1)
+  aq0(1)=1.d0/sum(vq0c(:,1)**2)
+case('gqmax')
+  read(50,*,err=20) gqmax
+case('gqsh')
+  read(50,*,err=20) gqsh
+case('tgqsh')
+  read(50,*,err=20) tgqsh 
+case('chi0_include_bands')
+  read(50,*,err=20) chi0_include_bands(:)
+case('chi0_exclude_bands')
+  read(50,*,err=20) chi0_exclude_bands(:)  
 case('response_w')
   read(50,*,err=20) lr_nw
-  read(50,*,err=20) lr_w0,lr_w1,lr_eta
-case('response_bands')
-  read(50,*,err=20) lr_e1,lr_e2
+  read(50,*,err=20) lr_w0,lr_w1,lr_eta  
 case('response_fxc')
   read(50,*,err=20) fxctype,nfxca,fxca0,fxca1
-case('response_options')
-  read(50,*,err=20) scalar_chi
-  read(50,*,err=20) parallel_read
 case('response_wann')
   read(50,*,err=20) wannier_chi0_chi
-  read(50,*,err=20) megqwan_afm
-  read(50,*,err=20)  megqwan_mindist,megqwan_maxdist 
-  read(50,*,err=20) megqwan_cutoff1,megqwan_cutoff2
-case('response_wann_include')
-  read(50,*,err=20) nwann_include
-  allocate(iwann_include(nwann_include))
-  read(50,*,err=20) (iwann_include(i),i=1,nwann_include)
+  read(50,*,err=20) wannier_chi0_afm
 case('wannier')
   read(50,*,err=20) wannier
   read(50,*,err=20) wann_add_poco
@@ -972,30 +1027,8 @@ case('wannier')
   do i=1,wann_natom
     read(50,*,err=20) wann_iprj(1,i), wann_iprj(2,i)
   enddo
-case('wannier_plot')
-  read(50,*,err=20)(zero3d(i),i=1,3)
-  read(50,*,err=20)(bound3d(i,1),i=1,3)
-  read(50,*,err=20)(bound3d(i,2),i=1,3)
-  read(50,*,err=20)(bound3d(i,3),i=1,3)
-  read(50,*,err=20)(nrxyz(i),i=1,3)
-  read(50,*,err=20)nwfplot,firstwf
-case('wannier_lc')
-  read(50,*,err=20)wannier_lc
-  read(50,*,err=20)nwann_lc
-  allocate(wann_iorb_lc(0:100,4,nwann_lc))
-  allocate(wann_iorb_lcc(0:100,nwann_lc))
-  do n=1,nwann_lc
-    read(50,*,err=20)wann_iorb_lc(0,1,n)
-    do i=1,wann_iorb_lc(0,1,n)
-      read(50,*,err=20)(wann_iorb_lc(i,l,n),l=1,4),wann_iorb_lcc(i,n)
-    enddo
-  enddo
-case ('wannier_h')
-  read(50,*,err=20) nwann_h
-  allocate(iwann_h(nwann_h))
-  read(50,*,err=20)(iwann_h(i),i=1,nwann_h)
 case ('wannier_min_prjao')
-  read(50,*,err=20)wannier_min_prjao
+  read(50,*,err=20) wannier_min_prjao
 case ('wannier_soft_eint')
   wannier_soft_eint=.true.
   allocate(wannier_soft_eint_e1(wann_ntype))
@@ -1003,87 +1036,77 @@ case ('wannier_soft_eint')
   allocate(wannier_soft_eint_w1(wann_ntype))
   allocate(wannier_soft_eint_w2(wann_ntype))
   do i=1,wann_ntype
-    read(50,*,err=20)wannier_soft_eint_e1(i),wannier_soft_eint_e2(i),&
+    read(50,*,err=20) wannier_soft_eint_e1(i),wannier_soft_eint_e2(i),&
       wannier_soft_eint_w1(i),wannier_soft_eint_w2(i)
-  enddo
+  enddo  
+case('wannier_plot')
+  read(50,*,err=20)(zero3d(i),i=1,3)
+  read(50,*,err=20)(bound3d(i,1),i=1,3)
+  read(50,*,err=20)(bound3d(i,2),i=1,3)
+  read(50,*,err=20)(bound3d(i,3),i=1,3)
+  read(50,*,err=20)(nrxyz(i),i=1,3)
+  read(50,*,err=20)nwfplot,firstwf  
+case('megqwan_dist')
+  read(50,*,err=20) megqwan_mindist,megqwan_maxdist
+case('megqwan_cutoff')
+  read(50,*,err=20) megqwan_cutoff1,megqwan_cutoff2
+case('megqwan_include')
+  read(50,*,err=20) nwann_include
+  allocate(iwann_include(nwann_include))
+  read(50,*,err=20) (iwann_include(i),i=1,nwann_include)
+case('mpigrid')
+  lmpigrid=.true.
+  read(50,*,err=20) mpigrid(1),mpigrid(2),mpigrid(3) 
+case('sic')
+  read(50,*,err=20) sic
+  read(50,*,err=20) nitersic
 case('disentangle')
-  read(50,*,err=20)ldisentangle
-case('bandrange')
-  read(50,*,err=20)bndranglow,bndranghi
-case('densmtrx')
-  read(50,*,err=20) dm_e1,dm_e2
-  ldensmtrx=.true.
-case('lcs')
-  read(50,*,err=20) natlcs
-  allocate(lcsrsh(16,16,natlcs))
-  allocate(iatlcs(natlcs))
-  lcsrsh=0.d0
-  do i=1,natlcs
-    do j=1,16
-      lcsrsh(j,j,i)=1.d0
-    enddo
-    read(50,*,err=20) iatlcs(i),l
-    do lm1=l**2+1,(l+1)**2
-      read(50,*,err=20)(lcsrsh(lm1,lm2,i),lm2=l**2+1,(l+1)**2)
-    enddo
-  enddo 
-case('clda')
-  read(50,*,err=20)clda
-  read(50,*,err=20)clda_rlmlcs
-  read(50,*,err=20)clda_norb,clda_iat(1),clda_ispn(1),clda_iat(2),clda_ispn(2)
-  allocate(clda_iorb(2,clda_norb))
-  allocate(clda_vorb(2,clda_norb))
-  read(50,*,err=20)(clda_iorb(1,i),i=1,clda_norb)
-  read(50,*,err=20)(clda_vorb(1,i),i=1,clda_norb)
-  read(50,*,err=20)(clda_iorb(2,i),i=1,clda_norb)
-  read(50,*,err=20)(clda_vorb(2,i),i=1,clda_norb)
-case('crpa')
-  read(50,*,err=20)crpa_e1,crpa_e2
-  read(50,*,err=20)crpa_scrn
-case('mpi_grid')
-  lmpi_grid=.true.
-  read(50,*,err=20)mpi_grid(1),mpi_grid(2),mpi_grid(3)
+  read(50,*,err=20) ldisentangle  
+case('scvl')
+  read(50,*,err=20) scvl(:,1)
+  read(50,*,err=20) scvl(:,2)
+  read(50,*,err=20) scvl(:,3)  
+case('papi')
+  do i=1,maxpapievents
+    read(50,'(A256)') papievent(i)
+    if (trim(papievent(i)).eq.'') then
+      npapievents=i-1
+      goto 10
+    end if
+  end do
+  write(*,*)
+  write(*,'("Error(readinput): too many papi events")')
+  write(*,*)
+  stop
+case('wann_r_cutoff')
+  read(50,*,err=20) wann_r_cutoff
 case('')
   goto 10
 case default
   write(*,*)
-  write(*,'("Error(readinput): invalid block name : ",A)') trim(bname)
+  write(*,'("Error(readinput): invalid block name : ",A)') trim(block)
   write(*,*)
   stop
 end select
 goto 10
 20 continue
 write(*,*)
-write(*,'("Error(readinput): error reading from exciting.in")')
-write(*,'("Problem occurred in ''",A,"'' block")') trim(bname)
+write(*,'("Error(readinput): error reading from elk.in")')
+write(*,'("Problem occurred in ''",A,"'' block")') trim(block)
+write(*,'("Check input convention in manual")')
 write(*,*)
 stop
 30 continue
 close(50)
+! scale the speed of light
+solsc=sol*solscf
 ! scale the lattice vectors (scaling not referenced again in code)
 avec(:,1)=sc1*avec(:,1)
 avec(:,2)=sc2*avec(:,2)
 avec(:,3)=sc3*avec(:,3)
 avec(:,:)=sc*avec(:,:)
-! check if system is an isolated molecule
+! case of isolated molecule
 if (molecule) then
-! set up cubic unit cell with vacuum region around molecule
-  avec(:,:)=0.d0
-  do is=1,nspecies
-    do ia=1,natoms(is)
-      do js=1,nspecies
-        do ja=1,natoms(is)
-          do i=1,3
-            t1=abs(atposl(i,ia,is)-atposl(i,ja,js))
-            if (t1.gt.avec(i,i)) avec(i,i)=t1
-          end do
-        end do
-      end do
-    end do
-  end do
-  do i=1,3
-    avec(i,i)=avec(i,i)+vacuum
-  end do
 ! convert atomic positions from Cartesian to lattice coordinates
   call r3minv(avec,ainv)
   do is=1,nspecies
@@ -1093,8 +1116,11 @@ if (molecule) then
     end do
   end do
 end if
-! read atomic species data from files
+! read in atomic species data
 call readspecies
+! delete TEST.OUT
+!open(50,file='TEST.OUT')
+!close(50,status='DELETE')
 return
 end subroutine
 !EOC

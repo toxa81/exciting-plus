@@ -17,17 +17,17 @@ stop
 end program
 
 !BOI
-! !TITLE: The Spacegroup Manual\\ Version 1.1.2
-! !AUTHORS: J. K. Dewhurst, S. Sharma and C. Ambrosch-Draxl
+! !TITLE: {\huge{\sc The Spacegroup Manual}}\\ \Large{\sc Version 1.1.4}
+! !AUTHORS: {\sc J. K. Dewhurst, S. Sharma and L. Nordstr\"{o}m}
 ! !AFFILIATION:
 ! !INTRODUCTION: Introduction
 ! {\sf Spacegroup} is a utility which produces crystal geometry for use with the
-! {\sf EXCITING} code, from the space group defined by its Hermann-Mauguin
-! symbol and lattice vector lengths and angles. {\sf Spacegroup} recognises all
-! 230 space groups in various coordinate settings giving a total of 530 possible
-! symbols, which are tabulated below. The code also provides output compatible
-! with the {\sf XCrysDen} or {\sf V\_Sim} packages for visualisation of the
-! crystal structure.
+! {\sf Elk} code, from the space group defined by its Hermann-Mauguin symbol and
+! lattice vector lengths and angles. {\sf Spacegroup} recognises all 230 space
+! groups in various coordinate settings giving a total of 530 possible symbols,
+! which are tabulated below. The code also provides output compatible with the
+! {\sf XCrysDen} or {\sf V\_Sim} packages for visualisation of the crystal
+! structure.
 ! \section{Usage}
 ! Only one input file, {\tt spacegroup.in}, is required. The structure of this
 ! file is illustrated by the following example for the high $T_c$ superconductor
@@ -39,13 +39,13 @@ end program
 !   1  1  1                              : ncell
 !   .true.                               : primcell
 !   3                                    : nspecies
-!   'La' 'La.in'                         : spsymb, spfname
+!   'La'                                 : spsymb
 !   1                                    : nwpos
 !   0.0000    0.0000    0.3608           : wpos
-!   'Cu' 'Cu.in'
+!   'Cu'
 !   1
 !   0.0000    0.0000    0.0000
-!   'O' 'O.in'
+!   'O'
 !   2
 !   0.2500    0.2500    0.0000
 !   0.0000    0.0000    0.1820
@@ -72,8 +72,8 @@ end program
 ! {\tt nspecies}\\
 ! Number of atomic species
 ! \vskip 6pt
-! {\tt spsymb}, {\tt spfname}\\
-! The species symbol and the species filename required by {\sf EXCITING}
+! {\tt spsymb}\\
+! The atomic species symbol
 ! \vskip 6pt
 ! {\tt nwpos}\\
 ! The number of Wyckoff positional coordinates
@@ -84,8 +84,8 @@ end program
 ! Note that {\tt nwpos} and {\tt wpos} are repeated as many times as there are
 ! species. After creating the input file, the {\tt spacegroup} command is run
 ! and the files {\tt GEOMETRY.OUT} and {\tt crystal.xsf} should be produced.
-! The {\tt GEOMETRY.OUT} file can simply be appended to an {\tt exciting.in}
-! file. If {\sf XCrysDen} is available, then use the command
+! The {\tt GEOMETRY.OUT} file can simply be appended to an {\tt elk.in} file. If
+! {\sf XCrysDen} is available, then use the command
 ! \vskip 6pt
 ! \hskip 24pt {\tt xcrysden --xsf crystal.xsf}
 ! \vskip 6pt

@@ -36,9 +36,9 @@ integer, intent(in) :: ldo
 real(8), intent(out) :: fo(ldo,no)
 ! local variables
 integer i,j,k,l
-real(8) dx,t
+real(8) x,dx
 ! automatic arrays
-real(8) cf(3,ni)
+real(8) cf(4,ni)
 if (ni.le.0) then
   write(*,*)
   write(*,'("Error(rfinterp): invalid number of input points : ",I8)') ni
@@ -59,24 +59,24 @@ call spline(ni,xi,ldi,fi,cf)
 ! evaluate spline at output points
 i=1
 do l=1,no
-  t=xo(l)
+  x=xo(l)
   if (i.ge.ni) i=1
-  if (t.lt.xi(i)) goto 10
-  if (t.le.xi(i+1)) goto 30
+  if (x.lt.xi(i)) goto 10
+  if (x.le.xi(i+1)) goto 30
 ! binary search
 10 continue
   i=1
   j=ni+1
 20 continue
   k=(i+j)/2
-  if (t.lt.xi(k)) then
+  if (x.lt.xi(k)) then
     j=k
   else
     i=k
   end if
   if (j.gt.i+1) goto 20
 30 continue
-  dx=t-xi(i)
+  dx=x-xi(i)
   fo(1,l)=fi(1,i)+dx*(cf(1,i)+dx*(cf(2,i)+dx*cf(3,i)))
 end do
 return

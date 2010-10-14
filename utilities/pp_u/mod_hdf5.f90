@@ -1,4 +1,7 @@
 module mod_hdf5
+#ifdef _MPI_
+use mod_mpi_grid
+#endif
 
 interface hdf5_write
   module procedure hdf5_write_z,hdf5_write_i,hdf5_write_d
@@ -40,18 +43,21 @@ if (ierr.ne.0) then
   write(*,*)
   write(*,'("Error(hdf5_create_file) : h5fcreate_f returned ",I6)')ierr
   write(*,'("  fname : ",A)')trim(fname)
-  stop
+  call pstop
 endif
 call h5fclose_f(h5_root_id,ierr)
 if (ierr.ne.0) then
   write(*,*)
   write(*,'("Error(hdf5_create_file) : h5fclose_f returned ",I6)')ierr
   write(*,'("  fname : ",A)')trim(fname)
-  stop
+  call pstop
 endif
 #endif
 end subroutine
 
+!--------------------------!
+!     hdf5_create_group    !
+!--------------------------!
 subroutine hdf5_create_group(fname,path,gname)
 #ifdef _HDF5_
 use hdf5
@@ -69,7 +75,7 @@ if (ierr.ne.0) then
   write(*,'("  fname : ",A)')trim(fname)
   write(*,'("  path : ",A)')trim(path)
   write(*,'("  gname : ",A)')trim(gname)  
-  stop
+  call pstop
 endif
 call h5gopen_f(h5_root_id,trim(path),h5_group_id,ierr)
 if (ierr.ne.0) then
@@ -78,7 +84,7 @@ if (ierr.ne.0) then
   write(*,'("  fname : ",A)')trim(fname)
   write(*,'("  path : ",A)')trim(path)
   write(*,'("  gname : ",A)')trim(gname)  
-  stop
+  call pstop
 endif
 call h5gcreate_f(h5_group_id,trim(gname),h5_new_group_id,ierr)
 if (ierr.ne.0) then
@@ -87,7 +93,7 @@ if (ierr.ne.0) then
   write(*,'("  fname : ",A)')trim(fname)
   write(*,'("  path : ",A)')trim(path)
   write(*,'("  gname : ",A)')trim(gname)  
-  stop
+  call pstop
 endif
 call h5gclose_f(h5_new_group_id,ierr)
 if (ierr.ne.0) then
@@ -96,7 +102,7 @@ if (ierr.ne.0) then
   write(*,'("  fname : ",A)')trim(fname)
   write(*,'("  path : ",A)')trim(path)
   write(*,'("  gname : ",A)')trim(gname)  
-  stop
+  call pstop
 endif
 call h5gclose_f(h5_group_id,ierr)
 if (ierr.ne.0) then
@@ -105,7 +111,7 @@ if (ierr.ne.0) then
   write(*,'("  fname : ",A)')trim(fname)
   write(*,'("  path : ",A)')trim(path)
   write(*,'("  gname : ",A)')trim(gname)  
-  stop
+  call pstop
 endif
 call h5fclose_f(h5_root_id,ierr)
 if (ierr.ne.0) then
@@ -114,11 +120,14 @@ if (ierr.ne.0) then
   write(*,'("  fname : ",A)')trim(fname)
   write(*,'("  path : ",A)')trim(path)
   write(*,'("  gname : ",A)')trim(gname)  
-  stop
+  call pstop
 endif
 #endif
 end subroutine
 
+!---------------------!
+!     hdf5_write_z    !
+!---------------------!
 subroutine hdf5_write_z(fname,path,dname,val,dims)
 #ifdef _HDF5_
 use hdf5
@@ -128,12 +137,8 @@ character(*), intent(in) :: path
 character(*), intent(in) :: dname
 complex(8), intent(in) :: val
 integer, optional, dimension(:), intent(in) :: dims
-
-integer ndims,ierr
-!integer(hsize_t), allocatable :: dims_(:)
+integer ndims
 integer, allocatable :: dims_(:)
-!integer(hid_t) h5_root_id,dataspace_id,dataset_id,group_id
-
 if (present(dims)) then
   ndims=size(dims)+1
   allocate(dims_(ndims))
@@ -144,35 +149,14 @@ else
   allocate(dims_(ndims))
   dims_(1)=2
 endif
-call write_real8_array1(val,ndims,dims_,fname,path,dname)
-
-!call h5fopen_f(trim(fname),H5F_ACC_RDWR_F,h5_root_id,ierr)
-!
-!call h5screate_simple_f(ndims,dims_,dataspace_id,ierr)
-!
-!call h5gopen_f(h5_root_id,trim(path),group_id,ierr)
-!
-!call h5dcreate_f(group_id,trim(dname),H5T_NATIVE_DOUBLE,dataspace_id, &
-!  dataset_id,ierr)
-!  
-!!call h5dwrite_f(dataset_id,H5T_NATIVE_DOUBLE,val,dims_,ierr)
-!
-!call h5gclose_f(group_id,ierr)
-!
-!call h5sclose_f(dataspace_id,ierr)
-!
-!call h5dclose_f(dataset_id,ierr)
-!
-!call h5fclose_f(h5_root_id,ierr)
-!
+call write_real8_array(val,ndims,dims_,fname,path,dname)
 deallocate(dims_)
-
-  
-
-
 #endif
 end subroutine
 
+!---------------------!
+!     hdf5_write_i    !
+!---------------------!
 subroutine hdf5_write_i(fname,path,dname,val,dims)
 #ifdef _HDF5_
 use hdf5
@@ -182,12 +166,8 @@ character(*), intent(in) :: path
 character(*), intent(in) :: dname
 integer, intent(in) :: val
 integer, optional, dimension(:), intent(in) :: dims
-
-integer ndims,ierr
-!integer(hsize_t), allocatable :: dims_(:)
+integer ndims
 integer, allocatable :: dims_(:)
-!integer(hid_t) h5_root_id,dataspace_id,dataset_id,group_id
-
 if (present(dims)) then
   ndims=size(dims)
   allocate(dims_(ndims))
@@ -198,34 +178,13 @@ else
   dims_(1)=1
 endif
 call write_integer_array(val,ndims,dims_,fname,path,dname)
-
-!call h5fopen_f(trim(fname),H5F_ACC_RDWR_F,h5_root_id,ierr)
-!
-!call h5screate_simple_f(ndims,dims_,dataspace_id,ierr)
-!
-!call h5gopen_f(h5_root_id,trim(path),group_id,ierr)
-!
-!call h5dcreate_f(group_id,trim(dname),H5T_NATIVE_DOUBLE,dataspace_id, &
-!  dataset_id,ierr)
-!  
-!!call h5dwrite_f(dataset_id,H5T_NATIVE_DOUBLE,val,dims_,ierr)
-!
-!call h5gclose_f(group_id,ierr)
-!
-!call h5sclose_f(dataspace_id,ierr)
-!
-!call h5dclose_f(dataset_id,ierr)
-!
-!call h5fclose_f(h5_root_id,ierr)
-!
 deallocate(dims_)
-
-  
-
-
 #endif
 end subroutine
 
+!---------------------!
+!     hdf5_write_d    !
+!---------------------!
 subroutine hdf5_write_d(fname,path,dname,val,dims)
 #ifdef _HDF5_
 use hdf5
@@ -235,12 +194,8 @@ character(*), intent(in) :: path
 character(*), intent(in) :: dname
 real(8), intent(in) :: val
 integer, optional, dimension(:), intent(in) :: dims
-
-integer ndims,ierr
-!integer(hsize_t), allocatable :: dims_(:)
+integer ndims
 integer, allocatable :: dims_(:)
-!integer(hid_t) h5_root_id,dataspace_id,dataset_id,group_id
-
 if (present(dims)) then
   ndims=size(dims)
   allocate(dims_(ndims))
@@ -251,35 +206,13 @@ else
   dims_(1)=1
 endif
 call write_real8_array(val,ndims,dims_,fname,path,dname)
-
-!call h5fopen_f(trim(fname),H5F_ACC_RDWR_F,h5_root_id,ierr)
-!
-!call h5screate_simple_f(ndims,dims_,dataspace_id,ierr)
-!
-!call h5gopen_f(h5_root_id,trim(path),group_id,ierr)
-!
-!call h5dcreate_f(group_id,trim(dname),H5T_NATIVE_DOUBLE,dataspace_id, &
-!  dataset_id,ierr)
-!  
-!!call h5dwrite_f(dataset_id,H5T_NATIVE_DOUBLE,val,dims_,ierr)
-!
-!call h5gclose_f(group_id,ierr)
-!
-!call h5sclose_f(dataspace_id,ierr)
-!
-!call h5dclose_f(dataset_id,ierr)
-!
-!call h5fclose_f(h5_root_id,ierr)
-!
 deallocate(dims_)
-
-  
-
-
 #endif
 end subroutine
 
-
+!--------------------!
+!     hdf5_read_z    !
+!--------------------!
 subroutine hdf5_read_z(fname,path,dname,val,dims)
 #ifdef _HDF5_
 use hdf5
@@ -289,12 +222,8 @@ character(*), intent(in) :: path
 character(*), intent(in) :: dname
 complex(8), intent(out) :: val
 integer, optional, dimension(:), intent(in) :: dims
-
-integer ndims,ierr
-!integer(hsize_t), allocatable :: dims_(:)
+integer ndims
 integer, allocatable :: dims_(:)
-!integer(hid_t) h5_root_id,dataspace_id,dataset_id,group_id
-
 if (present(dims)) then
   ndims=size(dims)+1
   allocate(dims_(ndims))
@@ -305,35 +234,14 @@ else
   allocate(dims_(ndims))
   dims_(1)=2
 endif
-call read_real8_array1(val,ndims,dims_,fname,path,dname)
-
-!call h5fopen_f(trim(fname),H5F_ACC_RDWR_F,h5_root_id,ierr)
-!
-!call h5screate_simple_f(ndims,dims_,dataspace_id,ierr)
-!
-!call h5gopen_f(h5_root_id,trim(path),group_id,ierr)
-!
-!call h5dcreate_f(group_id,trim(dname),H5T_NATIVE_DOUBLE,dataspace_id, &
-!  dataset_id,ierr)
-!  
-!!call h5dwrite_f(dataset_id,H5T_NATIVE_DOUBLE,val,dims_,ierr)
-!
-!call h5gclose_f(group_id,ierr)
-!
-!call h5sclose_f(dataspace_id,ierr)
-!
-!call h5dclose_f(dataset_id,ierr)
-!
-!call h5fclose_f(h5_root_id,ierr)
-!
+call read_real8_array(val,ndims,dims_,fname,path,dname)
 deallocate(dims_)
-
-  
-
-
 #endif
 end subroutine
 
+!--------------------!
+!     hdf5_read_i    !
+!--------------------!
 subroutine hdf5_read_i(fname,path,dname,val,dims)
 #ifdef _HDF5_
 use hdf5
@@ -343,12 +251,8 @@ character(*), intent(in) :: path
 character(*), intent(in) :: dname
 integer, intent(out) :: val
 integer, optional, dimension(:), intent(in) :: dims
-
-integer ndims,ierr
-!integer(hsize_t), allocatable :: dims_(:)
+integer ndims
 integer, allocatable :: dims_(:)
-!integer(hid_t) h5_root_id,dataspace_id,dataset_id,group_id
-
 if (present(dims)) then
   ndims=size(dims)
   allocate(dims_(ndims))
@@ -359,35 +263,13 @@ else
   dims_(1)=1
 endif
 call read_integer_array(val,ndims,dims_,fname,path,dname)
-
-!call h5fopen_f(trim(fname),H5F_ACC_RDWR_F,h5_root_id,ierr)
-!
-!call h5screate_simple_f(ndims,dims_,dataspace_id,ierr)
-!
-!call h5gopen_f(h5_root_id,trim(path),group_id,ierr)
-!
-!call h5dcreate_f(group_id,trim(dname),H5T_NATIVE_DOUBLE,dataspace_id, &
-!  dataset_id,ierr)
-!  
-!!call h5dwrite_f(dataset_id,H5T_NATIVE_DOUBLE,val,dims_,ierr)
-!
-!call h5gclose_f(group_id,ierr)
-!
-!call h5sclose_f(dataspace_id,ierr)
-!
-!call h5dclose_f(dataset_id,ierr)
-!
-!call h5fclose_f(h5_root_id,ierr)
-!
 deallocate(dims_)
-
-  
-
-
 #endif
 end subroutine
 
-
+!--------------------!
+!     hdf5_read_d    !
+!--------------------!
 subroutine hdf5_read_d(fname,path,dname,val,dims)
 #ifdef _HDF5_
 use hdf5
@@ -397,12 +279,8 @@ character(*), intent(in) :: path
 character(*), intent(in) :: dname
 real(8), intent(out) :: val
 integer, optional, dimension(:), intent(in) :: dims
-
-integer ndims,ierr
-!integer(hsize_t), allocatable :: dims_(:)
+integer ndims
 integer, allocatable :: dims_(:)
-!integer(hid_t) h5_root_id,dataspace_id,dataset_id,group_id
-
 if (present(dims)) then
   ndims=size(dims)
   allocate(dims_(ndims))
@@ -413,41 +291,23 @@ else
   dims_(1)=1
 endif
 call read_real8_array(val,ndims,dims_,fname,path,dname)
-
-!call h5fopen_f(trim(fname),H5F_ACC_RDWR_F,h5_root_id,ierr)
-!
-!call h5screate_simple_f(ndims,dims_,dataspace_id,ierr)
-!
-!call h5gopen_f(h5_root_id,trim(path),group_id,ierr)
-!
-!call h5dcreate_f(group_id,trim(dname),H5T_NATIVE_DOUBLE,dataspace_id, &
-!  dataset_id,ierr)
-!  
-!!call h5dwrite_f(dataset_id,H5T_NATIVE_DOUBLE,val,dims_,ierr)
-!
-!call h5gclose_f(group_id,ierr)
-!
-!call h5sclose_f(dataspace_id,ierr)
-!
-!call h5dclose_f(dataset_id,ierr)
-!
-!call h5fclose_f(h5_root_id,ierr)
-!
 deallocate(dims_)
-
-  
-
-
 #endif
 end subroutine
-
 
 end module
 
 
 
 
-subroutine write_real8_array1(a,ndims,dims,fname,path,nm)
+
+!---------------------------!
+!     write_real8_array     !
+!---------------------------!
+subroutine write_real8_array(a,ndims,dims,fname,path,nm)
+#ifdef _MPI_
+use mod_mpi_grid
+#endif
 #ifdef _HDF5_
 use hdf5
 implicit none
@@ -466,7 +326,7 @@ character*100 errmsg
 do i=1,ndims
   h_dims(i)=dims(i)
 enddo
-call h5fopen_f(fname,H5F_ACC_RDWR_F,h5_root_id,ierr)
+call h5fopen_f(trim(fname),H5F_ACC_RDWR_F,h5_root_id,ierr)
 if (ierr.ne.0) then
   write(errmsg,'("Error(write_real8_array) : h5fopen_f returned",I6)')ierr
   goto 100
@@ -476,12 +336,12 @@ if (ierr.ne.0) then
   write(errmsg,'("Error(write_real8_array) : h5screate_simple_f returned",I6)')ierr
   goto 100
 endif
-call h5gopen_f(h5_root_id,path,group_id,ierr)
+call h5gopen_f(h5_root_id,trim(path),group_id,ierr)
 if (ierr.ne.0) then
   write(errmsg,'("Error(write_real8_array) : h5gopen_f returned",I6)')ierr
   goto 100
 endif
-call h5dcreate_f(group_id,nm,H5T_NATIVE_DOUBLE,dataspace_id, &
+call h5dcreate_f(group_id,trim(nm),H5T_NATIVE_DOUBLE,dataspace_id, &
   dataset_id,ierr)
 if (ierr.ne.0) then
   write(errmsg,'("Error(write_real8_array) : h5dcreate_f returned",I6)')ierr
@@ -505,11 +365,17 @@ write(*,'("  dims : ",10I4)')dims
 write(*,'("  fname : ",A)')trim(fname)
 write(*,'("  path : ",A)')trim(path)
 write(*,'("  nm : ",A)')trim(nm)
-stop
+call pstop
 #endif
 end
 
-subroutine read_real8_array1(a,ndims,dims,fname,path,nm)
+!--------------------------!
+!     read_real8_array     !
+!--------------------------!
+subroutine read_real8_array(a,ndims,dims,fname,path,nm)
+#ifdef _MPI_
+use mod_mpi_grid
+#endif
 #ifdef _HDF5_
 use hdf5
 implicit none
@@ -520,7 +386,7 @@ character(*), intent(in) :: fname
 character(*), intent(in) :: path
 character(*), intent(in) :: nm
 
-integer(hid_t) h5_root_id,dataspace_id,dataset_id,group_id
+integer(hid_t) h5_root_id,dataset_id,group_id
 integer ierr,i
 integer(HSIZE_T), dimension(ndims) :: h_dims
 character*100 errmsg
@@ -530,17 +396,17 @@ do i=1,ndims
   h_dims(i)=dims(i)
 enddo
 
-call h5fopen_f(fname,H5F_ACC_RDONLY_F,h5_root_id,ierr)
+call h5fopen_f(trim(fname),H5F_ACC_RDONLY_F,h5_root_id,ierr)
 if (ierr.ne.0) then
   write(errmsg,'("Error(read_real8_array) : h5fopen_f returned",I6)')ierr
   goto 100
 endif
-call h5gopen_f(h5_root_id,path,group_id,ierr)
+call h5gopen_f(h5_root_id,trim(path),group_id,ierr)
 if (ierr.ne.0) then
   write(errmsg,'("Error(read_real8_array) : h5gopen_f returned",I6)')ierr
   goto 100
 endif
-call h5dopen_f(group_id,nm,dataset_id,ierr)
+call h5dopen_f(group_id,trim(nm),dataset_id,ierr)
 if (ierr.ne.0) then
   write(errmsg,'("Error(read_real8_array) : h5dopen_f returned",I6)')ierr
   goto 100
@@ -562,8 +428,73 @@ write(*,'("  dims : ",10I4)')dims
 write(*,'("  fname : ",A)')trim(fname)
 write(*,'("  path : ",A)')trim(path)
 write(*,'("  nm : ",A)')trim(nm)
-stop
+call pstop
 #endif
+end
+
+!---------------------------!
+!    write_integer_array    !
+!---------------------------!
+subroutine write_integer_array(a,ndims,dims,fname,path,nm)
+use hdf5
+implicit none
+integer, intent(in) :: ndims
+integer, intent(in) :: dims(ndims)
+integer, intent(in) :: a(*)
+character(*), intent(in) :: fname
+character(*), intent(in) :: path
+character(*), intent(in) :: nm
+
+
+integer(hid_t) h5_root_id,dataspace_id,dataset_id,group_id
+integer ierr,i
+integer(HSIZE_T), dimension(ndims) :: h_dims
+
+do i=1,ndims
+  h_dims(i)=dims(i)
+enddo
+call h5fopen_f(trim(fname),H5F_ACC_RDWR_F,h5_root_id,ierr)
+call h5screate_simple_f(ndims,h_dims,dataspace_id,ierr)
+call h5gopen_f(h5_root_id,trim(path),group_id,ierr)
+call h5dcreate_f(group_id,trim(nm),H5T_NATIVE_INTEGER,dataspace_id, &
+  dataset_id,ierr)
+call h5dwrite_f(dataset_id,H5T_NATIVE_INTEGER,a,h_dims,ierr)
+call h5gclose_f(group_id,ierr)
+call h5sclose_f(dataspace_id,ierr)
+call h5dclose_f(dataset_id,ierr)
+call h5fclose_f(h5_root_id,ierr)
+return
+end
+
+!--------------------------!
+!    read_integer_array    !
+!--------------------------!
+subroutine read_integer_array(a,ndims,dims,fname,path,nm)
+use hdf5
+implicit none
+integer, intent(in) :: ndims
+integer, intent(in) :: dims(ndims)
+integer, intent(out) :: a(*)
+character(*), intent(in) :: fname
+character(*), intent(in) :: path
+character(*), intent(in) :: nm
+
+
+integer(hid_t) h5_root_id,dataset_id,group_id
+integer ierr,i
+integer(HSIZE_T), dimension(ndims) :: h_dims
+
+do i=1,ndims
+  h_dims(i)=dims(i)
+enddo
+call h5fopen_f(trim(fname),H5F_ACC_RDONLY_F,h5_root_id,ierr)
+call h5gopen_f(h5_root_id,trim(path),group_id,ierr)
+call h5dopen_f(group_id,trim(nm),dataset_id,ierr)
+call h5dread_f(dataset_id,H5T_NATIVE_INTEGER,a,h_dims,ierr)
+call h5gclose_f(group_id,ierr)
+call h5dclose_f(dataset_id,ierr)
+call h5fclose_f(h5_root_id,ierr)
+return
 end
 
 

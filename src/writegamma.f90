@@ -5,6 +5,7 @@
 
 subroutine writegamma(gq)
 use modmain
+use modqpt
 implicit none
 ! arguments
 real(8), intent(in) :: gq(3*natmtot,nqpt)

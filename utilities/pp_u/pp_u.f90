@@ -3,214 +3,189 @@ use mod_hdf5
 implicit none
 
 character*100 fname
-integer nepts,size,ntr_uscrn,it,n,nwann,iw,iwloc,nwloc,i,j
+integer nw,size,ntr_uscrn,it,n,nwann,iw,iwloc,nwloc,i,j
 integer n1,n2
-integer, allocatable :: vtl_uscrn(:,:)
 real(8), allocatable :: w(:)
-complex(8), allocatable :: uscrn(:,:,:)
-complex(8), allocatable :: ubare(:,:)
+complex(8), allocatable :: uscrn(:)
 
-complex(8), allocatable :: uscrn_stat(:,:,:)
-complex(8), allocatable :: zf(:)
+complex(8), allocatable :: uscrn_(:,:,:)
+complex(8), allocatable :: uscrn2_(:,:)
+complex(8) zf(2)
 real(8) t1,uavg
+character*10 c1,c2,c3,c4
 character*8 c8
-character*3 c3
 logical exist
 real(8), parameter :: ha2ev = 27.21138386d0
-integer vtl(3)
-integer nwann_stat
-integer, allocatable :: iwann_stat(:)
+integer vtl_(3)
+integer nwann_
+integer, allocatable :: iwann_(:)
+integer nlist_
+integer, allocatable :: ilist_(:)
+integer nmegqwan
+integer, allocatable :: imegqwan(:,:)
+integer, allocatable :: iwm(:,:)
+character*100 str,fout
+integer mode
+integer ngq,ngridk(3)
 
 call hdf5_initialize
-
 open(150,file="pp_u.in",form="FORMATTED",status="OLD")
-read(150,*)vtl
-read(150,*)nwann_stat
-allocate(iwann_stat(nwann_stat))
-read(150,*)iwann_stat
-close(150)
-
-
+read(150,'(A)')str
+if (trim(adjustl(str)).eq."onsite") then
+  mode=0
+  vtl_=0
+  read(150,*)nwann_
+  allocate(iwann_(nwann_))
+  read(150,*)iwann_
+  close(150)
+else if (trim(adjustl(str)).eq."offsite") then
+  mode=1
+else if (trim(adjustl(str)).eq."list") then
+  mode=2
+  read(150,*)nlist_
+  allocate(ilist_(nlist_))
+  read(150,*)ilist_
+endif
 
 fname="uscrn0000.hdf"
 inquire(file=trim(fname),exist=exist)
 if (exist) then
-  call hdf5_read(fname,"/parameters","nepts",nepts)
+  call hdf5_read(fname,"/parameters","nw",nw)
   call hdf5_read(fname,"/parameters","nwann",nwann)
   call hdf5_read(fname,"/parameters","size",size)
-  call hdf5_read(fname,"/parameters","ntr_uscrn",ntr_uscrn)
-  allocate(vtl_uscrn(3,ntr_uscrn))
-  call hdf5_read(fname,"/parameters","vtl_uscrn",vtl_uscrn(1,1),(/3,ntr_uscrn/))  
-  
-  allocate(w(nepts))
-  allocate(uscrn(nwann,nwann,nepts))
-  c3="+++"
-  do it=1,ntr_uscrn
-    if (vtl_uscrn(1,it).eq.vtl(1).and.vtl_uscrn(2,it).eq.vtl(2).and.&
-        vtl_uscrn(3,it).eq.vtl(3)) then
-      write(c3,'(I3.3)')it
-    endif
-  enddo
-  
-  do n=0,size-1
-    write(fname,'("uscrn",I4.4,".hdf")')n
-    inquire(file=trim(fname),exist=exist)
-    if (exist) then
-      call hdf5_read(fname,"/parameters","nwloc",nwloc)
-      do iwloc=1,nwloc
-        write(c8,'(I8.8)')iwloc
-        call hdf5_read(fname,"/iwloc/"//c8,"iw",iw)
-        call hdf5_read(fname,"/iwloc/"//c8,"w",w(iw))
-        call hdf5_read(fname,"/iwloc/"//c8//"/"//c3,"uscrn",uscrn(1,1,iw),(/nwann,nwann/))
-      enddo
-    endif
-  enddo
-  
-  allocate(uscrn_stat(nwann_stat,nwann_stat,nepts))
-  do iw=1,nepts
-    do n1=1,nwann_stat
-      do n2=1,nwann_stat
-        uscrn_stat(n1,n2,iw)=uscrn(iwann_stat(n1),iwann_stat(n2),iw)
+  call hdf5_read(fname,"/parameters","nmegqwan",nmegqwan)
+  allocate(imegqwan(5,nmegqwan))
+  call hdf5_read(fname,"/parameters","imegqwan",imegqwan(1,1),(/5,nmegqwan/))  
+  call hdf5_read(fname,"/parameters","ngq",ngq)
+  call hdf5_read(fname,"/parameters","ngridk",ngridk(1),(/3/))  
+  allocate(w(nw))
+  allocate(uscrn(nmegqwan))
+  write(c1,'(I6)')ngridk(1)
+  write(c2,'(I6)')ngridk(2)
+  write(c3,'(I6)')ngridk(3)
+  write(c4,'(I8)')ngq
+  fout="cRPA__"//trim(adjustl(c1))//"x"//trim(adjustl(c2))//"x"//&
+    trim(adjustl(c3))//"_kgrid__"//trim(adjustl(c4))//"_Gv__.dat"
+  if (mode.eq.0) then
+    allocate(iwm(nwann_,nwann_)) 
+    allocate(uscrn_(nwann_,nwann_,nw))
+    uscrn_=dcmplx(0.d0,0.d0)
+  ! create i -> {nn'T} mapping
+    do i=1,nmegqwan
+      do n1=1,nwann_
+        do n2=1,nwann_
+          if (iwann_(n1).eq.imegqwan(1,i).and.&
+              iwann_(n2).eq.imegqwan(2,i).and.&
+              all(vtl_(:).eq.imegqwan(3:5,i))) then
+              iwm(n1,n2)=i
+          endif
+        enddo
       enddo
     enddo
-  enddo
-  
-  allocate(zf(2))    
-  open(150,file="cRPA.dat",status="REPLACE",form="FORMATTED")
-  write(150,'("# Wannier functions : ",100I4)')iwann_stat
-  write(150,'("#")')
-  write(150,'("# Screened U(w=0) matrix")')
-  write(150,'("#  real part")')
-  do i=1,nwann_stat
-    write(150,'("# ",100F12.6)')(dreal(uscrn_stat(i,j,1)),j=1,nwann_stat)
-  enddo
-  write(150,'("#  imag part")')
-  do i=1,nwann_stat
-    write(150,'("# ",100F12.6)')(dimag(uscrn_stat(i,j,1)),j=1,nwann_stat)
-  enddo
-  write(150,'("#")')
-  write(150,'("# columns : ")')
-  write(150,'("#   1 : enery ")')
-  write(150,'("#   2 : Re(U_avg_diagonal) ")')
-  write(150,'("#   3 : Im(U_avg_diagonal) ")')
-  write(150,'("#   4 : Re(U_avg_total) ")')
-  write(150,'("#   5 : Im(U_avg_total) ")')
-  write(150,'("#   6 : Re(U_{11}) ")')
-  write(150,'("#   7 : Im(U_{11}) ")')
-  write(150,'("#   8 : Re(U_{22}) ")')
-  write(150,'("#   9 : Im(U_{22}) ")')
-  write(150,'("#   10 : ... ")')
-  
-  
-  write(150,'("#")')
-  do iw=1,nepts
-    zf=dcmplx(0.d0,0.d0)
-    do n1=1,nwann_stat
-      zf(1)=zf(1)+uscrn_stat(n1,n1,iw)/nwann_stat
+    do n=0,size-1
+      write(fname,'("uscrn",I4.4,".hdf")')n
+      inquire(file=trim(fname),exist=exist)
+      if (exist) then
+        call hdf5_read(fname,"/parameters","nwloc",nwloc)
+        do iwloc=1,nwloc
+          write(c8,'(I8.8)')iwloc
+          call hdf5_read(fname,"/iwloc/"//c8,"iw",iw)
+          call hdf5_read(fname,"/iwloc/"//c8,"w",w(iw))
+          call hdf5_read(fname,"/iwloc/"//c8,"uscrn",uscrn(1),(/nmegqwan/))
+          do n1=1,nwann_
+            do n2=1,nwann_
+              uscrn_(n1,n2,iw)=uscrn(iwm(n1,n2))*ha2ev
+            enddo
+          enddo
+        enddo
+      endif
     enddo
-    do n1=1,nwann_stat
-      do n2=1,nwann_stat
-        zf(2)=zf(2)+uscrn_stat(n1,n2,iw)/nwann_stat/nwann_stat
+    
+    open(150,file=trim(adjustl(fout)),status="REPLACE",form="FORMATTED")
+    write(150,'("# Wannier functions : ",100I4)')iwann_
+    write(150,'("#")')
+    write(150,'("# Screened U(w=0) matrix")')
+    write(150,'("#  real part")')
+    do i=1,nwann_
+      write(150,'("# ",100F12.6)')(dreal(uscrn_(i,j,1)),j=1,nwann_)
+    enddo
+    write(150,'("#  imag part")')
+    do i=1,nwann_
+      write(150,'("# ",100F12.6)')(dimag(uscrn_(i,j,1)),j=1,nwann_)
+    enddo
+    write(150,'("#")')
+    write(150,'("# columns : ")')
+    write(150,'("#   1 : energy ")')
+    write(150,'("#   2 : Re(U_avg_diagonal) ")')
+    write(150,'("#   3 : Im(U_avg_diagonal) ")')
+    write(150,'("#   4 : Re(U_avg_total) ")')
+    write(150,'("#   5 : Im(U_avg_total) ")')
+    write(150,'("#   6 : Re(U_{11}) ")')
+    write(150,'("#   7 : Im(U_{11}) ")')
+    write(150,'("#   8 : Re(U_{22}) ")')
+    write(150,'("#   9 : Im(U_{22}) ")')
+    write(150,'("#   10 : ... ")')
+    
+    
+    write(150,'("#")')
+    do iw=1,nw
+      zf=dcmplx(0.d0,0.d0)
+      do n1=1,nwann_
+        zf(1)=zf(1)+uscrn_(n1,n1,iw)/nwann_
       enddo
+      do n1=1,nwann_
+        do n2=1,nwann_
+          zf(2)=zf(2)+uscrn_(n1,n2,iw)/nwann_/nwann_
+        enddo
+      enddo
+      write(150,'(100G18.10)')w(iw)*ha2ev,dreal(zf(1)),dimag(zf(1)),&
+        dreal(zf(2)),dimag(zf(2)),(dreal(uscrn_(n1,n1,iw)),&
+        dimag(uscrn_(n1,n1,iw)),n1=1,nwann_)
     enddo
-    write(150,'(15G18.10)')w(iw)*ha2ev,dreal(zf(1)),dimag(zf(1)),&
-      dreal(zf(2)),dimag(zf(2)),(dreal(uscrn_stat(n1,n1,iw)),&
-      dimag(uscrn_stat(n1,n1,iw)),n1=1,nwann_stat)
-  enddo
-  close(150)
+    close(150)
+  endif !mode.eq.0
   
-  open(150,file="CRPA_U.OUT",status="REPLACE",form="FORMATTED")
-  write(150,'("Screened U matrix")')
-  write(150,'("real part")')
-  do i=1,nwann
-    write(150,'(100F12.6)')(dreal(uscrn(i,j,1)),j=1,nwann)
-  enddo
-  write(150,'("imag part")')
-  do i=1,nwann
-    write(150,'(100F12.6)')(dimag(uscrn(i,j,1)),j=1,nwann)
-  enddo
-  uavg=0.d0
-  do i=1,nwann
-    uavg=uavg+dreal(uscrn(i,i,1))/nwann
-  enddo
-  write(150,'("Average diagonal screened U : ",F12.6)')uavg
-  uavg=0.d0
-  do i=1,nwann
-    do j=1,nwann
-      uavg=uavg+dreal(uscrn(i,j,1))/nwann/nwann
+  if (mode.eq.2) then
+    allocate(uscrn2_(nlist_,nw))
+    uscrn2_=dcmplx(0.d0,0.d0)
+    do n=0,size-1
+      write(fname,'("uscrn",I4.4,".hdf")')n
+      inquire(file=trim(fname),exist=exist)
+      if (exist) then
+        call hdf5_read(fname,"/parameters","nwloc",nwloc)
+        do iwloc=1,nwloc
+          write(c8,'(I8.8)')iwloc
+          call hdf5_read(fname,"/iwloc/"//c8,"iw",iw)
+          call hdf5_read(fname,"/iwloc/"//c8,"w",w(iw))
+          call hdf5_read(fname,"/iwloc/"//c8,"uscrn",uscrn(1),(/nmegqwan/))
+          do i=1,nlist_
+            uscrn2_(i,iw)=uscrn(ilist_(i))*ha2ev
+          enddo
+        enddo
+      endif
     enddo
-  enddo
-  write(150,'("Average total screened U : ",F12.6)')uavg 
-  close(150)
-  
-  deallocate(vtl_uscrn)
+    
+    open(150,file=trim(adjustl(fout)),status="REPLACE",form="FORMATTED")
+    write(150,'("#")')
+    write(150,'("# columns : ")')
+    write(150,'("#   1 : energy ")')
+    write(150,'("#   2 : Re(U(first transition in list)) ")')
+    write(150,'("#   3 : Im(U(first transition in list)) ")')
+    write(150,'("#   4 : Re(U(second transition in list)) ")')
+    write(150,'("#   5 : Im(U(second transition in list)) ")')    
+    write(150,'("#   5 : ... ")')
+    write(150,'("#")')
+    do iw=1,nw
+      write(150,'(100G18.10)')w(iw)*ha2ev,(dreal(uscrn2_(i,iw)),&
+        dimag(uscrn2_(i,iw)),i=1,nlist_)
+    enddo
+    close(150)
+  endif
 endif
-
-fname="ubare.hdf"
-inquire(file=trim(fname),exist=exist)
-if (exist) then
-  call hdf5_read(fname,"/parameters","nwann",nwann)
-  call hdf5_read(fname,"/parameters","ntr_uscrn",ntr_uscrn)
-  allocate(vtl_uscrn(3,ntr_uscrn))
-  call hdf5_read(fname,"/parameters","vtl_uscrn",vtl_uscrn(1,1),(/3,ntr_uscrn/))  
-  
-  allocate(ubare(nwann,nwann))
-  c3="+++"
-  do it=1,ntr_uscrn
-    if (vtl_uscrn(1,it).eq.vtl(1).and.vtl_uscrn(2,it).eq.vtl(2).and.&
-        vtl_uscrn(3,it).eq.vtl(3)) then
-      write(c3,'(I3.3)')it
-    endif
-  enddo
-  call hdf5_read(fname,"/it/"//c3,"ubare",ubare(1,1),(/nwann,nwann/))
-  open(150,file="U_BARE.OUT",form="FORMATTED",status="REPLACE")
-  write(150,'("Bare U matrix")')
-  write(150,'(" real part")')
-  do i=1,nwann_stat
-    write(150,'(100F12.6)')(dreal(ubare(iwann_stat(i),iwann_stat(j))),j=1,nwann_stat)
-  enddo
-  write(150,'(" imag part")')
-  do i=1,nwann_stat
-    write(150,'(100F12.6)')(dimag(ubare(iwann_stat(i),iwann_stat(j))),j=1,nwann_stat)
-  enddo
-  uavg=0.d0
-  do i=1,nwann_stat
-    uavg=uavg+dreal(ubare(iwann_stat(i),iwann_stat(i)))/nwann_stat
-  enddo
-  write(150,'("Average diagonal bare U : ",F12.6)')uavg
-  close(150)
-endif
-
-!write(150,*)
-!write(150,'("Bare U matrix")')
-!write(150,'("real part")')
-!do i=1,nwann
-!  write(150,'(100F12.6)')(dreal(ubarewan(i,j)),j=1,nwann)
-!enddo
-!write(150,'("imag part")')
-!do i=1,nwann
-!  write(150,'(100F12.6)')(dimag(ubarewan(i,j)),j=1,nwann)
-!enddo
-!uavg=0.d0
-!do i=1,nwann
-!  uavg=uavg+dreal(ubarewan(i,i))
-!enddo
-!uavg=uavg/nwann
-!write(150,'("Average diagonal bare U : ",F12.6)')uavg
-!uavg=0.d0
-!do i=1,nwann
-!  do j=1,nwann
-!    uavg=uavg+dreal(ubarewan(i,j))
-!  enddo
-!enddo
-!uavg=uavg/nwann/nwann
-!write(150,'("Average total bare U : ",F12.6)')uavg
-!close(150)  
-!
-!
-
-
-
 call hdf5_finalize
 return
+end
+
+subroutine pstop
+stop
 end

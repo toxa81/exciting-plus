@@ -5,7 +5,7 @@ implicit none
 integer, intent(in) :: ik
 real(8), intent(in) :: vpc(3)
 real(8), intent(in) :: e(nstsv)
-complex(8), intent(in) :: wfsvmt(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
+complex(8), intent(in) :: wfsvmt(lmmaxvr,nufrmax,natmtot,nspinor,nstsv)
 complex(8), intent(out) :: wann_c_(nwann,nstsv)
 ! local variables
 complex(8), allocatable :: prjao(:,:)

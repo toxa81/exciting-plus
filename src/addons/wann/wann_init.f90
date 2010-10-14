@@ -1,5 +1,6 @@
 subroutine wann_init
 use modmain
+use modldapu
 implicit none
 
 integer i,j,n,lm,ispn,iwgrp,itype,iatom
@@ -139,9 +140,6 @@ wann_ene=0.d0
 if (allocated(wann_occ)) deallocate(wann_occ)
 allocate(wann_occ(nwann))
 wann_occ=0.d0
-
-if (allocated(wf_v_mtrx)) deallocate(wf_v_mtrx)
-allocate(wf_v_mtrx(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
 
 return
 end

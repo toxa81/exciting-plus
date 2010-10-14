@@ -5,7 +5,6 @@ implicit none
 integer is,ip
 logical angstrom
 real(8), parameter :: au2ang=0.5291772108d0
-
 open(50,file='spacegroup.in',action='READ',status='OLD',form='FORMATTED')
 ! read the Hermann-Mauguin symbol
 read(50,*) hrmg
@@ -38,7 +37,7 @@ if (nspecies.gt.maxspecies) then
   stop
 end if
 do is=1,nspecies
-  read(50,*) spsymb(is),spfname(is)
+  read(50,*) spsymb(is)
   read(50,*) nwpos(is)
   if (nwpos(is).le.0) then
     write(*,*)

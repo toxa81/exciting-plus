@@ -5,6 +5,7 @@
 
 subroutine writeengy(fnum)
 use modmain
+use modldapu
 implicit none
 ! arguments
 integer, intent(in) :: fnum
@@ -12,7 +13,7 @@ write(fnum,*)
 write(fnum,'("Energies :")')
 write(fnum,'(" Fermi",T30,": ",G22.12)') efermi
 write(fnum,'(" sum of eigenvalues",T30,": ",G22.12)') evalsum
-write(fnum,'(" electronic kinetic",T30,": ",G22.12)') engykn
+write(fnum,'(" electron kinetic",T30,": ",G22.12)') engykn
 write(fnum,'(" core electron kinetic",T30,": ",G22.12)') engykncr
 write(fnum,'(" Coulomb",T30,": ",G22.12)') engycl
 write(fnum,'(" Coulomb potential",T30,": ",G22.12)') engyvcl
@@ -20,9 +21,6 @@ write(fnum,'(" nuclear-nuclear",T30,": ",G22.12)') engynn
 write(fnum,'(" electron-nuclear",T30,": ",G22.12)') engyen
 write(fnum,'(" Hartree",T30,": ",G22.12)') engyhar
 write(fnum,'(" Madelung",T30,": ",G22.12)') engymad
-if (chgexs.ne.0.d0) then
-  write(fnum,'(" comp. background charge",T30,": ",G22.12)') engycbc
-end if
 write(fnum,'(" xc potential",T30,": ",G22.12)') engyvxc
 if (spinpol) then
   write(fnum,'(" xc effective B-field",T30,": ",G22.12)') engybxc
@@ -33,10 +31,16 @@ write(fnum,'(" correlation",T30,": ",G22.12)') engyc
 if (ldapu.ne.0) then
   write(fnum,'(" LDA+U",T30,": ",G22.12)') engylu
 end if
+if (stype.eq.3) then
+  write(fnum,'(" electron entropic",T30,": ",G22.12)') engyts
+end if
 write(fnum,'(" total energy",T30,": ",G22.12)') engytot
 if (spinpol) then
   write(fnum,'(" (external B-field energy excluded from total)")')
 end if
+if (sic) then
+  write(fnum,'(" LDA total energy",T30,": ",G22.12)') engytot0
+endif
 call flushifc(fnum)
 return
 end subroutine

@@ -6,8 +6,9 @@
 !BOP
 ! !ROUTINE: rdiracint
 ! !INTERFACE:
-subroutine rdiracint(m,kpa,e,np,nr,r,vr,nn,g0p,f0p,g0,g1,f0,f1)
+subroutine rdiracint(sol,m,kpa,e,np,nr,r,vr,nn,g0p,f0p,g0,g1,f0,f1)
 ! !INPUT/OUTPUT PARAMETERS:
+!   sol : speed of light in atomic units (in,real)
 !   m   : order of energy derivative (in,integer)
 !   kpa : quantum number kappa (in,integer)
 !   e   : energy (in,real)
@@ -49,6 +50,7 @@ subroutine rdiracint(m,kpa,e,np,nr,r,vr,nn,g0p,f0p,g0,g1,f0,f1)
 !BOC
 implicit none
 ! arguments
+real(8), intent(in) :: sol
 integer, intent(in) :: m
 integer, intent(in) :: kpa
 real(8), intent(in) :: e
@@ -65,11 +67,7 @@ real(8), intent(out) :: f0(nr)
 real(8), intent(out) :: f1(nr)
 ! local variables
 integer ir,ir0,npl
-! fine-structure constant
-real(8), parameter :: alpha=1.d0/137.03599911d0
-! rest mass of electron
-real(8), parameter :: e0=1.d0/(alpha**2)
-real(8) rkpa,ri
+real(8) alpha,e0,rkpa,ri
 ! automatic arrays
 real(8) c(np)
 ! external functions
@@ -87,6 +85,10 @@ if ((m.lt.0).or.(m.gt.6)) then
   write(*,*)
   stop
 end if
+! fine structure constant
+alpha=1.d0/sol
+! electron rest energy
+e0=sol**2
 rkpa=dble(kpa)
 ! estimate r -> 0 boundary values
 f0(1)=0.d0

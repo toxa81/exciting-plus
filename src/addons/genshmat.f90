@@ -55,7 +55,7 @@ call invzge(yrlm,16)
 !     V - diagonal matrix of eigen values v
 !   from eigen-vector equation Ax=vx -> PVP^{T}x=vx -> VP^{T}x=vP^{T}x -> Vy=vy, 
 !     where y=P^{T}x or x=Py; x vector in old coord.sys, y - vector in new coord.sys 
-! transformation to LCS: R_m=\sum_{m'} P_{mm'} R^{loc}_{m'}, where
+! transformation to LPS: R_m=\sum_{m'} P_{mm'} R^{loc}_{m'}, where
 !   P_{mm'} matrix of eigen-vectors (stored in columns) of some matrix
 !   computed in global R_m basis
 !
@@ -63,27 +63,27 @@ call invzge(yrlm,16)
 !
 ! from definition Y_{m}=\sum_{m'} yrlm_{m,m'} R_{m'} in GCS:
 ! Y_m = \sum_{m'} yrlm_{mm'}R_{m'} = \sum_{m'} yrlm_{mm'} \sum_{m"} P_{m'm"} R^{loc}_{m"} = 
-!    \sum_{m"} R^{loc}_{m"}  \sum_{m'} yrlm_{mm'}P_{m'm"} = \sum_{m"} yrlm_lcs{mm"}R^{loc}_{m"}
-!    where yrlm_lcs{mm"}=\sum_{m'} yrlm_{mm'}P_{m'm"}
+!    \sum_{m"} R^{loc}_{m"}  \sum_{m'} yrlm_{mm'}P_{m'm"} = \sum_{m"} yrlm_lps{mm"}R^{loc}_{m"}
+!    where yrlm_lps{mm"}=\sum_{m'} yrlm_{mm'}P_{m'm"}
 
 
 do ias=1,natmtot
-  yrlm_lcs(:,:,ias)=yrlm(:,:)
-  rylm_lcs(:,:,ias)=rylm(:,:)
+  yrlm_lps(:,:,ias)=yrlm(:,:)
+  rylm_lps(:,:,ias)=rylm(:,:)
 enddo
 
-do i=1,natlcs
-  ias=iatlcs(i)
-  yrlm_lcs(:,:,ias)=dcmplx(0.d0,0.d0)
+do i=1,natlps
+  ias=iatlps(i)
+  yrlm_lps(:,:,ias)=dcmplx(0.d0,0.d0)
   do lm1=1,16
     do lm2=1,16
       do lm3=1,16
-        yrlm_lcs(lm1,lm2,ias)=yrlm_lcs(lm1,lm2,ias)+yrlm(lm1,lm3)*lcsrsh(lm3,lm2,i)
+        yrlm_lps(lm1,lm2,ias)=yrlm_lps(lm1,lm2,ias)+yrlm(lm1,lm3)*lpsrsh(lm3,lm2,i)
       enddo
     enddo
   enddo
-  rylm_lcs(:,:,ias)=yrlm_lcs(:,:,ias)
-  call invzge(rylm_lcs(1,1,ias),16)
+  rylm_lps(:,:,ias)=yrlm_lps(:,:,ias)
+  call invzge(rylm_lps(1,1,ias),16)
 enddo
 
 return

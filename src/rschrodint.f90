@@ -6,8 +6,9 @@
 !BOP
 ! !ROUTINE: rschrodint
 ! !INTERFACE:
-subroutine rschrodint(m,l,e,np,nr,r,vr,nn,p0p,p0,p1,q0,q1)
+subroutine rschrodint(sol,m,l,e,np,nr,r,vr,nn,p0p,p0,p1,q0,q1)
 ! !INPUT/OUTPUT PARAMETERS:
+!   sol : speed of light in atomic units (in,real)
 !   m   : order of energy derivative (in,integer)
 !   l   : angular momentum quantum number (in,integer)
 !   e   : energy (in,real)
@@ -50,6 +51,7 @@ subroutine rschrodint(m,l,e,np,nr,r,vr,nn,p0p,p0,p1,q0,q1)
 !BOC
 implicit none
 ! arguments
+real(8), intent(in) :: sol
 integer, intent(in) :: m
 integer, intent(in) :: l
 real(8), intent(in) :: e
@@ -65,31 +67,31 @@ real(8), intent(out) :: q0(nr)
 real(8), intent(out) :: q1(nr)
 ! local variables
 integer ir,ir0,npl
-! fine-structure constant
-real(8), parameter :: alpha=1.d0/137.03599911d0
-real(8) rm,ri,t1,t2
+real(8) rm,ri,t1,t2,t3,t4
 ! automatic arrays
 real(8) c(np)
 ! external functions
 real(8) polynom
 external polynom
+t1=1.d0/(2.d0*sol**2)
+t2=dble(l*(l+1))/2.d0
 ! estimate r -> 0 boundary values
 q0(1)=0.d0
 p1(1)=1.d0
 q1(1)=0.d0
-rm=1.d0-0.5d0*(alpha**2)*vr(1)
-t1=dble(l*(l+1))/(2.d0*rm*r(1)**2)
+rm=1.d0-t1*vr(1)
+t3=t2/(rm*r(1)**2)
 p0(1)=r(1)*(p1(1)-2.d0*rm*q0(1))
-q0(1)=r(1)*((t1+vr(1)-e)*p0(1)-q1(1))
+q0(1)=r(1)*((t3+vr(1)-e)*p0(1)-q1(1))
 if (m.ne.0) then
   q1(1)=q1(1)-dble(m)*p0p(1)
 end if
 nn=0
 do ir=2,nr
-  rm=1.d0-0.5d0*(alpha**2)*vr(ir)
+  rm=1.d0-t1*vr(ir)
   ri=1.d0/r(ir)
-  t1=dble(l*(l+1))/(2.d0*rm*r(ir)**2)
-  t2=t1+vr(ir)-e
+  t3=t2/(rm*r(ir)**2)
+  t4=t3+vr(ir)-e
 ! predictor-corrector order
   npl=min(ir,np)
   ir0=ir-npl+1
@@ -100,7 +102,7 @@ do ir=2,nr
   q0(ir)=polynom(-1,npl,r(ir0),q1(ir0),c,r(ir))+q0(ir0)
 ! compute the derivatives
   p1(ir)=2.d0*rm*q0(ir)+p0(ir)*ri
-  q1(ir)=t2*p0(ir)-q0(ir)*ri
+  q1(ir)=t4*p0(ir)-q0(ir)*ri
   if (m.ne.0) then
     q1(ir)=q1(ir)-dble(m)*p0p(ir)
   end if
@@ -109,7 +111,7 @@ do ir=2,nr
   q0(ir)=polynom(-1,npl,r(ir0),q1(ir0),c,r(ir))+q0(ir0)
 ! compute the derivatives again
   p1(ir)=2.d0*rm*q0(ir)+p0(ir)*ri
-  q1(ir)=t2*p0(ir)-q0(ir)*ri
+  q1(ir)=t4*p0(ir)-q0(ir)*ri
   if (m.ne.0) then
     q1(ir)=q1(ir)-dble(m)*p0p(ir)
   end if
