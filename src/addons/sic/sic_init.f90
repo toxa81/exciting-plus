@@ -3,14 +3,20 @@ use modmain
 use mod_lf
 implicit none
 integer i,j,ias,n
-integer i1,i2,i3,j1,j2,j3
-real(8) d
+integer i1,i2,i3,j1,j2,j3,is,ia,nt(3),ir0
+real(8) d,vr0c,r0
 logical l1
 real(8) v1(3),v2(3),v3(3)
 logical exist
+logical, external :: vrinmt
 
 call getnghbr(-0.1d0,wann_r_cutoff)
+if (allocated(vtl)) deallocate(vtl)
+allocate(vtl(3,maxvtl))
+vtl=-1000000
+ntr=0
 tlim=0
+
 do n=1,nwann
   ias=iwann(1,n)
   do j=1,nnghbr(ias)
@@ -20,13 +26,21 @@ do n=1,nwann
         tlim(1,i)=min(tlim(1,i),inghbr(2+i,j,ias))
         tlim(2,i)=max(tlim(2,i),inghbr(2+i,j,ias))
       enddo
+      l1=.true.
+      do i=1,ntr
+        if (all(vtl(:,i).eq.inghbr(3:5,j,ias))) l1=.false.
+      enddo !i
+      if (l1) then
+        ntr=ntr+1
+        if (ntr.gt.maxvtl) then
+          write(*,'("Error(sic_init) : maxvtl is too small")')
+          call pstop
+        endif
+        vtl(:,ntr)=inghbr(3:5,j,ias)
+      endif
     endif
   enddo !j
 enddo !n
-if (allocated(vtl)) deallocate(vtl)
-allocate(vtl(3,maxvtl))
-vtl=-10000
-ntr=0
 do n=1,nwann
   ias=iwann(1,n)
   do i1=tlim(1,1)-1,tlim(2,1)+1
@@ -42,7 +56,8 @@ do n=1,nwann
               v2(1)=dble(j1)/dble(ngrid(1))
               call r3mv(avec,v2,v3)
               v3(:)=v3(:)+v1(:)
-              if (sqrt(sum(v3(:)**2)).le.wann_r_cutoff) then
+              if (sqrt(sum(v3(:)**2)).le.wann_r_cutoff.and..not.&
+                  vrinmt(v3,is,ia,nt,vr0c,ir0,r0)) then
                 l1=.true.
                 do i=1,ntr
                   if (all(vtl(:,i).eq.(/i1,i2,i3/))) l1=.false.
