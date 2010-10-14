@@ -63,16 +63,12 @@ if (scissor.ne.0.d0) then
     if (evalsv(ist,ik).gt.efermi) evalsv(ist,ik)=evalsv(ist,ik)+scissor
   end do
 end if
-evalsv0(:,ik)=evalsv(:,ik)
 if (wannier) then
   call genwann(ikloc,evecfv,evecsv)
   if (wann_add_poco) then
     call wann_seceqn(ikloc,evecsv)
     call genwann(ikloc,evecfv,evecsv)
   endif
-endif
-if (sic) then
-  evecsv0loc(:,:,ikloc)=evecsv(:,:)
 endif
 deallocate(apwalm)
 return

@@ -7,27 +7,18 @@ integer i1,i2,i3,j1,j2,j3
 real(8) d
 logical l1
 real(8) v1(3),v2(3),v3(3)
+logical exist
 
 call getnghbr(-0.1d0,wann_r_cutoff)
-if (allocated(wann_r_nnghbr)) deallocate(wann_r_nnghbr)
-allocate(wann_r_nnghbr(natmtot))
-wann_r_nnghbr=nnghbr
-n=maxval(nnghbr)
-if (allocated(wann_r_inghbr)) deallocate(wann_r_inghbr)
-allocate(wann_r_inghbr(5,n,natmtot))
-do i=1,natmtot
-  wann_r_inghbr(1:5,1:nnghbr(i),i)=inghbr(1:5,1:nnghbr(i),i)
-enddo
-
 tlim=0
 do n=1,nwann
   ias=iwann(1,n)
-  do j=1,wann_r_nnghbr(ias)
-    d=wann_r_inghbr(2,j,ias)/1000000.d0
+  do j=1,nnghbr(ias)
+    d=inghbr(2,j,ias)/1000000.d0
     if (d.le.wann_r_cutoff) then
       do i=1,3
-        tlim(1,i)=min(tlim(1,i),wann_r_inghbr(2+i,j,ias))
-        tlim(2,i)=max(tlim(2,i),wann_r_inghbr(2+i,j,ias))
+        tlim(1,i)=min(tlim(1,i),inghbr(2+i,j,ias))
+        tlim(2,i)=max(tlim(2,i),inghbr(2+i,j,ias))
       enddo
     endif
   enddo !j
@@ -87,9 +78,30 @@ ntrloc=mpi_grid_map(ntr,dim_t)
 sic_etot_correction=0.d0
 if (allocated(wvmt)) deallocate(wvmt)
 allocate(wvmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
+wvmt=zzero
 if (allocated(wvir)) deallocate(wvir)  
 allocate(wvir(ngrtot,ntrloc,nspinor,nwann))
-if (allocated(hmltsv)) deallocate(hmltsv)
-allocate(hmltsv(nstsv,nstsv,nkptloc))
+wvir=zzero
+if (allocated(wanmt)) deallocate(wanmt)
+allocate(wanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
+wanmt=zzero
+if (allocated(wanir)) deallocate(wanir)
+allocate(wanir(ngrtot,ntrloc,nspinor,nwann))
+wanir=zzero
+if (allocated(sic_wann_e0)) deallocate(sic_wann_e0)
+allocate(sic_wann_e0(nwann))
+sic_wann_e0=0.d0
+inquire(file="SIC_WANN_E0.OUT",exist=exist)
+if (exist) then
+  open(170,file="SIC_WANN_E0.OUT",form="FORMATTED",status="OLD")
+  do n=1,nwann
+    read(170,*)sic_wann_e0(n)
+  enddo
+  close(170)
+endif
+if (allocated(sic_wann_h0k)) deallocate(sic_wann_h0k)
+allocate(sic_wann_h0k(nwann,nwann,nkptloc))
+sic_wann_h0k=zzero
+tevecsv=.true.
 return
 end

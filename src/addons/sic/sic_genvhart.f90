@@ -100,30 +100,6 @@ do n=1,nwann
       dims=(/dim_k/),all=.true.)
     call mpi_grid_reduce(vhwanir(1,itloc,1,n),ngrtot,dims=(/dim_k/),&
       all=.true.)
-! cutoff
-!    itr=mpi_grid_map(ntr,dim_t,loc=itloc)
-!    vtrc(:)=vtl(1,itr)*avec(:,1)+vtl(2,itr)*avec(:,2)+vtl(3,itr)*avec(:,3)
-!    jas=iwann(1,n)
-!    do ias=1,natmtot  
-!      v2(:)=atposc(:,ias2ia(ias),ias2is(ias))+vtrc(:)-&
-!        atposc(:,ias2ia(jas),ias2is(jas))
-!      if (sqrt(sum(v2(:)**2)).ge.wann_r_cutoff) &
-!        vhwanmt(:,:,ias,itloc,n)=zzero
-!    enddo
-!    ir=0
-!    do i3=0,ngrid(3)-1
-!      v2(3)=dble(i3)/dble(ngrid(3))
-!      do i2=0,ngrid(2)-1
-!        v2(2)=dble(i2)/dble(ngrid(2))
-!        do i1=0,ngrid(1)-1
-!          v2(1)=dble(i1)/dble(ngrid(1))
-!          ir=ir+1
-!          call r3mv(avec,v2,v3)
-!          v3(:)=v3(:)+vtrc(:)-atposc(:,ias2ia(jas),ias2is(jas))
-!          if (sqrt(sum(v3(:)**2)).gt.wann_r_cutoff) vhwanir(ir,itloc,n)=zzero
-!        enddo
-!      enddo
-!    enddo
   enddo !itloc
 enddo
 vhwanmt=vhwanmt/nkptnr/omega

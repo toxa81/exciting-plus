@@ -6,22 +6,22 @@ use modxcifc
 use mod_addons_q
 use mod_hdf5
 implicit none
-integer n,sz,i,j,n1,ispn,itr,itloc
-real(8) t1,t2
+integer n,sz,i,j,n1,ispn,itr,itloc,vtrl(3),ir
+real(8) t1,t2,vtrc(3)
 integer v1l(3)
 ! potential (Hartree+XC) of Wannier function charge density
 real(8), allocatable :: vhxcmt(:,:,:,:,:,:)
 real(8), allocatable :: vhxcir(:,:,:,:)
 ! Wannier functions
-complex(8), allocatable :: wanmt(:,:,:,:,:,:)
-complex(8), allocatable :: wanir(:,:,:,:)
 complex(8), allocatable :: wanmt0(:,:,:,:,:)
 complex(8), allocatable :: wanir0(:,:,:)
 complex(8), allocatable :: vwanme_old(:)
 complex(8), allocatable :: ehart(:),exc(:)
+complex(8), allocatable :: vwank(:,:)
 complex(8) z1
 complex(8), allocatable :: norm(:)
 logical exist
+integer n2,ik
 
 ! mpi grid layout
 !          (2)
@@ -33,6 +33,8 @@ logical exist
 !     |    |    |
 !     v
 !  k-points
+
+sic=.true.
 
 ! initialise universal variables
 call init0
@@ -106,15 +108,13 @@ enddo
 !-------------------!
 ! Wannier functions !
 !-------------------!
-allocate(wanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
-allocate(wanir(ngrtot,ntrloc,nspinor,nwann))
-! generate Wannier functions on a mesh
 call timer_reset(1)
 call timer_reset(2)
 allocate(wanmt0(lmmaxvr,nrmtmax,natmtot,nspinor,nwann))
 allocate(wanir0(ngrtot,nspinor,nwann))
 do itloc=1,ntrloc
   itr=mpi_grid_map(ntr,dim_t,loc=itloc)
+! generate Wannier functions on a mesh
   call sic_genwann(vtl(1,itr),ngknr,igkignr,wanmt0,wanir0)
   do ispn=1,nspinor
     do n=1,nwann
@@ -132,7 +132,7 @@ if (wproc) then
   write(151,'("Wann IT part : ",F8.3)')timer_get_value(2)
   call flushifc(151)
 endif
-allocate(norm(nwann))
+allocate(norm(nmegqwan))
 ! check orthonormality
 t1=0.d0
 t2=0.d0
@@ -145,19 +145,14 @@ do i=1,nmegqwan
     z1=z1+lf_dot_lf(.true.,wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n),v1l,&
       wanmt(1,1,1,1,ispn,n1),wanir(1,1,ispn,n1))
   enddo
+  norm(i)=z1
   if (n.eq.n1.and.v1l(1).eq.0.and.v1l(2).eq.0.and.v1l(3).eq.0) then
-    norm(n)=z1
     z1=z1-zone
   endif
   t2=max(t2,abs(z1))
   t1=t1+abs(z1)
 enddo
 if (wproc) then
-  write(151,*)
-  do n=1,nwann
-    write(151,'("n : ",I4,"   norm : ",2G18.10)')n,dreal(norm(n)),&
-      dimag(norm(n))
-  enddo
   write(151,*)
   write(151,'("Maximum deviation from norm : ",F12.6)')t2
   write(151,'("Average deviation from norm : ",F12.6)')t1/nmegqwan
@@ -166,7 +161,6 @@ endif
 if (wproc) then
   call timestamp(151,'done with Wannier functions')
 endif
-deallocate(norm)
 !------------------------------!
 ! Hartree energy <W_n|V^H|W_n> !
 !------------------------------!
@@ -185,7 +179,7 @@ enddo
 allocate(exc(nwann))
 exc=zzero
 call timer_start(12,reset=.true.)
-call sic_genvxc(wanmt,wanir,vhxcmt,vhxcir,exc)
+call sic_genvxc(vhxcmt,vhxcir,exc)
 call timer_stop(12)
 if (wproc) then
   write(151,'("time for XC potential : ",F8.3)')timer_get_value(12)
@@ -231,6 +225,9 @@ do i=1,nmegqwan
   do ispn=1,nspinor    
     vwanme(i)=vwanme(i)+lf_dot_lf(.true.,wvmt(1,1,1,1,ispn,n),wvir(1,1,ispn,n),&
       v1l,wanmt(1,1,1,1,ispn,n1),wanir(1,1,ispn,n1))
+    !vwanme(i)=vwanme(i)+lf_intgr_zdz(wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n),&
+    !  vhxcmt(1,1,1,1,ispn,n),vhxcir(1,1,ispn,n),v1l,wanmt(1,1,1,1,ispn,n1),&
+    !  wanir(1,1,ispn,n1))
   enddo
 enddo
 if (wproc) then
@@ -271,6 +268,39 @@ if (wproc) then
   call flushifc(151)
 endif
 if (wproc) then
+  write(151,*)
+  write(151,'("Wannier overlap integrals (n n1  T  <w_n|w_{n1,T}>)")')
+  do i=1,nmegqwan
+    write(151,'(I4,4X,I4,4X,3I3,4X,2G18.10)')imegqwan(:,i),&
+      dreal(norm(i)),dimag(norm(i))
+  enddo
+endif
+if (wproc) write(151,*)
+! check hermiticity of V_nn'(k)
+allocate(vwank(nwann,nwann))
+vwank=zzero
+do ik=1,nkpt
+  do i=1,nmegqwan
+    n1=imegqwan(1,i)
+    n2=imegqwan(2,i)
+    vtrl(:)=imegqwan(3:5,i)
+    vtrc(:)=vtrl(1)*avec(:,1)+vtrl(2)*avec(:,2)+vtrl(3)*avec(:,3)
+    z1=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
+    vwank(n1,n2)=vwank(n1,n2)+z1*vwanme(i)
+  enddo
+  t1=0.d0
+  do n1=1,nwann
+    do n2=1,nwann
+      t1=max(t1,abs(vwank(n1,n2)-dconjg(vwank(n2,n1))))
+    enddo
+  enddo
+  if (wproc) then
+    write(151,'("ik : ",I4,"   max.herm.err : ",G18.10 )')ik,t1
+  endif
+enddo
+deallocate(vwank)
+
+if (wproc) then
   inquire(file="sic.hdf5",exist=exist)
   if (exist) then
     allocate(vwanme_old(nmegqwan))
@@ -291,7 +321,7 @@ deallocate(vwanme)
 deallocate(ehart)
 deallocate(exc)
 deallocate(vhxcmt,vhxcir)
-deallocate(wanmt,wanir)
+deallocate(norm)
 return
 end
 

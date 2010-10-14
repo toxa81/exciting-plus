@@ -1,33 +1,32 @@
-subroutine sic_hunif(ikloc,wann_ufv,evecfv,evecsv)
+subroutine sic_hunif(ikloc,evecfv,hunif)
 use modmain
 use mod_lf
 use mod_hdf5
 ! arguments
 implicit none
 integer, intent(in) :: ikloc
-complex(8), intent(in) :: wann_ufv(nwann,nstfv,nspinor)
 complex(8), intent(in) :: evecfv(nmatmax,nstfv)
-complex(8), intent(inout) :: evecsv(nstsv,nstsv)
+complex(8), intent(inout) :: hunif(nstsv,nstsv)
 ! local variables
 logical exist
-complex(8), allocatable :: hunif(:,:)
-complex(8), allocatable :: work(:)
-real(8), allocatable :: rwork(:)
 real(8), allocatable :: vn(:)
-integer i,n,ik,j,lwork,i1,i2,info
+integer i,n,ik,i1,i2
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wfmt(:,:,:)
 complex(8), allocatable :: wfir(:)
-complex(8), allocatable :: hwank(:,:)
 complex(8), allocatable :: vwank(:,:)
-complex(8), allocatable :: wanvblh(:,:,:)
-
+complex(8), allocatable :: vwank_sym(:,:)
+complex(8), allocatable :: a(:,:,:)
+complex(8), allocatable :: b(:,:,:)
+complex(8), allocatable :: zm1(:,:)
 integer ias,ispn,ig,ir
 complex(8) expikt
 integer vtrl(3),n1,j1,j2,i3,ispn1,ispn2,jst1,jst2,ist,n2
 real(8) vtrc(3),v2(3),v3(3)
 complex(8) expikr
+real(8) t1
 real(8), parameter :: epsherm=1d-8
+!character*100 fname
 
 inquire(file="sic.hdf5",exist=exist)
 if (.not.exist) return
@@ -44,12 +43,16 @@ enddo
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 allocate(wfmt(lmmaxvr,nrmtmax,natmtot))
 allocate(wfir(ngrtot))
-allocate(wanvblh(nwann,nstfv,nspinor))
-wanvblh=zzero
+allocate(a(nwann,nstfv,nspinor))
+allocate(b(nwann,nstfv,nspinor))
+
+a=zzero
+b=zzero
 ! get apw coeffs 
 call match(ngk(1,ik),gkc(:,1,ikloc),tpgkc(:,:,1,ikloc),sfacgk(:,:,1,ikloc),&
   apwalm)
-! compute <W_n|V_n|\phi_{jk}> where phi(r) is a firt-variational wave-function
+! compute a=<W_n|\phi_{jk}> and b=<W_n|V_n|\phi_{jk}> where phi(r) are firt-
+!  variational Bloch wave-functions
 do ist=1,nstfv
   wfmt=zzero
   wfir=zzero
@@ -78,25 +81,17 @@ do ist=1,nstfv
   enddo
   do n=1,nwann
     do ispn=1,nspinor
-      wanvblh(n,ist,ispn)=lf_dot_blh(.true.,vkc(1,ik),wvmt(1,1,1,1,ispn,n),&
+      a(n,ist,ispn)=lf_dot_blh(.true.,vkc(1,ik),wanmt(1,1,1,1,ispn,n),&
+        wanir(1,1,ispn,n),wfmt,wfir)
+      b(n,ist,ispn)=lf_dot_blh(.true.,vkc(1,ik),wvmt(1,1,1,1,ispn,n),&
         wvir(1,1,ispn,n),wfmt,wfir)
     enddo
   enddo
 enddo !ist
 deallocate(apwalm,wfmt,wfir)
-! compute H_{nn'}(k)
-allocate(hwank(nwann,nwann))
-hwank=zzero
-do n1=1,nwann
-  do n2=1,nwann
-    do j=1,nstsv
-      hwank(n1,n2)=hwank(n1,n2)+&
-        dconjg(wann_c(n1,j,ikloc))*wann_c(n2,j,ikloc)*evalsv0(j,ik)
-    enddo
-  enddo
-enddo
 ! compute V_{nn'}(k)
 allocate(vwank(nwann,nwann))
+allocate(vwank_sym(nwann,nwann))
 vwank=zzero
 do i=1,nmegqwan
   n1=imegqwan(1,i)
@@ -106,112 +101,88 @@ do i=1,nmegqwan
   expikt=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
   vwank(n1,n2)=vwank(n1,n2)+expikt*vwanme(i)
 enddo
+! symmetrize the matrix
+do n1=1,nwann
+  do n2=1,nwann
+    vwank_sym(n1,n2)=0.5d0*(vwank(n1,n2)+dconjg(vwank(n2,n1)))
+  enddo
+enddo
+! compute H_{nn'}^{0}(k); remember that on entrance hunif=H0
+allocate(zm1(nwann,nstsv))
+call zgemm('N','N',nwann,nstsv,nstsv,zone,a,nwann,hunif,nstsv,zzero,zm1,nwann)
+call zgemm('N','C',nwann,nwann,nstsv,zone,zm1,nwann,a,nwann,zzero,&
+  sic_wann_h0k(1,1,ikloc),nwann)
+deallocate(zm1)
 
 !if (mpi_grid_root((/dim2/))) then
-!  write(fname,'("wvp_n",I2.2,"_k",I4.4".txt")')nproc,ik
-!  call wrmtrx(fname,nwann,nstsv,wvp,nwann)
-!  write(fname,'("hwank_n",I2.2,"_k",I4.4".txt")')nproc,ik
-!  call wrmtrx(fname,nwann,nwann,hwank,nwann)
-!  write(fname,'("vwank_n",I2.2,"_k",I4.4".txt")')nproc,ik
-!  call wrmtrx(fname,nwann,nwann,vwank,nwann)
+!  write(fname,'("h0_n",I2.2,"_k",I4.4".txt")')nproc,ik
+!  call wrmtrx(fname,nstsv,nstsv,hunif,nstsv)
+!  write(fname,'("sic_wann_h0k_n",I2.2,"_k",I4.4".txt")')nproc,ik
+!  call wrmtrx(fname,nwann,nwann,sic_wann_h0k,nwann)
 !endif
 
 ! setup unified Hamiltonian
-allocate(hunif(nstsv,nstsv))
 ! 1-st term: LDA Hamiltonian itself
-hunif=hmltsv(:,:,ikloc)
 do j1=1,nstfv
-do ispn1=1,nspinor
-  jst1=j1+(ispn1-1)*nstfv
-  do j2=1,nstfv
-  do ispn2=1,nspinor
-    jst2=j2+(ispn2-1)*nstfv
-! 2-nd term : -\sum'_{\alpha,\alpha'} P_{\alpha} H^{LDA} P_{\alpha'} = 
-!   -\sum_{\alpha,\alpha'} P_{\alpha} H^{LDA} P_{\alpha'} +   <-- take this
-!   +\sum_{\alpha} P_{\alpha} H^{LDA} P_{\alpha}
-    do n1=1,nwann
-      do n2=1,nwann
-       ! hunif(jst1,jst2)=hunif(jst1,jst2)-hwank(n1,n2)*wann_ufv(n1,j1,ispn1)*&
-       !   dconjg(wann_ufv(n2,j2,ispn2))
-      enddo
-    enddo
-! 3-rd term : \sum_{alpha} P_{\alpha} V_{\alpha} P_{\alpha})
-!  plus 4-th term: diagonal energy matrix element E_n
-    do n=1,nwann
-      hunif(jst1,jst2)=hunif(jst1,jst2)+wann_ufv(n,j1,ispn1)*&
-        dconjg(wann_ufv(n,j2,ispn2))*(vn(n)) !+sic_wann_ene(n))
-    enddo
+  do ispn1=1,nspinor
+    jst1=j1+(ispn1-1)*nstfv
+    do j2=1,nstfv
+      do ispn2=1,nspinor
+        jst2=j2+(ispn2-1)*nstfv
+! 2-nd term : -\sum_{\alpha,\alpha'} P_{\alpha} H^{LDA} P_{\alpha'}
+        do n1=1,nwann
+          do n2=1,nwann
+            hunif(jst1,jst2)=hunif(jst1,jst2)-sic_wann_h0k(n1,n2,ikloc)*&
+              dconjg(a(n1,j1,ispn1))*a(n2,j2,ispn2)
+          enddo
+        enddo
+! 3-rd term : \sum_{alpha} P_{\alpha} H^{LDA} P_{\alpha}
+! 4-th term : \sum_{alpha} P_{\alpha} V_{\alpha} P_{\alpha}
+        do n=1,nwann
+          hunif(jst1,jst2)=hunif(jst1,jst2)+dconjg(a(n,j1,ispn1))*&
+            a(n,j2,ispn2)*(vn(n)+sic_wann_e0(n))
+        enddo
 ! 5-th term : \sum_{\alpha} P_{\alpha} V_{\alpha} Q + 
-!                       \sum_{\alpha} Q V_{\alpha} P_{\alpha} 
-!   where Q=1-\sum_{\alpha'}P_{\alpha'}
-    do n=1,nwann
-     ! hunif(jst1,jst2)=hunif(jst1,jst2)+&
-     !   wann_ufv(n,j1,ispn1)*wanvblh(n,j2,ispn2)+&
-     !   dconjg(wanvblh(n,j1,ispn1)*wann_ufv(n,j2,ispn2))
-    enddo
-    do n1=1,nwann
-      do n2=1,nwann
-      !  hunif(jst1,jst2)=hunif(jst1,jst2)-&
-      !    vwank(n1,n2)*wann_ufv(n1,j1,ispn1)*dconjg(wann_ufv(n2,j2,ispn2))-&
-      !    dconjg(vwank(n1,n2))*wann_ufv(n2,j1,ispn1)*dconjg(wann_ufv(n1,j2,ispn2))
-      enddo
-    enddo
-  enddo !ispn2
-  enddo !j2
-enddo !ispn1
+!             \sum_{\alpha} Q V_{\alpha} P_{\alpha} 
+!  where Q=1-\sum_{\alpha'}P_{\alpha'}
+        do n=1,nwann
+          hunif(jst1,jst2)=hunif(jst1,jst2)+&
+            dconjg(a(n,j1,ispn1))*b(n,j2,ispn2)+&
+            dconjg(b(n,j1,ispn1))*a(n,j2,ispn2)
+        enddo
+        do n1=1,nwann
+          do n2=1,nwann
+            hunif(jst1,jst2)=hunif(jst1,jst2)-&
+              vwank_sym(n1,n2)*dconjg(a(n1,j1,ispn1))*a(n2,j2,ispn2)-&
+              dconjg(vwank_sym(n1,n2))*dconjg(a(n2,j1,ispn1))*a(n1,j2,ispn2)
+          enddo
+        enddo
+      enddo !ispn2
+    enddo !j2
+  enddo !ispn1
 enddo !j1
 
-if (mpi_grid_root((/dim2/))) then! check hermiticity
+!if (mpi_grid_root((/dim2/))) then
+!  write(fname,'("hunif_n",I2.2,"_k",I4.4".txt")')nproc,ik
+!  call wrmtrx(fname,nstsv,nstsv,hunif,nstsv)
+!endif
+
+! check hermiticity
+if (mpi_grid_root((/dim2/))) then  
   do j1=1,nstsv
     do j2=1,nstsv
-      if (abs(hunif(j1,j2)-dconjg(hunif(j2,j1))).gt.epsherm) then
+      t1=abs(hunif(j1,j2)-dconjg(hunif(j2,j1)))
+      if (t1.gt.epsherm) then
         write(*,*)
-        write(*,'("Warning(sic_seceqn) : unified Hamiltonian is not hermitian")')
+        write(*,'("Warning(sic_hunif) : unified Hamiltonian is not hermitian")')
+        write(*,'("  k-point : ",I4)')ik
+        write(*,'("  j1, j2, diff : ",2I4,G18.10)')j1,j2,t1
       endif
     enddo
   enddo
 endif
-
-if (mpi_grid_root((/dim2/))) then
-  lwork=2*nstsv
-  allocate(rwork(3*nstsv))
-  allocate(work(lwork))
-  if (ndmag.eq.1) then
-! collinear: block diagonalise H
-    call zheev('V','U',nstfv,hunif(1,1),nstsv,evalsv(1,ik),work,lwork,rwork,info)
-    if (info.ne.0) goto 20
-    i=nstfv+1
-    call zheev('V','U',nstfv,hunif(i,i),nstsv,evalsv(i,ik),work,lwork,rwork,info)
-    if (info.ne.0) goto 20
-    do i=1,nstfv
-      do j=1,nstfv
-        hunif(i,j+nstfv)=0.d0
-        hunif(i+nstfv,j)=0.d0
-      end do
-    end do
-  else
-! non-collinear or spin-unpolarised: full diagonalisation
-    call zheev('V','U',nstsv,hunif,nstsv,evalsv(1,ik),work,lwork,rwork,info)
-    if (info.ne.0) goto 20
-  endif
-  evecsv=hunif
-  deallocate(rwork)
-  deallocate(work)
-endif
-call mpi_grid_bcast(evecsv(1,1),nstsv*nstsv,dims=(/dim2/))
-call mpi_grid_bcast(evalsv(1,ik),nstsv,dims=(/dim2/))
-deallocate(hunif)
 deallocate(vn)
-deallocate(wanvblh)
-deallocate(hwank)
-deallocate(vwank)
+deallocate(a,b)
+deallocate(vwank,vwank_sym)
 return
-20 continue
-write(*,*)
-write(*,'("Error(sic_seceqn): diagonalisation of the second-variational &
- &Hamiltonian failed")')
-write(*,'(" for k-point ",I8)') ik
-write(*,'(" ZHEEV returned INFO = ",I8)') info
-write(*,*)
-call pstop
 end

@@ -83,11 +83,6 @@ integer, parameter :: dim_k=1
 ! auxiliary dimension for fine parallelization 
 integer, parameter :: dim2=2
 
-! lda second-variational eigen-values
-real(8), allocatable :: evalsv0(:,:)
-! lda second-variational eigen-vectors
-complex(8), allocatable :: evecsv0loc(:,:,:)
-
 !-------------------------!
 !     Linear response     !
 !-------------------------!
@@ -166,7 +161,6 @@ integer, allocatable :: imegqblhwan(:,:)
 complex(8), allocatable :: wann_c_jk(:,:,:)
 complex(8), allocatable :: wann_cc(:,:,:)
 complex(8), allocatable :: wann_cc2(:,:)
-
 
 integer ngntujumax
 integer, allocatable :: ngntuju(:,:)
@@ -341,20 +335,22 @@ data sic/.false./
 ! product of a Wannier function with it's potential
 complex(8), allocatable :: wvmt(:,:,:,:,:,:)
 complex(8), allocatable :: wvir(:,:,:,:)
+! Wannier functions
+complex(8), allocatable :: wanmt(:,:,:,:,:,:)
+complex(8), allocatable :: wanir(:,:,:,:)
 ! matrix elements of Wannier potential <W_{n0}|V_{n0}|W_{n'T}>
 complex(8), allocatable :: vwanme(:)
-real(8), allocatable :: sic_wann_ene(:)
-complex(8), allocatable :: hmltsv(:,:,:)
-integer nitersic
-integer iitersic
+! LDA Hamiltonian in k-space in Wannier basis 
+complex(8), allocatable :: sic_wann_h0k(:,:,:)
+! LDA energies of Wannier functions
+real(8), allocatable :: sic_wann_e0(:)
+integer nsclsic
+data nsclsic/3/
+integer isclsic
 real(8) sic_etot_correction
 data sic_etot_correction/0.d0/
-real(8) engytot0
-
 real(8) wann_r_cutoff
 data wann_r_cutoff/6.0/
-integer, allocatable :: wann_r_nnghbr(:)
-integer, allocatable :: wann_r_inghbr(:,:,:)
 
 !--------------!
 !      PAPI    !

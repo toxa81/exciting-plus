@@ -274,9 +274,10 @@ if (wannier) then
   call mpi_grid_reduce(wann_occ(1),nwann,dims=(/dim_k/),all=.true.)
   call mpi_grid_reduce(wann_ene(1),nwann,dims=(/dim_k/),all=.true.)
   if (wproc.and.fout.gt.0) then
-    write(fout,'("  Wannier function occupation numbers : ")')
+    write(fout,'("  Wannier function occupancy and energy : ")')
     do n=1,nwann
-      write(fout,'("    n : ",I4,"  occ : ",F8.6)')n,wann_occ(n)
+      write(fout,'("    n : ",I4,"  occ, ene : ",F8.6,2X,G18.10)')n,&
+        wann_occ(n),wann_ene(n)
     enddo
   endif
   call timer_stop(1)

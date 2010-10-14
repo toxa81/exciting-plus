@@ -3,10 +3,11 @@ use modmain
 implicit none
 character*3 c3
 
-do iitersic=1,nitersic
-  write(c3,'(I3.3)')iitersic
+sic=.true.
+do isclsic=1,nsclsic
+  write(c3,'(I3.3)')isclsic
   if (mpi_grid_root()) then
-    write(*,'("SIC iteration : ",I4)')iitersic
+    write(*,'("SIC iteration : ",I4)')isclsic
   endif
   call gndstate
   call mpi_world_barrier

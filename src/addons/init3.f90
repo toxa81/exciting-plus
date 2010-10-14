@@ -42,8 +42,6 @@ do l=0,50
 end do
 if (wannier) call wann_init
 if (.not.wannier) sic=.false.
-if (allocated(evalsv0)) deallocate(evalsv0)
-allocate(evalsv0(nstsv,nkpt))
 if (sic) call sic_init
 return
 end

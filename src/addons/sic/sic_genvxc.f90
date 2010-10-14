@@ -1,10 +1,8 @@
-subroutine sic_genvxc(wanmt,wanir,vhxcmt,vhxcir,exc)
+subroutine sic_genvxc(vhxcmt,vhxcir,exc)
 use modmain
 use mod_lf
 use modxcifc
 implicit none
-complex(8), intent(in) :: wanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann)
-complex(8), intent(in) :: wanir(ngrtot,ntrloc,nspinor,nwann)
 real(8), intent(out) :: vhxcmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann)
 real(8), intent(out) :: vhxcir(ngrtot,ntrloc,nspinor,nwann)
 complex(8), intent(out) :: exc(nwann)

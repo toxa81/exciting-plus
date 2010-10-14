@@ -18,9 +18,6 @@ if (allocated(vwanme)) deallocate(vwanme)
 allocate(vwanme(nmegqwan))
 call hdf5_read("sic.hdf5","/","vwanme",vwanme(1),(/nmegqwan/))
 call hdf5_read("sic.hdf5","/","sic_etot_correction",sic_etot_correction)
-if (allocated(sic_wann_ene)) deallocate(sic_wann_ene)
-allocate(sic_wann_ene(nwann))
-call hdf5_read("sic.hdf5","/","wann_ene",sic_wann_ene(1),(/nwann/))
 
 if (mpi_grid_side(dims=(/dim_t/))) then
   do itloc=1,ntrloc
@@ -36,6 +33,10 @@ if (mpi_grid_side(dims=(/dim_t/))) then
           (/lmmaxvr,nrmtmax,natmtot/))
         call hdf5_read("sic.hdf5",path,"wvir",wvir(1,itloc,ispn,n),&
           (/ngrtot/))
+       call hdf5_read("sic.hdf5",path,"wanmt",wanmt(1,1,1,itloc,ispn,n),&
+          (/lmmaxvr,nrmtmax,natmtot/))
+        call hdf5_read("sic.hdf5",path,"wanir",wanir(1,itloc,ispn,n),&
+          (/ngrtot/))
       enddo
     enddo
   enddo
@@ -46,6 +47,9 @@ do itloc=1,ntrloc
       call mpi_grid_bcast(wvmt(1,1,1,itloc,ispn,n),lmmaxvr*nrmtmax*natmtot, &
         dims=(/dim_k/))
       call mpi_grid_bcast(wvir(1,itloc,ispn,n),ngrtot,dims=(/dim_k/))
+      call mpi_grid_bcast(wanmt(1,1,1,itloc,ispn,n),lmmaxvr*nrmtmax*natmtot, &
+        dims=(/dim_k/))
+      call mpi_grid_bcast(wanir(1,itloc,ispn,n),ngrtot,dims=(/dim_k/))
     enddo
   enddo
 enddo

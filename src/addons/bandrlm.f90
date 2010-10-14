@@ -65,15 +65,10 @@ call genbeffmt
 call getufr
 ! get product of radial functions
 call genufrp  
+if (sic) call sic_readvwan
 ! begin parallel loop over k-points
-if (sic) then
-  if (allocated(evecsv0loc)) deallocate(evecsv0loc)
-  allocate(evecsv0loc(nstsv,nstsv,nkptloc))
-  call sic_readvwan
-endif
 bc=0.d0
 evalsv=0.d0
-evalsv0=0.d0
 do ikloc=1,nkptloc
   ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
   write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ik,nkpt
@@ -84,6 +79,7 @@ do ikloc=1,nkptloc
     call genwann_h(.true.,evalsv(1,ik),wann_c(1,1,ikloc),&
       wann_h(1,1,ik),wann_e(1,ik))
   endif
+!  call diagzhe(nwann,sic_wann_h0k(1,1,ikloc),wann_e(1,ik))
 ! compute the band characters if required
   call bandchar(.true.,lmax,ikloc,evecfv,evecsv,lmmax,bc(1,1,1,1,ik))
 ! end loop over k-points
