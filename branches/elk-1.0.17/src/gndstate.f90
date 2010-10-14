@@ -26,10 +26,10 @@ implicit none
 logical exist
 integer ik,is,ia,idm,i,ikloc
 integer n,nwork
-real(8) dv,dv_sic,etp,de,timetot
+real(8) dv,etp,de,timetot
 ! allocatable arrays
-real(8), allocatable :: v(:),v_sic(:)
-real(8), allocatable :: work(:),work_sic(:)
+real(8), allocatable :: v(:)
+real(8), allocatable :: work(:)
 real(8), allocatable :: evalfv(:,:,:)
 ! require forces for structural optimisation
 if ((task.eq.2).or.(task.eq.3)) tforce=.true.
@@ -43,10 +43,6 @@ wproc=mpi_grid_root()
 allocate(evalfv(nstfv,nspnfv,nkptloc))
 allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
 allocate(evecsvloc(nstsv,nstsv,nkptloc))
-if (sic) then
-  if (allocated(evecsv0loc)) deallocate(evecsv0loc)
-  allocate(evecsv0loc(nstsv,nstsv,nkptloc))
-endif
 ! initialise OEP variables if required
 if (xctype(1).lt.0) call init2
 if (wproc) then
@@ -109,12 +105,10 @@ if (spinpol) n=n*(1+ndmag)
 if (ldapu.ne.0) n=n+2*lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot
 ! allocate mixing arrays
 allocate(v(n))
-if (sic) allocate(v_sic(n))
 ! determine the size of the mixer work array
 nwork=-1
 call mixerifc(mixtype,n,v,dv,nwork,v)
 allocate(work(nwork))
-if (sic) allocate(work_sic(nwork))
 ! set stop flag
 tstop=.false.
 10 continue
@@ -189,14 +183,12 @@ do iscl=1,maxscl
   call genbeffmt
 ! begin parallel loop over k-points
   evalsv=0.d0
-  evalsv0=0.d0
   do ikloc=1,nkptloc
 ! solve the first- and second-variational secular equations
     call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
       evecsvloc(1,1,ikloc))
   end do  
   call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),all=.true.)
-  call mpi_grid_reduce(evalsv0(1,1),nstsv*nkpt,dims=(/dim_k/),all=.true.)
   if (wproc) then
 ! find the occupation numbers and Fermi energy
     call occupy
@@ -212,6 +204,7 @@ do iscl=1,maxscl
   call mpi_grid_bcast(swidth,dims=(/dim_k,dim2/))
   call mpi_grid_bcast(occsv(1,1),nstsv*nkpt,dims=(/dim_k,dim2/))
   if (wannier) call wann_ene_occ  
+  if (sic) call sic_e0
 ! set the charge density and magnetisation to zero
   rhomt(:,:,:)=0.d0
   rhoir(:)=0.d0
@@ -294,14 +287,6 @@ do iscl=1,maxscl
   end if
 ! compute the energy components
   call energy
-! now we have LDA energy
-  engytot0=engytot
-  if (sic) then
-! self-interation corrected total energy
-    engytot=engytot+sic_etot_correction
-! self-interation corrected charge density and effective potential
-    call sic_seceqn(n,v_sic,nwork,work_sic,dv_sic)
-  endif
 ! output energy components
   if (wproc) then
     call writeengy(60)
@@ -443,15 +428,10 @@ if (mpi_grid_side(dims=(/dim_k/))) then
       do ikloc=1,nkptloc
         ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
         call putevalfv(ik,evalfv(1,1,ikloc))
-        if (sic) then
-          call putevalsv(ik,evalsv0(1,ik))
-          call putevecsv(ik,evecsv0loc(1,1,ikloc))
-        else
-          call putevalsv(ik,evalsv(1,ik))
-          call putevecsv(ik,evecsvloc(1,1,ikloc))
-        endif
-        call putevecfv(ik,evecfvloc(1,1,1,ikloc))
+        call putevalsv(ik,evalsv(1,ik))
         call putoccsv(ik,occsv(1,ik))
+        call putevecfv(ik,evecfvloc(1,1,1,ikloc))
+        call putevecsv(ik,evecsvloc(1,1,ikloc))
       end do
     end if
     call mpi_grid_barrier(dims=(/dim_k/))
@@ -550,9 +530,6 @@ deallocate(v,work)
 deallocate(evalfv)
 deallocate(evecfvloc)
 deallocate(evecsvloc)
-if (sic) then
-  deallocate(evecsv0loc)
-endif
 return
 end subroutine
 !EOC

@@ -117,13 +117,6 @@ if (allocated(wann_c)) deallocate(wann_c)
 allocate(wann_c(nwann,nstsv,nkptloc))
 wann_c=zzero
 
-!if (allocated(wann_unkmt)) deallocate(wann_unkmt)
-!allocate(wann_unkmt(lmmaxvr,nrfmax,natmtot,nspinor,nwann,nkptloc))
-!wann_unkmt=zzero
-!if (allocated(wann_unkit)) deallocate(wann_unkit)
-!allocate(wann_unkit(ngkmax,nspinor,nwann,nkptloc))
-!wann_unkit=zzero
-
 if (allocated(wann_h)) deallocate(wann_h)
 allocate(wann_h(nwann,nwann,nkpt))
 wann_h=zzero

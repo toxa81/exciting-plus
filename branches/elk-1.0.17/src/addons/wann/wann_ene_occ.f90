@@ -69,7 +69,7 @@ do n1=1,nwann
             z2*occsv(j,ik)*wkpt(ik)
           wann_ene_m(lm1,lm2,ispn1,ispn2,ias)=&
             wann_ene_m(lm1,lm2,ispn1,ispn2,ias)+&
-            z2*evalsv0(j,ik)*wkpt(ik)
+            z2*evalsv(j,ik)*wkpt(ik)
         enddo !j
       enddo !ikloc
     endif
