@@ -7,9 +7,12 @@ integer nw,size,ntr_uscrn,it,n,nwann,iw,iwloc,nwloc,i,j
 integer n1,n2
 real(8), allocatable :: w(:)
 complex(8), allocatable :: uscrn(:)
+complex(8), allocatable :: jscrn(:)
 
 complex(8), allocatable :: uscrn_(:,:,:)
+complex(8), allocatable :: jscrn_(:,:,:)
 complex(8), allocatable :: uscrn2_(:,:)
+complex(8), allocatable :: ujmtrx(:,:)
 complex(8) zf(2)
 real(8) t1,uavg
 character*10 c1,c2,c3,c4
@@ -17,7 +20,7 @@ character*8 c8
 logical exist
 real(8), parameter :: ha2ev = 27.21138386d0
 integer vtl_(3)
-integer nwann_
+integer nwann_,is1,is2
 integer, allocatable :: iwann_(:)
 integer nlist_
 integer, allocatable :: ilist_(:)
@@ -46,6 +49,8 @@ else if (trim(adjustl(str)).eq."list") then
   allocate(ilist_(nlist_))
   read(150,*)ilist_
 endif
+write(*,*)trim(adjustl(str))
+write(*,*)mode
 
 fname="uscrn0000.hdf"
 inquire(file=trim(fname),exist=exist)
@@ -60,6 +65,7 @@ if (exist) then
   call hdf5_read(fname,"/parameters","ngridk",ngridk(1),(/3/))  
   allocate(w(nw))
   allocate(uscrn(nmegqwan))
+  allocate(jscrn(nmegqwan))
   write(c1,'(I6)')ngridk(1)
   write(c2,'(I6)')ngridk(2)
   write(c3,'(I6)')ngridk(3)
@@ -69,7 +75,9 @@ if (exist) then
   if (mode.eq.0) then
     allocate(iwm(nwann_,nwann_)) 
     allocate(uscrn_(nwann_,nwann_,nw))
+    allocate(jscrn_(nwann_,nwann_,nw))
     uscrn_=dcmplx(0.d0,0.d0)
+    jscrn_=dcmplx(0.d0,0.d0)
   ! create i -> {nn'T} mapping
     do i=1,nmegqwan
       do n1=1,nwann_
@@ -92,14 +100,35 @@ if (exist) then
           call hdf5_read(fname,"/iwloc/"//c8,"iw",iw)
           call hdf5_read(fname,"/iwloc/"//c8,"w",w(iw))
           call hdf5_read(fname,"/iwloc/"//c8,"uscrn",uscrn(1),(/nmegqwan/))
+          call hdf5_read(fname,"/iwloc/"//c8,"jscrn",jscrn(1),(/nmegqwan/))
           do n1=1,nwann_
             do n2=1,nwann_
               uscrn_(n1,n2,iw)=uscrn(iwm(n1,n2))*ha2ev
+              jscrn_(n1,n2,iw)=jscrn(iwm(n1,n2))*ha2ev
             enddo
           enddo
         enddo
       endif
     enddo
+    
+    allocate(ujmtrx(2*nwann_,2*nwann_))
+    do is1=1,2
+      do is2=1,2
+        do i=1,nwann_
+          do j=1,nwann_
+	    if (is1.eq.is2) then
+	      ujmtrx((is1-1)*nwann_+i,(is2-1)*nwann_+j)=uscrn_(i,j,1)-jscrn_(i,j,1)
+	    else
+	      ujmtrx((is1-1)*nwann_+i,(is2-1)*nwann_+j)=uscrn_(i,j,1)
+	    endif
+	  enddo
+	enddo
+      enddo
+    enddo
+    do i=1,2*nwann_
+      write(*,'(255F12.6)')(dreal(ujmtrx(i,j)),j=1,2*nwann_)
+    enddo
+    deallocate(ujmtrx)
     
     open(150,file=trim(adjustl(fout)),status="REPLACE",form="FORMATTED")
     write(150,'("# Wannier functions : ",100I4)')iwann_
@@ -112,6 +141,16 @@ if (exist) then
     write(150,'("#  imag part")')
     do i=1,nwann_
       write(150,'("# ",100F12.6)')(dimag(uscrn_(i,j,1)),j=1,nwann_)
+    enddo
+    write(150,'("#")')    
+    write(150,'("# Screened J(w=0) matrix")')
+    write(150,'("#  real part")')
+    do i=1,nwann_
+      write(150,'("# ",100F12.6)')(dreal(jscrn_(i,j,1)),j=1,nwann_)
+    enddo
+    write(150,'("#  imag part")')
+    do i=1,nwann_
+      write(150,'("# ",100F12.6)')(dimag(jscrn_(i,j,1)),j=1,nwann_)
     enddo
     write(150,'("#")')
     write(150,'("# columns : ")')
@@ -183,7 +222,6 @@ if (exist) then
   endif
 endif
 call hdf5_finalize
-return
 end
 
 subroutine pstop
