@@ -70,5 +70,18 @@ do i=1,nmegqwan
   idxmegqwan(imegqwan(1,i),imegqwan(2,i),imegqwan(3,i),imegqwan(4,i),&
     imegqwan(5,i))=i
 enddo
+if (allocated(itmegqwan)) deallocate(itmegqwan)
+allocate(itmegqwan(3,nmegqwan))
+ntmegqwan=0
+do i=1,nmegqwan
+  l1=.true.
+  do j=1,ntmegqwan
+    if (all(itmegqwan(:,j).eq.imegqwan(3:5,i))) l1=.false.
+  enddo
+  if (l1) then
+    ntmegqwan=ntmegqwan+1
+    itmegqwan(:,ntmegqwan)=imegqwan(3:5,i)
+  endif
+enddo
 return
 end

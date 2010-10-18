@@ -183,9 +183,6 @@ do iw=1,lr_nw
     if (wannier_chi0_afm) chi0wan(:,:)=chi0wan(:,:)*2.d0
 ! processor j saves chi0wan to local array  
     if (mpi_grid_x(dim_k).eq.j) chi0wanloc(:,:,jwloc)=chi0wan(:,:)
-!    if (iw.eq.120.and..true.) then
-!      call chi0wan_diag(chi0wan)
-!    endif
     call timer_stop(3)
   endif !wannier_chi0_chi
   call timer_stop(10)

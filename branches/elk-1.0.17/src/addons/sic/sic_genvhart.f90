@@ -54,7 +54,7 @@ call init_q_gq
 !    call system("mkdir -p "//trim(qnm))
 !  enddo
 !endif
-! distribute q-vectors along 3-rd dimention
+! distribute q-vectors along 2-nd dimention
 nvqloc=mpi_grid_map(nvq,dim_q)
 allocate(megqwan1(nwann,ngqmax,nvq))
 megqwan1=zzero

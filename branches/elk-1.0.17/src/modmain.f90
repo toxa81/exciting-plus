@@ -719,6 +719,8 @@ real(8) wdos(2)
 logical dosocc
 ! dosmsum is .true. if the partial DOS is to be summed over m
 logical dosmsum
+! dosssum is .true. if the partial DOS is to be summed over spin 
+logical dosssum
 ! number of optical matrix components required
 integer noptcomp
 ! required optical matrix components

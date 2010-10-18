@@ -144,7 +144,9 @@ data megqwan_maxdist/0.1d0/
 integer nmegqwanmax
 integer nmegqwan
 integer megqwan_tlim(2,3)
+integer ntmegqwan
 integer, allocatable :: imegqwan(:,:)
+integer, allocatable :: itmegqwan(:,:)
 integer, allocatable :: idxmegqwan(:,:,:,:,:)
 complex(8), allocatable :: megqwan(:,:)
 logical :: all_wan_ibt
@@ -238,6 +240,7 @@ complex(8), allocatable :: f_response(:,:,:)
 complex(8), allocatable :: uscrnwan(:,:)
 complex(8), allocatable :: jscrnwan(:,:)
 complex(8), allocatable :: ubarewan(:)
+complex(8), allocatable :: u4(:,:,:,:)
 
 !------------------!
 !     Wannier      !

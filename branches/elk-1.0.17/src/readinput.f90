@@ -113,6 +113,7 @@ wdos(1)=-0.5d0
 wdos(2)=0.5d0
 dosocc=.false.
 dosmsum=.false.
+dosssum=.false.
 lmirep=.true.
 spinpol=.false.
 spinorb=.false.
@@ -569,6 +570,8 @@ case('dos')
 case('dosocc')
   read(50,*,err=20) dosocc
 case('dosmsum')
+  read(50,*,err=20) dosmsum
+case('dosssum')
   read(50,*,err=20) dosmsum
 case('lmirep')
   read(50,*,err=20) lmirep
