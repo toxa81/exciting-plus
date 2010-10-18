@@ -35,46 +35,59 @@ use modtest
 implicit none
 ! local variables
 logical tsqaz
-integer lmax,lmmax,l,m,lm
-integer ispn,jspn,is,ia,ias,ikloc
-integer ik,nsk(3),ist,iw
-real(8) dw,th,t1
-real(8) v1(3),v2(3),v3(3)
+integer lmax,lmmax
+integer l0,l1,l,m,lm
+integer is,ia,ias
+integer nsd,ispn,jspn
+integer ngknr(2),nsk(3)
+integer ik,jk,igk,ist,iw,ikloc
+real(8) dw,th,sps(2),vl(3),vc(3)
+real(8) v1(3),v2(3),v3(3),t1
 complex(8) su2(2,2),dm1(2,2),dm2(2,2)
 character(256) fname
 ! allocatable arrays
-real(8), allocatable :: e(:,:,:),f(:,:),w(:)
-real(8), allocatable :: g(:,:),gp(:),gpl(:)
-! low precision for band character array saves memory
+integer, allocatable :: igkignr(:,:)
+! low precision for band/spin character array saves memory
 real(4), allocatable :: bc(:,:,:,:,:)
+real(4), allocatable :: sc(:,:,:)
+real(8), allocatable :: vgklnr(:,:,:)
+real(8), allocatable :: vgkcnr(:,:,:)
+real(8), allocatable :: gkcnr(:,:),tpgkcnr(:,:,:)
+real(8), allocatable :: w(:),e(:,:,:),f(:,:)
+real(8), allocatable :: g(:),dt(:,:),dp(:,:,:)
 real(8), allocatable :: elm(:,:)
-complex(8), allocatable :: ulm(:,:,:)
-complex(8), allocatable :: a(:,:)
+complex(8), allocatable :: ulm(:,:,:),a(:,:)
 complex(8), allocatable :: dmat(:,:,:,:,:)
-complex(8), allocatable :: sdmat(:,:,:,:)
+complex(8), allocatable :: sdmat(:,:,:)
+complex(8), allocatable :: sfacgknr(:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:,:)
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
+! always use the second-variational states (avoids confusion for RDMFT)
+tevecsv=.true.
 ! initialise universal variables
 call init0
 call init1
 lmax=min(3,lmaxapw)
 lmmax=(lmax+1)**2
-! allocate local arrays
-allocate(e(nstsv,nkpt,nspinor))
-allocate(f(nstsv,nkpt))
-allocate(w(nwdos))
-allocate(g(nwdos,nspinor))
-allocate(gp(nwdos))
-if (dosmsum) allocate(gpl(nwdos))
-allocate(bc(lmmax,nspinor,natmtot,nstsv,nkpt))
+if (dosssum) then
+  nsd=1
+else
+  nsd=2
+end if
+if (dosmsum) then
+  l0=0; l1=lmax
+else
+  l0=1; l1=lmmax
+end if
+allocate(bc(lmmax,nspinor,natmtot,nstsv,nkptnrloc))
 bc=0.0
+allocate(sc(nspinor,nstsv,nkptnrloc))
+sc=0.0
 if (lmirep) then
   allocate(elm(lmmax,natmtot))
   allocate(ulm(lmmax,lmmax,natmtot))
 end if
-allocate(sdmat(nspinor,nspinor,nstsv,nkpt))
-sdmat=zzero
 ! read density and potentials from file
 call readstate
 ! read Fermi energy from file
@@ -85,6 +98,11 @@ call linengy
 call genapwfr
 ! generate the local-orbital radial functions
 call genlofr
+! get the eigenvalues and occupancies from file
+do ik=1,nkpt
+  call getevalsv(vkl(:,ik),evalsv(:,ik))
+  if (dosocc) call getoccsv(vkl(:,ik),occsv(:,ik))
+end do
 ! generate unitary matrices which convert the (l,m) basis into the irreducible
 ! representation basis of the symmetry group at each atomic site
 if (lmirep) call genlmirep(lmax,lmmax,elm,ulm)
@@ -111,33 +129,58 @@ else
   th=-acos(v1(3))
   call axangsu2(v3,th,su2)
 end if
+allocate(igkignr(ngkmax,nspnfv))
+allocate(vgklnr(3,ngkmax,nspnfv))
+allocate(vgkcnr(3,ngkmax,nspnfv))
+allocate(gkcnr(ngkmax,nspnfv))
+allocate(tpgkcnr(2,ngkmax,nspnfv))
+allocate(sfacgknr(ngkmax,natmtot,nspnfv))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
 allocate(evecfv(nmatmax,nstfv,nspnfv))
 allocate(evecsv(nstsv,nstsv))
 allocate(dmat(lmmax,lmmax,nspinor,nspinor,nstsv))
+allocate(sdmat(nspinor,nspinor,nstsv))
 allocate(a(lmmax,lmmax))
-evalsv=0.d0
-occsv=0.d0
 ! begin parallel loop over k-points
-do ikloc=1,nkptloc
-  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-! get the eigenvalues/vectors from file
-  call getevalsv(vkl(:,ik),evalsv(:,ik))
-  call getevecfv(vkl(:,ik),vgkl(:,:,:,ikloc),evecfv)
-  call getevecsv(vkl(:,ik),evecsv)
-! get the occupancies if required
-  if (dosocc) call getoccsv(vkl(:,ik),occsv(:,ik))
-! find the matching coefficients
+do ikloc=1,nkptnrloc
+  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+  write(*,*)'ik=',ik
+! loop over first-variational spins
   do ispn=1,nspnfv
-    call match(ngk(ispn,ik),gkc(:,ispn,ikloc),tpgkc(:,:,ispn,ikloc), &
-     sfacgk(:,:,ispn,ikloc),apwalm(:,:,:,:,ispn))
+    vl(:)=vklnr(:,ik)
+    vc(:)=vkcnr(:,ik)
+! spin-spiral case
+    if (spinsprl) then
+      if (ispn.eq.1) then
+        vl(:)=vl(:)+0.5d0*vqlss(:)
+        vc(:)=vc(:)+0.5d0*vqcss(:)
+      else
+        vl(:)=vl(:)-0.5d0*vqlss(:)
+        vc(:)=vc(:)-0.5d0*vqcss(:)
+      end if
+    end if
+! generate the G+k vectors
+    call gengpvec(vl,vc,ngknr(ispn),igkignr(:,ispn),vgklnr(:,:,ispn), &
+     vgkcnr(:,:,ispn),gkcnr(1,ispn),tpgkcnr(1,1,ispn))
+! generate the spherical coordinates of the G+k vectors
+    do igk=1,ngknr(ispn)
+      call sphcrd(vgkcnr(:,igk,ispn),gkcnr(igk,ispn),tpgkcnr(:,igk,ispn))
+    end do
+! generate structure factors for G+k vectors
+    call gensfacgp(ngknr(ispn),vgkcnr(:,:,ispn),ngkmax,sfacgknr(:,:,ispn))
+! find the matching coefficients
+    call match(ngknr(ispn),gkcnr(:,ispn),tpgkcnr(:,:,ispn),sfacgknr(:,:,ispn), &
+     apwalm(:,:,:,:,ispn))
   end do
+! get the eigenvectors from file for non-reduced k-point
+  call getevecfv(vklnr(:,ik),vgklnr,evecfv)
+  call getevecsv(vklnr(:,ik),evecsv)
   do is=1,nspecies
     do ia=1,natoms(is)
       ias=idxas(ia,is)
 ! generate the density matrix
-      call gendmat(.false.,.false.,0,lmax,is,ia,ngk(:,ik),apwalm,evecfv, &
-       evecsv,lmmax,dmat)
+      call gendmat(.false.,.false.,0,lmax,is,ia,ngknr,apwalm,evecfv,evecsv, &
+       lmmax,dmat)
 ! convert (l,m) part to an irreducible representation if required
       if (lmirep) then
         do ist=1,nstsv
@@ -167,31 +210,37 @@ do ikloc=1,nkptloc
         do ispn=1,nspinor
           do lm=1,lmmax
             t1=dble(dmat(lm,lm,ispn,ispn,ist))
-            bc(lm,ispn,ias,ist,ik)=real(t1)
+            bc(lm,ispn,ias,ist,ikloc)=real(t1)
           end do
         end do
       end do
     end do
   end do
 ! compute the spin density matrices of the second-variational states
-  call gensdmat(evecsv,sdmat(:,:,:,ik))
+  call gensdmat(evecsv,sdmat)
 ! spin rotate the density matrices to desired spin-quantisation axis
   if (spinpol.and.(.not.tsqaz)) then
     do ist=1,nstsv
-      call z2mm(su2,sdmat(:,:,ist,ik),dm1)
-      call z2mmct(dm1,su2,sdmat(:,:,ist,ik))
+      call z2mm(su2,sdmat(:,:,ist),dm1)
+      call z2mmct(dm1,su2,sdmat(:,:,ist))
     end do
   end if
+  do ist=1,nstsv
+    do ispn=1,nspinor
+      t1=dble(sdmat(ispn,ispn,ist))
+      sc(ispn,ist,ikloc)=real(t1)
+    end do
+  end do
 end do
-deallocate(apwalm,evecfv,evecsv,dmat,a)
-call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/))
-call mpi_grid_reduce(occsv(1,1),nstsv*nkpt,dims=(/dim_k/))
-do ik=1,nkpt
-  call mpi_grid_reduce(bc(1,1,1,1,ik),lmmax*nspinor*natmtot*nstsv,&
-    dims=(/dim_k/))
-enddo
-call mpi_grid_reduce(sdmat(1,1,1,1),nspinor*nspinor*nstsv*nkpt,&
-  dims=(/dim_k/))
+deallocate(igkignr,vgklnr,vgkcnr,gkcnr)
+deallocate(tpgkcnr,sfacgknr,apwalm)
+deallocate(evecfv,evecsv,dmat,sdmat,a)
+allocate(w(nwdos))
+allocate(e(nstsv,nkptnr,nspinor))
+allocate(f(nstsv,nkptnr))
+allocate(g(nwdos))
+allocate(dt(nwdos,nsd))
+allocate(dp(nwdos,l0:l1,nsd))
 ! generate energy grid
 dw=(wdos(2)-wdos(1))/dble(nwdos)
 do iw=1,nwdos
@@ -199,89 +248,121 @@ do iw=1,nwdos
 end do
 ! number of subdivisions used for interpolation
 nsk(:)=max(ngrdos/ngridk(:),1)
-!--------------------------!
-!     output total DOS     !
-!--------------------------!
-if (mpi_grid_root()) then
-  open(50,file='TDOS.OUT',action='WRITE',form='FORMATTED')
-  do ispn=1,nspinor
-    if (ispn.eq.1) then
-      t1=1.d0
-    else
-      t1=-1.d0
-    end if
-    do ik=1,nkpt
-      do ist=1,nstsv
+! sign for spin in DOS
+sps(1)=1.d0
+sps(2)=-1.d0
+!-------------------!
+!     total DOS     !
+!-------------------!
+dt(:,:)=0.d0
+e=0.d0
+do ispn=1,nspinor
+  f=0.d0
+  do ikloc=1,nkptnrloc
+    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+    jk=ikmap(ivknr(1,ik),ivknr(2,ik),ivknr(3,ik))
+    do ist=1,nstsv
 ! subtract the Fermi energy
-        e(ist,ik,ispn)=evalsv(ist,ik)-efermi
+      e(ist,ik,ispn)=evalsv(ist,jk)-efermi
 ! use diagonal of spin density matrix for weight
-        f(ist,ik)=dble(sdmat(ispn,ispn,ist,ik))
-        if (dosocc) f(ist,ik)=f(ist,ik)*occsv(ist,ik)/occmax
-      end do
+      f(ist,ik)=sc(ispn,ist,ikloc)
+      if (dosocc) then
+        f(ist,ik)=f(ist,ik)*occsv(ist,jk)
+      else
+        f(ist,ik)=f(ist,ik)*occmax
+      end if
     end do
-    call brzint(nsmdos,ngridk,nsk,ikmap,nwdos,wdos,nstsv,nstsv,e(:,:,ispn),f, &
-     g(:,ispn))
-! multiply by the maximum occupancy (spin-polarised: 1, unpolarised: 2)
-    g(:,ispn)=occmax*g(:,ispn)
+  end do
+  call mpi_grid_reduce(f(1,1),nstsv*nkptnr,dims=(/dim_k/))
+  call mpi_grid_reduce(e(1,1,ispn),nstsv*nkptnr,dims=(/dim_k/))
+! integrate over the Brillouin zone
+  call brzint(nsmdos,ngridk,nsk,ikmapnr,nwdos,wdos,nstsv,nstsv,e(1,1,ispn),f,g)
+  if (dosssum) then
+    dt(:,1)=dt(:,1)+g(:)
+  else
+    dt(:,ispn)=g(:)
+  end if
+end do
+if (mpi_grid_root()) then
+! output to file
+  open(50,file='TDOS.OUT',action='WRITE',form='FORMATTED')
+  do ispn=1,nsd
     do iw=1,nwdos
-      write(50,'(2G18.10)') w(iw),t1*g(iw,ispn)
+      write(50,'(2G18.10)') w(iw),dt(iw,ispn)*sps(ispn)
     end do
     write(50,'("     ")')
-! write the total DOS to test file
-    call writetest(10,'total DOS',nv=nwdos,tol=2.d-2,rva=g)
   end do
   close(50)
-!----------------------------!
-!     output partial DOS     !
-!----------------------------!
-  do is=1,nspecies
-    do ia=1,natoms(is)
-      ias=idxas(ia,is)
-      write(fname,'("PDOS_S",I2.2,"_A",I4.4,".OUT")') is,ia
-      open(50,file=trim(fname),action='WRITE',form='FORMATTED')
-      do ispn=1,nspinor
-        if (ispn.eq.1) then
-          t1=1.d0
-        else
-          t1=-1.d0
-        end if
-        do l=0,lmax
-          if (dosmsum) gpl(:)=0.d0
-          do m=-l,l
-            lm=idxlm(l,m)
-            do ik=1,nkpt
-              do ist=1,nstsv
-                f(ist,ik)=bc(lm,ispn,ias,ist,ik)
-                if (dosocc) f(ist,ik)=f(ist,ik)*occsv(ist,ik)/occmax
-              end do
+endif
+!---------------------!
+!     partial DOS     !
+!---------------------!
+do is=1,nspecies
+  do ia=1,natoms(is)
+    ias=idxas(ia,is)
+    dp(:,:,:)=0.d0
+    do ispn=1,nspinor
+      do l=0,lmax
+        do m=-l,l
+          lm=idxlm(l,m)
+          f=0.d0
+          do ikloc=1,nkptnrloc
+            ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+            jk=ikmap(ivknr(1,ik),ivknr(2,ik),ivknr(3,ik))
+            do ist=1,nstsv
+              f(ist,ik)=bc(lm,ispn,ias,ist,ikloc)
+              if (dosocc) then
+                f(ist,ik)=f(ist,ik)*occsv(ist,jk)
+              else
+                f(ist,ik)=f(ist,ik)*occmax
+              end if
             end do
-            call brzint(nsmdos,ngridk,nsk,ikmap,nwdos,wdos,nstsv,nstsv, &
-             e(:,:,ispn),f,gp)
-            gp(:)=occmax*gp(:)
-! subtract from interstitial DOS
-            g(:,ispn)=g(:,ispn)-gp(:)
-            if (dosmsum) then
-              gpl(:)=gpl(:)+gp(:)
-            else
-! write (l,m)-resolved DOS
-              do iw=1,nwdos
-                write(50,'(2G18.10)') w(iw),t1*gp(iw)
-              end do
-              write(50,'("     ")')
-            end if
           end do
-! write l-resolved DOS
+          call mpi_grid_reduce(f(1,1),nstsv*nkptnr,dims=(/dim_k/))
+          call brzint(nsmdos,ngridk,nsk,ikmapnr,nwdos,wdos,nstsv,nstsv, &
+           e(:,:,ispn),f,g)
           if (dosmsum) then
-            do iw=1,nwdos
-              write(50,'(2G18.10)') w(iw),t1*gpl(iw)
-            end do
-            write(50,'("     ")')
+            if (dosssum) then
+              dp(:,l,1)=dp(:,l,1)+g(:)
+            else
+              dp(:,l,ispn)=dp(:,l,ispn)+g(:)
+            end if
+          else
+            if (dosssum) then
+              dp(:,lm,1)=dp(:,lm,1)+g(:)
+            else
+              dp(:,lm,ispn)=g(:)
+            end if
+          end if
+! subtract from interstitial DOS
+          if (dosssum) then
+            dt(:,1)=dt(:,1)-g(:)
+          else
+            dt(:,ispn)=dt(:,ispn)-g(:)
           end if
         end do
       end do
-      close(50)
     end do
+    if (mpi_grid_root()) then
+! output to file
+      write(fname,'("PDOS_S",I2.2,"_A",I4.4,".OUT")') is,ia
+      open(50,file=trim(fname),action='WRITE',form='FORMATTED')
+      do ispn=1,nsd
+        do l=l0,l1
+          do iw=1,nwdos
+            write(50,'(2G18.10)') w(iw),dp(iw,l,ispn)*sps(ispn)
+          end do
+          write(50,'("     ")')
+        end do
+      end do
+      close(50)
+    endif
   end do
+end do
+!------------------------------------------!
+!     irreducible representations file     !
+!------------------------------------------!
+if (mpi_grid_root()) then
   if (lmirep) then
     open(50,file='ELMIREP.OUT',action='WRITE',form='FORMATTED')
     do is=1,nspecies
@@ -301,18 +382,13 @@ if (mpi_grid_root()) then
     end do
     close(50)
   end if
-!---------------------------------!
-!     output interstitial DOS     !
-!---------------------------------!
+!--------------------------!
+!     interstitial DOS     !
+!--------------------------!
   open(50,file='IDOS.OUT',action='WRITE',form='FORMATTED')
-  do ispn=1,nspinor
-    if (ispn.eq.1) then
-      t1=1.d0
-    else
-      t1=-1.d0
-    end if
+  do ispn=1,nsd
     do iw=1,nwdos
-      write(50,'(2G18.10)') w(iw),t1*g(iw,ispn)
+      write(50,'(2G18.10)') w(iw),dt(iw,ispn)*sps(ispn)
     end do
     write(50,'("     ")')
   end do
@@ -325,6 +401,9 @@ if (mpi_grid_root()) then
   write(*,'(" for all species and atoms")')
   if (dosmsum) then
     write(*,'(" PDOS summed over m")')
+  end if
+  if (dosssum) then
+    write(*,'(" PDOS summed over spin")')
   end if
   if (.not.tsqaz) then
     write(*,*)
@@ -345,8 +424,9 @@ if (mpi_grid_root()) then
   write(*,'(" DOS units are states/Hartree/unit cell")')
   write(*,*)
 endif
-deallocate(e,f,w,g,gp,bc,sdmat)
-if (dosmsum) deallocate(gpl)
+! write the total DOS to test file
+call writetest(10,'total DOS',nv=nwdos*nsd,tol=2.d-2,rva=dt)
+deallocate(bc,sc,w,e,f,g,dt,dp)
 if (lmirep) deallocate(elm,ulm)
 return
 end subroutine
