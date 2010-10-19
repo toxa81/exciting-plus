@@ -137,6 +137,21 @@ do ikstep=1,nkstep
   endif !ikstep.le.nkptnrloc
   call timer_stop(2)
 enddo !ikstep
+if (wannier_megq) then
+  call timer_start(6,reset=.true.)
+! compute matrix elements of e^{-i(G+q)x} in the basis of Wannier functions
+  call genmegqwan(iq)
+! sum over all k-points and interband transitions to get <n,T=0|e^{-i(G+q)x}|n',T'>
+  call mpi_grid_reduce(megqwan(1,1),nmegqwan*ngvecme,dims=(/dim_k,dim_b/),&
+    all=.true.)
+  megqwan=megqwan/nkptnr
+  call timer_stop(6)
+  if (wproc) then
+    write(150,*)
+    write(150,'("Time for megqwan : ",F8.2)')timer_get_value(6)
+  endif
+!  call printmegqwan(iq)
+endif
 !call printmegqblh(iq)
 ! for G=q=0: e^{iqx}=1+iqx
 ! from "Formalism of Bnad Theory" by E.I. Blount:
@@ -169,22 +184,7 @@ if (all(vqm(:,iq).eq.0).and.allocated(pmatnrloc)) then
     enddo
   enddo
 endif
-!call printmegqblh(iq+100)
-if (wannier_megq) then
-  call timer_start(6,reset=.true.)
-! compute matrix elements of e^{-i(G+q)x} in the basis of Wannier functions
-  call genmegqwan(iq)
-! sum over all k-points and interband transitions to get <n,T=0|e^{-i(G+q)x}|n',T'>
-  call mpi_grid_reduce(megqwan(1,1),nmegqwan*ngvecme,dims=(/dim_k,dim_b/),&
-    all=.true.)
-  megqwan=megqwan/nkptnr
-  call timer_stop(6)
-  if (wproc) then
-    write(150,*)
-    write(150,'("Time for megqwan : ",F8.2)')timer_get_value(6)
-  endif
-!  call printmegqwan(iq)
-endif
+!call printmegqblh(iq)
 ! time for wave-functions send/recieve
 t1=timer_get_value(1)
 call mpi_grid_reduce(t1,dims=(/dim_k,dim_b/))

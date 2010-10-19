@@ -40,7 +40,7 @@ do ikloc=1,nkptnrloc
         zt2=zm1(n1,n2)*expkqt(j)
         do ig=1,ngvecme
           megqwan(j,ig)=megqwan(j,ig)+zt2*megqblh(ibloc,ig,ikloc)
-        enddo !ig      
+        enddo !ig 
       enddo !j
     endif !if (xloc.eq.mpi_grid_x(dim_b))
   enddo !i1
