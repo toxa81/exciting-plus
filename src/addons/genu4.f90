@@ -34,18 +34,21 @@ nwloc=mpi_grid_map(lr_nw,dim_k)
 ntmegqwanloc=mpi_grid_map(ntmegqwan,dim_b)
 allocate(megqwan2(ngvecme,nmegqwan))   
 allocate(megqwan3(ngvecme,nmegqwan))   
-! compute megqwan2^{*}=<W_n|e^{+i(G+q)x}|W_n'T'> and also rearrange megqwan
+! compute megqwan2=<W_n|e^{+i(G+q)x}|W_n'T'> and also rearrange megqwan
 do i=1,nmegqwan
   n=imegqwan(1,i)
   n1=imegqwan(2,i)
   vtl(:)=imegqwan(3:5,i)
+  v2=dble(vtl)
+  call r3mv(avec,v2,vtc)
+  zt1=exp(-zi*dot_product(vqc(:,iq),vtc))
   j=idxmegqwan(n1,n,-vtl(1),-vtl(2),-vtl(3))
   if (j.le.0) then
     write(*,'("Error(genuscrn) wrong index of matrix element")')
     write(*,'(" n,n1,vtl : ",5I4)')n,n1,vtl
     call pstop
   endif
-  megqwan2(:,i)=megqwan(j,:)
+  megqwan2(:,i)=dconjg(megqwan(j,:))*zt1
   megqwan3(:,i)=megqwan(i,:)
 enddo
 ! compute 4-index U
@@ -54,7 +57,7 @@ do iwloc=1,nwloc
 ! broadcast chi0
   call mpi_grid_bcast(chi0loc(1,1,iwloc),ngvecme*ngvecme,dims=(/dim_b/))
   call genvscrn(iq,iw,chi0loc(1,1,iwloc),krnl,vscrn,epsilon,chi)
-  call zgemm('C','N',nmegqwan,ngvecme,ngvecme,zone,megqwan2,ngvecme,&
+  call zgemm('T','N',nmegqwan,ngvecme,ngvecme,zone,megqwan2,ngvecme,&
     vscrn,ngvecme,zzero,zm1,nmegqwan)
   call zgemm('N','N',nmegqwan,nmegqwan,ngvecme,zone,zm1,nmegqwan,megqwan3,&
     ngvecme,zzero,zm2,nmegqwan)

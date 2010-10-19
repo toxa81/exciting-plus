@@ -200,9 +200,10 @@ if (mpi_grid_side(dims=(/dim_k,dim_b/)).and.nwloc.gt.0) then
   enddo
 endif
 if (wproc1) then
-!  write(151,*)
-!  write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
-!  write(151,*)
+  write(151,*)
+  write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
+  write(151,'("Number of Wannier translations : ",I6)')ntmegqwan
+  write(151,*)
 !  write(151,'("screened U_{n,n''T}(w=0)")')    
 !  write(151,'(65("-"))')
 !    call printwanntrans(151,uscrnwan(1,1))
