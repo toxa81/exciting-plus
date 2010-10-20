@@ -69,7 +69,7 @@ SRC_routines = \
  ggamt_sp_1.f90 ggair_sp_1.f90 ggamt_1.f90 ggair_1.f90 genspecies.f90 \
  ggamt_2a.f90 ggair_2a.f90 ggamt_2b.f90 ggair_2b.f90 ggamt_sp_2a.f90 \
  ggair_sp_2a.f90 ggamt_sp_2b.f90 ggair_sp_2b.f90 writeqpts.f90 potefield.f90 \
- findswidth.f90
+ findswidth.f90 seceqn1.f90 seceqn2.f90
 
 SRC_phonon = \
  phonon.f90 dyntask.f90 phcell.f90 phdisp.f90 readdyn.f90 dynqtor.f90 \
