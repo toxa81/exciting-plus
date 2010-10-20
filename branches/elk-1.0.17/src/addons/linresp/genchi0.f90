@@ -54,6 +54,22 @@ endif
   
 ! cutoff small matrix elements
 if (wannier_chi0_chi) then
+! Warning: this is quick fix. Code is taken from genmegq.f90.  
+!   The reason for recomputing megqwan is that for optical limit of 
+!   response in Wannier basis we need matrix elements with correct 
+!   asymptotics for q->0. This was done for megqblh in genmegq.f90,
+!   but megqwan was computed before fixing the q->0 limit (for cRPA 
+!   calculations we need those "normal" megqwan elements). 
+! There is still something wrong with optical limit of Wannier 
+!   response for metallic systems
+  if (all(vqm(:,iq).eq.0)) then
+    megqwan=zzero
+    call genmegqwan(iq)
+    call mpi_grid_reduce(megqwan(1,1),nmegqwan*ngvecme,dims=(/dim_k,dim_b/),&
+      all=.true.)
+    megqwan=megqwan/nkptnr
+  endif
+  
   allocate(megqwan_tmp(nmegqwan,ngvecme))
   megqwan_tmp=zzero
   allocate(imegqwan_tmp(5,nmegqwanmax))
