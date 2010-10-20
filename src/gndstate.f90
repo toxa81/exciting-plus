@@ -182,10 +182,15 @@ do iscl=1,maxscl
 ! generate muffin-tin effective magnetic fields and s.o. coupling functions
   call genbeffmt
 ! begin parallel loop over k-points
+  do ikloc=1,nkptloc
+! solve the first-variational secular equation
+    call seceqn1(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc))
+  end do  
+! SIC block to compute <W_n|\phi> goes gere
   evalsv=0.d0
   do ikloc=1,nkptloc
-! solve the first- and second-variational secular equations
-    call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
+! solve the second-variational secular equation
+    call seceqn2(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
       evecsvloc(1,1,ikloc))
   end do  
   call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),all=.true.)
