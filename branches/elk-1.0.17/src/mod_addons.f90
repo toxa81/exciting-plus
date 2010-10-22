@@ -259,6 +259,7 @@ real(8), allocatable :: wann_v(:)
 integer nwann
 integer, allocatable :: iwann(:,:)
 integer, allocatable :: nwannias(:)
+integer nwannloc
   
 ! expansion coefficients of Wannier functions over spinor Bloch eigen-functions  
 complex(8), allocatable :: wann_c(:,:,:)
@@ -354,6 +355,9 @@ real(8) sic_etot_correction
 data sic_etot_correction/0.d0/
 real(8) wann_r_cutoff
 data wann_r_cutoff/6.0/
+complex(8), allocatable :: sic_wb(:,:,:,:)
+complex(8), allocatable :: sic_wvb(:,:,:,:)
+
 
 !--------------!
 !      PAPI    !

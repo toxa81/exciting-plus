@@ -6,20 +6,16 @@ use modxcifc
 use mod_addons_q
 use mod_hdf5
 implicit none
-integer n,sz,i,j,n1,ispn,itr,itloc,vtrl(3),ir
+integer n,sz,i,j,n1,ispn,vtrl(3),nloc,n1loc,h,h1
 real(8) t1,t2,vtrc(3)
-integer v1l(3)
-! potential (Hartree+XC) of Wannier function charge density
-real(8), allocatable :: vhxcmt(:,:,:,:,:,:)
-real(8), allocatable :: vhxcir(:,:,:,:)
+integer vl(3)
 ! Wannier functions
 complex(8), allocatable :: wanmt0(:,:,:,:,:)
 complex(8), allocatable :: wanir0(:,:,:)
 complex(8), allocatable :: vwanme_old(:)
-complex(8), allocatable :: ehart(:),exc(:)
+complex(8), allocatable :: ene(:,:)
 complex(8), allocatable :: vwank(:,:)
 complex(8) z1
-complex(8), allocatable :: norm(:)
 logical exist
 integer n2,ik
 
@@ -32,7 +28,8 @@ integer n2,ik
 !     +----+----+--
 !     |    |    |
 !     v
-!  k-points
+!  k-points and 
+! Wannier functions
 
 sic=.true.
 
@@ -73,167 +70,57 @@ call genwfnr(151,.false.)
 ! get all Wannier transitions
 all_wan_ibt=.true.
 call getimegqwan(all_wan_ibt)
-wvmt=zzero
-wvir=zzero
-!-------------------!
-! Hartree potential !
-!-------------------!
-! generate Hartree potential of Wannier functions
-! use wvmt,wvir arrays as temporary
-call sic_genvhart(wvmt,wvir)
-! deallocate unnecessary arrays
-deallocate(wfsvmtnrloc)
-deallocate(wfsvitnrloc)
-deallocate(wanncnrloc)
-! restore wproc
-wproc=mpi_grid_root()
-if (wproc) then
-  write(151,*)
-  write(151,'("ngqmax : ",I4)')ngqmax
-  write(151,'("time for q-vectors : ",F8.3)')timer_get_value(10)
-  write(151,'("time for Hartree potential : ",F8.3)')timer_get_value(11)
-  write(151,'("average imaginary part (mt,ir) : ",2G18.10)') &
-    sum(abs(dimag(wvmt)))/lmmaxvr/nrmtmax/natmtot/ntrloc/nwann,&
-    sum(abs(dimag(wvir)))/ngrtot/ntrloc/nwann
-  call timestamp(151,'done with Hartree potential')
-endif
-allocate(vhxcmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann))
-allocate(vhxcir(ngrtot,ntrloc,nspinor,nwann))
-do ispn=1,nspinor
-  do n=1,nwann
-    vhxcmt(:,:,:,:,ispn,n)=dreal(wvmt(:,:,:,:,1,n))
-    vhxcir(:,:,ispn,n)=dreal(wvir(:,:,1,n))
-  enddo
-enddo
-!-------------------!
-! Wannier functions !
-!-------------------!
-call timer_reset(1)
-call timer_reset(2)
-allocate(wanmt0(lmmaxvr,nrmtmax,natmtot,nspinor,nwann))
-allocate(wanir0(ngrtot,nspinor,nwann))
-do itloc=1,ntrloc
-  itr=mpi_grid_map(ntr,dim_t,loc=itloc)
-! generate Wannier functions on a mesh
-  call sic_genwann(vtl(1,itr),ngknr,igkignr,wanmt0,wanir0)
-  do ispn=1,nspinor
-    do n=1,nwann
-      wanmt(:,:,:,itloc,ispn,n)=wanmt0(:,:,:,ispn,n)
-      wanir(:,itloc,ispn,n)=wanir0(:,ispn,n)
-    enddo !n
-  enddo !ispn
-enddo !itr
-deallocate(wanmt0,wanir0)
-deallocate(wann_unkmt)
-deallocate(wann_unkit)
-if (wproc) then
-  write(151,*)
-  write(151,'("Wann MT part : ",F8.3)')timer_get_value(1)
-  write(151,'("Wann IT part : ",F8.3)')timer_get_value(2)
-  call flushifc(151)
-endif
-allocate(norm(nmegqwan))
-! check orthonormality
-t1=0.d0
-t2=0.d0
-do i=1,nmegqwan
-  n=imegqwan(1,i)
-  n1=imegqwan(2,i)
-  v1l(:)=imegqwan(3:5,i)
-  z1=0
-  do ispn=1,nspinor
-    z1=z1+lf_dot_lf(.true.,wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n),v1l,&
-      wanmt(1,1,1,1,ispn,n1),wanir(1,1,ispn,n1))
-  enddo
-  norm(i)=z1
-  if (n.eq.n1.and.v1l(1).eq.0.and.v1l(2).eq.0.and.v1l(3).eq.0) then
-    z1=z1-zone
-  endif
-  t2=max(t2,abs(z1))
-  t1=t1+abs(z1)
-enddo
-if (wproc) then
-  write(151,*)
-  write(151,'("Maximum deviation from norm : ",F12.6)')t2
-  write(151,'("Average deviation from norm : ",F12.6)')t1/nmegqwan
-  call flushifc(151)
-endif
-if (wproc) then
-  call timestamp(151,'done with Wannier functions')
-endif
-!------------------------------!
-! Hartree energy <W_n|V^H|W_n> !
-!------------------------------!
-allocate(ehart(nwann))
-ehart=zzero
-do n=1,nwann
-  do ispn=1,nspinor
-    ehart(n)=ehart(n)+lf_intgr_zdz(wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n),&
-      vhxcmt(1,1,1,1,ispn,n),vhxcir(1,1,ispn,n),(/0,0,0/),wanmt(1,1,1,1,ispn,n),&
-      wanir(1,1,ispn,n))
-  enddo
-enddo
-!-------------------------!
-! XC potential and energy !
-!-------------------------!
-allocate(exc(nwann))
-exc=zzero
-call timer_start(12,reset=.true.)
-call sic_genvxc(vhxcmt,vhxcir,exc)
-call timer_stop(12)
-if (wproc) then
-  write(151,'("time for XC potential : ",F8.3)')timer_get_value(12)
-endif
-sic_etot_correction=0.d0
-ehart(:)=-1.d0*ehart(:)
-exc(:)=-1.d0*exc(:)
-do n=1,nwann
-  sic_etot_correction=sic_etot_correction+dreal(ehart(n))+dreal(exc(n))
-enddo
-if (wproc) then
-  write(151,*)
-  write(151,'(2X,"wann",16X,"E_n^{H}",33X,"E_n^{XC}")')
-  write(151,'(84("-"))')
-  do n=1,nwann
-    write(151,'(I4,4X,2G18.10,4X,2G18.10)')n,dreal(ehart(n)),dimag(ehart(n)),&
-      dreal(exc(n)),dimag(exc(n))
-  enddo
-  write(151,*)
-  write(151,'("Total energy correction : ",G18.10)')sic_etot_correction
-  call flushifc(151)
-endif
-! multiply Wannier function by potential and change sign
-do n=1,nwann
-  do ispn=1,nspinor
-    call lf_mult_zd(-zone,wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n), &
-      vhxcmt(1,1,1,1,ispn,n),vhxcir(1,1,ispn,n),wvmt(1,1,1,1,ispn,n),&
-      wvir(1,1,ispn,n))    
-  enddo
-enddo
+call sic_wan(151)
+allocate(ene(4,nwann))
+call sic_pot(151,ene)
 !----------------------------------!
 ! matrix elements of SIC potential !
 !----------------------------------!
 if (allocated(vwanme)) deallocate(vwanme)
 allocate(vwanme(nmegqwan))
 vwanme=zzero
+allocate(wanmt0(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor))
+allocate(wanir0(ngrtot,ntrloc,nspinor))
 ! compute matrix elements of SIC potential
 ! vwan = <w_n|v_n|w_{n1,T}>
 do i=1,nmegqwan
   n=imegqwan(1,i)
+  nloc=mpi_grid_map(nwann,dim_k,x=h,glob=n)
   n1=imegqwan(2,i)
-  v1l(:)=imegqwan(3:5,i)
-  do ispn=1,nspinor    
-    vwanme(i)=vwanme(i)+lf_dot_lf(.true.,wvmt(1,1,1,1,ispn,n),wvir(1,1,ispn,n),&
-      v1l,wanmt(1,1,1,1,ispn,n1),wanir(1,1,ispn,n1))
-    !vwanme(i)=vwanme(i)+lf_intgr_zdz(wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n),&
-    !  vhxcmt(1,1,1,1,ispn,n),vhxcir(1,1,ispn,n),v1l,wanmt(1,1,1,1,ispn,n1),&
-    !  wanir(1,1,ispn,n1))
-  enddo
+  n1loc=mpi_grid_map(nwann,dim_k,x=h1,glob=n1)
+  vl(:)=imegqwan(3:5,i)
+  if (mpi_grid_x(dim_k).eq.h1) then
+    call mpi_grid_send(wanmt(1,1,1,1,1,n1loc),lmmaxvr*nrmtmax*natmtot*ntrloc*nspinor,&
+      dims=(/dim_k/),dest=(/h/),tag=1)
+    call mpi_grid_send(wanir(1,1,1,n1loc),ngrtot*ntrloc*nspinor,&
+      dims=(/dim_k/),dest=(/h/),tag=2)
+  endif
+  if (mpi_grid_x(dim_k).eq.h) then
+    call mpi_grid_recieve(wanmt0(1,1,1,1,1),lmmaxvr*nrmtmax*natmtot*ntrloc*nspinor,&
+      dims=(/dim_k/),src=(/h1/),tag=1)
+    call mpi_grid_recieve(wanir0(1,1,1),ngrtot*ntrloc*nspinor,&
+      dims=(/dim_k/),src=(/h1/),tag=2)
+  endif
+  if (mpi_grid_x(dim_k).eq.h) then
+    do ispn=1,nspinor    
+      vwanme(i)=vwanme(i)+lf_dot_lf(.true.,wvmt(1,1,1,1,ispn,nloc),wvir(1,1,ispn,nloc),&
+        vl,wanmt0(1,1,1,1,ispn),wanir0(1,1,ispn))
+    enddo
+  endif
+enddo
+call mpi_grid_reduce(vwanme(1),nmegqwan,dims=(/dim_k/))
+t1=0.d0
+t2=0.d0
+do i=1,nmegqwan
+  n=imegqwan(1,i)
+  n1=imegqwan(2,i)
+  vl(:)=imegqwan(3:5,i)
+  j=idxmegqwan(n1,n,-vl(1),-vl(2),-vl(3))
+  t1=t1+abs(vwanme(i)-dconjg(vwanme(j)))
+  t2=max(t2,abs(vwanme(i)-dconjg(vwanme(j))))
 enddo
 if (wproc) then
-  call timestamp(151,'done with matrix elements')
-endif
-if (wproc) then
+  call timestamp(151,"done with matrix elements")
   write(151,*)
   write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
   write(151,'("Matrix elements of SIC potential &
@@ -242,18 +129,6 @@ if (wproc) then
     write(151,'(I4,4X,I4,4X,3I3,4X,2G18.10)')imegqwan(:,i),&
       dreal(vwanme(i)),dimag(vwanme(i))
   enddo
-endif
-t1=0.d0
-t2=0.d0
-do i=1,nmegqwan
-  n=imegqwan(1,i)
-  n1=imegqwan(2,i)
-  v1l(:)=imegqwan(3:5,i)
-  j=idxmegqwan(n1,n,-v1l(1),-v1l(2),-v1l(3))
-  t1=t1+abs(vwanme(i)-dconjg(vwanme(j)))
-  t2=max(t2,abs(vwanme(i)-dconjg(vwanme(j))))
-enddo
-if (wproc) then
   write(151,*)
   write(151,'("Maximum deviation from ""localization criterion"" : ",F12.6)')t2
   write(151,'("Average deviation from ""localization criterion"" : ",F12.6)')t1/nmegqwan
@@ -266,14 +141,6 @@ if (wproc) then
     write(151,'(I4,4X,2G18.10)')n,dreal(vwanme(j)),dimag(vwanme(j))
   enddo  
   call flushifc(151)
-endif
-if (wproc) then
-  write(151,*)
-  write(151,'("Wannier overlap integrals (n n1  T  <w_n|w_{n1,T}>)")')
-  do i=1,nmegqwan
-    write(151,'(I4,4X,I4,4X,3I3,4X,2G18.10)')imegqwan(:,i),&
-      dreal(norm(i)),dimag(norm(i))
-  enddo
 endif
 if (wproc) write(151,*)
 ! check hermiticity of V_nn'(k)
@@ -299,7 +166,6 @@ do ik=1,nkpt
   endif
 enddo
 deallocate(vwank)
-
 if (wproc) then
   inquire(file="sic.hdf5",exist=exist)
   if (exist) then
@@ -318,10 +184,7 @@ endif
 call sic_writevwan
 if (wproc) close(151)
 deallocate(vwanme)
-deallocate(ehart)
-deallocate(exc)
-deallocate(vhxcmt,vhxcir)
-deallocate(norm)
+deallocate(ene)
 return
 end
 
