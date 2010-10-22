@@ -186,7 +186,8 @@ do iscl=1,maxscl
 ! solve the first-variational secular equation
     call seceqn1(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc))
   end do  
-! SIC block to compute <W_n|\phi> goes gere
+! SIC block to compute <W_n|\phi> 
+  if (sic) call sic_genfvprj
   evalsv=0.d0
   do ikloc=1,nkptloc
 ! solve the second-variational secular equation

@@ -232,6 +232,7 @@ end if
 engytot=engykn+0.5d0*engyvcl+engymad+engyx+engyc+engyts
 ! add the LDA+U correction if required
 if (ldapu.ne.0) engytot=engytot+engylu
+if (sic) engytot=engytot+sic_etot_correction
 ! write total energy to test file
 call writetest(0,'total energy',tol=1.d-6,rv=engytot)
 return

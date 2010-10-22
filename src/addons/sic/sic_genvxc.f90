@@ -1,12 +1,12 @@
-subroutine sic_genvxc(vhxcmt,vhxcir,exc)
+subroutine sic_genvxc(vhxcmt,vhxcir,ene)
 use modmain
 use mod_lf
 use modxcifc
 implicit none
-real(8), intent(out) :: vhxcmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwann)
-real(8), intent(out) :: vhxcir(ngrtot,ntrloc,nspinor,nwann)
-complex(8), intent(out) :: exc(nwann)
-integer ntp,itp,lm,n,itloc,ias,iasloc,natmtotloc,ispn
+real(8), intent(out) :: vhxcmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwannloc)
+real(8), intent(out) :: vhxcir(ngrtot,ntrloc,nspinor,nwannloc)
+complex(8), intent(out) :: ene(4,nwann)
+integer ntp,itp,lm,n,itloc,ias,ispn,nloc
 real(8), allocatable :: tp(:,:)
 complex(8), allocatable :: ylm(:,:)
 real(8) rlm(lmmaxvr)
@@ -63,7 +63,7 @@ allocate(vxir_(ngrtot,nspinor))
 allocate(vcmt_(ntp,nrmtmax,nspinor))
 allocate(vcir_(ngrtot,nspinor))
 allocate(vxcmt_(ntp,nrmtmax,nspinor))
-do n=1,nwann
+do nloc=1,nwannloc
   vxcwanmt=0.d0
   vxcwanir=0.d0
   excwanmt=0.d0
@@ -72,16 +72,14 @@ do n=1,nwann
 !-----------------!
 ! muffin-tin part !
 !-----------------!
-    natmtotloc=mpi_grid_map(natmtot,dim_k)
-    do iasloc=1,natmtotloc
+    do ias=1,natmtot
       wfmt=zzero
-      ias=mpi_grid_map(natmtot,dim_k,loc=iasloc)
 ! compute charge density on a sphere
 !   rho(tp,r)=|wf(tp,r)|^2
 !   wf(tp,r)=\sum_{lm} R_{lm}(r) * Y_{lm}(tp)
       do ispn=1,nspinor
         call zgemm('T','N',ntp,nrmt(ias2is(ias)),lmmaxvr,zone,ylm,lmmaxvr,&
-          wanmt(1,1,ias,itloc,ispn,n),lmmaxvr,zzero,wfmt,ntp)
+          wanmt(1,1,ias,itloc,ispn,nloc),lmmaxvr,zzero,wfmt,ntp)
         wfmt2(:,:,ispn)=dreal(dconjg(wfmt(:,:))*wfmt(:,:))
       enddo
 ! compute XC potential and energy density
@@ -107,18 +105,12 @@ do n=1,nwann
 ! expand XC energy in spherical harmonics
       call dgemm('T','N',lmmaxvr,nrmt(ias2is(ias)),ntp,1.d0,rlmc,ntp,&
         excmt_,ntp,0.d0,excwanmt(1,1,ias,itloc),lmmaxvr)
-    enddo !iasloc
-    do ispn=1,nspinor
-      call mpi_grid_reduce(vxcwanmt(1,1,1,itloc,ispn),lmmaxvr*nrmtmax*natmtot,&
-        dims=(/dim_k/),all=.true.)
-    enddo
-    call mpi_grid_reduce(excwanmt(1,1,1,itloc),lmmaxvr*nrmtmax*natmtot,&
-      dims=(/dim_k/),all=.true.)
+    enddo !ias
 !-------------------!
 ! interstitial part !
 !-------------------!
     do ispn=1,nspinor
-      wfir2(:,ispn)=dreal(dconjg(wanir(:,itloc,ispn,n))*wanir(:,itloc,ispn,n))
+      wfir2(:,ispn)=dreal(dconjg(wanir(:,itloc,ispn,nloc))*wanir(:,itloc,ispn,nloc))
     enddo
     if (spinpol) then
       call xcifc(xctype,n=ngrtot,rhoup=wfir2(:,1),rhodn=wfir2(:,2),ex=exir_,&
@@ -132,14 +124,15 @@ do n=1,nwann
     excwanir(:,itloc)=exir_(:)+ecir_(:)
   enddo !itloc
   do ispn=1,nspinor
-    vhxcmt(:,:,:,:,ispn,n)=vhxcmt(:,:,:,:,ispn,n)+vxcwanmt(:,:,:,:,ispn)
-    vhxcir(:,:,ispn,n)=vhxcir(:,:,ispn,n)+vxcwanir(:,:,ispn)
+    vhxcmt(:,:,:,:,ispn,nloc)=vhxcmt(:,:,:,:,ispn,nloc)+vxcwanmt(:,:,:,:,ispn)
+    vhxcir(:,:,ispn,nloc)=vhxcir(:,:,ispn,nloc)+vxcwanir(:,:,ispn)
   enddo
+  n=mpi_grid_map(nwann,dim_k,loc=nloc)
   do ispn=1,nspinor
-    exc(n)=exc(n)+lf_intgr_zdz(wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n),&
-      excwanmt,excwanir,(/0,0,0/),wanmt(1,1,1,1,ispn,n),wanir(1,1,ispn,n))
+    ene(2,n)=ene(2,n)+lf_intgr_zdz(wanmt(1,1,1,1,ispn,nloc),wanir(1,1,ispn,nloc),&
+      excwanmt,excwanir,(/0,0,0/),wanmt(1,1,1,1,ispn,nloc),wanir(1,1,ispn,nloc))
   enddo
-enddo !n
+enddo !nloc
 deallocate(tp)
 deallocate(ylm)
 deallocate(rlmc)
