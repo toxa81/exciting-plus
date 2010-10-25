@@ -123,12 +123,12 @@ if (wproc) then
   call timestamp(151,"done with matrix elements")
   write(151,*)
   write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
-  write(151,'("Matrix elements of SIC potential &
-    &(n n1  T  <w_n|v_n|w_{n1,T}>)")')
-  do i=1,nmegqwan
-    write(151,'(I4,4X,I4,4X,3I3,4X,2G18.10)')imegqwan(:,i),&
-      dreal(vwanme(i)),dimag(vwanme(i))
-  enddo
+!  write(151,'("Matrix elements of SIC potential &
+!    &(n n1  T  <w_n|v_n|w_{n1,T}>)")')
+!  do i=1,nmegqwan
+!    write(151,'(I4,4X,I4,4X,3I3,4X,2G18.10)')imegqwan(:,i),&
+!      dreal(vwanme(i)),dimag(vwanme(i))
+!  enddo
   write(151,*)
   write(151,'("Maximum deviation from ""localization criterion"" : ",F12.6)')t2
   write(151,'("Average deviation from ""localization criterion"" : ",F12.6)')t1/nmegqwan

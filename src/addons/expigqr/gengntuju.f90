@@ -18,7 +18,7 @@ real(8), allocatable :: gnt(:,:,:)
 real(8), external :: gaunt
 real(8), external :: rfinteg
 complex(8), allocatable :: zm(:,:,:)
-integer, parameter :: ngvb=16
+integer, parameter :: ngvb=2
 integer i
 
 lmmaxexp=(lmaxexp+1)**2
