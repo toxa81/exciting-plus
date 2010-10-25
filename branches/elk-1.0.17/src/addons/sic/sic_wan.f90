@@ -48,6 +48,7 @@ allocate(wanmt0(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor))
 allocate(wanir0(ngrtot,ntrloc,nspinor))
 allocate(ovlp(nmegqwan))
 ovlp=zzero
+goto 20
 ! compute overlap integrals
 do i=1,nmegqwan
   n=imegqwan(1,i)
@@ -75,6 +76,7 @@ do i=1,nmegqwan
   endif
 enddo
 call mpi_grid_reduce(ovlp(1),nmegqwan,dims=(/dim_k/))
+20 continue
 ! check orthonormality
 t1=0.d0
 t2=0.d0
@@ -94,14 +96,13 @@ do i=1,nmegqwan
 enddo
 if (wproc) then
   write(fout,*)
-  write(fout,'("Wannier overlap integrals (n n1  T  <w_n|w_{n1,T}>)")')
-  do i=1,nmegqwan
-    write(151,'(I4,4X,I4,4X,3I3,4X,2G18.10)')imegqwan(:,i),&
-      dreal(ovlp(i)),dimag(ovlp(i))
-  enddo
-  write(fout,*)
+!  write(fout,'("Wannier overlap integrals (n n1  T  <w_n|w_{n1,T}>)")')
+!  do i=1,nmegqwan
+!    write(151,'(I4,4X,I4,4X,3I3,4X,2G18.10)')imegqwan(:,i),&
+!      dreal(ovlp(i)),dimag(ovlp(i))
+!  enddo
+!  write(fout,*)
   write(fout,'("Maximum deviation from norm                 : ",F12.6)')t2
-!  write(fout,'("Average deviation from norm : ",F12.6)')t1/nmegqwan
   write(fout,'("Maximum of <w_n|w_{n1,T}> - <w_n1|w_{n,-T}> : ",G18.10)')t3
   call timestamp(fout,"done with Wannier functions")
   call flushifc(151)
