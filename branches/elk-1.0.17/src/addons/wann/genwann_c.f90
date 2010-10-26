@@ -10,7 +10,7 @@ complex(8), intent(out) :: wann_c_(nwann,nstsv)
 ! local variables
 complex(8), allocatable :: prjao(:,:)
 integer ispn,j,ias,lm,itype,n
-integer itr(3),i,iw
+integer itr(3),i,iw,ierr
 real(8) tr(3),d1
 complex(8) zt1
 logical, external :: bndint
@@ -18,13 +18,22 @@ real(8), external :: orbwt
 integer, external :: hash
 
 if (debug_level.gt.0) then
+  if (debug_level.ge.1) then
+    call mpi_grid_hash(wfsvmt(1,1,1,1,1),lmmaxvr*nufrmax*natmtot*nspinor*nstsv,&
+      dim2,ierr)
+    if (ierr.ne.0) then
+      write(*,*)
+      write(*,'("Error(genwann_c): hash test failed")')
+      call pstop
+    endif
+  endif
   if (debug_level.ge.5) then
     call dbg_open_file
     write(fdbgout,*)
     write(fdbgout,'("[genwann_c]")')
-    write(fdbgout,'("ik : ",I6)')ik  
-    write(fdbgout,'("hash(e) : ",I16)')hash(e,8*nstsv)
-    write(fdbgout,'("hash(wfsvmt) : ",I16)')hash(wfsvmt,&
+    write(fdbgout,'("  ik : ",I6)')ik  
+    write(fdbgout,'("  hash(e) : ",I16)')hash(e,8*nstsv)
+    write(fdbgout,'("  hash(wfsvmt) : ",I16)')hash(wfsvmt,&
       16*lmmaxvr*nufrmax*natmtot*nspinor*nstsv)
     call dbg_close_file
   endif
@@ -116,8 +125,8 @@ if (debug_level.gt.0) then
     call dbg_open_file
     write(fdbgout,*)
     write(fdbgout,'("[wann_ort]")')
-    write(fdbgout,'("ik : ",I6)')ik  
-    write(fdbgout,'("hash(wann_u_mtrx) : ",I16)')hash(wann_u_mtrx,16*nwann*nstsv)
+    write(fdbgout,'("  ik : ",I6)')ik  
+    write(fdbgout,'("  hash(wann_u_mtrx) : ",I16)')hash(wann_u_mtrx,16*nwann*nstsv)
     call dbg_close_file
   endif
 endif
@@ -141,6 +150,7 @@ call isqrtzhe(nwann,s,ierr)
 if (ierr.ne.0) then
   write(*,*)
   write(*,'("Warning(wann_ort): failed to calculate S^{-1/2}")')
+  write(*,'("  mpi_grid_x : ",10I6)')mpi_grid_x
   write(*,'("  k-point : ",I4)')ik
   write(*,'("  iteration : ",I4)')iscl
   write(*,'("  number of linear dependent WFs : ",I4)')ierr

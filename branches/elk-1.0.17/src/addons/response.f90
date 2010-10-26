@@ -1,6 +1,6 @@
-#ifdef _HDF5_
 subroutine response
 use modmain
+#ifdef _HDF5_
 use hdf5
 use mod_nrkp
 use mod_addons_q
@@ -201,5 +201,8 @@ deallocate(occsvnr)
 deallocate(evalsvnr)   
 if (wannier_megq) deallocate(wann_c)
 return
-end
+#else
+write(*,'("Error(response): must be compiled with HDF5 support")')
+call pstop
 #endif
+end
