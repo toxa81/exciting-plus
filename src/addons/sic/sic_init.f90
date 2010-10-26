@@ -4,7 +4,7 @@ use mod_lf
 implicit none
 integer i,j,ias,n
 integer i1,i2,i3,j1,j2,j3,is,ia,nt(3),ir0
-real(8) d,vr0c,r0
+real(8) d,vr0c(3),r0
 logical l1
 real(8) v1(3),v2(3),v3(3)
 logical exist

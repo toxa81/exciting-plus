@@ -10,19 +10,25 @@ complex(8), intent(in) :: evecsv(nstsv,nstsv)
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: wfsvit(:,:,:)
-integer :: ik
+integer :: ik,ierr
 integer, external :: hash
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 if (debug_level.gt.0) then
+  if (debug_level.ge.1) then
+    call mpi_grid_hash(evecfv(1,1),nmatmax*nstfv,dim2,ierr)
+    if (ierr.ne.0) write(*,'("[genwann, x:",2I4,"]: hash test of evecfv failed")')mpi_grid_x
+    call mpi_grid_hash(evecsv(1,1),nstsv*nstsv,dim2,ierr)
+    if (ierr.ne.0) write(*,'("[genwann, x:",2I4,"]: hash test of evecsv failed")')mpi_grid_x
+  endif
   if (debug_level.ge.5) then
     call dbg_open_file
     write(fdbgout,*)
     write(fdbgout,'("[genwann]")')
-    write(fdbgout,'("ikloc : ",I6)')ikloc    
-    write(fdbgout,'("ik : ",I6)')ik  
-    write(fdbgout,'("hash(evecfv) : ",I16)')hash(evecfv,16*nmatmax*nstfv)
-    write(fdbgout,'("hash(evecsv) : ",I16)')hash(evecsv,16*nstsv*nstsv)
-    write(fdbgout,'("hash(evalsv) : ",I16)')hash(evalsv(1,ik),8*nstsv)
+    write(fdbgout,'("  ikloc : ",I6)')ikloc    
+    write(fdbgout,'("  ik : ",I6)')ik  
+    write(fdbgout,'("  hash(evecfv) : ",I16)')hash(evecfv,16*nmatmax*nstfv)
+    write(fdbgout,'("  hash(evecsv) : ",I16)')hash(evecsv,16*nstsv*nstsv)
+    write(fdbgout,'("  hash(evalsv) : ",I16)')hash(evalsv(1,ik),8*nstsv)
     call dbg_close_file
   endif
 endif
