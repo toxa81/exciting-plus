@@ -71,6 +71,7 @@ call genwfnr(151,.false.)
 all_wan_ibt=.true.
 call getimegqwan(all_wan_ibt)
 call sic_wan(151)
+call bstop
 allocate(ene(4,nwann))
 call sic_pot(151,ene)
 !----------------------------------!

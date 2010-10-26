@@ -11,8 +11,22 @@ complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: wfsvit(:,:,:)
 integer :: ik
-
+integer, external :: hash
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+if (debug_level.gt.0) then
+  if (debug_level.ge.5) then
+    open(fdbgout,file=trim(adjustl(fdbgname)),form="FORMATTED",status="OLD")
+    write(fdbgout,*)
+    write(fdbgout,'("[genwann]")')
+    write(fdbgout,'("ikloc : ",I6)')ikloc    
+    write(fdbgout,'("ik : ",I6)')ik  
+    write(fdbgout,'("hash(evecfv) : ",I16)')hash(evecfv,16*nmatmax*nstfv)
+    write(fdbgout,'("hash(evecsv) : ",I16)')hash(evecsv,16*nstsv*nstsv)
+    write(fdbgout,'("hash(evalsv) : ",I16)')hash(evalsv(1,ik),8*nstsv)
+    close(fdbgout)
+  endif
+  call mpi_grid_barrier(dims=ortdims((/dim_k/)))
+endif
 ! allocate arrays
 allocate(wfsvmt(lmmaxvr,nufrmax,natmtot,nspinor,nstsv))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))

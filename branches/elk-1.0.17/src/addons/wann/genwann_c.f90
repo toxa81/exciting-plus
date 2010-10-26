@@ -22,6 +22,21 @@ complex(8), allocatable :: mtrx1(:,:)
 real(8), allocatable :: mtrx1ev(:)
 complex(8), allocatable :: mtrx2(:,:)
 complex(8), allocatable :: zv1(:)
+integer, external :: hash
+
+if (debug_level.gt.0) then
+  if (debug_level.ge.5) then
+    open(fdbgout,file=trim(adjustl(fdbgname)),form="FORMATTED",status="OLD")
+    write(fdbgout,*)
+    write(fdbgout,'("[genwann_c]")')
+    write(fdbgout,'("ik : ",I6)')ik  
+    write(fdbgout,'("hash(e) : ",I16)')hash(e,8*nstsv)
+    write(fdbgout,'("hash(wfsvmt) : ",I16)')hash(wfsvmt,&
+      16*lmmaxvr*nufrmax*natmtot*nspinor*nstsv)
+    close(fdbgout)
+  endif
+  call mpi_grid_barrier(dims=ortdims((/dim_k/)))
+endif
 
 ! compute <\psi|g_n>
 allocate(prjao(nwann,nstsv))
@@ -141,6 +156,12 @@ if (ierr.ne.0) then
   write(*,'("  diagonal elements of overlap matrix : ")')
   write(*,'(6X,5G18.10)')abs(sdiag)
   write(*,*)
+!  write(*,'("  initial coefficients:")')
+!  call wrmtrx("",nwann,nstsv,wann_u_mtrx,nwann)
+!  write(*,*)
+!  write(*,'("mpi_grid_x : ",10I4)')mpi_grid_x
+  call pstop
+!  write(*,*)
 endif
 ! compute Wannier function expansion coefficients
 wann_u_mtrx_ort=zzero

@@ -43,5 +43,13 @@ end do
 if (wannier) call wann_init
 if (.not.wannier) sic=.false.
 if (sic) call sic_init
+if (debug_level.ge.5) then
+  fdbgout=999
+  write(fdbgname,'("iproc_",I7.7,"__x_",I4.4,"_",I4.4,"_",I4.4,&
+    &"__debug.txt")')iproc,mpi_grid_x
+  open(fdbgout,file=trim(adjustl(fdbgname)),form="FORMATTED",status="REPLACE")
+  write(fdbgout,'("x : ",10I8)')mpi_grid_x
+  close(fdbgout)
+endif
 return
 end

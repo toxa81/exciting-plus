@@ -1084,6 +1084,8 @@ case('papi')
   stop
 case('wann_r_cutoff')
   read(50,*,err=20) wann_r_cutoff
+case('debug_level')
+  read(50,*,err=20) debug_level  
 case('')
   goto 10
 case default
