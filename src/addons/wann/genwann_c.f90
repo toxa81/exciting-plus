@@ -9,33 +9,25 @@ complex(8), intent(in) :: wfsvmt(lmmaxvr,nufrmax,natmtot,nspinor,nstsv)
 complex(8), intent(out) :: wann_c_(nwann,nstsv)
 ! local variables
 complex(8), allocatable :: prjao(:,:)
-complex(8), allocatable :: s(:,:),sdiag(:)
-integer ispn,j,n,m1,m2,ias,lm,ierr,itype,n1
-integer itr(3),i,iw,i1
+integer ispn,j,ias,lm,itype,n
+integer itr(3),i,iw
 real(8) tr(3),d1
 complex(8) zt1
 logical, external :: bndint
-integer, parameter :: maxiter=100
-logical l1
 real(8), external :: orbwt
-complex(8), allocatable :: mtrx1(:,:)
-real(8), allocatable :: mtrx1ev(:)
-complex(8), allocatable :: mtrx2(:,:)
-complex(8), allocatable :: zv1(:)
 integer, external :: hash
 
 if (debug_level.gt.0) then
   if (debug_level.ge.5) then
-    open(fdbgout,file=trim(adjustl(fdbgname)),form="FORMATTED",status="OLD")
+    call dbg_open_file
     write(fdbgout,*)
     write(fdbgout,'("[genwann_c]")')
     write(fdbgout,'("ik : ",I6)')ik  
     write(fdbgout,'("hash(e) : ",I16)')hash(e,8*nstsv)
     write(fdbgout,'("hash(wfsvmt) : ",I16)')hash(wfsvmt,&
       16*lmmaxvr*nufrmax*natmtot*nspinor*nstsv)
-    close(fdbgout)
+    call dbg_close_file
   endif
-  call mpi_grid_barrier(dims=ortdims((/dim_k/)))
 endif
 
 ! compute <\psi|g_n>
@@ -82,19 +74,6 @@ do n=1,nwann
 enddo !n
 
 ! remove small contribution
-!do n=1,nwann
-!  do j=1,nstsv
-!    if (abs(prjao(n,j)).lt.wannier_min_prjao) prjao(n,j)=zzero
-!  enddo
-!enddo
-!do j=1,nstsv
-!  zt1=zzero
-!  do n=1,nwann
-!    zt1=zt1+abs(prjao(n,j))**2
-!  enddo
-!  write(*,*)'j=',j,'sum=',abs(zt1)
-!enddo
-!  
 do j=1,nstsv
   d1=0.d0
   do n=1,nwann
@@ -129,7 +108,19 @@ complex(8), intent(inout) :: wann_u_mtrx(nwann,nstsv)
 complex(8), allocatable :: s(:,:)
 complex(8), allocatable :: sdiag(:)
 complex(8), allocatable :: wann_u_mtrx_ort(:,:)
-integer ierr,m1,m2,j,n
+integer ierr,m1,m2,j
+integer, external :: hash
+
+if (debug_level.gt.0) then
+  if (debug_level.ge.5) then
+    call dbg_open_file
+    write(fdbgout,*)
+    write(fdbgout,'("[wann_ort]")')
+    write(fdbgout,'("ik : ",I6)')ik  
+    write(fdbgout,'("hash(wann_u_mtrx) : ",I16)')hash(wann_u_mtrx,16*nwann*nstsv)
+    call dbg_close_file
+  endif
+endif
 
 allocate(s(nwann,nwann))
 allocate(sdiag(nwann))
@@ -160,7 +151,7 @@ if (ierr.ne.0) then
 !  call wrmtrx("",nwann,nstsv,wann_u_mtrx,nwann)
 !  write(*,*)
 !  write(*,'("mpi_grid_x : ",10I4)')mpi_grid_x
-  call pstop
+!  call pstop
 !  write(*,*)
 endif
 ! compute Wannier function expansion coefficients
