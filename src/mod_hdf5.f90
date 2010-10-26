@@ -34,8 +34,10 @@ end subroutine
 subroutine hdf5_create_file(fname)
 #ifdef _HDF5_
 use hdf5
+#endif
 implicit none
 character(*), intent(in) :: fname
+#ifdef _HDF5_
 integer ierr
 integer(hid_t) h5_root_id
 call h5fcreate_f(trim(fname),H5F_ACC_TRUNC_F,h5_root_id,ierr)
@@ -61,10 +63,12 @@ end subroutine
 subroutine hdf5_create_group(fname,path,gname)
 #ifdef _HDF5_
 use hdf5
+#endif
 implicit none
 character(*), intent(in) :: fname
 character(*), intent(in) :: path
 character(*), intent(in) :: gname
+#ifdef _HDF5_
 integer(hid_t) h5_root_id,h5_group_id,h5_new_group_id
 integer ierr
 
@@ -131,12 +135,14 @@ end subroutine
 subroutine hdf5_write_z(fname,path,dname,val,dims)
 #ifdef _HDF5_
 use hdf5
+#endif
 implicit none
 character(*), intent(in) :: fname
 character(*), intent(in) :: path
 character(*), intent(in) :: dname
 complex(8), intent(in) :: val
 integer, optional, dimension(:), intent(in) :: dims
+#ifdef _HDF5_
 integer ndims
 integer, allocatable :: dims_(:)
 if (present(dims)) then
@@ -160,12 +166,14 @@ end subroutine
 subroutine hdf5_write_i(fname,path,dname,val,dims)
 #ifdef _HDF5_
 use hdf5
+#endif
 implicit none
 character(*), intent(in) :: fname
 character(*), intent(in) :: path
 character(*), intent(in) :: dname
 integer, intent(in) :: val
 integer, optional, dimension(:), intent(in) :: dims
+#ifdef _HDF5_
 integer ndims
 integer, allocatable :: dims_(:)
 if (present(dims)) then
@@ -188,12 +196,14 @@ end subroutine
 subroutine hdf5_write_d(fname,path,dname,val,dims)
 #ifdef _HDF5_
 use hdf5
+#endif
 implicit none
 character(*), intent(in) :: fname
 character(*), intent(in) :: path
 character(*), intent(in) :: dname
 real(8), intent(in) :: val
 integer, optional, dimension(:), intent(in) :: dims
+#ifdef _HDF5_
 integer ndims
 integer, allocatable :: dims_(:)
 if (present(dims)) then
@@ -216,12 +226,14 @@ end subroutine
 subroutine hdf5_read_z(fname,path,dname,val,dims)
 #ifdef _HDF5_
 use hdf5
+#endif
 implicit none
 character(*), intent(in) :: fname
 character(*), intent(in) :: path
 character(*), intent(in) :: dname
 complex(8), intent(out) :: val
 integer, optional, dimension(:), intent(in) :: dims
+#ifdef _HDF5_
 integer ndims
 integer, allocatable :: dims_(:)
 if (present(dims)) then
@@ -245,12 +257,14 @@ end subroutine
 subroutine hdf5_read_i(fname,path,dname,val,dims)
 #ifdef _HDF5_
 use hdf5
+#endif
 implicit none
 character(*), intent(in) :: fname
 character(*), intent(in) :: path
 character(*), intent(in) :: dname
 integer, intent(out) :: val
 integer, optional, dimension(:), intent(in) :: dims
+#ifdef _HDF5_
 integer ndims
 integer, allocatable :: dims_(:)
 if (present(dims)) then
@@ -273,12 +287,14 @@ end subroutine
 subroutine hdf5_read_d(fname,path,dname,val,dims)
 #ifdef _HDF5_
 use hdf5
+#endif
 implicit none
 character(*), intent(in) :: fname
 character(*), intent(in) :: path
 character(*), intent(in) :: dname
 real(8), intent(out) :: val
 integer, optional, dimension(:), intent(in) :: dims
+#ifdef _HDF5_
 integer ndims
 integer, allocatable :: dims_(:)
 if (present(dims)) then
