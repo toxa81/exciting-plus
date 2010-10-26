@@ -21,11 +21,7 @@ if (debug_level.gt.0) then
   if (debug_level.ge.1) then
     call mpi_grid_hash(wfsvmt(1,1,1,1,1),lmmaxvr*nufrmax*natmtot*nspinor*nstsv,&
       dim2,ierr)
-    if (ierr.ne.0) then
-      write(*,*)
-      write(*,'("Error(genwann_c): hash test failed")')
-      call pstop
-    endif
+    if (ierr.ne.0) write(*,'("[genwann_c, x:",2I4,"]: hash test of wfsvmt failed")')mpi_grid_x                             
   endif
   if (debug_level.ge.5) then
     call dbg_open_file
