@@ -38,6 +38,10 @@ interface mpi_grid_reduce
     mpi_grid_reduce_c,mpi_grid_reduce_i8
 end interface
 
+interface mpi_grid_hash
+  module procedure mpi_grid_hash_z
+end interface
+
 interface mpi_grid_send
   module procedure mpi_grid_send_z,mpi_grid_send_i
 end interface
@@ -872,6 +876,37 @@ else
   call mpi_reduce(val,tmp,length,MPI_REAL,reduceop,rootid,comm,ierr)
 endif
 call memcopy(tmp,val,length*sz)
+deallocate(tmp)
+#endif
+return
+end subroutine
+
+!---------------------------!
+!      mpi_grid_hash_z      !
+!---------------------------!
+subroutine mpi_grid_hash_z(val,n,d,ierr)
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+! arguments
+complex(8), intent(in) :: val
+integer, intent(in) :: n
+integer, intent(in) :: d
+integer, intent(out) :: ierr
+! local variables
+integer, allocatable :: tmp(:)
+integer, external :: hash
+integer i
+#ifdef _MPI_
+ierr=0
+allocate(tmp(0:mpi_grid_size(d)-1))
+tmp=0
+tmp(mpi_grid_x(d))=hash(val,16*n)
+call mpi_grid_reduce(tmp(1),mpi_grid_size(d),dims=(/d/))
+do i=0,mpi_grid_x(d)-1
+  if (tmp(i).ne.tmp(0)) ierr=1
+enddo
 deallocate(tmp)
 #endif
 return
