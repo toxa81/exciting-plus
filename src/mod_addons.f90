@@ -60,6 +60,11 @@ real(8), parameter :: au2ang=0.5291772108d0
 ! super-cell vectors in lattice coordinates
 integer scvl(3,3)
 
+integer debug_level
+data debug_level/0/
+integer fdbgout
+character*256 fdbgname
+
 !-----------------------!
 !      MPI parallel     !
 !-----------------------!
