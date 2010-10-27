@@ -3,6 +3,7 @@ use modmain
 implicit none
 real(8) fr(nrmtmax),gr(nrmtmax),cf(4,nrmtmax)
 integer is,ias,l,io1,io2,ir,ic
+ufrp=0.d0
 do ic=1,natmcls
   ias=ic2ias(ic)
   is=ias2is(ias)

@@ -35,6 +35,14 @@ if (debug_level.gt.0) then
       16*lmmaxvr*nufrmax*natmtot*nspinor*nstsv)
     call dbg_close_file
   endif
+  if (debug_level.ge.6) then
+    call dbg_open_file
+    write(fdbgout,*)
+    write(fdbgout,'("[genwann_c]")')
+    write(fdbgout,'("  ik : ",I6)')ik  
+    write(fdbgout,'("  e : ",6G12.6)')e(:)
+    call dbg_close_file
+  endif
 endif
 
 ! compute <\psi|g_n>

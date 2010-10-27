@@ -31,6 +31,15 @@ if (debug_level.gt.0) then
     write(fdbgout,'("  hash(evalsv) : ",I16)')hash(evalsv(1,ik),8*nstsv)
     call dbg_close_file
   endif
+  if (debug_level.ge.6) then
+    call dbg_open_file
+    write(fdbgout,*)
+    write(fdbgout,'("[genwann]")')
+    write(fdbgout,'("  ikloc : ",I6)')ikloc    
+    write(fdbgout,'("  ik : ",I6)')ik  
+    write(fdbgout,'("  evalsv : ",6G12.6)')evalsv(:,ik)
+    call dbg_close_file
+  endif
 endif
 ! allocate arrays
 allocate(wfsvmt(lmmaxvr,nufrmax,natmtot,nspinor,nstsv))
