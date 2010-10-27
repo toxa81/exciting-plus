@@ -39,7 +39,7 @@ interface mpi_grid_reduce
 end interface
 
 interface mpi_grid_hash
-  module procedure mpi_grid_hash_z
+  module procedure mpi_grid_hash_z,mpi_grid_hash_d
 end interface
 
 interface mpi_grid_send
@@ -903,12 +903,70 @@ ierr=0
 allocate(tmp(0:mpi_grid_size(d)-1))
 tmp=0
 tmp(mpi_grid_x(d))=hash(val,16*n)
-call mpi_grid_reduce(tmp(1),mpi_grid_size(d),dims=(/d/))
-do i=0,mpi_grid_x(d)-1
-  if (tmp(i).ne.tmp(0)) ierr=1
-enddo
+call mpi_grid_reduce(tmp(0),mpi_grid_size(d),dims=(/d/),all=.true.)
+if (mpi_grid_x(d).eq.0) then
+  do i=0,mpi_grid_size(d)-1
+    if (tmp(i).ne.tmp(0)) ierr=1
+  enddo
+else
+  if (tmp(mpi_grid_x(d)).ne.tmp(0)) ierr=1
+endif
 deallocate(tmp)
 #endif
+return
+end subroutine
+
+!---------------------------!
+!      mpi_grid_hash_d      !
+!---------------------------!
+subroutine mpi_grid_hash_d(val,n,d,ierr)
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+! arguments
+real(8), intent(in) :: val
+integer, intent(in) :: n
+integer, intent(in) :: d
+integer, intent(out) :: ierr
+! local variables
+integer, allocatable :: tmp(:)
+integer, external :: hash
+integer i
+#ifdef _MPI_
+ierr=0
+allocate(tmp(0:mpi_grid_size(d)-1))
+tmp=0
+tmp(mpi_grid_x(d))=hash(val,8*n)
+call mpi_grid_reduce(tmp(0),mpi_grid_size(d),dims=(/d/),all=.true.)
+if (mpi_grid_x(d).eq.0) then
+  do i=0,mpi_grid_size(d)-1
+    if (tmp(i).ne.tmp(0)) ierr=1
+  enddo
+else
+  if (tmp(mpi_grid_x(d)).ne.tmp(0)) ierr=1
+endif
+deallocate(tmp)
+#endif
+return
+end subroutine
+
+
+subroutine mpi_grid_msg(sname,msg)
+implicit none
+character*(*), intent(in) :: sname
+character*(*), intent(in) :: msg
+character*100 sx
+character*256 sout
+character*20 c1
+integer i
+sx="x"
+do i=1,mpi_grid_nd
+  write(c1,'(I10)')mpi_grid_x(i)
+  sx=trim(adjustl(sx))//":"//trim(adjustl(c1))
+enddo
+sout="["//trim(adjustl(sname))//" "//trim(adjustl(sx))//"] "//trim(adjustl(msg))
+write(*,'(A)')trim(adjustl(sout))
 return
 end subroutine
 

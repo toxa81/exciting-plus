@@ -16,9 +16,9 @@ ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 if (debug_level.gt.0) then
   if (debug_level.ge.1) then
     call mpi_grid_hash(evecfv(1,1),nmatmax*nstfv,dim2,ierr)
-    if (ierr.ne.0) write(*,'("[genwann, x:",2I4,"]: hash test of evecfv failed")')mpi_grid_x
+    if (ierr.ne.0) call mpi_grid_msg("genwann","hash test of evecfv failed")
     call mpi_grid_hash(evecsv(1,1),nstsv*nstsv,dim2,ierr)
-    if (ierr.ne.0) write(*,'("[genwann, x:",2I4,"]: hash test of evecsv failed")')mpi_grid_x
+    if (ierr.ne.0) call mpi_grid_msg("genwann","hash test of evecsv failed")
   endif
   if (debug_level.ge.5) then
     call dbg_open_file
