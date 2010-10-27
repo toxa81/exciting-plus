@@ -17,7 +17,6 @@ do isclsic=1,nsclsic
     call system("cp EFERMI.OUT EFERMI.OUT"//c3)
     call system("cp TOTENERGY.OUT TOTENERGY.OUT"//c3)    
   endif
-  if (isclsic.eq.2) call bstop
   call sic_genvwan
   call mpi_world_barrier
   if (mpi_grid_root()) then

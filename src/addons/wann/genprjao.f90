@@ -17,7 +17,7 @@ l=lm2l(lm)
 prjao=zzero
 do m1=-l,l
   lm1=idxlm(l,m1)
-  do io1=1,nufrmax
+  do io1=1,nufr(l,ias2is(ias))
     prjao=prjao+dconjg(wfsvmt(lm1,io1,ias,ispn,i))*&
       ufrp(l,io1,apword(l,ias2is(ias))+1,ias2ic(ias))*rylm_lps(lm,lm1,ias)
   enddo !io1

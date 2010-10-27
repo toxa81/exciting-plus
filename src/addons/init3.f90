@@ -49,6 +49,8 @@ if (debug_level.ge.5) then
     &"__debug.txt")')iproc,mpi_grid_x
   open(fdbgout,file=trim(adjustl(fdbgname)),form="FORMATTED",status="REPLACE")
   write(fdbgout,'("x : ",10I8)')mpi_grid_x
+  write(fdbgout,'("task : ",I4)')task
+  write(fdbgout,'("isclsic : ",I4)')isclsic
   close(fdbgout)
 endif
 return

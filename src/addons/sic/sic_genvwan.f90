@@ -72,7 +72,7 @@ all_wan_ibt=.true.
 call getimegqwan(all_wan_ibt)
 call sic_wan(151)
 allocate(ene(4,nwann))
-!call sic_pot(151,ene)
+call sic_pot(151,ene)
 !----------------------------------!
 ! matrix elements of SIC potential !
 !----------------------------------!
@@ -81,7 +81,6 @@ allocate(vwanme(nmegqwan))
 vwanme=zzero
 allocate(wanmt0(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor))
 allocate(wanir0(ngrtot,ntrloc,nspinor))
-goto 30
 ! compute matrix elements of SIC potential
 ! vwan = <w_n|v_n|w_{n1,T}>
 do i=1,nmegqwan
@@ -109,7 +108,6 @@ do i=1,nmegqwan
     enddo
   endif
 enddo
-30 continue
 call mpi_grid_reduce(vwanme(1),nmegqwan,dims=(/dim_k/))
 t1=0.d0
 t2=0.d0
