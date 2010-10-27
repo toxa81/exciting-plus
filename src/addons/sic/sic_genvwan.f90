@@ -183,7 +183,7 @@ if (wproc) then
     deallocate(vwanme_old)
   endif
 endif
-!call sic_writevwan
+call sic_writevwan
 if (wproc) close(151)
 deallocate(vwanme)
 deallocate(ene)
