@@ -316,7 +316,7 @@ end module
 
 
 
-
+#ifdef _HDF5_
 !---------------------------!
 !     write_real8_array     !
 !---------------------------!
@@ -324,7 +324,6 @@ subroutine write_real8_array(a,ndims,dims,fname,path,nm)
 #ifdef _MPI_
 use mod_mpi_grid
 #endif
-#ifdef _HDF5_
 use hdf5
 implicit none
 integer, intent(in) :: ndims
@@ -382,7 +381,6 @@ write(*,'("  fname : ",A)')trim(fname)
 write(*,'("  path : ",A)')trim(path)
 write(*,'("  nm : ",A)')trim(nm)
 call pstop
-#endif
 end
 
 !--------------------------!
@@ -392,7 +390,6 @@ subroutine read_real8_array(a,ndims,dims,fname,path,nm)
 #ifdef _MPI_
 use mod_mpi_grid
 #endif
-#ifdef _HDF5_
 use hdf5
 implicit none
 integer, intent(in) :: ndims
@@ -445,7 +442,6 @@ write(*,'("  fname : ",A)')trim(fname)
 write(*,'("  path : ",A)')trim(path)
 write(*,'("  nm : ",A)')trim(nm)
 call pstop
-#endif
 end
 
 !---------------------------!
@@ -512,6 +508,6 @@ call h5dclose_f(dataset_id,ierr)
 call h5fclose_f(h5_root_id,ierr)
 return
 end
-
+#endif
 
 
