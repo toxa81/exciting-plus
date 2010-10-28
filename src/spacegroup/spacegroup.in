@@ -3,6 +3,7 @@
  90.0     90.0     90.0               : ab, ac, bc
  1  1  1                              : ncell
  .true.                               : primcell
+ .false.                              : .false. if length is in a.u.; .true. if in angstroms 
  3                                    : nspecies
  'La'                                 : spsymb, spfname
  1                                    : nwpos
