@@ -197,6 +197,8 @@ do iw=1,lr_nw
       root=(/j/))
     chi0wan(:,:)=chi0wan(:,:)/nkptnr/omega
     if (wannier_chi0_afm) chi0wan(:,:)=chi0wan(:,:)*2.d0
+!!! WSTHORNTON
+    call svdchi0(chi0wan,iq,iw,lr_w(iw)*ha2ev)
 ! processor j saves chi0wan to local array  
     if (mpi_grid_x(dim_k).eq.j) chi0wanloc(:,:,jwloc)=chi0wan(:,:)
     call timer_stop(3)
