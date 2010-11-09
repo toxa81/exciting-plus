@@ -8,11 +8,12 @@ implicit none
 integer, intent(in) :: fout
 complex(8), intent(out) :: ene(4,nwann)
 ! local variables
-integer nloc,ispn,i,n
+integer nloc,ispn,i,n,lm,ir
 ! potential (Hartree+XC) of Wannier function charge density
 real(8), allocatable :: vhxcmt(:,:,:,:,:,:)
 real(8), allocatable :: vhxcir(:,:,:,:)
 real(8) sic_ekin,sic_epot
+complex(8), allocatable :: zm1(:,:)
 
 if (wproc) then
   write(fout,*)
@@ -125,6 +126,19 @@ do nloc=1,nwannloc
       wvir(1,1,ispn,nloc))    
   enddo
 enddo
+!allocate(zm1(lmmaxvr,nrmtmax))
+!do n=1,nwann
+!  call zgemm('T','N',lmmaxvr,nrmtmax,lmmaxvr,zone,dzsht,lmmaxapw,&
+!    wanmt(1,1,1,1,1,n),lmmaxvr,zzero,zm1,lmmaxvr)
+!  do lm=1,16
+!    do ir=1,nrmtmax
+!      !write(100+n,*)ir,dreal(zm1(lm,ir)),dimag(zm1(lm,ir)) !vhxcmt(lm,ir,1,1,1,n)
+!      write(200+n,*)ir,vhxcmt(lm,ir,1,1,1,n)
+!    enddo
+!    write(100+n,*)
+!    write(200+n,*)
+!  enddo
+!enddo
 deallocate(vhxcmt,vhxcir)
 return
 end

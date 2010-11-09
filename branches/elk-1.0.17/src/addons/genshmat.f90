@@ -2,7 +2,7 @@ subroutine genshmat
 use modmain
 implicit none
 complex(8) sqrt2,isqrt2
-integer l,ias,lm1,lm2,lm3,i
+integer l,ias,lm1,lm2,lm3,i,m1,m2
 
 rylm=dcmplx(0.d0,0.d0)
 sqrt2=dcmplx(1.d0/sqrt(2.d0),0.d0)
@@ -86,6 +86,39 @@ do i=1,natlps
   call invzge(rylm_lps(1,1,ias),16)
 enddo
 
+! new implementation
+if (allocated(zdsht)) deallocate(zdsht)
+allocate(zdsht(lmmaxapw,lmmaxapw))
+zdsht=zzero
+if (allocated(dzsht)) deallocate(dzsht)
+allocate(dzsht(lmmaxapw,lmmaxapw))
+dzsht=zzero
+! Mathematica code to generate real spherical harmonics
+!b[m1_, m2_] := 
+! If[m1 == 0, 1, 
+!  If[m1 < 0 && m2 < 0, -I/Sqrt[2], 
+!   If[m1 < 0 && m2 > 0, (-1)^m2*I/Sqrt[2], 
+!    If[m1 > 0 && m2 < 0, (-1)^m1/Sqrt[2], 
+!     If[m1 > 0 && m2 > 0, 1/Sqrt[2]]]]]]
+!a[m1_, m2_] := If[Abs[m1] == Abs[m2], b[m1, m2], 0]
+!R[l_, m_, t_, p_] := 
+! Sum[a[m, m1]*SphericalHarmonicY[l, m1, t, p], {m1, -l, l}]
+do l=0,lmaxapw
+  do m1=-l,l
+    do m2=-l,l
+      if (abs(m1).eq.abs(m2)) then
+        if (m1.eq.0) zdsht(idxlm(l,m1),idxlm(l,m1))=zone
+        if (m1.lt.0.and.m2.lt.0) zdsht(idxlm(l,m1),idxlm(l,m2))=-zi/sqrt(2.d0)
+        if (m1.lt.0.and.m2.gt.0) zdsht(idxlm(l,m1),idxlm(l,m2))=(-1)**m2*zi/sqrt(2.d0)        
+        if (m1.gt.0.and.m2.lt.0) zdsht(idxlm(l,m1),idxlm(l,m2))=(-1)**m1/sqrt(2.d0)        
+        if (m1.gt.0.and.m2.gt.0) zdsht(idxlm(l,m1),idxlm(l,m2))=1.d0/sqrt(2.d0)        
+      endif
+    enddo
+  enddo
+enddo
+! R_{L}=\sum_{L'} M_{L,L'} Y_{L'} so Y_{L}=\sum_{L'} (M^{-1})_{L,L'} R_{L'}
+dzsht=zdsht
+call invzge(dzsht,lmmaxapw)
 return
 end
 

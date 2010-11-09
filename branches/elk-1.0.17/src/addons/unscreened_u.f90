@@ -57,7 +57,7 @@ call genwfnr(151,.false.)
 all_wan_ibt=.true.
 call getimegqwan(all_wan_ibt)
 
-! distribute q-vectors along 3-rd dimention
+! distribute q-vectors along 2-nd dimention
 nvqloc=mpi_grid_map(nvq,dim_q)
 allocate(ubarewan(nmegqwan))
 ubarewan=zzero

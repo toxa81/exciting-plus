@@ -43,12 +43,10 @@ if (wproc) then
   write(fout,'("time for interstitial part (sec.) : ",F8.3)')timer_get_value(2)
   call flushifc(fout)
 endif
-
 allocate(wanmt0(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor))
 allocate(wanir0(ngrtot,ntrloc,nspinor))
 allocate(ovlp(nmegqwan))
 ovlp=zzero
-goto 20
 ! compute overlap integrals
 do i=1,nmegqwan
   n=imegqwan(1,i)
@@ -56,27 +54,32 @@ do i=1,nmegqwan
   n1=imegqwan(2,i)
   n1loc=mpi_grid_map(nwann,dim_k,x=h1,glob=n1)
   vl(:)=imegqwan(3:5,i)
-  if (mpi_grid_x(dim_k).eq.h1) then
+  if (mpi_grid_x(dim_k).eq.h1.and.h1.ne.h) then
     call mpi_grid_send(wanmt(1,1,1,1,1,n1loc),lmmaxvr*nrmtmax*natmtot*ntrloc*nspinor,&
       dims=(/dim_k/),dest=(/h/),tag=1)
     call mpi_grid_send(wanir(1,1,1,n1loc),ngrtot*ntrloc*nspinor,&
       dims=(/dim_k/),dest=(/h/),tag=2)
   endif
   if (mpi_grid_x(dim_k).eq.h) then
-    call mpi_grid_recieve(wanmt0(1,1,1,1,1),lmmaxvr*nrmtmax*natmtot*ntrloc*nspinor,&
-      dims=(/dim_k/),src=(/h1/),tag=1)
-    call mpi_grid_recieve(wanir0(1,1,1),ngrtot*ntrloc*nspinor,&
-      dims=(/dim_k/),src=(/h1/),tag=2)
+    if (h.ne.h1) then
+      call mpi_grid_recieve(wanmt0(1,1,1,1,1),lmmaxvr*nrmtmax*natmtot*ntrloc*nspinor,&
+        dims=(/dim_k/),src=(/h1/),tag=1)
+      call mpi_grid_recieve(wanir0(1,1,1),ngrtot*ntrloc*nspinor,&
+        dims=(/dim_k/),src=(/h1/),tag=2)
+    else
+      wanmt0(:,:,:,:,:)=wanmt(:,:,:,:,:,n1loc)
+      wanir0(:,:,:)=wanir(:,:,:,n1loc)
+    endif
   endif
   if (mpi_grid_x(dim_k).eq.h) then
     do ispn=1,nspinor
       ovlp(i)=ovlp(i)+lf_dot_lf(.true.,wanmt(1,1,1,1,ispn,nloc),&
-        wanir(1,1,ispn,nloc),vl,wanmt0(1,1,1,1,ispn),wanir0(1,1,ispn))
+        wanir(1,1,ispn,nloc),vl,wanmt0(1,1,1,1,ispn),wanir0(1,1,ispn),&
+        twanmt(1,1,n),twanmt(1,1,n1))
     enddo
   endif
 enddo
 call mpi_grid_reduce(ovlp(1),nmegqwan,dims=(/dim_k/))
-20 continue
 ! check orthonormality
 t1=0.d0
 t2=0.d0
@@ -97,11 +100,15 @@ enddo
 if (wproc) then
   write(fout,*)
 !  write(fout,'("Wannier overlap integrals (n n1  T  <w_n|w_{n1,T}>)")')
-!  do i=1,nmegqwan
-!    write(151,'(I4,4X,I4,4X,3I3,4X,2G18.10)')imegqwan(:,i),&
-!      dreal(ovlp(i)),dimag(ovlp(i))
-!  enddo
-!  write(fout,*)
+  write(fout,'("Wannier overlap integrals (n n1 <w_n|w_n1>)")')
+  do i=1,nmegqwan
+    vl(:)=imegqwan(3:5,i)
+    if (all(vl.eq.0)) then
+      write(151,'(I4,4X,I4,4X,2G18.10)')imegqwan(1:2,i),&
+        dreal(ovlp(i)),dimag(ovlp(i))
+    endif
+  enddo
+  write(fout,*)
   write(fout,'("Maximum deviation from norm                 : ",F12.6)')t2
   write(fout,'("Maximum of <w_n|w_{n1,T}> - <w_n1|w_{n,-T}> : ",G18.10)')t3
   call timestamp(fout,"done with Wannier functions")

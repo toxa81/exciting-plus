@@ -19,37 +19,40 @@ integer dim_t
 
 contains
 
-complex(8) function lf_dot_lf(tsh,f1mt,f1ir,t,f2mt,f2ir)
+complex(8) function lf_dot_lf(tsh,fmt1,fir1,t,fmt2,fir2,tfmt1,tfmt2)
 use modmain
 implicit none
+! arguments
 logical, intent(in) :: tsh
-complex(8), intent(in) :: f1mt(lmmaxvr,nrmtmax,natmtot,ntrloc)
-complex(8), intent(in) :: f1ir(ngrtot,ntrloc)
 integer, intent(in) :: t(3)
-complex(8), intent(in) :: f2mt(lmmaxvr,nrmtmax,natmtot,ntrloc)
-complex(8), intent(in) :: f2ir(ngrtot,ntrloc)
-complex(8), allocatable :: f2mt_tmp(:,:,:)
-complex(8), allocatable :: f2ir_tmp(:)
-
+logical, intent(in) :: tfmt1(natmtot,ntr)
+logical, intent(in) :: tfmt2(natmtot,ntr)
+complex(8), intent(in) :: fmt1(lmmaxvr,nrmtmax,natmtot,ntrloc)
+complex(8), intent(in) :: fir1(ngrtot,ntrloc)
+complex(8), intent(in) :: fmt2(lmmaxvr,nrmtmax,natmtot,ntrloc)
+complex(8), intent(in) :: fir2(ngrtot,ntrloc)
+! local variables
+complex(8), allocatable :: fmt2_(:,:,:)
+complex(8), allocatable :: fir2_(:)
+!complex(8), external :: zfmtinp_
 complex(8) zprod,zt1
 integer ispn,it,jt,v1(3),v2(3),j,ntstep,itstep,ntloc1
-integer jtloc,i,tag
+integer jtloc,i,tag,is,ir,ias
 logical l1,l2
-complex(8), external :: zfinp_
-
+complex(8), external :: zfmtinp_
+logical, allocatable :: tfmt2_(:)
 ! compute <f1_0|f2_T>=\int_{-\inf}^{\inf} f1^{*}(r)f2(r-T)dr = 
 !   = \sum_{R} \int_{\Omega} f1^{*}(r+R)f2(r+R-T)dr
-
 zprod=zzero
-allocate(f2mt_tmp(lmmaxvr,nrmtmax,natmtot))
-allocate(f2ir_tmp(ngrtot))
-
+allocate(fmt2_(lmmaxvr,nrmtmax,natmtot))
+allocate(fir2_(ngrtot))
+allocate(tfmt2_(natmtot))
 j=0
 ntstep=mpi_grid_map(ntr,dim_t,x=j)
 do itstep=1,ntstep
-  f2mt_tmp=zzero
-  f2ir_tmp=zzero
-  l2=.false.
+  fmt2_=zzero
+  fir2_=zzero
+  tfmt2_=.false.
   do i=0,mpi_grid_size(dim_t)-1
     ntloc1=mpi_grid_map(ntr,dim_t,x=i)
     if (itstep.le.ntloc1) then
@@ -68,32 +71,45 @@ do itstep=1,ntstep
       endif
       if (l1.and.mpi_grid_x(dim_t).eq.j.and.mpi_grid_x(dim_t).ne.i) then
         tag=(itstep*mpi_grid_size(dim_t)+i)*10
-        call mpi_grid_send(f2mt(1,1,1,jtloc),lmmaxvr*nrmtmax*natmtot,&
+        call mpi_grid_send(fmt2(1,1,1,jtloc),lmmaxvr*nrmtmax*natmtot,&
           (/dim_t/),(/i/),tag)
-        call mpi_grid_send(f2ir(1,jtloc),ngrtot,(/dim_t/),(/i/),tag+1)
+        call mpi_grid_send(fir2(1,jtloc),ngrtot,(/dim_t/),(/i/),tag+1)
+        call mpi_grid_send(tfmt2(1,jt),natmtot,(/dim_t/),(/i/),tag+2)
       endif
       if (l1.and.mpi_grid_x(dim_t).eq.i) then
-        !l2=.true.
         if (j.ne.i) then
           tag=(itstep*mpi_grid_size(dim_t)+i)*10
-          call mpi_grid_recieve(f2mt_tmp(1,1,1),lmmaxvr*nrmtmax*natmtot,&
+          call mpi_grid_recieve(fmt2_(1,1,1),lmmaxvr*nrmtmax*natmtot,&
             (/dim_t/),(/j/),tag)
-          call mpi_grid_recieve(f2ir_tmp(1),ngrtot,(/dim_t/),(/j/),tag+1)
+          call mpi_grid_recieve(fir2_(1),ngrtot,(/dim_t/),(/j/),tag+1)
+          call mpi_grid_recieve(tfmt2_(1),natmtot,(/dim_t/),(/j/),tag+2)
         else
-          f2mt_tmp(:,:,:)=f2mt(:,:,:,jtloc)
-          f2ir_tmp(:)=f2ir(:,jtloc)
+          fmt2_(:,:,:)=fmt2(:,:,:,jtloc)
+          fir2_(:)=fir2(:,jtloc)
+          tfmt2_(:)=tfmt2(:,jt)
         endif
       endif
-    endif
-  enddo !
+    endif !itstep.le.ntloc1
+  enddo !i
   if (itstep.le.ntrloc) then
-    zt1=zfinp_(tsh,f1mt(1,1,1,itstep),f2mt_tmp,f1ir(1,itstep),&
-      f2ir_tmp)
+    it=mpi_grid_map(ntr,dim_t,loc=itstep)
+    zt1=zzero
+    do ir=1,ngrtot
+      zt1=zt1+cfunir(ir)*dconjg(fir1(ir,itstep))*fir2_(ir)
+    enddo
+    zt1=zt1*omega/dble(ngrtot)
+    do ias=1,natmtot
+      is=ias2is(ias)
+      if (tfmt1(ias,it).and.tfmt2_(ias)) then
+        zt1=zt1+zfmtinp_(tsh,lmaxvr,nrmt(is),spr(:,is),lmmaxvr,&
+          fmt1(1,1,ias,itstep),fmt2_(1,1,ias))
+      endif
+    enddo
     zprod=zprod+zt1
   endif
   call mpi_grid_barrier(dims=(/dim_t/))
 enddo
-deallocate(f2mt_tmp,f2ir_tmp)
+deallocate(fmt2_,fir2_,tfmt2_)
 call mpi_grid_reduce(zprod,dims=(/dim_t/))
 lf_dot_lf=zprod
 return

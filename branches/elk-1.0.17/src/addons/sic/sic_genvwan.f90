@@ -73,6 +73,8 @@ call getimegqwan(all_wan_ibt)
 call sic_wan(151)
 allocate(ene(4,nwann))
 call sic_pot(151,ene)
+!close(151)
+!call pstop
 !----------------------------------!
 ! matrix elements of SIC potential !
 !----------------------------------!
@@ -89,22 +91,27 @@ do i=1,nmegqwan
   n1=imegqwan(2,i)
   n1loc=mpi_grid_map(nwann,dim_k,x=h1,glob=n1)
   vl(:)=imegqwan(3:5,i)
-  if (mpi_grid_x(dim_k).eq.h1) then
+  if (mpi_grid_x(dim_k).eq.h1.and.h1.ne.h) then
     call mpi_grid_send(wanmt(1,1,1,1,1,n1loc),lmmaxvr*nrmtmax*natmtot*ntrloc*nspinor,&
       dims=(/dim_k/),dest=(/h/),tag=1)
     call mpi_grid_send(wanir(1,1,1,n1loc),ngrtot*ntrloc*nspinor,&
       dims=(/dim_k/),dest=(/h/),tag=2)
   endif
   if (mpi_grid_x(dim_k).eq.h) then
-    call mpi_grid_recieve(wanmt0(1,1,1,1,1),lmmaxvr*nrmtmax*natmtot*ntrloc*nspinor,&
-      dims=(/dim_k/),src=(/h1/),tag=1)
-    call mpi_grid_recieve(wanir0(1,1,1),ngrtot*ntrloc*nspinor,&
-      dims=(/dim_k/),src=(/h1/),tag=2)
+    if (h.ne.h1) then
+      call mpi_grid_recieve(wanmt0(1,1,1,1,1),lmmaxvr*nrmtmax*natmtot*ntrloc*nspinor,&
+        dims=(/dim_k/),src=(/h1/),tag=1)
+      call mpi_grid_recieve(wanir0(1,1,1),ngrtot*ntrloc*nspinor,&
+        dims=(/dim_k/),src=(/h1/),tag=2)
+    else
+      wanmt0(:,:,:,:,:)=wanmt(:,:,:,:,:,n1loc)
+      wanir0(:,:,:)=wanir(:,:,:,n1loc)
+    endif
   endif
   if (mpi_grid_x(dim_k).eq.h) then
     do ispn=1,nspinor    
       vwanme(i)=vwanme(i)+lf_dot_lf(.true.,wvmt(1,1,1,1,ispn,nloc),wvir(1,1,ispn,nloc),&
-        vl,wanmt0(1,1,1,1,ispn),wanir0(1,1,ispn))
+        vl,wanmt0(1,1,1,1,ispn),wanir0(1,1,ispn),twanmt(1,1,n),twanmt(1,1,n1))
     enddo
   endif
 enddo
@@ -125,10 +132,15 @@ if (wproc) then
   write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
 !  write(151,'("Matrix elements of SIC potential &
 !    &(n n1  T  <w_n|v_n|w_{n1,T}>)")')
-!  do i=1,nmegqwan
-!    write(151,'(I4,4X,I4,4X,3I3,4X,2G18.10)')imegqwan(:,i),&
-!      dreal(vwanme(i)),dimag(vwanme(i))
-!  enddo
+  write(151,'("Matrix elements of SIC potential &
+    &(n n1  <w_n|v_n|w_n1}>)")')
+  do i=1,nmegqwan
+    vl(:)=imegqwan(3:5,i)
+    if (all(vl.eq.0)) then
+      write(151,'(I4,4X,I4,4X,2G18.10)')imegqwan(1:2,i),&
+        dreal(vwanme(i)),dimag(vwanme(i))
+    endif
+  enddo
   write(151,*)
   write(151,'("Maximum deviation from ""localization criterion"" : ",F12.6)')t2
   write(151,'("Average deviation from ""localization criterion"" : ",F12.6)')t1/nmegqwan

@@ -510,4 +510,12 @@ return
 end
 #endif
 
+#ifndef _MPI_
+subroutine pstop
+implicit none
+stop
+return
+end
+#endif
+
 

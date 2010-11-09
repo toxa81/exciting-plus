@@ -1,5 +1,6 @@
 subroutine sic_genwann(vtrl,ngknr,igkignr,wanmt_,wanir_)
 use modmain
+use mod_lf
 implicit none
 integer, intent(in) :: vtrl(3)
 integer, intent(in) :: ngknr(nkptnrloc)
@@ -13,22 +14,10 @@ complex(8), allocatable :: zfir(:,:)
 complex(8), allocatable :: wmt(:,:,:,:)
 complex(8), allocatable :: wir(:,:)
 complex(8) expikr,zt1
-logical tmt(nwann,natmtot)
 logical, external :: vrinmt
 wanmt_=zzero
 wanir_=zzero
 vtrc(:)=vtrl(1)*avec(:,1)+vtrl(2)*avec(:,2)+vtrl(3)*avec(:,3)
-
-tmt=.false.
-do n=1,nwann
-  jas=iwann(1,n)
-  do ias=1,natmtot  
-    v2(:)=atposc(:,ias2ia(ias),ias2is(ias))+vtrc(:)-&
-      atposc(:,ias2ia(jas),ias2is(jas))
-    if (sqrt(sum(v2(:)**2)).le.wann_r_cutoff) tmt(n,ias)=.true.
-  enddo
-enddo
-
 allocate(wmt(lmmaxvr,nrmtmax,natmtot,nspinor))
 allocate(wir(ngrtot,nspinor))
 allocate(zfir(ngrtot,nspinor))
@@ -43,7 +32,7 @@ do n=1,nwann
     expikr=exp(zi*dot_product(vkcnr(:,ik),vtrc(:)))/nkptnr
     do ias=1,natmtot
       is=ias2is(ias)
-      if (tmt(n,ias)) then
+      if (twanmt(ias,ivtit(vtrl(1),vtrl(2),vtrl(3)),n)) then
         do ispn=1,nspinor
           do ir=1,nrmt(is)
             do l=0,lmaxvr
