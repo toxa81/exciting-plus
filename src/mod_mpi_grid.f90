@@ -43,11 +43,11 @@ interface mpi_grid_hash
 end interface
 
 interface mpi_grid_send
-  module procedure mpi_grid_send_z,mpi_grid_send_i
+  module procedure mpi_grid_send_z,mpi_grid_send_i,mpi_grid_send_l
 end interface
 
 interface mpi_grid_recieve
-  module procedure mpi_grid_recieve_z,mpi_grid_recieve_i
+  module procedure mpi_grid_recieve_z,mpi_grid_recieve_i,mpi_grid_recieve_l
 end interface
 
 contains
@@ -1084,6 +1084,29 @@ call mpi_isend(val,n,MPI_INTEGER,dest_rank,tag,comm,req,ierr)
 return
 end subroutine
 
+!---------------------------!
+!      mpi_grid_send_l      !
+!---------------------------!
+subroutine mpi_grid_send_l(val,n,dims,dest,tag)
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+logical, intent(in) :: val
+integer, intent(in) :: n
+integer, dimension(:), intent(in) :: dims
+integer, dimension(:), intent(in) :: dest
+integer, intent(in) :: tag
+! local variables
+integer comm,dest_rank,req,ierr
+#ifdef _MPI_
+comm=mpi_grid_get_comm(dims)
+call mpi_cart_rank(comm,dest,dest_rank,ierr) 
+call mpi_isend(val,n,MPI_LOGICAL,dest_rank,tag,comm,req,ierr)
+#endif
+return
+end subroutine
+
 !------------------------------!
 !      mpi_grid_recieve_z      !
 !------------------------------!
@@ -1137,6 +1160,30 @@ integer stat(MPI_STATUS_SIZE)
 comm=mpi_grid_get_comm(dims)
 call mpi_cart_rank(comm,src,src_rank,ierr)
 call mpi_recv(val,n,MPI_INTEGER,src_rank,tag,comm,stat,ierr)
+#endif
+return
+end subroutine
+
+!------------------------------!
+!      mpi_grid_recieve_l      !
+!------------------------------!
+subroutine mpi_grid_recieve_l(val,n,dims,src,tag)
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+logical, intent(out) :: val
+integer, intent(in) :: n
+integer, dimension(:), intent(in) :: dims
+integer, dimension(:), intent(in) :: src
+integer, intent(in) :: tag
+! local variables
+#ifdef _MPI_
+integer comm,src_rank,ierr
+integer stat(MPI_STATUS_SIZE)
+comm=mpi_grid_get_comm(dims)
+call mpi_cart_rank(comm,src,src_rank,ierr)
+call mpi_recv(val,n,MPI_LOGICAL,src_rank,tag,comm,stat,ierr)
 #endif
 return
 end subroutine

@@ -38,7 +38,7 @@ do l=0,lmaxvr
     enddo
   enddo
 enddo
-! R_{L}=\sum_{L'} M_{L,L'} Y_{L'} so Y_{L}=\sum_{L'} (M^{-1})_{L,L'} Y_{L'}
+! R_{L}=\sum_{L'} M_{L,L'} Y_{L'} so Y_{L}=\sum_{L'} (M^{-1})_{L,L'} R_{L'}
 call invzge(ylmtorlm,lmmaxvr)
 
 vhwanmt=zzero
@@ -85,8 +85,12 @@ do iq=1,nvq
       expikt=exp(zi*dot_product(vtrc(:),vqc(:,iq)))/nkptnr/omega
       do nloc=1,nwannloc
         n=mpi_grid_map(nwann,dim_k,loc=nloc)
-        vhwanmt(:,:,:,itloc,1,nloc)=vhwanmt(:,:,:,itloc,1,nloc)+&
-          megqwan1(n,ig,iq)*vhgq(ig,iq)*pwmt(:,:,:)*expikt
+        do ias=1,natmtot
+          if (twanmt(ias,itr,n)) then
+            vhwanmt(:,:,ias,itloc,1,nloc)=vhwanmt(:,:,ias,itloc,1,nloc)+&
+              megqwan1(n,ig,iq)*vhgq(ig,iq)*pwmt(:,:,ias)*expikt          
+          endif
+        enddo
         vhwanir(:,itloc,1,nloc)=vhwanir(:,itloc,1,nloc)+&
           megqwan1(n,ig,iq)*vhgq(ig,iq)*pwir(:)*expikt
       enddo !nloc

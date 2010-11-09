@@ -2,7 +2,7 @@ subroutine sic_init
 use modmain
 use mod_lf
 implicit none
-integer i,j,ias,n
+integer i,j,ias,n,jas
 integer i1,i2,i3,j1,j2,j3,is,ia,nt(3),ir0
 real(8) d,vr0c(3),r0
 logical l1
@@ -131,5 +131,19 @@ allocate(sic_wann_h0k(nwann,nwann,nkptloc))
 sic_wann_h0k=zzero
 sic_etot_correction=0.d0
 tevecsv=.true.
+if (allocated(twanmt)) deallocate(twanmt)
+allocate(twanmt(natmtot,ntr,nwann))
+twanmt=.false.
+do i=1,ntr
+  v1(:)=vtl(1,i)*avec(:,1)+vtl(2,i)*avec(:,2)+vtl(3,i)*avec(:,3)
+  do n=1,nwann
+    jas=iwann(1,n)
+    do ias=1,natmtot  
+      v2(:)=atposc(:,ias2ia(ias),ias2is(ias))+v1(:)-&
+        atposc(:,ias2ia(jas),ias2is(jas))
+      if (sqrt(sum(v2(:)**2)).le.wann_r_cutoff) twanmt(ias,i,n)=.true.
+    enddo
+  enddo
+enddo
 return
 end

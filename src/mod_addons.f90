@@ -40,8 +40,10 @@ real(8), allocatable :: lpsrsh(:,:,:)
 integer, allocatable :: iatlps(:)
 ! complex to real spherical harmonic transformation
 complex(8), allocatable :: rylm(:,:)
+complex(8), allocatable :: zdsht(:,:)
 ! real to complex spherical harmonic transformation
 complex(8), allocatable :: yrlm(:,:)
+complex(8), allocatable :: dzsht(:,:)
 ! global complex to real lps spherical harmonic transformation
 complex(8), allocatable :: rylm_lps(:,:,:)
 ! real lps to global complex spherical harmonic transformation
@@ -307,6 +309,11 @@ data wannier_min_prjao/-0.1d0/
 logical ldisentangle
 data ldisentangle/.false./
 
+! wannier_prjao=0 (default) : project to local orbital
+! wannier_prjao=1 : project to f(x)=(1+cos(Pi*x/R))
+integer wannier_prjao
+data wannier_prjao/0/
+
 !----------------!
 !      timer     !
 !----------------!
@@ -347,6 +354,7 @@ complex(8), allocatable :: wvir(:,:,:,:)
 ! Wannier functions
 complex(8), allocatable :: wanmt(:,:,:,:,:,:)
 complex(8), allocatable :: wanir(:,:,:,:)
+logical, allocatable :: twanmt(:,:,:)
 ! matrix elements of Wannier potential <W_{n0}|V_{n0}|W_{n'T}>
 complex(8), allocatable :: vwanme(:)
 ! LDA Hamiltonian in k-space in Wannier basis 
