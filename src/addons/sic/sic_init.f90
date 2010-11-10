@@ -2,13 +2,14 @@ subroutine sic_init
 use modmain
 use mod_lf
 implicit none
-integer i,j,ias,n,jas
-integer i1,i2,i3,j1,j2,j3,is,ia,nt(3),ir0
+integer i,j,ias,n,jas,ntp
+integer i1,i2,i3,j1,j2,j3,is,ia,nt(3),ir0,itp
 real(8) d,vr0c(3),r0
 logical l1
 real(8) v1(3),v2(3),v3(3)
 logical exist
 logical, external :: vrinmt
+real(8), allocatable :: spx(:,:),wtp(:),tp(:,:)
 
 call getnghbr(-0.1d0,wann_r_cutoff)
 if (allocated(vtl)) deallocate(vtl)
@@ -16,6 +17,30 @@ allocate(vtl(3,maxvtl))
 vtl=-1000000
 ntr=0
 tlim=0
+
+!ntp=6000
+!allocate(spx(3,ntp),wtp(ntp),tp(2,ntp))
+!call sphcover(ntp,tp)                                                         
+!do itp=1,ntp
+!  spx(1,itp)=sin(tp(1,itp))*cos(tp(2,itp))
+!  spx(2,itp)=sin(tp(1,itp))*sin(tp(2,itp))
+!  spx(3,itp)=cos(tp(1,itp))  
+!  spx=spx*wann_r_cutoff
+!  call getntr(spx(1,itp),nt,v1)
+!  l1=.true.
+!  do i=1,ntr
+!    if (all(vtl(:,i).eq.nt(:))) l1=.false.
+!  enddo !i
+!  if (l1) then
+!    ntr=ntr+1
+!    if (ntr.gt.maxvtl) then
+!      write(*,'("Error(sic_init) : maxvtl is too small")')
+!      call pstop
+!    endif
+!    vtl(:,ntr)=nt(:)
+!  endif
+!enddo
+!deallocate(spx,wtp,tp)
 
 do n=1,nwann
   ias=iwann(1,n)

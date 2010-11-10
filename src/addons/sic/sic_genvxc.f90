@@ -224,6 +224,10 @@ do nloc=1,nwannloc
     do ispn=1,nspinor
       wfir2(:,ispn)=dreal(dconjg(wanir(:,itloc,ispn,nloc))*wanir(:,itloc,ispn,nloc))
     enddo
+    ecir_=0.d0
+    exir_=0.d0
+    vxir_=0.d0
+    vcir_=0.d0
     if (spinpol) then
       call xcifc(xctype,n=ngrtot,rhoup=wfir2(:,1),rhodn=wfir2(:,2),ex=exir_,&
         ec=ecir_,vxup=vxir_(:,1),vxdn=vxir_(:,2),vcup=vcir_(:,1),vcdn=vcir_(:,2))

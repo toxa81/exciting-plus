@@ -11,6 +11,10 @@ complex(8), allocatable :: a(:,:,:)
 complex(8), allocatable :: b(:,:,:)
 integer ik,h,ikloc,ig,ir,n,nloc,ispn,ist,ias,i1,i2,i3
 real(8) v2(3),v3(3)
+logical exist
+
+inquire(file="sic.hdf5",exist=exist)
+if (.not.exist) return
 
 allocate(evecfv1(nmatmax,nstfv,nspnfv))
 allocate(igkig1(ngkmax))

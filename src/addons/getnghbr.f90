@@ -15,7 +15,7 @@ llim=0
 do i=1,3
   vrc=0.d0
   vrc(i)=maxdist
-  call getntr(avec,vrc,ntr,vrl)
+  call getntr(vrc,ntr,vrl)
   do j=1,3
     llim(j)=max(abs(ntr(j))+1,llim(j))
   enddo

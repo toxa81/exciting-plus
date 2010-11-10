@@ -101,7 +101,11 @@ do i3=0,ngrid(3)-1
       do nloc=1,nwannloc
         n=mpi_grid_map(nwann,dim_k,loc=nloc)
         v4(:)=v3(:)-atposc(:,ias2ia(iwann(1,n)),ias2is(iwann(1,n)))
-        if (sqrt(sum(v4(:)**2)).gt.wann_r_cutoff) wanir_(ir,:,nloc)=zzero
+        if (sqrt(sum(v4(:)**2)).gt.wann_r_cutoff) then
+          wanir_(ir,:,nloc)=zzero
+        !else
+        !  write(*,*)'x=',v3,'wan(',nloc,')=',wanir_(ir,1,nloc)
+        endif
       enddo !nloc
     enddo
   enddo
