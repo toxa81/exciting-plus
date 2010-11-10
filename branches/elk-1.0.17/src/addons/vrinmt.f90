@@ -14,7 +14,7 @@ real(8) vrl(3),vrc(3),rmt2,pos(3)
 integer i1,i2,i3,ir,np2
 
 vrinmt=.false.
-call getntr(avec,vrcnr,ntr,vrl)
+call getntr(vrcnr,ntr,vrl)
 call r3mv(avec,vrl,vrc)
 
 np2=nprad/2

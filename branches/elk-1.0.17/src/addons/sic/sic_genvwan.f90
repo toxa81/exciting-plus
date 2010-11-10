@@ -6,7 +6,7 @@ use modxcifc
 use mod_addons_q
 use mod_hdf5
 implicit none
-integer n,sz,i,j,n1,ispn,vtrl(3),nloc,n1loc,h,h1
+integer n,sz,i,j,i1,j1,n1,ispn,vtrl(3),nloc,n1loc,h,h1
 real(8) t1,t2,vtrc(3)
 integer vl(3)
 ! Wannier functions
@@ -70,11 +70,10 @@ call genwfnr(151,.false.)
 ! get all Wannier transitions
 all_wan_ibt=.true.
 call getimegqwan(all_wan_ibt)
+!twanmt=.false.
 call sic_wan(151)
 allocate(ene(4,nwann))
 call sic_pot(151,ene)
-!close(151)
-!call pstop
 !----------------------------------!
 ! matrix elements of SIC potential !
 !----------------------------------!
@@ -117,14 +116,18 @@ do i=1,nmegqwan
 enddo
 call mpi_grid_reduce(vwanme(1),nmegqwan,dims=(/dim_k/))
 t1=0.d0
-t2=0.d0
+t2=-1.d0
 do i=1,nmegqwan
   n=imegqwan(1,i)
   n1=imegqwan(2,i)
   vl(:)=imegqwan(3:5,i)
   j=idxmegqwan(n1,n,-vl(1),-vl(2),-vl(3))
   t1=t1+abs(vwanme(i)-dconjg(vwanme(j)))
-  t2=max(t2,abs(vwanme(i)-dconjg(vwanme(j))))
+  if (abs(vwanme(i)-dconjg(vwanme(j))).ge.t2) then
+    t2=abs(vwanme(i)-dconjg(vwanme(j)))
+    i1=i
+    j1=j
+  endif
 enddo
 if (wproc) then
   call timestamp(151,"done with matrix elements")
@@ -145,6 +148,12 @@ if (wproc) then
   write(151,'("Maximum deviation from ""localization criterion"" : ",F12.6)')t2
   write(151,'("Average deviation from ""localization criterion"" : ",F12.6)')t1/nmegqwan
   write(151,*)
+  write(151,'("Matrix elements with maximum difference : ",2I6)')i1,j1
+  write(151,'(I4,4X,I4,4X,3I4,4X,2G18.10)')imegqwan(:,i1),&
+        dreal(vwanme(i1)),dimag(vwanme(i1))
+  write(151,'(I4,4X,I4,4X,3I4,4X,2G18.10)')imegqwan(:,j1),&
+        dreal(vwanme(j1)),dimag(vwanme(j1))
+  write(151,*)
   write(151,'("Diagonal matrix elements")')
   write(151,'(2X,"wann",18X,"V_n")')
   write(151,'(44("-"))')
@@ -154,7 +163,6 @@ if (wproc) then
   enddo  
   call flushifc(151)
 endif
-if (wproc) write(151,*)
 ! check hermiticity of V_nn'(k)
 allocate(vwank(nwann,nwann))
 vwank=zzero
@@ -174,7 +182,16 @@ do ik=1,nkpt
     enddo
   enddo
   if (wproc) then
+    write(151,*)
     write(151,'("ik : ",I4,"   max.herm.err : ",G18.10 )')ik,t1
+    write(151,*)
+    do n1=1,nwann
+      write(151,'(5X,255F12.7)')(dreal(vwank(n1,n2)),n2=1,nwann)
+    enddo
+    write(151,*)
+    do n1=1,nwann
+      write(151,'(5X,255F12.7)')(dimag(vwank(n1,n2)),n2=1,nwann)
+    enddo
   endif
 enddo
 deallocate(vwank)
