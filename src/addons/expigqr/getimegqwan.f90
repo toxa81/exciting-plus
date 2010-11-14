@@ -5,6 +5,8 @@ logical, intent(in) :: lall
 integer n,n1,i,ias,jas,j,j1
 logical l1
 logical, external :: wann_diel
+logical lkeep
+integer iwfch
 
 if (nwann_include.eq.0) then
   nwann_include=nwann
@@ -47,10 +49,27 @@ do j=1,nwann_include
 ! for fractional occupancies or other cases take all transitions
         if (.not.wann_diel().or.lall) l1=.true.
         if (l1) then
-          nmegqwan=nmegqwan+1
-          imegqwan(1,nmegqwan)=n
-          imegqwan(2,nmegqwan)=n1
-          imegqwan(3:5,nmegqwan)=inghbr(3:5,i,ias)
+          if (lrespwffilter) then
+            lkeep=.false.
+            do iwfch=1,nwfch
+              if (((wfch(1,iwfch).eq.n).and.(wfch(2,iwfch).eq.n1)) &
+                .or.((wfch(1,iwfch).eq.n1).and.(wfch(2,iwfch).eq.n))) then
+                write(*,*) n,n1,wfch(1,iwfch),wfch(2,iwfch)
+                lkeep=.true.
+              endif
+            enddo
+            if (lkeep) then
+              nmegqwan=nmegqwan+1
+              imegqwan(1,nmegqwan)=n
+              imegqwan(2,nmegqwan)=n1
+              imegqwan(3:5,nmegqwan)=inghbr(3:5,i,ias)
+            endif
+          else
+            nmegqwan=nmegqwan+1
+            imegqwan(1,nmegqwan)=n
+            imegqwan(2,nmegqwan)=n1
+            imegqwan(3:5,nmegqwan)=inghbr(3:5,i,ias)
+          endif
         endif 
       endif
     enddo
