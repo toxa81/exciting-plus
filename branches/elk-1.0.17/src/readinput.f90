@@ -1059,6 +1059,12 @@ case('megqwan_include')
   read(50,*,err=20) nwann_include
   allocate(iwann_include(nwann_include))
   read(50,*,err=20) (iwann_include(i),i=1,nwann_include)
+case('megqwan_channels')
+  read(50,*,err=20) nwfch
+  do i=1,nwfch
+    read(50,*,err=20) wfch(1,i), wfch(2,i)
+  enddo
+  lrespwffilter=.true.
 case('mpigrid')
   lmpigrid=.true.
   read(50,*,err=20) mpigrid(1),mpigrid(2),mpigrid(3) 
