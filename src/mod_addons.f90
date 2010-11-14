@@ -309,6 +309,11 @@ data wannier_min_prjao/-0.1d0/
 logical ldisentangle
 data ldisentangle/.false./
 
+logical lrespwffilter
+data lrespwffilter/.false./
+integer nwfch
+integer wfch(2,200)
+
 ! wannier_prjao=0 (default) : project to local orbital
 ! wannier_prjao=1 : project to f(x)=(1+cos(Pi*x/R))
 integer wannier_prjao
