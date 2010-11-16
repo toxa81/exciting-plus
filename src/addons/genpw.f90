@@ -35,7 +35,8 @@ do ias=1,natmtot
     enddo
   enddo
 enddo
-! Y_{m}=\sum_{m'} dzsht_{m,m'} R_{m'}
+! convert to real spherical harmonics
+!   remember that Y_{m}=\sum_{m'} dzsht_{m,m'} R_{m'}
 do ias=1,natmtot
   is=ias2is(ias)
   do ir=1,nrmt(is)
@@ -46,18 +47,8 @@ do ias=1,natmtot
     pwmt(:,ir,ias)=zt2(:)
   enddo
 enddo
-ir=0
-do i3=0,ngrid(3)-1
-  v2(3)=dble(i3)/dble(ngrid(3))
-  do i2=0,ngrid(2)-1
-    v2(2)=dble(i2)/dble(ngrid(2))
-    do i1=0,ngrid(1)-1
-      v2(1)=dble(i1)/dble(ngrid(1))
-      call r3mv(avec,v2,v3)
-      ir=ir+1
-      pwir(ir)=exp(zi*dot_product(vgpc,v3(:))) 
-    enddo
-  enddo
+do ir=1,ngrtot
+  pwir(ir)=exp(zi*dot_product(vgpc,vgrc(:,ir)))
 enddo
 return
 end
