@@ -1,30 +1,22 @@
-subroutine sic_hunif(ikloc,evecfv,hunif)
+subroutine sic_hunif(ikloc,hunif)
 use modmain
 use mod_lf
 use mod_hdf5
 ! arguments
 implicit none
 integer, intent(in) :: ikloc
-complex(8), intent(in) :: evecfv(nmatmax,nstfv)
 complex(8), intent(inout) :: hunif(nstsv,nstsv)
 ! local variables
 logical exist
+integer i,n,ik,vtrl(3),n1,j1,j2,ispn1,ispn2,jst1,jst2,n2
+real(8) vtrc(3),t1
 real(8), allocatable :: vn(:)
-integer i,n,ik,i1,i2
-complex(8), allocatable :: apwalm(:,:,:,:)
-complex(8), allocatable :: wfmt(:,:,:)
-complex(8), allocatable :: wfir(:)
+complex(8) expikt
 complex(8), allocatable :: vwank(:,:)
 complex(8), allocatable :: vwank_sym(:,:)
 complex(8), allocatable :: a(:,:,:)
 complex(8), allocatable :: b(:,:,:)
 complex(8), allocatable :: zm1(:,:)
-integer ias,ispn,ig,ir
-complex(8) expikt
-integer vtrl(3),n1,j1,j2,i3,ispn1,ispn2,jst1,jst2,ist,n2
-real(8) vtrc(3),v2(3),v3(3)
-complex(8) expikr
-real(8) t1
 real(8), parameter :: epsherm=1d-8
 !character*100 fname
 
@@ -40,59 +32,10 @@ do i=1,nmegqwan
   endif
 enddo
 
-!allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-!allocate(wfmt(lmmaxvr,nrmtmax,natmtot))
-!allocate(wfir(ngrtot))
 allocate(a(nwann,nstfv,nspinor))
 allocate(b(nwann,nstfv,nspinor))
-
 a(:,:,:)=sic_wb(:,:,:,ikloc)
 b(:,:,:)=sic_wvb(:,:,:,ikloc)
-
-!a=zzero
-!b=zzero
-!! get apw coeffs 
-!call match(ngk(1,ik),gkc(:,1,ikloc),tpgkc(:,:,1,ikloc),sfacgk(:,:,1,ikloc),&
-!  apwalm)
-!! compute a=<W_n|\phi_{jk}> and b=<W_n|V_n|\phi_{jk}> where phi(r) are firt-
-!!  variational Bloch wave-functions
-!do ist=1,nstfv
-!  wfmt=zzero
-!  wfir=zzero
-!  do ias=1,natmtot
-!    call wavefmt(1,lmaxvr,ias2is(ias),ias2ia(ias),ngk(1,ik),apwalm,&
-!      evecfv(:,ist),lmmaxvr,wfmt(1,1,ias))
-!  enddo
-!  do ig=1,ngk(1,ik)
-!    wfir(igfft(igkig(ig,1,ikloc)))=evecfv(ig,ist)
-!  enddo
-!  call zfftifc(3,ngrid,1,wfir)
-!  wfir(:)=wfir(:)/sqrt(omega)
-!  ir=0
-!  do i3=0,ngrid(3)-1
-!    v2(3)=dble(i3)/dble(ngrid(3))
-!    do i2=0,ngrid(2)-1
-!      v2(2)=dble(i2)/dble(ngrid(2))
-!      do i1=0,ngrid(1)-1
-!        v2(1)=dble(i1)/dble(ngrid(1))
-!        ir=ir+1
-!        call r3mv(avec,v2,v3)
-!        expikr=exp(zi*dot_product(vkc(:,ik),v3(:)))
-!        wfir(ir)=expikr*wfir(ir)
-!      enddo
-!    enddo
-!  enddo
-!  do n=1,nwann
-!    do ispn=1,nspinor
-!      a(n,ist,ispn)=lf_dot_blh(.true.,vkc(1,ik),wanmt(1,1,1,1,ispn,n),&
-!        wanir(1,1,ispn,n),wfmt,wfir)
-!      b(n,ist,ispn)=lf_dot_blh(.true.,vkc(1,ik),wvmt(1,1,1,1,ispn,n),&
-!        wvir(1,1,ispn,n),wfmt,wfir)
-!    enddo
-!  enddo
-!enddo !ist
-!deallocate(apwalm,wfmt,wfir)
-
 
 ! compute V_{nn'}(k)
 allocate(vwank(nwann,nwann))

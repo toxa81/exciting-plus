@@ -2,7 +2,8 @@ subroutine init3
 use modmain
 use mod_lf
 implicit none
-integer ia,is,lm,l,m
+integer ia,is,lm,l,m,ir,i1,i2,i3
+real(8) vl(3)
 if (allocated(rylm)) deallocate(rylm)
 allocate(rylm(16,16))
 if (allocated(yrlm)) deallocate(yrlm)
@@ -40,6 +41,20 @@ do l=0,50
     lm2m(idxlm(l,m))=m
   end do
 end do
+if (allocated(vgrc)) deallocate(vgrc)
+allocate(vgrc(3,ngrtot))
+ir=0
+do i3=0,ngrid(3)-1
+  vl(3)=dble(i3)/dble(ngrid(3))
+  do i2=0,ngrid(2)-1
+    vl(2)=dble(i2)/dble(ngrid(2))
+    do i1=0,ngrid(1)-1
+      vl(1)=dble(i1)/dble(ngrid(1))
+      ir=ir+1
+      call r3mv(avec,vl,vgrc(1,ir))
+    enddo
+  enddo
+enddo
 if (wannier) call wann_init
 if (.not.wannier) sic=.false.
 if (sic) call sic_init

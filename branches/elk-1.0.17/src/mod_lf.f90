@@ -513,8 +513,8 @@ subroutine lf_write(fname,fmt,fir)
 use modmain
 implicit none
 character*(*), intent(in) :: fname
-complex(8), intent(in) :: fmt(lmmaxvr,nrmtmax,natmtot,*)
-complex(8), intent(in) :: fir(ngrtot,*)
+real(8), intent(in) :: fmt(lmmaxvr,nrmtmax,natmtot,ntrloc)
+real(8), intent(in) :: fir(ngrtot,ntrloc)
 
 integer it,itloc,i1,i2,i3,ir,i,is,ia,itr(3),ir0
 real(8) vtrc(3),v2(3),v3(3),vrc0(3),r0
@@ -538,7 +538,7 @@ do itloc=1,ntrloc
         l1=vrinmt(v3,is,ia,itr,vrc0,ir0,r0)        
         v3(:)=v3(:)+vtrc(:)
         if (abs(fir(ir,itloc)).gt.1d-10) then
-          write(160,'(4G16.8)')v3,abs(fir(ir,itloc))
+          write(160,*)v3(1),',',v3(2),',',v3(3),',',fir(ir,itloc)
           i=i+1
         endif
       enddo

@@ -8,12 +8,12 @@ implicit none
 integer, intent(in) :: fout
 complex(8), intent(out) :: ene(4,nwann)
 ! local variables
-integer nloc,ispn,i,n,lm,ir
+integer nloc,ispn,i,n
 ! potential (Hartree+XC) of Wannier function charge density
 real(8), allocatable :: vhxcmt(:,:,:,:,:,:)
 real(8), allocatable :: vhxcir(:,:,:,:)
 real(8) sic_ekin,sic_epot
-complex(8), allocatable :: zm1(:,:)
+!complex(8), allocatable :: zm1(:,:)
 
 if (wproc) then
   write(fout,*)
@@ -27,7 +27,7 @@ wvir=zzero
 ! Hartree potential !
 !-------------------!
 ! generate Hartree potential of Wannier functions
-!  use wvmt,wvir arrays as temporary
+!   wvmt and wvir arrays are used as temporary
 call sic_genvhart(wvmt,wvir)
 ! deallocate unnecessary arrays
 deallocate(wfsvmtnrloc)
@@ -40,6 +40,7 @@ if (wproc) then
   write(fout,'("ngqmax : ",I4)')ngqmax
   write(fout,'("time for q-vectors : ",F8.3)')timer_get_value(10)
   write(fout,'("time for Hartree potential : ",F8.3)')timer_get_value(11)
+! TODO: change to maximum imaginary part  
   write(fout,'("average imaginary part (mt,ir) : ",2G18.10)') &
     sum(abs(dimag(wvmt)))/lmmaxvr/nrmtmax/natmtot/ntrloc/nwann,&
     sum(abs(dimag(wvir)))/ngrtot/ntrloc/nwann
@@ -139,6 +140,7 @@ enddo
 !    write(200+n,*)
 !  enddo
 !enddo
+!call lf_write("vxc1.dat",vhxcmt(1,1,1,1,1,1),vhxcir(1,1,1,1))
 deallocate(vhxcmt,vhxcir)
 return
 end
