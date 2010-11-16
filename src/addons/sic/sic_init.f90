@@ -2,107 +2,44 @@ subroutine sic_init
 use modmain
 use mod_lf
 implicit none
-integer i,j,ias,n,jas,ntp
-integer i1,i2,i3,j1,j2,j3,is,ia,nt(3),ir0,itp
-real(8) d,vr0c(3),r0
-logical l1
-real(8) v1(3),v2(3),v3(3)
-logical exist
-logical, external :: vrinmt
-real(8), allocatable :: spx(:,:),wtp(:),tp(:,:)
+integer i,ias,n,jas,i1,i2,i3,vl(3),ish
+logical l1,l2,exist
+real(8) v1(3),v2(3)
+logical, external :: vrinmt,sic_include_cell
 
-call getnghbr(-0.1d0,wann_r_cutoff)
 if (allocated(vtl)) deallocate(vtl)
 allocate(vtl(3,maxvtl))
 vtl=-1000000
 ntr=0
-tlim=0
-
-!ntp=6000
-!allocate(spx(3,ntp),wtp(ntp),tp(2,ntp))
-!call sphcover(ntp,tp)                                                         
-!do itp=1,ntp
-!  spx(1,itp)=sin(tp(1,itp))*cos(tp(2,itp))
-!  spx(2,itp)=sin(tp(1,itp))*sin(tp(2,itp))
-!  spx(3,itp)=cos(tp(1,itp))  
-!  spx=spx*wann_r_cutoff
-!  call getntr(spx(1,itp),nt,v1)
-!  l1=.true.
-!  do i=1,ntr
-!    if (all(vtl(:,i).eq.nt(:))) l1=.false.
-!  enddo !i
-!  if (l1) then
-!    ntr=ntr+1
-!    if (ntr.gt.maxvtl) then
-!      write(*,'("Error(sic_init) : maxvtl is too small")')
-!      call pstop
-!    endif
-!    vtl(:,ntr)=nt(:)
-!  endif
-!enddo
-!deallocate(spx,wtp,tp)
-
-do n=1,nwann
-  ias=iwann(1,n)
-  do j=1,nnghbr(ias)
-    d=inghbr(2,j,ias)/1000000.d0
-    if (d.le.wann_r_cutoff) then
-      do i=1,3
-        tlim(1,i)=min(tlim(1,i),inghbr(2+i,j,ias))
-        tlim(2,i)=max(tlim(2,i),inghbr(2+i,j,ias))
-      enddo
-      l1=.true.
-      do i=1,ntr
-        if (all(vtl(:,i).eq.inghbr(3:5,j,ias))) l1=.false.
-      enddo !i
-      if (l1) then
-        ntr=ntr+1
-        if (ntr.gt.maxvtl) then
-          write(*,'("Error(sic_init) : maxvtl is too small")')
-          call pstop
+l2=.true.
+ish=0
+do while (l2)
+  l1=.false.
+  do i1=-ish,ish
+    do i2=-ish,ish
+      do i3=-ish,ish
+        if (abs(i1).eq.ish.or.abs(i2).eq.ish.or.abs(i3).eq.ish) then
+          vl=(/i1,i2,i3/)
+          if (sic_include_cell(vl)) then
+            l1=.true.            
+            ntr=ntr+1
+            if (ntr.gt.maxvtl) then
+              write(*,'("Error(sic_init) : maxvtl is too small")')
+              call pstop
+            endif
+            vtl(:,ntr)=vl
+          endif
         endif
-        vtl(:,ntr)=inghbr(3:5,j,ias)
-      endif
-    endif
-  enddo !j
-enddo !n
-do n=1,nwann
-  ias=iwann(1,n)
-  do i1=tlim(1,1)-1,tlim(2,1)+1
-    do i2=tlim(1,2)-1,tlim(2,2)+1
-      do i3=tlim(1,3)-1,tlim(2,3)+1
-        v1(:)=i1*avec(:,1)+i2*avec(:,2)+i3*avec(:,3)-&
-          atposc(:,ias2ia(ias),ias2is(ias))
-        do j3=0,ngrid(3)-1
-          v2(3)=dble(j3)/dble(ngrid(3))
-          do j2=0,ngrid(2)-1
-            v2(2)=dble(j2)/dble(ngrid(2))
-            do j1=0,ngrid(1)-1
-              v2(1)=dble(j1)/dble(ngrid(1))
-              call r3mv(avec,v2,v3)
-              v3(:)=v3(:)+v1(:)
-              if (sqrt(sum(v3(:)**2)).le.wann_r_cutoff.and..not.&
-                  vrinmt(v3,is,ia,nt,vr0c,ir0,r0)) then
-                l1=.true.
-                do i=1,ntr
-                  if (all(vtl(:,i).eq.(/i1,i2,i3/))) l1=.false.
-                enddo !i
-                if (l1) then
-                  ntr=ntr+1
-                  if (ntr.gt.maxvtl) then
-                    write(*,'("Error(sic_init) : maxvtl is too small")')
-                    call pstop
-                  endif
-                  vtl(:,ntr)=(/i1,i2,i3/)
-                endif
-              endif
-            enddo
-          enddo
-        enddo
       enddo
     enddo
-  enddo
+  enddo !i1
+  if (l1) then
+    ish=ish+1
+  else
+    l2=.false.
+  endif
 enddo
+tlim=0
 do i=1,3
   tlim(1,i)=minval(vtl(i,1:ntr))
   tlim(2,i)=maxval(vtl(i,1:ntr))
@@ -139,6 +76,7 @@ wanir=zzero
 if (allocated(sic_wann_e0)) deallocate(sic_wann_e0)
 allocate(sic_wann_e0(nwann))
 sic_wann_e0=0.d0
+! TODO: skip reading the file with different WF set
 inquire(file="SIC_WANN_E0.OUT",exist=exist)
 if (exist) then
   open(170,file="SIC_WANN_E0.OUT",form="FORMATTED",status="OLD")
@@ -170,5 +108,31 @@ do i=1,ntr
     enddo
   enddo
 enddo
+return
+end
+
+logical function sic_include_cell(vl)
+use modmain
+implicit none
+integer, intent(in) :: vl(3)
+logical l1
+integer n,ias,jas,ir
+real(8) vt(3),v1(3)
+
+vt(:)=vl(1)*avec(:,1)+vl(2)*avec(:,2)+vl(3)*avec(:,3)
+l1=.false.
+do n=1,nwann
+  ias=iwann(1,n)
+  do jas=1,natmtot
+    v1(:)=atposc(:,ias2ia(jas),ias2is(jas))+vt(:)-&
+      atposc(:,ias2ia(ias),ias2is(ias))
+    if (sqrt(sum(v1(:)**2)).le.wann_r_cutoff) l1=.true.
+  enddo
+  do ir=1,ngrtot
+    v1(:)=vgrc(:,ir)+vt(:)-atposc(:,ias2ia(ias),ias2is(ias))
+    if (sqrt(sum(v1(:)**2)).le.wann_r_cutoff) l1=.true.
+  enddo
+enddo
+sic_include_cell=l1
 return
 end

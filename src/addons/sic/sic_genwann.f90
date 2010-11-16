@@ -7,9 +7,9 @@ integer, intent(in) :: ngknr(nkptnrloc)
 integer, intent(in) :: igkignr(ngkmax,nkptnrloc)
 complex(8), intent(out) :: wanmt_(lmmaxvr,nrmtmax,natmtot,nspinor,nwannloc)
 complex(8), intent(out) :: wanir_(ngrtot,nspinor,nwannloc)
-integer is,ias,ir,i1,i2,i3,ig,ikloc,ik,l
-integer io,lm,n,ispn,jas,h,nloc
-real(8) v2(3),v3(3),vtrc(3),v4(3)
+integer is,ias,ir,ig,ikloc,ik,l
+integer io,lm,n,ispn,h,nloc
+real(8) v1(3),vtrc(3)
 complex(8), allocatable :: zfir(:,:)
 complex(8), allocatable :: wmt(:,:,:,:)
 complex(8), allocatable :: wir(:,:)
@@ -58,22 +58,12 @@ do n=1,nwann
       enddo
       call zfftifc(3,ngrid,1,zfir(:,ispn))
     enddo !ispn
-    ir=0
-    do i3=0,ngrid(3)-1
-      v2(3)=dble(i3)/dble(ngrid(3))
-      do i2=0,ngrid(2)-1
-        v2(2)=dble(i2)/dble(ngrid(2))
-        do i1=0,ngrid(1)-1
-          v2(1)=dble(i1)/dble(ngrid(1))
-          ir=ir+1
-          call r3mv(avec,v2,v3)
-          v3(:)=v3(:)+vtrc(:)
-          zt1=exp(zi*dot_product(vkcnr(:,ik),v3(:)))
-          do ispn=1,nspinor
-            wir(ir,ispn)=wir(ir,ispn)+zt1*zfir(ir,ispn)
-          enddo
-        enddo
-      enddo
+    do ir=1,ngrtot
+      v1(:)=vgrc(:,ir)+vtrc(:)
+      zt1=exp(zi*dot_product(vkcnr(:,ik),v1(:)))
+      do ispn=1,nspinor
+        wir(ir,ispn)=wir(ir,ispn)+zt1*zfir(ir,ispn)
+      enddo      
     enddo
     call timer_stop(2)
   enddo !ikloc
@@ -88,28 +78,15 @@ do n=1,nwann
 enddo !n
 deallocate(wmt,wir,zfir)
 ! cutoff in the interstitial
-ir=0
-do i3=0,ngrid(3)-1
-  v2(3)=dble(i3)/dble(ngrid(3))
-  do i2=0,ngrid(2)-1
-    v2(2)=dble(i2)/dble(ngrid(2))
-    do i1=0,ngrid(1)-1
-      v2(1)=dble(i1)/dble(ngrid(1))
-      ir=ir+1
-      call r3mv(avec,v2,v3)
-      v3(:)=v3(:)+vtrc(:)
-      do nloc=1,nwannloc
-        n=mpi_grid_map(nwann,dim_k,loc=nloc)
-        v4(:)=v3(:)-atposc(:,ias2ia(iwann(1,n)),ias2is(iwann(1,n)))
-        if (sqrt(sum(v4(:)**2)).gt.wann_r_cutoff) then
-          wanir_(ir,:,nloc)=zzero
-        !else
-        !  write(*,*)'x=',v3,'wan(',nloc,')=',wanir_(ir,1,nloc)
-        endif
-      enddo !nloc
-    enddo
+do nloc=1,nwannloc
+  n=mpi_grid_map(nwann,dim_k,loc=nloc)
+  do ir=1,ngrtot
+    v1(:)=vgrc(:,ir)+vtrc(:)-atposc(:,ias2ia(iwann(1,n)),ias2is(iwann(1,n)))
+    if (sqrt(sum(v1(:)**2)).gt.wann_r_cutoff) then
+      wanir_(ir,:,nloc)=zzero
+    endif
   enddo
-enddo 
+enddo
 return
 end
 

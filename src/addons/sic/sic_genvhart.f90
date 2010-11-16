@@ -5,9 +5,8 @@ use mod_lf
 implicit none
 complex(8), intent(out) :: vhwanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwannloc)
 complex(8), intent(out) :: vhwanir(ngrtot,ntrloc,nspinor,nwannloc)
-integer nvqloc,iqloc,iq,n,nloc,itr,itloc,ig,l,m1,m2
-integer ias,jas,ir,i1,i2,i3
-real(8) vtrc(3),v2(3),v3(3)
+integer nvqloc,iqloc,iq,n,nloc,itr,itloc,ig,ias
+real(8) vtrc(3)
 complex(8), allocatable ::megqwan1(:,:,:)
 complex(8), allocatable :: pwmt(:,:,:)
 complex(8), allocatable :: pwir(:)

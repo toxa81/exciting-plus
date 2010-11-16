@@ -6,11 +6,11 @@ implicit none
 real(8), intent(out) :: vhxcmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwannloc)
 real(8), intent(out) :: vhxcir(ngrtot,ntrloc,nspinor,nwannloc)
 complex(8), intent(out) :: ene(4,nwann)
-integer ntp,itp,lm,n,itloc,ias,ispn,nloc,it,l
+integer ntp,itp,lm,n,itloc,ias,ispn,nloc,it
 real(8), allocatable :: tp(:,:)
 complex(8), allocatable :: ylm(:,:)
 complex(8), allocatable :: rlmz(:,:)
-real(8) rlm(lmmaxvr),theta,phi
+real(8) rlm(lmmaxvr)
 real(8), allocatable :: rlmb(:,:)
 real(8), allocatable :: vxcwanmt(:,:,:,:,:)
 real(8), allocatable :: vxcwanir(:,:,:)
@@ -29,8 +29,7 @@ real(8), allocatable :: vcmt_(:,:,:)
 real(8), allocatable :: vcir_(:,:)
 real(8), allocatable :: vxcmt_(:,:,:)
 real(8), allocatable :: excmt_(:,:)
-real(8), allocatable :: x(:),w(:),wtp(:)
-integer nt,np,ip,i,j
+real(8), allocatable :: wtp(:)
 real(8), allocatable :: spx(:,:)
 real(8) t1
 

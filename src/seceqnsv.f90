@@ -260,7 +260,7 @@ do ispn=1,nspinor
     evecsv(i,i)=evecsv(i,i)+evalfv(ist)
   end do
 end do
-if (sic) call sic_hunif(ikloc,evecfv,evecsv)
+if (sic) call sic_hunif(ikloc,evecsv)
 if (mpi_grid_root((/dim2/))) then
 ! diagonalise second-variational Hamiltonian
   allocate(rwork(3*nstsv))
