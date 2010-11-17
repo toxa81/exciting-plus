@@ -165,8 +165,8 @@ if (wproc) then
 endif
 ! check hermiticity of V_nn'(k)
 allocate(vwank(nwann,nwann))
-vwank=zzero
 do ik=1,nkpt
+  vwank=zzero
   do i=1,nmegqwan
     n1=imegqwan(1,i)
     n2=imegqwan(2,i)
