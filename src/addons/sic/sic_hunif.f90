@@ -13,16 +13,23 @@ real(8) vtrc(3),t1
 real(8), allocatable :: vn(:)
 complex(8) expikt
 complex(8), allocatable :: vwank(:,:)
-complex(8), allocatable :: vwank_sym(:,:)
+!complex(8), allocatable :: vwank_sym(:,:)
 complex(8), allocatable :: a(:,:,:)
 complex(8), allocatable :: b(:,:,:)
 complex(8), allocatable :: zm1(:,:)
-real(8), parameter :: epsherm=1d-8
+real(8), parameter :: epsherm=1d-10
 !character*100 fname
 
 inquire(file="sic.hdf5",exist=exist)
 if (.not.exist) return
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+
+! restore full hermitian matrix
+do j1=2,nstsv
+  do j2=1,j1-1
+    hunif(j1,j2)=dconjg(hunif(j2,j1))
+  enddo
+enddo
 
 allocate(vn(nwann))
 do i=1,nmegqwan
@@ -39,7 +46,7 @@ b(:,:,:)=sic_wvb(:,:,:,ikloc)
 
 ! compute V_{nn'}(k)
 allocate(vwank(nwann,nwann))
-allocate(vwank_sym(nwann,nwann))
+!allocate(vwank_sym(nwann,nwann))
 vwank=zzero
 do i=1,nmegqwan
   n1=imegqwan(1,i)
@@ -50,12 +57,12 @@ do i=1,nmegqwan
   vwank(n1,n2)=vwank(n1,n2)+expikt*vwanme(i)
 enddo
 ! symmetrize the matrix
-do n1=1,nwann
-  do n2=1,nwann
-    vwank_sym(n1,n2)=0.5d0*(vwank(n1,n2)+dconjg(vwank(n2,n1)))
-  enddo
-enddo
-! compute H_{nn'}^{0}(k); remember that on entrance hunif=H0
+!do n1=1,nwann
+!  do n2=1,nwann
+!    vwank_sym(n1,n2)=0.5d0*(vwank(n1,n2)+dconjg(vwank(n2,n1)))
+!  enddo
+!enddo
+! compute H_{nn'}^{0}(k); remember that on input hunif=H0
 allocate(zm1(nwann,nstsv))
 call zgemm('N','N',nwann,nstsv,nstsv,zone,a,nwann,hunif,nstsv,zzero,zm1,nwann)
 call zgemm('N','C',nwann,nwann,nstsv,zone,zm1,nwann,a,nwann,zzero,&
@@ -101,8 +108,8 @@ do j1=1,nstfv
         do n1=1,nwann
           do n2=1,nwann
             hunif(jst1,jst2)=hunif(jst1,jst2)-&
-              vwank_sym(n1,n2)*dconjg(a(n1,j1,ispn1))*a(n2,j2,ispn2)-&
-              dconjg(vwank_sym(n1,n2))*dconjg(a(n2,j1,ispn1))*a(n1,j2,ispn2)
+              vwank(n1,n2)*dconjg(a(n1,j1,ispn1))*a(n2,j2,ispn2)-&
+              dconjg(vwank(n1,n2))*dconjg(a(n2,j1,ispn1))*a(n1,j2,ispn2)
           enddo
         enddo
       enddo !ispn2
@@ -131,6 +138,6 @@ if (mpi_grid_root((/dim2/))) then
 endif
 deallocate(vn)
 deallocate(a,b)
-deallocate(vwank,vwank_sym)
+deallocate(vwank)
 return
 end
