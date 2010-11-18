@@ -50,28 +50,28 @@ ivtit=-1
 do i=1,ntr
   ivtit(vtl(1,i),vtl(2,i),vtl(3,i))=i
 enddo
-dim_t=dim2
-ntrloc=mpi_grid_map(ntr,dim_t)
-nwannloc=mpi_grid_map(nwann,dim_k)
+
+ngrloc=mpi_grid_map2(ngrtot,dims=(/dim_k,dim2/),offs=nroffs)
+nmtloc=mpi_grid_map2(nrmtmax*natmtot,dims=(/dim_k,dim2/),offs=mtoffs)
+
 if (mpi_grid_root()) then
   write(*,*)
   write(*,'("[sic_init] total number of translations : ",I3)')ntr
-  write(*,'("[sic_init] local number of translations : ",I3)')ntrloc
   write(*,'("[sic_init] size of Wannier function arrays : ",I6," Mb")') &
-    int(2*16.d0*(lmmaxvr*nrmtmax*natmtot+ngrtot)*ntrloc*nspinor*nwannloc/1048576.d0)
+    int(2*16.d0*(lmmaxvr*nmtloc+ngrloc)*ntr*nspinor*nwann/1048576.d0)
 endif
 call mpi_grid_barrier()
 if (allocated(wvmt)) deallocate(wvmt)
-allocate(wvmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwannloc))
+allocate(wvmt(lmmaxvr,nmtloc,ntr,nspinor,nwann))
 wvmt=zzero
 if (allocated(wvir)) deallocate(wvir)  
-allocate(wvir(ngrtot,ntrloc,nspinor,nwannloc))
+allocate(wvir(ngrloc,ntr,nspinor,nwann))
 wvir=zzero
 if (allocated(wanmt)) deallocate(wanmt)
-allocate(wanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwannloc))
+allocate(wanmt(lmmaxvr,nmtloc,ntr,nspinor,nwann))
 wanmt=zzero
 if (allocated(wanir)) deallocate(wanir)
-allocate(wanir(ngrtot,ntrloc,nspinor,nwannloc))
+allocate(wanir(ngrloc,ntr,nspinor,nwann))
 wanir=zzero
 if (allocated(sic_wann_e0)) deallocate(sic_wann_e0)
 allocate(sic_wann_e0(nwann))

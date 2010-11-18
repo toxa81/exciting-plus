@@ -1,6 +1,6 @@
-subroutine sic_genwann(vtrl,ngknr,igkignr,wanmt_,wanir_)
+subroutine sic_genwan(vtrl,ngknr,igkignr,wanmt_,wanir_)
 use modmain
-use mod_lf
+use mod_sic
 implicit none
 integer, intent(in) :: vtrl(3)
 integer, intent(in) :: ngknr(nkptnrloc)
