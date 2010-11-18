@@ -5,8 +5,8 @@ integer i,ig,ikloc
 integer ist1,ist2
 if (iproc.eq.0) then
   open(200,file="MEGQBLH.OUT",form="FORMATTED",status="REPLACE")
-  do ikloc=1,1 !nkptnrloc
-    write(200,'("ikloc : ",I4)')ikloc
+  do ikloc=1,nkptnrloc
+    write(200,'("ikloc : ",I4,"  idxkq : ",2I4)')ikloc,idxkq(:,ikloc)
     do ist2=1,nstsv
       write(200,'("  ist2 : ",I4)')ist2
       do ist1=1,nstsv

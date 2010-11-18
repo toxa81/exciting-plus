@@ -168,7 +168,7 @@ if (ivq0m(1).eq.0.and.ivq0m(2).eq.0.and.ivq0m(3).eq.0) then
     enddo
   enddo
 endif
-
+call printmegqblh
 ! time for wave-functions send/recieve
 t1=timer_get_value(1)
 call mpi_grid_reduce(t1,dims=(/dim_k,dim_b/))
