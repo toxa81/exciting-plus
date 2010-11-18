@@ -1,6 +1,6 @@
 subroutine sic_wan(fout)
 use modmain
-use mod_lf
+use mod_sic
 use mod_nrkp
 implicit none
 ! arguments
