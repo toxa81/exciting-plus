@@ -1,0 +1,184 @@
+subroutine sic_genvhart(vhwanmt,vhwanir)
+use modmain
+use mod_addons_q
+use mod_lf
+implicit none
+complex(8), intent(out) :: vhwanmt(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor,nwannloc)
+complex(8), intent(out) :: vhwanir(ngrtot,ntrloc,nspinor,nwannloc)
+integer nvqloc,iqloc,iq,n,nloc,itr,itloc,ig,l,m1,m2
+integer ias,jas,ir,i1,i2,i3,lm
+real(8) vtrc(3),v2(3),v3(3)
+complex(8), allocatable ::megqwan1(:,:,:)
+complex(8), allocatable :: pwmt(:,:,:)
+complex(8), allocatable :: pwir(:)
+complex(8), allocatable :: ylmtorlm(:,:)
+complex(8), allocatable :: pwmt1(:,:)
+complex(8), allocatable :: pwmt2(:,:)
+complex(8), allocatable :: zm1(:,:,:)
+complex(8) expikt,zv1(lmmaxvr)
+complex(8), external :: zdotu
+allocate(ylmtorlm(lmmaxvr,lmmaxvr))
+
+!b[m1_, m2_] := 
+! If[m1 == 0, 1, 
+!  If[m1 < 0 && m2 < 0, -I/Sqrt[2], 
+!   If[m1 < 0 && m2 > 0, (-1)^m2*I/Sqrt[2], 
+!    If[m1 > 0 && m2 < 0, (-1)^m1/Sqrt[2], 
+!     If[m1 > 0 && m2 > 0, 1/Sqrt[2]]]]]]
+!a[m1_, m2_] := If[Abs[m1] == Abs[m2], b[m1, m2], 0]
+!R[l_, m_, t_, p_] := 
+! Sum[a[m, m1]*SphericalHarmonicY[l, m1, t, p], {m1, -l, l}]
+ylmtorlm=zzero
+do l=0,lmaxvr
+  do m1=-l,l
+    do m2=-l,l
+      if (abs(m1).eq.abs(m2)) then
+        if (m1.eq.0) ylmtorlm(idxlm(l,m1),idxlm(l,m1))=zone
+        if (m1.lt.0.and.m2.lt.0) ylmtorlm(idxlm(l,m1),idxlm(l,m2))=-zi/sqrt(2.d0)
+        if (m1.lt.0.and.m2.gt.0) ylmtorlm(idxlm(l,m1),idxlm(l,m2))=(-1)**m2*zi/sqrt(2.d0)        
+        if (m1.gt.0.and.m2.lt.0) ylmtorlm(idxlm(l,m1),idxlm(l,m2))=(-1)**m1/sqrt(2.d0)        
+        if (m1.gt.0.and.m2.gt.0) ylmtorlm(idxlm(l,m1),idxlm(l,m2))=1.d0/sqrt(2.d0)        
+      endif
+    enddo
+  enddo
+enddo
+! R_{L}=\sum_{L'} M_{L,L'} Y_{L'} so Y_{L}=\sum_{L'} (M^{-1})_{L,L'} Y_{L'}
+call invzge(ylmtorlm,lmmaxvr)
+
+vhwanmt=zzero
+vhwanir=zzero
+wannier_megq=.true.
+call init_qbz(tq0bz,1)
+call init_q_gq
+! create q-directories
+!if (mpi_grid_root()) then
+!  call system("mkdir -p q")
+!  do iq=1,nvq0
+!    call getqdir(iq,ivq0m_list(:,iq),qnm)
+!    call system("mkdir -p "//trim(qnm))
+!  enddo
+!endif
+! distribute q-vectors along 2-nd dimention
+nvqloc=mpi_grid_map(nvq,dim_q)
+allocate(megqwan1(ngqmax,nvq,nwann))
+megqwan1=zzero
+call timer_start(10,reset=.true.)
+! loop over q-points
+do iqloc=1,nvqloc
+  iq=mpi_grid_map(nvq,dim_q,loc=iqloc)
+  call genmegq(iq,.false.,.false.)
+! save <n,T=0|e^{-i(G+q)r}|n,T=0>
+  do n=1,nwann
+    megqwan1(1:ngq(iq),iq,n)=megqwan(idxmegqwan(n,n,0,0,0),1:ngq(iq))
+  enddo
+enddo
+call mpi_grid_reduce(megqwan1(1,1,1),nwann*ngqmax*nvq,dims=(/dim_q/), &
+  all=.true.)
+call timer_stop(10)
+allocate(pwmt1(nvq,lmmaxvr))
+allocate(pwmt2(ngqmax,lmmaxvr))
+allocate(zm1(nvq,lmmaxvr,nwannloc))
+! generate Hartree potential
+call timer_start(11,reset=.true.)
+! muffin-tin part
+do ias=1,natmtot
+  do ir=1,nrmt(ias2is(ias))
+    call genpwmt1(nvq,vqc,ias,ir,pwmt1)
+    zm1=zzero
+    do iq=1,nvq
+      call genpwmt2(ngqmax,ngq(iq),igqig(1,iq),ias,ir,pwmt2)
+      do nloc=1,nwannloc
+        n=mpi_grid_map(nwann,dim_k,loc=nloc)
+        do lm=1,lmmaxvr
+          zm1(iq,lm,nloc)=zdotu(ngq(iq),megqwan1(1,iq,n),1,pwmt2(1,lm),1)
+        enddo
+      enddo
+    enddo
+    do itloc=1,ntrloc
+      itr=mpi_grid_map(ntr,dim_t,loc=itloc)
+      vtrc(:)=vtl(1,itr)*avec(:,1)+vtl(2,itr)*avec(:,2)+vtl(3,itr)*avec(:,3)
+      expikt=exp(zi*dot_product(vtrc(:),vqc(:,iq)))/nkptnr/omega
+      do nloc=1,nwannloc
+        do lm=1,lmmaxvr
+          vhwanmt(lm,ir,ias,itloc,1,nloc)=vhwanmt(lm,ir,ias,itloc,1,nloc)+&
+            expikt*zdotu(nvq,zm1(1,lm,nloc),1,pwmt1(1,lm),1)
+        enddo
+      enddo
+    enddo
+  enddo
+enddo
+deallocate(pwmt1)
+deallocate(pwmt2)
+deallocate(zm1)
+! convert to spherical harmonics
+do nloc=1,nwannloc
+  do itloc=1,ntrloc
+    do ias=1,natmtot
+      do ir=1,nrmt(ias2is(ias))
+        call zgemv('T',lmmaxvr,lmmaxvr,zone,ylmtorlm,lmmaxvr,&
+          vhwanmt(1,ir,ias,itloc,1,nloc),1,zzero,zv1,1)
+        vhwanmt(:,ir,ias,itloc,1,nloc)=zv1(:)
+      enddo
+    enddo
+  enddo
+enddo
+
+
+! interstitial part
+!allocate(pwmt1(nvq,ngrid(1)))
+!allocate(pwmt2(ngqmax,ngrid(1)))
+!allocate(zm1(nvq,ngrid(1),nwannloc))
+!do i3=0,ngrid(3)-1
+!  do i2=0,ngrid(2)-1
+!    call genpwir1(nvq,vqc,i3,i2,pwmt1)
+!    zm1=zzero
+!    do iq=1,nvq
+!      call genpwir2(ngqmax,ngq(iq),igqig(1,iq),i3,i2,pwmt2)
+!      do nloc=1,nwannloc
+!        n=mpi_grid_map(nwann,dim_k,loc=nloc)
+!        do i1=1,ngrid(1)
+!          zm1(iq,i1,nloc)=zdotu(ngq(iq),megqwan1(1,iq,n),1,pwmt2(1,i1),1)
+!        enddo
+!      enddo
+!    enddo
+!    do itloc=1,ntrloc
+!      itr=mpi_grid_map(ntr,dim_t,loc=itloc)
+!      vtrc(:)=vtl(1,itr)*avec(:,1)+vtl(2,itr)*avec(:,2)+vtl(3,itr)*avec(:,3)
+!      expikt=exp(zi*dot_product(vtrc(:),vqc(:,iq)))/nkptnr/omega
+!      ir=i3*ngrid(1)*ngrid(2)+i2*ngrid(1)
+!      do nloc=1,nwannloc
+!        do i1=1,ngrid(1)
+!          vhwanir(ir+i1,itloc,1,nloc)=vhwanir(ir+i1,itloc,1,nloc)+&
+!            expikt*zdotu(nvq,zm1(1,i1,nloc),1,pwmt1(1,i1),1)
+!        enddo
+!      enddo
+!    enddo
+!  enddo
+!enddo
+!deallocate(pwmt1)
+!deallocate(pwmt2)
+!deallocate(zm1)
+!
+
+
+!do iq=1,nvq
+!  do ig=1,ngq(iq)
+!    call genpw(vgqc(1,ig,iq),pwmt,pwir,ylmtorlm)
+!    do itloc=1,ntrloc
+!      itr=mpi_grid_map(ntr,dim_t,loc=itloc)
+!      vtrc(:)=vtl(1,itr)*avec(:,1)+vtl(2,itr)*avec(:,2)+vtl(3,itr)*avec(:,3)
+!      expikt=exp(zi*dot_product(vtrc(:),vqc(:,iq)))/nkptnr/omega
+!      do nloc=1,nwannloc
+!        n=mpi_grid_map(nwann,dim_k,loc=nloc)
+!        vhwanmt(:,:,:,itloc,1,nloc)=vhwanmt(:,:,:,itloc,1,nloc)+&
+!          megqwan1(n,ig,iq)*vhgq(ig,iq)*pwmt(:,:,:)*expikt
+!        vhwanir(:,itloc,1,nloc)=vhwanir(:,itloc,1,nloc)+&
+!          megqwan1(n,ig,iq)*vhgq(ig,iq)*pwir(:)*expikt
+!      enddo !nloc
+!    enddo !itloc
+!  enddo !igloc
+!enddo !iq
+call timer_stop(11)
+deallocate(megqwan1,ylmtorlm)
+return
+end

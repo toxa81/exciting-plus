@@ -311,7 +311,7 @@ class Cell:
     # find position of bottom-left-front corner of the box
     b0=[0,0,0]
     for x in range(3):
-      b0[x]=self.box[0][x]-0.5*(self.box[1][x]+self.box[2][x]+self.box[2][x])
+      b0[x]=self.box[0][x]-0.5*(self.box[1][x]+self.box[2][x]+self.box[3][x])
       
     for iat in range(len(self.geometry.atomList)):
       visible=self.geometry.atomList[iat].species.visible
