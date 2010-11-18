@@ -9,6 +9,7 @@
 subroutine charge
 ! !USES:
 use modmain
+use modtest
 ! !DESCRIPTION:
 !   Computes the muffin-tin, interstitial and total charges by integrating the
 !   density.
@@ -22,7 +23,7 @@ implicit none
 integer is,ia,ias,ir
 real(8) sum,t1
 ! automatic arrays
-real(8) fr(nrmtmax),gr(nrmtmax),cf(3,nrmtmax)
+real(8) fr(nrmtmax),gr(nrmtmax),cf(4,nrmtmax)
 ! find the muffin-tin charges
 chgmttot=0.d0
 do is=1,nspecies
@@ -52,6 +53,8 @@ if (abs(t1-1.d0).gt.epschg) then
   write(*,'(" Calculated : ",G18.10)') chgcalc
   write(*,'(" Required   : ",G18.10)') chgtot
 end if
+! write calculated total charge to test file
+call writetest(400,'calculated total charge',tol=1.d-6,rv=chgcalc)
 return
 end subroutine
 !EOC

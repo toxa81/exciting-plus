@@ -5,23 +5,45 @@ implicit none
 integer, intent(in) :: ik
 real(8), intent(in) :: vpc(3)
 real(8), intent(in) :: e(nstsv)
-complex(8), intent(in) :: wfsvmt(lmmaxvr,nrfmax,natmtot,nspinor,nstsv)
+complex(8), intent(in) :: wfsvmt(lmmaxvr,nufrmax,natmtot,nspinor,nstsv)
 complex(8), intent(out) :: wann_c_(nwann,nstsv)
 ! local variables
 complex(8), allocatable :: prjao(:,:)
-complex(8), allocatable :: s(:,:),sdiag(:)
-integer ispn,j,n,m1,m2,ias,lm,ierr,itype,n1
-integer itr(3),i,iw,i1
+integer ispn,j,ias,lm,itype,n
+integer itr(3),i,iw,ierr
 real(8) tr(3),d1
 complex(8) zt1
 logical, external :: bndint
-integer, parameter :: maxiter=100
-logical l1
 real(8), external :: orbwt
-complex(8), allocatable :: mtrx1(:,:)
-real(8), allocatable :: mtrx1ev(:)
-complex(8), allocatable :: mtrx2(:,:)
-complex(8), allocatable :: zv1(:)
+integer, external :: hash
+
+if (debug_level.gt.0) then
+  if (debug_level.ge.1) then
+    call mpi_grid_hash(wfsvmt(1,1,1,1,1),lmmaxvr*nufrmax*natmtot*nspinor*nstsv,&
+      dim2,ierr)
+    if (ierr.ne.0) call mpi_grid_msg("genwann_c","hash test of wfsvmt failed")
+    call mpi_grid_hash(e(1),nstsv,dim2,ierr)
+    if (ierr.ne.0) call mpi_grid_msg("genwann_c","hash test of e failed")
+  endif
+  if (debug_level.ge.5) then
+    call dbg_open_file
+    write(fdbgout,*)
+    write(fdbgout,'("[genwann_c]")')
+    write(fdbgout,'("  ik : ",I6)')ik  
+    write(fdbgout,'("  hash(e) : ",I16)')hash(e,8*nstsv)
+    write(fdbgout,'("  hash(wfsvmt) : ",I16)')hash(wfsvmt,&
+      16*lmmaxvr*nufrmax*natmtot*nspinor*nstsv)
+    call dbg_close_file
+  endif
+  if (debug_level.ge.6) then
+    call dbg_open_file
+    write(fdbgout,*)
+    write(fdbgout,'("[genwann_c]")')
+    write(fdbgout,'("  ik : ",I6)')ik  
+    write(fdbgout,'("  e : ",6G12.6)')e(:)
+    call dbg_close_file
+  endif
+endif
 
 ! compute <\psi|g_n>
 allocate(prjao(nwann,nstsv))
@@ -67,19 +89,6 @@ do n=1,nwann
 enddo !n
 
 ! remove small contribution
-!do n=1,nwann
-!  do j=1,nstsv
-!    if (abs(prjao(n,j)).lt.wannier_min_prjao) prjao(n,j)=zzero
-!  enddo
-!enddo
-!do j=1,nstsv
-!  zt1=zzero
-!  do n=1,nwann
-!    zt1=zt1+abs(prjao(n,j))**2
-!  enddo
-!  write(*,*)'j=',j,'sum=',abs(zt1)
-!enddo
-!  
 do j=1,nstsv
   d1=0.d0
   do n=1,nwann
@@ -114,7 +123,19 @@ complex(8), intent(inout) :: wann_u_mtrx(nwann,nstsv)
 complex(8), allocatable :: s(:,:)
 complex(8), allocatable :: sdiag(:)
 complex(8), allocatable :: wann_u_mtrx_ort(:,:)
-integer ierr,m1,m2,j,n
+integer ierr,m1,m2,j
+integer, external :: hash
+
+if (debug_level.gt.0) then
+  if (debug_level.ge.5) then
+    call dbg_open_file
+    write(fdbgout,*)
+    write(fdbgout,'("[wann_ort]")')
+    write(fdbgout,'("  ik : ",I6)')ik  
+    write(fdbgout,'("  hash(wann_u_mtrx) : ",I16)')hash(wann_u_mtrx,16*nwann*nstsv)
+    call dbg_close_file
+  endif
+endif
 
 allocate(s(nwann,nwann))
 allocate(sdiag(nwann))
@@ -135,12 +156,19 @@ call isqrtzhe(nwann,s,ierr)
 if (ierr.ne.0) then
   write(*,*)
   write(*,'("Warning(wann_ort): failed to calculate S^{-1/2}")')
+  write(*,'("  mpi_grid_x : ",10I6)')mpi_grid_x
   write(*,'("  k-point : ",I4)')ik
   write(*,'("  iteration : ",I4)')iscl
   write(*,'("  number of linear dependent WFs : ",I4)')ierr
   write(*,'("  diagonal elements of overlap matrix : ")')
   write(*,'(6X,5G18.10)')abs(sdiag)
   write(*,*)
+!  write(*,'("  initial coefficients:")')
+!  call wrmtrx("",nwann,nstsv,wann_u_mtrx,nwann)
+!  write(*,*)
+!  write(*,'("mpi_grid_x : ",10I4)')mpi_grid_x
+!  call pstop
+!  write(*,*)
 endif
 ! compute Wannier function expansion coefficients
 wann_u_mtrx_ort=zzero

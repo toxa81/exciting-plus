@@ -73,8 +73,8 @@ enddo
 
 open(150,file='bz.dx',status='replace',form='formatted')
 ! labels of the points
-write(150,'("object 1 class array type string rank 1 shape 4 items ",\
-  I3," data follows")')nptot
+write(150,'("object 1 class array type string rank 1 shape 4 items ",&
+  &I3," data follows")')nptot
 pl=1
 do m=1,nptot
   do j=1,nptot
@@ -91,36 +91,36 @@ do m=1,nptot
 enddo
 write(150,'("attribute ""dep"" string ""positions""")')
 ! color of points
-write(150,'("object 2 class array type float rank 1 shape 3 items ",\
-  I3," data follows")')nptot
+write(150,'("object 2 class array type float rank 1 shape 3 items ",&
+  &I3," data follows")')nptot
 do i=1,nptot
   write(150,'(3F12.6)')0.d0,0.d0,1.d0
 enddo
 write(150,'("attribute ""dep"" string ""positions""")')
 ! positions
-write(150,'("object 3 class array type float rank 1 shape 3 items ",\
-  I3," data follows")')nptot
+write(150,'("object 3 class array type float rank 1 shape 3 items ",&
+  &I3," data follows")')nptot
 do i=1,nptot
   write(150,'(3F12.6)')pt3(:,i)
 enddo
 write(150,'("attribute ""dep"" string ""positions""")')
 ! connections
-write(150,'("object 4 class array type int rank 1 shape 2 items ",\
-  I3," data follows")')nc
+write(150,'("object 4 class array type int rank 1 shape 2 items ",&
+  &I3," data follows")')nc
 do i=1,nc
   write(150,'(2I4)')connections(:,i)
 enddo
 write(150,'("attribute ""element type"" string ""lines""")')
 write(150,'("attribute ""ref"" string ""positions""")')
 ! faces
-write(150,'("object 5 class array type int rank 0 items ",\
-  I3," data follows")')n1
+write(150,'("object 5 class array type int rank 0 items ",&
+  &I3," data follows")')n1
 do i=1,nf
   write(150,'(10I4)')faces(1:faces(0,i),i)
 enddo
 write(150,'("attribute ""ref"" string ""positions""")')
-write(150,'("object 6 class array type int rank 0 items ",\
-  I3," data follows")')nf
+write(150,'("object 6 class array type int rank 0 items ",&
+  &I3," data follows")')nf
 i=0
 j=1
 do while (i.lt.n1)
@@ -129,8 +129,8 @@ do while (i.lt.n1)
   j=j+1
 enddo
 write(150,'("attribute ""ref"" string ""edges""")')
-write(150,'("object 7 class array type int rank 0 items ",\
-  I3," data follows")')nf
+write(150,'("object 7 class array type int rank 0 items ",&
+  &I3," data follows")')nf
 do i=1,nf
   write(150,'(I3)')i-1
 enddo

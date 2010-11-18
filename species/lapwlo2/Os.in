@@ -1,0 +1,57 @@
+ 'Os'                                       : spsymb
+ 'osmium'                                   : spname
+  -76.0000                                  : spzn
+   346768.0764                              : spmass
+  0.229416E-06    2.0000   38.1970  1050    : sprmin, rmt, sprmax, nrmt
+  22                                        : spnst
+   1   0   1   2.00000    T                 : spn, spl, spk, spocc, spcore
+   2   0   1   2.00000    T
+   2   1   1   2.00000    T
+   2   1   2   4.00000    T
+   3   0   1   2.00000    T
+   3   1   1   2.00000    T
+   3   1   2   4.00000    T
+   3   2   2   4.00000    T
+   3   2   3   6.00000    T
+   4   0   1   2.00000    T
+   4   1   1   2.00000    T
+   4   1   2   4.00000    T
+   4   2   2   4.00000    T
+   4   2   3   6.00000    T
+   4   3   3   6.00000    F
+   4   3   4   8.00000    F
+   5   0   1   2.00000    F
+   5   1   1   2.00000    F
+   5   1   2   4.00000    F
+   5   2   2   4.00000    F
+   5   2   3   2.00000    F
+   6   0   1   2.00000    F
+   2                                        : apword
+  0.1500   0  F                             : apwe0, apwdm, apwve
+  0.1500   1  F
+   0                                        : nlx
+   8                                        : nlorb
+   0   2                                    : lorbl, lorbord
+  0.1500   0  F                             : lorbe0, lorbdm, lorbve
+  0.1500   1  F
+   1   2                                    : lorbl, lorbord
+  0.1500   0  F                             : lorbe0, lorbdm, lorbve
+  0.1500   1  F
+   2   2                                    : lorbl, lorbord
+  0.1500   0  F                             : lorbe0, lorbdm, lorbve
+  0.1500   1  F
+   3   2                                    : lorbl, lorbord
+  0.1500   0  F                             : lorbe0, lorbdm, lorbve
+  0.1500   1  F
+   3   2                                    : lorbl, lorbord
+ -2.1058   0  T                             : lorbe0, lorbdm, lorbve
+ -2.1058   1  T
+   0   2                                    : lorbl, lorbord
+ -3.6040   0  T                             : lorbe0, lorbdm, lorbve
+ -3.6040   1  T
+   1   2                                    : lorbl, lorbord
+ -1.9897   0  T                             : lorbe0, lorbdm, lorbve
+ -1.9897   1  T
+   2   2                                    : lorbl, lorbord
+ -0.4659   0  T                             : lorbe0, lorbdm, lorbve
+ -0.4659   1  T

@@ -3,11 +3,10 @@
 ! This file is distributed under the terms of the GNU General Public License.
 ! See the file COPYING for license details.
 
-subroutine zrhogp(gpc,jlgpr,ylmgp,sfacgp,zrhomt,zrhoir,zrho0)
+subroutine zrhogp(jlgpr,ylmgp,sfacgp,zrhomt,zrhoir,zrho0)
 use modmain
 implicit none
 ! arguments
-real(8), intent(in) :: gpc
 real(8), intent(in) :: jlgpr(0:lmaxvr,nrcmtmax,nspecies)
 complex(8), intent(in) :: ylmgp(lmmaxvr)
 complex(8), intent(in) :: sfacgp(natmtot)
@@ -21,7 +20,7 @@ real(8) t1,t2
 complex(8) zsum1,zsum2
 ! automatic arrays
 real(8) fr1(nrcmtmax),fr2(nrcmtmax)
-real(8) gr(nrcmtmax),cf(3,nrcmtmax)
+real(8) gr(nrcmtmax),cf(4,nrcmtmax)
 !-----------------------------------!
 !     interstitial contribution     !
 !-----------------------------------!

@@ -54,7 +54,7 @@ complex(8), intent(in) :: sfacgp(ngkmax,natmtot)
 complex(8), intent(out) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 ! local variables
 integer np,is,ia,ias,omax
-integer l,m,lm,io1,io2
+integer l,m,lm,io,jo
 integer i,ir,igp,info
 real(8) fpso,t1
 complex(8) zt1,zt2
@@ -68,7 +68,6 @@ complex(8), allocatable :: zb(:,:)
 ! external functions
 real(8) polynom
 external polynom
-fpso=fourpi/sqrt(omega)
 ! polynomial order
 np=max(apwordmax+1,4)
 allocate(ipiv(np))
@@ -81,6 +80,7 @@ allocate(zb(apwordmax,ngp*(2*lmaxapw+1)))
 do igp=1,ngp
   call genylm(lmaxapw,tpgpc(:,igp),ylmgp(:,igp))
 end do
+fpso=fourpi/sqrt(omega)
 ! begin loops over atoms and species
 do is=1,nspecies
 ! evaluate the spherical Bessel function derivatives for all G+p-vectors
@@ -90,13 +90,13 @@ do is=1,nspecies
   end do
   do igp=1,ngp
     t1=gpc(igp)*rmt(is)
-    do io1=1,omax
-      call sbesseldm(io1-1,lmaxapw,t1,djl(:,io1,igp))
+    do io=1,omax
+      call sbesseldm(io-1,lmaxapw,t1,djl(:,io,igp))
     end do
     t1=1.d0
-    do io1=2,omax
+    do io=2,omax
       t1=t1*gpc(igp)
-      djl(:,io1,igp)=t1*djl(:,io1,igp)
+      djl(:,io,igp)=t1*djl(:,io,igp)
     end do
   end do
   do ia=1,natoms(is)
@@ -105,11 +105,10 @@ do is=1,nspecies
     do l=0,lmaxapw
       zt1=fpso*zil(l)
 ! set up matrix of derivatives
-      do io2=1,apword(l,is)
+      do jo=1,apword(l,is)
         ir=nrmt(is)-np+1
-        do io1=1,apword(l,is)
-          zd(io1,io2)=polynom(io1-1,np,spr(ir,is),apwfr(ir,1,io2,l,ias),c, &
-           rmt(is))
+        do io=1,apword(l,is)
+          zd(io,jo)=polynom(io-1,np,spr(ir,is),apwfr(ir,1,jo,l,ias),c,rmt(is))
         end do
       end do
 ! set up target vectors
@@ -119,8 +118,8 @@ do is=1,nspecies
         do m=-l,l
           lm=idxlm(l,m)
           i=i+1
-          do io1=1,apword(l,is)
-            zb(io1,i)=djl(l,io1,igp)*zt2*conjg(ylmgp(lm,igp))
+          do io=1,apword(l,is)
+            zb(io,i)=djl(l,io,igp)*zt2*conjg(ylmgp(lm,igp))
           end do
         end do
       end do
@@ -140,8 +139,8 @@ do is=1,nspecies
         do m=-l,l
           lm=idxlm(l,m)
           i=i+1
-          do io1=1,apword(l,is)
-            apwalm(igp,io1,lm,ias)=zb(io1,i)
+          do io=1,apword(l,is)
+            apwalm(igp,io,lm,ias)=zb(io,i)
           end do
         end do
       end do

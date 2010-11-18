@@ -138,10 +138,9 @@ do l=1,noptcomp
 ! generalised DFT correction
           if (usegdft) eji=eji+delta(jst,ist,jk)
         end if
-        t1=occsv(ist,jk)*(1.d0-occsv(jst,jk)/occmax)
-        if (abs(t1).gt.epsocc) then
-          t2=t1/(eji+swidth)
-          sigma(:)=sigma(:)+t2*(zt1/(w(:)-eji+eta)+conjg(zt1)/(w(:)+eji+eta))
+        if (abs(eji).gt.1.d-8) then
+          t1=occsv(ist,jk)*(1.d0-occsv(jst,jk)/occmax)/eji
+          sigma(:)=sigma(:)+t1*(zt1/(w(:)-eji+eta)+conjg(zt1)/(w(:)+eji+eta))
         end if
 ! add to the plasma frequency
         if (intraband) then
@@ -192,22 +191,18 @@ do l=1,noptcomp
     t1=0.d0
     if (i.eq.j) t1=1.d0
     do iw=1,nwdos
-      if (w(iw).gt.1.d-8) then
-        t2=t1-fourpi*aimag(sigma(iw)/(w(iw)+eta))
-        write(60,'(2G18.10)') w(iw),t2
-      end if
+      t2=t1-fourpi*aimag(sigma(iw)/(w(iw)+eta))
+      write(60,'(2G18.10)') w(iw),t2
     end do
     write(60,'("     ")')
     do iw=1,nwdos
-      if (w(iw).gt.1.d-8) then
-        t2=fourpi*dble(sigma(iw)/(w(iw)+eta))
-        write(60,'(2G18.10)') w(iw),t2
-      end if
+      t2=fourpi*dble(sigma(iw)/(w(iw)+eta))
+      write(60,'(2G18.10)') w(iw),t2
     end do
     close(60)
 ! write sigma to test file
     call writetest(121,'optical conductivity',nv=nwdos,tol=1.d-2,zva=sigma)
-  endif
+  end if
 ! end loop over tensor components
 end do
 if (mpi_grid_root()) then
@@ -223,7 +218,7 @@ if (mpi_grid_root()) then
     write(*,'("  i = ",I1,", j = ",I1)') optcomp(1:2,l)
   end do
   write(*,*)
-endif
+end if
 deallocate(lspl,w,sigma,pmat)
 if (usegdft) deallocate(delta)
 return

@@ -5,6 +5,7 @@
 
 subroutine gendmatlu
 use modmain
+use modldapu
 implicit none
 ! local variables
 integer ik,ispn,ist,ikloc
@@ -12,23 +13,14 @@ integer is,ia,ias
 real(8) t1
 ! allocatable arrays
 complex(8), allocatable :: apwalm(:,:,:,:,:)
-complex(8), allocatable :: evecfv(:,:,:)
-complex(8), allocatable :: evecsv(:,:)
 complex(8), allocatable :: dmat(:,:,:,:,:)
-! allocate local arrays
-allocate(evecsv(nstsv,nstsv))
-allocate(evecfv(nmatmax,nstfv,nspnfv))
-allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
-allocate(dmat(lmmaxlu,lmmaxlu,nspinor,nspinor,nstsv))
 ! zero the LDA+U density matrix
 dmatlu(:,:,:,:,:)=0.d0
-! begin loop over k-points
+allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
+allocate(dmat(lmmaxlu,lmmaxlu,nspinor,nspinor,nstsv))
+! begin parallel loop over k-points
 do ikloc=1,nkptloc
   ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-! get the eigenvectors and occupancies from file
-!  call getevecfv(vkl(:,ik),vgkl(:,:,:,ik),evecfv)
-!  call getevecsv(vkl(:,ik),evecsv)
-!  call getoccsv(vkl(:,ik),occsv(:,ik))
 ! find the matching coefficients
   do ispn=1,nspnfv
     call match(ngk(ispn,ik),gkc(:,ispn,ikloc),tpgkc(:,:,ispn,ikloc), &
@@ -38,7 +30,7 @@ do ikloc=1,nkptloc
   do is=1,nspecies
     do ia=1,natoms(is)
       ias=idxas(ia,is)
-      call gendmat(.false.,.false.,0,lmaxlu,is,ia,ngk(:,ik),apwalm, &
+      call gendmat(.false.,.false.,0,lmaxlu,is,ia,ngk(:,ik),apwalm,&
        evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),lmmaxlu,dmat)
       do ist=1,nstsv
         t1=wkpt(ik)*occsv(ist,ik)
@@ -47,11 +39,11 @@ do ikloc=1,nkptloc
     end do
   end do
 end do
-call mpi_grid_reduce(dmatlu(1,1,1,1,1),lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,&
-  dims=(/dim_k/),all=.true.)
+deallocate(apwalm,dmat)
+call mpi_grid_reduce(dmatlu(1,1,1,1,1),&
+  lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,dims=(/dim_k/),all=.true.)
 ! symmetrise the density matrix
 call symdmat(lmaxlu,lmmaxlu,dmatlu)
-deallocate(evecfv,evecsv,apwalm,dmat)
 return
 end subroutine
 

@@ -11,7 +11,7 @@ real(8), intent(out) :: val(2)
 integer is,ia,ias,ir0,io,l,j,i,lm,ig
 integer ntr(3),ikloc
 real(8) tr(3),trvec(3),vrc1(3),tp(2),vr0(3),r0,t1
-real(8) ur(0:lmaxvr,nrfmax)
+real(8) ur(0:lmaxvr,nufrmax)
 complex(8) zt1,zt2,zt3,ylm(lmmaxvr)
 real(8) ya(nprad),c(nprad)
 real(8), external :: polynom
@@ -35,18 +35,18 @@ if (vrinmt(vrc1,is,ia,ntr,vr0,ir0,r0)) then
   call sphcrd(vr0,t1,tp)
   call genylm(lmaxvr,tp,ylm)
   tr(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
-  do io=1,nrfmax
+  do io=1,nufrmax
     do l=0,lmaxvr
       do j=1,nprad
         i=ir0+j-1
-        ya(j)=urf(i,l,io,ias)
+        ya(j)=ufr(i,l,io,ias2ic(ias))
       end do
       ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
     enddo !l
   enddo !io
   do ikloc=1,nkpt
     zt3=exp(zi*dot_product(vkc(:,ikloc),tr(:)))
-    do io=1,nrfmax
+    do io=1,nufrmax
       do lm=1,lmmaxvr
         zt1=zt1+zt3*wann_unkmt(lm,io,ias,ispn,n,ikloc)* &
           ur(lm2l(lm),io)*ylm(lm)

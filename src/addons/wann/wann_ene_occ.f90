@@ -1,42 +1,54 @@
 subroutine wann_ene_occ
 use modmain
+use modldapu
 use mod_mpi_grid
 implicit none
+complex(8), allocatable :: wann_ene_m(:,:,:,:,:)
+complex(8), allocatable :: wann_occ_m(:,:,:,:,:)
+allocate(wann_ene_m(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
+allocate(wann_occ_m(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
+call wann_ene_occ_(wann_ene_m,wann_occ_m)
+deallocate(wann_ene_m,wann_occ_m)
+return
+end
+
+subroutine wann_ene_occ_(wann_ene_m,wann_occ_m)
+use modmain
+use modldapu
+use mod_mpi_grid
+implicit none
+complex(8), intent(inout) :: wann_ene_m(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot)
+complex(8), intent(inout) :: wann_occ_m(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot)
 ! local variables
-real(8) wf_ene(nwann),wf_occ(nwann),t(2),w2
+real(8) t(2),w2
 integer n,i,ik,ispn,ias,lm1,lm2,l,j,n1,n2,m1,m2,ispn1,ispn2,ikloc
-!integer, external :: ikglob
-complex(8), allocatable :: wf_ene_mtrx(:,:,:,:,:)
-complex(8), allocatable :: wf_occ_mtrx(:,:,:,:,:)
 complex(8) z2
 
-wf_ene=0.d0
-wf_occ=0.d0
+wann_ene=0.d0
+wann_occ=0.d0
 do n=1,nwann
   do ikloc=1,nkptloc
     ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
     do i=1,nstsv
       w2=dreal(dconjg(wann_c(n,i,ikloc))*wann_c(n,i,ikloc))
-      wf_ene(n)=wf_ene(n)+w2*evalsv(i,ik)*wkpt(ik)
-      wf_occ(n)=wf_occ(n)+w2*occsv(i,ik)*wkpt(ik)
+      wann_ene(n)=wann_ene(n)+w2*evalsv(i,ik)*wkpt(ik)
+      wann_occ(n)=wann_occ(n)+w2*occsv(i,ik)*wkpt(ik)
     enddo
   enddo
 enddo
-call mpi_grid_reduce(wf_ene(1),nwann,dims=(/dim_k/),side=.true.)
-call mpi_grid_reduce(wf_occ(1),nwann,dims=(/dim_k/),side=.true.)
+call mpi_grid_reduce(wann_ene(1),nwann,dims=(/dim_k/))
+call mpi_grid_reduce(wann_occ(1),nwann,dims=(/dim_k/))
 if (wproc.and.nosym) then
   write(60,*)
-  write(60,'(" WF  energy (Ha)  energy (eV)    occupancy ")')
-  write(60,'("-------------------------------------------")')
+  write(60,'(" WF  energy (Ha)  occupancy ")')
+  write(60,'("----------------------------")')
   do n=1,nwann
-    write(60,'(1X,I2,1X,F12.6,1X,F12.6,1X,F12.6)')n,wf_ene(n),wf_ene(n)*ha2ev,wf_occ(n)
+    write(60,'(I4,2F12.6)')n,wann_ene(n),wann_occ(n)
   enddo
 endif
 
-allocate(wf_ene_mtrx(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
-allocate(wf_occ_mtrx(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
-wf_occ_mtrx=zzero
-wf_ene_mtrx=zzero
+wann_occ_m=zzero
+wann_ene_m=zzero
 ! generate occupancy matrix in WF basis for collinear (!!!) case only
 ! for noncollinear case the product <W_{n\sigma}|W_{n'\sigma'}> is required
 !  (in collinear case it is diagonal in spin index)
@@ -52,62 +64,45 @@ do n1=1,nwann
         ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)        
         do j=1,nstsv
           z2=dconjg(wann_c(n1,j,ikloc))*wann_c(n2,j,ikloc)
-          wf_occ_mtrx(lm1,lm2,ispn1,ispn2,ias)=&
-            wf_occ_mtrx(lm1,lm2,ispn1,ispn2,ias)+&
+          wann_occ_m(lm1,lm2,ispn1,ispn2,ias)=&
+            wann_occ_m(lm1,lm2,ispn1,ispn2,ias)+&
             z2*occsv(j,ik)*wkpt(ik)
-          wf_ene_mtrx(lm1,lm2,ispn1,ispn2,ias)=&
-            wf_ene_mtrx(lm1,lm2,ispn1,ispn2,ias)+&
+          wann_ene_m(lm1,lm2,ispn1,ispn2,ias)=&
+            wann_ene_m(lm1,lm2,ispn1,ispn2,ias)+&
             z2*evalsv(j,ik)*wkpt(ik)
         enddo !j
       enddo !ikloc
     endif
   enddo
 enddo 
-call mpi_grid_reduce(wf_occ_mtrx(1,1,1,1,1),&
-  lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,dims=(/dim_k/),side=.true.,all=.true.)
-call mpi_grid_reduce(wf_ene_mtrx(1,1,1,1,1),&
-  lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,dims=(/dim_k/),side=.true.,all=.true.)
+call mpi_grid_reduce(wann_occ_m(1,1,1,1,1),&
+  lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,dims=(/dim_k/),all=.true.)
+call mpi_grid_reduce(wann_ene_m(1,1,1,1,1),&
+  lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,dims=(/dim_k/),all=.true.)
 ! convert from Rlm to Ylm basis
 do ias=1,natmtot
-  call mtrxbas(lmmaxlu,yrlm_lcs(1,1,ias),wf_occ_mtrx(1,1,1,1,ias))
-  call mtrxbas(lmmaxlu,yrlm_lcs(1,1,ias),wf_ene_mtrx(1,1,1,1,ias))
+  do ispn=1,nspinor
+    call unimtrxt(lmmaxlu,yrlm_lps(1,1,ias),wann_occ_m(1,1,ispn,ispn,ias))
+    call unimtrxt(lmmaxlu,yrlm_lps(1,1,ias),wann_ene_m(1,1,ispn,ispn,ias))
+  enddo
 enddo
 ! symmetrise matrix
-call symdmat(lmaxlu,lmmaxlu,wf_occ_mtrx)
-call symdmat(lmaxlu,lmmaxlu,wf_ene_mtrx)
-!! generate "lda+u" matrix
-!dmatlu=wf_occ_mtrx
-!ujlu(1,1)=0.3
-!ujlu(2,1)=0.058
-!call genvmatlu
-!wf_v_mtrx=vmatlu
-!ujlu(1,1)=0.0
-!ujlu(2,1)=0.0
+call symdmat(lmaxlu,lmmaxlu,wann_occ_m)
+call symdmat(lmaxlu,lmmaxlu,wann_ene_m)
 ! convert back to Rlm
 do ias=1,natmtot
-  call mtrxbas(lmmaxlu,rylm_lcs(1,1,ias),wf_occ_mtrx(1,1,1,1,ias))
-  call mtrxbas(lmmaxlu,rylm_lcs(1,1,ias),wf_ene_mtrx(1,1,1,1,ias))
-  call mtrxbas(lmmaxlu,rylm_lcs(1,1,ias),wf_v_mtrx(1,1,1,1,ias))
+  do ispn=1,nspinor
+    call unimtrxt(lmmaxlu,rylm_lps(1,1,ias),wann_occ_m(1,1,ispn,ispn,ias))
+    call unimtrxt(lmmaxlu,rylm_lps(1,1,ias),wann_ene_m(1,1,ispn,ispn,ias))
+  enddo
 enddo
-!! save energies and occupancies
-!do ispn=1,wann_nspin
-!  do i=1,wann_natom
-!    ias=wann_iatom(1,i)
-!    do l=0,lmaxlu
-!      do m1=-l,l
-!        lm1=idxlm(l,m1)
-!        lm2=idxlm(l,m2)
-!        n1=iasiwann(ias,lm1,ispn)
-!        if (n1.ne.-1) then
-!          wann_ene(n1,ispn)=wf_ene_mtrx(lm1,lm1,ispn,ispn,ias)
-!          wann_occ(n1,ispn)=wf_occ_mtrx(lm1,lm1,ispn,ispn,ias)
-!        endif
-!      enddo !m1
-!    enddo !l
-!  enddo !i
-!enddo !ispn
-!
-if (iproc.eq.0) then
+do n=1,nwann
+  ias=iwann(1,n)
+  lm1=iwann(2,n)
+  ispn1=iwann(3,n)
+  wann_ene(n)=wann_ene_m(lm1,lm1,ispn1,ispn1,ias)
+enddo
+if (wproc) then
   write(60,*)
   write(60,'("On-site matrices in WF basis")')
   do i=1,wann_natom
@@ -115,7 +110,7 @@ if (iproc.eq.0) then
     write(60,*)
     write(60,'("ias : ",I4)')ias
     do l=0,lmaxlu
-      if (sum(abs(wf_ene_mtrx(idxlm(l,-l):idxlm(l,l),idxlm(l,-l):idxlm(l,l),:,:,ias))).gt.1d-8) then
+      if (sum(abs(wann_ene_m(idxlm(l,-l):idxlm(l,l),idxlm(l,-l):idxlm(l,l),:,:,ias))).gt.1d-8) then
 ! occupancy matrix
         write(60,'("  occupancy matrix")')
         t=0.0
@@ -123,12 +118,12 @@ if (iproc.eq.0) then
           write(60,'("  ispn : ",I1)')ispn
           write(60,'("    real part")')
           do lm1=l**2+1,(l+1)**2
-            write(60,'(2X,7F12.6)')(dreal(wf_occ_mtrx(lm1,lm2,ispn,ispn,ias)),lm2=l**2+1,(l+1)**2)
-            t(ispn)=t(ispn)+dreal(wf_occ_mtrx(lm1,lm1,ispn,ispn,ias))
+            write(60,'(2X,7F12.6)')(dreal(wann_occ_m(lm1,lm2,ispn,ispn,ias)),lm2=l**2+1,(l+1)**2)
+            t(ispn)=t(ispn)+dreal(wann_occ_m(lm1,lm1,ispn,ispn,ias))
           enddo
           write(60,'("    imag part")')
           do lm1=l**2+1,(l+1)**2
-            write(60,'(2X,7F12.6)')(dimag(wf_occ_mtrx(lm1,lm2,ispn,ispn,ias)),lm2=l**2+1,(l+1)**2)
+            write(60,'(2X,7F12.6)')(dimag(wann_occ_m(lm1,lm2,ispn,ispn,ias)),lm2=l**2+1,(l+1)**2)
           enddo
           write(60,'("    occupancy : ",F12.6)')t(ispn)
         enddo !ispn
@@ -143,18 +138,18 @@ if (iproc.eq.0) then
           write(60,'("  ispn : ",I1)')ispn
           write(60,'("    real part")')
           do lm1=l**2+1,(l+1)**2
-            write(60,'(2X,7F12.6)')(dreal(wf_ene_mtrx(lm1,lm2,ispn,ispn,ias)),lm2=l**2+1,(l+1)**2)
+            write(60,'(2X,7F12.6)')(dreal(wann_ene_m(lm1,lm2,ispn,ispn,ias)),lm2=l**2+1,(l+1)**2)
           enddo
           write(60,'("    imag part")')
           do lm1=l**2+1,(l+1)**2
-            write(60,'(2X,7F12.6)')(dimag(wf_ene_mtrx(lm1,lm2,ispn,ispn,ias)),lm2=l**2+1,(l+1)**2)
+            write(60,'(2X,7F12.6)')(dimag(wann_ene_m(lm1,lm2,ispn,ispn,ias)),lm2=l**2+1,(l+1)**2)
           enddo
           w2=0.d0
           n=0
           do lm1=l**2+1,(l+1)**2
-            if (abs(wf_ene_mtrx(lm1,lm1,ispn,ispn,ias)).gt.1d-12) then
+            if (abs(wann_ene_m(lm1,lm1,ispn,ispn,ias)).gt.1d-12) then
               n=n+1
-              w2=w2+dreal(wf_ene_mtrx(lm1,lm1,ispn,ispn,ias))
+              w2=w2+dreal(wann_ene_m(lm1,lm1,ispn,ispn,ias))
             endif
           enddo
           if (n.ne.0) write(60,'("    average energy : ",F12.6)')w2/n
@@ -163,7 +158,6 @@ if (iproc.eq.0) then
     enddo !l
   enddo !i
 endif
-deallocate(wf_ene_mtrx,wf_occ_mtrx)
 return
 end
   

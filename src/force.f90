@@ -9,6 +9,7 @@
 subroutine force
 ! !USES:
 use modmain
+use modtest
 ! !DESCRIPTION:
 !   Computes the various contributions to the atomic forces. In principle, the
 !   force acting on a nucleus is simply the gradient at that site of the
@@ -78,7 +79,7 @@ use modmain
 !BOC
 implicit none
 ! local variables
-integer ik,is,ia,ias,nr,i
+integer is,ia,ias,nr,i,ikloc
 real(8) sum,t1
 real(8) ts0,ts1
 ! allocatable arrays
@@ -107,13 +108,17 @@ call symvect(.false.,forcehf)
 !--------------------------------------!
 !     core correction to the force     !
 !--------------------------------------!
+if (spincore) then
+  write(*,*)
+  write(*,'("Warning(force): forces are inaccurate with polarised cores")')
+end if
 rfmt(:,:)=0.d0
 do is=1,nspecies
   nr=nrmt(is)
   do ia=1,natoms(is)
     ias=idxas(ia,is)
 ! compute the gradient of the core density
-    rfmt(1,1:nr)=rhocr(1:nr,ias)/y00
+    rfmt(1,1:nr)=rhocr(1:nr,ias,1)/y00
     call gradrfmt(1,nr,spr(:,is),lmmaxvr,nrmtmax,rfmt,grfmt)
     do i=1,3
       forcecr(i,ias)=rfmtinp(1,1,nr,spr(:,is),lmmaxvr,veffmt(:,:,ias), &
@@ -130,27 +135,28 @@ call symvect(.false.,forcecr)
 forceibs(:,:)=0.d0
 if (tfibs) then
   allocate(ffacg(ngvec,nspecies))
+! generate the smooth step function form factors
+  do is=1,nspecies
+    call genffacg(is,ngvec,ffacg(:,is))
+  end do
+! compute k-point dependent contribution to the IBS force
+  do ikloc=1,nkptloc
+    call forcek(ikloc,ffacg)
+  end do
+  call mpi_grid_reduce(forceibs(1,1),3*natmtot,dims=(/dim_k/))
 ! integral of effective potential with gradient of valence density
   do is=1,nspecies
     nr=nrmt(is)
     do ia=1,natoms(is)
       ias=idxas(ia,is)
       rfmt(:,1:nr)=rhomt(:,1:nr,ias)
-      rfmt(1,1:nr)=rfmt(1,1:nr)-rhocr(1:nr,ias)/y00
+      rfmt(1,1:nr)=rfmt(1,1:nr)-rhocr(1:nr,ias,1)/y00
       call gradrfmt(lmaxvr,nr,spr(:,is),lmmaxvr,nrmtmax,rfmt,grfmt)
       do i=1,3
         t1=rfmtinp(1,lmaxvr,nr,spr(:,is),lmmaxvr,veffmt(:,:,ias),grfmt(:,:,i))
         forceibs(i,ias)=forceibs(i,ias)+t1
       end do
     end do
-  end do
-! generate the step function form factors
-  do is=1,nspecies
-    call genffacg(is,ffacg(:,is))
-  end do
-! compute k-point dependent contribution to the IBS force
-  do ik=1,nkpt
-    call forcek(ik,ffacg)
   end do
 ! symmetrise IBS force
   call symvect(.false.,forceibs)
@@ -180,6 +186,8 @@ end do
 deallocate(rfmt,grfmt)
 call timesec(ts1)
 timefor=timefor+ts1-ts0
+! write total forces to test file
+call writetest(750,'total forces',nv=3*natmtot,tol=1.d-5,rva=forcetot)
 return
 end subroutine
 !EOC

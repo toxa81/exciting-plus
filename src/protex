@@ -934,11 +934,12 @@ sub print_preamble {
 
   unless ( $opt_b ) {
     print "%------------------------ PREAMBLE --------------------------";
-    print "\\documentclass[11pt]{article}";
+    print "\\documentclass[a4paper,11pt]{article}";
     print "\\usepackage{amsmath}";
     print "\\usepackage{epsfig}";
     print "\\usepackage{hangcaption}";
     print "\\usepackage{tabularx}";
+    print "\\usepackage{hyperref}";
     print "\\textheight     9in";
     print "\\topmargin      0pt";
     print "\\headsep        1cm";
@@ -1010,12 +1011,17 @@ sub do_beg {
     if ( $begdoc == 0 ) {
         if ( $tpage ) {
             print "\\title{@title}";
-            print "\\author{{\\sc @author}\\\\ {\\em @affiliation}}";
+            print "\\author{@author\\\\ {\\em @affiliation}}";
             print "\\date{@date}";
         }
         print "\\begin{document}";
         if ( $tpage ) {
+            print "\\fbox{\\fbox{";
+            print "\\begin{minipage}[t]{\\linewidth}";
             print "\\maketitle";
+            print "\\end{minipage}}}";
+            print "\\thispagestyle{empty}";
+            print "\\newpage";
         }
         print "\\tableofcontents";
         print "\\newpage";

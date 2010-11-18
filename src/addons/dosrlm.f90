@@ -3,16 +3,16 @@ use modmain
 implicit none
 ! local variables
 integer lmax,lmmax,l,m,lm,nsk(3)
-integer ik,ispn,is,ia,ias,ist,iw,i,ikloc,idx0,bs
+integer ik,ispn,is,ia,ias,ist,iw,i,ikloc,x0,n
 real(8) t1
 ! allocatable arrays
 real(4), allocatable :: bndchr(:,:,:,:,:)
-!real(8), allocatable :: e(:,:,:)
 real(8), allocatable :: f(:,:)
 real(8), allocatable :: w(:)
 real(8), allocatable :: tdos(:,:)
 real(8), allocatable :: idos(:,:)
 real(8), allocatable :: pdos(:,:,:,:)
+real(8), allocatable :: doswan(:,:)
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
 complex(8), allocatable :: sdmat(:,:,:,:)
@@ -32,9 +32,10 @@ call linengy
 call genapwfr
 ! generate the local-orbital radial functions
 call genlofr
-
-call geturf
-call genurfprod
+! get radial-muffint tin functions
+call getufr
+! get product of radial functions
+call genufrp  
 
 lmax=min(3,lmaxapw)
 lmmax=(lmax+1)**2
@@ -54,18 +55,10 @@ if (mpi_grid_side(dims=(/dim_k/))) then
         call getevecfv(vkl(1,ik),vgkl(1,1,1,ikloc),evecfv)
         call getevecsv(vkl(1,ik),evecsv)
         call getevalsv(vkl(1,ik),evalsv(1,ik))
-! substract Fermi energy
-        evalsv(:,ik)=evalsv(:,ik)-efermi
-! correction for scissors operator
-        do ist=1,nstsv
-          if (evalsv(ist,ik).gt.0.d0) evalsv(ist,ik)=evalsv(ist,ik)+scissor
-        enddo
 ! compute the band character
         call bandchar(.true.,lmax,ikloc,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik))
-!        if (wannier) then
-!          call getwfc(ik,wann_c(1,1,1,ik)) 
-!        endif
         call gensdmat(evecsv,sdmat(:,:,:,ik))
+        if (wannier) call genwann(ikloc,evecfv,evecsv)
       end do
     endif
     call mpi_grid_barrier(dims=(/dim_k/))
@@ -95,7 +88,7 @@ end do
 ! allocate local arrays
 allocate(f(nstsv,nkpt))
 allocate(pdos(nwdos,lmmax,nspinor,natmtot))
-if (iproc.eq.0) then
+if (mpi_grid_root()) then
   allocate(tdos(nwdos,nspinor))
   allocate(idos(nwdos,nspinor))
 endif
@@ -118,11 +111,10 @@ if (mpi_grid_root()) then
   tdos=tdos*occmax
 endif
 ! compute partial DOS in parallel
-!pdos=0.d0
-!call idxbos(natmtot,nproc,iproc+1,idx0,bs)
-natmtotloc=mpi_grid_map(natmtot,dim1)
+pdos=0.d0
+natmtotloc=mpi_grid_map(natmtot,dim_k)
 do iasloc=1,natmtotloc
-  ias=mpi_grid_map(natmtot,dim1,loc=iasloc)
+  ias=mpi_grid_map(natmtot,dim_k,loc=iasloc)
   do ispn=1,nspinor
     do l=0,lmax
       do m=-l,l
@@ -140,13 +132,32 @@ do iasloc=1,natmtotloc
 enddo !ias
 pdos=pdos*occmax
 do ias=1,natmtot
-  call mpi_grid_reduce(pdos(1,1,1,ias),nwdos*lmmax*nspinor,dims=(/dim1/),&
+  call mpi_grid_reduce(pdos(1,1,1,ias),nwdos*lmmax*nspinor,dims=(/dim_k/),&
     side=.true.)
 enddo
+allocate(doswan(nwdos,nwann))
+doswan=0.d0
+if (wannier) then
+  do n=1,nwann
+    f=0.d0
+    do ik=1,nkpt
+      ikloc=mpi_grid_map(nkpt,dim_k,x=x0,glob=ik)
+      if (mpi_grid_x(dim_k).eq.x0) then
+        do ist=1,nstsv
+          f(ist,ik)=abs(wann_c(n,ist,ikloc))**2
+        end do
+      endif
+    end do
+    call mpi_grid_reduce(f(1,1),nstsv*nkpt,dims=(/dim_k/))
+    call brzint(nsmdos,ngridk,nsk,ikmap,nwdos,wdos,nstsv,nstsv, &
+      evalsv,f,doswan(1,n)) 
+  enddo
+endif 
 
 if (mpi_grid_root()) then
 ! write total DOS
-  open(50,file='TDOS_EV.OUT',action='WRITE',form='FORMATTED')
+  open(50,file="TDOS.OUT",action="WRITE",form="FORMATTED")
+  open(51,file="tdos.dat",action="WRITE",form="FORMATTED")
   do ispn=1,nspinor
     if (ispn.eq.1) then
       t1=1.d0
@@ -154,11 +165,14 @@ if (mpi_grid_root()) then
       t1=-1.d0
     end if
     do iw=1,nwdos
-      write(50,'(2G18.10)') w(iw)*ha2ev,t1*tdos(iw,ispn)/ha2ev
+      write(50,'(2G18.10)') w(iw),t1*tdos(iw,ispn)
+      write(51,'(2G18.10)') (w(iw)-efermi)*ha2ev,t1*tdos(iw,ispn)/ha2ev
     end do
     write(50,'("     ")')
+    write(51,'("     ")')
   enddo
   close(50)
+  close(51)
 ! compute interstitial DOS
   idos=tdos
   do ispn=1,nspinor
@@ -169,7 +183,8 @@ if (mpi_grid_root()) then
     enddo
   enddo
 ! write interstitial DOS
-  open(50,file='IDOS_EV.OUT',action='WRITE',form='FORMATTED')
+  open(50,file="IDOS.OUT",action="WRITE",form="FORMATTED")
+  open(51,file="idos.dat",action="WRITE",form="FORMATTED")
   do ispn=1,nspinor
     if (ispn.eq.1) then
       t1=1.d0
@@ -177,13 +192,16 @@ if (mpi_grid_root()) then
       t1=-1.d0
     end if
     do iw=1,nwdos
-      write(50,'(2G18.10)') w(iw)*ha2ev,t1*idos(iw,ispn)/ha2ev
+      write(50,'(2G18.10)') w(iw),t1*idos(iw,ispn)
+      write(51,'(2G18.10)') (w(iw)-efermi)*ha2ev,t1*idos(iw,ispn)/ha2ev
     end do
     write(50,'("     ")')  
+    write(51,'("     ")')  
   end do
   close(50)
+  close(51)
 ! write partial DOS
-  open(50,file='PDOS.OUT',form='UNFORMATTED',status='REPLACE')
+  open(50,file="PDOS.OUT",form="UNFORMATTED",status="REPLACE")
   write(50)nspecies,natmtot,nspinor,lmax,lmmax,nwdos
   do is=1,nspecies
     write(50)spsymb(is)
@@ -195,7 +213,7 @@ if (mpi_grid_root()) then
     enddo
   enddo
   do iw=1,nwdos
-    write(50)w(iw)*ha2ev
+    write(50)(w(iw)-efermi)*ha2ev
   enddo
   do is=1,nspecies
     do ia=1,natoms(is)
@@ -212,30 +230,21 @@ if (mpi_grid_root()) then
       enddo
     enddo
   enddo
+  write(50)wannier
+  if (wannier) then
+    write(50)nwann
+    do n=1,nwann
+      do iw=1,nwdos
+        write(50)occmax*doswan(iw,n)/ha2ev
+      enddo
+    enddo
+  endif
   close(50)
 endif
-deallocate(f,w,pdos)
-if (iproc.eq.0) then
+if (mpi_grid_root()) then
   deallocate(tdos,idos)
 endif
-!if (wannier) then
-!  do n=1,wf_dim
-!    do ik=1,nkpt
-!      do ist=1,nstfv
-!        f(ist,ik)=abs(wfc(n,ist,1,ik))**2
-!      end do
-!    end do
-!    call brzint(nsmdos,ngridk,nsk,ikmap,nwdos,wdos,nstsv,nstsv, &
-!      e(1,1,1),f,gp) 
-!    write(fname,'("WDOS_",I4.4,".OUT")')n
-!    open(50,file=trim(fname),action='WRITE',form='FORMATTED')
-!    do iw = 1, nwdos
-!      write(50,'(2G18.10)')w(iw)*ha2ev, gp(iw)/ha2ev
-!    enddo
-!    close(50)
-!  enddo
-!endif 
-!endif
+deallocate(f,w,pdos,doswan)
 deallocate(bndchr,evecfv,evecsv)
 return
 end subroutine

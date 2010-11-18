@@ -42,7 +42,7 @@ real(8), intent(in) :: rfmt2(ld,nr)
 ! local variables
 integer lmmax,ir,irc
 ! automatic arrays
-real(8) rc(nr),fr(nr),gr(nr),cf(3,nr)
+real(8) rc(nr),fr(nr),gr(nr),cf(4,nr)
 ! external functions
 real(8) ddot
 external ddot

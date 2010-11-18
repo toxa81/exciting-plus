@@ -10,37 +10,45 @@ complex(8), intent(in) :: evecsv(nstsv,nstsv)
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: wfsvit(:,:,:)
-!complex(8), allocatable :: wann_unkmt_new(:,:,:,:,:)
-!complex(8), allocatable :: wann_unkit_new(:,:,:)
-integer j,n
-integer :: ik
-
+integer :: ik,ierr
+integer, external :: hash
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+if (debug_level.gt.0) then
+  if (debug_level.ge.1) then
+    call mpi_grid_hash(evecfv(1,1),nmatmax*nstfv,dim2,ierr)
+    if (ierr.ne.0) call mpi_grid_msg("genwann","hash test of evecfv failed")
+    call mpi_grid_hash(evecsv(1,1),nstsv*nstsv,dim2,ierr)
+    if (ierr.ne.0) call mpi_grid_msg("genwann","hash test of evecsv failed")
+  endif
+  if (debug_level.ge.5) then
+    call dbg_open_file
+    write(fdbgout,*)
+    write(fdbgout,'("[genwann]")')
+    write(fdbgout,'("  ikloc : ",I6)')ikloc    
+    write(fdbgout,'("  ik : ",I6)')ik  
+    write(fdbgout,'("  hash(evecfv) : ",I16)')hash(evecfv,16*nmatmax*nstfv)
+    write(fdbgout,'("  hash(evecsv) : ",I16)')hash(evecsv,16*nstsv*nstsv)
+    write(fdbgout,'("  hash(evalsv) : ",I16)')hash(evalsv(1,ik),8*nstsv)
+    call dbg_close_file
+  endif
+  if (debug_level.ge.6) then
+    call dbg_open_file
+    write(fdbgout,*)
+    write(fdbgout,'("[genwann]")')
+    write(fdbgout,'("  ikloc : ",I6)')ikloc    
+    write(fdbgout,'("  ik : ",I6)')ik  
+    write(fdbgout,'("  evalsv : ",6G12.6)')evalsv(:,ik)
+    call dbg_close_file
+  endif
+endif
 ! allocate arrays
-allocate(wfsvmt(lmmaxvr,nrfmax,natmtot,nspinor,nstsv))
-!allocate(wfsvit(ngkmax,nspinor,nstsv))
+allocate(wfsvmt(lmmaxvr,nufrmax,natmtot,nspinor,nstsv))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 call match(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),sfacgk(1,1,1,ikloc),apwalm)
 ! generate second-varioational wave-functions
 call genwfsvmt(lmaxvr,lmmaxvr,ngk(1,ik),evecfv,evecsv,apwalm,wfsvmt)
-!call genwfsvit(ngk(1,ik),evecfv,evecsv,wfsvit)
 ! calculate WF expansion coefficients
 call genwann_c(ik,vkc(:,ik),evalsv(1,ik),wfsvmt,wann_c(1,1,ikloc))
-! compute Bloch-sums of Wannier functions
-!allocate(wann_unkmt_new(lmmaxvr,nrfmax,natmtot,nspinor,nwann))
-!allocate(wann_unkit_new(ngkmax,nspinor,nwann))
-!wann_unkmt_new=zzero
-!wann_unkit_new=zzero
-!do n=1,nwann
-!  do j=1,nstsv
-!    wann_unkmt_new(:,:,:,:,n)=wann_unkmt_new(:,:,:,:,n) + &
-!      wfsvmt(:,:,:,:,j)*wann_c(n,j,ikloc)
-!    wann_unkit_new(:,:,n)=wann_unkit_new(:,:,n) + &
-!      wfsvit(:,:,j)*wann_c(n,j,ikloc)
-!  enddo
-!enddo
-!wann_unkmt(:,:,:,:,:,ikloc)=wann_unkmt_new(:,:,:,:,:)
-!wann_unkit(:,:,:,ikloc)=wann_unkit_new(:,:,:)
 deallocate(wfsvmt,apwalm)
 return
 end

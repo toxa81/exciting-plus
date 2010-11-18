@@ -1,6 +1,7 @@
 
 subroutine phfext(iq,is,ia,ip,fext)
 use modmain
+use modqpt
 implicit none
 ! arguments
 integer, intent(in) :: iq

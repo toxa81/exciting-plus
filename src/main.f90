@@ -1,33 +1,28 @@
 
-! Copyright (C) 2002-2008 J. K. Dewhurst, S. Sharma and C. Ambrosch-Draxl.
+! Copyright (C) 2002-2010 J. K. Dewhurst, S. Sharma and C. Ambrosch-Draxl.
 ! This file is distributed under the terms of the GNU General Public License.
 ! See the file COPYING for license details.
 
-! main routine for the EXCITING code
+! main routine for the Elk code
 program main
 use modmain
-use mod_mpi_grid
 use mod_hdf5
 implicit none
 ! local variables
 integer itask
 call mpi_world_initialize
+if (iproc.eq.0) call timestamp(6,"[main] done mpi_world_initialize")
 call hdf5_initialize
-
-if (iproc.eq.0) call timestamp(6,'before readinput')
 ! read input files
 call readinput
-call mpi_world_barrier
-if (iproc.eq.0) call timestamp(6,'after readinput')
-
+call papi_initialize(npapievents,papievent)
+if (iproc.eq.0) call timestamp(6,"[main] done readinput")
 ! perform the appropriate task
 do itask=1,ntasks
   task=tasks(itask)
   select case(task)
   case(-1)
-    write(*,*)
-    write(*,'("EXCITING version ",I1.1,".",I2.2,".",I3.3)') version
-    write(*,*)
+    write(*,'("Elk version ",I1.1,".",I1.1,".",I2.2)') version
     stop
   case(0,1,2,3)
     call gndstate
@@ -35,14 +30,12 @@ do itask=1,ntasks
     call hartfock
   case(10)
     call dos
-  case(11)
-    call dosrlm
+  case(14)
+    call writesf
   case(15,16)
     call writelsj
   case(20,21)
     call bandstr
-  case(22)
-    call bandrlm
   case(25)
     call effmass
   case(31,32,33)
@@ -51,18 +44,16 @@ do itask=1,ntasks
     call potplot
   case(51,52,53)
     call elfplot
-  case(61,62,63,64,162)
+  case(61,62,63,162)
     call wfplot
-  case(65)
-    call wfsvplot
-  case(361,362,363)
-    call wann_plot
   case(72,73,82,83,142,143,152,153)
     call vecplot
   case(91,92,93)
     call dbxcplot
   case(100,101)
     call fermisurf
+  case(102)
+    call fermisurfbxsf
   case(110)
     call mossbauer
   case(115)
@@ -77,6 +68,12 @@ do itask=1,ntasks
     call writeexpiqr
   case(140)
     call elnes
+  case(170)
+    call writewfpw
+  case(172)
+    call dielectricq
+  case(175)
+    call yambo
   case(190)
     call geomplot
   case(200,201)
@@ -95,32 +92,45 @@ do itask=1,ntasks
     call alpha2f
   case(300)
     call rdmft
-#ifdef _HDF5_
-  case(400,401,402)
-    call response
-#endif
+  case(400)
+    call writetensmom
   case(500)
-    call checknorm
-  case(501)
-    call checkwf
-  case(600,601,602)
-    call writewann
-  case(700)
-    call writebz
-  case(701)
-    call writexc
-  case(702)
+    call testcheck
+  case(800)
+    call response
+  case(801)
+    call crpa
+  case(802)
+    call unscreened_u
+  case(804)
     call genscell
-  case(703)
-    call genrlm_lcs
+  case(805)
+    call genwfdrc
+  case(806)
+    call writebz
+  case(807,808)
+    call writewann
+  case(809)
+    call sic_genvwan 
+  case(810)
+    call sic_gndstate
+  case(822)
+    call bandrlm  
+  case(811)
+    call dosrlm  
+  case(861,862)
+    call wann_plot
+  case(863)
+    call wann_plot_3d
   case default
     write(*,*)
     write(*,'("Error(main): task not defined : ",I8)') task
     write(*,*)
-    call pstop
+    stop
   end select
   call mpi_world_barrier
 end do
+call papi_finalize
 call hdf5_finalize
 call mpi_grid_finalize
 call mpi_world_finalize
@@ -128,85 +138,109 @@ stop
 end program
 
 !BOI
-! !TITLE: The EXCITING Code Manual\\ Version 0.9.224
-! !AUTHORS: J. K. Dewhurst, S. Sharma and C. Ambrosch-Draxl
+! !TITLE: {\huge{\sc The Elk Code Manual}}\\ \Large{\sc Version 1.0.17}\\ \vskip 0.5cm \includegraphics[height=1cm]{elk_silhouette.pdf}
+! !AUTHORS: {\sc J. K. Dewhurst, S. Sharma} \\ {\sc L. Nordstr\"{o}m, F. Cricchio, F. Bultmark} \\ {\sc E. K. U. Gross}
 ! !AFFILIATION:
 ! !INTRODUCTION: Introduction
-!   Welcome to the {\sf EXCITING} Code!
-!   The {\sf EXCITING} code is a state-of-the-art full-potential linearised
-!   augmented-plane-wave (FP-LAPW) code for determining the properties of
-!   crystalline solids. It was developed mainly at the
+!   Welcome to the {\sf Elk} Code! {\sf Elk} is an all-electron full-potential
+!   linearised augmented-plane-wave (FP-LAPW) code for determining the
+!   properties of crystalline solids. It was developed originally at the
 !   Karl-Franzens-Universit\"{a}t Graz as part of the {\sf EXCITING} EU Research
-!   and Training Network project \cite{exciting}. The guiding philosophy during
+!   and Training Network project\footnote{{\sf EXCITING} code developed under
+!   the Research and Training Network {\sf EXCITING} funded by the EU, contract
+!   No. HPRN-CT-2002-00317}. The guiding philosophy during
 !   the implementation of the code was to keep it as simple as possible for both
 !   users and developers without compromising on its capabilities. All the
 !   routines are released under either the GNU General Public License (GPL) or
 !   the GNU Lesser General Public License (LGPL) in the hope that they may
-!   inspire other scientists to implement new and, well, exciting developments
-!   in the field of density functional theory and beyond.
+!   inspire other scientists to implement new developments in the field of
+!   density functional theory and beyond.
 !
 !   \section{Acknowledgements}
-!   Lots of people contributed to the {\sf EXCITING} code with ideas, checking
-!   and testing, writing code or documentation and general encouragement. They
-!   include Lars Nordstr\"{o}m, Clas Persson, Christian Brouder, Rickard
-!   Armiento, Andrew Chizmeshya, Per Anderson, Igor Nekrasov, Fredrik Bultmark,
-!   Sushil Auluck, Frank Wagner, Fateh Kalarasse, J\"{u}rgen Spitaler, Stefano
-!   Pittalis, Nektarios Lathiotakis, Tobias Burnus, Stephan Sagmeister,
-!   Christian Meisenbichler, Francesco Cricchio, S\'{e}bastien Leb\`{e}gue,
-!   Yigang Zhang, Fritz K\"{o}rmann, Alexey Baranov, Anton Kozhevnikov and
-!   Shigeru Suehara. Special mention of David Singh's very useful book
-!   {\it Planewaves, Pseudopotentials and the LAPW Method} \cite{singh} must
-!   also be made. Finally we would like to acknowledge the generous support of
-!   Karl-Franzens-Universit\"{a}t Graz, as well as the EU Marie-Curie Research
-!   Training Networks initiative.
+!   Lots of people contributed to the {\sf Elk} code with ideas, checking and
+!   testing, writing code or documentation and general encouragement. They
+!   include Claudia Ambrosch-Draxl, Clas Persson, Christian Brouder, Rickard
+!   Armiento, Andrew Chizmeshya, Per Anderson, Igor Nekrasov, Sushil Auluck,
+!   Frank Wagner, Fateh Kalarasse, J\"{u}rgen Spitaler, Stefano Pittalis,
+!   Nektarios Lathiotakis, Tobias Burnus, Stephan Sagmeister, Christian
+!   Meisenbichler, S\'{e}bastien Leb\`{e}gue, Yigang Zhang, Fritz K\"{o}rmann,
+!   Alexey Baranov, Anton Kozhevnikov, Shigeru Suehara, Frank Essenberger,
+!   Antonio Sanna, Tyrel McQueen, Tim Baldsiefen, Marty Blaber, Anton Filanovich
+!   and Torbj\"{o}rn Bj\"{o}rkman. Special mention of David Singh's very useful
+!   book on the LAPW method\footnote{D. J. Singh, {\it Planewaves,
+!   Pseudopotentials and the LAPW Method} (Kluwer Academic Publishers, Boston,
+!   1994).} must also be made. Finally we would like to acknowledge the generous
+!   support of Karl-Franzens-Universit\"{a}t Graz, as well as the EU Marie-Curie
+!   Research Training Networks initiative.
 !
 !   \vspace{24pt}
-!   Kay Dewhurst, Sangeeta Sharma and Claudia Ambrosch-Draxl
+!   Kay Dewhurst\newline
+!   Sangeeta Sharma\newline
+!   Lars Nordstr\"{o}m\newline
+!   Francesco Cricchio\newline
+!   Fredrik Bultmark\newline
+!   Hardy Gross
 !
 !   \vspace{12pt}
-!   Edinburgh, Berlin and Leoben, November 2008
+!   Halle and Uppsala, April 2010
 !   \newpage
 !
 !   \section{Units}
-!   Unless explicitly stated otherwise, {\sf EXCITING} uses atomic units. In
+!   Unless explicitly stated otherwise, {\sf Elk} uses atomic units. In
 !   this system $\hbar=1$, the electron mass $m=1$, the Bohr radius $a_0=1$ and
 !   the electron charge $e=1$ (note that the electron charge is positive, so
 !   that the atomic numbers $Z$ are negative). Thus, the atomic unit of length
 !   is 0.52917720859(36) \AA, and the atomic unit of energy is the Hartree which
 !   equals 27.21138386(68) eV. The unit of the external magnetic fields is
-!   defined such that one unit of magnetic field in {\tt exciting.in} equals
-!   1717.2445320376 Tesla.
+!   defined such that one unit of magnetic field in {\tt elk.in} equals
+!   1715.255397557 Tesla.
 !
-!   \section{Compiling and running {\sf EXCITING}}
+!   \section{Compiling and running {\sf Elk}}
 !   \subsection{Compiling the code}
 !   Unpack the code from the archive file. Run the command
 !   \begin{verbatim}
 !     setup
 !   \end{verbatim}
-!   in the {\tt exciting} directory and select the appropriate system and
-!   compiler. We highly recommend that you edit the file {\tt make.inc} and tune
-!   the compiler options for your particular system. You can also make use of
+!   in the {\tt elk} directory and select the appropriate system and compiler.
+!   We highly recommend that you edit the file {\tt make.inc} and tune the
+!   compiler options for your particular system. In particular, make use of
 !   machine-optimised {\tt BLAS/LAPACK} libraries if they are available, but
 !   make sure they are version $3.x$. Setting the {\sf OpenMP} options of your
-!   compiler will enable {\sf EXCITING} to run in parallel mode on
-!   multiprocessor systems. Following this, run
+!   compiler will enable {\sf Elk} to run in parallel mode on multiprocessor
+!   systems. Following this, run
 !   \begin{verbatim}
-!     make all
+!     make
 !   \end{verbatim}
 !   This will hopefully compile the entire code and all the libraries into one
-!   executable, {\tt exciting}, located in the {\tt src} directory. It will also
-!   compile a few useful auxiliary programs, namely {\tt spacegroup} for
-!   producing crystal geometries from spacegroup data, {\tt species} for
-!   generating species files, and {\tt eos} for fitting equations of state to
-!   energy-volume data. If you want to compile everything all over again, then
-!   run {\tt make clean} from the {\tt exciting} directory, followed by
-!   {\tt make all}.
+!   executable, {\tt elk}, located in the {\tt elk/src} directory. It will also
+!   compile two useful auxiliary programs, namely {\tt spacegroup} for producing
+!   crystal geometries from spacegroup data and {\tt eos} for fitting equations
+!   of state to energy-volume data. If you want to compile everything all over
+!   again, then run {\tt make clean} from the {\tt elk} directory, followed by
+!   {\tt make}.
+!
+!   \subsection{Linking with the {\sf Libxc} functional library}
+!   {\sf Libxc} is the ETSF library of exchange-correlation functionals. Elk can
+!   use the complete set of LDA and GGA functionals available in {\sf Libxc}.
+!   In order to do this, first download and compile {\sf Libxc}. This should
+!   have produced the file {\tt libxc.a}. Copy this file to the {\tt elk/src}
+!   directory and then uncomment the lines indicated in the file
+!   {\tt elk/src/libxc.inc}. Once this is done, run {\tt make clean} followed by
+!   {\tt make}. To select a particular functional of {\sf Libxc}, use the block
+!   \begin{verbatim}
+!     xctype
+!      100 nx nc
+!   \end{verbatim}
+!   where {\tt nx} and {\tt nc} are, respectively, the numbers of the exchange
+!   and correlation functionals in the {\sf Libxc} library. See the
+!   documentation of the library for the functionals and their associated
+!   numbers.
 !
 !   \subsection{Running the code}
 !   As a rule, all input files for the code are in lower case and end with the
 !   extension {\tt .in}. All output files are uppercase and have the extension
 !   {\tt .OUT}. For most cases, the user will only need to modify the file
-!   {\tt exciting.in}. In this file input parameters are arranged in blocks.
+!   {\tt elk.in}. In this file input parameters are arranged in blocks.
 !   Each block consists of a block name on one line and the block variables on
 !   subsequent lines. Almost all blocks are optional: the code uses reasonable
 !   default values in cases where they are absent. Blocks can appear in any
@@ -222,7 +256,7 @@ end program
 !   required. Users should not have to modify these files in the majority of
 !   cases.
 !
-!   The best way to learn to use {\sf EXCITING} is to run the examples included
+!   The best way to learn to use {\sf Elk} is to run the examples included
 !   with the package. These can be found in the {\tt examples} directory and use
 !   many of the code's capabilities. The following section which describes all
 !   the input parameters will be of invaluable assistance.
@@ -231,7 +265,7 @@ end program
 !   This section lists all the input blocks available. It is arranged with the
 !   name of the block followed by a table which lists each parameter name, what
 !   the parameter does, its type and default value. A horizontal line in the
-!   table indicates a new line in {\tt exciting.in}. Below the table is a brief
+!   table indicates a new line in {\tt elk.in}. Below the table is a brief
 !   overview of the block's function.
 !
 !   \subsection{{\tt atoms}}
@@ -267,7 +301,7 @@ end program
 !    automatically & logical & {\tt .false.} \\
 !   \hline
 !   \end{tabularx}\newline\newline
-!   See {\tt rlambda} for details.
+!   See {\tt radkpt} for details.
 !
 !   \subsection{{\tt autormt}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
@@ -278,18 +312,59 @@ end program
 !   \end{tabularx}\newline\newline
 !   See {\tt rmtapm} for details.
 !
+!   \subsection{{\tt autoswidth}}
+!   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
+!   \hline
+!   {\tt autoswidth} & {\tt .true.} if the smearing parameter {\tt swidth} 
+!    should be determined automatically & logical & {\tt .false.} \\
+!   \hline
+!   \end{tabularx}\newline\newline
+!   Calculates the smearing width from the $k$-point density,
+!   $V_{\rm BZ}/n_k$; the valence band width, $W$; and an effective mass
+!   parameter, $m^{*}$; according to
+!   $$ \sigma=\frac{\sqrt{2W}}{m^{*}}\left(\frac{3}{4\pi}
+!    \frac{V_{\rm BZ}}{n_k}\right)^{1/3}. $$
+!   The variable {\tt mstar} then replaces {\tt swidth} as the control parameter
+!   of the smearing width. A large value of $m^{*}$ gives a narrower smearing
+!   function. Since {\tt swidth} is adjusted according to the fineness of the
+!   $\mathbf{k}$-mesh, the smearing parameter can then be eliminated. It is not
+!   recommended that {\tt autoswidth} be used in conjunction with the
+!   Fermi-Dirac smearing function, since the electronic temperature will then be
+!   a function of the $\mathbf{k}$-point mesh. See T. Bj\"orkman and
+!   O. Gr\aa n\"as, {\it Int. J. Quant. Chem.} DOI: 10.1002/qua.22476 (2010) for
+!   details. See also {\tt stype} and {\tt swidth}.
+!
 !   \subsection{{\tt avec}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
 !   \hline
-!   {\tt avec(1) } & first lattice vector & real(3) & $(1.0,0.0,0.0)$ \\
+!   {\tt avec(1)} & first lattice vector & real(3) & $(1.0,0.0,0.0)$ \\
 !   \hline
-!   {\tt avec(2) } & second lattice vector & real(3) & $(0.0,1.0,0.0)$ \\
+!   {\tt avec(2)} & second lattice vector & real(3) & $(0.0,1.0,0.0)$ \\
 !   \hline
-!   {\tt avec(3) } & third lattice vector & real(3) & $(0.0,0.0,1.0)$ \\
+!   {\tt avec(3)} & third lattice vector & real(3) & $(0.0,0.0,1.0)$ \\
 !   \hline
 !   \end{tabularx}\newline\newline
 !   Lattice vectors of the crystal in atomic units (Bohr). If {\tt molecule} is
 !   {\tt .true.} then these vectors are not used.
+!
+!   \subsection{{\tt beta0}}
+!   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
+!   \hline
+!   {\tt beta0} & adaptive mixing parameter & real & $0.05$ \\
+!   \hline
+!   \end{tabularx}\newline\newline
+!   This determines how much of the potential from the previous iteration is
+!   mixed with the current potential during the self-consistent loop. It should
+!   be made smaller if the calculation is unstable. See {\tt betamax} and also
+!   the routine {\tt mixadapt}.
+!
+!   \subsection{{\tt betamax}}
+!   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
+!   \hline
+!   {\tt betamax} & maximum adaptive mixing parameter & real & $0.5$ \\
+!   \hline
+!   \end{tabularx}\newline\newline
+!   Maximum allowed mixing parameter used in routine {\tt mixadapt}.
 !
 !   \subsection{{\tt bfieldc}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
@@ -300,17 +375,16 @@ end program
 !   \end{tabularx}\newline\newline
 !   This is a constant magnetic field applied throughout the entire unit cell
 !   and enters the second-variational Hamiltonian as
-!   $$ \frac{g_e\alpha}{4}\,\vec{\sigma}\cdot{\bf B}_{\rm ext}, $$
-!   where $g_e$ is the electron $g$-factor (2.0023193043718). This field is
-!   normally used to break spin symmetry for spin-polarised calculations and
-!   considered to be infinitesimal with no direct contribution to the total
-!   energy. In cases where the magnetic field is finite (for example when
-!   computing magnetic response) the external ${\bf B}$-field energy reported in
-!   {\tt INFO.OUT} should be added to the total by hand. This field is applied
-!   throughout the entire unit cell. To apply magnetic fields in particular
-!   muffin-tins use the {\tt bfcmt} vectors in the {\tt atoms} block. Collinear
-!   calculations are more efficient if the field is applied in the
-!   $z$-direction.
+!   $$ \frac{g_e}{4c}\,\vec{\sigma}\cdot{\bf B}_{\rm ext}, $$
+!   where $g_e$ is the electron $g$-factor. This field is normally used to break
+!   spin symmetry for spin-polarised calculations and considered to be
+!   infinitesimal with no direct contribution to the total energy. In cases
+!   where the magnetic field is finite (for example when computing magnetic
+!   response) the external ${\bf B}$-field energy reported in {\tt INFO.OUT}
+!   should be added to the total by hand. This field is applied throughout the
+!   entire unit cell. To apply magnetic fields in particular muffin-tins use the
+!   {\tt bfcmt} vectors in the {\tt atoms} block. Collinear calculations are
+!   more efficient if the field is applied in the $z$-direction.
 !
 !   \subsection{{\tt chgexs}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
@@ -329,14 +403,14 @@ end program
 !   \hline
 !   \end{tabularx}\newline\newline
 !   The initial step length used when searching for the band energy, which is
-!   used as the APW linearisation energy. This is done by first searching
-!   upwards in energy until the radial wavefunction at the muffin-tin radius is
-!   zero. This is the energy at the top of the band, denoted $E_{\rm t}$. A
-!   downward search is now performed from $E_{\rm t}$ until the slope of the
-!   radial wavefunction at the muffin-tin radius is zero. This energy,
-!   $E_{\rm b}$, is at the bottom of the band. The band energy is taken as
-!   $(E_{\rm t}+E_{\rm b})/2$. If either $E_{\rm t}$ or $E_{\rm b}$ cannot be
-!   found then the band energy is set to the default value.
+!   used as the APW and local-orbital linearisation energies. This is done by
+!   first searching upwards in energy until the radial wavefunction at the
+!   muffin-tin radius is zero. This is the energy at the top of the band,
+!   denoted $E_{\rm t}$. A downward search is now performed from $E_{\rm t}$
+!   until the slope of the radial wavefunction at the muffin-tin radius is zero.
+!   This energy, $E_{\rm b}$, is at the bottom of the band. The band energy is
+!   taken as $(E_{\rm t}+E_{\rm b})/2$. If either $E_{\rm t}$ or $E_{\rm b}$
+!   cannot be found then the band energy is set to the default value.
 !
 !   \subsection{{\tt deltaem}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
@@ -388,6 +462,28 @@ end program
 !   level given by {\tt nsmdos}. This is the number of successive 3-point
 !   averages to be applied to the function $g$.
 !
+!   \subsection{{\tt dosmsum}}
+!   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
+!   \hline
+!   {\tt dosmsum} & {\tt .true.} if the partial DOS is to be summed over $m$ &
+!    logical & {\tt .false.} \\
+!   \hline
+!   \end{tabularx}\newline\newline
+!   By default, the partial density of states is resolved over $(l,m)$ quantum
+!   numbers. If {\tt dosmsum} is set to {\tt .true.} then the partial DOS is
+!   summed over $m$, and thus depends only on $l$.
+!
+!   \subsection{{\tt epsband}}
+!   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
+!   \hline
+!   {\tt epsband} & convergence tolerance for determining band energies & real &
+!    $1\times 10^{-6}$ \\
+!   \hline
+!   \end{tabularx}\newline\newline
+!   APW and local-orbital linearisation energies are determined from the band
+!   energies. Good convergence of these energies, especially for low-lying,
+!   states is required for accurate total energies. See also {\tt deband}.
+!
 !   \subsection{{\tt epschg}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
 !   \hline
@@ -438,14 +534,13 @@ end program
 !   being calculated, the atomic positions updated and the loop restarted. See
 !   also {\tt maxscl}.
 !
-!   \subsection{{\tt evalmin}}
+!   \subsection{{\tt emaxelnes}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
 !   \hline
-!   {\tt evalmin} & valence eigenvalue minimum & real & $-4.5$ \\
+!   {\tt emaxelnes} & maximum allowed initial-state eigenvalue for ELNES
+!    calculations & real & $-1.2$ \\
 !   \hline
-!   \end{tabularx}\newline\newline
-!   Any valence states with eigenvalues below {\tt evalmin} are not occupied and
-!   a warning message is issued.
+!   \end{tabularx}
 !
 !   \subsection{{\tt fixspin}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
@@ -454,7 +549,8 @@ end program
 !    local muffin-tin FSM, and 3 for both total and local FSM & integer & 0 \\
 !   \hline
 !   \end{tabularx}\newline\newline
-!   Set to 1, 2 or 3 for fixed spin moment calculations. See also
+!   Set to 1, 2 or 3 for fixed spin moment calculations. To fix only the
+!   direction and not the magnitude set to $-1$, $-2$ or $-3$. See also
 !   {\tt momfix}, {\tt mommtfix}, {\tt taufsm} and {\tt spinpol}.
 !
 !   \subsection{{\tt fracinr}}
@@ -473,7 +569,10 @@ end program
 !    density and potential & real & $12.0$ \\
 !   \hline
 !   \end{tabularx}\newline\newline
-!   See also {\tt rgkmax}.
+!   This variable has a lower bound which is enforced by the code as follows:
+!   $$ {\rm gmaxvr}\rightarrow\max\,({\rm gmaxvr},2\times{\rm gkmax}
+!    +{\rm epslat}) $$
+!   See {\tt rgkmax}.
 !
 !   \subsection{{\tt intraband}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
@@ -490,9 +589,10 @@ end program
 !    calculating {\tt gkmax} & integer & $-1$ \\
 !   \hline
 !   \end{tabularx}\newline\newline
-!   By default the smallest muffin-tin radius is used for determining
+!   By default ($-1$) the average muffin-tin radius is used for determining
 !   {\tt gkmax} from {\tt rgkmax}. This can be changed by setting {\tt isgkmax}
-!   to the desired species number.
+!   either to the desired species number, or to $-2$ in which case the smallest
+!   radius is used.
 !
 !   \subsection{{\tt kstlist}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
@@ -510,6 +610,7 @@ end program
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
 !   \hline
 !   {\tt ldapu} & type of LDA+$U$ calculation & integer & 0 \\
+!   {\tt inptypelu} & type of input for LDA+U calculation & integer & 1 \\
 !   \hline
 !   {\tt is} & species number & integer & - \\
 !   {\tt l} & angular momentum value & integer & -1 \\
@@ -519,7 +620,7 @@ end program
 !   \end{tabularx}\newline\newline
 !   This block contains the parameters required for an LDA+$U$ calculation, with
 !   the list of parameters for each species terminated with a blank line. The
-!   type of calculation required is set with the parameter {\tt ldapu}.
+!   type of double counting required is set with the parameter {\tt ldapu}.
 !   Currently implemented are:\newline\newline
 !   \begin{tabularx}{\textwidth}[h]{lX}
 !   0 & No LDA+$U$ calculation \\
@@ -527,8 +628,18 @@ end program
 !   2 & Around mean field (AFM) \\
 !   3 & An interpolation between FLL and AFM \\
 !   \end{tabularx}\newline\newline
-!   See (amongst others) Phys. Rev. B {\bf 67}, 153106 (2003), Phys. Rev. B
-!   {\bf 52}, R5467 (1995), and Phys. Rev. B {\bf 60}, 10673 (1999).
+!   The type of input parameters is set with the parameter {\tt inptypelu}.
+!   The current possibilities are:\newline\newline
+!   \begin{tabularx}{\textwidth}[h]{lX}
+!   1 & U and J \\
+!   2 & Slater parameters \\
+!   3 & Racah parameters \\
+!   4 & Yukawa screening length \\
+!   5 & U and determination of corresponding Yukawa screening length
+!   \end{tabularx}\newline\newline
+!   See (amongst others) {\it Phys. Rev. B} {\bf 67}, 153106 (2003),
+!   {\it Phys. Rev. B} {\bf 52}, R5467 (1995), {\it Phys. Rev. B} {\bf 60},
+!   10673 (1999), and {\it Phys. Rev. B} {\bf 80}, 035121 (2009).
 !
 !   \subsection{{\tt lmaxapw}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
@@ -633,15 +744,6 @@ end program
 !   \end{tabularx}\newline\newline
 !   If {\tt molecule} is {\tt .true.}, then the atomic positions, ${\bf a}$,
 !   given in the {\tt atoms} block are assumed to be in Cartesian coordinates.
-!   The lattice vectors are also set up automatically with the $i$th lattice
-!   vector given by
-!   $$ {\bf A}^i=A_i\hat{\bf e}^i, $$
-!   where
-!   $$ A_i=\max_{\alpha,\beta}\left|{\bf a}^{\alpha}_i-{\bf a}^{\beta}_i\right|
-!    +d_{\rm vac} $$
-!   with $\alpha$ and $\beta$ labeling atoms, and $d_{\rm vac}$ determines the
-!   size of the vacuum around the molecule. The last variable is set by the
-!   input parameter {\tt vacuum}.
 !
 !   \subsection{{\tt momfix}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
@@ -666,6 +768,15 @@ end program
 !   list terminated with a blank line. Note that all three components must be
 !   specified (even for collinear calculations). See {\tt fixspin}, {\tt taufsm}
 !   and {\tt spinpol}.
+!
+!   \subsection{{\tt mstar}}
+!   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
+!   \hline
+!   {\tt mstar} & Value of the effective mass parameter used for adaptive
+!    determination of {\tt swidth} & real & $10.0$ \\
+!   \hline
+!   \end{tabularx}\newline\newline
+!   See {\tt autoswidth}.
 !
 !   \subsection{{\tt mustar}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
@@ -893,6 +1004,22 @@ end program
 !   {\tt autokpt} is set to {\tt .true.} then the mesh sizes will be determined
 !   by $n_i=\lambda/|{\bf A}_i|+1$.
 !
+!   \subsection{{\tt readalu}}
+!   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
+!   \hline
+!   {\tt readalu} & set to {\tt .true.} if the interpolation constant for
+!    LDA+$U$ should be read from file rather than calculated & logical &
+!    {\tt .false.} \\
+!   \hline
+!   \end{tabularx}\newline\newline
+!   When {\tt ldapu}=3, the LDA+$U$ energy and potential are interpolated
+!   between FLL and AFM. The interpolation constant, $\alpha$, is normally
+!   calculated from the density matrix, but can also be read in from the file
+!   {\tt ALPHALU.OUT}. This allows the user to fix $\alpha$, but is also
+!   necessary when calculating forces, since the contribution of the potential
+!   of the variation of $\alpha$ with respect to the density matrix is not
+!   computed. See {\tt lda+u}.
+!
 !   \subsection{{\tt reducebf}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
 !   \hline
@@ -909,26 +1036,33 @@ end program
 !   \subsection{{\tt reducek}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
 !   \hline
-!   {\tt reducek} & set to {\tt .true.} if the ${\bf k}$-point set is to be
-!    reduced with the crystal symmetries & logical & {\tt .true.} \\
+!   {\tt reducek} & type of reduction of the $k$-point set & integer & 1 \\
 !   \hline
 !   \end{tabularx}\newline\newline
+!   Types of reduction are defined by the symmetry group used:
+!   \newline\newline
+!   \begin{tabularx}{\textwidth}[h]{lX}
+!   0 & no reduction \\
+!   1 & reduce with full crystal symmetry group (including non-symmorphic
+!    symmetries) \\
+!   2 & reduce with symmorphic symmetries only, and any spin rotation has to
+!    be the same as the spatial rotation
+!   \end{tabularx}
 !   See also {\tt ngridk} and {\tt vkloff}.
 !
 !   \subsection{{\tt reduceq}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
 !   \hline
-!   {\tt reduceq} & set to {\tt .true.} if the ${\bf q}$-point set is to be
-!    reduced with the crystal symmetries & logical & {\tt .true.} \\
+!   {\tt reduceq} & type of reduction of the $q$-point set & integer & 1 \\
 !   \hline
 !   \end{tabularx}\newline\newline
-!   See also {\tt ngridq}.
+!   See {\tt reducek} and {\tt ngridq}.
 !
 !   \subsection{{\tt rgkmax}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
 !   \hline
-!   {\tt rgkmax} & $R^{\rm MT}_{\rm min}\times\max(|{\bf G}+{\bf k}|)$ & real &
-!    $7.0$ \\
+!   {\tt rgkmax} & $R^{\rm MT}_{\rm min}\times\max\{|{\bf G}+{\bf k}|\}$ &
+!    real & $7.0$ \\
 !   \hline
 !   \end{tabularx}\newline\newline
 !   This sets the maximum length for the ${\bf G}+{\bf k}$ vectors, defined as
@@ -986,6 +1120,14 @@ end program
 !   network then {\tt scrpath} can be set to a directory on the local disk, for
 !   example {\tt /tmp/}. Note that the forward slash {\tt /} at the end of the
 !   string must be included.
+!
+!   \subsection{{\tt spincore}}
+!   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
+!   \hline
+!   {\tt spincore} & set to {\tt .true.} if the core should be spin-polarised
+!    & logical & {\tt .false.} \\
+!   \hline
+!   \end{tabularx}
 !
 !   \subsection{{\tt spinorb}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
@@ -1046,6 +1188,7 @@ end program
 !   2 & Methfessel-Paxton order 2 \\
 !   3 & Fermi-Dirac
 !   \end{tabularx}
+!   See also {\tt autoswidth} and {\tt swidth}. 
 !
 !   \subsection{{\tt swidth}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
@@ -1072,9 +1215,11 @@ end program
 !   2 & Structural optimisation run starting from the atomic densities, with
 !    atomic positions written to {\tt GEOMETRY.OUT}. \\
 !   3 & Resumption of structural optimisation run using density in
-!    {\tt STATE.OUT} but with positions from {\tt exciting.in}. \\
+!    {\tt STATE.OUT} but with positions from {\tt elk.in}. \\
 !   5 & Ground state Hartree-Fock run. \\
 !   10 & Total, partial and interstitial density of states (DOS). \\
+!   14 & Plots the smooth Dirac delta and Heaviside step functions used by the
+!        code to calculate occupancies. \\
 !   15 & Output ${\bf L}$, ${\bf S}$ and ${\bf J}$ total expectation values. \\
 !   16 & Output ${\bf L}$, ${\bf S}$ and ${\bf J}$ expectation values for each
 !        {\bf k}-point and state in {\tt kstlist}. \\
@@ -1127,7 +1272,9 @@ end program
 !   250 & Eliashberg function $\alpha^2F(\omega)$, electron-phonon coupling
 !    constant $\lambda$, and the McMillan-Allen-Dynes critical temperature
 !    $T_c$. \\
-!   300 & Reduced density matrix functional theory (RDMFT) calculation.
+!   300 & Reduced density matrix functional theory (RDMFT) calculation. \\
+!   400 & Calculation of tensor moments and corresponding LDA+U Hartree-Fock
+!    energy contributions.
 !   \end{tabularx}
 !
 !   \subsection{{\tt tau0atm}}
@@ -1198,6 +1345,20 @@ end program
 !   This variable is automatically set to {\tt .true.} when performing
 !   structural optimisation.
 !
+!   \subsection{{\tt tmomlu}}
+!   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
+!   \hline
+!   {\tt tmomlu} & set to {\tt .true.} if the tensor moments and the
+!   corresponding decomposition of LDA+U energy should be calculated
+!   at every iteration of the self-consistent cycle & logical & {\tt .false.} \\
+!   \hline
+!   \end{tabularx}\newline\newline
+!   This variable is useful to check the convergence of the tensor moments in
+!   LDA+U caculations. Alternatively, with {\tt task} equal to 400, one can
+!   calculate the tensor moments and corresponding LDA+U energy contributions
+!   from a given density matrix and set of Slater parameters at the end of the
+!   self-consistent cycle.
+!
 !   \subsection{{\tt tseqit}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
 !   \hline
@@ -1215,15 +1376,6 @@ end program
 !    logical & {\tt .true.} \\
 !   \hline
 !   \end{tabularx}
-!
-!   \subsection{{\tt vacuum}}
-!   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
-!   \hline
-!   {\tt vacuum} & the size of the vacuum region around a molecule & real &
-!    8.05 \\
-!   \hline
-!   \end{tabularx}\newline\newline
-!   See {\tt molecule}.
 !
 !   \subsection{{\tt vklem}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
@@ -1265,11 +1417,13 @@ end program
 !   \subsection{{\tt xctype}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
 !   \hline
-!   {\tt xctype} & integer defining the type of exchange-correlation functional
-!    to be used & integer & 3 \\
+!   {\tt xctype} & integers defining the type of exchange-correlation functional
+!    to be used & integer(3) & $(3,0,0)$ \\
 !   \hline
 !   \end{tabularx}\newline\newline
-!   Currently implemented are:\newline\newline
+!   Normally only the first value is used to define the functional type. The
+!   other value may be used for external libraries. Currently implemented are:
+!   \newline\newline
 !   \begin{tabularx}{\textwidth}[h]{lX}
 !   1 & No exchange-correlation funtional ($E_{\rm xc}\equiv 0$) \\
 !   2 & LDA, Perdew-Zunger/Ceperley-Alder, {\it Phys. Rev. B} {\bf 23}, 5048
@@ -1283,16 +1437,19 @@ end program
 !    (1996) \\
 !   21 & GGA, Revised PBE, Zhang-Yang, {\it Phys. Rev. Lett.} {\bf 80}, 890
 !    (1998) \\
-!   22 & GGA, PBEsol, arXiv:0707.2088v1 (2007) \\
+!   22 & GGA, PBEsol, Phys. Rev. Lett. 100, 136406 (2008) \\
 !   26 & GGA, Wu-Cohen exchange (WC06) with PBE correlation, {\it Phys. Rev. B}
 !    {\bf 73}, 235116 (2006) \\
 !   30 & GGA, Armiento-Mattsson (AM05) spin-unpolarised functional,
 !    {\it Phys. Rev. B} {\bf 72}, 085108 (2005) \\
+!   100 & {\tt libxc} functionals, the second and third values of {\tt xctype}
+!    define the exchange and correlation functionals in the {\tt libxc} library,
+!    respectively \\
 !   \end{tabularx}
 !
-!   \section{Contributing to {\sf EXCITING}}
-!   Please bear in mind when writing code for the {\sf EXCITING} project that
-!   it should be an exercise in physics and not software engineering. All code
+!   \section{Contributing to {\sf Elk}}
+!   Please bear in mind when writing code for the {\sf Elk} project that it
+!   should be an exercise in physics and not software engineering. All code
 !   should therefore be kept as simple and concise as possible, and above all it
 !   should be easy for anyone to locate and follow the {\sf Fortran}
 !   representation of the original mathematics. We would also appreciate the
@@ -1332,7 +1489,7 @@ end program
 !    example:
 !    \begin{verbatim}
 !     write(*,*)
-!     write(*,'("Error(readinput): invalid spnst : ",I8)') spnst(is)
+!     write(*,'("Error(readinput): natoms <= 0 : ",I8)') natoms(is)
 !     write(*,'(" for species ",I4)') is
 !     write(*,*)
 !    \end{verbatim}
@@ -1359,9 +1516,6 @@ end program
 !    Author(s) of the code retain the copyrights. Copyright and (L)GPL
 !    information must be included at the beginning of every file, and no code
 !    will be accepted without this.
-!
-!   \bibliographystyle{unsrt}
-!   \bibliography{exciting}
 !
 !EOI
 

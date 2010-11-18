@@ -7,13 +7,14 @@ subroutine wfplot
 use modmain
 implicit none
 ! local variables
-integer ik,ist,ikloc,ias
+integer ik,ist
 real(8) x,t1
 ! allocatable arrays
 complex(8), allocatable :: evecfv(:,:)
 complex(8), allocatable :: evecsv(:,:)
 ! external functions
-real(8), external :: sdelta
+real(8) sdelta
+external sdelta
 ! initialise universal variables
 call init0
 call init1
@@ -48,16 +49,6 @@ if ((task.eq.61).or.(task.eq.62).or.(task.eq.63)) then
 ! plotting a single wavefunction
   occsv(:,:)=0.d0
   occsv(ist,ik)=1.d0/wkpt(ik)
-else if (task.eq.64) then
-! use all k-points for plotting, but use only a limited number of bands
-  occsv(:,:)=0.d0
-  do ik=1,nkpt
-    do ist=1,nstsv
-      if ((ist.ge.bndranglow).and.(ist.le.bndranghi)) then
-        occsv(ist,ik)=1.d0
-      end if
-    end do
-  end do
 else
 ! plotting an STM image by setting occupancies to be a delta function at the
 ! Fermi energy
@@ -75,15 +66,13 @@ end if
 rhomt(:,:,:)=0.d0
 rhoir(:)=0.d0
 ! compute the charge density with the new occupancies
-do ikloc=1,nkptloc
+do ik=1,nkpt
 ! get the eigenvectors from file
-  call getevecfv(vkl(:,ik),vgkl(:,:,:,ikloc),evecfv)
+  call getevecfv(vkl(:,ik),vgkl(:,:,:,ik),evecfv)
   call getevecsv(vkl(:,ik),evecsv)
-  call rhomagk(ikloc,evecfv,evecsv)
+  call rhomagk(ik,evecfv,evecsv)
 end do
-call mpi_grid_reduce(rhomt(1,1,1),lmmaxvr*nrmtmax*natmtot,dims=(/dim_k,2/),&
-  all=.true.)
-call mpi_grid_reduce(rhoir(1),ngrtot,dims=(/dim_k,2/),all=.true.)
+! convert muffin-tin density/magnetisation to spherical harmonics
 call rhomagsh
 ! symmetrise the density for the STM plot
 if (task.eq.162) then
@@ -91,16 +80,6 @@ if (task.eq.162) then
 end if
 ! convert the density from a coarse to a fine radial mesh
 call rfmtctof(rhomt)
-call charge
-if (mpi_grid_root()) then
-  write(*,*)
-  write(*,'("MT charges : ")')
-  do ias=1,natmtot
-    write(*,'("  ias : ",I6,"  charge : ",F10.6)')ias,chgmt(ias)
-  enddo
-  write(*,'("Total in MT : ",F10.6)')chgmttot
-  write(*,'("Total in IT : ",F10.6)')chgir  
-endif
 ! write the wavefunction modulus squared plot to file
 select case(task)
 case(61)
@@ -127,23 +106,18 @@ case(162)
   write(*,*)
   write(*,'("Info(wfplot):")')
   write(*,'(" 2D STM image written to STM2D.OUT")')
-case(63,64)
-  if (mpi_grid_root())  then
-    open(50,file='WF3D.OUT',action='WRITE',form='FORMATTED')
-  endif
+case(63)
+  open(50,file='WF3D.OUT',action='WRITE',form='FORMATTED')
   call plot3d(50,1,lmaxvr,lmmaxvr,rhomt,rhoir)
-  if (mpi_grid_root()) then
-    close(50)
-    write(*,*)
-    write(*,'("Info(wfplot):")')
-    write(*,'(" 3D wavefunction modulus squared written to WF3D.OUT")')
-  endif
+  close(50)
+  write(*,*)
+  write(*,'("Info(wfplot):")')
+  write(*,'(" 3D wavefunction modulus squared written to WF3D.OUT")')
 end select
 if (task.ne.162) then
-  if (mpi_grid_root()) then
-    write(*,'(" for k-point ",I6," and state ",I6)') kstlist(1,1),kstlist(2,1)
-  endif
+  write(*,'(" for k-point ",I6," and state ",I6)') kstlist(1,1),kstlist(2,1)
 end if
+write(*,*)
 deallocate(evecfv,evecsv)
 return
 end subroutine

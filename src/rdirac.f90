@@ -6,8 +6,9 @@
 !BOP
 ! !ROUTINE: rdirac
 ! !INTERFACE:
-subroutine rdirac(n,l,k,np,nr,r,vr,eval,g0,f0)
+subroutine rdirac(sol,n,l,k,np,nr,r,vr,eval,g0,f0)
 ! !INPUT/OUTPUT PARAMETERS:
+!   sol  : speed of light in atomic units (in,real)
 !   n    : principal quantum number (in,integer)
 !   l    : quantum number l (in,integer)
 !   k    : quantum number k (l or l+1) (in,integer)
@@ -30,9 +31,9 @@ subroutine rdirac(n,l,k,np,nr,r,vr,eval,g0,f0)
 !   Created September 2002 (JKD)
 !EOP
 !BOC
-use mod_mpi_grid
 implicit none
 ! arguments
+real(8), intent(in) :: sol
 integer, intent(in) :: n
 integer, intent(in) :: l
 integer, intent(in) :: k
@@ -48,10 +49,9 @@ integer, parameter :: maxit=2000
 integer kpa,it,nn,ir,irm,nnd,nndp
 ! energy convergence tolerance
 real(8), parameter :: eps=1.d-11
-real(8) t1,de,eval_in
+real(8) t1,de
 ! automatic arrays
-real(8) g1(nr),f1(nr),fr(nr),gr(nr),cf(3,nr)
-eval_in=eval
+real(8) g1(nr),f1(nr),fr(nr),gr(nr),cf(4,nr)
 if (k.le.0) then
   write(*,*)
   write(*,'("Error(rdirac): k <= 0 : ",I8)') k
@@ -84,7 +84,7 @@ de=1.d0
 nndp=0
 do it=1,maxit
 ! integrate the Dirac equation
-  call rdiracdme(0,kpa,eval,np,nr,r,vr,nn,g0,g1,f0,f1)
+  call rdiracdme(sol,0,kpa,eval,np,nr,r,vr,nn,g0,g1,f0,f1)
 ! check the number of nodes
   nnd=nn-(n-l-1)
   if (nnd.gt.0) then
@@ -107,14 +107,7 @@ end do
 write(*,*)
 write(*,'("Error(rdirac): maximum iterations exceeded")')
 write(*,*)
-write(*,*)'n=',n
-write(*,*)'l=',l
-write(*,*)'k=',k
-write(*,*)'np=',np
-write(*,*)'nr=',nr
-write(*,*)'eval_in=',eval_in
-write(*,*)'eval=',eval
-call pstop
+stop
 20 continue
 ! find effective infinity and set wavefunction to zero after that point
 ! major component
@@ -141,14 +134,7 @@ else
   write(*,*)
   write(*,'("Error(rdirac): zero wavefunction")')
   write(*,*)
-  write(*,*)'n=',n
-  write(*,*)'l=',l
-  write(*,*)'k=',k
-  write(*,*)'np=',np
-  write(*,*)'nr=',nr
-  write(*,*)'eval_in=',eval_in
-  write(*,*)'eval=',eval
-  call pstop
+  stop
 end if
 g0(:)=t1*g0(:)
 f0(:)=t1*f0(:)

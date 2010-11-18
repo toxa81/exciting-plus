@@ -5,6 +5,7 @@
 
 subroutine readdyn(dynq)
 use modmain
+use modqpt
 implicit none
 ! arguments
 complex(8), intent(out) :: dynq(3*natmtot,3*natmtot,nqpt)

@@ -15,11 +15,11 @@ integer :: ikloc
 integer recl
 ikloc=mpi_grid_map(nkpt,dim_k,glob=ik)
 ! find the record length
-inquire(iolength=recl) vkl(:,ik),nmatmax,nstfv,nspnfv,evecfv,vgkl(:,:,1,ikloc),&
+inquire(iolength=recl) vkl(:,ik),nmatmax,nstfv,nspnfv,evecfv,vgkl(:,:,:,ikloc),&
   igkig(:,:,ikloc)
 open(70,file=trim(scrpath)//'EVECFV'//trim(filext),action='WRITE', &
  form='UNFORMATTED',access='DIRECT',recl=recl)
-write(70,rec=ik) vkl(:,ik),nmatmax,nstfv,nspnfv,evecfv,vgkl(:,:,1,ikloc),&
+write(70,rec=ik) vkl(:,ik),nmatmax,nstfv,nspnfv,evecfv,vgkl(:,:,:,ikloc),&
   igkig(:,:,ikloc)
 close(70)
 return

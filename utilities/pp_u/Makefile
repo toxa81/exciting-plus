@@ -1,13 +1,17 @@
 include ../../make.inc
+F90_OPTS_SERIAL=$(subst -D_MPI_,,$(F90_OPTS))
 
 .SUFFIXES: .o .f90
 .f90.o:
-	$(F90) $(F90_OPTS) -c -o $(*F).o $<
+	$(F90) $(F90_OPTS_SERIAL) -c -o $(*F).o $<
 
-all: pp_u
+all: pp_u4
 
-pp_u: mod_hdf5.o hdf5.o pp_u.o
-	$(F90) -o $@ mod_hdf5.o hdf5.o pp_u.o $(LIB_SYS)
+mod_hdf5.o:
+	$(F90) -c $(F90_OPTS_SERIAL) ../../src/mod_hdf5.f90 -o mod_hdf5.o
+
+pp_u4: mod_hdf5.o pp_u4.o 
+	$(F90) -o $@ mod_hdf5.o pp_u4.o $(LIB_SYS)
 		
 clean:
 	rm *.o *.mod

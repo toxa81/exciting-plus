@@ -10,6 +10,7 @@ subroutine init0
 ! !USES:
 use modmain
 use modxcifc
+use modldapu
 ! !DESCRIPTION:
 !   Performs basic consistency checks as well as allocating and initialising
 !   global variables not dependent on the $k$-point set.
@@ -20,8 +21,9 @@ use modxcifc
 !BOC
 implicit none
 ! local variables
-integer is,js,ia,ias
+integer is,ia,ias
 integer ist,l,m,lm,iv(3)
+real(8) sum
 real(8) ts0,ts1
 
 !-------------------------------!
@@ -58,23 +60,17 @@ end if
 ! index to (l,m) pairs
 if (allocated(idxlm)) deallocate(idxlm)
 allocate(idxlm(0:50,-50:50))
-if (allocated(lm2l)) deallocate(lm2l)
-allocate(lm2l(51*51))
-if (allocated(lm2m)) deallocate(lm2m)
-allocate(lm2m(51*51))
 lm=0
 do l=0,50
   do m=-l,l
     lm=lm+1
     idxlm(l,m)=lm
-    lm2l(lm)=l
-    lm2m(lm)=m
   end do
 end do
 ! array of i**l values
 if (allocated(zil)) deallocate(zil)
-allocate(zil(0:lmaxapw))
-do l=0,lmaxapw
+allocate(zil(0:50))
+do l=0,50
   zil(l)=zi**l
 end do
 
@@ -105,14 +101,16 @@ natmtot=ias
 !     spin variables     !
 !------------------------!
 if (spinsprl) then
+  spinpol=.true.
+  spinorb=.false.
   select case(task)
-  case(2,3,15,51,52,53,61,62,63,120,121)
+  case(51,52,53,61,62,63,120,121)
     write(*,*)
     write(*,'("Error(init0): spin-spirals do not work with task ",I4)') task
     write(*,*)
     stop
   end select
-  if (xctype.lt.0) then
+  if (xctype(1).lt.0) then
     write(*,*)
     write(*,'("Error(init0): spin-spirals do not work with the OEP method")')
     write(*,*)
@@ -149,6 +147,9 @@ if ((spinpol).and.(xcspin.eq.0)) then
   write(*,*)
   stop
 end if
+! set the magnetic fields to the initial values
+bfieldc(:)=bfieldc0(:)
+bfcmt(:,:,:)=bfcmt0(:,:,:)
 ! check for collinearity in the z-direction and set the dimension of the
 ! magnetisation and exchange-correlation vector fields
 if (spinpol) then
@@ -173,38 +174,59 @@ if (ndmag.eq.3) then
 else
   ncmag=.false.
 end if
-if ((ncmag).and.(xcgrad.gt.0)) then
-  write(*,*)
-  write(*,'("Warning(init0): GGA inconsistent with non-collinear magnetism")')
-end if
+! spin-polarised cores
+if (.not.spinpol) spincore=.false.
 ! set fixed spin moment effective field to zero
 bfsmc(:)=0.d0
 ! set muffin-tin FSM fields to zero
 bfsmcmt(:,:,:)=0.d0
 
-!-------------------------------------!
-!     lattice and symmetry set up     !
-!-------------------------------------!
+!----------------------------------!
+!     crystal structure set up     !
+!----------------------------------!
 ! generate the reciprocal lattice vectors and unit cell volume
 call reciplat
 ! compute the inverse of the lattice vector matrix
 call r3minv(avec,ainv)
 ! compute the inverse of the reciprocal vector matrix
 call r3minv(bvec,binv)
+! Cartesian coordinates of the spin-spiral vector
+call r3mv(bvec,vqlss,vqcss)
 do is=1,nspecies
   do ia=1,natoms(is)
 ! map atomic lattice coordinates to [0,1) if not in molecule mode
     if (.not.molecule) call r3frac(epslat,atposl(:,ia,is),iv)
 ! determine atomic Cartesian coordinates
     call r3mv(avec,atposl(:,ia,is),atposc(:,ia,is))
-! lattice coordinates of the muffin-tin magnetic fields
-    call r3mv(ainv,bfcmt(:,ia,is),bflmt(:,ia,is))
   end do
 end do
-! lattice coordinates of the global magnetic field
-call r3mv(ainv,bfieldc,bfieldl)
-! Cartesian coordinates of the spin-spiral vector
-call r3mv(bvec,vqlss,vqcss)
+! automatically determine the muffin-tin radii if required
+if (autormt) call autoradmt
+! check for overlapping muffin-tins
+call checkmt
+
+!-------------------------------!
+!     vector fields E and A     !
+!-------------------------------!
+efieldpol=.false.
+if ((abs(efieldc(1)).gt.epslat).or.(abs(efieldc(2)).gt.epslat).or. &
+ (abs(efieldc(3)).gt.epslat)) then
+  efieldpol=.true.
+  tshift=.false.
+! electric field vector in lattice coordinates
+  call r3mv(ainv,efieldc,efieldl)
+end if
+afieldpol=.false.
+if ((abs(afieldc(1)).gt.epslat).or.(abs(afieldc(2)).gt.epslat).or. &
+ (abs(afieldc(3)).gt.epslat)) then
+  afieldpol=.true.
+! vector potential added in second-variational step
+  tevecsv=.true.
+end if
+
+!---------------------------------!
+!     crystal symmetry set up     !
+!---------------------------------!
 ! find Bravais lattice symmetries
 call findsymlat
 ! use only the identity if required
@@ -213,17 +235,14 @@ if (nosym) nsymlat=1
 call findsymcrys
 ! find the site symmetries
 call findsymsite
-! automatically determine the muffin-tin radii if required
-if (autormt) call autoradmt
-! check for overlapping muffin-tins
-call checkmt
+! check if fixed spin moments are invariant under the symmetry group
+call checkfsm
 
 !-----------------------!
 !     radial meshes     !
 !-----------------------!
 nrmtmax=1
 nrcmtmax=1
-js=1
 do is=1,nspecies
 ! make the muffin-tin mesh commensurate with lradstp
   nrmt(is)=nrmt(is)-mod(nrmt(is)-1,lradstp)
@@ -231,10 +250,7 @@ do is=1,nspecies
 ! number of coarse radial mesh points
   nrcmt(is)=(nrmt(is)-1)/lradstp+1
   nrcmtmax=max(nrcmtmax,nrcmt(is))
-! smallest muffin-tin radius
-  if (rmt(is).lt.rmt(js)) js=is
 end do
-if ((isgkmax.lt.1).or.(isgkmax.gt.nspecies)) isgkmax=js
 ! set up atomic and muffin-tin radial meshes
 call genrmesh
 
@@ -278,6 +294,27 @@ rwigner=(3.d0/(fourpi*(chgtot/omega)))**(1.d0/3.d0)
 !-------------------------!
 !     G-vector arrays     !
 !-------------------------!
+! determine gkmax from rgkmax and the muffin-tin radius
+if (nspecies.gt.0) then
+  if ((isgkmax.ge.1).and.(isgkmax.le.nspecies)) then
+! use user-specified muffin-tin radius
+    gkmax=rgkmax/rmt(isgkmax)
+  else if (isgkmax.eq.-1) then
+! use average muffin-tin radius
+    sum=0.d0
+    do is=1,nspecies
+      sum=sum+dble(natoms(is))*rmt(is)
+    end do
+    sum=sum/dble(natmtot)
+    gkmax=rgkmax/sum
+  else
+! use minimum muffin-tin radius
+    gkmax=rgkmax/minval(rmt(1:nspecies))
+  end if
+else
+  gkmax=rgkmax/2.d0
+end if
+gmaxvr=max(gmaxvr,2.d0*gkmax+epslat)
 ! find the G-vector grid sizes
 call gridsize
 ! generate the G-vectors
@@ -296,9 +333,14 @@ call gencfun
 !     atoms and cores     !
 !-------------------------!
 ! solve the Kohn-Sham-Dirac equations for all atoms
-if (.not.(task.eq.400.or.task.eq.401.or.task.eq.402)) then
-  call allatoms
-endif
+!if (.not.(task.eq.800.or.task.eq.801.or.task.eq.802)) then
+!  call allatoms
+!endif
+! allocate global species charge density and potential arrays
+if (allocated(sprho)) deallocate(sprho)
+allocate(sprho(spnrmax,nspecies))
+if (allocated(spvr)) deallocate(spvr)
+allocate(spvr(spnrmax,nspecies))
 ! allocate core state eigenvalue array and set to default
 if (allocated(evalcr)) deallocate(evalcr)
 allocate(evalcr(spnstmax,natmtot))
@@ -313,9 +355,15 @@ end do
 ! allocate core state radial wavefunction array
 if (allocated(rwfcr)) deallocate(rwfcr)
 allocate(rwfcr(spnrmax,2,spnstmax,natmtot))
+! number of core spin channels
+if (spincore) then
+  nspncr=2
+else
+  nspncr=1
+end if
 ! allocate core state charge density array
 if (allocated(rhocr)) deallocate(rhocr)
-allocate(rhocr(spnrmax,natmtot))
+allocate(rhocr(spnrmax,natmtot,nspncr))
 
 !---------------------------------------!
 !     charge density and potentials     !
@@ -342,12 +390,19 @@ if (allocated(vxcmt)) deallocate(vxcmt)
 allocate(vxcmt(lmmaxvr,nrmtmax,natmtot))
 if (allocated(vxcir)) deallocate(vxcir)
 allocate(vxcir(ngrtot))
-! exchange-correlation magnetic field
+! exchange-correlation magnetic and effective fields
 if (allocated(bxcmt)) deallocate(bxcmt)
 if (allocated(bxcir)) deallocate(bxcir)
+if (allocated(beffmt)) deallocate(beffmt)
 if (spinpol) then
   allocate(bxcmt(lmmaxvr,nrmtmax,natmtot,ndmag))
   allocate(bxcir(ngrtot,ndmag))
+  allocate(beffmt(lmmaxvr,nrcmtmax,natmtot,ndmag))
+end if
+! spin-orbit coupling radial function
+if (allocated(socfr)) deallocate(socfr)
+if (spinorb) then
+  allocate(socfr(nrcmtmax,natmtot))
 end if
 ! exchange energy density
 if (allocated(exmt)) deallocate(exmt)
@@ -419,8 +474,10 @@ end if
 !-----------------------!
 ! determine the nuclear-nuclear energy
 call energynn
-! get smearing function data
+! get smearing function description
 call getsdata(stype,sdescr)
+! get mixing type description
+call getmixdata(mixtype,mixdescr)
 ! generate the spherical harmonic transform (SHT) matrices
 call genshtmat
 ! allocate 1D plotting arrays
@@ -433,35 +490,17 @@ allocate(dpp1d(npp1d))
 ! zero self-consistent loop number
 iscl=0
 tlast=.false.
-
-if (allocated(rylm)) deallocate(rylm)
-allocate(rylm(16,16))
-if (allocated(yrlm)) deallocate(yrlm)
-allocate(yrlm(16,16))
-if (allocated(rylm_lcs)) deallocate(rylm_lcs)
-allocate(rylm_lcs(16,16,natmtot))
-if (allocated(yrlm_lcs)) deallocate(yrlm_lcs)
-allocate(yrlm_lcs(16,16,natmtot))
-call genshmat
-
-!if (allocated(timer)) deallocate(timer)
-!allocate(timer(ntimers,2))
-!timer=0.d0
-
-if (allocated(ias2is)) deallocate(ias2is)
-allocate(ias2is(natmtot))
-if (allocated(ias2ia)) deallocate(ias2ia)
-allocate(ias2ia(natmtot))
-do is=1,nspecies
-  do ia=1,natoms(is)
-    ias2is(idxas(ia,is))=is
-    ias2ia(idxas(ia,is))=ia
-  end do
-end do
+! if reducebf < 1 then reduce the external magnetic fields immediately for
+! non-self-consistent calculations
+if ((reducebf.lt.1.d0).and.(task.gt.3)) then
+  bfieldc(:)=0.d0
+  bfcmt(:,:,:)=0.d0
+end if
+! set the Fermi energy to zero
+efermi=0.d0
 
 call timesec(ts1)
 timeinit=timeinit+ts1-ts0
-
 return
 end subroutine
 !EOC

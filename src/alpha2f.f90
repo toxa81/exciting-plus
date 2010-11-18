@@ -5,6 +5,8 @@
 
 subroutine alpha2f
 use modmain
+use modtest
+use modqpt
 implicit none
 ! local variables
 integer n,ik,iq,i,j
@@ -40,7 +42,7 @@ allocate(gq(n,nqpt))
 allocate(a2fp(n))
 allocate(w(nwdos))
 allocate(a2f(nwdos))
-allocate(f(nwdos),g(nwdos),cf(3,nwdos))
+allocate(f(nwdos),g(nwdos),cf(4,nwdos))
 allocate(rwork(3*n))
 allocate(dynq(n,n,nqpt))
 allocate(dynp(n,n))
@@ -145,6 +147,8 @@ close(50)
 write(*,*)
 write(*,'("Info(alpha2f):")')
 write(*,'(" Eliashberg function written to ALPHA2F.OUT")')
+! write the Eliashberg function to test file
+call writetest(250,'Eliashberg function',nv=nwdos,tol=1.d-2,rva=a2f)
 ! compute the total lambda
 do iw=1,nwdos
   if (w(iw).gt.1.d-8) then
@@ -164,6 +168,9 @@ write(*,*)
 write(*,'("Info(alpha2f):")')
 write(*,'(" Electron-phonon mass enhancement parameter, lambda, written to&
  & LAMBDA.OUT")')
+! write lambda to test file
+call writetest(251,'Electron-phonon mass enhancement parameter, lambda', &
+ tol=1.d-2,rv=lambda)
 ! compute the logarithmic average frequency
 do iw=1,nwdos
   if (w(iw).gt.1.d-8) then
@@ -185,7 +192,7 @@ write(50,*)
 write(50,'("Coulomb pseudopotential, mu* : ",G18.10)') mustar
 write(50,*)
 write(50,'("McMillan-Allen-Dynes superconducting critical temperature")')
-write(50,'("[Eq. 34, Phys. Rev. B 12, 905 (1975)] (kelvin) : ",G18.10)') tc
+write(50,'(" [Eq. 34, Phys. Rev. B 12, 905 (1975)] (kelvin) : ",G18.10)') tc
 write(50,*)
 close(50)
 write(*,*)

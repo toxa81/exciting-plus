@@ -1,12 +1,12 @@
 ! DJBHash function
 ! http://www.partow.net/programming/hashfunctions/index.html
-integer function hash(str,n)
+integer function hash(str,len)
 implicit none
-integer, intent(in) :: n
-character, intent(in) :: str(n)
+character, intent(in) :: str(*)
+integer, intent(in) :: len
 integer i
 hash=5381
-do i=1,n
+do i=1,len
   hash=hash*32+hash+ichar(str(i))
 enddo
 end function

@@ -16,7 +16,6 @@ write(fout,*)
 write(fout,'("timestamp: ",I2.2,".",I2.2,".",I4.4,"  ",I2.2,":",I2.2,":",I2.2)') &
   values(3),values(2),values(1),values(5),values(6),values(7)
 if (present(txt)) write(fout,'("comment: ",A)')trim(adjustl(txt))
-write(fout,*)
 return
 end subroutine
 

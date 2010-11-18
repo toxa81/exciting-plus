@@ -10,10 +10,8 @@ integer j,ispn,istfv
 wfsvit=zzero
 do j=1,nstsv
   do ispn=1,nspinor
-    do istfv=1,nstfv
-      wfsvit(1:ngp,ispn,j)=wfsvit(1:ngp,ispn,j)+&
-        evecsv(istfv+(ispn-1)*nstfv,j)*evecfv(1:ngp,istfv)
-    enddo
+    call zgemv('N',ngp,nstfv,zone,evecfv,nmatmax,&
+      evecsv(1+(ispn-1)*nstfv,j),1,zzero,wfsvit(1,ispn,j),1)
   enddo
 enddo 
 return

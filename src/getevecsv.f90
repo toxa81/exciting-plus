@@ -48,29 +48,13 @@ if (.not.spinpol) return
 ! find the SU(2) representation of the spin rotation matrix
 call rotaxang(epslat,symlatc(:,:,lspn),det,v,th)
 call axangsu2(v,th,su2)
-! apply SU(2) symmetry matrix to second-variational states
+! apply SU(2) matrix to second-variational states (active transformation)
 do i=1,nstsv
   do ist=1,nstfv
     zt1=evecsv(ist,i)
     zt2=evecsv(ist+nstfv,i)
     evecsv(ist,i)=su2(1,1)*zt1+su2(1,2)*zt2
     evecsv(ist+nstfv,i)=su2(2,1)*zt1+su2(2,2)*zt2
-!    if (.not.ncmag) then
-!      if (i.le.nstfv) then
-!        if (abs(evecsv(ist+nstfv,i)).gt.abs(evecsv(ist,i))) then
-!	  zt1=evecsv(ist+nstfv,i)
-!	  evecsv(ist+nstfv,i)=evecsv(ist,i)
-!	  evecsv(ist,i)=zt1
-!	endif
-!      endif
-!      if (i.gt.nstfv) then
-!        if (abs(evecsv(ist,i)).gt.abs(evecsv(ist+nstfv,i))) then
-!	  zt1=evecsv(ist+nstfv,i)
-!	  evecsv(ist+nstfv,i)=evecsv(ist,i)
-!	  evecsv(ist,i)=zt1
-!	endif
-!      endif
-!    endif
   end do
 end do
 return

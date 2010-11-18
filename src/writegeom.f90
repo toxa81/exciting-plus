@@ -14,7 +14,7 @@ use modmain
 !          {\tt GEOMETRY.OUT} (in,logical)
 ! !DESCRIPTION:
 !   Outputs the lattice vectors and atomic positions to file, in a format
-!   which may be then used directly in {\tt exciting.in}.
+!   which may be then used directly in {\tt elk.in}.
 !
 ! !REVISION HISTORY:
 !   Created January 2004 (JKD)

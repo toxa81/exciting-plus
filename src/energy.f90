@@ -9,6 +9,8 @@
 subroutine energy
 ! !USES:
 use modmain
+use modldapu
+use modtest
 ! !DESCRIPTION:
 !   Computes the total energy and its individual contributions. The kinetic
 !   energy is given by
@@ -49,11 +51,11 @@ use modmain
 !   external magnetic fields in the muffin-tins, {\tt bfcmt}, is always removed
 !   from the total since these fields are non-physical: their field lines do not
 !   close. The energy of the physical external field, {\tt bfieldc}, is also not
-!   included in the total because this field, like those in the muffin-tins,
-!   is used for breaking spin symmetry and taken to be infintesimal. If this
-!   field is intended to be finite, then the associated energy, {\tt engybext},
-!   should be added to the total by hand. See {\tt potxc}, {\tt exxengy} and
-!   related subroutines.
+!   included in the total because this field, like those in the muffin-tins, is
+!   used for breaking spin symmetry and taken to be infintesimal. If this field
+!   is intended to be finite, then the associated energy, {\tt engybext}, should
+!   be added to the total by hand. See {\tt potxc}, {\tt exxengy} and related
+!   subroutines.
 !
 ! !REVISION HISTORY:
 !   Created May 2003 (JKD)
@@ -61,13 +63,9 @@ use modmain
 !BOC
 implicit none
 ! local variables
-integer is,ia,ias,ik,ist,idm,jdm
-! fine structure constant
-real(8), parameter :: alpha=1.d0/137.03599911d0
-! electron g factor
-real(8), parameter :: ge=2.0023193043718d0
-real(8), parameter :: ga4=ge*alpha/4.d0
-real(8) vn
+integer is,ia,ias
+integer ik,ist,idm,jdm
+real(8) cb,vn,sum,f
 complex(8) zt1
 ! allocatable arrays
 complex(8), allocatable :: evecsv(:,:),c(:,:)
@@ -75,6 +73,8 @@ complex(8), allocatable :: evecsv(:,:),c(:,:)
 real(8) rfmtinp,rfinp,rfint
 complex(8) zdotc
 external rfmtinp,rfinp,rfint,zdotc
+! coupling constant of the external field (g_e/4c)
+cb=gfacte/(4.d0*solsc)
 !-----------------------------------------------!
 !     exchange-correlation potential energy     !
 !-----------------------------------------------!
@@ -99,12 +99,12 @@ do idm=1,ndmag
     jdm=3
   end if
 ! energy of physical global field
-  engybext=engybext+ga4*momtot(idm)*bfieldc(jdm)
+  engybext=engybext+cb*momtot(idm)*bfieldc(jdm)
 ! energy of non-physical muffin-tin fields
   do is=1,nspecies
     do ia=1,natoms(is)
       ias=idxas(ia,is)
-      engybmt=engybmt+ga4*mommt(idm,ias)*bfcmt(jdm,ia,is)
+      engybmt=engybmt+cb*mommt(idm,ias)*bfcmt(jdm,ia,is)
     end do
   end do
 end do
@@ -142,7 +142,7 @@ engycl=engynn+engyen+engyhar
 ! exchange energy from the density
 engyx=rfinp(1,rhomt,exmt,rhoir,exir)
 ! exact exchange for OEP-EXX or Hartree-Fock on last iteration
-if ((xctype.lt.0).or.(task.eq.5).or.(task.eq.6)) then
+if ((xctype(1).lt.0).or.(task.eq.5).or.(task.eq.6)) then
   if (tlast) call exxengy
 end if
 !----------------------------!
@@ -159,14 +159,6 @@ if (ldapu.ne.0) then
   do ias=1,natmtot
     engylu=engylu+engyalu(ias)
   end do
-end if
-!-----------------------------------------------!
-!     compensating background charge energy     !
-!-----------------------------------------------!
-if (chgexs.ne.0.d0) then
-  engycbc=chgexs*rfint(vclmt,vclir)
-else
-  engycbc=0.d0
 end if
 !----------------------------!
 !     sum of eigenvalues     !
@@ -213,12 +205,36 @@ else
 ! Kohn-Sham case
   engykn=evalsum-engyvcl-engyvxc-engybxc-engybext-engybmt
 end if
+!-------------------------------!
+!     entropic contribution     !
+!-------------------------------!
+entrpy=0.d0
+engyts=0.d0
+! non-zero only for the Fermi-Dirac smearing function
+if (stype.eq.3) then
+  sum=0.d0
+  do ik=1,nkpt
+    do ist=1,nstsv
+      f=occsv(ist,ik)/occmax
+      if ((f.gt.0.d0).and.(f.lt.1.d0)) then
+        sum=sum+wkpt(ik)*(f*log(f)+(1.d0-f)*log(1.d0-f))
+      end if
+    end do
+  end do
+! entropy
+  entrpy=-occmax*kboltz*sum
+! contribution to free energy
+  engyts=-swidth*entrpy/kboltz
+end if
 !----------------------!
 !     total energy     !
 !----------------------!
-engytot=engykn+0.5d0*engyvcl+engymad+engyx+engyc+engycbc
+engytot=engykn+0.5d0*engyvcl+engymad+engyx+engyc+engyts
 ! add the LDA+U correction if required
 if (ldapu.ne.0) engytot=engytot+engylu
+if (sic) engytot=engytot+sic_etot_correction
+! write total energy to test file
+call writetest(0,'total energy',tol=1.d-6,rv=engytot)
 return
 end subroutine
 !EOC

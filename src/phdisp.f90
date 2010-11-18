@@ -5,6 +5,7 @@
 
 subroutine phdisp
 use modmain
+use modqpt
 implicit none
 ! local variables
 integer iq,i,n,iv

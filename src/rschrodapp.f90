@@ -6,8 +6,9 @@
 !BOP
 ! !ROUTINE: rschrodapp
 ! !INTERFACE:
-subroutine rschrodapp(l,nr,r,vr,p0,q0,q1,hp0)
+subroutine rschrodapp(sol,l,nr,r,vr,p0,q0,q1,hp0)
 ! !INPUT/OUTPUT PARAMETERS:
+!   sol : speed of light in atomic units (in,real)
 !   l   : angular momentum quantum number (in,integer)
 !   nr  : number of radial mesh points (in,integer)
 !   r   : radial mesh (in,real(nr))
@@ -32,6 +33,7 @@ subroutine rschrodapp(l,nr,r,vr,p0,q0,q1,hp0)
 !EOP
 !BOC
 implicit none
+real(8), intent(in) :: sol
 integer, intent(in) :: l
 integer, intent(in) :: nr
 real(8), intent(in) :: r(nr)
@@ -42,13 +44,13 @@ real(8), intent(in) :: q1(nr)
 real(8), intent(out) :: hp0(nr)
 ! local variables
 integer ir
-! fine structure constant
-real(8), parameter :: alpha=1.d0/137.03599911d0
-real(8) rm,t1
+real(8) rm,t1,t2,t3
+t1=1.d0/(2.d0*sol**2)
+t2=dble(l*(l+1))/2.d0
 do ir=1,nr
-  rm=1.d0-0.5d0*(alpha**2)*vr(ir)
-  t1=dble(l*(l+1))/(2.d0*rm*r(ir)**2)
-  hp0(ir)=(t1+vr(ir))*p0(ir)-q0(ir)/r(ir)-q1(ir)
+  rm=1.d0-t1*vr(ir)
+  t3=t2/(rm*r(ir)**2)
+  hp0(ir)=(t3+vr(ir))*p0(ir)-q0(ir)/r(ir)-q1(ir)
 end do
 return
 end subroutine

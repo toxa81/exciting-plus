@@ -64,7 +64,7 @@ if (n.le.0) then
   stop
 end if
 do i=1,n
-  if ((rhoup(i).gt.1.d-12).and.(rhodn(i).gt.1.d-12)) then
+  if ((rhoup(i).gt.1.d-12).or.(rhodn(i).gt.1.d-12)) then
     r=rhoup(i)+rhodn(i)
     rs=(3.d0/(4.d0*pi*r))**thrd
     srs=sqrt(rs)

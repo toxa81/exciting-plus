@@ -5,6 +5,7 @@
 
 subroutine oepvnlk(ikp,vnlcv,vnlvv)
 use modmain
+use modqpt
 implicit none
 ! arguments
 integer, intent(in) :: ikp
@@ -97,8 +98,8 @@ call getevecsv(vkl(:,ikp),evecsv)
 ! find the matching coefficients
 call match(ngk(1,ikp),gkc(:,1,ikp),tpgkc(:,:,1,ikp),sfacgk(:,:,1,ikp),apwalm)
 ! calculate the wavefunctions for all states for the input k-point
-call genwfsv(.false.,ngk(1,ikp),igkig(:,1,ikp),evalsvp,apwalm,evecfv,evecsv, &
- wfmt1,wfir1)
+call genwfsv(.false.,.false.,ngk(1,ikp),igkig(:,1,ikp),evalsvp,apwalm,evecfv, &
+ evecsv,wfmt1,wfir1)
 ! start loop over non-reduced k-point set
 do ik=1,nkptnr
 ! generate G+k-vectors
@@ -135,7 +136,8 @@ do ik=1,nkptnr
   call genjlgpr(lmax,gqc,jlgqr)
   call genjlgq0r(gqc(igq0),jlgq0r)
 ! calculate the wavefunctions for occupied states
-  call genwfsv(.true.,ngknr,igkignr,evalsvnr,apwalm,evecfv,evecsv,wfmt2,wfir2)
+  call genwfsv(.false.,.true.,ngknr,igkignr,evalsvnr,apwalm,evecfv,evecsv, &
+   wfmt2,wfir2)
   do ist3=1,nstsv
     if (evalsvnr(ist3).lt.efermi) then
       do ist2=1,nstsv
@@ -156,8 +158,7 @@ do ik=1,nkptnr
                wfir2(:,:,ist3),wfir1(:,:,ist1),zrhomt,zrhoir)
               zt1=zfinp(.true.,zrhomt,zvclmt,zrhoir,zvclir)
 ! compute the density coefficient of the smallest G+q-vector
-              call zrhogp(gqc(igq0),jlgq0r,ylmgq(:,igq0),sfacgq0,zrhomt, &
-               zrhoir,zrho01)
+              call zrhogp(jlgq0r,ylmgq(:,igq0),sfacgq0,zrhomt,zrhoir,zrho01)
               zt2=cfq*wiq2(iq)*(conjg(zrho01)*zrho02)
               vnlvv(ist1,ist2)=vnlvv(ist1,ist2)-(wkptnr(ik)*zt1+zt2)
             end if

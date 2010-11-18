@@ -5,9 +5,13 @@
 
 subroutine init2
 use modmain
+use modrdm
+use modqpt
 implicit none
 ! local variables
-integer is,ia,ist,ic,m
+logical lsym(48)
+integer isym,is,ia
+integer ist,ic,m
 real(8) ts0,ts1
 real(8) boxl(3,4)
 
@@ -18,10 +22,27 @@ call timesec(ts0)
 !---------------------!
 ! check if the system is an isolated molecule
 if (molecule) ngridq(:)=1
+! store the point group symmetries for reducing the q-point set
+if (reduceq.eq.0) then
+  nsymqpt=1
+  symqpt(:,:,1)=symlat(:,:,1)
+else
+  lsym(:)=.false.
+  do isym=1,nsymcrys
+    lsym(lsplsymc(isym))=.true.
+  end do
+  nsymqpt=0
+  do isym=1,nsymlat
+    if (lsym(isym)) then
+      nsymqpt=nsymqpt+1
+      symqpt(:,:,nsymqpt)=symlat(:,:,isym)
+    end if
+  end do
+end if
 ! OEP, Hartree-Fock or RDMFT
-if ((xctype.lt.0).or.(task.eq.5).or.(task.eq.6).or.(task.eq.300)) then
+if ((xctype(1).lt.0).or.(task.eq.5).or.(task.eq.6).or.(task.eq.300)) then
   ngridq(:)=ngridk(:)
-  reduceq=.false.
+  reduceq=0
 end if
 ! allocate the q-point arrays
 if (allocated(ivq)) deallocate(ivq)
@@ -36,21 +57,22 @@ if (allocated(iqmap)) deallocate(iqmap)
 allocate(iqmap(0:ngridq(1)-1,0:ngridq(2)-1,0:ngridq(3)-1))
 ! setup the q-point box (offset should always be zero)
 boxl(:,:)=0.d0
-boxl(1,2)=1.d0; boxl(2,3)=0.d0; boxl(3,4)=0.d0
+boxl(1,2)=1.d0; boxl(2,3)=1.d0; boxl(3,4)=1.d0;
 ! generate the q-point set, note that the vectors vql and vqc are mapped to the
 ! first Brillouin zone
-call genppts(reduceq,.true.,ngridq,boxl,nqpt,iqmap,ivq,vql,vqc,wqpt)
+call genppts(.true.,nsymqpt,symqpt,ngridq,epslat,bvec,boxl,nqpt,iqmap,ivq,vql, &
+ vqc,wqpt)
 
 !-----------------------------------------------!
 !     OEP, Hartree-Fock and RDMFT variables     !
 !-----------------------------------------------!
-if ((xctype.lt.0).or.(task.eq.5).or.(task.eq.6).or.(task.eq.300)) then
+if ((xctype(1).lt.0).or.(task.eq.5).or.(task.eq.6).or.(task.eq.300)) then
 ! determine the 1/q^2 integral weights if required
   call genwiq2
 ! output the 1/q^2 integrals to WIQ2.OUT
   call writewiq2
 end if
-if (xctype.lt.0) then
+if (xctype(1).lt.0) then
 ! initialise OEP residual magnitude
   resoep=1.d0
 ! find maximum core states over all species
@@ -94,8 +116,6 @@ if (task.eq.300) then
   allocate(vclmat(nstsv,nstsv,nkpt))
   if (allocated(dkdc)) deallocate(dkdc)
   allocate(dkdc(nstsv,nstsv,nkpt))
-  if (allocated(vnlrdm)) deallocate(vnlrdm)
-  allocate(vnlrdm(nstsv,nkpt,nstsv,nkptnr))
 end if
 
 call timesec(ts1)

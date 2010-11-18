@@ -35,15 +35,19 @@ end interface
 interface mpi_grid_reduce
   module procedure mpi_grid_reduce_i,mpi_grid_reduce_d, &
     mpi_grid_reduce_z,mpi_grid_reduce_f,mpi_grid_reduce_i2,&
-    mpi_grid_reduce_c
+    mpi_grid_reduce_c,mpi_grid_reduce_i8
+end interface
+
+interface mpi_grid_hash
+  module procedure mpi_grid_hash_z,mpi_grid_hash_d
 end interface
 
 interface mpi_grid_send
-  module procedure mpi_grid_send_z,mpi_grid_send_i
+  module procedure mpi_grid_send_z,mpi_grid_send_i,mpi_grid_send_l
 end interface
 
 interface mpi_grid_recieve
-  module procedure mpi_grid_recieve_z,mpi_grid_recieve_i
+  module procedure mpi_grid_recieve_z,mpi_grid_recieve_i,mpi_grid_recieve_l
 end interface
 
 contains
@@ -677,6 +681,45 @@ return
 end subroutine
 
 !-----------------------------!
+!      mpi_grid_reduce_i8     !
+!-----------------------------!
+subroutine mpi_grid_reduce_i8(val,n,dims,side,all,op,root)
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+! arguments
+integer(8), intent(inout) :: val
+integer, optional, intent(in) :: n
+integer, optional, dimension(:), intent(in) :: dims
+logical, optional, intent(in) :: side
+logical, optional, intent(in) :: all
+integer, optional, intent(in) :: op
+integer, optional, dimension(:), intent(in) :: root
+! local variables
+integer comm,rootid,ierr,sz
+logical lreduce,lallreduce
+integer length,reduceop
+integer(8), allocatable :: tmp(:)
+#ifdef _MPI_
+call mpi_grid_reduce_common(n_=n,dims_=dims,side_=side,all_=all,op_=op,&
+  root_=root,lreduce_=lreduce,lallreduce_=lallreduce,length_=length,&
+  reduceop_=reduceop,comm_=comm,rootid_=rootid)
+sz=sizeof(val)
+if (.not.lreduce) return
+allocate(tmp(length))
+if (lallreduce) then
+  call mpi_allreduce(val,tmp,length,MPI_INTEGER8,reduceop,comm,ierr)
+else
+  call mpi_reduce(val,tmp,length,MPI_INTEGER8,reduceop,rootid,comm,ierr)
+endif
+call memcopy(tmp,val,length*sz)
+deallocate(tmp)
+#endif
+return
+end subroutine
+
+!-----------------------------!
 !      mpi_grid_reduce_d      !
 !-----------------------------!
 subroutine mpi_grid_reduce_d(val,n,dims,side,all,op,root)
@@ -838,6 +881,95 @@ deallocate(tmp)
 return
 end subroutine
 
+!---------------------------!
+!      mpi_grid_hash_z      !
+!---------------------------!
+subroutine mpi_grid_hash_z(val,n,d,ierr)
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+! arguments
+complex(8), intent(in) :: val
+integer, intent(in) :: n
+integer, intent(in) :: d
+integer, intent(out) :: ierr
+! local variables
+integer, allocatable :: tmp(:)
+integer, external :: hash
+integer i
+#ifdef _MPI_
+ierr=0
+allocate(tmp(0:mpi_grid_size(d)-1))
+tmp=0
+tmp(mpi_grid_x(d))=hash(val,16*n)
+call mpi_grid_reduce(tmp(0),mpi_grid_size(d),dims=(/d/),all=.true.)
+if (mpi_grid_x(d).eq.0) then
+  do i=0,mpi_grid_size(d)-1
+    if (tmp(i).ne.tmp(0)) ierr=1
+  enddo
+else
+  if (tmp(mpi_grid_x(d)).ne.tmp(0)) ierr=1
+endif
+deallocate(tmp)
+#endif
+return
+end subroutine
+
+!---------------------------!
+!      mpi_grid_hash_d      !
+!---------------------------!
+subroutine mpi_grid_hash_d(val,n,d,ierr)
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+! arguments
+real(8), intent(in) :: val
+integer, intent(in) :: n
+integer, intent(in) :: d
+integer, intent(out) :: ierr
+! local variables
+integer, allocatable :: tmp(:)
+integer, external :: hash
+integer i
+#ifdef _MPI_
+ierr=0
+allocate(tmp(0:mpi_grid_size(d)-1))
+tmp=0
+tmp(mpi_grid_x(d))=hash(val,8*n)
+call mpi_grid_reduce(tmp(0),mpi_grid_size(d),dims=(/d/),all=.true.)
+if (mpi_grid_x(d).eq.0) then
+  do i=0,mpi_grid_size(d)-1
+    if (tmp(i).ne.tmp(0)) ierr=1
+  enddo
+else
+  if (tmp(mpi_grid_x(d)).ne.tmp(0)) ierr=1
+endif
+deallocate(tmp)
+#endif
+return
+end subroutine
+
+
+subroutine mpi_grid_msg(sname,msg)
+implicit none
+character*(*), intent(in) :: sname
+character*(*), intent(in) :: msg
+character*100 sx
+character*256 sout
+character*20 c1
+integer i
+sx="x"
+do i=1,mpi_grid_nd
+  write(c1,'(I10)')mpi_grid_x(i)
+  sx=trim(adjustl(sx))//":"//trim(adjustl(c1))
+enddo
+sout="["//trim(adjustl(sname))//" "//trim(adjustl(sx))//"] "//trim(adjustl(msg))
+write(*,'(A)')trim(adjustl(sout))
+return
+end subroutine
+
 
 !------------------------!
 !      mpi_grid_map      !
@@ -952,6 +1084,29 @@ call mpi_isend(val,n,MPI_INTEGER,dest_rank,tag,comm,req,ierr)
 return
 end subroutine
 
+!---------------------------!
+!      mpi_grid_send_l      !
+!---------------------------!
+subroutine mpi_grid_send_l(val,n,dims,dest,tag)
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+logical, intent(in) :: val
+integer, intent(in) :: n
+integer, dimension(:), intent(in) :: dims
+integer, dimension(:), intent(in) :: dest
+integer, intent(in) :: tag
+! local variables
+integer comm,dest_rank,req,ierr
+#ifdef _MPI_
+comm=mpi_grid_get_comm(dims)
+call mpi_cart_rank(comm,dest,dest_rank,ierr) 
+call mpi_isend(val,n,MPI_LOGICAL,dest_rank,tag,comm,req,ierr)
+#endif
+return
+end subroutine
+
 !------------------------------!
 !      mpi_grid_recieve_z      !
 !------------------------------!
@@ -967,7 +1122,7 @@ integer, dimension(:), intent(in) :: src
 integer, intent(in) :: tag
 ! local variables
 #ifdef _MPI_
-integer comm,src_rank,req,ierr
+integer comm,src_rank,ierr
 integer stat(MPI_STATUS_SIZE)
 #endif
 if (debug) then
@@ -981,7 +1136,6 @@ endif
 comm=mpi_grid_get_comm(dims)
 call mpi_cart_rank(comm,src,src_rank,ierr)
 call mpi_recv(val,n,MPI_DOUBLE_COMPLEX,src_rank,tag,comm,stat,ierr)
-!call mpi_irecv(val,n,MPI_DOUBLE_COMPLEX,src_rank,tag,comm,req,ierr)
 #endif
 return
 end subroutine
@@ -1001,12 +1155,35 @@ integer, dimension(:), intent(in) :: src
 integer, intent(in) :: tag
 ! local variables
 #ifdef _MPI_
-integer comm,src_rank,req,ierr
+integer comm,src_rank,ierr
 integer stat(MPI_STATUS_SIZE)
 comm=mpi_grid_get_comm(dims)
 call mpi_cart_rank(comm,src,src_rank,ierr)
 call mpi_recv(val,n,MPI_INTEGER,src_rank,tag,comm,stat,ierr)
-!call mpi_irecv(val,n,MPI_INTEGER,src_rank,tag,comm,req,ierr)
+#endif
+return
+end subroutine
+
+!------------------------------!
+!      mpi_grid_recieve_l      !
+!------------------------------!
+subroutine mpi_grid_recieve_l(val,n,dims,src,tag)
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+logical, intent(out) :: val
+integer, intent(in) :: n
+integer, dimension(:), intent(in) :: dims
+integer, dimension(:), intent(in) :: src
+integer, intent(in) :: tag
+! local variables
+#ifdef _MPI_
+integer comm,src_rank,ierr
+integer stat(MPI_STATUS_SIZE)
+comm=mpi_grid_get_comm(dims)
+call mpi_cart_rank(comm,src,src_rank,ierr)
+call mpi_recv(val,n,MPI_LOGICAL,src_rank,tag,comm,stat,ierr)
 #endif
 return
 end subroutine
@@ -1164,7 +1341,6 @@ subroutine pstop(ierr_)
 #ifdef _MPI_
 use mpi
 #endif
-!use mod_mpi_grid
 implicit none
 integer, optional, intent(in) :: ierr_
 integer ierr
@@ -1182,6 +1358,36 @@ if (allocated(mpi_grid_x)) &
   write(*,'("  coordinates of processor : ",10I8)')mpi_grid_x
 #ifdef _MPI_
 call mpi_abort(MPI_COMM_WORLD,ierr,ierr)
+call mpi_finalize(ierr)
+#endif
+stop
+return
+end subroutine
+
+!-----------------!
+!      bstop      !
+!-----------------!
+subroutine bstop(ierr_)
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+integer, optional, intent(in) :: ierr_
+integer ierr
+
+if (present(ierr_)) then
+  ierr=ierr_
+else
+  ierr=-1
+endif
+
+write(*,'("STOP execution")')
+write(*,'("  error code : ",I8)')ierr
+write(*,'("  global index of processor : ",I8)')iproc
+if (allocated(mpi_grid_x)) &
+  write(*,'("  coordinates of processor : ",10I8)')mpi_grid_x
+#ifdef _MPI_
+call mpi_grid_barrier()
 call mpi_finalize(ierr)
 #endif
 stop

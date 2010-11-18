@@ -25,20 +25,16 @@ use modmain
 !EOP
 !BOC
 implicit none
-! always use LDA to setup atomic densities
-integer, parameter :: xctype_=3
-integer, parameter :: xcgrad_=0
+integer xctype_(3),xcgrad_
 integer is
 ! allocatable arrays
 real(8), allocatable :: rwf(:,:,:)
-! allocate global species charge density and potential arrays
-if (allocated(sprho)) deallocate(sprho)
-allocate(sprho(spnrmax,nspecies))
-if (allocated(spvr)) deallocate(spvr)
-allocate(spvr(spnrmax,nspecies))
+! use LDA (xctype=3) to setup atomic densities
+xctype_(1)=3; xctype_(2)=0; xctype_(3)=0
+xcgrad_=0
 do is=1,nspecies
   allocate(rwf(spnrmax,2,spnstmax))
-  call atom(ptnucl,spzn(is),spnst(is),spn(:,is),spl(:,is),spk(:,is), &
+  call atom(solsc,ptnucl,spzn(is),spnst(is),spn(:,is),spl(:,is),spk(:,is), &
    spocc(:,is),xctype_,xcgrad_,nprad,spnr(is),spr(:,is),speval(:,is), &
    sprho(:,is),spvr(:,is),rwf)
   deallocate(rwf)

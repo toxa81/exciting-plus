@@ -3,14 +3,15 @@
  90.0     90.0     90.0               : ab, ac, bc
  1  1  1                              : ncell
  .true.                               : primcell
+ .false.                              : .false. if length is in a.u.; .true. if in angstroms 
  3                                    : nspecies
- 'La' 'La.in'                         : spsymb, spfname
+ 'La'                                 : spsymb, spfname
  1                                    : nwpos
  0.0000    0.0000    0.3608           : wpos
- 'Cu' 'Cu.in'
+ 'Cu'
  1
  0.0000    0.0000    0.0000
- 'O' 'O.in'
+ 'O'
  2
  0.2500    0.2500    0.0000
  0.0000    0.0000    0.1820
