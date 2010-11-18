@@ -70,7 +70,6 @@ call genwfnr(151,.false.)
 ! get all Wannier transitions
 all_wan_ibt=.true.
 call getimegqwan(all_wan_ibt)
-!twanmt=.false.
 call sic_wan(151)
 allocate(ene(4,nwann))
 call sic_pot(151,ene)
