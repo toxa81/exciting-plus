@@ -111,7 +111,7 @@ do itask=1,ntasks
   case(807,808)
     call writewann
   case(809)
-    call sic_genvwan 
+    call sic_main 
   case(810)
     call sic_gndstate
   case(822)

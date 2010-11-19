@@ -970,67 +970,6 @@ write(*,'(A)')trim(adjustl(sout))
 return
 end subroutine
 
-
-!------------------------!
-!      mpi_grid_map      !
-!------------------------!
-! Examples of use
-!  get size of local block for current processor
-!    nkptloc=mpi_grid_map(nkp,dim_k)
-!  get global index by local index of current processor
-!    ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-!  get local index of k-point for current processor
-!    ikloc=mpi_grid_map(nkp,dim_k,glob=ik)
-!  get local index of k-point for processor with coordinate h
-!    ikloc=mpi_grid_map(nkp,dim_k,x=h,glob=ik)
-integer function mpi_grid_map(length,idim,x,loc,glob,offs)
-implicit none
-! arguments
-integer, intent(in) :: length
-integer, intent(in) :: idim
-integer, optional, intent(inout) :: x
-integer, optional, intent(in) :: loc
-integer, optional, intent(in) :: glob
-integer, optional, intent(out) :: offs
-! local variables
-integer idx0_,size_,x_
-integer i
-
-i=0
-if (present(loc)) i=i+1
-if (present(glob)) i=i+1
-if (present(offs)) i=i+1
-
-if (i.gt.1) then
-  write(*,'("Error(cart_map): more than one optional argument is presented")')
-  call pstop
-endif
-
-if (present(glob)) then
-  call idxloc(length,mpi_grid_size(idim),glob,x_,idx0_)
-  if (present(x)) x=x_-1
-  mpi_grid_map=idx0_
-  return
-endif
-
-if (present(x)) then
-  x_=x
-else
-  x_=mpi_grid_x(idim)
-endif
-
-if (present(loc)) then
-  call idxglob(length,mpi_grid_size(idim),x_+1,loc,idx0_)
-  mpi_grid_map=idx0_
-  return
-endif
-
-call idxofs(length,mpi_grid_size(idim),x_+1,idx0_,size_)
-if (present(offs)) offs=idx0_
-mpi_grid_map=size_
-return
-end function
-
 !---------------------------!
 !      mpi_grid_send_z      !
 !---------------------------!
@@ -1188,14 +1127,132 @@ call mpi_recv(val,n,MPI_LOGICAL,src_rank,tag,comm,stat,ierr)
 return
 end subroutine
 
+!------------------------!
+!      mpi_grid_map      !
+!------------------------!
+! Examples of use
+!  get size of local block for current processor
+!    nkptloc=mpi_grid_map(nkp,dim_k)
+!  get global index by local index of current processor
+!    ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+!  get local index of k-point for current processor
+!    ikloc=mpi_grid_map(nkp,dim_k,glob=ik)
+!  get local index of k-point for processor with coordinate h
+!    ikloc=mpi_grid_map(nkp,dim_k,x=h,glob=ik)
+integer function mpi_grid_map(length,idim,x,loc,glob,offs)
+implicit none
+! arguments
+integer, intent(in) :: length
+integer, intent(in) :: idim
+integer, optional, intent(inout) :: x
+integer, optional, intent(in) :: loc
+integer, optional, intent(in) :: glob
+integer, optional, intent(out) :: offs
+! local variables
+integer idx0_,size_,x_
+integer i
+
+i=0
+if (present(loc)) i=i+1
+if (present(glob)) i=i+1
+if (present(offs)) i=i+1
+
+if (i.gt.1) then
+  write(*,'("Error(mpi_grid_map): more than one optional argument is presented")')
+  call pstop
+endif
+
+if (present(glob)) then
+  call idxloc(length,mpi_grid_size(idim),glob,x_,idx0_)
+  if (present(x)) x=x_-1
+  mpi_grid_map=idx0_
+  return
+endif
+
+if (present(x)) then
+  x_=x
+else
+  x_=mpi_grid_x(idim)
+endif
+
+if (present(loc)) then
+  call idxglob(length,mpi_grid_size(idim),x_+1,loc,idx0_)
+  mpi_grid_map=idx0_
+  return
+endif
+
+call idxofs(length,mpi_grid_size(idim),x_+1,idx0_,size_)
+if (present(offs)) offs=idx0_
+mpi_grid_map=size_
+return
+end function
 
 
+integer function mpi_grid_map2(length,dims,x,loc,glob,offs)
+implicit none
+! arguments
+integer, intent(in) :: length
+integer, dimension(:), intent(in) :: dims
+integer, optional, dimension(:), intent(inout) :: x
+integer, optional, intent(in) :: loc
+integer, optional, intent(in) :: glob
+integer, optional, intent(out) :: offs
+! local variables
+integer idx0_,size_,x_
+integer i,size1,k,j
 
+i=0
+if (present(loc)) i=i+1
+if (present(glob)) i=i+1
+if (present(offs)) i=i+1
+
+if (i.gt.1) then
+  write(*,'("Error(mpi_grid_map2): more than one optional argument is presented")')
+  call pstop
+endif
+
+! total number of processors
+size1=1
+do i=1,size(dims)
+  size1=size1*mpi_grid_size(dims(i))
+enddo
+! make a liner index from coordinates
+k=1
+j=1
+do i=1,size(dims)
+  j=j+mpi_grid_x(dims(i))*k
+  k=k*mpi_grid_size(dims(i))
+enddo
+
+!if (present(glob)) then
+!  call idxloc(length,mpi_grid_size(idim),glob,x_,idx0_)
+!  if (present(x)) x=x_-1
+!  mpi_grid_map=idx0_
+!  return
+!endif
+!
+!if (present(x)) then
+!  x_=x
+!else
+!  x_=mpi_grid_x(idim)
+!endif
+!
+!if (present(loc)) then
+!  call idxglob(length,mpi_grid_size(idim),x_+1,loc,idx0_)
+!  mpi_grid_map=idx0_
+!  return
+!endif
+
+call idxofs(length,size1,j,idx0_,size_)
+if (present(offs)) offs=idx0_
+mpi_grid_map2=size_
+return
+end function
 
 ! partition something of size "length" to blocks 
 !   (in) nblocks is number of blocks
 !   (in) iblock is the index of block (from 1 to nblocks)
-!   (out) idx0 is the offset in global block
+!   (out) idx0 is the offset in global index
 !   (out) blocksize is the size of local block
 ! if length.eq.0 -> nothing to partition
 ! if iblock outside the boundaries -> return with error 
@@ -1320,7 +1377,7 @@ if (iblock.le.n2.and.(idxl.gt.(n1+1))) lerr=.true.
 if (iblock.gt.n2.and.(idxl.gt.n1)) lerr=.true.
 if (lerr) then
   write(*,*)
-  write(*,'("Error(idxloc) : local index out of boundary")')
+  write(*,'("Error(idxglob) : local index out of boundary")')
   write(*,'("  iblock : ",I8)')iblock
   write(*,'("  idxl : ",I8)')idxl
   write(*,*)

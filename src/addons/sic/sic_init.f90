@@ -1,11 +1,12 @@
 subroutine sic_init
 use modmain
-use mod_lf
+use mod_sic
 implicit none
-integer i,ias,n,jas,i1,i2,i3,vl(3),ish
+integer i,ias,n,jas,i1,i2,i3,vl(3),ish,ir,is
 logical l1,l2,exist
 real(8) v1(3),v2(3)
 logical, external :: vrinmt,sic_include_cell
+real(8), allocatable :: wt1(:,:)
 
 if (allocated(vtl)) deallocate(vtl)
 allocate(vtl(3,maxvtl))
@@ -50,8 +51,13 @@ ivtit=-1
 do i=1,ntr
   ivtit(vtl(1,i),vtl(2,i),vtl(3,i))=i
 enddo
+if (allocated(vtc)) deallocate(vtc)
+allocate(vtc(3,ntr))
+do i=1,ntr
+  vtc(:,i)=vtl(1,i)*avec(:,1)+vtl(2,i)*avec(:,2)+vtl(3,i)*avec(:,3)
+end do
 
-ngrloc=mpi_grid_map2(ngrtot,dims=(/dim_k,dim2/),offs=nroffs)
+ngrloc=mpi_grid_map2(ngrtot,dims=(/dim_k,dim2/),offs=groffs)
 nmtloc=mpi_grid_map2(nrmtmax*natmtot,dims=(/dim_k,dim2/),offs=mtoffs)
 
 if (mpi_grid_root()) then
@@ -108,6 +114,21 @@ do i=1,ntr
     enddo
   enddo
 enddo
+if (allocated(rmtwt)) deallocate(rmtwt)
+allocate(rmtwt(nmtloc))
+allocate(wt1(nrmtmax,natmtot))
+wt1=0.d0
+do ias=1,natmtot
+  is=ias2is(ias)
+  do ir=1,nrmt(is)-1
+    wt1(ir,ias)=wt1(ir,ias)+&
+      0.5d0*(spr(ir+1,is)-spr(ir,is))*spr(ir,is)**2
+    wt1(ir+1,ias)=wt1(ir+1,ias)+&
+      0.5d0*(spr(ir+1,is)-spr(ir,is))*spr(ir+1,is)**2
+  enddo
+enddo
+call sic_copy_mt_d(.true.,1,wt1,rmtwt)
+deallocate(wt1)
 return
 end
 

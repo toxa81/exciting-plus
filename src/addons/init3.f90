@@ -1,6 +1,5 @@
 subroutine init3
 use modmain
-use mod_lf
 implicit none
 integer ia,is,lm,l,m,ir,i1,i2,i3
 real(8) vl(3)

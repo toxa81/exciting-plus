@@ -1,6 +1,6 @@
 subroutine sic_hunif(ikloc,hunif)
 use modmain
-use mod_lf
+use mod_sic
 use mod_hdf5
 ! arguments
 implicit none
