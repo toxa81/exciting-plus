@@ -6,8 +6,8 @@ implicit none
 ! arguments
 integer, intent(in) :: fout
 ! local variables
-complex(8), allocatable :: wanmt0(:,:,:,:,:)
-complex(8), allocatable :: wanir0(:,:,:)
+!complex(8), allocatable :: wanmt0(:,:,:,:,:)
+!complex(8), allocatable :: wanir0(:,:,:)
 complex(8), allocatable :: ovlp(:)
 integer itloc,it,n,ispn,vl(3),nloc,n1loc,h,h1,n1,i,j
 real(8) t1,t2,t3
@@ -21,20 +21,7 @@ if (wproc) then
 endif
 call timer_reset(1)
 call timer_reset(2)
-allocate(wanmt0(lmmaxvr,nrmtmax,natmtot,nspinor,nwannloc))
-allocate(wanir0(ngrtot,nspinor,nwannloc))
-do itloc=1,ntrloc
-  it=mpi_grid_map(ntr,dim_t,loc=itloc)
-! generate Wannier functions on a mesh
-  call sic_genwann(vtl(1,it),ngknr,igkignr,wanmt0,wanir0)
-  do ispn=1,nspinor
-    do n=1,nwannloc
-      wanmt(:,:,:,itloc,ispn,n)=wanmt0(:,:,:,ispn,n)
-      wanir(:,itloc,ispn,n)=wanir0(:,ispn,n)
-    enddo !n
-  enddo !ispn
-enddo !it
-deallocate(wanmt0,wanir0)
+call sic_genwan
 deallocate(wann_unkmt)
 deallocate(wann_unkit)
 if (wproc) then
@@ -43,41 +30,17 @@ if (wproc) then
   write(fout,'("time for interstitial part (sec.) : ",F8.3)')timer_get_value(2)
   call flushifc(fout)
 endif
-allocate(wanmt0(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor))
-allocate(wanir0(ngrtot,ntrloc,nspinor))
 allocate(ovlp(nmegqwan))
 ovlp=zzero
 ! compute overlap integrals
 do i=1,nmegqwan
   n=imegqwan(1,i)
-  nloc=mpi_grid_map(nwann,dim_k,x=h,glob=n)
   n1=imegqwan(2,i)
-  n1loc=mpi_grid_map(nwann,dim_k,x=h1,glob=n1)
   vl(:)=imegqwan(3:5,i)
-  if (mpi_grid_x(dim_k).eq.h1.and.h1.ne.h) then
-    call mpi_grid_send(wanmt(1,1,1,1,1,n1loc),lmmaxvr*nrmtmax*natmtot*ntrloc*nspinor,&
-      dims=(/dim_k/),dest=(/h/),tag=1)
-    call mpi_grid_send(wanir(1,1,1,n1loc),ngrtot*ntrloc*nspinor,&
-      dims=(/dim_k/),dest=(/h/),tag=2)
-  endif
-  if (mpi_grid_x(dim_k).eq.h) then
-    if (h.ne.h1) then
-      call mpi_grid_recieve(wanmt0(1,1,1,1,1),lmmaxvr*nrmtmax*natmtot*ntrloc*nspinor,&
-        dims=(/dim_k/),src=(/h1/),tag=1)
-      call mpi_grid_recieve(wanir0(1,1,1),ngrtot*ntrloc*nspinor,&
-        dims=(/dim_k/),src=(/h1/),tag=2)
-    else
-      wanmt0(:,:,:,:,:)=wanmt(:,:,:,:,:,n1loc)
-      wanir0(:,:,:)=wanir(:,:,:,n1loc)
-    endif
-  endif
-  if (mpi_grid_x(dim_k).eq.h) then
-    do ispn=1,nspinor
-      ovlp(i)=ovlp(i)+lf_dot_lf(.true.,wanmt(1,1,1,1,ispn,nloc),&
-        wanir(1,1,ispn,nloc),vl,wanmt0(1,1,1,1,ispn),wanir0(1,1,ispn),&
-        twanmt(1,1,n),twanmt(1,1,n1))
-    enddo
-  endif
+  do ispn=1,nspinor
+    ovlp(i)=ovlp(i)+sic_dot_ll(wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),&
+      wanmt(1,1,1,ispn,n1),wanir(1,1,ispn,n1),vl)
+  enddo
 enddo
 call mpi_grid_reduce(ovlp(1),nmegqwan,dims=(/dim_k/))
 ! check orthonormality
@@ -99,7 +62,6 @@ do i=1,nmegqwan
 enddo
 if (wproc) then
   write(fout,*)
-!  write(fout,'("Wannier overlap integrals (n n1  T  <w_n|w_{n1,T}>)")')
   write(fout,'("Wannier overlap integrals (n n1 <w_n|w_n1>)")')
   do i=1,nmegqwan
     vl(:)=imegqwan(3:5,i)
@@ -114,6 +76,7 @@ if (wproc) then
   call timestamp(fout,"done with Wannier functions")
   call flushifc(151)
 endif
-deallocate(wanmt0,wanir0,ovlp)
+call pstop
+deallocate(ovlp)
 return
 end

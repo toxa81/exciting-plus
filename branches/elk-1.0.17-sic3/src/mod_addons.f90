@@ -268,7 +268,6 @@ real(8), allocatable :: wann_v(:)
 integer nwann
 integer, allocatable :: iwann(:,:)
 integer, allocatable :: nwannias(:)
-integer nwannloc
   
 ! expansion coefficients of Wannier functions over spinor Bloch eigen-functions  
 complex(8), allocatable :: wann_c(:,:,:)
@@ -356,10 +355,10 @@ integer, parameter :: t_dmat=45
 logical sic
 data sic/.false./
 ! product of a Wannier function with it's potential
-complex(8), allocatable :: wvmt(:,:,:,:,:,:)
+complex(8), allocatable :: wvmt(:,:,:,:,:)
 complex(8), allocatable :: wvir(:,:,:,:)
 ! Wannier functions
-complex(8), allocatable :: wanmt(:,:,:,:,:,:)
+complex(8), allocatable :: wanmt(:,:,:,:,:)
 complex(8), allocatable :: wanir(:,:,:,:)
 logical, allocatable :: twanmt(:,:,:)
 ! matrix elements of Wannier potential <W_{n0}|V_{n0}|W_{n'T}>
@@ -377,7 +376,6 @@ real(8) wann_r_cutoff
 data wann_r_cutoff/6.0/
 complex(8), allocatable :: sic_wb(:,:,:,:)
 complex(8), allocatable :: sic_wvb(:,:,:,:)
-
 
 !--------------!
 !      PAPI    !
