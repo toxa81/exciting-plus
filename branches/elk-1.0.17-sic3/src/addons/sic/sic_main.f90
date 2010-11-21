@@ -4,7 +4,7 @@ use mod_nrkp
 use mod_hdf5
 use mod_sic
 implicit none
-integer n,sz,i,j,i1,j1,n1,ispn,vtrl(3),nloc,n1loc,h,h1
+integer n,sz,i,j,i1,j1,n1,ispn,vtrl(3)
 real(8) t1,t2,vtrc(3)
 integer vl(3)
 ! Wannier functions
@@ -69,150 +69,125 @@ call genwfnr(151,.false.)
 all_wan_ibt=.true.
 call getimegqwan(all_wan_ibt)
 call sic_wan(151)
-call pstop
-!allocate(ene(4,nwann))
-!call sic_pot(151,ene)
-!!----------------------------------!
-!! matrix elements of SIC potential !
-!!----------------------------------!
-!if (allocated(vwanme)) deallocate(vwanme)
-!allocate(vwanme(nmegqwan))
-!vwanme=zzero
-!allocate(wanmt0(lmmaxvr,nrmtmax,natmtot,ntrloc,nspinor))
-!allocate(wanir0(ngrtot,ntrloc,nspinor))
-!! compute matrix elements of SIC potential
-!! vwan = <w_n|v_n|w_{n1,T}>
-!do i=1,nmegqwan
-!  n=imegqwan(1,i)
-!  nloc=mpi_grid_map(nwann,dim_k,x=h,glob=n)
-!  n1=imegqwan(2,i)
-!  n1loc=mpi_grid_map(nwann,dim_k,x=h1,glob=n1)
-!  vl(:)=imegqwan(3:5,i)
-!  if (mpi_grid_x(dim_k).eq.h1.and.h1.ne.h) then
-!    call mpi_grid_send(wanmt(1,1,1,1,1,n1loc),lmmaxvr*nrmtmax*natmtot*ntrloc*nspinor,&
-!      dims=(/dim_k/),dest=(/h/),tag=1)
-!    call mpi_grid_send(wanir(1,1,1,n1loc),ngrtot*ntrloc*nspinor,&
-!      dims=(/dim_k/),dest=(/h/),tag=2)
-!  endif
-!  if (mpi_grid_x(dim_k).eq.h) then
-!    if (h.ne.h1) then
-!      call mpi_grid_recieve(wanmt0(1,1,1,1,1),lmmaxvr*nrmtmax*natmtot*ntrloc*nspinor,&
-!        dims=(/dim_k/),src=(/h1/),tag=1)
-!      call mpi_grid_recieve(wanir0(1,1,1),ngrtot*ntrloc*nspinor,&
-!        dims=(/dim_k/),src=(/h1/),tag=2)
-!    else
-!      wanmt0(:,:,:,:,:)=wanmt(:,:,:,:,:,n1loc)
-!      wanir0(:,:,:)=wanir(:,:,:,n1loc)
-!    endif
-!  endif
-!  if (mpi_grid_x(dim_k).eq.h) then
-!    do ispn=1,nspinor    
-!      vwanme(i)=vwanme(i)+lf_dot_lf(.true.,wvmt(1,1,1,1,ispn,nloc),wvir(1,1,ispn,nloc),&
-!        vl,wanmt0(1,1,1,1,ispn),wanir0(1,1,ispn),twanmt(1,1,n),twanmt(1,1,n1))
-!    enddo
-!  endif
-!enddo
-!call mpi_grid_reduce(vwanme(1),nmegqwan,dims=(/dim_k/))
-!t1=0.d0
-!t2=-1.d0
-!do i=1,nmegqwan
-!  n=imegqwan(1,i)
-!  n1=imegqwan(2,i)
-!  vl(:)=imegqwan(3:5,i)
-!  j=idxmegqwan(n1,n,-vl(1),-vl(2),-vl(3))
-!  t1=t1+abs(vwanme(i)-dconjg(vwanme(j)))
-!  if (abs(vwanme(i)-dconjg(vwanme(j))).ge.t2) then
-!    t2=abs(vwanme(i)-dconjg(vwanme(j)))
-!    i1=i
-!    j1=j
-!  endif
-!enddo
-!if (wproc) then
-!  call timestamp(151,"done with matrix elements")
-!  write(151,*)
-!  write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
-!!  write(151,'("Matrix elements of SIC potential &
-!!    &(n n1  T  <w_n|v_n|w_{n1,T}>)")')
+allocate(ene(4,nwann))
+call sic_pot(151,ene)
+!----------------------------------!
+! matrix elements of SIC potential !
+!----------------------------------!
+if (allocated(vwanme)) deallocate(vwanme)
+allocate(vwanme(nmegqwan))
+vwanme=zzero
+! compute matrix elements of SIC potential
+!  vwanme = <w_n|v_n|w_{n1,T}>
+do i=1,nmegqwan
+  n=imegqwan(1,i)
+  n1=imegqwan(2,i)
+  vl(:)=imegqwan(3:5,i)
+  do ispn=1,nspinor    
+    vwanme(i)=vwanme(i)+sic_dot_ll(wvmt(1,1,1,ispn,n),wvir(1,1,ispn,n),&
+      wanmt(1,1,1,ispn,n1),wanir(1,1,ispn,n1),vl,twanmt(1,1,n),twanmt(1,1,n1))
+  enddo
+enddo
+t1=0.d0
+t2=-1.d0
+do i=1,nmegqwan
+  n=imegqwan(1,i)
+  n1=imegqwan(2,i)
+  vl(:)=imegqwan(3:5,i)
+  j=idxmegqwan(n1,n,-vl(1),-vl(2),-vl(3))
+  t1=t1+abs(vwanme(i)-dconjg(vwanme(j)))
+  if (abs(vwanme(i)-dconjg(vwanme(j))).ge.t2) then
+    t2=abs(vwanme(i)-dconjg(vwanme(j)))
+    i1=i
+    j1=j
+  endif
+enddo
+if (wproc) then
+  call timestamp(151,"done with matrix elements")
+  write(151,*)
+  write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
 !  write(151,'("Matrix elements of SIC potential &
-!    &(n n1  <w_n|v_n|w_n1}>)")')
-!  do i=1,nmegqwan
-!    vl(:)=imegqwan(3:5,i)
-!    if (all(vl.eq.0)) then
-!      write(151,'(I4,4X,I4,4X,2G18.10)')imegqwan(1:2,i),&
-!        dreal(vwanme(i)),dimag(vwanme(i))
-!    endif
-!  enddo
-!  write(151,*)
-!  write(151,'("Maximum deviation from ""localization criterion"" : ",F12.6)')t2
-!  write(151,'("Average deviation from ""localization criterion"" : ",F12.6)')t1/nmegqwan
-!  write(151,*)
-!  write(151,'("Matrix elements with maximum difference : ",2I6)')i1,j1
-!  write(151,'(I4,4X,I4,4X,3I4,4X,2G18.10)')imegqwan(:,i1),&
-!        dreal(vwanme(i1)),dimag(vwanme(i1))
-!  write(151,'(I4,4X,I4,4X,3I4,4X,2G18.10)')imegqwan(:,j1),&
-!        dreal(vwanme(j1)),dimag(vwanme(j1))
-!  write(151,*)
-!  write(151,'("Diagonal matrix elements")')
-!  write(151,'(2X,"wann",18X,"V_n")')
-!  write(151,'(44("-"))')
-!  do n=1,nwann
-!    j=idxmegqwan(n,n,0,0,0)
-!    write(151,'(I4,4X,2G18.10)')n,dreal(vwanme(j)),dimag(vwanme(j))
-!  enddo  
-!  call flushifc(151)
-!endif
-!! check hermiticity of V_nn'(k)
-!allocate(vwank(nwann,nwann))
-!do ik=1,nkpt
-!  vwank=zzero
-!  do i=1,nmegqwan
-!    n1=imegqwan(1,i)
-!    n2=imegqwan(2,i)
-!    vtrl(:)=imegqwan(3:5,i)
-!    vtrc(:)=vtrl(1)*avec(:,1)+vtrl(2)*avec(:,2)+vtrl(3)*avec(:,3)
-!    z1=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
-!    vwank(n1,n2)=vwank(n1,n2)+z1*vwanme(i)
-!  enddo
-!  t1=0.d0
-!  do n1=1,nwann
-!    do n2=1,nwann
-!      t1=max(t1,abs(vwank(n1,n2)-dconjg(vwank(n2,n1))))
-!    enddo
-!  enddo
-!  if (wproc) then
-!    write(151,*)
-!    write(151,'("ik : ",I4,"   max.herm.err : ",G18.10 )')ik,t1
-!    write(151,*)
-!    do n1=1,nwann
-!      write(151,'(5X,255F12.7)')(dreal(vwank(n1,n2)),n2=1,nwann)
-!    enddo
-!    write(151,*)
-!    do n1=1,nwann
-!      write(151,'(5X,255F12.7)')(dimag(vwank(n1,n2)),n2=1,nwann)
-!    enddo
-!  endif
-!enddo
-!deallocate(vwank)
-!if (wproc) then
-!  inquire(file="sic.hdf5",exist=exist)
-!  if (exist) then
-!    allocate(vwanme_old(nmegqwan))
-!    call hdf5_read("sic.hdf5","/","vwanme",vwanme_old(1),(/nmegqwan/))
-!    t1=0.d0
-!    do i=1,nmegqwan
-!      t1=t1+abs(vwanme(i)-vwanme_old(i))**2
-!    enddo
-!    t1=sqrt(t1/nmegqwan)
-!    write(151,*)
-!    write(151,'("SIC matrix elements RMS difference :",G18.10)')t1
-!    deallocate(vwanme_old)
-!  endif
-!endif
-!call sic_writevwan
-!if (wproc) close(151)
-!deallocate(vwanme)
-!deallocate(ene)
-!return
+!    &(n n1  T  <w_n|v_n|w_{n1,T}>)")')
+  write(151,'("Matrix elements of SIC potential &
+    &(n n1  <w_n|v_n|w_n1}>)")')
+  do i=1,nmegqwan
+    vl(:)=imegqwan(3:5,i)
+    if (all(vl.eq.0)) then
+      write(151,'(I4,4X,I4,4X,2G18.10)')imegqwan(1:2,i),&
+        dreal(vwanme(i)),dimag(vwanme(i))
+    endif
+  enddo
+  write(151,*)
+  write(151,'("Maximum deviation from ""localization criterion"" : ",F12.6)')t2
+  write(151,'("Average deviation from ""localization criterion"" : ",F12.6)')t1/nmegqwan
+  write(151,*)
+  write(151,'("Matrix elements with maximum difference : ",2I6)')i1,j1
+  write(151,'(I4,4X,I4,4X,3I4,4X,2G18.10)')imegqwan(:,i1),&
+        dreal(vwanme(i1)),dimag(vwanme(i1))
+  write(151,'(I4,4X,I4,4X,3I4,4X,2G18.10)')imegqwan(:,j1),&
+        dreal(vwanme(j1)),dimag(vwanme(j1))
+  write(151,*)
+  write(151,'("Diagonal matrix elements")')
+  write(151,'(2X,"wann",18X,"V_n")')
+  write(151,'(44("-"))')
+  do n=1,nwann
+    j=idxmegqwan(n,n,0,0,0)
+    write(151,'(I4,4X,2G18.10)')n,dreal(vwanme(j)),dimag(vwanme(j))
+  enddo  
+  call flushifc(151)
+endif
+! check hermiticity of V_nn'(k)
+allocate(vwank(nwann,nwann))
+do ik=1,nkpt
+  vwank=zzero
+  do i=1,nmegqwan
+    n1=imegqwan(1,i)
+    n2=imegqwan(2,i)
+    vtrl(:)=imegqwan(3:5,i)
+    vtrc(:)=vtrl(1)*avec(:,1)+vtrl(2)*avec(:,2)+vtrl(3)*avec(:,3)
+    z1=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
+    vwank(n1,n2)=vwank(n1,n2)+z1*vwanme(i)
+  enddo
+  t1=0.d0
+  do n1=1,nwann
+    do n2=1,nwann
+      t1=max(t1,abs(vwank(n1,n2)-dconjg(vwank(n2,n1))))
+    enddo
+  enddo
+  if (wproc) then
+    write(151,*)
+    write(151,'("ik : ",I4,"   max.herm.err : ",G18.10 )')ik,t1
+    write(151,*)
+    do n1=1,nwann
+      write(151,'(5X,255F12.7)')(dreal(vwank(n1,n2)),n2=1,nwann)
+    enddo
+    write(151,*)
+    do n1=1,nwann
+      write(151,'(5X,255F12.7)')(dimag(vwank(n1,n2)),n2=1,nwann)
+    enddo
+  endif
+enddo
+deallocate(vwank)
+if (wproc) then
+  inquire(file="sic.hdf5",exist=exist)
+  if (exist) then
+    allocate(vwanme_old(nmegqwan))
+    call hdf5_read("sic.hdf5","/","vwanme",vwanme_old(1),(/nmegqwan/))
+    t1=0.d0
+    do i=1,nmegqwan
+      t1=t1+abs(vwanme(i)-vwanme_old(i))**2
+    enddo
+    t1=sqrt(t1/nmegqwan)
+    write(151,*)
+    write(151,'("SIC matrix elements RMS difference :",G18.10)')t1
+    deallocate(vwanme_old)
+  endif
+endif
+call sic_writevwan
+if (wproc) close(151)
+deallocate(vwanme)
+deallocate(ene)
+return
 end
 !
 !

@@ -354,28 +354,6 @@ integer, parameter :: t_dmat=45
 !-------------!
 logical sic
 data sic/.false./
-! product of a Wannier function with it's potential
-complex(8), allocatable :: wvmt(:,:,:,:,:)
-complex(8), allocatable :: wvir(:,:,:,:)
-! Wannier functions
-complex(8), allocatable :: wanmt(:,:,:,:,:)
-complex(8), allocatable :: wanir(:,:,:,:)
-logical, allocatable :: twanmt(:,:,:)
-! matrix elements of Wannier potential <W_{n0}|V_{n0}|W_{n'T}>
-complex(8), allocatable :: vwanme(:)
-! LDA Hamiltonian in k-space in Wannier basis 
-complex(8), allocatable :: sic_wann_h0k(:,:,:)
-! LDA energies of Wannier functions
-real(8), allocatable :: sic_wann_e0(:)
-integer nsclsic
-data nsclsic/3/
-integer isclsic
-real(8) sic_etot_correction
-data sic_etot_correction/0.d0/
-real(8) wann_r_cutoff
-data wann_r_cutoff/6.0/
-complex(8), allocatable :: sic_wb(:,:,:,:)
-complex(8), allocatable :: sic_wvb(:,:,:,:)
 
 !--------------!
 !      PAPI    !

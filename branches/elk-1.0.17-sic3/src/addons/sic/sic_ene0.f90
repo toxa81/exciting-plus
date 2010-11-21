@@ -2,6 +2,7 @@ subroutine sic_e0
 use modmain
 use modldapu
 use mod_mpi_grid
+use mod_sic
 implicit none
 complex(8), allocatable :: ene0(:,:,:,:,:)
 integer n1,n2,ias,lm1,lm2,ispn1,ispn2,ikloc,ik,ispn,n

@@ -67,18 +67,21 @@ if (mpi_grid_root()) then
     int(2*16.d0*(lmmaxvr*nmtloc+ngrloc)*ntr*nspinor*nwann/1048576.d0)
 endif
 call mpi_grid_barrier()
-if (allocated(wvmt)) deallocate(wvmt)
-allocate(wvmt(lmmaxvr,nmtloc,ntr,nspinor,nwann))
-wvmt=zzero
-if (allocated(wvir)) deallocate(wvir)  
-allocate(wvir(ngrloc,ntr,nspinor,nwann))
-wvir=zzero
+! main arrays of SIC code
+!  wan(mt,ir) - Wannier function defined on a real-space grid
+!  wv(mt,ir) - product of a Wannier function with it's potential
 if (allocated(wanmt)) deallocate(wanmt)
 allocate(wanmt(lmmaxvr,nmtloc,ntr,nspinor,nwann))
 wanmt=zzero
 if (allocated(wanir)) deallocate(wanir)
 allocate(wanir(ngrloc,ntr,nspinor,nwann))
 wanir=zzero
+if (allocated(wvmt)) deallocate(wvmt)
+allocate(wvmt(lmmaxvr,nmtloc,ntr,nspinor,nwann))
+wvmt=zzero
+if (allocated(wvir)) deallocate(wvir)  
+allocate(wvir(ngrloc,ntr,nspinor,nwann))
+wvir=zzero
 if (allocated(sic_wann_e0)) deallocate(sic_wann_e0)
 allocate(sic_wann_e0(nwann))
 sic_wann_e0=0.d0
@@ -103,6 +106,9 @@ tevecsv=.true.
 if (allocated(twanmt)) deallocate(twanmt)
 allocate(twanmt(natmtot,ntr,nwann))
 twanmt=.false.
+if (allocated(twanmtuc)) deallocate(twanmtuc)
+allocate(twanmtuc(ntr,nwann))
+twanmtuc=.false.
 do i=1,ntr
   v1(:)=vtl(1,i)*avec(:,1)+vtl(2,i)*avec(:,2)+vtl(3,i)*avec(:,3)
   do n=1,nwann
@@ -112,6 +118,7 @@ do i=1,ntr
         atposc(:,ias2ia(jas),ias2is(jas))
       if (sqrt(sum(v2(:)**2)).le.wann_r_cutoff) twanmt(ias,i,n)=.true.
     enddo
+    twanmtuc(i,n)=any(twanmt(:,i,n))
   enddo
 enddo
 if (allocated(rmtwt)) deallocate(rmtwt)
@@ -134,12 +141,12 @@ end
 
 logical function sic_include_cell(vl)
 use modmain
+use mod_sic
 implicit none
 integer, intent(in) :: vl(3)
 logical l1
 integer n,ias,jas,ir
 real(8) vt(3),v1(3)
-
 vt(:)=vl(1)*avec(:,1)+vl(2)*avec(:,2)+vl(3)*avec(:,3)
 l1=.false.
 do n=1,nwann
