@@ -37,7 +37,7 @@ call timer_start(10,reset=.true.)
 ! loop over q-points
 do iqloc=1,nvqloc
   iq=mpi_grid_map(nvq,dim_q,loc=iqloc)
-  call genmegq(iq,.true.,.false.)
+  call genmegq(iq,.false.,.false.)
 ! save <n,T=0|e^{-i(G+q)r}|n,T=0>
   do n=1,nwann
     megqwan1(n,1:ngq(iq),iq)=megqwan(idxmegqwan(n,n,0,0,0),1:ngq(iq))

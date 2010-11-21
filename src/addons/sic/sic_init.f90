@@ -96,8 +96,10 @@ if (exist) then
 endif
 if (allocated(sic_wb)) deallocate(sic_wb)
 allocate(sic_wb(nwann,nstfv,nspinor,nkptloc))
+sic_wb=zzero
 if (allocated(sic_wvb)) deallocate(sic_wvb)
 allocate(sic_wvb(nwann,nstfv,nspinor,nkptloc))
+sic_wvb=zzero
 if (allocated(sic_wann_h0k)) deallocate(sic_wann_h0k)
 allocate(sic_wann_h0k(nwann,nwann,nkptloc))
 sic_wann_h0k=zzero

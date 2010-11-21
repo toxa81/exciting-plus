@@ -8,8 +8,6 @@ integer n,sz,i,j,i1,j1,n1,ispn,vtrl(3)
 real(8) t1,t2,vtrc(3)
 integer vl(3)
 ! Wannier functions
-complex(8), allocatable :: wanmt0(:,:,:,:,:)
-complex(8), allocatable :: wanir0(:,:,:)
 complex(8), allocatable :: vwanme_old(:)
 complex(8), allocatable :: ene(:,:)
 complex(8), allocatable :: vwank(:,:)

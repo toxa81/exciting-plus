@@ -153,7 +153,7 @@ do it=1,ntr
   endif
 enddo
 zt1=zdotmt+zdotir*omega/dble(ngrtot)
-call mpi_grid_reduce(zt1)
+call mpi_grid_reduce(zt1,all=.true.)
 sic_dot_ll=zt1
 return
 end function
@@ -216,7 +216,7 @@ do it=1,ntr
 enddo
 deallocate(f1mt_,f2mt_,f3mt_)
 zt1=zsummt+zsumir*omega/dble(ngrtot)
-call mpi_grid_reduce(zt1)
+call mpi_grid_reduce(zt1,all=.true.)
 sic_int_zdz=zt1
 end function
 
@@ -270,5 +270,42 @@ do it=1,ntr
 enddo
 deallocate(f1mt_,f2mt_,f3mt_)
 end subroutine
+
+! <f|psi> = \int dr f^{*}(r) psi(r) =
+!   = \sum_R \int_{Omega} dr f^{*}(r+R) psi(r+R) = 
+!     \sum_R e^{ikR} \int_{Omega} dr f^{*}(r+R) psi(r)
+complex(8) function sic_dot_lb(vpc,fmt1,fir1,tfmt1,fmt2,fir2)
+use modmain
+implicit none
+real(8), intent(in) :: vpc(3)
+complex(8), intent(in) :: fmt1(lmmaxvr,nmtloc,ntr)
+complex(8), intent(in) :: fir1(ngrloc,ntr)
+logical, intent(in) :: tfmt1(natmtot,ntr)
+complex(8), intent(in) :: fmt2(lmmaxvr,nmtloc)
+complex(8), intent(in) :: fir2(ngrloc)
+complex(8) zdotmt,zdotir,zdot
+complex(8), external :: zdotc
+integer it,i,ias,ir
+zdot=zzero
+do it=1,ntr
+  zdotmt=zzero
+  zdotir=zzero
+  do i=1,nmtloc
+    ias=(mtoffs+i-1)/nrmtmax+1
+    if (tfmt1(ias,it)) then
+      zdotmt=zdotmt+rmtwt(i)*zdotc(lmmaxvr,fmt1(:,i,it),1,&
+        fmt2(:,i),1)
+    endif
+  enddo
+  do ir=1,ngrloc
+    zdotir=zdotir+cfunir(ir+groffs)*dconjg(fir1(ir,it))*fir2(ir)
+  enddo
+  zdot=zdot+(zdotmt+zdotir*omega/dble(ngrtot))*exp(zi*dot_product(vpc,vtc(:,it)))
+enddo
+call mpi_grid_reduce(zdot,all=.true.)
+sic_dot_lb=zdot
+return
+end function
+
 
 end module

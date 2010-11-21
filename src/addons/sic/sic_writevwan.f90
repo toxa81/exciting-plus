@@ -44,7 +44,7 @@ do n=1,nwann
       call sic_copy_ir_z(.false.,fir,wanir(1,it,ispn,n))
       call mpi_grid_reduce(fmt(1,1,1),lmmaxvr*nrmtmax*natmtot)
       call mpi_grid_reduce(fir(1),ngrtot)
-      if (wproc) then
+      if (mpi_grid_root()) then
         write(c1,'("n",I4.4)')n
         write(c2,'("s",I4.4)')ispn
         write(c3,'("t",I4.4)')it
@@ -60,7 +60,7 @@ do n=1,nwann
       call sic_copy_ir_z(.false.,fir,wvir(1,it,ispn,n))
       call mpi_grid_reduce(fmt(1,1,1),lmmaxvr*nrmtmax*natmtot)
       call mpi_grid_reduce(fir(1),ngrtot)
-      if (wproc) then
+      if (mpi_grid_root()) then
         call hdf5_write("sic.hdf5",path,"wvmt",fmt(1,1,1),&
           (/lmmaxvr,nrmtmax,natmtot/))
         call hdf5_write("sic.hdf5",path,"wvir",fir(1),(/ngrtot/))
@@ -68,5 +68,6 @@ do n=1,nwann
     enddo
   enddo
 enddo
+deallocate(fmt,fir)
 return
 end
