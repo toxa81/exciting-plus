@@ -83,9 +83,9 @@ do n=1,nwann
       dims=ortdims((/dim_k/)))
     call mpi_grid_bcast(wir(1,1),ngrtot*nspinor,dims=ortdims((/dim_k/)))
     do ispn=1,nspinor
-      call sic_copy_mt(.true.,lmmaxvr,wmt(1,1,1,ispn),&
+      call sic_copy_mt_z(.true.,lmmaxvr,wmt(1,1,1,ispn),&
         wanmt(1,1,it,ispn,n))
-      call sic_copy_ir(.true.,wir(1,ispn),wanir(1,it,ispn,n))
+      call sic_copy_ir_z(.true.,wir(1,ispn),wanir(1,it,ispn,n))
     end do
   end do !it
 end do !n

@@ -39,10 +39,10 @@ do i=1,nmegqwan
   vl(:)=imegqwan(3:5,i)
   do ispn=1,nspinor
     ovlp(i)=ovlp(i)+sic_dot_ll(wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),&
-      wanmt(1,1,1,ispn,n1),wanir(1,1,ispn,n1),vl)
+      wanmt(1,1,1,ispn,n1),wanir(1,1,ispn,n1),vl,twanmt(1,1,n),&
+      twanmt(1,1,n1))
   enddo
 enddo
-call mpi_grid_reduce(ovlp(1),nmegqwan,dims=(/dim_k/))
 ! check orthonormality
 t1=0.d0
 t2=0.d0
@@ -76,7 +76,6 @@ if (wproc) then
   call timestamp(fout,"done with Wannier functions")
   call flushifc(151)
 endif
-call pstop
 deallocate(ovlp)
 return
 end

@@ -29,7 +29,6 @@ wfsize=lmmaxvr*nufrmax*natmtot+ngknr2
 allocate(wftmp1(wfsize,ngvecme))
 allocate(wftmp2(wfsize,nstsv))
 allocate(wfir1(ngrtot))
-
 call papi_timer_start(pt_megqblh)
 
 ! global k-point

@@ -14,6 +14,7 @@ use modrdm
 use modtest
 use modqpt
 use mod_addons_q
+use mod_sic
 ! !DESCRIPTION:
 !   Reads in the input parameters from the file {\tt elk.in}. Also sets default
 !   values for the input parameters.

@@ -11,6 +11,7 @@ subroutine energy
 use modmain
 use modldapu
 use modtest
+use mod_sic
 ! !DESCRIPTION:
 !   Computes the total energy and its individual contributions. The kinetic
 !   energy is given by

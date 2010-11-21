@@ -1,5 +1,6 @@
 subroutine sic_gndstate
 use modmain
+use mod_sic
 implicit none
 character*3 c3
 
