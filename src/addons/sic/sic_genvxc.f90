@@ -189,15 +189,11 @@ do n=1,nwann
       do ispn=1,nspinor
         vxmt_(:,:,ispn)=vxmt_(:,:,ispn)+vcmt_(:,:,ispn)
       enddo
-! expand XC potential in spherical harmonics and save it to vcmt_
+! expand XC potential in spherical harmonics and add it to vhxcmt
       do ispn=1,nspinor
         call dgemm('T','N',lmmaxvr,nmtloc,ntp,1.d0,rlmb,ntp,&
           vxmt_(1,1,ispn),ntp,1.d0,vhxcmt(1,1,it,ispn,n),lmmaxvr)
       enddo
-! add XC potential to main array
-!      do ispn=1,nspinor
-!        vhxcmt(:,:,it,ispn,n)=vhxcmt(:,:,it,ispn,n)+vcmt_(:,:,ispn)
-!      enddo
 ! save total XC energy to exmt_
       exmt_(:,:)=exmt_(:,:)+ecmt_(:,:)
 ! expand XC energy in spherical harmonics

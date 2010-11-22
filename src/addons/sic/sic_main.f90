@@ -155,14 +155,14 @@ do ik=1,nkpt
   if (wproc) then
     write(151,*)
     write(151,'("ik : ",I4,"   max.herm.err : ",G18.10 )')ik,t1
-    write(151,*)
-    do n1=1,nwann
-      write(151,'(5X,255F12.7)')(dreal(vwank(n1,n2)),n2=1,nwann)
-    enddo
-    write(151,*)
-    do n1=1,nwann
-      write(151,'(5X,255F12.7)')(dimag(vwank(n1,n2)),n2=1,nwann)
-    enddo
+!    write(151,*)
+!    do n1=1,nwann
+!      write(151,'(5X,255F12.7)')(dreal(vwank(n1,n2)),n2=1,nwann)
+!    enddo
+!    write(151,*)
+!    do n1=1,nwann
+!      write(151,'(5X,255F12.7)')(dimag(vwank(n1,n2)),n2=1,nwann)
+!    enddo
   endif
 enddo
 deallocate(vwank)
