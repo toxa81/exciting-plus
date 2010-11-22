@@ -1,10 +1,11 @@
 ! this subroutine generates e^{igr} 
 subroutine genpw(vgpc,pwmt,pwir)
 use modmain
+use mod_sic
 implicit none
 real(8), intent(in) :: vgpc(3)
 complex(8), intent(out) :: pwmt(lmmaxvr,nrmtmax,natmtot)
-complex(8), intent(out) :: pwir(ngrtot)
+complex(8), intent(out) :: pwir(ngrloc)
 real(8) gpc
 real(8) tpgp(2)
 complex(8) ylmgp(lmmaxvr)
@@ -47,8 +48,8 @@ do ias=1,natmtot
     pwmt(:,ir,ias)=zt2(:)
   enddo
 enddo
-do ir=1,ngrtot
-  pwir(ir)=exp(zi*dot_product(vgpc,vgrc(:,ir)))
+do ir=1,ngrloc
+  pwir(ir)=exp(zi*dot_product(vgpc,vgrc(:,ir+groffs)))
 enddo
 return
 end

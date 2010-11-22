@@ -5,13 +5,11 @@ use mod_sic
 implicit none
 complex(8), intent(out) :: vhwanmt(lmmaxvr,nmtloc,ntr,nspinor,nwann)
 complex(8), intent(out) :: vhwanir(ngrloc,ntr,nspinor,nwann)
-integer nvqloc,iqloc,it,iq,n,ig,ias
+integer nvqloc,iqloc,it,iq,n,ig,ias,i
 real(8) vtrc(3)
 complex(8), allocatable ::megqwan1(:,:,:)
-complex(8), allocatable :: pwmt(:,:,:)
+complex(8), allocatable :: pwmt(:,:)
 complex(8), allocatable :: pwir(:)
-complex(8), allocatable :: pwmt1(:,:)
-complex(8), allocatable :: pwir1(:)
 complex(8) expikt,zt1
 character*100 qnm
 
@@ -47,30 +45,29 @@ call mpi_grid_reduce(megqwan1(1,1,1),nwann*ngqmax*nvq,dims=(/dim_q/), &
   all=.true.)
 call timer_stop(10)
 ! allocate arrays for plane-wave
-allocate(pwmt(lmmaxvr,nrmtmax,natmtot))
-allocate(pwir(ngrtot))
-allocate(pwmt1(lmmaxvr,nmtloc))
-allocate(pwir1(ngrloc))
+allocate(pwmt(lmmaxvr,nmtloc))
+allocate(pwir(ngrloc))
 ! generate Hartree potential
 call timer_start(11,reset=.true.)
 do iq=1,nvq
   do ig=1,ngq(iq)
-    call genpw(vgqc(1,ig,iq),pwmt,pwir)
-    call sic_copy_mt_z(.true.,lmmaxvr,pwmt,pwmt1)
-    call sic_copy_ir_z(.true.,pwir,pwir1)
+    call sic_genpw(vgqc(1,ig,iq),pwmt,pwir)
     do it=1,ntr
       expikt=exp(zi*dot_product(vtc(:,it),vqc(:,iq)))/nkptnr/omega
       do n=1,nwann
         zt1=megqwan1(n,ig,iq)*vhgq(ig,iq)*expikt
-        if (twanmtuc(it,n)) then
-          call zaxpy(lmmaxvr*nmtloc,zt1,pwmt1,1,vhwanmt(1,1,it,1,n),1)
-        endif
-        call zaxpy(ngrloc,zt1,pwir1,1,vhwanir(1,it,1,n),1)
+        do i=1,nmtloc
+          ias=(mtoffs+i-1)/nrmtmax+1
+          if (twanmt(ias,it,n)) then       
+            call zaxpy(lmmaxvr,zt1,pwmt(1,i),1,vhwanmt(1,i,it,1,n),1)
+          endif
+        enddo
+        call zaxpy(ngrloc,zt1,pwir,1,vhwanir(1,it,1,n),1)
       enddo !n
     enddo !it
   enddo !ig
 enddo !iq
 call timer_stop(11)
-deallocate(pwmt,pwir,pwmt1,pwir1,megqwan1)
+deallocate(pwmt,pwir,megqwan1)
 return
 end

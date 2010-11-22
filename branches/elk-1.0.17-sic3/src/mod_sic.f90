@@ -307,5 +307,66 @@ sic_dot_lb=zdot
 return
 end function
 
+! this subroutine generates e^{igr} 
+subroutine sic_genpw(vgpc,pwmt,pwir)
+use modmain
+implicit none
+real(8), intent(in) :: vgpc(3)
+complex(8), intent(out) :: pwmt(lmmaxvr,nmtloc)
+complex(8), intent(out) :: pwir(ngrloc)
+real(8) gpc
+real(8) tpgp(2)
+complex(8) ylmgp(lmmaxvr)
+integer ias,is,ia,lm,ias1
+real(8) jl(0:lmaxvr)
+complex(8) zt1
+integer ir,i1,i2,i3,lm1,lm2,i
+real(8) v2(3),v3(3)
+complex(8), allocatable :: pwmt_(:,:)
+!complex(8) zt2(lmmaxvr)
+!complex(8), external :: zdotu
+
+allocate(pwmt_(lmmaxvr,nmtloc))
+pwmt_=zzero
+! get spherical coordinates and length of G+q
+call sphcrd(vgpc,gpc,tpgp)
+! generate spherical harmonics for G+q
+call genylm(lmaxvr,tpgp,ylmgp)
+
+ias=mtoffs/nrmtmax+1
+ias1=ias
+ir=mod(mtoffs+1,nrmtmax)
+is=ias2is(ias)
+ia=ias2ia(ias)
+zt1=fourpi*exp(zi*dot_product(vgpc,atposc(:,ia,is)))  
+do i=1,nmtloc
+  ias=(mtoffs+i-1)/nrmtmax+1
+  if (ias.ne.ias1) then
+    is=ias2is(ias)
+    ia=ias2ia(ias)
+    zt1=fourpi*exp(zi*dot_product(vgpc,atposc(:,ia,is)))  
+    ias1=ias
+    ir=1
+  endif
+  if (ir.le.nrmt(is)) then
+! generate Bessel functions j_l(|G+q|x)
+    call sbessel(lmaxvr,gpc*spr(ir,is),jl)
+    do lm=1,lmmaxvr
+      pwmt_(lm,i)=zt1*(zi**lm2l(lm))*jl(lm2l(lm))*dconjg(ylmgp(lm))
+    enddo
+  endif
+  ir=ir+1
+enddo
+! convert to real spherical harmonics
+!   remember that Y_{m}=\sum_{m'} dzsht_{m,m'} R_{m'}
+call zgemm('T','N',lmmaxvr,nmtloc,lmmaxvr,zone,dzsht,lmmaxapw,pwmt_,lmmaxvr,&
+  zzero,pwmt,lmmaxvr)
+deallocate(pwmt_)
+do ir=1,ngrloc
+  pwir(ir)=exp(zi*dot_product(vgpc,vgrc(:,ir+groffs)))
+enddo
+return
+end subroutine
+
 
 end module
