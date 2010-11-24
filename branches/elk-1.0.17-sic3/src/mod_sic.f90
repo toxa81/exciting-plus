@@ -24,6 +24,15 @@ data wann_r_cutoff/6.0/
 complex(8), allocatable :: sic_wb(:,:,:,:)
 complex(8), allocatable :: sic_wvb(:,:,:,:)
 
+integer, allocatable :: sic_apply(:)
+integer, allocatable :: wann_sic(:,:)
+real(8), allocatable :: wann_sic_v(:,:)
+
+logical tsic_wv
+data tsic_wv/.false./
+logical tsic_arrays_allocated
+data tsic_arrays_allocated/.false./
+
 ! total number of translations
 integer ntr
 ! maximum number of translation vectors
