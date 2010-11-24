@@ -19,7 +19,7 @@ do i=1,wann_natom
   nwann=nwann+wann_norb(iwgrp)
 enddo
 if (allocated(iwann)) deallocate(iwann)
-allocate(iwann(4,nwann))
+allocate(iwann(7,nwann))
 if (allocated(nwannias)) deallocate(nwannias)
 allocate(nwannias(natmtot))
 nwannias=0
@@ -49,11 +49,14 @@ do i=1,wann_natom
     iwann(2,n)=lm
     iwann(3,n)=ispn
     iwann(4,n)=itype
+    iwann(5,n)=iwgrp
+    iwann(6,n)=i
+    iwann(7,n)=j
   enddo
 enddo !i
 ! sort WF by spin (for collinear case)
 if (.not.ncmag) then
-  allocate(iwann_tmp(4,nwann))
+  allocate(iwann_tmp(7,nwann))
   n=0
   do j=1,nwann
     if (iwann(3,j).eq.1) then

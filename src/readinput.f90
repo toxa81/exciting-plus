@@ -1071,6 +1071,13 @@ case('mpigrid')
   read(50,*,err=20) mpigrid(1),mpigrid(2),mpigrid(3) 
 case('sic')
   read(50,*,err=20) sic
+case('wann_sic')
+  allocate(wann_sic(32,wann_natom))
+  allocate(wann_sic_v(32,wann_natom))
+  do i=1,wann_natom
+    read(50,*,err=20) (wann_sic(j,i),j=1,wann_norb(wann_iprj(2,i)))
+    read(50,*,err=20) (wann_sic_v(j,i),j=1,wann_norb(wann_iprj(2,i)))
+  enddo
 case('nsclsic')
   read(50,*,err=20) nsclsic 
 case('disentangle')

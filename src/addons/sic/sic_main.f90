@@ -5,7 +5,7 @@ use mod_hdf5
 use mod_sic
 implicit none
 integer n,sz,i,j,i1,j1,n1,ispn,vtrl(3)
-real(8) t1,t2,vtrc(3)
+real(8) t1,t2,t3,vtrc(3)
 integer vl(3)
 ! Wannier functions
 complex(8), allocatable :: vwanme_old(:)
@@ -14,18 +14,6 @@ complex(8), allocatable :: vwank(:,:)
 complex(8) z1
 logical exist
 integer n2,ik
-
-! mpi grid layout
-!          (2)
-!     +----+----+--> T-vectos 
-!     |    |    |
-!     +----+----+--
-! (1) |    |    |
-!     +----+----+--
-!     |    |    |
-!     v
-!  k-points and 
-! Wannier functions
 
 sic=.true.
 
@@ -63,17 +51,14 @@ if (wproc) then
 endif
 ! generate wave-functions for all k-points in BZ
 call genwfnr(151,.false.)  
-! get all Wannier transitions
-all_wan_ibt=.true.
-call getimegqwan(all_wan_ibt)
 call sic_wan(151)
 allocate(ene(4,nwann))
 call sic_pot(151,ene)
 !----------------------------------!
 ! matrix elements of SIC potential !
 !----------------------------------!
-if (allocated(vwanme)) deallocate(vwanme)
-allocate(vwanme(nmegqwan))
+allocate(vwanme_old(nmegqwan))
+vwanme_old=vwanme
 vwanme=zzero
 ! compute matrix elements of SIC potential
 !  vwanme = <w_n|v_n|w_{n1,T}>
@@ -88,6 +73,7 @@ do i=1,nmegqwan
 enddo
 t1=0.d0
 t2=-1.d0
+t3=0.d0
 do i=1,nmegqwan
   n=imegqwan(1,i)
   n1=imegqwan(2,i)
@@ -99,13 +85,12 @@ do i=1,nmegqwan
     i1=i
     j1=j
   endif
+  t3=t3+abs(vwanme(i)-vwanme_old(i))**2
 enddo
 if (wproc) then
   call timestamp(151,"done with matrix elements")
   write(151,*)
   write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
-!  write(151,'("Matrix elements of SIC potential &
-!    &(n n1  T  <w_n|v_n|w_{n1,T}>)")')
   write(151,'("Matrix elements of SIC potential &
     &(n n1  <w_n|v_n|w_n1}>)")')
   do i=1,nmegqwan
@@ -132,8 +117,12 @@ if (wproc) then
     j=idxmegqwan(n,n,0,0,0)
     write(151,'(I4,4X,2G18.10)')n,dreal(vwanme(j)),dimag(vwanme(j))
   enddo  
+  t3=sqrt(t3/nmegqwan)
+  write(151,*)
+  write(151,'("SIC matrix elements RMS difference :",G18.10)')t3  
   call flushifc(151)
 endif
+deallocate(vwanme_old)
 ! check hermiticity of V_nn'(k)
 allocate(vwank(nwann,nwann))
 do ik=1,nkpt
@@ -166,24 +155,26 @@ do ik=1,nkpt
   endif
 enddo
 deallocate(vwank)
-if (wproc) then
-  inquire(file="sic.hdf5",exist=exist)
-  if (exist) then
-    allocate(vwanme_old(nmegqwan))
-    call hdf5_read("sic.hdf5","/","vwanme",vwanme_old(1),(/nmegqwan/))
-    t1=0.d0
-    do i=1,nmegqwan
-      t1=t1+abs(vwanme(i)-vwanme_old(i))**2
-    enddo
-    t1=sqrt(t1/nmegqwan)
-    write(151,*)
-    write(151,'("SIC matrix elements RMS difference :",G18.10)')t1
-    deallocate(vwanme_old)
-  endif
-endif
-call sic_writevwan
+!if (wproc) then
+!  inquire(file="sic.hdf5",exist=exist)
+!  if (exist) then
+!    allocate(vwanme_old(nmegqwan))
+!    call hdf5_read("sic.hdf5","/","vwanme",vwanme_old(1),(/nmegqwan/))
+!    t1=0.d0
+!    do i=1,nmegqwan
+!      t1=t1+abs(vwanme(i)-vwanme_old(i))**2
+!    enddo
+!    t1=sqrt(t1/nmegqwan)
+!    write(151,*)
+!    write(151,'("SIC matrix elements RMS difference :",G18.10)')t1
+!    deallocate(vwanme_old)
+!  endif
+!endif
 if (wproc) close(151)
-deallocate(vwanme)
+! flag that now we have computed sic potential and wannier functions
+tsic_wv=.true.
+! write to HDF5 file after last iteration
+if (isclsic.eq.nsclsic) call sic_writevwan
 deallocate(ene)
 return
 end

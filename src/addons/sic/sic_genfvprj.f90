@@ -12,12 +12,28 @@ complex(8), allocatable :: wfir_(:)
 complex(8), allocatable :: a(:,:,:)
 complex(8), allocatable :: b(:,:,:)
 complex(8), allocatable :: expikr(:)
-integer ik,h,ikloc,ig,ir,n,ispn,ist,ias,i1,i2,i3
-real(8) v2(3),v3(3)
+integer ik,h,ikloc,ig,ir,n,ispn,ist,ias,i,j
 logical exist
 
-inquire(file="sic.hdf5",exist=exist)
-if (.not.exist) return
+if (.not.tsic_wv) then
+  do ikloc=1,nkptloc
+    sic_wb(:,:,:,ikloc)=zzero
+    sic_wvb(:,:,:,ikloc)=zzero
+    do n=1,nwann
+      do ispn=1,nspinor
+        do ist=1,nstfv
+          i=ist+(ispn-1)*nstfv
+          do j=1,nstsv
+! TODO: zgemm?
+            sic_wb(n,ist,ispn,ikloc)=sic_wb(n,ist,ispn,ikloc)+&
+              dconjg(wann_c(n,j,ikloc)*evecsvloc(i,j,ikloc))
+          enddo !j
+        enddo !ispn
+      enddo !i
+    enddo !n
+  enddo !ikloc  
+  return
+endif
 
 allocate(evecfv1(nmatmax,nstfv,nspnfv))
 allocate(igkig1(ngkmax))
@@ -73,7 +89,7 @@ do ik=1,nkpt
           wanir(1,1,ispn,n),twanmt(1,1,n),wfmt_,wfir_)
         b(n,ist,ispn)=sic_dot_lb(vkc(1,ik),wvmt(1,1,1,ispn,n),&
           wvir(1,1,ispn,n),twanmt(1,1,n),wfmt_,wfir_)
-      enddo
+        enddo
     enddo !n
   enddo !ist
   if (mpi_grid_x(dim_k).eq.h) then

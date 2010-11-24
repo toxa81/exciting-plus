@@ -2,7 +2,7 @@ subroutine sic_init
 use modmain
 use mod_sic
 implicit none
-integer i,ias,n,jas,i1,i2,i3,vl(3),ish,ir,is
+integer i,ias,n,jas,i1,i2,i3,vl(3),ish,ir,is,j,iwgrp
 logical l1,l2,exist
 real(8) v1(3),v2(3)
 logical, external :: vrinmt,sic_include_cell
@@ -67,21 +67,40 @@ if (mpi_grid_root()) then
     int(2*16.d0*(lmmaxvr*nmtloc+ngrloc)*ntr*nspinor*nwann/1048576.d0)
 endif
 call mpi_grid_barrier()
-! main arrays of SIC code
+! get all Wannier transitions
+all_wan_ibt=.true.
+call getimegqwan(all_wan_ibt)
+! allocate once main arrays of SIC code
 !  wan(mt,ir) - Wannier function defined on a real-space grid
 !  wv(mt,ir) - product of a Wannier function with it's potential
-if (allocated(wanmt)) deallocate(wanmt)
-allocate(wanmt(lmmaxvr,nmtloc,ntr,nspinor,nwann))
-wanmt=zzero
-if (allocated(wanir)) deallocate(wanir)
-allocate(wanir(ngrloc,ntr,nspinor,nwann))
-wanir=zzero
-if (allocated(wvmt)) deallocate(wvmt)
-allocate(wvmt(lmmaxvr,nmtloc,ntr,nspinor,nwann))
-wvmt=zzero
-if (allocated(wvir)) deallocate(wvir)  
-allocate(wvir(ngrloc,ntr,nspinor,nwann))
-wvir=zzero
+if (.not.tsic_arrays_allocated) then
+  !if (allocated(wanmt)) deallocate(wanmt)
+  allocate(wanmt(lmmaxvr,nmtloc,ntr,nspinor,nwann))
+  wanmt=zzero
+  !if (allocated(wanir)) deallocate(wanir)
+  allocate(wanir(ngrloc,ntr,nspinor,nwann))
+  wanir=zzero
+  !if (allocated(wvmt)) deallocate(wvmt)
+  allocate(wvmt(lmmaxvr,nmtloc,ntr,nspinor,nwann))
+  wvmt=zzero
+  !if (allocated(wvir)) deallocate(wvir)  
+  allocate(wvir(ngrloc,ntr,nspinor,nwann))
+  wvir=zzero
+  !if (allocated(sic_apply)) deallocate(sic_apply)
+  allocate(sic_apply(nwann))
+  sic_apply=1
+  !if (allocated(vwanme)) deallocate(vwanme)
+  allocate(vwanme(nmegqwan))
+  vwanme=zzero
+  do n=1,nwann
+    i=iwann(6,n)
+    j=iwann(7,n)
+    if (allocated(wann_sic)) sic_apply(n)=wann_sic(j,i)
+    if (allocated(wann_sic_v)) vwanme(idxmegqwan(n,n,0,0,0))=zone*wann_sic_v(j,i)
+  enddo
+  tsic_arrays_allocated=.true.
+endif
+  
 if (allocated(sic_wann_e0)) deallocate(sic_wann_e0)
 allocate(sic_wann_e0(nwann))
 sic_wann_e0=0.d0
@@ -94,6 +113,7 @@ if (exist) then
   enddo
   close(170)
 endif
+! TODO: these arrays are need only in ground state
 if (allocated(sic_wb)) deallocate(sic_wb)
 allocate(sic_wb(nwann,nstfv,nspinor,nkptloc))
 sic_wb=zzero

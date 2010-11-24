@@ -10,9 +10,8 @@ logical exist
 complex(8), allocatable :: fmt(:,:,:)
 complex(8), allocatable :: fir(:)
 
-allocate(fmt(lmmaxvr,nrmtmax,natmtot))
-allocate(fir(ngrtot))
-
+! retutn if wannier functions and potential are initialized
+if (tsic_wv) return
 inquire(file="sic.hdf5",exist=exist)
 if (.not.exist) return
 
@@ -24,6 +23,8 @@ allocate(vwanme(nmegqwan))
 call hdf5_read("sic.hdf5","/","vwanme",vwanme(1),(/nmegqwan/))
 call hdf5_read("sic.hdf5","/","sic_etot_correction",sic_etot_correction)
 
+allocate(fmt(lmmaxvr,nrmtmax,natmtot))
+allocate(fir(ngrtot))
 do n=1,nwann
   do ispn=1,nspinor
     do it=1,ntr
@@ -54,5 +55,6 @@ do n=1,nwann
   enddo
 enddo
 deallocate(fmt,fir)
+tsic_wv=.true.
 return
 end
