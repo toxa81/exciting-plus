@@ -89,7 +89,7 @@ do ik=1,nkpt
           wanir(1,1,ispn,n),twanmt(1,1,n),wfmt_,wfir_)
         b(n,ist,ispn)=sic_dot_lb(vkc(1,ik),wvmt(1,1,1,ispn,n),&
           wvir(1,1,ispn,n),twanmt(1,1,n),wfmt_,wfir_)
-        enddo
+      enddo
     enddo !n
   enddo !ist
   if (mpi_grid_x(dim_k).eq.h) then
