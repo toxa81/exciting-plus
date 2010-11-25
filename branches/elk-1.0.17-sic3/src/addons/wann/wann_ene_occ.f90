@@ -103,46 +103,47 @@ do n=1,nwann
   wann_ene(n)=wann_ene_m(lm1,lm1,ispn1,ispn1,ias)
 enddo
 if (wproc) then
-  write(60,*)
-  write(60,'("On-site matrices in WF basis")')
+  open(190,file="WANN_ENE_OCC.OUT",form="formatted",status="replace")
+  write(190,*)
+  write(190,'("On-site matrices in WF basis")')
   do i=1,wann_natom
     ias=wann_iprj(1,i)
-    write(60,*)
-    write(60,'("ias : ",I4)')ias
+    write(190,*)
+    write(190,'("ias : ",I4)')ias
     do l=0,lmaxlu
       if (sum(abs(wann_ene_m(idxlm(l,-l):idxlm(l,l),idxlm(l,-l):idxlm(l,l),:,:,ias))).gt.1d-8) then
 ! occupancy matrix
-        write(60,'("  occupancy matrix")')
+        write(190,'("  occupancy matrix")')
         t=0.0
         do ispn=1,nspinor
-          write(60,'("  ispn : ",I1)')ispn
-          write(60,'("    real part")')
+          write(190,'("  ispn : ",I1)')ispn
+          write(190,'("    real part")')
           do lm1=l**2+1,(l+1)**2
-            write(60,'(2X,7F12.6)')(dreal(wann_occ_m(lm1,lm2,ispn,ispn,ias)),lm2=l**2+1,(l+1)**2)
+            write(190,'(2X,7F12.6)')(dreal(wann_occ_m(lm1,lm2,ispn,ispn,ias)),lm2=l**2+1,(l+1)**2)
             t(ispn)=t(ispn)+dreal(wann_occ_m(lm1,lm1,ispn,ispn,ias))
           enddo
-          write(60,'("    imag part")')
+          write(190,'("    imag part")')
           do lm1=l**2+1,(l+1)**2
-            write(60,'(2X,7F12.6)')(dimag(wann_occ_m(lm1,lm2,ispn,ispn,ias)),lm2=l**2+1,(l+1)**2)
+            write(190,'(2X,7F12.6)')(dimag(wann_occ_m(lm1,lm2,ispn,ispn,ias)),lm2=l**2+1,(l+1)**2)
           enddo
-          write(60,'("    occupancy : ",F12.6)')t(ispn)
+          write(190,'("    occupancy : ",F12.6)')t(ispn)
         enddo !ispn
-        write(60,'("  total occupancy : ",F12.6)')sum(t)
+        write(190,'("  total occupancy : ",F12.6)')sum(t)
         if (nspinor.eq.2) then
-          write(60,'("  moment : ",F12.6)')t(1)-t(2)
+          write(190,'("  moment : ",F12.6)')t(1)-t(2)
         endif      
 ! energy matrix
-        write(60,*)
-        write(60,'("  energy matrix")')
+        write(190,*)
+        write(190,'("  energy matrix")')
         do ispn=1,nspinor
-          write(60,'("  ispn : ",I1)')ispn
-          write(60,'("    real part")')
+          write(190,'("  ispn : ",I1)')ispn
+          write(190,'("    real part")')
           do lm1=l**2+1,(l+1)**2
-            write(60,'(2X,7F12.6)')(dreal(wann_ene_m(lm1,lm2,ispn,ispn,ias)),lm2=l**2+1,(l+1)**2)
+            write(190,'(2X,7F12.6)')(dreal(wann_ene_m(lm1,lm2,ispn,ispn,ias)),lm2=l**2+1,(l+1)**2)
           enddo
-          write(60,'("    imag part")')
+          write(190,'("    imag part")')
           do lm1=l**2+1,(l+1)**2
-            write(60,'(2X,7F12.6)')(dimag(wann_ene_m(lm1,lm2,ispn,ispn,ias)),lm2=l**2+1,(l+1)**2)
+            write(190,'(2X,7F12.6)')(dimag(wann_ene_m(lm1,lm2,ispn,ispn,ias)),lm2=l**2+1,(l+1)**2)
           enddo
           w2=0.d0
           n=0
@@ -152,11 +153,12 @@ if (wproc) then
               w2=w2+dreal(wann_ene_m(lm1,lm1,ispn,ispn,ias))
             endif
           enddo
-          if (n.ne.0) write(60,'("    average energy : ",F12.6)')w2/n
+          if (n.ne.0) write(190,'("    average energy : ",F12.6)')w2/n
         enddo !ispn
       endif
     enddo !l
   enddo !i
+  close(190)
 endif
 return
 end

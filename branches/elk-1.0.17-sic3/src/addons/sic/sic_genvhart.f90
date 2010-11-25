@@ -55,14 +55,16 @@ do iq=1,nvq
     do it=1,ntr
       expikt=exp(zi*dot_product(vtc(:,it),vqc(:,iq)))/nkptnr/omega
       do n=1,nwann
-        zt1=megqwan1(n,ig,iq)*vhgq(ig,iq)*expikt
-        do i=1,nmtloc
-          ias=(mtoffs+i-1)/nrmtmax+1
-          if (twanmt(ias,it,n)) then       
-            call zaxpy(lmmaxvr,zt1,pwmt(1,i),1,vhwanmt(1,i,it,1,n),1)
-          endif
-        enddo
-        call zaxpy(ngrloc,zt1,pwir,1,vhwanir(1,it,1,n),1)
+        if (sic_apply(n).eq.1) then
+          zt1=megqwan1(n,ig,iq)*vhgq(ig,iq)*expikt
+          do i=1,nmtloc
+            ias=(mtoffs+i-1)/nrmtmax+1
+            if (twanmt(ias,it,n)) then       
+              call zaxpy(lmmaxvr,zt1,pwmt(1,i),1,vhwanmt(1,i,it,1,n),1)
+            endif
+          enddo
+          call zaxpy(ngrloc,zt1,pwir,1,vhwanir(1,it,1,n),1)
+        endif
       enddo !n
     enddo !it
   enddo !ig

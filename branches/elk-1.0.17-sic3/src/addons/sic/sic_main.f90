@@ -59,9 +59,9 @@ call sic_pot(151,ene)
 !----------------------------------!
 allocate(vwanme_old(nmegqwan))
 vwanme_old=vwanme
-vwanme=zzero
 ! compute matrix elements of SIC potential
 !  vwanme = <w_n|v_n|w_{n1,T}>
+vwanme=zzero
 do i=1,nmegqwan
   n=imegqwan(1,i)
   n1=imegqwan(2,i)
@@ -155,21 +155,6 @@ do ik=1,nkpt
   endif
 enddo
 deallocate(vwank)
-!if (wproc) then
-!  inquire(file="sic.hdf5",exist=exist)
-!  if (exist) then
-!    allocate(vwanme_old(nmegqwan))
-!    call hdf5_read("sic.hdf5","/","vwanme",vwanme_old(1),(/nmegqwan/))
-!    t1=0.d0
-!    do i=1,nmegqwan
-!      t1=t1+abs(vwanme(i)-vwanme_old(i))**2
-!    enddo
-!    t1=sqrt(t1/nmegqwan)
-!    write(151,*)
-!    write(151,'("SIC matrix elements RMS difference :",G18.10)')t1
-!    deallocate(vwanme_old)
-!  endif
-!endif
 if (wproc) close(151)
 ! flag that now we have computed sic potential and wannier functions
 tsic_wv=.true.
@@ -178,114 +163,3 @@ if (isclsic.eq.nsclsic) call sic_writevwan
 deallocate(ene)
 return
 end
-!
-!
-!
-!
-!!subroutine test_lf(wmt,vmt,zsum1,zsum2)
-!!use modmain
-!!implicit none
-!!
-!!complex(8), intent(out) :: wmt(lmmaxvr,nrmtmax,natmtot)
-!!real(8), intent(out) :: vmt(lmmaxvr,nrmtmax,natmtot)
-!!complex(8), intent(out) :: zsum1
-!!complex(8), intent(out) :: zsum2
-!!complex(8), allocatable :: zfmt(:,:,:)
-!!complex(8), allocatable :: zgmt(:,:,:)
-!!real(8), allocatable :: dfmt(:,:,:)
-!!complex(8), allocatable :: zfmt_(:,:),zgmt_(:,:)
-!!real(8), allocatable :: dfmt_(:,:)
-!!integer ias,ir,lm,lm1,lm2,lm3
-!!real(8) d1,d2(2)
-!!complex(8) zt1,zt2
-!!complex(8) zf1(nrmtmax)
-!!complex(8), external :: gauntyry
-!!complex(8), external :: zfmtinp_
-!!
-!!
-!!allocate(zfmt(lmmaxvr,nrmtmax,natmtot))
-!!allocate(zgmt(lmmaxvr,nrmtmax,natmtot))
-!!allocate(dfmt(lmmaxvr,nrmtmax,natmtot))
-!!
-!!do ias=1,natmtot
-!!  do ir=1,nrmtmax
-!!    do lm=1,lmmaxvr
-!!      call random_number(d2)
-!!      zfmt(lm,ir,ias)=dcmplx(d2(1),d2(2))*10
-!!      call random_number(d1)
-!!      dfmt(lm,ir,ias)=d1*10
-!!    enddo
-!!  enddo
-!!enddo
-!!wmt=zfmt
-!!vmt=dfmt
-!!
-!!allocate(zfmt_(nrmtmax,lmmaxvr))
-!!allocate(zgmt_(nrmtmax,lmmaxvr))
-!!allocate(dfmt_(nrmtmax,lmmaxvr))
-!!
-!!! muffin-tin contribution
-!!do ias=1,natmtot
-!!  do lm1=1,lmmaxvr
-!!    zfmt_(:,lm1)=zfmt(lm1,:,ias)
-!!    dfmt_(:,lm1)=dfmt(lm1,:,ias)
-!!  enddo
-!!  do lm1=1,lmmaxvr
-!!    do lm2=1,lmmaxvr
-!!      do lm3=1,lmmaxvr
-!!        zt1=gauntyry(lm2l(lm1),lm2l(lm2),lm2l(lm3),&
-!!                 lm2m(lm1),lm2m(lm2),lm2m(lm3))
-!!        if (abs(zt1).gt.1d-12) then
-!!          do ir=1,nrmt(ias2is(ias))
-!!            zf1(ir)=dconjg(zfmt_(ir,lm1))*dfmt_(ir,lm2)*zfmt_(ir,lm3)*&
-!!              spr(ir,ias2is(ias))**2
-!!          enddo
-!!          zt2=zzero
-!!          do ir=1,nrmt(ias2is(ias))-1
-!!            zt2=zt2+0.5d0*(spr(ir+1,ias2is(ias))-spr(ir,ias2is(ias)))*&
-!!              (zf1(ir)+zf1(ir+1))
-!!          enddo
-!!          zsum1=zsum1+zt2*zt1
-!!        endif
-!!      enddo
-!!    enddo
-!!  enddo
-!!enddo !ias
-!!
-!!do ias=1,natmtot
-!!  do lm1=1,lmmaxvr
-!!    zfmt_(:,lm1)=zfmt(lm1,:,ias)
-!!    dfmt_(:,lm1)=dfmt(lm1,:,ias)
-!!    zgmt_(:,lm1)=zzero
-!!  enddo
-!!  do lm1=1,lmmaxvr
-!!    do lm2=1,lmmaxvr
-!!      do lm3=1,lmmaxvr
-!!        zt1=gauntyry(lm2l(lm3),lm2l(lm2),lm2l(lm1),&
-!!          lm2m(lm3),lm2m(lm2),lm2m(lm1))
-!!        write(180,*)zt1
-!!        if (abs(zt1).gt.1d-12) then
-!!          do ir=1,nrmt(ias2is(ias))
-!!            zgmt_(ir,lm3)=zgmt_(ir,lm3)+zfmt_(ir,lm1)*dfmt_(ir,lm2)*zt1
-!!          enddo
-!!        endif
-!!      enddo
-!!    enddo
-!!  enddo
-!!  !write(180,*)'ias=',ias
-!!  !write(180,*)zgmt_
-!!  do lm3=1,lmmaxvr
-!!    zgmt(lm3,:,ias)=zgmt_(:,lm3)
-!!  enddo
-!!  zsum2=zsum2+zfmtinp_(.true.,lmaxvr,nrmt(ias2is(ias)),spr(:,ias2is(ias)),&
-!!    lmmaxvr,zgmt(1,1,ias),zgmt(1,1,ias))
-!!enddo !ias
-!!
-!!!if (abs(zsum1-zsum2).gt.1d-8) 
-!!!write(*,*)abs(zsum1-zsum2),abs(zsum1-zsum2)/abs(zsum1),abs(zsum1-zsum2)/abs(zsum2)
-!!
-!!deallocate(zfmt,zgmt,dfmt,zfmt_,zgmt_,dfmt_)
-!!
-!!end
-!
-!
