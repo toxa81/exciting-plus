@@ -157,74 +157,76 @@ allocate(vxir_(ngrloc,nspinor))
 allocate(vcmt_(ntp,nmtloc,nspinor))
 allocate(vcir_(ngrloc,nspinor))
 do n=1,nwann
-  excwanmt=0.d0
-  excwanir=0.d0
-  do it=1,ntr
+  if (sic_apply(n).eq.1) then
+    excwanmt=0.d0
+    excwanir=0.d0
+    do it=1,ntr
 !-----------------!
 ! muffin-tin part !
 !-----------------!
-    if (twanmtuc(it,n)) then
-      wfmt=zzero
-      vxmt_=0.d0
-      vcmt_=0.d0
-      exmt_=0.d0
-      ecmt_=0.d0
-      do ispn=1,nspinor
+      if (twanmtuc(it,n)) then
+        wfmt=zzero
+        vxmt_=0.d0
+        vcmt_=0.d0
+        exmt_=0.d0
+        ecmt_=0.d0
+        do ispn=1,nspinor
 ! wfmt(tp,r)=\sum_{lm} f_{lm}(r) * Y_{lm}(tp)
-        call zgemm('T','N',ntp,nmtloc,lmmaxvr,zone,ylm,lmmaxvr,&
-          wanmt(1,1,it,ispn,n),lmmaxvr,zzero,wfmt,ntp)
+          call zgemm('T','N',ntp,nmtloc,lmmaxvr,zone,ylm,lmmaxvr,&
+            wanmt(1,1,it,ispn,n),lmmaxvr,zzero,wfmt,ntp)
 ! rho(tp,r)=|wf(tp,r)|^2
-        wfmt2(:,:,ispn)=dreal(dconjg(wfmt(:,:))*wfmt(:,:))
-      enddo
+          wfmt2(:,:,ispn)=dreal(dconjg(wfmt(:,:))*wfmt(:,:))
+        enddo
 ! compute XC potential and energy density
-      if (spinpol) then
-        call xcifc(xctype,n=ntp*nmtloc,rhoup=wfmt2(1,1,1),rhodn=wfmt2(1,1,2),&
-          ex=exmt_,ec=ecmt_,vxup=vxmt_(1,1,1),vxdn=vxmt_(1,1,2),&
-          vcup=vcmt_(1,1,1),vcdn=vcmt_(1,1,2))
-      else
-        call xcifc(xctype,n=ntp*nmtloc,rho=wfmt2,ex=exmt_,ec=ecmt_,vx=vxmt_,&
-          vc=vcmt_)
-      endif
+        if (spinpol) then
+          call xcifc(xctype,n=ntp*nmtloc,rhoup=wfmt2(1,1,1),rhodn=wfmt2(1,1,2),&
+            ex=exmt_,ec=ecmt_,vxup=vxmt_(1,1,1),vxdn=vxmt_(1,1,2),&
+            vcup=vcmt_(1,1,1),vcdn=vcmt_(1,1,2))
+        else
+          call xcifc(xctype,n=ntp*nmtloc,rho=wfmt2,ex=exmt_,ec=ecmt_,vx=vxmt_,&
+            vc=vcmt_)
+        endif
 ! save total XC potential to vxmt_ 
-      do ispn=1,nspinor
-        vxmt_(:,:,ispn)=vxmt_(:,:,ispn)+vcmt_(:,:,ispn)
-      enddo
+        do ispn=1,nspinor
+          vxmt_(:,:,ispn)=vxmt_(:,:,ispn)+vcmt_(:,:,ispn)
+        enddo
 ! expand XC potential in spherical harmonics and add it to vhxcmt
-      do ispn=1,nspinor
-        call dgemm('T','N',lmmaxvr,nmtloc,ntp,1.d0,rlmb,ntp,&
-          vxmt_(1,1,ispn),ntp,1.d0,vhxcmt(1,1,it,ispn,n),lmmaxvr)
-      enddo
+        do ispn=1,nspinor
+          call dgemm('T','N',lmmaxvr,nmtloc,ntp,1.d0,rlmb,ntp,&
+            vxmt_(1,1,ispn),ntp,1.d0,vhxcmt(1,1,it,ispn,n),lmmaxvr)
+        enddo
 ! save total XC energy to exmt_
-      exmt_(:,:)=exmt_(:,:)+ecmt_(:,:)
+        exmt_(:,:)=exmt_(:,:)+ecmt_(:,:)
 ! expand XC energy in spherical harmonics
-      call dgemm('T','N',lmmaxvr,nmtloc,ntp,1.d0,rlmb,ntp,exmt_,ntp,0.d0,&
-        excwanmt(1,1,it),lmmaxvr)
-    endif
+        call dgemm('T','N',lmmaxvr,nmtloc,ntp,1.d0,rlmb,ntp,exmt_,ntp,0.d0,&
+          excwanmt(1,1,it),lmmaxvr)
+      endif
 !-------------------!
 ! interstitial part !
 !-------------------!
+      do ispn=1,nspinor
+        wfir2(:,ispn)=dreal(dconjg(wanir(:,it,ispn,n))*wanir(:,it,ispn,n))
+      enddo
+      ecir_=0.d0
+      exir_=0.d0
+      vxir_=0.d0
+      vcir_=0.d0
+      if (spinpol) then
+        call xcifc(xctype,n=ngrloc,rhoup=wfir2(:,1),rhodn=wfir2(:,2),ex=exir_,&
+          ec=ecir_,vxup=vxir_(:,1),vxdn=vxir_(:,2),vcup=vcir_(:,1),vcdn=vcir_(:,2))
+      else
+        call xcifc(xctype,n=ngrloc,rho=wfir2,ex=exir_,ec=ecir_,vx=vxir_,vc=vcir_)
+      endif
+      do ispn=1,nspinor
+        vhxcir(:,it,ispn,n)=vhxcir(:,it,ispn,n)+vxir_(:,ispn)+vcir_(:,ispn)
+      enddo
+      excwanir(:,it)=exir_(:)+ecir_(:)
+    enddo !it
     do ispn=1,nspinor
-      wfir2(:,ispn)=dreal(dconjg(wanir(:,it,ispn,n))*wanir(:,it,ispn,n))
+      ene(4,n)=ene(4,n)+sic_int_zdz(wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),&
+        excwanmt,excwanir,wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),twanmtuc(1,n))
     enddo
-    ecir_=0.d0
-    exir_=0.d0
-    vxir_=0.d0
-    vcir_=0.d0
-    if (spinpol) then
-      call xcifc(xctype,n=ngrloc,rhoup=wfir2(:,1),rhodn=wfir2(:,2),ex=exir_,&
-        ec=ecir_,vxup=vxir_(:,1),vxdn=vxir_(:,2),vcup=vcir_(:,1),vcdn=vcir_(:,2))
-    else
-      call xcifc(xctype,n=ngrloc,rho=wfir2,ex=exir_,ec=ecir_,vx=vxir_,vc=vcir_)
-    endif
-    do ispn=1,nspinor
-      vhxcir(:,it,ispn,n)=vhxcir(:,it,ispn,n)+vxir_(:,ispn)+vcir_(:,ispn)
-    enddo
-    excwanir(:,it)=exir_(:)+ecir_(:)
-  enddo !it
-  do ispn=1,nspinor
-    ene(4,n)=ene(4,n)+sic_int_zdz(wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),&
-      excwanmt,excwanir,wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),twanmtuc(1,n))
-  enddo
+  endif
 enddo !n
 deallocate(ylm)
 deallocate(rlmb)
