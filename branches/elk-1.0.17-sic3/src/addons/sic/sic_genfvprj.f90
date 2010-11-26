@@ -17,6 +17,7 @@ integer ik,h,ikloc,ig,ir,n,ispn,ist,ias,i,j,m1,l,lm1,lm,is,io1,ic
 logical exist
 real(8) fr(nrmtmax),gr(nrmtmax),cf(4,nrmtmax)
 
+if (.not.tsic_wv) return
 !if (.not.tsic_wv) then
 !  do ikloc=1,nkptloc
 !    sic_wb(:,:,:,ikloc)=0.8d0*sic_wb(:,:,:,ikloc) !zzero

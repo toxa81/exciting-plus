@@ -16,6 +16,7 @@ complex(8), allocatable :: zm1(:,:)
 character*500 fname,msg
 logical, parameter :: tcheckherm=.true.
 
+if (.not.tsic_wv) return
 ! simplified potential correction if we don't have SIC potential yet
 !if (.not.tsic_wv) then
 !  do j1=1,nstfv

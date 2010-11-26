@@ -7,7 +7,7 @@ fout=open("srclog.f90","w")
 fout.write("!Warning: this is automatically generated file\n")
 fout.write("subroutine srclog\n")
 fout.write("implicit none\n")
-fout.write("open(190,file=\"SRC.LOG\",status=\"replace\",form=\"formatted\")\n")
+fout.write("open(190,file=\"source-code.log\",status=\"replace\",form=\"formatted\")\n")
 fout.write("write(190,'(\"Output of ''svn info''\")')\n")
 t=svninfo.splitlines()
 for s in t:
