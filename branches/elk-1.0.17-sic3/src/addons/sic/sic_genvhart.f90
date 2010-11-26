@@ -19,13 +19,14 @@ wannier_megq=.true.
 call init_qbz(tq0bz,1)
 call init_q_gq
 ! create q-directories
-!if (mpi_grid_root()) then
-!  call system("mkdir -p q")
-!  do iq=1,nvq
-!    call getqdir(iq,vqm(:,iq),qnm)
-!    call system("mkdir -p "//trim(qnm))
-!  enddo
-!endif
+if (mpi_grid_root()) then
+  call system("mkdir -p q")
+  do iq=1,nvq
+    call getqdir(iq,vqm(:,iq),qnm)
+    call system("mkdir -p "//trim(qnm))
+  enddo
+endif
+call mpi_grid_barrier()
 ! distribute q-vectors along 2-nd dimention
 nvqloc=mpi_grid_map(nvq,dim_q)
 allocate(megqwan1(nwann,ngqmax,nvq))
@@ -35,7 +36,7 @@ call timer_start(10,reset=.true.)
 ! loop over q-points
 do iqloc=1,nvqloc
   iq=mpi_grid_map(nvq,dim_q,loc=iqloc)
-  call genmegq(iq,.false.,.false.)
+  call genmegq(iq,.true.,.false.)
 ! save <n,T=0|e^{-i(G+q)r}|n,T=0>
   do n=1,nwann
     megqwan1(n,1:ngq(iq),iq)=megqwan(idxmegqwan(n,n,0,0,0),1:ngq(iq))
