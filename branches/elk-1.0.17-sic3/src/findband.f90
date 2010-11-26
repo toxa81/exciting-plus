@@ -48,18 +48,16 @@ real(8), intent(inout) :: e
 logical, intent(out) :: fnd
 ! local variables
 ! maximum number of steps
-!integer, parameter :: maxstp=10000
-integer maxstp
+integer, parameter :: maxstp=1000
 integer ie,nn
 real(8) de,et,eb,t,tp
 ! automatic arrays
 real(8) p0(nr),p1(nr),q0(nr),q1(nr)
 fnd=.false.
 tp=0.d0
-maxstp=20.d0/abs(de0)
 ! find the top of the band
 de=abs(de0)
-et=-10.d0
+et=e
 do ie=1,maxstp
   et=et+de
   call rschroddme(sol,0,l,k,et,np,nr,r,vr,nn,p0,p1,q0,q1)

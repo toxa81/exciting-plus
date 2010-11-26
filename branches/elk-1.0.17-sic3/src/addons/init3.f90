@@ -1,7 +1,8 @@
 subroutine init3
 use modmain
 implicit none
-integer ia,is,lm,l,m,ir,i1,i2,i3
+integer ia,is,lm,l,m,ir,i1,i2,i3,i,n
+logical l1(maxspst,0:lmaxapw)
 real(8) vl(3)
 if (allocated(rylm)) deallocate(rylm)
 allocate(rylm(16,16))
@@ -52,6 +53,23 @@ do i3=0,ngrid(3)-1
       ir=ir+1
       call r3mv(avec,vl,vgrc(1,ir))
     enddo
+  enddo
+enddo
+if (allocated(spnl)) deallocate(spnl)
+allocate(spnl(0:maxlapw,maxspecies))
+spnl=0
+do l=0,lmaxapw
+  spnl(l,:)=l+1
+enddo
+do is=1,nspecies
+  l1=.false.
+  do i=1,spnst(is)
+    n=spn(i,is)
+    l=spl(i,is)
+    if (spcore(i,is).and..not.l1(n,l)) then
+      spnl(l,is)=spnl(l,is)+1
+      l1(n,l)=.true.
+    endif
   enddo
 enddo
 if (wannier) call wann_init

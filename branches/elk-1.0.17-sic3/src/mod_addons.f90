@@ -64,6 +64,8 @@ integer scvl(3,3)
 ! r-vectors of fft grid
 real(8), allocatable :: vgrc(:,:)
 
+integer, allocatable :: spnl(:,:)
+
 integer debug_level
 data debug_level/0/
 integer fdbgout
