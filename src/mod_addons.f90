@@ -162,6 +162,8 @@ integer, allocatable :: idxmegqwan(:,:,:,:,:)
 complex(8), allocatable :: megqwan(:,:)
 logical :: all_wan_ibt
 data all_wan_ibt/.false./
+logical :: diag_wan_ibt
+data diag_wan_ibt/.false./
 
 integer nwann_include
 data nwann_include/0/
