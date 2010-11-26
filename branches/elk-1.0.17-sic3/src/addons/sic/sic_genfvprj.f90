@@ -12,28 +12,30 @@ complex(8), allocatable :: wfir_(:)
 complex(8), allocatable :: a(:,:,:)
 complex(8), allocatable :: b(:,:,:)
 complex(8), allocatable :: expikr(:)
-integer ik,h,ikloc,ig,ir,n,ispn,ist,ias,i,j
+complex(8), allocatable :: wffvmt(:,:,:,:)
+integer ik,h,ikloc,ig,ir,n,ispn,ist,ias,i,j,m1,l,lm1,lm,is,io1,ic
 logical exist
+real(8) fr(nrmtmax),gr(nrmtmax),cf(4,nrmtmax)
 
-if (.not.tsic_wv) then
-  do ikloc=1,nkptloc
-    sic_wb(:,:,:,ikloc)=zzero
-    sic_wvb(:,:,:,ikloc)=zzero
-    do n=1,nwann
-      do ispn=1,nspinor
-        do ist=1,nstfv
-          i=ist+(ispn-1)*nstfv
-          do j=1,nstsv
-! TODO: zgemm?
-            sic_wb(n,ist,ispn,ikloc)=sic_wb(n,ist,ispn,ikloc)+&
-              dconjg(wann_c(n,j,ikloc)*evecsvloc(i,j,ikloc))
-          enddo !j
-        enddo !ispn
-      enddo !i
-    enddo !n
-  enddo !ikloc  
-  return
-endif
+!if (.not.tsic_wv) then
+!  do ikloc=1,nkptloc
+!    sic_wb(:,:,:,ikloc)=0.8d0*sic_wb(:,:,:,ikloc) !zzero
+!    sic_wvb(:,:,:,ikloc)=zzero
+!    do n=1,nwann
+!      do ispn=1,nspinor
+!        do ist=1,nstfv
+!          i=ist+(ispn-1)*nstfv
+!          do j=1,nstsv
+!! TODO: zgemm?
+!            sic_wb(n,ist,ispn,ikloc)=sic_wb(n,ist,ispn,ikloc)+&
+!              0.2d0*dconjg(wann_c(n,j,ikloc)*evecsvloc(i,j,ikloc))
+!          enddo !j
+!        enddo !ispn
+!      enddo !i
+!    enddo !n
+!  enddo !ikloc  
+!  return
+!endif
 
 allocate(evecfv1(nmatmax,nstfv,nspnfv))
 allocate(igkig1(ngkmax))
@@ -45,6 +47,7 @@ allocate(wfir_(ngrloc))
 allocate(a(nwann,nstfv,nspinor))
 allocate(b(nwann,nstfv,nspinor))
 allocate(expikr(ngrloc))
+!allocate(wffvmt(nstfv,lmmaxvr,nufrmax,natmtot))
 
 do ik=1,nkpt
   ikloc=mpi_grid_map(nkpt,dim_k,x=h,glob=ik)
@@ -63,6 +66,9 @@ do ik=1,nkpt
   do ir=1,ngrloc
     expikr(ir)=exp(zi*dot_product(vkc(:,ik),vgrc(:,ir+groffs)))
   enddo
+!  if (.not.tsic_wv) then
+!    call genwffvmt(lmaxvr,lmmaxvr,ngk(1,ik),evecfv1,apwalm,wffvmt)
+!  endif
   a=zzero
   b=zzero
 ! compute a=<W_n|\phi_{jk}> and b=<W_n|V_n|\phi_{jk}> where phi(r) are firt-
@@ -70,27 +76,49 @@ do ik=1,nkpt
   do ist=1,nstfv
     wfmt=zzero
     wfir=zzero
-    do ias=1,natmtot
-      call wavefmt(1,lmaxvr,ias2is(ias),ias2ia(ias),ngk(1,ik),apwalm,&
-        evecfv1(1,ist,1),lmmaxvr,wfmt(1,1,ias))
-    enddo
-    do ig=1,ngk(1,ik)
-      wfir(igfft(igkig1(ig)))=evecfv1(ig,ist,1)
-    enddo
-    call zfftifc(3,ngrid,1,wfir)
-    call sic_copy_mt_z(.true.,lmmaxvr,wfmt,wfmt_)
-    call sic_copy_ir_z(.true.,wfir,wfir_)
-    do ir=1,ngrloc
-      wfir_(ir)=wfir_(ir)*expikr(ir)/sqrt(omega)
-    enddo
-    do n=1,nwann
-      do ispn=1,nspinor
-        a(n,ist,ispn)=sic_dot_lb(vkc(1,ik),wanmt(1,1,1,ispn,n),&
-          wanir(1,1,ispn,n),twanmt(1,1,n),wfmt_,wfir_)
-        b(n,ist,ispn)=sic_dot_lb(vkc(1,ik),wvmt(1,1,1,ispn,n),&
-          wvir(1,1,ispn,n),twanmt(1,1,n),wfmt_,wfir_)
+    if (tsic_wv) then
+      do ias=1,natmtot
+        call wavefmt(1,lmaxvr,ias2is(ias),ias2ia(ias),ngk(1,ik),apwalm,&
+          evecfv1(1,ist,1),lmmaxvr,wfmt(1,1,ias))
       enddo
-    enddo !n
+      do ig=1,ngk(1,ik)
+        wfir(igfft(igkig1(ig)))=evecfv1(ig,ist,1)
+      enddo
+      call zfftifc(3,ngrid,1,wfir)
+      call sic_copy_mt_z(.true.,lmmaxvr,wfmt,wfmt_)
+      call sic_copy_ir_z(.true.,wfir,wfir_)
+      do ir=1,ngrloc
+        wfir_(ir)=wfir_(ir)*expikr(ir)/sqrt(omega)
+      enddo
+      do n=1,nwann
+        do ispn=1,nspinor
+          a(n,ist,ispn)=sic_dot_lb(vkc(1,ik),wanmt(1,1,1,ispn,n),&
+            wanir(1,1,ispn,n),twanmt(1,1,n),wfmt_,wfir_)
+          b(n,ist,ispn)=sic_dot_lb(vkc(1,ik),wvmt(1,1,1,ispn,n),&
+            wvir(1,1,ispn,n),twanmt(1,1,n),wfmt_,wfir_)
+        enddo
+      enddo !n
+    else
+!      do n=1,nwann
+!        ias=iwann(1,n) 
+!        lm=iwann(2,n)
+!        ispn=iwann(3,n)
+!        l=lm2l(lm)
+!        is=ias2is(ias)
+!        ic=ias2ic(ias)
+!        do io1=1,nufr(l,is)
+!          do ir=1,nrmt(is)
+!            fr(ir)=ufr(ir,l,io1,ic)*(1+cos(pi*spr(ir,is)/rmt(is)))*(spr(ir,is)**2)                                                        
+!          enddo
+!          call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
+!          do m1=-l,l
+!            lm1=idxlm(l,m1)
+!            a(n,ist,ispn)=a(n,ist,ispn)+dconjg(wffvmt(ist,lm1,io1,ias))*&
+!              gr(nrmt(is))*rylm_lps(lm,lm1,ias)
+!          enddo
+!        enddo
+!      enddo
+    endif
   enddo !ist
   if (mpi_grid_x(dim_k).eq.h) then
     sic_wb(:,:,:,ikloc)=a(:,:,:)

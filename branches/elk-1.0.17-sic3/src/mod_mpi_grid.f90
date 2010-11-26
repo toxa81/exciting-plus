@@ -957,7 +957,7 @@ implicit none
 character*(*), intent(in) :: sname
 character*(*), intent(in) :: msg
 character*100 sx
-character*256 sout
+character*1000 sout
 character*20 c1
 integer i
 sx="x"
