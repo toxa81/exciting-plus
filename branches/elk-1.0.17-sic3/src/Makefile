@@ -125,7 +125,7 @@ SRC_xc = \
   x_wc06.f90 x_pbe.f90 c_pbe.f90 c_pbe_gcor.f90 xc_vbh.f90
   
 #SRC_addons := $(shell ls addons/*.f90 addons/linresp/*.f90 addons/wann/*.f90 addons/expigqr/*.f90)
-SRC_addons := $(shell find ./addons -name \*.f90)
+SRC_addons := $(shell python ../gensrclog.py; mv srclog.f90 ./addons; find ./addons -name \*.f90)
 
 SRC = $(SRC_modules) $(SRC_main) $(SRC_routines) $(SRC_lib) $(SRC_advanced) \
  $(SRC_phonon) $(SRC_optics) $(SRC_xc) $(SRC_LDAU) $(SRC_rdmft) $(SRC_pw) $(SRC_addons)
