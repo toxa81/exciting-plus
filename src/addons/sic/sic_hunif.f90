@@ -40,6 +40,10 @@ do j1=2,nstsv
     hunif(j1,j2)=dconjg(hunif(j2,j1))
   enddo
 enddo
+do j1=1,nstsv
+  hunif(j1,j1)=zone*dreal(hunif(j1,j1))
+enddo
+
 ! compute V_{nn'}(k)
 allocate(vwank(nwann,nwann))
 vwank=zzero
