@@ -82,6 +82,7 @@ real(8), optional, intent(out) :: dcdgu2(n)
 real(8), optional, intent(out) :: dcdgd2(n)
 real(8), optional, intent(out) :: dcdgud(n)
 ! local variables
+#ifdef _LIBXC_
 integer nspin,xcf,id,k
 type(xc_f90_pointer_t) p,info
 ! allocatable arrays
@@ -194,6 +195,12 @@ do k=2,3
     end if
   end if
 end do
+#else
+write(*,*)
+write(*,'("Error(libxcifc): libxc not or improperly installed")')
+write(*,*)
+stop
+#endif
 return
 end subroutine
 
@@ -208,6 +215,7 @@ integer, intent(out) :: xcgrad
 integer xcf,id,k
 character(256) name
 type(xc_f90_pointer_t) p,info
+#ifdef _LIBXC_
 ! unknown spin polarisation
 xcspin=-1
 ! no gradients by default
@@ -238,6 +246,12 @@ do k=2,3
   end if
 end do
 xcdescr=trim(xcdescr)//' (see libxc for references)'
+#else
+write(*,*)
+write(*,'("Error(libxcifc):  libxc not or improperly installed")')
+write(*,*)
+stop
+#endif
 return
 end subroutine
 !EOC
