@@ -18,8 +18,8 @@ do i=1,wann_natom
   iwgrp=wann_iprj(2,i)
   nwantot=nwantot+wann_norb(iwgrp)
 enddo
-if (allocated(iwann)) deallocate(iwann)
-allocate(iwann(7,nwantot))
+if (allocated(wan_info)) deallocate(wan_info)
+allocate(wan_info(7,nwantot))
 
 n=0
 do i=1,wann_natom
@@ -42,13 +42,13 @@ do i=1,wann_natom
       call pstop
     endif
     itype=wann_iorb(3,j,iwgrp)
-    iwann(1,n)=iatom
-    iwann(2,n)=lm
-    iwann(3,n)=ispn
-    iwann(4,n)=itype
-    iwann(5,n)=iwgrp
-    iwann(6,n)=i
-    iwann(7,n)=j
+    wan_info(1,n)=iatom
+    wan_info(2,n)=lm
+    wan_info(3,n)=ispn
+    wan_info(4,n)=itype
+    wan_info(5,n)=iwgrp
+    wan_info(6,n)=i
+    wan_info(7,n)=j
   enddo
 enddo !i
 ! sort WF by spin (for collinear case)
@@ -56,18 +56,18 @@ if (.not.ncmag) then
   allocate(iwann_tmp(7,nwantot))
   n=0
   do j=1,nwantot
-    if (iwann(3,j).eq.1) then
+    if (wan_info(3,j).eq.1) then
       n=n+1
-      iwann_tmp(:,n)=iwann(:,j)
+      iwann_tmp(:,n)=wan_info(:,j)
     endif
   enddo
   do j=1,nwantot
-    if (iwann(3,j).eq.2) then
+    if (wan_info(3,j).eq.2) then
       n=n+1
-      iwann_tmp(:,n)=iwann(:,j)
+      iwann_tmp(:,n)=wan_info(:,j)
     endif
   enddo
-  iwann=iwann_tmp
+  wan_info=iwann_tmp
   deallocate(iwann_tmp)
 endif
 
@@ -84,10 +84,10 @@ if (mpi_grid_root()) then
   write(100,*)
 endif
 do n=1,nwantot
-  iatom=iwann(1,n)
-  lm=iwann(2,n)
-  ispn=iwann(3,n)
-  itype=iwann(4,n)
+  iatom=wan_info(1,n)
+  lm=wan_info(2,n)
+  ispn=wan_info(3,n)
+  itype=wan_info(4,n)
   nwannias(iatom)=nwannias(iatom)+1
   if (mpi_grid_root()) then     
     write(100,'("  wf : ",I4)')n

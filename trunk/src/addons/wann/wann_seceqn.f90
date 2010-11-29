@@ -24,7 +24,7 @@ do i=1,nstsv
 enddo
 
 do n=1,nwantot
-  itype=iwann(4,n)
+  itype=wan_info(4,n)
   do i1=1,nstsv
     do i2=1,nstsv
       z1(i1,i2)=z1(i1,i2)+dconjg(wann_c(n,i1,ikloc))*wann_c(n,i2,ikloc)*wann_v(itype)

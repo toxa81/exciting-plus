@@ -101,9 +101,9 @@ do ik=1,nkpt
       enddo !n
     else
 !      do n=1,nwantot
-!        ias=iwann(1,n) 
-!        lm=iwann(2,n)
-!        ispn=iwann(3,n)
+!        ias=wan_info(1,n) 
+!        lm=wan_info(2,n)
+!        ispn=wan_info(3,n)
 !        l=lm2l(lm)
 !        is=ias2is(ias)
 !        ic=ias2ic(ias)
