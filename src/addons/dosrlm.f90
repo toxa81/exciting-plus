@@ -135,10 +135,10 @@ do ias=1,natmtot
   call mpi_grid_reduce(pdos(1,1,1,ias),nwdos*lmmax*nspinor,dims=(/dim_k/),&
     side=.true.)
 enddo
-allocate(doswan(nwdos,nwann))
+allocate(doswan(nwdos,nwantot))
 doswan=0.d0
 if (wannier) then
-  do n=1,nwann
+  do n=1,nwantot
     f=0.d0
     do ik=1,nkpt
       ikloc=mpi_grid_map(nkpt,dim_k,x=x0,glob=ik)
@@ -232,8 +232,8 @@ if (mpi_grid_root()) then
   enddo
   write(50)wannier
   if (wannier) then
-    write(50)nwann
-    do n=1,nwann
+    write(50)nwantot
+    do n=1,nwantot
       do iw=1,nwdos
         write(50)occmax*doswan(iw,n)/ha2ev
       enddo

@@ -23,7 +23,7 @@ do i=1,nstsv
   z1(i,i)=evalsv(i,ik)
 enddo
 
-do n=1,nwann
+do n=1,nwantot
   itype=iwann(4,n)
   do i1=1,nstsv
     do i2=1,nstsv

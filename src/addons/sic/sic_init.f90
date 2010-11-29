@@ -64,7 +64,7 @@ if (mpi_grid_root()) then
   write(*,*)
   write(*,'("[sic_init] total number of translations : ",I3)')ntr
   write(*,'("[sic_init] size of Wannier function arrays : ",I6," Mb")') &
-    int(2*16.d0*(lmmaxvr*nmtloc+ngrloc)*ntr*nspinor*nwann/1048576.d0)
+    int(2*16.d0*(lmmaxvr*nmtloc+ngrloc)*ntr*nspinor*nwantot/1048576.d0)
 endif
 call mpi_grid_barrier()
 ! get all Wannier transitions
@@ -75,24 +75,24 @@ call getimegqwan(all_wan_ibt)
 !  wv(mt,ir) - product of a Wannier function with it's potential
 if (.not.tsic_arrays_allocated) then
   !if (allocated(wanmt)) deallocate(wanmt)
-  allocate(wanmt(lmmaxvr,nmtloc,ntr,nspinor,nwann))
+  allocate(wanmt(lmmaxvr,nmtloc,ntr,nspinor,nwantot))
   wanmt=zzero
   !if (allocated(wanir)) deallocate(wanir)
-  allocate(wanir(ngrloc,ntr,nspinor,nwann))
+  allocate(wanir(ngrloc,ntr,nspinor,nwantot))
   wanir=zzero
   !if (allocated(wvmt)) deallocate(wvmt)
-  allocate(wvmt(lmmaxvr,nmtloc,ntr,nspinor,nwann))
+  allocate(wvmt(lmmaxvr,nmtloc,ntr,nspinor,nwantot))
   wvmt=zzero
   !if (allocated(wvir)) deallocate(wvir)  
-  allocate(wvir(ngrloc,ntr,nspinor,nwann))
+  allocate(wvir(ngrloc,ntr,nspinor,nwantot))
   wvir=zzero
   !if (allocated(sic_apply)) deallocate(sic_apply)
-  allocate(sic_apply(nwann))
+  allocate(sic_apply(nwantot))
   sic_apply=1
   !if (allocated(vwanme)) deallocate(vwanme)
   allocate(vwanme(nmegqwan))
   vwanme=zzero
-  do n=1,nwann
+  do n=1,nwantot
     i=iwann(6,n)
     j=iwann(7,n)
     if (allocated(wann_sic)) sic_apply(n)=wann_sic(j,i)
@@ -102,38 +102,38 @@ if (.not.tsic_arrays_allocated) then
 endif
   
 if (allocated(sic_wann_e0)) deallocate(sic_wann_e0)
-allocate(sic_wann_e0(nwann))
+allocate(sic_wann_e0(nwantot))
 sic_wann_e0=0.d0
 ! TODO: skip reading the file with different WF set
 inquire(file="SIC_WANN_E0.OUT",exist=exist)
 if (exist) then
   open(170,file="SIC_WANN_E0.OUT",form="FORMATTED",status="OLD")
-  do n=1,nwann
+  do n=1,nwantot
     read(170,*)sic_wann_e0(n)
   enddo
   close(170)
 endif
 ! TODO: these arrays are need only in ground state
 if (allocated(sic_wb)) deallocate(sic_wb)
-allocate(sic_wb(nwann,nstfv,nspinor,nkptloc))
+allocate(sic_wb(nwantot,nstfv,nspinor,nkptloc))
 sic_wb=zzero
 if (allocated(sic_wvb)) deallocate(sic_wvb)
-allocate(sic_wvb(nwann,nstfv,nspinor,nkptloc))
+allocate(sic_wvb(nwantot,nstfv,nspinor,nkptloc))
 sic_wvb=zzero
 if (allocated(sic_wann_h0k)) deallocate(sic_wann_h0k)
-allocate(sic_wann_h0k(nwann,nwann,nkptloc))
+allocate(sic_wann_h0k(nwantot,nwantot,nkptloc))
 sic_wann_h0k=zzero
 sic_etot_correction=0.d0
 tevecsv=.true.
 if (allocated(twanmt)) deallocate(twanmt)
-allocate(twanmt(natmtot,ntr,nwann))
+allocate(twanmt(natmtot,ntr,nwantot))
 twanmt=.false.
 if (allocated(twanmtuc)) deallocate(twanmtuc)
-allocate(twanmtuc(ntr,nwann))
+allocate(twanmtuc(ntr,nwantot))
 twanmtuc=.false.
 do i=1,ntr
   v1(:)=vtl(1,i)*avec(:,1)+vtl(2,i)*avec(:,2)+vtl(3,i)*avec(:,3)
-  do n=1,nwann
+  do n=1,nwantot
     jas=iwann(1,n)
     do ias=1,natmtot  
       v2(:)=atposc(:,ias2ia(ias),ias2is(ias))+v1(:)-&
@@ -171,7 +171,7 @@ integer n,ias,jas,ir
 real(8) vt(3),v1(3)
 vt(:)=vl(1)*avec(:,1)+vl(2)*avec(:,2)+vl(3)*avec(:,3)
 l1=.false.
-do n=1,nwann
+do n=1,nwantot
   ias=iwann(1,n)
   do jas=1,natmtot
     v1(:)=atposc(:,ias2ia(jas),ias2is(jas))+vt(:)-&

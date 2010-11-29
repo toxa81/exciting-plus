@@ -25,7 +25,7 @@ if (.not.tsic_wv) return
 !      do j2=1,nstfv
 !        do ispn2=1,nspinor
 !          jst2=j2+(ispn2-1)*nstfv
-!          do n=1,nwann
+!          do n=1,nwantot
 !            hunif(jst1,jst2)=hunif(jst1,jst2)+dconjg(sic_wb(n,j1,ispn1,ikloc))*&
 !              sic_wb(n,j2,ispn2,ikloc)*dreal(vwanme(idxmegqwan(n,n,0,0,0)))
 !          enddo
@@ -46,7 +46,7 @@ do j1=1,nstsv
 enddo
 
 ! compute V_{nn'}(k)
-allocate(vwank(nwann,nwann))
+allocate(vwank(nwantot,nwantot))
 vwank=zzero
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 do i=1,nmegqwan
@@ -58,19 +58,19 @@ do i=1,nmegqwan
   vwank(n1,n2)=vwank(n1,n2)+expikt*vwanme(i)
 enddo
 ! compute H_{nn'}^{0}(k); remember that on input hunif=H0
-allocate(zm1(nwann,nstsv))
-call zgemm('N','N',nwann,nstsv,nstsv,zone,sic_wb(1,1,1,ikloc),nwann,hunif,&
-  nstsv,zzero,zm1,nwann)
-call zgemm('N','C',nwann,nwann,nstsv,zone,zm1,nwann,sic_wb(1,1,1,ikloc),nwann,&
-  zzero,sic_wann_h0k(1,1,ikloc),nwann)
+allocate(zm1(nwantot,nstsv))
+call zgemm('N','N',nwantot,nstsv,nstsv,zone,sic_wb(1,1,1,ikloc),nwantot,hunif,&
+  nstsv,zzero,zm1,nwantot)
+call zgemm('N','C',nwantot,nwantot,nstsv,zone,zm1,nwantot,sic_wb(1,1,1,ikloc),nwantot,&
+  zzero,sic_wann_h0k(1,1,ikloc),nwantot)
 deallocate(zm1)
 !if (mpi_grid_root((/dim2/))) then
 !  write(fname,'("hlda_n",I2.2,"_k",I4.4".txt")')nproc,ik
 !  call wrmtrx(fname,nstsv,nstsv,hunif,nstsv)
 !  write(fname,'("sic_wann_h0k_n",I2.2,"_k",I4.4".txt")')nproc,ik
-!  call wrmtrx(fname,nwann,nwann,sic_wann_h0k,nwann)
+!  call wrmtrx(fname,nwantot,nwantot,sic_wann_h0k,nwantot)
 !  write(fname,'("sic_vwank_np",I2.2,"_kp",I4.4".txt")')nproc,ik
-!  call wrmtrx(fname,nwann,nwann,vwank,nwann)
+!  call wrmtrx(fname,nwantot,nwantot,vwank,nwantot)
 !endif
 
 allocate(zm1(nstsv,nstsv))
@@ -86,8 +86,8 @@ do j1=1,nstfv
     do j2=1,nstfv
       do ispn2=1,nspinor
         jst2=j2+(ispn2-1)*nstfv
-        do n1=1,nwann
-          do n2=1,nwann
+        do n1=1,nwantot
+          do n2=1,nwantot
             zm1(jst1,jst2)=zm1(jst1,jst2)-sic_wann_h0k(n1,n2,ikloc)*&
               dconjg(sic_wb(n1,j1,ispn1,ikloc))*sic_wb(n2,j2,ispn2,ikloc)
           enddo
@@ -116,7 +116,7 @@ do j1=1,nstfv
     do j2=1,nstfv
       do ispn2=1,nspinor
         jst2=j2+(ispn2-1)*nstfv
-        do n=1,nwann
+        do n=1,nwantot
           zm1(jst1,jst2)=zm1(jst1,jst2)+dconjg(sic_wb(n,j1,ispn1,ikloc))*&
             sic_wb(n,j2,ispn2,ikloc)*(dreal(vwanme(idxmegqwan(n,n,0,0,0)))+&
             sic_wann_e0(n))
@@ -152,7 +152,7 @@ do j1=1,nstfv
     do j2=1,nstfv
       do ispn2=1,nspinor
         jst2=j2+(ispn2-1)*nstfv
-        do n=1,nwann
+        do n=1,nwantot
           zm1(jst1,jst2)=zm1(jst1,jst2)+&
             dconjg(sic_wb(n,j1,ispn1,ikloc))*sic_wvb(n,j2,ispn2,ikloc)+&
             dconjg(sic_wvb(n,j1,ispn1,ikloc))*sic_wb(n,j2,ispn2,ikloc)
@@ -178,8 +178,8 @@ do j1=1,nstfv
     do j2=1,nstfv
       do ispn2=1,nspinor
         jst2=j2+(ispn2-1)*nstfv
-        do n1=1,nwann
-          do n2=1,nwann
+        do n1=1,nwantot
+          do n2=1,nwantot
             hunif(jst1,jst2)=hunif(jst1,jst2)-&
               vwank(n1,n2)*dconjg(sic_wb(n1,j1,ispn1,ikloc))*&
               sic_wb(n2,j2,ispn2,ikloc)-dconjg(vwank(n1,n2))*&
@@ -209,15 +209,15 @@ hunif=hunif+zm1
 !    do j2=1,nstfv
 !      do ispn2=1,nspinor
 !        jst2=j2+(ispn2-1)*nstfv
-!        do n1=1,nwann
-!          do n2=1,nwann
+!        do n1=1,nwantot
+!          do n2=1,nwantot
 !            hunif(jst1,jst2)=hunif(jst1,jst2)-sic_wann_h0k(n1,n2,ikloc)*&
 !              dconjg(sic_wb(n1,j1,ispn1,ikloc))*sic_wb(n2,j2,ispn2,ikloc)
 !          enddo
 !        enddo
 !! 3-rd term : \sum_{alpha} P_{\alpha} H^{LDA} P_{\alpha}
 !! 4-th term : \sum_{alpha} P_{\alpha} V_{\alpha} P_{\alpha}
-!        do n=1,nwann
+!        do n=1,nwantot
 !          hunif(jst1,jst2)=hunif(jst1,jst2)+dconjg(sic_wb(n,j1,ispn1,ikloc))*&
 !            sic_wb(n,j2,ispn2,ikloc)*(dreal(vwanme(idxmegqwan(n,n,0,0,0)))+&
 !            sic_wann_e0(n))
@@ -225,13 +225,13 @@ hunif=hunif+zm1
 !! 5-th term : \sum_{\alpha} P_{\alpha} V_{\alpha} Q + 
 !!             \sum_{\alpha} Q V_{\alpha} P_{\alpha} 
 !!  where Q=1-\sum_{\alpha'}P_{\alpha'}
-!        do n=1,nwann
+!        do n=1,nwantot
 !          hunif(jst1,jst2)=hunif(jst1,jst2)+&
 !            dconjg(sic_wb(n,j1,ispn1,ikloc))*sic_wvb(n,j2,ispn2,ikloc)+&
 !            dconjg(sic_wvb(n,j1,ispn1,ikloc))*sic_wb(n,j2,ispn2,ikloc)
 !        enddo
-!        do n1=1,nwann
-!          do n2=1,nwann
+!        do n1=1,nwantot
+!          do n2=1,nwantot
 !            hunif(jst1,jst2)=hunif(jst1,jst2)-&
 !              vwank(n1,n2)*dconjg(sic_wb(n1,j1,ispn1,ikloc))*&
 !              sic_wb(n2,j2,ispn2,ikloc)-dconjg(vwank(n1,n2))*&

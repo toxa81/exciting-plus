@@ -16,7 +16,7 @@ if (.not.diag_wan_ibt) then
     vtrc(:,j)=avec(:,1)*imegqwan(3,j)+avec(:,2)*imegqwan(4,j)+&
       avec(:,3)*imegqwan(5,j)
   enddo
-  allocate(zm1(nwann,nwann))
+  allocate(zm1(nwantot,nwantot))
   allocate(expkqt(nmegqwan))
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
@@ -29,8 +29,8 @@ if (.not.diag_wan_ibt) then
       if (xloc.eq.mpi_grid_x(dim_b)) then
         ist1=bmegqblh(1,i,ikloc)
         ist2=bmegqblh(2,i,ikloc)
-        do n1=1,nwann
-          do n2=1,nwann
+        do n1=1,nwantot
+          do n2=1,nwantot
             zm1(n1,n2)=dconjg(wanncnrloc(n1,ist1,ikloc))*wann_c_jk(n2,ist2,ikloc)
           enddo
         enddo
@@ -49,7 +49,7 @@ if (.not.diag_wan_ibt) then
   deallocate(expkqt)
   deallocate(vtrc)
 else
-  allocate(zm1(nwann,1))
+  allocate(zm1(nwantot,1))
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
     do i1=1,nmegqblhwan(ikloc)
@@ -58,10 +58,10 @@ else
       if (xloc.eq.mpi_grid_x(dim_b)) then
         ist1=bmegqblh(1,i,ikloc)
         ist2=bmegqblh(2,i,ikloc)
-        do n=1,nwann
+        do n=1,nwantot
           zm1(n,1)=dconjg(wanncnrloc(n,ist1,ikloc))*wann_c_jk(n,ist2,ikloc)
         enddo
-        do n=1,nwann
+        do n=1,nwantot
           j=idxmegqwan(n,n,0,0,0)
           do ig=1,ngvecme
             megqwan(j,ig)=megqwan(j,ig)+zm1(n,1)*megqblh(ibloc,ig,ikloc)

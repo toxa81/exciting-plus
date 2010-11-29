@@ -23,7 +23,7 @@ do ikloc=1,nkptnrloc
 enddo
 wanmt=zzero
 wanir=zzero
-do n=1,nwann
+do n=1,nwantot
 ! precompute interstitial wave-functions
   zfir=zzero
   do ikloc=1,nkptnrloc
@@ -92,7 +92,7 @@ end do !n
 deallocate(wmt,wir,zfir,expikr)
 ! cutoff in the interstitial
 do it=1,ntr
-  do n=1,nwann
+  do n=1,nwantot
     do ir=1,ngrloc
       v1(:)=vgrc(:,ir+groffs)+vtc(:,it)-&
         atposc(:,ias2ia(iwann(1,n)),ias2is(iwann(1,n)))

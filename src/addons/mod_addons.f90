@@ -269,7 +269,7 @@ integer, allocatable :: wann_iprj(:,:)
 real(8), allocatable :: wann_eint(:,:)
 real(8), allocatable :: wann_v(:)
 
-integer nwann
+integer nwantot
 integer, allocatable :: iwann(:,:)
 integer, allocatable :: nwannias(:)
   

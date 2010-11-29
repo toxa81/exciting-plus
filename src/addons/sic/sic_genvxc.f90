@@ -3,9 +3,9 @@ use modmain
 use mod_sic
 use modxcifc
 implicit none
-real(8), intent(out) :: vhxcmt(lmmaxvr,nmtloc,ntr,nspinor,nwann)
-real(8), intent(out) :: vhxcir(ngrloc,ntr,nspinor,nwann)
-complex(8), intent(out) :: ene(4,nwann)
+real(8), intent(out) :: vhxcmt(lmmaxvr,nmtloc,ntr,nspinor,nwantot)
+real(8), intent(out) :: vhxcir(ngrloc,ntr,nspinor,nwantot)
+complex(8), intent(out) :: ene(4,nwantot)
 integer ntp,itp,lm,n,ispn,it
 real(8), allocatable :: tp(:,:)
 complex(8), allocatable :: ylm(:,:)
@@ -156,7 +156,7 @@ allocate(vxmt_(ntp,nmtloc,nspinor))
 allocate(vxir_(ngrloc,nspinor))
 allocate(vcmt_(ntp,nmtloc,nspinor))
 allocate(vcir_(ngrloc,nspinor))
-do n=1,nwann
+do n=1,nwantot
   if (sic_apply(n).eq.1) then
     excwanmt=0.d0
     excwanir=0.d0

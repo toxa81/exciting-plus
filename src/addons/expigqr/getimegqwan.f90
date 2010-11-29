@@ -9,10 +9,10 @@ logical lkeep
 integer iwfch
 
 if (nwann_include.eq.0) then
-  nwann_include=nwann
+  nwann_include=nwantot
   if (allocated(iwann_include)) deallocate(iwann_include)
-  allocate(iwann_include(nwann))
-  do j=1,nwann
+  allocate(iwann_include(nwantot))
+  do j=1,nwantot
     iwann_include(j)=j
   enddo
 endif
@@ -20,10 +20,10 @@ endif
 call getnghbr(megqwan_mindist,megqwan_maxdist)
 ! get maximum possible number of WF transitions
 nmegqwanmax=0
-do n=1,nwann
+do n=1,nwantot
   ias=iwann(1,n)
   do i=1,nnghbr(ias)
-    do n1=1,nwann
+    do n1=1,nwantot
       jas=iwann(1,n1)
       if (jas.eq.inghbr(1,i,ias)) then
         nmegqwanmax=nmegqwanmax+nwannias(jas)
@@ -82,7 +82,7 @@ megqwan_tlim(2,2)=maxval(imegqwan(4,:))
 megqwan_tlim(1,3)=minval(imegqwan(5,:))
 megqwan_tlim(2,3)=maxval(imegqwan(5,:))
 if (allocated(idxmegqwan)) deallocate(idxmegqwan)
-allocate(idxmegqwan(nwann,nwann,megqwan_tlim(1,1):megqwan_tlim(2,1),&
+allocate(idxmegqwan(nwantot,nwantot,megqwan_tlim(1,1):megqwan_tlim(2,1),&
   megqwan_tlim(1,2):megqwan_tlim(2,2),megqwan_tlim(1,3):megqwan_tlim(2,3)))
 idxmegqwan=-100
 do i=1,nmegqwan

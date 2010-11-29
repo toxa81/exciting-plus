@@ -15,7 +15,7 @@ allocate(fir(ngrtot))
 if (wproc) then
   call hdf5_create_file("sic.hdf5")
   call hdf5_create_group("sic.hdf5","/","wann")
-  do n=1,nwann
+  do n=1,nwantot
     path="/wann"
     write(c1,'("n",I4.4)')n
     call hdf5_create_group("sic.hdf5",path,trim(adjustl(c1)))   
@@ -35,7 +35,7 @@ if (wproc) then
   call hdf5_write("sic.hdf5","/","vwanme",vwanme(1),(/nmegqwan/))
   call hdf5_write("sic.hdf5","/","sic_etot_correction",sic_etot_correction)
 endif
-do n=1,nwann
+do n=1,nwantot
   do ispn=1,nspinor
     do it=1,ntr
       fmt=zzero

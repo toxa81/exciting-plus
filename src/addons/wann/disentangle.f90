@@ -2,7 +2,7 @@ subroutine disentangle(evalsv_,wann_c_,evecsv_)
 use modmain
 implicit none
 real(8), intent(inout) :: evalsv_(nstsv)
-complex(8), intent(inout) :: wann_c_(nwann,nstsv)
+complex(8), intent(inout) :: wann_c_(nwantot,nstsv)
 complex(8), intent(inout) :: evecsv_(nstsv,nstsv)
 complex(8), allocatable :: tmtrx1(:,:)
 complex(8), allocatable :: tmtrx2(:,:)
@@ -20,13 +20,13 @@ complex(8) zt1
 !  \tilde u_n=\sum_j tmtrx1(j,n) \psi_j
 allocate(tmtrx1(nstsv,nstsv))
 tmtrx1=zzero
-! we already know first nwann functions of a new basis - this are Bloch-sums
+! we already know first nwantot functions of a new basis - this are Bloch-sums
 !   of Wannier functions
-do n=1,nwann
+do n=1,nwantot
   tmtrx1(:,n)=wann_c_(n,:)
 enddo
 allocate(zv1(nstsv))
-n1=nwann+1
+n1=nwantot+1
 m1=1
 do while (n1.le.nstsv)
   if (m1.gt.nstsv) then
@@ -50,14 +50,14 @@ do while (n1.le.nstsv)
   m1=m1+1
 enddo
 
-allocate(hwann(nwann,nwann))
-allocate(ewann(nwann))
-allocate(hrest(nstsv-nwann,nstsv-nwann))
-allocate(erest(nstsv-nwann))
+allocate(hwann(nwantot,nwantot))
+allocate(ewann(nwantot))
+allocate(hrest(nstsv-nwantot,nstsv-nwantot))
+allocate(erest(nstsv-nwantot))
 
 hwann=zzero
-do m1=1,nwann
-  do m2=1,nwann
+do m1=1,nwantot
+  do m2=1,nwantot
     do j=1,nstsv
       hwann(m1,m2)=hwann(m1,m2)+dconjg(tmtrx1(j,m1))*tmtrx1(j,m2)*evalsv_(j)
     enddo
@@ -65,18 +65,18 @@ do m1=1,nwann
 enddo
 
 hrest=zzero
-do m1=1,nstsv-nwann
-  do m2=1,nstsv-nwann
+do m1=1,nstsv-nwantot
+  do m2=1,nstsv-nwantot
     do j=1,nstsv
-      hrest(m1,m2)=hrest(m1,m2)+dconjg(tmtrx1(j,m1+nwann))*tmtrx1(j,m2+nwann)*evalsv_(j)
+      hrest(m1,m2)=hrest(m1,m2)+dconjg(tmtrx1(j,m1+nwantot))*tmtrx1(j,m2+nwantot)*evalsv_(j)
     enddo
   enddo
 enddo
 
-call diagzhe(nwann,hwann,ewann)
-call diagzhe(nstsv-nwann,hrest,erest)
-evalsv_(1:nwann)=ewann(1:nwann)
-evalsv_(nwann+1:nstsv)=erest(1:nstsv-nwann)
+call diagzhe(nwantot,hwann,ewann)
+call diagzhe(nstsv-nwantot,hrest,erest)
+evalsv_(1:nwantot)=ewann(1:nwantot)
+evalsv_(nwantot+1:nstsv)=erest(1:nstsv-nwantot)
 
 allocate(tmtrx2(nstsv,nstsv))
 tmtrx2=zzero
@@ -84,14 +84,14 @@ tmtrx2=zzero
 !   of new Hamiltonian
 ! \tilde psi_i = \sum_j tmtrx2(j,i) \psi_j
 do j=1,nstsv
-  do i=1,nwann
-    do n=1,nwann
+  do i=1,nwantot
+    do n=1,nwantot
       tmtrx2(j,i)=tmtrx2(j,i)+dconjg(hwann(n,i))*tmtrx1(j,n)
     enddo
   enddo
-  do i=1,nstsv-nwann
-    do n=1,nstsv-nwann
-      tmtrx2(j,i+nwann)=tmtrx2(j,i+nwann)+dconjg(hrest(n,i))*tmtrx1(j,n+nwann)
+  do i=1,nstsv-nwantot
+    do n=1,nstsv-nwantot
+      tmtrx2(j,i+nwantot)=tmtrx2(j,i+nwantot)+dconjg(hrest(n,i))*tmtrx1(j,n+nwantot)
     enddo
   enddo
 enddo
@@ -108,10 +108,10 @@ evecsv_=evecsv_new
 
 call invzge(tmtrx2,nstsv)
 
-allocate(wann_c_new(nwann,nstsv))
+allocate(wann_c_new(nwantot,nstsv))
 wann_c_new=zzero
 
-do n=1,nwann
+do n=1,nwantot
   do i=1,nstsv
     do j=1,nstsv
       wann_c_new(n,i)=wann_c_new(n,i)+wann_c_(n,j)*tmtrx2(i,j)

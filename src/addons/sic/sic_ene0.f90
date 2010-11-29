@@ -10,8 +10,8 @@ integer n1,n2,ias,lm1,lm2,ispn1,ispn2,ikloc,ik,ispn,n
 allocate(ene0(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
 ene0=zzero
 ! collinear (!!!) case only
-do n1=1,nwann
-  do n2=1,nwann
+do n1=1,nwantot
+  do n2=1,nwantot
     if (iwann(1,n1).eq.iwann(1,n2)) then
       ias=iwann(1,n1)
       lm1=iwann(2,n1)
@@ -42,7 +42,7 @@ do ias=1,natmtot
     call unimtrxt(lmmaxlu,rylm_lps(1,1,ias),ene0(1,1,ispn,ispn,ias))
   enddo
 enddo
-do n=1,nwann
+do n=1,nwantot
   ias=iwann(1,n)
   lm1=iwann(2,n)
   ispn1=iwann(3,n)
@@ -50,7 +50,7 @@ do n=1,nwann
 enddo
 if (mpi_grid_root()) then
   open(170,file="SIC_WANN_E0.OUT",form="FORMATTED",status="REPLACE")
-  do n=1,nwann
+  do n=1,nwantot
     write(170,'(G18.10)')sic_wann_e0(n)
   enddo
   close(170)

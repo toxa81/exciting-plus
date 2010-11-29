@@ -34,10 +34,10 @@ lpmat=.false.
 if (task.eq.808) lpmat=.true.
 call genwfnr(6,.false.)
 if (allocated(wann_h)) deallocate(wann_h)
-allocate(wann_h(nwann,nwann,nkptnr))
+allocate(wann_h(nwantot,nwantot,nkptnr))
 wann_h=zzero
 if (allocated(wann_e)) deallocate(wann_e)
-allocate(wann_e(nwann,nkptnr))
+allocate(wann_e(nwantot,nkptnr))
 wann_e=0.d0
 do ikloc=1,nkptnrloc
   ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
@@ -49,9 +49,9 @@ enddo
 !allocate(wann_occ_m(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
 !call wann_ene_occ_(wann_ene_m,wann_occ_m)
 
-call mpi_grid_reduce(wann_h(1,1,1),nwann*nwann*nkptnr,dims=(/dim_k/),side=.true.)
-call mpi_grid_reduce(wann_e(1,1),nwann*nkptnr,dims=(/dim_k/),side=.true.)
-!call mpi_grid_reduce(wann_p(1,1,1,1),3*nwann*nwann*nkpt,dims=(/dim_k/),side=.true.)
+call mpi_grid_reduce(wann_h(1,1,1),nwantot*nwantot*nkptnr,dims=(/dim_k/),side=.true.)
+call mpi_grid_reduce(wann_e(1,1),nwantot*nkptnr,dims=(/dim_k/),side=.true.)
+!call mpi_grid_reduce(wann_p(1,1,1,1),3*nwantot*nwantot*nkpt,dims=(/dim_k/),side=.true.)
 if (mpi_grid_root().and.task.eq.807) then
   call readfermi
   open(200,file="WANN_H.OUT",form="FORMATTED",status="REPLACE")
@@ -71,7 +71,7 @@ if (mpi_grid_root().and.task.eq.807) then
   write(200,'("# number of k-points")')
   write(200,'(I8)')nkptnr
   write(200,'("# number of Wannier functions")')
-  write(200,'(I8)')nwann
+  write(200,'(I8)')nwantot
 !  write(200,'("# occupancy matrix")')
 !  do i=1,wann_natom
 !    ias=wann_iprj(1,i)
@@ -105,15 +105,15 @@ if (mpi_grid_root().and.task.eq.807) then
     write(200,'("# Cartesian coordinates")')
     write(200,'(3G18.10)')vkcnr(:,ik)
     write(200,'("# real part of H")')
-    do i=1,nwann
-      write(200,'(255G18.10)')(dreal(wann_h(i,j,ik)),j=1,nwann)
+    do i=1,nwantot
+      write(200,'(255G18.10)')(dreal(wann_h(i,j,ik)),j=1,nwantot)
     enddo
     write(200,'("# imaginary part of H")')
-    do i=1,nwann
-      write(200,'(255G18.10)')(dimag(wann_h(i,j,ik)),j=1,nwann)
+    do i=1,nwantot
+      write(200,'(255G18.10)')(dimag(wann_h(i,j,ik)),j=1,nwantot)
     enddo
     write(200,'("# eigen-values of H")')
-    write(200,'(255G18.10)')(wann_e(j,ik),j=1,nwann)
+    write(200,'(255G18.10)')(wann_e(j,ik),j=1,nwantot)
   enddo	
   close(200)
 endif

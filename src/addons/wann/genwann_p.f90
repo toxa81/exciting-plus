@@ -17,10 +17,10 @@ call match(ngk(1,ikloc),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),&
 call genpmat(ngk(1,ikloc),igkig(1,1,ikloc),vgkc(1,1,1,ikloc),&
   apwalm,evecfv,evecsv,pmat)
 ! compute p_nn'(k)=<W_n|\grad|W_n'> 
-allocate(zt2(3,nwann,nwann))
+allocate(zt2(3,nwantot,nwantot))
 zt2=zzero
-do m1=1,nwann
-  do m2=1,nwann
+do m1=1,nwantot
+  do m2=1,nwantot
     do j1=1,nstsv
       do j2=1,nstsv
         zt2(:,m1,m2)=zt2(:,m1,m2)+dconjg(wann_c(m1,j1,ikloc))*wann_c(m2,j2,ikloc)*&

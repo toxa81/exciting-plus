@@ -38,7 +38,7 @@ if (wproc) then
 endif
 if (wproc) then
   sz=lmmaxvr*nmtloc+ngrloc
-  sz=16*sz*ntr*nspinor*(2*nwann+2)/1024/1024
+  sz=16*sz*ntr*nspinor*(2*nwantot+2)/1024/1024
   write(151,*)
   write(151,'("Required memory for real-space arrays (MB) : ",I6)')sz
   write(151,*)
@@ -52,7 +52,7 @@ endif
 ! generate wave-functions for all k-points in BZ
 call genwfnr(151,.false.)  
 call sic_wan(151)
-allocate(ene(4,nwann))
+allocate(ene(4,nwantot))
 call sic_pot(151,ene)
 !----------------------------------!
 ! matrix elements of SIC potential !
@@ -113,7 +113,7 @@ if (wproc) then
   write(151,'("Diagonal matrix elements")')
   write(151,'(2X,"wann",18X,"V_n")')
   write(151,'(44("-"))')
-  do n=1,nwann
+  do n=1,nwantot
     j=idxmegqwan(n,n,0,0,0)
     write(151,'(I4,4X,2G18.10)')n,dreal(vwanme(j)),dimag(vwanme(j))
   enddo  
@@ -124,7 +124,7 @@ if (wproc) then
 endif
 deallocate(vwanme_old)
 ! check hermiticity of V_nn'(k)
-allocate(vwank(nwann,nwann))
+allocate(vwank(nwantot,nwantot))
 do ik=1,nkpt
   vwank=zzero
   do i=1,nmegqwan
@@ -136,8 +136,8 @@ do ik=1,nkpt
     vwank(n1,n2)=vwank(n1,n2)+z1*vwanme(i)
   enddo
   t1=0.d0
-  do n1=1,nwann
-    do n2=1,nwann
+  do n1=1,nwantot
+    do n2=1,nwantot
       t1=max(t1,abs(vwank(n1,n2)-dconjg(vwank(n2,n1))))
     enddo
   enddo
@@ -145,12 +145,12 @@ do ik=1,nkpt
     write(151,*)
     write(151,'("ik : ",I4,"   max.herm.err : ",G18.10 )')ik,t1
 !    write(151,*)
-!    do n1=1,nwann
-!      write(151,'(5X,255F12.7)')(dreal(vwank(n1,n2)),n2=1,nwann)
+!    do n1=1,nwantot
+!      write(151,'(5X,255F12.7)')(dreal(vwank(n1,n2)),n2=1,nwantot)
 !    enddo
 !    write(151,*)
-!    do n1=1,nwann
-!      write(151,'(5X,255F12.7)')(dimag(vwank(n1,n2)),n2=1,nwann)
+!    do n1=1,nwantot
+!      write(151,'(5X,255F12.7)')(dimag(vwank(n1,n2)),n2=1,nwantot)
 !    enddo
   endif
 enddo
