@@ -15,7 +15,8 @@ include ../make.inc
 SRC_modules = ./addons/mod_addons.f90 ./addons/mod_addons_q.f90 ./addons/mod_mpi_grid.f90 \
   ./addons/mod_timer.f90 ./addons/mod_papi.f90 modmain.f90 modqpt.f90 ./addons/mod_nrkp.f90 \
   ./addons/mod_hdf5.f90 libxc_funcs.f90 libxc.f90 libxcifc.f90 modxcifc.f90 modldapu.f90 \
-  modrdm.f90 modphonon.f90 modtest.f90 ./addons/sic/mod_sic.f90
+  modrdm.f90 modphonon.f90 modtest.f90 ./addons/sic/mod_sic.f90 ./addons/wann/mod_wannier.f90
+  
 OBJ_modules = $(SRC_modules:.f90=.o)
 SRC = $(shell python ../gensrclog.py; mv srclog.f90 ./addons; find . -name \*.f90)
 OBJ = $(SRC:.f90=.o)

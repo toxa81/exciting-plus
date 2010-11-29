@@ -17,6 +17,7 @@ do isclsic=1,nsclsic
     call system("cp EIGVAL.OUT EIGVAL.OUT"//c3)
     call system("cp EFERMI.OUT EFERMI.OUT"//c3)
     call system("cp TOTENERGY.OUT TOTENERGY.OUT"//c3)    
+    call system("cp SIC_WANN_E0.OUT SIC_WANN_E0.OUT"//c3)    
   endif
   call sic_main
   call mpi_world_barrier
