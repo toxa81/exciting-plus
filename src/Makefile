@@ -12,10 +12,10 @@ include ../make.inc
 #-------------------------------------------------------------------------------
 
 # modules
-SRC_modules = ./addons/mod_addons.f90 ./addons/mod_addons_q.f90 mod_mpi_grid.f90 mod_timer.f90 \
-  mod_papi.f90 modmain.f90 modqpt.f90 mod_nrkp.f90 mod_hdf5.f90 libxc_funcs.f90 \
-  libxc.f90 libxcifc.f90 modxcifc.f90 modldapu.f90 modrdm.f90 modphonon.f90 modtest.f90 \
-  mod_sic.f90
+SRC_modules = ./addons/mod_addons.f90 ./addons/mod_addons_q.f90 ./addons/mod_mpi_grid.f90 \
+  ./addons/mod_timer.f90 ./addons/mod_papi.f90 modmain.f90 modqpt.f90 ./addons/mod_nrkp.f90 \
+  ./addons/mod_hdf5.f90 libxc_funcs.f90 libxc.f90 libxcifc.f90 modxcifc.f90 modldapu.f90 \
+  modrdm.f90 modphonon.f90 modtest.f90 ./addons/sic/mod_sic.f90
 OBJ_modules = $(SRC_modules:.f90=.o)
 
 SRC = $(shell python ../gensrclog.py; mv srclog.f90 ./addons; find . -name \*.f90)
@@ -41,7 +41,7 @@ lib:
 	libtool -static -o libelk.a $(OBJ)
 	
 clean:
-	rm -f $(OBJ) *.mod *~ fort.* ifc* *.gcno gmon.out *.aux *.dvi *.log \
+	rm -f *.o *.mod *~ fort.* ifc* *.gcno gmon.out *.aux *.dvi *.log \
          elk.pdf *.tex *.toc $(EXE)
 
 doc:
