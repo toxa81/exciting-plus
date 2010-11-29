@@ -17,10 +17,10 @@ complex(8), allocatable :: chi(:,:)
 call papi_timer_start(pt_uscrn)
 
 allocate(vscrn(ngvecme,ngvecme))
-allocate(megqwan1(ngvecme,nwann))                                                                                                     
+allocate(megqwan1(ngvecme,nwantot))
 allocate(expiqt(nmegqwan))
-allocate(zm1(nwann,nwann))
-allocate(zm2(nwann,ngvecme))
+allocate(zm1(nwantot,nwantot))
+allocate(zm2(nwantot,ngvecme))
 allocate(krnl(ngvecme,ngvecme))
 allocate(epsilon(ngvecme,ngvecme))
 allocate(chi(ngvecme,ngvecme))
@@ -33,7 +33,7 @@ do i=1,nmegqwan
   call r3mv(avec,v2,vtc)
   expiqt(i)=exp(-zi*dot_product(vqc(:,iq),vtc))
 enddo
-do n=1,nwann
+do n=1,nwantot
   megqwan1(:,n)=megqwan(idxmegqwan(n,n,0,0,0),:)
 enddo
 ! distribute frequency points over 1-st dimension
@@ -45,10 +45,10 @@ do iwloc=1,nwloc
 ! broadcast chi0
   call mpi_grid_bcast(chi0loc(1,1,iwloc),ngvecme*ngvecme,dims=(/dim_b/))
   call genvscrn(iq,iw,chi0loc(1,1,iwloc),krnl,vscrn,epsilon,chi)
-  call zgemm('C','N',nwann,ngvecme,ngvecme,zone,megqwan1,ngvecme,&
-    vscrn,ngvecme,zzero,zm2,nwann)
-  call zgemm('N','N',nwann,nwann,ngvecme,zone,zm2,nwann,megqwan1,ngvecme,&
-    zzero,zm1,nwann)
+  call zgemm('C','N',nwantot,ngvecme,ngvecme,zone,megqwan1,ngvecme,&
+    vscrn,ngvecme,zzero,zm2,nwantot)
+  call zgemm('N','N',nwantot,nwantot,ngvecme,zone,zm2,nwantot,megqwan1,ngvecme,&
+    zzero,zm1,nwantot)
   do iloc=1,nmegqwanloc
     i=mpi_grid_map(nmegqwan,dim_b,loc=iloc)
     n=imegqwan(1,i)
