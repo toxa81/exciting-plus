@@ -17,7 +17,6 @@ SRC_modules = ./addons/mod_addons.f90 ./addons/mod_addons_q.f90 ./addons/mod_mpi
   ./addons/mod_hdf5.f90 libxc_funcs.f90 libxc.f90 libxcifc.f90 modxcifc.f90 modldapu.f90 \
   modrdm.f90 modphonon.f90 modtest.f90 ./addons/sic/mod_sic.f90
 OBJ_modules = $(SRC_modules:.f90=.o)
-
 SRC = $(shell python ../gensrclog.py; mv srclog.f90 ./addons; find . -name \*.f90)
 OBJ = $(SRC:.f90=.o)
 
@@ -41,7 +40,8 @@ lib:
 	libtool -static -o libelk.a $(OBJ)
 	
 clean:
-	rm -f *.o *.mod *~ fort.* ifc* *.gcno gmon.out *.aux *.dvi *.log \
+	find . -name \*.o -exec rm {} \;
+	rm -f *.mod *~ fort.* ifc* *.gcno gmon.out *.aux *.dvi *.log \
         elk.pdf *.tex *.toc elk.lst elk.out $(EXE)
 
 doc:
@@ -97,3 +97,4 @@ lines:
 spaces:
 	./rmspaces $(SRC)
 
+# DO NOT DELETE
