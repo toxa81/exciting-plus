@@ -12,7 +12,7 @@ integer i,j,n,ik,vtrl(3),n1,j1,j2,ispn1,ispn2,jst1,jst2,n2
 real(8) vtrc(3),t1
 complex(8) expikt
 complex(8), allocatable :: vwank(:,:)
-complex(8), allocatable :: zm1(:,:)
+complex(8), allocatable :: zm1(:,:),zm2(:,:)
 character*500 fname,msg
 logical, parameter :: tcheckherm=.true.
 
@@ -73,39 +73,9 @@ deallocate(zm1)
 !  call wrmtrx(fname,nwann,nwann,vwank,nwann)
 !endif
 
-!allocate(zm1(nstsv,nstsv))
-!zm1=zzero
-!do j1=1,nstfv
-!  do ispn1=1,nspinor
-!    jst1=j1+(ispn1-1)*nstfv
-!    do j2=1,nstfv
-!      do ispn2=1,nspinor
-!        jst2=j2+(ispn2-1)*nstfv
-!        do n=1,nwann
-!          zm1(jst1,jst2)=zm1(jst1,jst2)+dconjg(a(n,j1,ispn1))*&
-!            a(n,j2,ispn2)*(vn(n)+sic_wann_e0(n))
-!        enddo
-!      enddo
-!    enddo
-!  enddo
-!enddo
-!if (mpi_grid_root((/dim2/))) then
-!  write(fname,'("hunif2_n",I2.2,"_k",I4.4".txt")')nproc,ik
-!  call wrmtrx(fname,nstsv,nstsv,zm1,nstsv)
-!endif
-
-if (tcheckherm) then
-  call checkherm(nwann,sic_wann_h0k(1,1,ikloc),i,j)
-  if (i.gt.0) then
-    write(msg,'("matrix sic_wann_h0k is not Hermitian at k-point ",I4,&
-      " : i, j, m(i,j), m(j,i)=",I5,",",I5,", (",2G18.10,"), (",2G18.10,")")')&
-      ik,i,j,dreal(sic_wann_h0k(i,j,ikloc)),dimag(sic_wann_h0k(i,j,ikloc)),&
-      dreal(sic_wann_h0k(j,i,ikloc)),dimag(sic_wann_h0k(j,i,ikloc))
-    call mpi_grid_msg("sic_hunif",msg)
-  endif
-endif
-
 allocate(zm1(nstsv,nstsv))
+allocate(zm2(nstsv,nstsv))
+zm2=zzero
 ! setup unified Hamiltonian
 ! 1-st term: LDA Hamiltonian itself
 ! 2-nd term : -\sum_{\alpha,\alpha'} P_{\alpha} H^{LDA} P_{\alpha'}
@@ -136,6 +106,7 @@ if (tcheckherm) then
   endif
 endif
 hunif=hunif+zm1
+zm2=zm2+zm1
 ! 3-rd term : \sum_{alpha} P_{\alpha} H^{LDA} P_{\alpha}
 ! 4-th term : \sum_{alpha} P_{\alpha} V_{\alpha} P_{\alpha}
 zm1=zzero
@@ -164,6 +135,13 @@ if (tcheckherm) then
   endif
 endif
 hunif=hunif+zm1
+zm2=zm2+zm1
+if (mpi_grid_root((/dim2/))) then
+  write(fname,'("hcorr",I2.2,"_k",I4.4".txt")')nproc,ik
+  call wrmtrx(fname,nstsv,nstsv,zm2,nstsv)
+endif
+
+
 ! 5-th term : \sum_{\alpha} P_{\alpha} V_{\alpha} Q + 
 !             \sum_{\alpha} Q V_{\alpha} P_{\alpha} 
 !  where Q=1-\sum_{\alpha'}P_{\alpha'}
@@ -294,6 +272,6 @@ endif
 !    enddo
 !  enddo
 !endif
-deallocate(vwank)
+deallocate(vwank,zm1,zm2)
 return
 end
