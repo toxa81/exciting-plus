@@ -12,12 +12,13 @@ include ../make.inc
 #-------------------------------------------------------------------------------
 
 # modules
-SRC_modules = mod_addons.f90 mod_addons_q.f90 mod_mpi_grid.f90 mod_timer.f90 \
+SRC_modules = ./addons/mod_addons.f90 ./addons/mod_addons_q.f90 mod_mpi_grid.f90 mod_timer.f90 \
   mod_papi.f90 modmain.f90 modqpt.f90 mod_nrkp.f90 mod_hdf5.f90 libxc_funcs.f90 \
   libxc.f90 libxcifc.f90 modxcifc.f90 modldapu.f90 modrdm.f90 modphonon.f90 modtest.f90 \
   mod_sic.f90
+OBJ_modules = $(SRC_modules:.f90=.o)
 
-SRC = $(SRC_modules) $(shell python ../gensrclog.py; mv srclog.f90 ./addons; find . -name \*.f90)
+SRC = $(shell python ../gensrclog.py; mv srclog.f90 ./addons; find . -name \*.f90)
 OBJ = $(SRC:.f90=.o)
 
 EXE = elk
@@ -33,25 +34,19 @@ EXE = elk
 #-------------------------------------------------------------------------------
 # Targets
 #-------------------------------------------------------------------------------
-elk:	$(OBJ)
+elk:	$(OBJ_modules) $(OBJ)
 	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) $(LIB_LPK) $(LIB_XC) $(LIB_SYS)
 
 lib:
 	libtool -static -o libelk.a $(OBJ)
 	
-all:	fft elk
-
 clean:
 	rm -f $(OBJ) *.mod *~ fort.* ifc* *.gcno gmon.out *.aux *.dvi *.log \
          elk.pdf *.tex *.toc $(EXE)
 
-cleanall:
-	cd fftlib; $(MAKE) clean
-	$(MAKE) clean
-
 doc:
 	rm -f elk.aux elk.bbl elk.blg elk.log elk.pdf elk.tex elk.toc elk.lst
-	ls $(SRC_modules) $(SRC_routines) $(SRC_lib) $(SRC_xc) $(SRC_advanced) $(SRC_phonon) $(SRC_optics) $(SRC_LDAU) $(SRC_rdmft) > elk.lst
+	ls $(SRC) > elk.lst
 	./protex -F -s $(SRC_main) $$(cat elk.lst) > elk.tex
 	pdflatex elk;pdflatex elk;pdflatex elk
 
