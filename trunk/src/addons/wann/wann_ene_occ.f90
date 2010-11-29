@@ -26,7 +26,7 @@ complex(8) z2
 
 wann_ene=0.d0
 wann_occ=0.d0
-do n=1,nwann
+do n=1,nwantot
   do ikloc=1,nkptloc
     ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
     do i=1,nstsv
@@ -36,13 +36,13 @@ do n=1,nwann
     enddo
   enddo
 enddo
-call mpi_grid_reduce(wann_ene(1),nwann,dims=(/dim_k/))
-call mpi_grid_reduce(wann_occ(1),nwann,dims=(/dim_k/))
+call mpi_grid_reduce(wann_ene(1),nwantot,dims=(/dim_k/))
+call mpi_grid_reduce(wann_occ(1),nwantot,dims=(/dim_k/))
 if (wproc.and.nosym) then
   write(60,*)
   write(60,'(" WF  energy (Ha)  occupancy ")')
   write(60,'("----------------------------")')
-  do n=1,nwann
+  do n=1,nwantot
     write(60,'(I4,2F12.6)')n,wann_ene(n),wann_occ(n)
   enddo
 endif
@@ -52,8 +52,8 @@ wann_ene_m=zzero
 ! generate occupancy matrix in WF basis for collinear (!!!) case only
 ! for noncollinear case the product <W_{n\sigma}|W_{n'\sigma'}> is required
 !  (in collinear case it is diagonal in spin index)
-do n1=1,nwann
-  do n2=1,nwann
+do n1=1,nwantot
+  do n2=1,nwantot
     if (iwann(1,n1).eq.iwann(1,n2)) then
       ias=iwann(1,n1)
       lm1=iwann(2,n1)
@@ -96,7 +96,7 @@ do ias=1,natmtot
     call unimtrxt(lmmaxlu,rylm_lps(1,1,ias),wann_ene_m(1,1,ispn,ispn,ias))
   enddo
 enddo
-do n=1,nwann
+do n=1,nwantot
   ias=iwann(1,n)
   lm1=iwann(2,n)
   ispn1=iwann(3,n)

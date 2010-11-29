@@ -107,14 +107,14 @@ enddo
 !    call genwann_h(.true.,evalsv(1,ik),wann_c(1,1,ikloc),&
 !      wann_h(1,1,ik),wann_e(1,ik))
 !  endif
-!!  call diagzhe(nwann,sic_wann_h0k(1,1,ikloc),wann_e(1,ik))
+!!  call diagzhe(nwantot,sic_wann_h0k(1,1,ikloc),wann_e(1,ik))
 !! compute the band characters if required
 !  call bandchar(.true.,lmax,ikloc,evecfv,evecsv,lmmax,bc(1,1,1,1,ik))
 !! end loop over k-points
 !end do
 deallocate(evalfv,evecfvloc,evecsvloc)
 call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.)
-if (wannier) call mpi_grid_reduce(wann_e(1,1),nwann*nkpt,dims=(/dim_k/),side=.true.)
+if (wannier) call mpi_grid_reduce(wann_e(1,1),nwantot*nkpt,dims=(/dim_k/),side=.true.)
 do ik=1,nkpt
   call mpi_grid_reduce(bc(1,1,1,1,ik),lmmax*natmtot*nspinor*nstsv,dims=(/dim_k/),side=.true.)
 enddo
@@ -142,7 +142,7 @@ if (mpi_grid_root()) then
   write(*,'(" band structure plot written to BAND.OUT")')
   if (wannier) then
     open(50,file='WANN_BAND.OUT',action='WRITE',form='FORMATTED')
-    do ist=1,nwann
+    do ist=1,nwantot
       do ik=1,nkpt
         write(50,'(2G18.10)') dpp1d(ik),wann_e(ist,ik)
       end do
@@ -150,7 +150,7 @@ if (mpi_grid_root()) then
     end do
     close(50)
     open(50,file='bands_wann.dat',action='WRITE',form='FORMATTED')
-    do ist=1,nwann
+    do ist=1,nwantot
       do ik=1,nkpt
         write(50,'(2G18.10)') dpp1d(ik),(wann_e(ist,ik)-efermi)*ha2ev
       end do
@@ -178,7 +178,7 @@ if (mpi_grid_root()) then
   enddo
   write(50,*)wannier
   if (wannier) then
-    write(50,*)nwann
+    write(50,*)nwantot
   endif
 endif
 
@@ -188,7 +188,7 @@ if (wannier) then
       if (mpi_grid_x(dim_k).eq.i) then
         open(50,file='BNDCHR.OUT',form='FORMATTED',status='OLD',position='APPEND')
         do ikloc=1,nkptloc
-          write(50,*)((abs(wann_c(n,j,ikloc)),n=1,nwann),j=1,nstfv)
+          write(50,*)((abs(wann_c(n,j,ikloc)),n=1,nwantot),j=1,nstfv)
         enddo
         close(50)
       endif

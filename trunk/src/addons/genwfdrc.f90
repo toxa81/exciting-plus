@@ -53,7 +53,7 @@ if (mpi_grid_side(dims=(/dim_k/))) then
         endif
         if (wannier) then
           call hdf5_write(fname,"/kpoints/"//trim(kname),"wannc",&
-            wanncnrloc(1,1,ikloc),(/nwann,nstsv/))          
+            wanncnrloc(1,1,ikloc),(/nwantot,nstsv/))          
         endif
         if (spinpol) then
           call hdf5_write(fname,"/kpoints/"//trim(kname),"spinor_ud",&

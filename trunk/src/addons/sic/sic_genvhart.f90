@@ -3,8 +3,8 @@ use modmain
 use mod_addons_q
 use mod_sic
 implicit none
-complex(8), intent(out) :: vhwanmt(lmmaxvr,nmtloc,ntr,nspinor,nwann)
-complex(8), intent(out) :: vhwanir(ngrloc,ntr,nspinor,nwann)
+complex(8), intent(out) :: vhwanmt(lmmaxvr,nmtloc,ntr,nspinor,nwantot)
+complex(8), intent(out) :: vhwanir(ngrloc,ntr,nspinor,nwantot)
 integer nvqloc,iqloc,it,iq,n,ig,ias,i
 real(8) vtrc(3)
 complex(8), allocatable ::megqwan1(:,:,:)
@@ -29,7 +29,7 @@ endif
 call mpi_grid_barrier()
 ! distribute q-vectors along 2-nd dimention
 nvqloc=mpi_grid_map(nvq,dim_q)
-allocate(megqwan1(nwann,ngqmax,nvq))
+allocate(megqwan1(nwantot,ngqmax,nvq))
 megqwan1=zzero
 chi0_include_bands(:)=(/100.1d0,-100.1d0/)
 diag_wan_ibt=.true.
@@ -39,11 +39,11 @@ do iqloc=1,nvqloc
   iq=mpi_grid_map(nvq,dim_q,loc=iqloc)
   call genmegq(iq,.true.,.false.)
 ! save <n,T=0|e^{-i(G+q)r}|n,T=0>
-  do n=1,nwann
+  do n=1,nwantot
     megqwan1(n,1:ngq(iq),iq)=megqwan(idxmegqwan(n,n,0,0,0),1:ngq(iq))
   enddo
 enddo
-call mpi_grid_reduce(megqwan1(1,1,1),nwann*ngqmax*nvq,dims=(/dim_q/), &
+call mpi_grid_reduce(megqwan1(1,1,1),nwantot*ngqmax*nvq,dims=(/dim_q/), &
   all=.true.)
 call timer_stop(10)
 ! allocate arrays for plane-wave
@@ -56,7 +56,7 @@ do iq=1,nvq
     call sic_genpw(vgqc(1,ig,iq),pwmt,pwir)
     do it=1,ntr
       expikt=exp(zi*dot_product(vtc(:,it),vqc(:,iq)))/nkptnr/omega
-      do n=1,nwann
+      do n=1,nwantot
         if (sic_apply(n).eq.1) then
           zt1=megqwan1(n,ig,iq)*vhgq(ig,iq)*expikt
           do i=1,nmtloc

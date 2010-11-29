@@ -20,7 +20,7 @@ if (wannier_megq) then
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
     do i=1,nstsv
-      do n=1,nwann
+      do n=1,nwantot
         if (abs(wanncnrloc(n,i,ikloc)).gt.1d-10) wann_bnd(i,ik)=1
       enddo
     enddo

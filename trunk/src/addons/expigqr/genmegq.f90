@@ -113,7 +113,7 @@ if (wannier_megq) then
   allocate(megqwan(nmegqwan,ngvecme))
   megqwan(:,:)=zzero
   if (allocated(wann_c_jk)) deallocate(wann_c_jk)
-  allocate(wann_c_jk(nwann,nstsv,nkptnrloc))
+  allocate(wann_c_jk(nwantot,nstsv,nkptnrloc))
 endif
 
 i=0

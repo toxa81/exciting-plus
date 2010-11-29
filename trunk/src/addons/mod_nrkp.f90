@@ -111,8 +111,8 @@ if (wproc.and.fout.gt.0) then
   sz=sz+dble(lmmaxvr*nufrmax*natmtot*nstsv*nspinor)+dble(ngkmax*nstsv*nspinor)
 ! wannier functions
   if (wannier) then
-    sz=sz+dble(nwann*nstsv)+dble(lmmaxvr*nufrmax*natmtot*nspinor*nwann)+&
-      dble(ngkmax*nspinor*nwann)
+    sz=sz+dble(nwantot*nstsv)+dble(lmmaxvr*nufrmax*natmtot*nspinor*nwantot)+&
+      dble(ngkmax*nspinor*nwantot)
   endif
 ! momentum operator matrix
   if (lpmat) then
@@ -138,11 +138,11 @@ if (lpmat) then
 endif
 if (wannier) then
   if (allocated(wanncnrloc)) deallocate(wanncnrloc)
-  allocate(wanncnrloc(nwann,nstsv,nkptnrloc))
+  allocate(wanncnrloc(nwantot,nstsv,nkptnrloc))
   if (allocated(wann_unkmt)) deallocate(wann_unkmt)
-  allocate(wann_unkmt(lmmaxvr,nufrmax,natmtot,nspinor,nwann,nkptnrloc))
+  allocate(wann_unkmt(lmmaxvr,nufrmax,natmtot,nspinor,nwantot,nkptnrloc))
   if (allocated(wann_unkit)) deallocate(wann_unkit)
-  allocate(wann_unkit(ngkmax,nspinor,nwann,nkptnrloc))
+  allocate(wann_unkit(ngkmax,nspinor,nwantot,nkptnrloc))
 endif
 call timer_start(1,reset=.true.)
 ! read eigen-vectors
@@ -213,9 +213,9 @@ endif
 if (wannier) then
   call timer_start(1,reset=.true.)
   if (allocated(wann_unkmt)) deallocate(wann_unkmt)
-  allocate(wann_unkmt(lmmaxvr,nufrmax,natmtot,nspinor,nwann,nkptnrloc))
+  allocate(wann_unkmt(lmmaxvr,nufrmax,natmtot,nspinor,nwantot,nkptnrloc))
   if (allocated(wann_unkit)) deallocate(wann_unkit)
-  allocate(wann_unkit(ngkmax,nspinor,nwann,nkptnrloc))
+  allocate(wann_unkit(ngkmax,nspinor,nwantot,nkptnrloc))
   wann_unkmt=zzero
   wann_unkit=zzero
   if (wproc.and.fout.gt.0) then
@@ -224,7 +224,7 @@ if (wannier) then
     if (fout.ne.6) call flushifc(fout)
   endif !wproc
   do ikloc=1,nkptnrloc
-    do n=1,nwann
+    do n=1,nwantot
       do j=1,nstsv
         wann_unkmt(:,:,:,:,n,ikloc)=wann_unkmt(:,:,:,:,n,ikloc) + &
           wfsvmtnrloc(:,:,:,:,j,ikloc)*wanncnrloc(n,j,ikloc)
@@ -261,7 +261,7 @@ if (wannier) then
 ! calculate Wannier function occupancies 
   wann_occ=0.d0
   wann_ene=0.d0
-  do n=1,nwann
+  do n=1,nwantot
     do ikloc=1,nkptnrloc
       ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
       do j=1,nstsv
@@ -271,11 +271,11 @@ if (wannier) then
       enddo
     enddo
   enddo
-  call mpi_grid_reduce(wann_occ(1),nwann,dims=(/dim_k/),all=.true.)
-  call mpi_grid_reduce(wann_ene(1),nwann,dims=(/dim_k/),all=.true.)
+  call mpi_grid_reduce(wann_occ(1),nwantot,dims=(/dim_k/),all=.true.)
+  call mpi_grid_reduce(wann_ene(1),nwantot,dims=(/dim_k/),all=.true.)
   if (wproc.and.fout.gt.0) then
     write(fout,'("  Wannier function occupancy and energy : ")')
-    do n=1,nwann
+    do n=1,nwantot
       write(fout,'("    n : ",I4,"  occ, ene : ",F8.6,2X,G18.10)')n,&
         wann_occ(n),wann_ene(n)
     enddo

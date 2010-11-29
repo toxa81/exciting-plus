@@ -160,7 +160,7 @@ if (mpi_grid_side(dims=(/dim_k,dim_b/)).and.nwloc.gt.0) then
     call hdf5_create_file(trim(fuscrn))
     call hdf5_create_group(trim(fuscrn),"/","iwloc")
     call hdf5_create_group(trim(fuscrn),"/","parameters")
-    call hdf5_write(fuscrn,"/parameters","nwann",nwann)  
+    call hdf5_write(fuscrn,"/parameters","nwantot",nwantot)  
     call hdf5_write(fuscrn,"/parameters","nw",lr_nw)
     call hdf5_write(fuscrn,"/parameters","nwloc",nwloc)
     call hdf5_write(fuscrn,"/parameters","x",mpi_grid_x(dim_k))

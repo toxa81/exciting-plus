@@ -31,7 +31,7 @@ if (allocated(wfsvitnrloc)) deallocate(wfsvitnrloc)
 allocate(wfsvitnrloc(ngkmax,nspinor,nstsv,nkptnrloc))
 if (flg_wan.eq.1) then
   if (allocated(wanncnrloc)) deallocate(wanncnrloc)
-  allocate(wanncnrloc(nwann,nstsv,nkptnrloc))
+  allocate(wanncnrloc(nwantot,nstsv,nkptnrloc))
 endif
 if (flg_pmat.eq.1) then
   if (allocated(pmatnrloc)) deallocate(pmatnrloc)
@@ -55,7 +55,7 @@ if (mpi_grid_side(dims=(/dim_k/))) then
     endif
     if (flg_wan.eq.1) then
       call hdf5_read(fname,"/kpoints/"//trim(kname),"wannc",&
-        wanncnrloc(1,1,ikloc),(/nwann,nstsv/))          
+        wanncnrloc(1,1,ikloc),(/nwantot,nstsv/))          
     endif
     if (spinpol) then
       call hdf5_read(fname,"/kpoints/"//trim(kname),"spinor_ud",&
@@ -75,7 +75,7 @@ do ikloc=1,nkptnrloc
       dims=ortdims((/dim_k/)))
   endif
   if (flg_wan.eq.1) then
-    call mpi_grid_bcast(wanncnrloc(1,1,ikloc),nwann*nstsv,&
+    call mpi_grid_bcast(wanncnrloc(1,1,ikloc),nwantot*nstsv,&
       dims=ortdims((/dim_k/)))
   endif
 enddo

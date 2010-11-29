@@ -47,7 +47,7 @@ do i=0,mpi_grid_size(dim_k)-1
       call mpi_grid_send(ngknr(jkloc),1,(/dim_k/),(/i/),tag+2)
       call mpi_grid_send(igkignr(1,jkloc),ngkmax,(/dim_k/),(/i/),tag+3)
       if (wannier_megq) then
-        call mpi_grid_send(wanncnrloc(1,1,jkloc),nwann*nstsv,(/dim_k/),(/i/),tag+4)
+        call mpi_grid_send(wanncnrloc(1,1,jkloc),nwantot*nstsv,(/dim_k/),(/i/),tag+4)
       endif
     endif
     if (mpi_grid_x(dim_k).eq.i) then
@@ -61,7 +61,7 @@ do i=0,mpi_grid_size(dim_k)-1
         call mpi_grid_recieve(ngknr_jk,1,(/dim_k/),(/j/),tag+2)
         call mpi_grid_recieve(igkignr_jk(1),ngkmax,(/dim_k/),(/j/),tag+3)
         if (wannier_megq) then
-          call mpi_grid_recieve(wann_c_jk(1,1,ikstep),nwann*nstsv,&
+          call mpi_grid_recieve(wann_c_jk(1,1,ikstep),nwantot*nstsv,&
             (/dim_k/),(/j/),tag+4)
         endif
       else

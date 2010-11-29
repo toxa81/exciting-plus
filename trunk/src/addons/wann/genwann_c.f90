@@ -6,7 +6,7 @@ integer, intent(in) :: ik
 real(8), intent(in) :: vpc(3)
 real(8), intent(in) :: e(nstsv)
 complex(8), intent(in) :: wfsvmt(lmmaxvr,nufrmax,natmtot,nspinor,nstsv)
-complex(8), intent(out) :: wann_c_(nwann,nstsv)
+complex(8), intent(out) :: wann_c_(nwantot,nstsv)
 ! local variables
 complex(8), allocatable :: prjao(:,:)
 integer ispn,j,ias,lm,itype,n
@@ -46,9 +46,9 @@ if (debug_level.gt.0) then
 endif
 
 ! compute <\psi|g_n>
-allocate(prjao(nwann,nstsv))
+allocate(prjao(nwantot,nstsv))
 prjao=zzero
-do n=1,nwann
+do n=1,nwantot
   if (.not.wannier_lc) then
     ias=iwann(1,n)
     lm=iwann(2,n)
@@ -91,7 +91,7 @@ enddo !n
 ! remove small contribution
 do j=1,nstsv
   d1=0.d0
-  do n=1,nwann
+  do n=1,nwantot
     d1=d1+abs(prjao(n,j))**2
   enddo
   if (d1.lt.wannier_min_prjao) prjao(:,j)=zzero
@@ -101,7 +101,7 @@ if (.false.) then
   write(*,'("Total contribution of projected orbitals : ")')
   do j=1,nstsv
     d1=0.d0
-    do n=1,nwann
+    do n=1,nwantot
       d1=d1+abs(prjao(n,j))**2
     enddo
     write(*,'("  band : ",I4,"  wt : ",F12.6)')j,d1
@@ -118,7 +118,7 @@ subroutine wann_ort(ik,wann_u_mtrx)
 use modmain
 implicit none
 integer, intent(in) :: ik
-complex(8), intent(inout) :: wann_u_mtrx(nwann,nstsv)
+complex(8), intent(inout) :: wann_u_mtrx(nwantot,nstsv)
 
 complex(8), allocatable :: s(:,:)
 complex(8), allocatable :: sdiag(:)
@@ -132,19 +132,19 @@ if (debug_level.gt.0) then
     write(fdbgout,*)
     write(fdbgout,'("[wann_ort]")')
     write(fdbgout,'("  ik : ",I6)')ik  
-    write(fdbgout,'("  hash(wann_u_mtrx) : ",I16)')hash(wann_u_mtrx,16*nwann*nstsv)
+    write(fdbgout,'("  hash(wann_u_mtrx) : ",I16)')hash(wann_u_mtrx,16*nwantot*nstsv)
     call dbg_close_file
   endif
 endif
 
-allocate(s(nwann,nwann))
-allocate(sdiag(nwann))
-allocate(wann_u_mtrx_ort(nwann,nstsv))
+allocate(s(nwantot,nwantot))
+allocate(sdiag(nwantot))
+allocate(wann_u_mtrx_ort(nwantot,nstsv))
 
 ! compute ovelap matrix
 s=zzero
-do m1=1,nwann
-  do m2=1,nwann
+do m1=1,nwantot
+  do m2=1,nwantot
     do j=1,nstsv
       s(m1,m2)=s(m1,m2)+wann_u_mtrx(m1,j)*dconjg(wann_u_mtrx(m2,j))
     enddo
@@ -152,7 +152,7 @@ do m1=1,nwann
   sdiag(m1)=s(m1,m1)
 enddo
 ! compute S^{-1/2}
-call isqrtzhe(nwann,s,ierr)
+call isqrtzhe(nwantot,s,ierr)
 if (ierr.ne.0) then
   write(*,*)
   write(*,'("Warning(wann_ort): failed to calculate S^{-1/2}")')
@@ -164,7 +164,7 @@ if (ierr.ne.0) then
   write(*,'(6X,5G18.10)')abs(sdiag)
   write(*,*)
 !  write(*,'("  initial coefficients:")')
-!  call wrmtrx("",nwann,nstsv,wann_u_mtrx,nwann)
+!  call wrmtrx("",nwantot,nstsv,wann_u_mtrx,nwantot)
 !  write(*,*)
 !  write(*,'("mpi_grid_x : ",10I4)')mpi_grid_x
 !  call pstop
@@ -173,8 +173,8 @@ endif
 ! compute Wannier function expansion coefficients
 wann_u_mtrx_ort=zzero
 if (ierr.eq.0) then
-  do m1=1,nwann
-    do m2=1,nwann
+  do m1=1,nwantot
+    do m2=1,nwantot
       wann_u_mtrx_ort(m1,:)=wann_u_mtrx_ort(m1,:)+wann_u_mtrx(m2,:)*&
         dconjg(s(m2,m1))
     enddo

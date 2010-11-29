@@ -22,7 +22,7 @@ if (.not.tsic_wv) return
 !  do ikloc=1,nkptloc
 !    sic_wb(:,:,:,ikloc)=0.8d0*sic_wb(:,:,:,ikloc) !zzero
 !    sic_wvb(:,:,:,ikloc)=zzero
-!    do n=1,nwann
+!    do n=1,nwantot
 !      do ispn=1,nspinor
 !        do ist=1,nstfv
 !          i=ist+(ispn-1)*nstfv
@@ -45,8 +45,8 @@ allocate(wfmt(lmmaxvr,nrmtmax,natmtot))
 allocate(wfir(ngrtot))
 allocate(wfmt_(lmmaxvr,nmtloc))
 allocate(wfir_(ngrloc))
-allocate(a(nwann,nstfv,nspinor))
-allocate(b(nwann,nstfv,nspinor))
+allocate(a(nwantot,nstfv,nspinor))
+allocate(b(nwantot,nstfv,nspinor))
 allocate(expikr(ngrloc))
 !allocate(wffvmt(nstfv,lmmaxvr,nufrmax,natmtot))
 
@@ -91,7 +91,7 @@ do ik=1,nkpt
       do ir=1,ngrloc
         wfir_(ir)=wfir_(ir)*expikr(ir)/sqrt(omega)
       enddo
-      do n=1,nwann
+      do n=1,nwantot
         do ispn=1,nspinor
           a(n,ist,ispn)=sic_dot_lb(vkc(1,ik),wanmt(1,1,1,ispn,n),&
             wanir(1,1,ispn,n),twanmt(1,1,n),wfmt_,wfir_)
@@ -100,7 +100,7 @@ do ik=1,nkpt
         enddo
       enddo !n
     else
-!      do n=1,nwann
+!      do n=1,nwantot
 !        ias=iwann(1,n) 
 !        lm=iwann(2,n)
 !        ispn=iwann(3,n)

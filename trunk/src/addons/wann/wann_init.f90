@@ -13,16 +13,13 @@ if (nspnfv.eq.2) then
   call pstop
 endif
 
-nwann=0
+nwantot=0
 do i=1,wann_natom
   iwgrp=wann_iprj(2,i)
-  nwann=nwann+wann_norb(iwgrp)
+  nwantot=nwantot+wann_norb(iwgrp)
 enddo
 if (allocated(iwann)) deallocate(iwann)
-allocate(iwann(7,nwann))
-if (allocated(nwannias)) deallocate(nwannias)
-allocate(nwannias(natmtot))
-nwannias=0
+allocate(iwann(7,nwantot))
 
 n=0
 do i=1,wann_natom
@@ -56,15 +53,15 @@ do i=1,wann_natom
 enddo !i
 ! sort WF by spin (for collinear case)
 if (.not.ncmag) then
-  allocate(iwann_tmp(7,nwann))
+  allocate(iwann_tmp(7,nwantot))
   n=0
-  do j=1,nwann
+  do j=1,nwantot
     if (iwann(3,j).eq.1) then
       n=n+1
       iwann_tmp(:,n)=iwann(:,j)
     endif
   enddo
-  do j=1,nwann
+  do j=1,nwantot
     if (iwann(3,j).eq.2) then
       n=n+1
       iwann_tmp(:,n)=iwann(:,j)
@@ -74,16 +71,19 @@ if (.not.ncmag) then
   deallocate(iwann_tmp)
 endif
 
+if (allocated(nwannias)) deallocate(nwannias)
+allocate(nwannias(natmtot))
+nwannias=0
 if (mpi_grid_root()) then     
   open(100,file='WANNIER.OUT',form='formatted',status='replace')
   write(100,'("number of WF atoms : ", I4)')wann_natom
   write(100,'("number of WF orbital groups : ", I4)')wann_norbgrp
   write(100,'("number of WF types : ", I4)')wann_ntype
   write(100,*)
-  write(100,'("total number of WF : ", I4)')nwann
+  write(100,'("total number of WF : ", I4)')nwantot
   write(100,*)
 endif
-do n=1,nwann
+do n=1,nwantot
   iatom=iwann(1,n)
   lm=iwann(2,n)
   ispn=iwann(3,n)
@@ -114,27 +114,27 @@ if (mpi_grid_root()) then
   endif
   close(100)
 endif
-if (wannier_lc) nwann=nwann_lc
+if (wannier_lc) nwantot=nwann_lc
 
 if (allocated(wann_c)) deallocate(wann_c)
-allocate(wann_c(nwann,nstsv,nkptloc))
+allocate(wann_c(nwantot,nstsv,nkptloc))
 wann_c=zzero
 
 if (allocated(wann_h)) deallocate(wann_h)
-allocate(wann_h(nwann,nwann,nkpt))
+allocate(wann_h(nwantot,nwantot,nkpt))
 wann_h=zzero
 if (allocated(wann_e)) deallocate(wann_e)
-allocate(wann_e(nwann,nkpt))
+allocate(wann_e(nwantot,nkpt))
 wann_e=0.d0
 if (allocated(wann_p)) deallocate(wann_p)
-allocate(wann_p(3,nwann,nwann,nkpt))
+allocate(wann_p(3,nwantot,nwantot,nkpt))
 wann_p=zzero
 
 if (allocated(wann_ene)) deallocate(wann_ene)
-allocate(wann_ene(nwann))
+allocate(wann_ene(nwantot))
 wann_ene=0.d0
 if (allocated(wann_occ)) deallocate(wann_occ)
-allocate(wann_occ(nwann))
+allocate(wann_occ(nwantot))
 wann_occ=0.d0
 
 return
