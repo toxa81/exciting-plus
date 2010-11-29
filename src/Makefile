@@ -42,7 +42,7 @@ lib:
 	
 clean:
 	rm -f *.o *.mod *~ fort.* ifc* *.gcno gmon.out *.aux *.dvi *.log \
-         elk.pdf *.tex *.toc $(EXE)
+        elk.pdf *.tex *.toc elk.lst elk.out $(EXE)
 
 doc:
 	rm -f elk.aux elk.bbl elk.blg elk.log elk.pdf elk.tex elk.toc elk.lst
