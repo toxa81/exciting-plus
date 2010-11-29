@@ -95,7 +95,7 @@ do it=1,ntr
   do n=1,nwantot
     do ir=1,ngrloc
       v1(:)=vgrc(:,ir+groffs)+vtc(:,it)-&
-        atposc(:,ias2ia(iwann(1,n)),ias2is(iwann(1,n)))
+        atposc(:,ias2ia(wan_info(1,n)),ias2is(wan_info(1,n)))
       if (sqrt(sum(v1(:)**2)).gt.wann_r_cutoff) then
         wanir(ir,it,:,n)=zzero
       endif

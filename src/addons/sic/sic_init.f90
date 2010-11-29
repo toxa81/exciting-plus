@@ -93,8 +93,8 @@ if (.not.tsic_arrays_allocated) then
   allocate(vwanme(nmegqwan))
   vwanme=zzero
   do n=1,nwantot
-    i=iwann(6,n)
-    j=iwann(7,n)
+    i=wan_info(6,n)
+    j=wan_info(7,n)
     if (allocated(wann_sic)) sic_apply(n)=wann_sic(j,i)
     if (allocated(wann_sic_v)) vwanme(idxmegqwan(n,n,0,0,0))=zone*wann_sic_v(j,i)
   enddo
@@ -134,7 +134,7 @@ twanmtuc=.false.
 do i=1,ntr
   v1(:)=vtl(1,i)*avec(:,1)+vtl(2,i)*avec(:,2)+vtl(3,i)*avec(:,3)
   do n=1,nwantot
-    jas=iwann(1,n)
+    jas=wan_info(1,n)
     do ias=1,natmtot  
       v2(:)=atposc(:,ias2ia(ias),ias2is(ias))+v1(:)-&
         atposc(:,ias2ia(jas),ias2is(jas))
@@ -172,7 +172,7 @@ real(8) vt(3),v1(3)
 vt(:)=vl(1)*avec(:,1)+vl(2)*avec(:,2)+vl(3)*avec(:,3)
 l1=.false.
 do n=1,nwantot
-  ias=iwann(1,n)
+  ias=wan_info(1,n)
   do jas=1,natmtot
     v1(:)=atposc(:,ias2ia(jas),ias2is(jas))+vt(:)-&
       atposc(:,ias2ia(ias),ias2is(ias))

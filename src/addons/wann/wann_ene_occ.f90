@@ -54,12 +54,12 @@ wann_ene_m=zzero
 !  (in collinear case it is diagonal in spin index)
 do n1=1,nwantot
   do n2=1,nwantot
-    if (iwann(1,n1).eq.iwann(1,n2)) then
-      ias=iwann(1,n1)
-      lm1=iwann(2,n1)
-      lm2=iwann(2,n2)
-      ispn1=iwann(3,n1)
-      ispn2=iwann(3,n2)
+    if (wan_info(1,n1).eq.wan_info(1,n2)) then
+      ias=wan_info(1,n1)
+      lm1=wan_info(2,n1)
+      lm2=wan_info(2,n2)
+      ispn1=wan_info(3,n1)
+      ispn2=wan_info(3,n2)
       do ikloc=1,nkptloc
         ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)        
         do j=1,nstsv
@@ -97,9 +97,9 @@ do ias=1,natmtot
   enddo
 enddo
 do n=1,nwantot
-  ias=iwann(1,n)
-  lm1=iwann(2,n)
-  ispn1=iwann(3,n)
+  ias=wan_info(1,n)
+  lm1=wan_info(2,n)
+  ispn1=wan_info(3,n)
   wann_ene(n)=wann_ene_m(lm1,lm1,ispn1,ispn1,ias)
 enddo
 if (wproc) then

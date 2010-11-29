@@ -21,10 +21,10 @@ call getnghbr(megqwan_mindist,megqwan_maxdist)
 ! get maximum possible number of WF transitions
 nmegqwanmax=0
 do n=1,nwantot
-  ias=iwann(1,n)
+  ias=wan_info(1,n)
   do i=1,nnghbr(ias)
     do n1=1,nwantot
-      jas=iwann(1,n1)
+      jas=wan_info(1,n1)
       if (jas.eq.inghbr(1,i,ias)) then
         nmegqwanmax=nmegqwanmax+nwannias(jas)
       endif
@@ -37,11 +37,11 @@ imegqwan=0
 nmegqwan=0   
 do j=1,nwann_include
   n=iwann_include(j)
-  ias=iwann(1,n)
+  ias=wan_info(1,n)
   do i=1,nnghbr(ias)
     do j1=1,nwann_include
       n1=iwann_include(j1)
-      jas=iwann(1,n1)
+      jas=wan_info(1,n1)
       if (jas.eq.inghbr(1,i,ias)) then
         l1=.false.
 ! for integer occupancy numbers take only transitions between occupied and empty bands

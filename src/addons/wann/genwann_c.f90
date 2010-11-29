@@ -50,10 +50,10 @@ allocate(prjao(nwantot,nstsv))
 prjao=zzero
 do n=1,nwantot
   if (.not.wannier_lc) then
-    ias=iwann(1,n)
-    lm=iwann(2,n)
-    ispn=iwann(3,n)
-    itype=iwann(4,n)
+    ias=wan_info(1,n)
+    lm=wan_info(2,n)
+    ispn=wan_info(3,n)
+    itype=wan_info(4,n)
     do j=1,nstsv
       if (bndint(j,e(j),wann_eint(1,itype),wann_eint(2,itype))) then
         call genprjao(ias,lm,ispn,j,wfsvmt,prjao(n,j))
@@ -70,10 +70,10 @@ do n=1,nwantot
       iw=wann_iorb_lc(i,1,n)
       itr(:)=wann_iorb_lc(i,2:4,n)
       tr(:)=avec(:,1)*itr(1)+avec(:,2)*itr(2)+avec(:,3)*itr(3)
-      ias=iwann(1,iw)
-      lm=iwann(2,iw)
-      ispn=iwann(3,iw)
-      itype=iwann(4,iw)
+      ias=wan_info(1,iw)
+      lm=wan_info(2,iw)
+      ispn=wan_info(3,iw)
+      itype=wan_info(4,iw)
       do j=1,nstsv
         if (bndint(j,e(j),wann_eint(1,itype),wann_eint(2,itype))) then
           call genprjao(ias,lm,ispn,j,wfsvmt,zt1)

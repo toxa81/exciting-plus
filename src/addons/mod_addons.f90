@@ -270,7 +270,7 @@ real(8), allocatable :: wann_eint(:,:)
 real(8), allocatable :: wann_v(:)
 
 integer nwantot
-integer, allocatable :: iwann(:,:)
+integer, allocatable :: wan_info(:,:)
 integer, allocatable :: nwannias(:)
   
 ! expansion coefficients of Wannier functions over spinor Bloch eigen-functions  
