@@ -1,5 +1,6 @@
 subroutine disentangle(evalsv_,wann_c_,evecsv_)
 use modmain
+use mod_wannier
 implicit none
 real(8), intent(inout) :: evalsv_(nstsv)
 complex(8), intent(inout) :: wann_c_(nwantot,nstsv)

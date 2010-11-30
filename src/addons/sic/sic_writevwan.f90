@@ -2,6 +2,8 @@ subroutine sic_writevwan
 use modmain
 use mod_sic
 use mod_hdf5
+use mod_linresp
+use mod_wannier
 implicit none
 integer n,ispn,it,i,itloc,nloc,j
 character*12 c1,c2,c3

@@ -2,6 +2,8 @@ subroutine genmegqwan(iq)
 use modmain
 use mod_nrkp
 use mod_addons_q
+use mod_linresp
+use mod_wannier
 implicit none
 integer, intent(in) :: iq
 integer ik,i1,ibloc,xloc,ist1,ist2,i,n1,n2,ig,j,ikloc,n

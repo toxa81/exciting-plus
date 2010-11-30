@@ -10,6 +10,7 @@ subroutine bandrlm
 ! !USES:
 use modmain
 use mod_mpi_grid
+use mod_wannier
 ! !DESCRIPTION:
 !   Produces a band structure along the path in reciprocal-space which connects
 !   the vertices in the array {\tt vvlp1d}. The band structure is obtained from

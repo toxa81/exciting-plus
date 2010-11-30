@@ -2,6 +2,8 @@ subroutine genmegq(iq,tout,tg0q)
 use modmain
 use mod_nrkp
 use mod_addons_q
+use mod_linresp
+use mod_wannier
 implicit none
 integer, intent(in) :: iq
 logical, intent(in) :: tout

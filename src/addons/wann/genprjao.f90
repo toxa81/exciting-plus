@@ -1,5 +1,6 @@
 subroutine genprjao(ias,lm,ispn,i,wfsvmt,prjao)
 use modmain
+use mod_wannier
 implicit none
 integer, intent(in) :: ias
 integer, intent(in) :: lm

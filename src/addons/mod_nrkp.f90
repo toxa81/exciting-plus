@@ -1,4 +1,5 @@
 module mod_nrkp
+use mod_wannier
 
 integer, allocatable :: ngknr(:)
 integer, allocatable :: igkignr(:,:)

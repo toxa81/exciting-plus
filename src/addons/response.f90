@@ -2,6 +2,7 @@ subroutine response
 use modmain
 use mod_nrkp
 use mod_addons_q
+use mod_linresp
 use mod_wannier
 implicit none
 integer*8, allocatable :: hw_values(:)

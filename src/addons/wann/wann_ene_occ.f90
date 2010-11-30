@@ -2,6 +2,7 @@ subroutine wann_ene_occ
 use modmain
 use modldapu
 use mod_mpi_grid
+use mod_wannier
 implicit none
 complex(8), allocatable :: wann_ene_m(:,:,:,:,:)
 complex(8), allocatable :: wann_occ_m(:,:,:,:,:)
@@ -16,6 +17,7 @@ subroutine wann_ene_occ_(wann_ene_m,wann_occ_m)
 use modmain
 use modldapu
 use mod_mpi_grid
+use mod_wannier
 implicit none
 complex(8), intent(inout) :: wann_ene_m(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot)
 complex(8), intent(inout) :: wann_occ_m(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot)

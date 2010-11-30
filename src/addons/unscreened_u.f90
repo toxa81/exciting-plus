@@ -2,6 +2,8 @@ subroutine unscreened_u
 use modmain
 use mod_addons_q
 use mod_nrkp
+use mod_linresp
+use mod_wannier
 implicit none
 integer iq,ig,i,n,n1
 integer nvqloc,iqloc

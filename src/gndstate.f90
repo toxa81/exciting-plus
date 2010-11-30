@@ -10,6 +10,7 @@ subroutine gndstate
 ! !USES:
 use modmain
 use modldapu
+use mod_wannier
 ! !DESCRIPTION:
 !   Computes the self-consistent Kohn-Sham ground-state. General information is
 !   written to the file {\tt INFO.OUT}. First- and second-variational

@@ -1,6 +1,8 @@
 subroutine genu4(iq)
 use modmain
 use mod_addons_q
+use mod_linresp
+use mod_wannier
 implicit none
 integer, intent(in) :: iq
 integer iwloc,nwloc,iw,n,n1,i,ig,ig1,itloc,iloc,vtl(3),j,it,ntmegqwanloc

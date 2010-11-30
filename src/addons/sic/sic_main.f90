@@ -3,6 +3,8 @@ use modmain
 use mod_nrkp
 use mod_hdf5
 use mod_sic
+use mod_wannier
+use mod_linresp
 implicit none
 integer n,sz,i,j,i1,j1,n1,ispn,vtrl(3)
 real(8) t1,t2,t3,vtrc(3)

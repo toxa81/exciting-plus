@@ -2,6 +2,8 @@ subroutine sic_wan(fout)
 use modmain
 use mod_sic
 use mod_nrkp
+use mod_wannier
+use mod_linresp
 implicit none
 ! arguments
 integer, intent(in) :: fout

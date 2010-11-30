@@ -2,6 +2,8 @@ subroutine sic_hunif(ikloc,hunif)
 use modmain
 use mod_sic
 use mod_hdf5
+use mod_wannier
+use mod_linresp
 ! arguments
 implicit none
 integer, intent(in) :: ikloc

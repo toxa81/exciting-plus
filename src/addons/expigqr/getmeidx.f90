@@ -1,6 +1,7 @@
 subroutine getmeidx(req)
 use modmain
 use mod_nrkp
+use mod_linresp
 implicit none
 ! arguments
 logical, intent(in) :: req

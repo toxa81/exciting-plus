@@ -1,5 +1,6 @@
 logical function wann_diel()
 use modmain
+use mod_wannier
 implicit none
 integer n
 wann_diel=.true.

@@ -1,5 +1,6 @@
 subroutine genwann_c(ik,vpc,e,wfsvmt,wann_c_)
 use modmain
+use mod_wannier
 implicit none
 ! arguments
 integer, intent(in) :: ik
@@ -116,6 +117,7 @@ end
 
 subroutine wann_ort(ik,wann_u_mtrx)
 use modmain
+use mod_wannier
 implicit none
 integer, intent(in) :: ik
 complex(8), intent(inout) :: wann_u_mtrx(nwantot,nstsv)

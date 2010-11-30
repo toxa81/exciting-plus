@@ -1,6 +1,76 @@
 module mod_wannier
 implicit none
 
+!------------------!
+!     Wannier      !
+!------------------!
+logical wannier
+integer wann_natom
+integer wann_norbgrp
+integer wann_ntype
+logical wann_add_poco
+integer, allocatable :: wann_norb(:)
+integer, allocatable :: wann_iorb(:,:,:)
+integer, allocatable :: wann_iprj(:,:)
+real(8), allocatable :: wann_eint(:,:)
+real(8), allocatable :: wann_v(:)
+
+integer nwantot
+integer, allocatable :: wan_info(:,:)
+integer, allocatable :: nwannias(:)
+  
+! expansion coefficients of Wannier functions over spinor Bloch eigen-functions  
+complex(8), allocatable :: wann_c(:,:,:)
+! Bloch-sums of WF
+complex(8), allocatable :: wann_unkmt(:,:,:,:,:,:)
+complex(8), allocatable :: wann_unkit(:,:,:,:)
+
+! H(k) in WF basis
+complex(8), allocatable :: wann_h(:,:,:)
+! e(k) of WF H(k) (required for band-sctructure plot only)
+real(8), allocatable :: wann_e(:,:)
+! momentum operator in WF basis
+complex(8), allocatable :: wann_p(:,:,:,:)
+
+real(8), allocatable :: wann_ene(:)
+real(8), allocatable :: wann_occ(:)
+
+real(8) zero3d(3)
+real(8) bound3d(3,3)
+integer nrxyz(3)
+integer nwfplot
+integer firstwf
+logical wannier_lc
+integer nwann_lc
+integer, allocatable :: wann_iorb_lc(:,:,:)
+real(8), allocatable :: wann_iorb_lcc(:,:)
+
+integer nwann_h
+integer, allocatable :: iwann_h(:)
+
+logical wannier_soft_eint
+data wannier_soft_eint/.false./
+real(8), allocatable :: wannier_soft_eint_w1(:)
+real(8), allocatable :: wannier_soft_eint_w2(:)
+real(8), allocatable :: wannier_soft_eint_e1(:)
+real(8), allocatable :: wannier_soft_eint_e2(:)
+real(8) wannier_min_prjao
+data wannier_min_prjao/-0.1d0/
+
+logical ldisentangle
+data ldisentangle/.false./
+
+logical lrespwffilter
+data lrespwffilter/.false./
+integer nwfch
+integer wfch(2,200)
+
+! wannier_prjao=0 (default) : project to local orbital
+! wannier_prjao=1 : project to f(x)=(1+cos(Pi*x/R))
+integer wannier_prjao
+data wannier_prjao/0/
+
+
 type wannier_transitions
 ! number of taken Wannier functions
   integer :: nwan
@@ -26,7 +96,7 @@ end type wannier_transitions
 contains
 
 subroutine genwantran(twantran,mindist,maxdist,waninc,all,diag)
-use modmain
+use mod_addons
 implicit none
 ! arguments
 type(wannier_transitions), intent(out) :: twantran

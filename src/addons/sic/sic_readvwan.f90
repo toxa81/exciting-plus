@@ -2,6 +2,8 @@ subroutine sic_readvwan
 use modmain
 use mod_sic
 use mod_hdf5
+use mod_linresp
+use mod_wannier
 implicit none
 integer it,n,ispn
 character*20 c1,c2,c3

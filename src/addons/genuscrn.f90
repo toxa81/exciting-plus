@@ -1,6 +1,8 @@
 subroutine genuscrn(iq)
 use modmain
 use mod_addons_q
+use mod_linresp
+use mod_wannier
 implicit none
 integer, intent(in) :: iq
 integer iwloc,nwloc,iw,n,n1,i,ig,ig1,nmegqwanloc,iloc
