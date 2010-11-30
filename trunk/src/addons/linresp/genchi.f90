@@ -1,6 +1,8 @@
 subroutine genchi(iq)
 use modmain
 use mod_addons_q
+use mod_linresp
+use mod_wannier
 implicit none
 ! arguments
 integer, intent(in) :: iq

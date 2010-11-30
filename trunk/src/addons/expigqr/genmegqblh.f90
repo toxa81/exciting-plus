@@ -3,6 +3,7 @@ subroutine genmegqblh(iq,ikloc,ngknr1,ngknr2,igkignr1,igkignr2,wfsvmt1,wfsvmt2,&
 use modmain
 use mod_addons_q
 use mod_nrkp
+use mod_linresp
 implicit none
 integer, intent(in) :: iq
 integer, intent(in) :: ikloc

@@ -1,5 +1,6 @@
 subroutine init_gntuju(iq,lmaxexp)
 use modmain
+use mod_linresp
 implicit none
 integer, intent(in) :: iq
 integer, intent(in) :: lmaxexp

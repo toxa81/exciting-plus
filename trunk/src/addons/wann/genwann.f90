@@ -1,6 +1,7 @@
 subroutine genwann(ikloc,evecfv,evecsv)
 use modmain
 use mod_mpi_grid
+use mod_wannier
 implicit none
 ! arguments
 integer, intent(in) :: ikloc

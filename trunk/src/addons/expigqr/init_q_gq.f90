@@ -1,6 +1,7 @@
 subroutine init_q_gq
 use modmain
 use mod_addons_q
+use mod_linresp
 implicit none
 real(8) t0,t2
 integer iq,ig,i

@@ -1,6 +1,7 @@
 subroutine genchi0blh(ikloc,w,chi0w)
 use modmain
 use mod_nrkp
+use mod_linresp
 implicit none
 ! arguments
 integer, intent(in) :: ikloc

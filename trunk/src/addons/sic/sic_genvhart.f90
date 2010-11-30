@@ -1,6 +1,8 @@
 subroutine sic_genvhart(vhwanmt,vhwanir)
 use modmain
 use mod_addons_q
+use mod_linresp
+use mod_wannier
 use mod_sic
 implicit none
 complex(8), intent(out) :: vhwanmt(lmmaxvr,nmtloc,ntr,nspinor,nwantot)

@@ -1,6 +1,8 @@
 subroutine solve_chi_wan(iq,w,vcwan,chi0wan,f_response_)
 use modmain
 use mod_addons_q
+use mod_linresp
+use mod_wannier
 implicit none
 integer, intent(in) :: iq
 complex(8), intent(in) :: w

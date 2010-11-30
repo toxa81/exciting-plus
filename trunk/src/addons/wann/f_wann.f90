@@ -1,5 +1,6 @@
 subroutine f_wann(n,ispn,d1,itr,vrc,val)
 use modmain
+use mod_wannier
 implicit none
 integer, intent(in) :: n
 integer, intent(in) :: ispn

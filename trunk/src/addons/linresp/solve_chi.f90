@@ -1,6 +1,7 @@
 subroutine solve_chi(iq,w,chi0m,krnl,f_response_)
 use modmain
 use mod_addons_q
+use mod_linresp
 implicit none
 integer, intent(in) :: iq
 complex(8), intent(in) :: w

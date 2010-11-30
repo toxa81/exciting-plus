@@ -1,6 +1,7 @@
 subroutine getngvecme
 use modmain
 use mod_addons_q
+use mod_linresp
 implicit none
 integer ngsh,gshq0,i,j
 integer, allocatable :: igishell(:)

@@ -1,5 +1,6 @@
 subroutine dosrlm
 use modmain
+use mod_wannier
 implicit none
 ! local variables
 integer lmax,lmmax,l,m,lm,nsk(3)

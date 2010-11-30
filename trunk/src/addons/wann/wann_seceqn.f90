@@ -1,5 +1,6 @@
 subroutine wann_seceqn(ikloc,evecsv)
 use modmain
+use mod_wannier
 ! arguments
 implicit none
 integer, intent(in) :: ikloc

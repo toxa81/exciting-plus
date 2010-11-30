@@ -1,6 +1,8 @@
 subroutine getwfkq(ikstep,ngknr_jk,igkignr_jk,wfsvmt_jk,wfsvit_jk)
 use modmain
 use mod_nrkp
+use mod_linresp
+use mod_wannier
 implicit none
 integer, intent(in) :: ikstep
 integer, intent(out) :: ngknr_jk

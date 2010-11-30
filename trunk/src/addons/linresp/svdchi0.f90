@@ -1,7 +1,8 @@
 subroutine svdchi0(chi0wan,iq,iw,w)
 use modmain
 use mod_addons_q
-
+use mod_linresp
+use mod_wannier
 ! arguments
 complex(8), intent(in) :: chi0wan(nmegqwan,nmegqwan)
 integer, intent(in) :: iq

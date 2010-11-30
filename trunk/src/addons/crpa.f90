@@ -3,6 +3,8 @@ use modmain
 use mod_addons_q
 use mod_nrkp
 use mod_hdf5
+use mod_wannier
+use mod_linresp
 implicit none
 integer iq,i
 integer nvqloc,iqloc,ntmegqwanloc,it,itloc

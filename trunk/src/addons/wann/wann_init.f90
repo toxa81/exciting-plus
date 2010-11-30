@@ -1,6 +1,7 @@
 subroutine wann_init
 use modmain
 use modldapu
+use mod_wannier
 implicit none
 
 integer i,j,n,lm,ispn,iwgrp,itype,iatom

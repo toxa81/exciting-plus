@@ -1,6 +1,8 @@
 subroutine genchi0wan_k(ikloc,w,chi0wan_k)
 use modmain
 use mod_nrkp
+use mod_linresp
+use mod_wannier
 implicit none
 integer, intent(in) :: ikloc
 complex(8), intent(in) :: w

@@ -1,5 +1,6 @@
 subroutine genwann_p(ikloc,evecfv,evecsv)
 use modmain
+use mod_wannier
 implicit none
 integer, intent(in) :: ikloc
 complex(8), intent(in) :: evecfv(nmatmax,nstfv)

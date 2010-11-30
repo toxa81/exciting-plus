@@ -2,6 +2,8 @@ subroutine sic_init
 use modmain
 use mod_wannier
 use mod_sic
+use mod_linresp
+use mod_wannier
 implicit none
 integer i,ias,n,jas,i1,i2,i3,vl(3),ish,ir,is,j,iwgrp
 logical l1,l2,exist

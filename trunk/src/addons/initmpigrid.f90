@@ -13,9 +13,9 @@ if (task.eq.0.or.task.eq.1.or.task.eq.22..or.task.eq.20.or.task.eq.822.or.&
   allocate(d(nd))
   d=1
   if (nproc.le.nkpt) then
-    d(dim_k)=nproc
+    d(dim1)=nproc
   else
-    d(dim_k)=nkpt
+    d(dim1)=nkpt
     d(dim2)=nproc/nkpt
   endif    
 else if (task.eq.800.or.task.eq.801.or.task.eq.802.or.task.eq.810.or.task.eq.809) then
@@ -25,15 +25,15 @@ else if (task.eq.800.or.task.eq.801.or.task.eq.802.or.task.eq.810.or.task.eq.809
   allocate(d(nd))
   d=1
   if (nproc.le.nkptnr) then
-    d(dim_k)=nproc
+    d(dim1)=nproc
   else  
-    d(dim_k)=nkptnr
+    d(dim1)=nkptnr
     i1=nproc/nkptnr
     if (i1.le.i2) then
-      d(dim_q)=i1
+      d(dim2)=i1
     else
-      d(dim_q)=i2
-      d(dim_b)=nproc/(nkptnr*i2)
+      d(dim2)=i2
+      d(dim3)=nproc/(nkptnr*i2)
     endif
   endif
 else

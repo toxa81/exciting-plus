@@ -1,6 +1,7 @@
 subroutine genvscrn(iq,iw,chi0,krnl,vscrn,epsilon,chi)
 use modmain
 use mod_addons_q
+use mod_linresp
 implicit none
 ! arguments
 integer, intent(in) :: iq

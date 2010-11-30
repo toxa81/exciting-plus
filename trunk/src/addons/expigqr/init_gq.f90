@@ -1,6 +1,7 @@
 subroutine init_gq(iq,lmaxexp,lmmaxexp,tg0q)
 use modmain
 use mod_addons_q
+use mod_linresp
 implicit none
 integer, intent(in) :: iq
 integer, intent(in) :: lmaxexp

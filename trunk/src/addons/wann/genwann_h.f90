@@ -1,6 +1,7 @@
 subroutine genwann_h(tdiag,evalsv_,wann_c_,wann_h_,wann_e_)
 use modmain
 use mod_mpi_grid
+use mod_wannier
 implicit none
 logical, intent(in) :: tdiag
 real(8), intent(in) :: evalsv_(nstsv)
