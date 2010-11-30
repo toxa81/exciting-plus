@@ -70,8 +70,8 @@ else
 ! generate wave-functions for entire BZ
   call genwfnr(151,tq0bz)
 endif
-all_wan_ibt=.true.
-call getimegqwan(all_wan_ibt)
+!all_wan_ibt=.true.
+!call getimegqwan(all_wan_ibt)
 ! setup energy mesh
 lr_dw=(lr_w1-lr_w0)/(lr_nw-1)
 if (allocated(lr_w)) deallocate(lr_w)

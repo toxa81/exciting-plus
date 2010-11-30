@@ -1,5 +1,6 @@
 subroutine sic_init
 use modmain
+use mod_wannier
 use mod_sic
 implicit none
 integer i,ias,n,jas,i1,i2,i3,vl(3),ish,ir,is,j,iwgrp
@@ -68,8 +69,12 @@ if (mpi_grid_root()) then
 endif
 call mpi_grid_barrier()
 ! get all Wannier transitions
-all_wan_ibt=.true.
-call getimegqwan(all_wan_ibt)
+!all_wan_ibt=.true.
+!call getimegqwan(all_wan_ibt)
+call deletewantran(sic_wantran)
+call genwantran(sic_wantran,0.d0,sic_me_cutoff,all=.true.)
+call printwantran(sic_wantran)
+stop
 ! allocate once main arrays of SIC code
 !  wan(mt,ir) - Wannier function defined on a real-space grid
 !  wv(mt,ir) - product of a Wannier function with it's potential
@@ -138,7 +143,7 @@ do i=1,ntr
     do ias=1,natmtot  
       v2(:)=atposc(:,ias2ia(ias),ias2is(ias))+v1(:)-&
         atposc(:,ias2ia(jas),ias2is(jas))
-      if (sqrt(sum(v2(:)**2)).le.wann_r_cutoff) twanmt(ias,i,n)=.true.
+      if (sqrt(sum(v2(:)**2)).le.sic_wan_cutoff) twanmt(ias,i,n)=.true.
     enddo
     twanmtuc(i,n)=any(twanmt(:,i,n))
   enddo
@@ -176,11 +181,11 @@ do n=1,nwantot
   do jas=1,natmtot
     v1(:)=atposc(:,ias2ia(jas),ias2is(jas))+vt(:)-&
       atposc(:,ias2ia(ias),ias2is(ias))
-    if (sqrt(sum(v1(:)**2)).le.wann_r_cutoff) l1=.true.
+    if (sqrt(sum(v1(:)**2)).le.sic_wan_cutoff) l1=.true.
   enddo
   do ir=1,ngrtot
     v1(:)=vgrc(:,ir)+vt(:)-atposc(:,ias2ia(ias),ias2is(ias))
-    if (sqrt(sum(v1(:)**2)).le.wann_r_cutoff) l1=.true.
+    if (sqrt(sum(v1(:)**2)).le.sic_wan_cutoff) l1=.true.
   enddo
 enddo
 sic_include_cell=l1

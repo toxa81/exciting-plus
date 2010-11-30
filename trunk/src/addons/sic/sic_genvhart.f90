@@ -32,7 +32,6 @@ nvqloc=mpi_grid_map(nvq,dim_q)
 allocate(megqwan1(nwantot,ngqmax,nvq))
 megqwan1=zzero
 chi0_include_bands(:)=(/100.1d0,-100.1d0/)
-diag_wan_ibt=.true.
 call timer_start(10,reset=.true.)
 ! loop over q-points
 do iqloc=1,nvqloc

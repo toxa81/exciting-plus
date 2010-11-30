@@ -72,7 +72,7 @@ if (wannier_chi0_chi) then
   
   allocate(megqwan_tmp(nmegqwan,ngvecme))
   megqwan_tmp=zzero
-  allocate(imegqwan_tmp(5,nmegqwanmax))
+  allocate(imegqwan_tmp(5,nmegqwan))
   imegqwan_tmp=0
   j=0
   do i=1,nmegqwan
@@ -83,9 +83,14 @@ if (wannier_chi0_chi) then
       megqwan_tmp(j,:)=megqwan(i,:)
     endif
   enddo
+! new number of matrix elements
   nmegqwan=j
-  megqwan(:,:)=megqwan_tmp(:,:)
-  imegqwan(:,:)=imegqwan_tmp(:,:)
+  deallocate(megqwan)
+  allocate(megqwan(nmegqwan,ngvecme))
+  megqwan(1:nmegqwan,:)=megqwan_tmp(1:nmegqwan,:)
+  deallocate(imegqwan)
+  allocate(imegqwan(5,nmegqwan))
+  imegqwan(:,1:nmegqwan)=imegqwan_tmp(:,1:nmegqwan)
   deallocate(megqwan_tmp)
   deallocate(imegqwan_tmp)
 endif
