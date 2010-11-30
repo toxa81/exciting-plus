@@ -1098,8 +1098,10 @@ case('papi')
   write(*,'("Error(readinput): too many papi events")')
   write(*,*)
   stop
-case('wann_r_cutoff')
-  read(50,*,err=20) wann_r_cutoff
+case('sic_wan_cutoff')
+  read(50,*,err=20) sic_wan_cutoff
+case('sic_me_cutoff')
+  read(50,*,err=20) sic_me_cutoff
 case('debug_level')
   read(50,*,err=20) debug_level  
 case('')

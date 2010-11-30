@@ -8,6 +8,11 @@ integer flg_wan,flg_pmat,j,ik,ikloc
 character*20 kname
 character*100 fname
 
+#ifndef _HDF5_
+write(*,'("Error(drc_read_wf): must be compiled with HDF5 support")')
+call pstop
+#endif
+
 fname="wfnrkp.hdf5"
 
 call gengknr

@@ -42,7 +42,7 @@ if (wproc) then
   write(151,*)
   write(151,'("Required memory for real-space arrays (MB) : ",I6)')sz
   write(151,*)
-  write(151,'("cutoff radius for WF : ",F12.6)')wann_r_cutoff
+  write(151,'("cutoff radius for WF : ",F12.6)')sic_wan_cutoff
   write(151,'("number of translations : ",I4)')ntr
   do i=1,ntr
     write(151,'("  i : ",I4,"    vtl(i) : ",3I4)')i,vtl(:,i)

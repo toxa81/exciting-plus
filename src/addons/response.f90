@@ -1,28 +1,23 @@
 subroutine response
 use modmain
-#ifdef _HDF5_
-use hdf5
 use mod_nrkp
 use mod_addons_q
+use mod_wannier
 implicit none
-#ifdef _PAPI_
-integer ierr
-include 'f90papi.h'
-real real_time,cpu_time,mflops
-integer*8 fp_ins
-real(8) t1
-#endif
 integer*8, allocatable :: hw_values(:)
 integer i,j,iq
 integer nvqloc,iqloc,ist,ik
 character*100 qnm
 logical wproc1,exist,lpmat
 logical, external :: wann_diel
+type(wannier_transitions) :: megqwantran
+
 ! MPI grid:
 !   (matrix elements) : (1) k-points x (2) q-points x 
 !                     x (3) interband transitions 
 !   (response) : (1) energy mesh x (2) q-points x (3) number of fxc kernels
 !
+
 if (lrtype.eq.1.and..not.spinpol) then
   write(*,*)
   write(*,'("Error(response): can''t do magnetic response for unpolarized &
@@ -42,9 +37,6 @@ if (wannier_chi0_chi) wannier_megq=.true.
 
 allocate(hw_values(0:papi_ncounters))
 call papi_timer_start(pt_resp_tot)
-#ifdef _PAPI_
-!call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
-#endif
 
 ! initialise universal variables
 call init0
@@ -106,8 +98,21 @@ else
   call genwfnr(151,lpmat)
 endif
 if (wannier_megq) then
+  !all_wan_ibt=.false.
+  !call getimegqwan(all_wan_ibt)
+  call genwantran(megqwantran,megqwan_mindist,megqwan_maxdist)
+! bingings for old code
+  nmegqwan=megqwantran%nwantran
+  if (allocated(imegqwan)) deallocate(imegqwan)
+  allocate(imegqwan(5,nmegqwan))
+  imegqwan(:,:)=megqwantran%wantran(:,1:nmegqwan)
+  megqwan_tlim(:,:)=megqwantran%tlim(:,:)
+  if (allocated(idxmegqwan)) deallocate(idxmegqwan)
+  allocate(idxmegqwan(nwantot,nwantot,megqwan_tlim(1,1):megqwan_tlim(2,1),&
+    megqwan_tlim(1,2):megqwan_tlim(2,2),megqwan_tlim(1,3):megqwan_tlim(2,3)))
+  idxmegqwan(:,:,:,:,:)=megqwantran%iwantran(:,:,:,:,:)
   all_wan_ibt=.false.
-  call getimegqwan(all_wan_ibt)
+  
   if (wproc1) then
     write(151,*)
     write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
@@ -176,22 +181,14 @@ call papi_timer_read(pt_chi,hw_values)
 call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
 if (wproc1) call papi_report(151,hw_values,"pt_chi")
 
-#ifdef _PAPI_
-!call PAPIF_flops(real_time,cpu_time,fp_ins,mflops,ierr)
-!t1=dble(mflops)
-!call mpi_grid_reduce(t1)
-#endif
-
 if (wproc1) then
   write(151,*)
-#ifdef _PAPI_
-!  write(151,'("Average performance (Gflops/proc) : ",F15.3)')t1/mpi_grid_nproc/1000.d0
-#endif  
   write(151,'("Done.")')
   call timestamp(151)
   close(151)
 endif
 
+call deletewantran(megqwantran)
 deallocate(wfsvmtnrloc)
 deallocate(wfsvitnrloc)
 if (wannier) deallocate(wanncnrloc)
@@ -201,8 +198,4 @@ deallocate(occsvnr)
 deallocate(evalsvnr)   
 if (wannier_megq) deallocate(wann_c)
 return
-#else
-write(*,'("Error(response): must be compiled with HDF5 support")')
-call pstop
-#endif
 end

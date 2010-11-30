@@ -1,4 +1,5 @@
 module mod_sic
+use mod_wannier
 
 ! product of a Wannier function with it's potential
 complex(8), allocatable :: wvmt(:,:,:,:,:)
@@ -19,8 +20,10 @@ data nsclsic/3/
 integer isclsic
 real(8) sic_etot_correction
 data sic_etot_correction/0.d0/
-real(8) wann_r_cutoff
-data wann_r_cutoff/6.0/
+real(8) sic_wan_cutoff
+data sic_wan_cutoff/6.d0/
+real(8) sic_me_cutoff
+data sic_me_cutoff/0.1d0/
 complex(8), allocatable :: sic_wb(:,:,:,:)
 complex(8), allocatable :: sic_wvb(:,:,:,:)
 
@@ -52,6 +55,8 @@ integer :: nmtloc
 integer :: mtoffs
 ! weights for radial integration
 real(8), allocatable :: rmtwt(:)
+
+type(wannier_transitions) :: sic_wantran
 
 !interface sic_copy_mt
 !  module procedure sic_copy_mt_z,sic_copy_mt_d

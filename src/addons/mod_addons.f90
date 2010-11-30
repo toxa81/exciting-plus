@@ -152,7 +152,6 @@ data megqwan_mindist/-0.1d0/
 real(8) megqwan_maxdist
 data megqwan_maxdist/0.1d0/
 
-integer nmegqwanmax
 integer nmegqwan
 integer megqwan_tlim(2,3)
 integer ntmegqwan
@@ -162,8 +161,6 @@ integer, allocatable :: idxmegqwan(:,:,:,:,:)
 complex(8), allocatable :: megqwan(:,:)
 logical :: all_wan_ibt
 data all_wan_ibt/.false./
-logical :: diag_wan_ibt
-data diag_wan_ibt/.false./
 
 integer nwann_include
 data nwann_include/0/
