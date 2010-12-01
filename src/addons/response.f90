@@ -11,7 +11,6 @@ integer nvqloc,iqloc,ist,ik
 character*100 qnm
 logical wproc1,exist,lpmat
 logical, external :: wann_diel
-type(wannier_transitions) :: megqwantran
 
 ! MPI grid:
 !   (matrix elements) : (1) k-points x (2) q-points x 
@@ -102,29 +101,30 @@ if (wannier_megq) then
   !all_wan_ibt=.false.
   !call getimegqwan(all_wan_ibt)
   call genwantran(megqwantran,megqwan_mindist,megqwan_maxdist)
+  
 ! bingings for old code
-  nmegqwan=megqwantran%nwantran
-  if (allocated(imegqwan)) deallocate(imegqwan)
-  allocate(imegqwan(5,nmegqwan))
-  imegqwan(:,:)=megqwantran%wantran(:,1:nmegqwan)
-  megqwan_tlim(:,:)=megqwantran%tlim(:,:)
-  if (allocated(idxmegqwan)) deallocate(idxmegqwan)
-  allocate(idxmegqwan(nwantot,nwantot,megqwan_tlim(1,1):megqwan_tlim(2,1),&
-    megqwan_tlim(1,2):megqwan_tlim(2,2),megqwan_tlim(1,3):megqwan_tlim(2,3)))
-  idxmegqwan(:,:,:,:,:)=megqwantran%iwantran(:,:,:,:,:)
-  all_wan_ibt=.false.
+!  nmegqwan=megqwantran%nwantran
+!  if (allocated(imegqwan)) deallocate(imegqwan)
+!  allocate(imegqwan(5,nmegqwan))
+!  imegqwan(:,:)=megqwantran%wantran(:,1:nmegqwan)
+!  megqwan_tlim(:,:)=megqwantran%tlim(:,:)
+!  if (allocated(idxmegqwan)) deallocate(idxmegqwan)
+!  allocate(idxmegqwan(nwantot,nwantot,megqwan_tlim(1,1):megqwan_tlim(2,1),&
+!    megqwan_tlim(1,2):megqwan_tlim(2,2),megqwan_tlim(1,3):megqwan_tlim(2,3)))
+!  idxmegqwan(:,:,:,:,:)=megqwantran%iwantran(:,:,:,:,:)
+!  all_wan_ibt=.false.
   
   if (wproc1) then
     write(151,*)
-    write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
-    write(151,'("List of Wannier transitions (n n1 T) ")')
-    do i=1,nmegqwan
-      write(151,'(I4,4X,I4,4X,3I3)')imegqwan(:,i)
-    enddo
-    call timestamp(151)
-    write(151,*)
-    write(151,'("Translation limits : ",6I6)')megqwan_tlim(:,1), &
-      megqwan_tlim(:,2),megqwan_tlim(:,3)
+    write(151,'("Number of Wannier transitions : ",I6)')megqwantran%nwt
+!    write(151,'("List of Wannier transitions (m n T) ")')
+!    do i=1,megqwantran%nwt
+!      write(151,'(I4,4X,I4,4X,3I3)')megqwantran%iwt(:,i)
+!    enddo
+!    call timestamp(151)
+!    write(151,*)
+    write(151,'("Translation limits : ",6I6)')megqwantran%tlim(:,1), &
+      megqwantran%tlim(:,2),megqwantran%tlim(:,3)
     call flushifc(151)
   endif
 endif
@@ -136,6 +136,7 @@ do i=1,lr_nw
   lr_w(i)=dcmplx(lr_w0+lr_dw*(i-1),lr_eta)/ha2ev
 enddo
 call init_q_gq
+megq_include_bands=chi0_include_bands
 ! distribute q-vectors along 3-rd dimention
 nvqloc=mpi_grid_map(nvq,dim_q)
 do iqloc=1,nvqloc
