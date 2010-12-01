@@ -1,3 +1,5 @@
+! the subroutine computes <psi_{n,k}|e^{-i(G+q)x}|psi_{n',k+q}>  and
+!  <W_n|e^{-i(G+q)x}|W_{n'T}> 
 subroutine genmegq(iq,tout,tg0q)
 use modmain
 use mod_nrkp
@@ -8,7 +10,6 @@ implicit none
 integer, intent(in) :: iq
 logical, intent(in) :: tout
 logical, intent(in) :: tg0q
-
 ! allocatable arrays
 integer, allocatable :: igkignr_jk(:)
 complex(8), allocatable :: wfsvmt_jk(:,:,:,:,:)
@@ -22,9 +23,6 @@ integer np
 character*100 :: qnm,qdir,fout
 
 call papi_timer_start(pt_megq)
-! comment:
-! the subroutine computes <psi_{n,k}|e^{-i(G+q)x}|psi_{n',k+q}>  and
-!  <W_n|e^{-i(G+q)x}|W_{n'T}> 
 
 ! maximum l for exponent expansion
 lmaxexp=lmaxvr
@@ -36,7 +34,7 @@ wproc=.false.
 if (mpi_grid_root((/dim_k,dim_b/)).and.tout) then
   wproc=.true.
   fout=trim(qnm)//"_ME.OUT"
-  open(150,file=trim(fout),form='formatted',status='replace')
+  open(150,file=trim(fout),form="formatted",status="replace")
 endif
 
 if (wproc) then
@@ -82,7 +80,7 @@ if (wproc) then
   write(150,*)
   write(150,'("Minimal energy transition (eV) : ",F12.6)')lr_min_e12*ha2ev    
   write(150,*)
-  write(150,'("Maximum number of interband transitions : ",I5)')nmegqblhmax
+  write(150,'("Maximum number of interband transitions : ",I5)')nmegqblhtotmax
   if (wannier_megq) then
     write(150,*)
     write(150,'("Maximum number of interband transitions for megqwan : ",I5)')nmegqblhwanmax
@@ -91,7 +89,7 @@ if (wproc) then
   write(150,*)
   write(150,'("Array size of matrix elements in Bloch basis (MB) : ",I6)')sz
   if (wannier_megq) then
-    sz=int(16.d0*nmegqwan*ngvecme/1048576.d0)
+    sz=int(16.d0*megqwantran%nwt*ngvecme/1048576.d0)
     write(150,*)
     write(150,'("Array size of matrix elements in Wannier basis (MB) : ",I6)')sz
   endif   
@@ -112,7 +110,7 @@ allocate(wfsvit_jk(ngkmax,nspinor,nstsv))
 allocate(igkignr_jk(ngkmax))
 if (wannier_megq) then
   if (allocated(megqwan)) deallocate(megqwan)
-  allocate(megqwan(nmegqwan,ngvecme))
+  allocate(megqwan(megqwantran%nwt,ngvecme))
   megqwan(:,:)=zzero
   if (allocated(wann_c_jk)) deallocate(wann_c_jk)
   allocate(wann_c_jk(nwantot,nstsv,nkptnrloc))
@@ -144,8 +142,8 @@ if (wannier_megq) then
 ! compute matrix elements of e^{-i(G+q)x} in the basis of Wannier functions
   call genmegqwan(iq)
 ! sum over all k-points and interband transitions to get <n,T=0|e^{-i(G+q)x}|n',T'>
-  call mpi_grid_reduce(megqwan(1,1),nmegqwan*ngvecme,dims=(/dim_k,dim_b/),&
-    all=.true.)
+  call mpi_grid_reduce(megqwan(1,1),megqwantran%nwt*ngvecme,&
+    dims=(/dim_k,dim_b/),all=.true.)
   megqwan=megqwan/nkptnr
   call timer_stop(6)
   if (wproc) then
@@ -203,8 +201,8 @@ call mpi_grid_reduce(t4,dims=(/dim_k,dim_b/))
 t5=timer_get_value(5)
 call mpi_grid_reduce(t5,dims=(/dim_k,dim_b/))
 ! approximate number of matrix elements
-dn1=1.d0*nmegqblhmax*ngvecme*nkptnr
-if (wannier_megq) dn1=dn1+1.d0*nmegqwan*ngvecme
+dn1=1.d0*nmegqblhtotmax*ngvecme*nkptnr
+if (wannier_megq) dn1=dn1+1.d0*megqwantran%nwt*ngvecme
 np=mpi_grid_size(dim_k)*mpi_grid_size(dim_b)
 if (wproc) then
   write(150,*)
@@ -230,5 +228,6 @@ if (wproc) then
   write(150,'("Done.")')
   call flushifc(150)
 endif
+stop
 return
 end

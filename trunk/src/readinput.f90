@@ -1057,7 +1057,7 @@ case('wannier_plot')
 case('megqwan_dist')
   read(50,*,err=20) megqwan_mindist,megqwan_maxdist
 case('megqwan_cutoff')
-  read(50,*,err=20) megqwan_cutoff1,megqwan_cutoff2
+  read(50,*,err=20) megqwan_cutoff(:)
 case('megqwan_include')
   read(50,*,err=20) nwann_include
   allocate(iwann_include(nwann_include))

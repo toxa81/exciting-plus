@@ -25,7 +25,7 @@ do ikloc=1,nkptnrloc
   enddo
   do i1=1,nmegqblhwan(ikloc)
     i=imegqblhwan(i1,ikloc)
-    ibloc=mpi_grid_map(nmegqblh(ikloc),dim_b,glob=i,x=xloc)
+    ibloc=mpi_grid_map(nmegqblhtot(ikloc),dim_b,glob=i,x=xloc)
     if (xloc.eq.mpi_grid_x(dim_b)) then
       ist1=bmegqblh(1,i,ikloc)
       ist2=bmegqblh(2,i,ikloc)

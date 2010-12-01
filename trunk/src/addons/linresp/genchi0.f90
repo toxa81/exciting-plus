@@ -78,8 +78,8 @@ if (wannier_chi0_chi) then
   imegqwan_tmp=0
   j=0
   do i=1,nmegqwan
-    if (abs(megqwan(i,iig0q)).ge.megqwan_cutoff1.and.&
-        abs(megqwan(i,iig0q)).le.megqwan_cutoff2) then
+    if (abs(megqwan(i,iig0q)).ge.megqwan_cutoff(1).and.&
+        abs(megqwan(i,iig0q)).le.megqwan_cutoff(2)) then
       j=j+1
       imegqwan_tmp(:,j)=imegqwan(:,i)
       megqwan_tmp(j,:)=megqwan(i,:)
@@ -104,7 +104,7 @@ if (wannier_chi0_chi) then
     write(150,'("Wannier chi0 AFM : ",L1)')wannier_chi0_afm
     write(150,*)
     write(150,'("megqwan value cutoff (min,max) : ",2F12.6)')&
-      megqwan_cutoff1,megqwan_cutoff2
+      megqwan_cutoff
     write(150,'("megqwan distance cutoff (min,max) : ",2F12.6)')&
       megqwan_mindist,megqwan_maxdist
     write(150,'("Number of Wannier transitions after cutoff : ",I6)')nmegqwan

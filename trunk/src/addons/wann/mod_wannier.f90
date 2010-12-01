@@ -71,31 +71,37 @@ integer wannier_prjao
 data wannier_prjao/0/
 
 
+
+
+
 type wannier_transitions
 ! number of taken Wannier functions
   integer :: nwan
 ! global index of taken Wannier functions
   integer, allocatable :: iwan(:)
-! total number of transitions (total number of <m| |nT> bra-kets)
-  integer :: nwantran
-! i-th transition
-  integer, allocatable :: wantran(:,:)
+! total number of Wannier transitions (total number of <m| |nT> bra-kets)
+  integer :: nwt
+! i-th Wannier transition
+  integer, allocatable :: iwt(:,:)
 ! mapping from {m,n,T} to global index
-  integer, allocatable :: iwantran(:,:,:,:,:) 
+  integer, allocatable :: iwtidx(:,:,:,:,:) 
 ! translation limits
   integer :: tlim(2,3)  
 ! minimal distance
   real(8) :: mindist
 ! maximum distance
   real(8) :: maxdist
-! list of all encountered translations
-  integer :: nvt
-  integer, allocatable :: vtl(:,:)
+! number of all encountered translations
+  integer :: ntr
+! list of translations
+  integer, allocatable :: vtr(:,:)
+! flag that indicates if transition between m,n Wannier functions is in list
+  integer, allocatable :: wt(:,:)
 end type wannier_transitions
 
 contains
 
-subroutine genwantran(twantran,mindist,maxdist,waninc,all,diag)
+subroutine genwantran(twantran,mindist,maxdist,waninc,allwt,diagwt)
 use mod_addons
 implicit none
 ! arguments
@@ -103,125 +109,146 @@ type(wannier_transitions), intent(out) :: twantran
 real(8), intent(in) :: mindist
 real(8), intent(in) :: maxdist
 integer, optional, intent(in) :: waninc(nwantot)
-logical, optional, intent(in) :: all
-logical, optional, intent(in) :: diag
+logical, optional, intent(in) :: allwt
+logical, optional, intent(in) :: diagwt
 ! local variables
-integer n,i,n1,ias,jas,ntran,ntranmax,nvt,j,j1
-logical ladd,lkeep,all_,diag_
+integer m,n,j,nwtmax,i,k,t(3),ias,jas
+logical ladd,lkeep,allwt_,diagwt_
+integer nwan,nwt,ntr,tlim(2,3)
+integer, allocatable :: iwan(:)
+integer, allocatable :: iwt(:,:)
+integer, allocatable :: wt(:,:)
+integer, allocatable :: vtr(:,:)
 logical, external :: wann_diel
 real(8), parameter :: epswfocc=1d-8
 
-all_=.false.
-if (present(all)) all_=all
-diag_=.false.
-if (present(diag)) diag_=diag
+allwt_=.false.
+if (present(allwt)) allwt_=allwt
+diagwt_=.false.
+if (present(diagwt)) diagwt_=diagwt
 
-allocate(twantran%iwan(nwantot))
+! make list of included Wannier functions
+allocate(iwan(nwantot))
 if (present(waninc)) then
-  twantran%iwan=-1
-  i=0
+  nwan=0
   do n=1,nwantot
     if (waninc(n).ne.0) then
-      i=i+1
-      twantran%iwan(i)=n
+      nwan=nwan+1
+      iwan(nwan)=n
     endif   
   enddo
-  twantran%nwan=i
 else
-  twantran%nwan=nwantot
+  nwan=nwantot
   do n=1,nwantot
-    twantran%iwan(n)=n
+    iwan(n)=n
   enddo
 endif
+twantran%nwan=nwan
+allocate(twantran%iwan(nwan))
+twantran%iwan(1:nwan)=iwan(1:nwan)
+! get nearest neighbours
 twantran%mindist=mindist
 twantran%maxdist=maxdist
 call getnghbr(mindist,maxdist)
 ! get maximum possible number of WF transitions
-ntranmax=0
+nwtmax=0
 do n=1,nwantot
   ias=wan_info(1,n)
   do i=1,nnghbr(ias)
-    do n1=1,nwantot
-      jas=wan_info(1,n1)
-      if (jas.eq.inghbr(1,i,ias)) then
-        ntranmax=ntranmax+nwannias(jas)
-      endif
-    enddo
+    jas=inghbr(1,i,ias)
+    nwtmax=nwtmax+nwannias(jas)
   enddo
 enddo
-allocate(twantran%wantran(5,ntranmax))
-twantran%wantran=0
-ntran=0
-do j=1,twantran%nwan
-  n=twantran%iwan(j)
-  ias=wan_info(1,n)
-  do i=1,nnghbr(ias)
-    do j1=1,twantran%nwan
-      n1=twantran%iwan(j1)
-      jas=wan_info(1,n1)
-      if (jas.eq.inghbr(1,i,ias)) then
+! make list of Wannier transitions
+allocate(iwt(5,nwtmax))
+allocate(wt(nwantot,nwantot))
+wt=0
+nwt=0
+do i=1,nwan
+  m=iwan(i)
+  ias=wan_info(1,m)
+  do k=1,nnghbr(ias)
+    do j=1,nwan
+      n=iwan(j)
+      jas=wan_info(1,n)
+      if (jas.eq.inghbr(1,k,ias)) then
         ladd=.false.
-        if (diag_) then
-          if (n.eq.n1) ladd=.true.  
+        if (diagwt_) then
+          if (m.eq.n) ladd=.true.  
         else
 ! for integer occupancy numbers take only transitions between occupied and empty bands
-          if (wann_diel().and.(abs(wann_occ(n)-wann_occ(n1)).gt.epswfocc)) ladd=.true.
+          if (wann_diel().and.(abs(wann_occ(m)-wann_occ(n)).gt.epswfocc)) ladd=.true.
 ! for fractional occupancies or other cases take all transitions
-          if (.not.wann_diel().or.all_) ladd=.true.
+          if (.not.wann_diel().or.allwt_) ladd=.true.
         endif
         if (ladd) then
-          ntran=ntran+1
-          twantran%wantran(1,ntran)=n
-          twantran%wantran(2,ntran)=n1
-          twantran%wantran(3:5,ntran)=inghbr(3:5,i,ias)
+          nwt=nwt+1
+          iwt(1,nwt)=m
+          iwt(2,nwt)=n
+          iwt(3:5,nwt)=inghbr(3:5,k,ias)
+          wt(m,n)=1
         endif
       endif
     enddo !j1
   enddo !i
 enddo !j
-twantran%nwantran=ntran
-twantran%tlim(1,1)=minval(twantran%wantran(3,:))
-twantran%tlim(2,1)=maxval(twantran%wantran(3,:))
-twantran%tlim(1,2)=minval(twantran%wantran(4,:))
-twantran%tlim(2,2)=maxval(twantran%wantran(4,:))
-twantran%tlim(1,3)=minval(twantran%wantran(5,:))
-twantran%tlim(2,3)=maxval(twantran%wantran(5,:))
-allocate(twantran%iwantran(nwantot,nwantot,twantran%tlim(1,1):twantran%tlim(2,1),&
-  twantran%tlim(1,2):twantran%tlim(2,2),twantran%tlim(1,3):twantran%tlim(2,3)))
-twantran%iwantran=-1
-do i=1,twantran%nwantran
-  twantran%iwantran(twantran%wantran(1,i),&
-                    twantran%wantran(2,i),&
-                    twantran%wantran(3,i),&
-                    twantran%wantran(4,i),&
-                    twantran%wantran(5,i))=i
-enddo
-allocate(twantran%vtl(3,twantran%nwantran))
-twantran%vtl=0
-nvt=0
-do i=1,twantran%nwantran
-  ladd=.true.
-  do j=1,nvt
-   if (twantran%vtl(1,j).eq.twantran%wantran(3,i).and.&
-       twantran%vtl(2,j).eq.twantran%wantran(4,i).and.&
-       twantran%vtl(3,j).eq.twantran%wantran(5,i)) ladd=.false.
+twantran%nwt=nwt
+allocate(twantran%iwt(5,nwt))
+twantran%iwt(:,1:nwt)=iwt(:,1:nwt)
+allocate(twantran%wt(nwantot,nwantot))
+twantran%wt(:,:)=wt(:,:)
+! get translation limits
+tlim=0
+if (nwt.gt.0) then
+  do i=1,3
+    tlim(1,i)=minval(iwt(2+i,1:nwt))
+    tlim(2,i)=maxval(iwt(2+i,1:nwt))
   enddo
-  if (ladd) then
-    nvt=nvt+1
-    twantran%vtl(:,nvt)=twantran%wantran(3:5,i)
-  endif
+endif
+twantran%tlim(:,:)=tlim(:,:)
+! generate {m,n,t} -> global index mapping
+allocate(twantran%iwtidx(nwantot,nwantot,tlim(1,1):tlim(2,1),&
+  tlim(1,2):tlim(2,2),tlim(1,3):tlim(2,3)))
+twantran%iwtidx=-1
+do i=1,nwt
+  m=iwt(1,i)
+  n=iwt(2,i)
+  t=iwt(3:5,i)
+  twantran%iwtidx(m,n,t(1),t(2),t(3))=i
 enddo
-twantran%nvt=nvt
+! get list of encountered translations
+allocate(vtr(3,nwt))
+ntr=0
+do i=1,nwt
+  t(:)=iwt(3:5,i)
+  do j=1,ntr
+    ladd=.true.
+    if (all(vtr(:,j).eq.t(:))) ladd=.false.
+    if (ladd) then
+      ntr=ntr+1
+      vtr(:,ntr)=t(:)
+    endif
+  enddo
+enddo
+twantran%ntr=ntr
+allocate(twantran%vtr(3,ntr))
+twantran%vtr(:,1:ntr)=vtr(:,1:ntr)
+deallocate(iwan)
+deallocate(iwt)
+deallocate(wt)
+deallocate(vtr)
 return
 end subroutine
 
 subroutine deletewantran(twantran)
 implicit none
 type(wannier_transitions), intent(inout) :: twantran
+
 if (allocated(twantran%iwan)) deallocate(twantran%iwan)
-if (allocated(twantran%wantran)) deallocate(twantran%wantran)
-if (allocated(twantran%iwantran)) deallocate(twantran%iwantran)
-if (allocated(twantran%vtl)) deallocate(twantran%vtl)
+if (allocated(twantran%iwt)) deallocate(twantran%iwt)
+if (allocated(twantran%iwtidx)) deallocate(twantran%iwtidx)
+if (allocated(twantran%vtr)) deallocate(twantran%vtr)
+if (allocated(twantran%wt)) deallocate(twantran%wt)
 return
 end subroutine
 
@@ -230,9 +257,9 @@ implicit none
 type(wannier_transitions), intent(in) :: twantran
 integer i
 
-write(*,*)'twantran%nwantran=',twantran%nwantran
-do i=1,twantran%nwantran
-  write(*,*)twantran%wantran(:,i)
+write(*,*)'twantran%nwt=',twantran%nwt
+do i=1,twantran%nwt
+  write(*,*)twantran%iwt(:,i)
 enddo
 return
 end subroutine

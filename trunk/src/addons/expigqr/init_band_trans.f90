@@ -7,18 +7,18 @@ logical, external :: wann_diel
 
 ! get limits
 call getmeidx(.true.)
-if (allocated(nmegqblh)) deallocate(nmegqblh)
-allocate(nmegqblh(nkptnrloc))
-nmegqblh=0
+if (allocated(nmegqblhtot)) deallocate(nmegqblhtot)
+allocate(nmegqblhtot(nkptnrloc))
+nmegqblhtot=0
 if (allocated(bmegqblh)) deallocate(bmegqblh)
-allocate(bmegqblh(2,nmegqblhmax,nkptnrloc))
+allocate(bmegqblh(2,nmegqblhtotmax,nkptnrloc))
 bmegqblh=0
 if (wannier_megq) then
   if (allocated(nmegqblhwan)) deallocate(nmegqblhwan)
   allocate(nmegqblhwan(nkptnrloc))
   nmegqblhwan=0
   if (allocated(imegqblhwan)) deallocate(imegqblhwan)
-  allocate(imegqblhwan(nmegqblhmax,nkptnrloc))
+  allocate(imegqblhwan(nmegqblhtotmax,nkptnrloc))
   imegqblhwan=0
 endif
 ! setup n,n' stuff
@@ -28,10 +28,10 @@ if (allocated(nmegqblhloc)) deallocate(nmegqblhloc)
 allocate(nmegqblhloc(2,nkptnrloc))
 nmegqblhloc=0
 do ikloc=1,nkptnrloc
-  nmegqblhloc(1,ikloc)=mpi_grid_map(nmegqblh(ikloc),dim_b,offs=i)
+  nmegqblhloc(1,ikloc)=mpi_grid_map(nmegqblhtot(ikloc),dim_b,offs=i)
   nmegqblhloc(2,ikloc)=i
 enddo
-nmegqblhlocmax=maxval(nmegqblhloc)
+nmegqblhlocmax=maxval(nmegqblhloc(1,:))
 if (wannier_megq) then
   nmegqblhwanmax=maxval(nmegqblhwan)
 endif

@@ -74,7 +74,7 @@ call mpi_grid_barrier()
 !all_wan_ibt=.true.
 !call getimegqwan(all_wan_ibt)
 call deletewantran(sic_wantran)
-call genwantran(sic_wantran,0.d0,sic_me_cutoff,all=.true.)
+call genwantran(sic_wantran,0.d0,sic_me_cutoff,allwt=.true.)
 call printwantran(sic_wantran)
 stop
 ! allocate once main arrays of SIC code

@@ -1,61 +1,77 @@
 module mod_linresp
+use mod_wannier
 implicit none
 
-!-------------------------!
-!     Linear response     !
-!-------------------------!
 ! dimension for q-vectors
 integer, parameter :: dim_q=2
+
 ! dimension for interband transitions
 integer, parameter :: dim_b=3
+
 ! number of G-vectors for matrix elements
 integer ngvecme
+
 ! type of linear response calculation
 !   0 : charge response
-!   1 : magnetic response
+!   1 : magnetic response (not yet implemented)
 integer lrtype
 data lrtype/0/
 
-! number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> in the Bloch basis
-!  for a given k-point
-integer, allocatable :: nmegqblh(:)
-! local number of interband transitions (each processor along dim_b does 
-!  it's local fraction of transitions)
+! total number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> in the Bloch basis
+! for a given local k-point
+integer, allocatable :: nmegqblhtot(:)
+
+! maximum total number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> 
+! over all k-points
+integer nmegqblhtotmax
+
+! local number of interband transitions and offset (each processor along 
+! dim_b does it's local fraction of nmegqblh(ikloc) transitions)
+!   1-st index: 1: local number of transitions
+!               2: offset to compute global index
 integer, allocatable :: nmegqblhloc(:,:)
-! maximum number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> over all k-points
-integer nmegqblhmax
+
+! maximum local number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> 
+! over all k-points
 integer nmegqblhlocmax
-! matrix elements <nk|e^{-i(G+q)x}|n'k+q> in the Bloch basis
-!   1-st index : G-vector
-!   2-nd index : global index of pair of bands (n,n')
-!   3-rd index : k-point
-complex(8), allocatable :: megqblh(:,:,:)
-! matrix elements <nk|e^{-i(G+q)x}|n'k+q> in the Bloch basis
-!   1-st index : global index of pair of bands (n,n')
-!   2-nd index : G-vector
-!   3-rd index : k-point
-complex(8), allocatable :: megqblh2(:,:)
-! pair of bands (n,n') for matrix elements <nk|e^{-i(G+q)x}|n'k+q> by global index
-!   1-st index :  1 -> n
-!                 2 -> n'
+
+! bands (n,n') for matrix elements <nk|e^{-i(G+q)x}|n'k+q>  
+!   1-st index :  1: n at k
+!                 2: n' at k+q
 !   2-nd index : global index of pair of bands (n,n')
 !   3-rd index : k-point
 integer, allocatable :: bmegqblh(:,:,:)
 
+! matrix elements <nk|e^{-i(G+q)x}|n'k+q> in the Bloch basis
+!   1-st index : local index of pair of bands (n,n')
+!   2-nd index : G-vector
+!   3-rd index : k-point
+complex(8), allocatable :: megqblh(:,:,:)
+
+! temporary array used in genchi0blh
+complex(8), allocatable :: megqblh2(:,:)
+
+! interval of bands to take for matrix elements <nk|e^{-i(G+q)x}|n'k+q>
+real(8) megq_include_bands(2)
+data megq_include_bands/-100.1d0,100.1d0/
+
+! interval of bands to include in chi0
 real(8) chi0_include_bands(2)
 data chi0_include_bands/-100.1d0,100.1d0/
+
+! interval of bands to exclude from chi0
 real(8) chi0_exclude_bands(2)
 data chi0_include_bands/100.1d0,-100.1d0/
 
+! minimum interband transition energy
 real(8) lr_min_e12
 
-real(8) megqwan_cutoff1
-data megqwan_cutoff1/-0.1d0/
-real(8) megqwan_cutoff2
-data megqwan_cutoff2/100.1d0/
+! minimum and maximum cutoff values for matrix elements in Wannier basis
+real(8) megqwan_cutoff(2)
+data megqwan_cutoff/-0.0d0,1000.d0/
 
 real(8) megqwan_mindist
-data megqwan_mindist/-0.1d0/
+data megqwan_mindist/-0.0d0/
 real(8) megqwan_maxdist
 data megqwan_maxdist/0.1d0/
 
@@ -66,8 +82,8 @@ integer, allocatable :: imegqwan(:,:)
 integer, allocatable :: itmegqwan(:,:)
 integer, allocatable :: idxmegqwan(:,:,:,:,:)
 complex(8), allocatable :: megqwan(:,:)
-logical :: all_wan_ibt
-data all_wan_ibt/.false./
+!logical :: all_wan_ibt
+!data all_wan_ibt/.false./
 
 integer nwann_include
 data nwann_include/0/
@@ -158,6 +174,10 @@ complex(8), allocatable :: uscrnwan(:,:)
 complex(8), allocatable :: jscrnwan(:,:)
 complex(8), allocatable :: ubarewan(:)
 complex(8), allocatable :: u4(:,:,:,:)
+
+type(wannier_transitions) :: megqwantran
+type(wannier_transitions) :: u4wantran
+
 
 
 
