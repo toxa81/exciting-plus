@@ -59,11 +59,11 @@ call papi_timer_start(pt_chi)
   
 ! for response in Wannier bais
 if (wannier_chi0_chi) then
-  allocate(vcwan(nmegqwan,nmegqwan))
+  allocate(vcwan(megqwantran%nwt,megqwantran%nwt))
 ! Coulomb matrix in local basis
   vcwan=zzero
-  do i=1,nmegqwan
-    do j=1,nmegqwan
+  do i=1,megqwantran%nwt
+    do j=1,megqwantran%nwt
       do ig=1,ngvecme
         vcwan(i,j)=vcwan(i,j)+dconjg(megqwan(i,ig))*megqwan(j,ig)*vhgq(ig,iq)
       enddo

@@ -12,18 +12,17 @@ complex(8), allocatable :: chi0(:,:)
 complex(8), allocatable :: chi0wan_k(:,:,:)
 complex(8), allocatable :: chi0wan(:,:)
 complex(8), allocatable :: mexp(:,:,:)
-!complex(8), allocatable :: megqwan1(:,:)
 complex(8), allocatable :: megqwan_tmp(:,:)
-integer, allocatable :: imegqwan_tmp(:,:)
-
 integer i,iw,i1,i2,ikloc,n,j
-integer ist1,ist2,nfxcloc,nwloc,jwloc,iwloc
+integer ist1,ist2,nwloc,jwloc
 integer it1(3),it2(3),it(3)
 character*100 qnm,qdir,fout,fstat
 integer ik,n1,n2
+integer nwt
+integer, allocatable :: iwt_tmp(:,:)
 real(8) vtc(3)
 
-real(8) t1,t2,t3,t4,t5,t6,t7
+real(8) t1,t2,t3
 
 call getqdir(iq,vqm(:,iq),qdir)
 call getqname(vqm(:,iq),qnm)
@@ -54,7 +53,6 @@ if (wproc) then
   call flushifc(150)
 endif
   
-! cutoff small matrix elements
 if (wannier_chi0_chi) then
 ! Warning: this is quick fix. Code is taken from genmegq.f90.  
 !   The reason for recomputing megqwan is that for optical limit of 
@@ -67,34 +65,34 @@ if (wannier_chi0_chi) then
   if (all(vqm(:,iq).eq.0)) then
     megqwan=zzero
     call genmegqwan(iq)
-    call mpi_grid_reduce(megqwan(1,1),nmegqwan*ngvecme,dims=(/dim_k,dim_b/),&
-      all=.true.)
+    call mpi_grid_reduce(megqwan(1,1),megqwantran%nwt*ngvecme,&
+      dims=(/dim_k,dim_b/),all=.true.)
     megqwan=megqwan/nkptnr
   endif
-  
-  allocate(megqwan_tmp(nmegqwan,ngvecme))
+endif
+! filter matrix elements
+if (wannier_chi0_chi.and..false.) then
+  allocate(megqwan_tmp(megqwantran%nwt,ngvecme))
   megqwan_tmp=zzero
-  allocate(imegqwan_tmp(5,nmegqwan))
-  imegqwan_tmp=0
-  j=0
-  do i=1,nmegqwan
+  allocate(iwt_tmp(5,megqwantran%nwt))
+  iwt_tmp=0
+  nwt=0
+  do i=1,megqwantran%nwt
     if (abs(megqwan(i,iig0q)).ge.megqwan_cutoff(1).and.&
         abs(megqwan(i,iig0q)).le.megqwan_cutoff(2)) then
-      j=j+1
-      imegqwan_tmp(:,j)=imegqwan(:,i)
-      megqwan_tmp(j,:)=megqwan(i,:)
+      nwt=nwt+1
+      iwt_tmp(:,nwt)=megqwantran%iwt(:,i)
+      megqwan_tmp(nwt,:)=megqwan(i,:)
     endif
   enddo
-! new number of matrix elements
-  nmegqwan=j
+  call deletewantran(megqwantran)
+  megqwantran%nwt=nwt
+  allocate(megqwantran%iwt(5,nwt))
+  megqwantran%iwt(:,1:nwt)=iwt_tmp(:,1:nwt)
   deallocate(megqwan)
-  allocate(megqwan(nmegqwan,ngvecme))
-  megqwan(1:nmegqwan,:)=megqwan_tmp(1:nmegqwan,:)
-  deallocate(imegqwan)
-  allocate(imegqwan(5,nmegqwan))
-  imegqwan(:,1:nmegqwan)=imegqwan_tmp(:,1:nmegqwan)
-  deallocate(megqwan_tmp)
-  deallocate(imegqwan_tmp)
+  allocate(megqwan(nwt,ngvecme))
+  megqwan(1:nwt,:)=megqwan_tmp(1:nwt,:)
+  deallocate(iwt_tmp,megqwan_tmp)
 endif
 
 ! for response in Wannier bais
@@ -107,42 +105,43 @@ if (wannier_chi0_chi) then
       megqwan_cutoff
     write(150,'("megqwan distance cutoff (min,max) : ",2F12.6)')&
       megqwan_mindist,megqwan_maxdist
-    write(150,'("Number of Wannier transitions after cutoff : ",I6)')nmegqwan
+    write(150,'("Number of Wannier transitions after cutoff : ",I6)')&
+      megqwantran%nwt
     write(150,*)
     write(150,'("<n|e^{-iqx}|n''T> where q-vector is not reduced")')    
     write(150,'(65("-"))')    
     call printwanntrans(150,megqwan(1,iig0q))
   endif
-  allocate(chi0wan(nmegqwan,nmegqwan))
-  allocate(chi0wan_k(nmegqwan,nmegqwan,nkptnrloc))
-  allocate(mexp(nmegqwan,nmegqwan,nkptnrloc))
-  do i1=1,nmegqwan
-    do i2=1,nmegqwan
-      it1(:)=imegqwan(3:5,i1)
-      it2(:)=imegqwan(3:5,i2)
+  allocate(chi0wan(megqwantran%nwt,megqwantran%nwt))
+  allocate(chi0wan_k(megqwantran%nwt,megqwantran%nwt,nkptnrloc))
+  allocate(mexp(megqwantran%nwt,megqwantran%nwt,nkptnrloc))
+  do i1=1,megqwantran%nwt
+    do i2=1,megqwantran%nwt
+      it1(:)=megqwantran%iwt(3:5,i1)
+      it2(:)=megqwantran%iwt(3:5,i2)
       it(:)=it1(:)-it2(:)
       vtc(:)=avec(:,1)*it(1)+avec(:,2)*it(2)+avec(:,3)*it(3)
       do ikloc=1,nkptnrloc
         ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-! phase e^{i(k+q)T}
-        mexp(i1,i2,ikloc)=exp(dcmplx(0.d0,dot_product(vkcnr(:,ik)+vqc(:,iq),&
-          vtc(:))))   
+! phase e^{i(k+q)(T1-T2)}
+        mexp(i1,i2,ikloc)=exp(zi*dot_product(vkcnr(:,ik)+vqc(:,iq),vtc(:)))
       enddo
     enddo
   enddo
 ! arrangement for zgemm  
-  allocate(wann_cc(nmegqblhwanmax,nmegqwan,nkptnrloc))
-  allocate(wann_cc2(nmegqblhwanmax,nmegqwan))
+  allocate(wann_cc(nmegqblhwanmax,megqwantran%nwt,nkptnrloc))
+  allocate(wann_cc2(nmegqblhwanmax,megqwantran%nwt))
   wann_cc=zzero
   do ikloc=1,nkptnrloc
     do i1=1,nmegqblhwan(ikloc)
       i=imegqblhwan(i1,ikloc)
       ist1=bmegqblh(1,i,ikloc)
       ist2=bmegqblh(2,i,ikloc)
-      do n=1,nmegqwan
-        n1=imegqwan(1,n)
-        n2=imegqwan(2,n)
-        wann_cc(i1,n,ikloc)=wanncnrloc(n1,ist1,ikloc)*dconjg(wann_c_jk(n2,ist2,ikloc))
+      do n=1,megqwantran%nwt
+        n1=megqwantran%iwt(1,n)
+        n2=megqwantran%iwt(2,n)
+        wann_cc(i1,n,ikloc)=wanncnrloc(n1,ist1,ikloc)*&
+          dconjg(wann_c_jk(n2,ist2,ikloc))
       enddo
     enddo !i1
   enddo !ikloc
@@ -151,22 +150,17 @@ endif !wannier_chi0_chi
 allocate(chi0(ngvecme,ngvecme))
 allocate(megqblh2(nmegqblhlocmax,ngvecme))
 
-! distribute nfxca between 3-rd dimension 
-nfxcloc=mpi_grid_map(nfxca,dim_b)
 ! distribute frequency points over 1-st dimension
 nwloc=mpi_grid_map(lr_nw,dim_k)
 
 allocate(chi0loc(ngvecme,ngvecme,nwloc))
-if (wannier_chi0_chi) allocate(chi0wanloc(nmegqwan,nmegqwan,nwloc))
+if (wannier_chi0_chi) then
+  allocate(chi0wanloc(megqwantran%nwt,megqwantran%nwt,nwloc))
+endif
 
 call timer_start(1,reset=.true.)
 call timer_reset(2)
 call timer_reset(3)
-call timer_reset(4)
-call timer_reset(5)
-call timer_reset(6)
-call timer_reset(7)
-call timer_reset(8)
 ! loop over energy points
 do iw=1,lr_nw
   call timer_start(10,reset=.true.)
@@ -200,8 +194,8 @@ do iw=1,lr_nw
       chi0wan(:,:)=chi0wan(:,:)+mexp(:,:,ikloc)*chi0wan_k(:,:,ikloc)
     enddo !ikloc
 ! sum chi0wan over all k-points
-    call mpi_grid_reduce(chi0wan(1,1),nmegqwan*nmegqwan,dims=(/dim_k/),&
-      root=(/j/))
+    call mpi_grid_reduce(chi0wan(1,1),megqwantran%nwt*megqwantran%nwt,&
+      dims=(/dim_k/),root=(/j/))
     chi0wan(:,:)=chi0wan(:,:)/nkptnr/omega
     if (wannier_chi0_afm) chi0wan(:,:)=chi0wan(:,:)*2.d0
 !!! WSTHORNTON
