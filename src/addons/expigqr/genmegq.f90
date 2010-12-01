@@ -150,7 +150,7 @@ if (wannier_megq) then
     write(150,*)
     write(150,'("Time for megqwan : ",F8.2)')timer_get_value(6)
   endif
-!  call printmegqwan(iq)
+  !call printmegqwan(iq)
 endif
 !call printmegqblh(iq)
 ! for G=q=0: e^{iqx}=1+iqx
@@ -228,6 +228,5 @@ if (wproc) then
   write(150,'("Done.")')
   call flushifc(150)
 endif
-stop
 return
 end

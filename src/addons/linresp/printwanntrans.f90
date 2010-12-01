@@ -4,7 +4,7 @@ use mod_linresp
 use mod_wannier
 implicit none
 integer, intent(in) :: fout
-complex(8), intent(in) :: dat(nmegqwan)
+complex(8), intent(in) :: dat(megqwantran%nwt)
 integer ias,jas,lm1,lm2,n,n1,vtl(3)
 real(8) vtc(3),vrc(3)
 character*20 c1,c2,c3,c4
@@ -12,10 +12,10 @@ character, parameter :: orb(4)=(/'s','p','d','f'/)
 integer i
 character*200 str
 
-do i=1,nmegqwan
-  n=imegqwan(1,i)
-  n1=imegqwan(2,i)
-  vtl=imegqwan(3:5,i)
+do i=1,megqwantran%nwt
+  n=megqwantran%iwt(1,i)
+  n1=megqwantran%iwt(2,i)
+  vtl=megqwantran%iwt(3:5,i)
   ias=wan_info(1,n)
   lm1=wan_info(2,n)
   jas=wan_info(1,n1)
@@ -58,8 +58,8 @@ do i=1,nmegqwan
   write(fout,'(A)')trim(str)
   
 !  write(fout,'("i : ",I4," n=",I4," ",A,"  -> ",I4,"T=",3I3," ",A,"    R=",3F12.6,&
-!    &"   D=",F12.6,"  |me(G0q)|=",G18.10)')i,imegqwan(1,i),&
-!    trim(c3),imegqwan(2,i),trim(c4),vtc,sqrt(sum(vtc(:)**2)),dat(i)
+!    &"   D=",F12.6,"  |me(G0q)|=",G18.10)')i,megqwantran%iwt(1,i),&
+!    trim(c3),megqwantran%iwt(2,i),trim(c4),vtc,sqrt(sum(vtc(:)**2)),dat(i)
 enddo
 call flushifc(fout)
 return

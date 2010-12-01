@@ -101,6 +101,7 @@ if (wannier_megq) then
   !all_wan_ibt=.false.
   !call getimegqwan(all_wan_ibt)
   call genwantran(megqwantran,megqwan_mindist,megqwan_maxdist)
+  !call printwantran(megqwantran)
   
 ! bingings for old code
 !  nmegqwan=megqwantran%nwantran
