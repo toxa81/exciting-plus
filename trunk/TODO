@@ -1,2 +1,4 @@
 * clean SHT part
-* robust nearest neighbours search
+* response code optimization 
+* clear the code from nmegqwan,imegqwan
+* scalapack diagonalization
