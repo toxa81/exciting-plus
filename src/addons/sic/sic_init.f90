@@ -71,39 +71,29 @@ if (mpi_grid_root()) then
 endif
 call mpi_grid_barrier()
 ! get all Wannier transitions
-!all_wan_ibt=.true.
-!call getimegqwan(all_wan_ibt)
 call deletewantran(sic_wantran)
-call genwantran(sic_wantran,0.d0,sic_me_cutoff,allwt=.true.)
-call printwantran(sic_wantran)
-stop
+call genwantran(sic_wantran,-0.d0,sic_me_cutoff,allwt=.true.)
 ! allocate once main arrays of SIC code
 !  wan(mt,ir) - Wannier function defined on a real-space grid
 !  wv(mt,ir) - product of a Wannier function with it's potential
 if (.not.tsic_arrays_allocated) then
-  !if (allocated(wanmt)) deallocate(wanmt)
   allocate(wanmt(lmmaxvr,nmtloc,ntr,nspinor,nwantot))
   wanmt=zzero
-  !if (allocated(wanir)) deallocate(wanir)
   allocate(wanir(ngrloc,ntr,nspinor,nwantot))
   wanir=zzero
-  !if (allocated(wvmt)) deallocate(wvmt)
   allocate(wvmt(lmmaxvr,nmtloc,ntr,nspinor,nwantot))
   wvmt=zzero
-  !if (allocated(wvir)) deallocate(wvir)  
   allocate(wvir(ngrloc,ntr,nspinor,nwantot))
   wvir=zzero
-  !if (allocated(sic_apply)) deallocate(sic_apply)
   allocate(sic_apply(nwantot))
   sic_apply=1
-  !if (allocated(vwanme)) deallocate(vwanme)
-  allocate(vwanme(nmegqwan))
+  allocate(vwanme(sic_wantran%nwt))
   vwanme=zzero
   do n=1,nwantot
     i=wan_info(6,n)
     j=wan_info(7,n)
     if (allocated(wann_sic)) sic_apply(n)=wann_sic(j,i)
-    if (allocated(wann_sic_v)) vwanme(idxmegqwan(n,n,0,0,0))=zone*wann_sic_v(j,i)
+    if (allocated(wann_sic_v)) vwanme(sic_wantran%iwtidx(n,n,0,0,0))=zone*wann_sic_v(j,i)
   enddo
   tsic_arrays_allocated=.true.
 endif

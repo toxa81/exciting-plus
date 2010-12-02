@@ -8,16 +8,14 @@ implicit none
 complex(8), intent(out) :: vhwanmt(lmmaxvr,nmtloc,ntr,nspinor,nwantot)
 complex(8), intent(out) :: vhwanir(ngrloc,ntr,nspinor,nwantot)
 integer nvqloc,iqloc,it,iq,n,ig,ias,i
-real(8) vtrc(3)
-complex(8), allocatable ::megqwan1(:,:,:)
 complex(8), allocatable :: pwmt(:,:)
 complex(8), allocatable :: pwir(:)
+complex(8), allocatable ::megqwan1(:,:,:)
 complex(8) expikt,zt1
 character*100 qnm
 
 vhwanmt=zzero
 vhwanir=zzero
-wannier_megq=.true.
 call init_qbz(tq0bz,1)
 call init_q_gq
 ! create q-directories
@@ -29,11 +27,15 @@ if (mpi_grid_root()) then
   enddo
 endif
 call mpi_grid_barrier()
-! distribute q-vectors along 2-nd dimention
-nvqloc=mpi_grid_map(nvq,dim_q)
+wannier_megq=.true.
+megq_include_bands(:)=(/100.1d0,-100.1d0/)
+call deletewantran(megqwantran)
+!call genwantran(megqwantran,-0.d0,0.01d0,diagwt=.true.)
+call genwantran(megqwantran,-0.d0,5.92d0,allwt=.true.)
 allocate(megqwan1(nwantot,ngqmax,nvq))
 megqwan1=zzero
-chi0_include_bands(:)=(/100.1d0,-100.1d0/)
+! distribute q-vectors along 2-nd dimention
+nvqloc=mpi_grid_map(nvq,dim_q)
 call timer_start(10,reset=.true.)
 ! loop over q-points
 do iqloc=1,nvqloc
@@ -41,7 +43,7 @@ do iqloc=1,nvqloc
   call genmegq(iq,.true.,.false.)
 ! save <n,T=0|e^{-i(G+q)r}|n,T=0>
   do n=1,nwantot
-    megqwan1(n,1:ngq(iq),iq)=megqwan(idxmegqwan(n,n,0,0,0),1:ngq(iq))
+    megqwan1(n,1:ngq(iq),iq)=megqwan(megqwantran%iwtidx(n,n,0,0,0),1:ngq(iq))
   enddo
 enddo
 call mpi_grid_reduce(megqwan1(1,1,1),nwantot*ngqmax*nvq,dims=(/dim_q/), &
