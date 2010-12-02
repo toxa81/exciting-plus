@@ -84,8 +84,9 @@ enddo
 if (ttop.and.tbot) then
 ! set the band energy to the mid-point
   e=(etop+ebot)/2.d0
-  fnd=.true.
 endif
+! don't signal that linearization energy is not found 
+fnd=.true.
 return
 end subroutine
 !EOC

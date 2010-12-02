@@ -74,7 +74,7 @@ zn=-dble(nz)
 ! minimum radial mesh point proportional to 1/sqrt(Z)
 rmin=2.d-6/sqrt(dble(nz))
 ! set the number of radial mesh points proportional to number of nodes
-nrmt=100*(nmax+1)
+nrmt=150*(nmax+1)
 ! default effective infinity
 rmax=100.d0
 do i=1,2
@@ -116,17 +116,18 @@ do ist=1,nst
     end do
   end if
 end do
-lmax=1
+lmax=0
 do ist=1,nst
   if (.not.core(ist)) lmax=max(lmax,l(ist))
 end do
+lmax=min(lmax+1,3)
 ! determine the local orbitals
 nlorb=lmax+1
 lorb(:)=.false.
 do ist=1,nst
   if (.not.core(ist)) then
     if ((l(ist).eq.0).or.(l(ist).lt.k(ist))) then
-      if ((eval(ist).lt.esccut).or.(l(ist).ge.2)) then
+      if (eval(ist).lt.esccut) then
         lorb(ist)=.true.
         nlorb=nlorb+1
       end if
@@ -149,12 +150,16 @@ do ist=2,nst
 end do
 write(60,'(I4,T45,": apword")') 1
 write(60,'(F8.4,I4,"  ",L1,T45,": apwe0, apwdm, apwve")') apwe0,0,.false.
-write(60,'(I4,T45,": nlx")') 0
+write(60,'(I4,T45,": nlx")') lmax+1
+do i=0,lmax
+  write(60,'(2I4,T45,": l, apword")')i,1
+  write(60,'(F8.4,I4,"  ",L1,T45,": apwe0, apwdm, apwve")') apwe0,0,.true.
+enddo
 write(60,'(I4,T45,": nlorb")') nlorb
 do i=0,lmax
   write(60,'(2I4,T45,": lorbl, lorbord")') i,2
-  write(60,'(F8.4,I4,"  ",L1,T45,": lorbe0, lorbdm, lorbve")') apwe0,0,.false.
-  write(60,'(F8.4,I4,"  ",L1)') apwe0,1,.false.
+  write(60,'(F8.4,I4,"  ",L1,T45,": lorbe0, lorbdm, lorbve")') apwe0,0,.true.
+  write(60,'(F8.4,I4,"  ",L1)') apwe0,1,.true.
 end do
 do ist=1,nst
   if (lorb(ist)) then
@@ -163,7 +168,7 @@ do ist=1,nst
      .false.
     write(60,'(F8.4,I4,"  ",L1)') apwe0,1,.false.
 ! subtract 0.25 Ha from eigenvalue because findband searches upwards
-    write(60,'(F8.4,I4,"  ",L1)') eval(ist)-0.25d0,0,.true.
+    write(60,'(F8.4,I4,"  ",L1)') eval(ist),0,.true.
   end if
 end do
 close(60)
