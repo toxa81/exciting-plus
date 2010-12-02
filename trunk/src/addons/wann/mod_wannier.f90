@@ -113,7 +113,7 @@ logical, optional, intent(in) :: allwt
 logical, optional, intent(in) :: diagwt
 ! local variables
 integer m,n,j,nwtmax,i,k,t(3),ias,jas
-logical ladd,lkeep,allwt_,diagwt_
+logical ladd,allwt_,diagwt_
 integer nwan,nwt,ntr,tlim(2,3)
 integer, allocatable :: iwan(:)
 integer, allocatable :: iwt(:,:)

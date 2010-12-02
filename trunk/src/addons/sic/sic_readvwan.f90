@@ -5,7 +5,7 @@ use mod_hdf5
 use mod_linresp
 use mod_wannier
 implicit none
-integer it,n,ispn
+integer it,n,ispn,nwt
 character*20 c1,c2,c3
 character*100 path
 logical exist
@@ -17,12 +17,14 @@ if (tsic_wv) return
 inquire(file="sic.hdf5",exist=exist)
 if (.not.exist) return
 
-call hdf5_read("sic.hdf5","/","nmegqwan",nmegqwan)
-if (.not.allocated(imegqwan)) allocate(imegqwan(5,nmegqwan))
-call hdf5_read("sic.hdf5","/","imegqwan",imegqwan(1,1),(/5,nmegqwan/))
-if (allocated(vwanme)) deallocate(vwanme)
-allocate(vwanme(nmegqwan))
-call hdf5_read("sic.hdf5","/","vwanme",vwanme(1),(/nmegqwan/))
+call hdf5_read("sic.hdf5","/","nwt",nwt)
+if (nwt.ne.sic_wantran%nwt) then
+  write(*,'("Error(sic_readvwan) wrong number of Wannier transitions")')
+  write(*,'("  nwt read from file : ",I6)')nwt
+  write(*,'("  sic_wantran%nwt : ",I6)')sic_wantran%nwt
+  call pstop
+endif
+call hdf5_read("sic.hdf5","/","vwanme",vwanme(1),(/sic_wantran%nwt/))
 call hdf5_read("sic.hdf5","/","sic_etot_correction",sic_etot_correction)
 
 allocate(fmt(lmmaxvr,nrmtmax,natmtot))

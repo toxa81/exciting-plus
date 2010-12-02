@@ -59,15 +59,15 @@ call sic_pot(151,ene)
 !----------------------------------!
 ! matrix elements of SIC potential !
 !----------------------------------!
-allocate(vwanme_old(nmegqwan))
+allocate(vwanme_old(sic_wantran%nwt))
 vwanme_old=vwanme
 ! compute matrix elements of SIC potential
 !  vwanme = <w_n|v_n|w_{n1,T}>
 vwanme=zzero
-do i=1,nmegqwan
-  n=imegqwan(1,i)
-  n1=imegqwan(2,i)
-  vl(:)=imegqwan(3:5,i)
+do i=1,sic_wantran%nwt
+  n=sic_wantran%iwt(1,i)
+  n1=sic_wantran%iwt(2,i)
+  vl(:)=sic_wantran%iwt(3:5,i)
   do ispn=1,nspinor    
     vwanme(i)=vwanme(i)+sic_dot_ll(wvmt(1,1,1,ispn,n),wvir(1,1,ispn,n),&
       wanmt(1,1,1,ispn,n1),wanir(1,1,ispn,n1),vl,twanmt(1,1,n),twanmt(1,1,n1))
@@ -76,11 +76,11 @@ enddo
 t1=0.d0
 t2=-1.d0
 t3=0.d0
-do i=1,nmegqwan
-  n=imegqwan(1,i)
-  n1=imegqwan(2,i)
-  vl(:)=imegqwan(3:5,i)
-  j=idxmegqwan(n1,n,-vl(1),-vl(2),-vl(3))
+do i=1,sic_wantran%nwt
+  n=sic_wantran%iwt(1,i)
+  n1=sic_wantran%iwt(2,i)
+  vl(:)=sic_wantran%iwt(3:5,i)
+  j=sic_wantran%iwtidx(n1,n,-vl(1),-vl(2),-vl(3))
   t1=t1+abs(vwanme(i)-dconjg(vwanme(j)))
   if (abs(vwanme(i)-dconjg(vwanme(j))).ge.t2) then
     t2=abs(vwanme(i)-dconjg(vwanme(j)))
@@ -92,34 +92,34 @@ enddo
 if (wproc) then
   call timestamp(151,"done with matrix elements")
   write(151,*)
-  write(151,'("Number of Wannier transitions : ",I6)')nmegqwan
+  write(151,'("Number of Wannier transitions : ",I6)')sic_wantran%nwt
   write(151,'("Matrix elements of SIC potential &
     &(n n1  <w_n|v_n|w_n1}>)")')
-  do i=1,nmegqwan
-    vl(:)=imegqwan(3:5,i)
+  do i=1,sic_wantran%nwt
+    vl(:)=sic_wantran%iwt(3:5,i)
     if (all(vl.eq.0)) then
-      write(151,'(I4,4X,I4,4X,2G18.10)')imegqwan(1:2,i),&
+      write(151,'(I4,4X,I4,4X,2G18.10)')sic_wantran%iwt(1:2,i),&
         dreal(vwanme(i)),dimag(vwanme(i))
     endif
   enddo
   write(151,*)
   write(151,'("Maximum deviation from ""localization criterion"" : ",F12.6)')t2
-  write(151,'("Average deviation from ""localization criterion"" : ",F12.6)')t1/nmegqwan
+  write(151,'("Average deviation from ""localization criterion"" : ",F12.6)')t1/sic_wantran%nwt
   write(151,*)
   write(151,'("Matrix elements with maximum difference : ",2I6)')i1,j1
-  write(151,'(I4,4X,I4,4X,3I4,4X,2G18.10)')imegqwan(:,i1),&
+  write(151,'(I4,4X,I4,4X,3I4,4X,2G18.10)')sic_wantran%iwt(:,i1),&
         dreal(vwanme(i1)),dimag(vwanme(i1))
-  write(151,'(I4,4X,I4,4X,3I4,4X,2G18.10)')imegqwan(:,j1),&
+  write(151,'(I4,4X,I4,4X,3I4,4X,2G18.10)')sic_wantran%iwt(:,j1),&
         dreal(vwanme(j1)),dimag(vwanme(j1))
   write(151,*)
   write(151,'("Diagonal matrix elements")')
   write(151,'(2X,"wann",18X,"V_n")')
   write(151,'(44("-"))')
   do n=1,nwantot
-    j=idxmegqwan(n,n,0,0,0)
+    j=sic_wantran%iwtidx(n,n,0,0,0)
     write(151,'(I4,4X,2G18.10)')n,dreal(vwanme(j)),dimag(vwanme(j))
   enddo  
-  t3=sqrt(t3/nmegqwan)
+  t3=sqrt(t3/sic_wantran%nwt)
   write(151,*)
   write(151,'("SIC matrix elements RMS difference :",G18.10)')t3  
   call flushifc(151)
@@ -129,10 +129,10 @@ deallocate(vwanme_old)
 allocate(vwank(nwantot,nwantot))
 do ik=1,nkpt
   vwank=zzero
-  do i=1,nmegqwan
-    n1=imegqwan(1,i)
-    n2=imegqwan(2,i)
-    vtrl(:)=imegqwan(3:5,i)
+  do i=1,sic_wantran%nwt
+    n1=sic_wantran%iwt(1,i)
+    n2=sic_wantran%iwt(2,i)
+    vtrl(:)=sic_wantran%iwt(3:5,i)
     vtrc(:)=vtrl(1)*avec(:,1)+vtrl(2)*avec(:,2)+vtrl(3)*avec(:,3)
     z1=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
     vwank(n1,n2)=vwank(n1,n2)+z1*vwanme(i)
