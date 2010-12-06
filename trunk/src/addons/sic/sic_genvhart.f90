@@ -30,8 +30,7 @@ call mpi_grid_barrier()
 wannier_megq=.true.
 megq_include_bands(:)=(/100.1d0,-100.1d0/)
 call deletewantran(megqwantran)
-!call genwantran(megqwantran,-0.d0,0.01d0,diagwt=.true.)
-call genwantran(megqwantran,-0.d0,5.92d0,allwt=.true.)
+call genwantran(megqwantran,-0.d0,0.01d0,diagwt=.true.)
 allocate(megqwan1(nwantot,ngqmax,nvq))
 megqwan1=zzero
 ! distribute q-vectors along 2-nd dimention
