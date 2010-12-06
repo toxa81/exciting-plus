@@ -62,13 +62,18 @@ do i=1,sic_wantran%nwt
 enddo
 if (wproc) then
   write(fout,*)
-  write(fout,'("Wannier overlap integrals (n n1 <w_n|w_n1>)")')
-  do i=1,sic_wantran%nwt
-    vl(:)=sic_wantran%iwt(3:5,i)
-    if (all(vl.eq.0)) then
-      write(151,'(I4,4X,I4,4X,2G18.10)')sic_wantran%iwt(1:2,i),&
-        dreal(ovlp(i)),dimag(ovlp(i))
-    endif
+!  write(fout,'("Wannier overlap integrals (n n1 <w_n|w_n1>)")')
+!  do i=1,sic_wantran%nwt
+!    vl(:)=sic_wantran%iwt(3:5,i)
+!    if (all(vl.eq.0)) then
+!      write(151,'(I4,4X,I4,4X,2G18.10)')sic_wantran%iwt(1:2,i),&
+!        dreal(ovlp(i)),dimag(ovlp(i))
+!    endif
+!  enddo
+  write(fout,'("Wannier overlap integrals (<w_n|w_n>)")')
+  do n=1,nwantot
+    j=sic_wantran%iwtidx(n,n,0,0,0)
+    write(151,'(I4,4X,2G18.10)')n,dreal(ovlp(j)),dimag(ovlp(j))
   enddo
   write(fout,*)
   write(fout,'("Maximum deviation from norm                 : ",F12.6)')t2
