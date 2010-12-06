@@ -75,13 +75,6 @@ data megqwan_mindist/-0.0d0/
 real(8) megqwan_maxdist
 data megqwan_maxdist/0.1d0/
 
-integer nmegqwan
-integer megqwan_tlim(2,3)
-integer ntmegqwan
-integer, allocatable :: imegqwan(:,:)
-integer, allocatable :: itmegqwan(:,:)
-integer, allocatable :: idxmegqwan(:,:,:,:,:)
-
 complex(8), allocatable :: megqwan(:,:)
 
 integer nwann_include
@@ -169,15 +162,9 @@ integer, parameter :: f_loss_wann            = 18
 integer, parameter :: nf_response            = 18
 complex(8), allocatable :: f_response(:,:,:)
 
-complex(8), allocatable :: uscrnwan(:,:)
-complex(8), allocatable :: jscrnwan(:,:)
-complex(8), allocatable :: ubarewan(:)
 complex(8), allocatable :: u4(:,:,:,:)
 
 type(wannier_transitions) :: megqwantran
-type(wannier_transitions) :: u4wantran
-
-
 
 
 end module

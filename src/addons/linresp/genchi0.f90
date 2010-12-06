@@ -152,7 +152,7 @@ allocate(megqblh2(nmegqblhlocmax,ngvecme))
 
 ! distribute frequency points over 1-st dimension
 nwloc=mpi_grid_map(lr_nw,dim_k)
-
+if (allocated(chi0loc)) deallocate(chi0loc)
 allocate(chi0loc(ngvecme,ngvecme,nwloc))
 if (wannier_chi0_chi) then
   allocate(chi0wanloc(megqwantran%nwt,megqwantran%nwt,nwloc))

@@ -4,7 +4,7 @@ use mod_addons_q
 use mod_linresp
 use mod_wannier
 ! arguments
-complex(8), intent(in) :: chi0wan(nmegqwan,nmegqwan)
+complex(8), intent(in) :: chi0wan(megqwantran%nwt,megqwantran%nwt)
 integer, intent(in) :: iq
 integer, intent(in) :: iw
 real(8), intent(in) :: w
@@ -34,29 +34,29 @@ character*200 str
 
 ! do allocations
 lwmax = 100000
-allocate(A(nmegqwan,nmegqwan))
-allocate(S(nmegqwan))
-allocate(U(nmegqwan,nmegqwan))
-allocate(VT(nmegqwan,nmegqwan))
+allocate(A(megqwantran%nwt,megqwantran%nwt))
+allocate(S(megqwantran%nwt))
+allocate(U(megqwantran%nwt,megqwantran%nwt))
+allocate(VT(megqwantran%nwt,megqwantran%nwt))
 allocate(work(lwmax))
-allocate(tmp1(nmegqwan))
-allocate(tmp2(nmegqwan))
+allocate(tmp1(megqwantran%nwt))
+allocate(tmp2(megqwantran%nwt))
 
 ! make copy of chi0wan
 A = abs(chi0wan)
 
 ! lapack nonsense
 lwork = lwmax
-lda = nmegqwan
-ldu = nmegqwan
-ldvt = nmegqwan
+lda = megqwantran%nwt
+ldu = megqwantran%nwt
+ldvt = megqwantran%nwt
 
 !write(c1,'(I6)')iw
 !fname="matrixA__"//trim(adjustl(c1))//".txt"
 !open(210,file=trim(fname),form='formatted',status='replace')
 !if (wproc) then
 !  write(210,'(F15.5)')w
-!  do i=1,nmegqwan
+!  do i=1,megqwantran%nwt
 !    write(210,'(100F15.5)')A(i,:)
 !  enddo
 !endif
@@ -69,16 +69,16 @@ ldvt = nmegqwan
 !  print *, ''
 !  print *, 'A matrix:'
 !  print *, '------------------------------------------------------------'
-!  do i=1,nmegqwan
+!  do i=1,megqwantran%nwt
 !    print '(100F15.5)',A(i,:)
 !  enddo
 !endif
 
-call dgesvd('A','A',nmegqwan,nmegqwan,A(1,1),lda,S(1),U(1,1),ldu,VT(1,1),ldvt,work,&
+call dgesvd('A','A',megqwantran%nwt,megqwantran%nwt,A(1,1),lda,S(1),U(1,1),ldu,VT(1,1),ldvt,work,&
   lwork,info)
 
 nlow = -1
-do i=1,nmegqwan
+do i=1,megqwantran%nwt
   t1 = S(1)/S(i)
   if (t1.lt.4.0) then
     nlow = i
@@ -91,7 +91,7 @@ enddo
 !  print *, ''
 !  print *, 'S matrix:'
 !  print *, '------------------------------------------------------------'
-!  do i=1,nmegqwan
+!  do i=1,megqwantran%nwt
 !    t1 = S(1)/S(i)
 !    if (t1.lt.4.0) then
 !      nlow = i
@@ -117,9 +117,9 @@ enddo
 !endif
 
 ! loop over particle-hole pairs
-do i=1,nmegqwan
+do i=1,megqwantran%nwt
   ! loop over singular values
-  do j=1,nmegqwan
+  do j=1,megqwantran%nwt
     tmp1(i)=tmp1(i)+S(j)*abs(U(i,j))
   enddo
 enddo
@@ -129,9 +129,9 @@ if (wproc) then
   fname="sing2_values__"//trim(adjustl(c1))//".txt"
   open(210,file=trim(fname),form='formatted',status='replace')
   write(210,'(F15.5)')w
-  do i=1,nmegqwan
-    n=imegqwan(1,i)
-    n1=imegqwan(2,i)
+  do i=1,megqwantran%nwt
+    n=megqwantran%iwt(1,i)
+    n1=megqwantran%iwt(2,i)
     write(210,'(I4," ---> ",I4,"     : ",F15.5)')n,n1,tmp1(i)
   enddo
   close(210)
@@ -152,11 +152,11 @@ if (wproc) then
       write(210,'(I4)')i
       str="           SV="//trim(adjustl(c1))
       write(210,'(A)')
-    do j=1,nmegqwan
+    do j=1,megqwantran%nwt
       if (U(j,i).gt.0.1) then
-        n=imegqwan(1,j)
-        n1=imegqwan(2,j)
-        vtl=imegqwan(3:5,j)
+        n=megqwantran%iwt(1,j)
+        n1=megqwantran%iwt(2,j)
+        vtl=megqwantran%iwt(3:5,j)
         ias=wan_info(1,n)
         lm1=wan_info(2,n)
         jas=wan_info(1,n1)
