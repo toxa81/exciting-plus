@@ -221,14 +221,14 @@ allocate(vtr(3,nwt))
 ntr=0
 do i=1,nwt
   t(:)=iwt(3:5,i)
+  ladd=.true.
   do j=1,ntr
-    ladd=.true.
     if (all(vtr(:,j).eq.t(:))) ladd=.false.
-    if (ladd) then
-      ntr=ntr+1
-      vtr(:,ntr)=t(:)
-    endif
   enddo
+  if (ladd) then
+    ntr=ntr+1
+    vtr(:,ntr)=t(:)
+  endif
 enddo
 twantran%ntr=ntr
 allocate(twantran%vtr(3,ntr))

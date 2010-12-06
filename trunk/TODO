@@ -1,4 +1,6 @@
 * clean SHT part
 * response code optimization 
-* clear the code from nmegqwan,imegqwan
+* clear the code from nmegqwan,imegqwan (crpa, unscreened U)
+* probaly: unify screened/unscreened U
 * scalapack diagonalization
+* regression tests

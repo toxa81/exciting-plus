@@ -4,19 +4,19 @@ implicit none
 integer i,j,is1,is2,n1,n2,n,it,iw,nwloc,iwloc
 integer i1,i2,j1,j2
 character*100 str,fname,fout
-integer mode,vtl_(3),nw,nwann,size,ngq,ngridk(3)
+integer mode,vtl_(3),nw,nwantot,size,ngq,ngridk(3)
 integer nwann_
 integer, allocatable :: iwann_(:)
 integer nu4
 integer, allocatable :: iu4(:,:) 
-integer nmegqwan
-integer, allocatable :: imegqwan(:,:)
-integer ntmegqwan
-integer, allocatable :: itmegqwan(:,:)
+integer nwt
+integer, allocatable :: iwt(:,:)
+integer ntr
+integer, allocatable :: vtr(:,:)
 integer tlim1(2,3)
-integer, allocatable :: idxt1(:,:,:,:,:) 
+integer, allocatable :: iwtidx(:,:,:,:,:) 
 integer tlim2(2,3)
-integer, allocatable :: idxt2(:,:,:) 
+integer, allocatable :: vtridx(:,:,:) 
 real(8), allocatable :: w(:)
 complex(8), allocatable :: u4mtrx(:,:,:)
 complex(8), allocatable :: uscrn(:,:,:)
@@ -52,50 +52,49 @@ else if (trim(adjustl(str)).eq."u4") then
 !  read(150,*)ilist_
 endif
 
-fname="uscrn0000.hdf5"
+
+
+
+
+fname="u4_0000.hdf5"
 inquire(file=trim(fname),exist=exist)
 if (.not.exist) then
-  write(*,'("File uscrn0000.hdf5 not found.")')
+  write(*,'("File u4_0000.hdf5 not found.")')
   return
 endif
 call hdf5_read(fname,"/parameters","nw",nw)
-call hdf5_read(fname,"/parameters","nwann",nwann)
+call hdf5_read(fname,"/parameters","nwantot",nwantot)
 call hdf5_read(fname,"/parameters","size",size)
-call hdf5_read(fname,"/parameters","nmegqwan",nmegqwan)
-allocate(imegqwan(5,nmegqwan))
-call hdf5_read(fname,"/parameters","imegqwan",imegqwan(1,1),(/5,nmegqwan/))  
+call hdf5_read(fname,"/parameters","nwt",nwt)
+allocate(iwt(5,nwt))
+call hdf5_read(fname,"/parameters","iwt",iwt(1,1),(/5,nwt/))  
 call hdf5_read(fname,"/parameters","ngq",ngq)
 call hdf5_read(fname,"/parameters","ngridk",ngridk(1),(/3/))  
-call hdf5_read(fname,"/parameters","ntmegqwan",ntmegqwan)
-allocate(itmegqwan(3,ntmegqwan))
-call hdf5_read(fname,"/parameters","itmegqwan",itmegqwan(1,1),(/3,ntmegqwan/))
+call hdf5_read(fname,"/parameters","ntr",ntr)
+allocate(vtr(3,ntr))
+call hdf5_read(fname,"/parameters","vtr",vtr(1,1),(/3,ntr/))
 ! find translation limits and build reverce ((tx,ty,tz) -> it) index
-tlim1(1,1)=minval(imegqwan(3,:))
-tlim1(2,1)=maxval(imegqwan(3,:))
-tlim1(1,2)=minval(imegqwan(4,:))
-tlim1(2,2)=maxval(imegqwan(4,:))
-tlim1(1,3)=minval(imegqwan(5,:))
-tlim1(2,3)=maxval(imegqwan(5,:))
-allocate(idxt1(nwann,nwann,tlim1(1,1):tlim1(2,1),tlim1(1,2):tlim1(2,2),&
-  tlim1(1,3):tlim1(2,3)))
-idxt1=-100
-do i=1,nmegqwan
-  idxt1(imegqwan(1,i),imegqwan(2,i),imegqwan(3,i),imegqwan(4,i),&
-    imegqwan(5,i))=i
+do i=1,3
+  tlim1(1,i)=minval(iwt(2+i,:))
+  tlim1(2,i)=maxval(iwt(2+i,:))
 enddo
-tlim2(1,1)=minval(itmegqwan(1,:))
-tlim2(2,1)=maxval(itmegqwan(1,:))
-tlim2(1,2)=minval(itmegqwan(2,:))
-tlim2(2,2)=maxval(itmegqwan(2,:))
-tlim2(1,3)=minval(itmegqwan(3,:))
-tlim2(2,3)=maxval(itmegqwan(3,:))
-allocate(idxt2(tlim2(1,1):tlim2(2,1),tlim2(1,2):tlim2(2,2),tlim2(1,3):tlim2(2,3)))
-idxt2=-100
-do i=1,ntmegqwan
-  idxt2(itmegqwan(1,i),itmegqwan(2,i),itmegqwan(3,i))=i
+allocate(iwtidx(nwantot,nwantot,tlim1(1,1):tlim1(2,1),tlim1(1,2):tlim1(2,2),&
+  tlim1(1,3):tlim1(2,3)))
+iwtidx=-1
+do i=1,nwt
+  iwtidx(iwt(1,i),iwt(2,i),iwt(3,i),iwt(4,i),iwt(5,i))=i
+enddo
+do i=1,3
+  tlim2(1,i)=minval(vtr(i,:))
+  tlim2(2,i)=maxval(vtr(i,:))
+enddo
+allocate(vtridx(tlim2(1,1):tlim2(2,1),tlim2(1,2):tlim2(2,2),tlim2(1,3):tlim2(2,3)))
+vtridx=-1
+do i=1,ntr
+  vtridx(vtr(1,i),vtr(2,i),vtr(3,i))=i
 enddo
 allocate(w(nw))
-allocate(u4mtrx(nmegqwan,nmegqwan,ntmegqwan))
+allocate(u4mtrx(nwt,nwt,ntr))
 write(c1,'(I6)')ngridk(1)
 write(c2,'(I6)')ngridk(2)
 write(c3,'(I6)')ngridk(3)
@@ -105,7 +104,7 @@ fout="cRPA__"//trim(adjustl(c1))//"x"//trim(adjustl(c2))//"x"//&
 zeps=dcmplx(0.d0,1d-12)
 if (mode.eq.0) then
 ! check that we have the required translation
-  if (idxt2(vtl_(1),vtl_(2),vtl_(3)).lt.0) then
+  if (vtridx(vtl_(1),vtl_(2),vtl_(3)).lt.0) then
     write(*,'("Error: translation ",3I4," is not in list")')vtl_
   endif
   allocate(uscrn(nwann_,nwann_,nw))
@@ -114,7 +113,7 @@ if (mode.eq.0) then
   uscrn=dcmplx(0.d0,0.d0)
   jscrn=dcmplx(0.d0,0.d0)
   do n=0,size-1
-    write(fname,'("uscrn",I4.4,".hdf5")')n
+    write(fname,'("u4_",I4.4,".hdf5")')n
     inquire(file=trim(fname),exist=exist)
     if (exist) then
       call hdf5_read(fname,"/parameters","nwloc",nwloc)
@@ -122,19 +121,19 @@ if (mode.eq.0) then
         write(c1,'(I8.8)')iwloc
         call hdf5_read(fname,"/iwloc/"//c1,"iw",iw)
         call hdf5_read(fname,"/iwloc/"//c1,"w",w(iw))
-        do it=1,ntmegqwan
+        do it=1,ntr
           write(c2,'("t",I7.7)')it
           call hdf5_read(fname,"/iwloc/"//c1//"/"//c2,"u4",u4mtrx(1,1,it),&
-            (/nmegqwan,nmegqwan/))
+            (/nwt,nwt/))
         enddo
 ! take 2-index U
         do n1=1,nwann_
           do n2=1,nwann_
-            i1=idxt1(iwann_(n1),iwann_(n1),0,0,0)
-            i2=idxt1(iwann_(n2),iwann_(n2),0,0,0)
-            j1=idxt1(iwann_(n1),iwann_(n2),0,0,0)
-            j2=idxt1(iwann_(n2),iwann_(n1),0,0,0)
-            it=idxt2(vtl_(1),vtl_(2),vtl_(3))
+            i1=iwtidx(iwann_(n1),iwann_(n1),0,0,0)
+            i2=iwtidx(iwann_(n2),iwann_(n2),0,0,0)
+            j1=iwtidx(iwann_(n1),iwann_(n2),0,0,0)
+            j2=iwtidx(iwann_(n2),iwann_(n1),0,0,0)
+            it=vtridx(vtl_(1),vtl_(2),vtl_(3))
             uscrn(n1,n2,iw)=u4mtrx(i1,i2,it)*ha2ev
             jscrn(n1,n2,iw)=u4mtrx(j1,j2,it)*ha2ev
           enddo !n2
@@ -227,7 +226,7 @@ endif !mode.eq.0
 if (mode.eq.1) then
 ! check that we have the required translation
   do i=1,nu4
-    if (idxt2(iu4(11,i),iu4(12,i),iu4(13,i)).lt.0) then
+    if (vtridx(iu4(11,i),iu4(12,i),iu4(13,i)).lt.0) then
       write(*,'("Error: translation ",3I4," is not in list")')iu4(11:13,i)
     endif
   enddo
@@ -242,15 +241,15 @@ if (mode.eq.1) then
         write(c1,'(I8.8)')iwloc
         call hdf5_read(fname,"/iwloc/"//c1,"iw",iw)
         call hdf5_read(fname,"/iwloc/"//c1,"w",w(iw))
-        do it=1,ntmegqwan
+        do it=1,ntr
           write(c2,'("t",I7.7)')it
           call hdf5_read(fname,"/iwloc/"//c1//"/"//c2,"u4",u4mtrx(1,1,it),&
-            (/nmegqwan,nmegqwan/))
+            (/nwt,nwt/))
         enddo
         do i=1,nu4
-          i1=idxt1(iu4(1,i),iu4(2,i),iu4(3,i),iu4(4,i),iu4(5,i))
-          i2=idxt1(iu4(6,i),iu4(7,i),iu4(8,i),iu4(9,i),iu4(10,i))
-          it=idxt2(iu4(11,i),iu4(12,i),iu4(13,i))
+          i1=iwtidx(iu4(1,i),iu4(2,i),iu4(3,i),iu4(4,i),iu4(5,i))
+          i2=iwtidx(iu4(6,i),iu4(7,i),iu4(8,i),iu4(9,i),iu4(10,i))
+          it=vtridx(iu4(11,i),iu4(12,i),iu4(13,i))
           u4(i,iw)=u4mtrx(i1,i2,it)*ha2ev
         enddo
       enddo !iwloc
@@ -321,7 +320,7 @@ endif !mode.eq.1
 !          write(c8,'(I8.8)')iwloc
 !          call hdf5_read(fname,"/iwloc/"//c8,"iw",iw)
 !          call hdf5_read(fname,"/iwloc/"//c8,"w",w(iw))
-!          call hdf5_read(fname,"/iwloc/"//c8,"uscrn",uscrn(1),(/nmegqwan/))
+!          call hdf5_read(fname,"/iwloc/"//c8,"uscrn",uscrn(1),(/nwt/))
 !          do i=1,nlist_
 !            uscrn2_(i,iw)=uscrn(ilist_(i))*ha2ev
 !          enddo
@@ -346,8 +345,4 @@ endif !mode.eq.1
 !    close(150)
 !  endif
 call hdf5_finalize
-end
-
-subroutine pstop
-stop
 end
