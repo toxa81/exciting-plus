@@ -3,7 +3,7 @@ subroutine genmegqblh(iq,ikloc,ngknr1,ngknr2,igkignr1,igkignr2,wfsvmt1,wfsvmt2,&
 use modmain
 use mod_addons_q
 use mod_nrkp
-use mod_linresp
+use mod_expigqr
 implicit none
 integer, intent(in) :: iq
 integer, intent(in) :: ikloc
@@ -42,11 +42,7 @@ igkq=idxkq(2,ik)
 offs=nmegqblhloc(2,ikloc)
 
 do ispn1=1,nspinor
-  if (lrtype.eq.0) then
-    ispn2=ispn1
-  else if (lrtype.eq.1) then 
-    ispn2=3-ispn1
-  endif
+  if (expigqr22.eq.1) ispn2=ispn1
 ! index of local part of interband transitions
   i=1
 ! go through the local fraction of interband transitions    

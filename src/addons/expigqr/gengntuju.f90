@@ -1,7 +1,7 @@
 subroutine gengntuju(iq,lmaxexp)
 use modmain
 use mod_addons_q
-use mod_linresp
+use mod_expigqr
 implicit none
 ! arguments
 integer, intent(in) :: iq

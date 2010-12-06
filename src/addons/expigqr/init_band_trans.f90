@@ -1,6 +1,7 @@
 subroutine init_band_trans
 use modmain
-use mod_linresp
+use mod_wannier
+use mod_expigqr
 implicit none
 integer ikloc,i
 logical, external :: wann_diel

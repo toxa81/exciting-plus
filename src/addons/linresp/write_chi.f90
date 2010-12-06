@@ -1,6 +1,7 @@
 subroutine write_chi(iq,ivq0m,ifxc)
 use modmain
 use mod_addons_q
+use mod_expigqr
 use mod_linresp
 implicit none
 integer, intent(in) :: iq

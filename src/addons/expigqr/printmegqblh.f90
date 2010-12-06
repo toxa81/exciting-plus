@@ -1,6 +1,7 @@
 subroutine printmegqblh(iq)
 use modmain
-use mod_linresp
+use mod_wannier
+use mod_expigqr
 implicit none
 integer, intent(in) :: iq
 integer i,ig,ikloc,ik,iboffs

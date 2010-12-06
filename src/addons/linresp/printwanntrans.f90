@@ -1,7 +1,8 @@
 subroutine printwanntrans(fout,dat)
 use modmain
-use mod_linresp
 use mod_wannier
+use mod_expigqr
+use mod_linresp
 implicit none
 integer, intent(in) :: fout
 complex(8), intent(in) :: dat(megqwantran%nwt)
