@@ -1,7 +1,8 @@
 subroutine init_kq(iq)
 use modmain
 use mod_addons_q
-use mod_linresp
+use mod_wannier
+use mod_expigqr
 implicit none
 integer, intent(in) :: iq
 integer ik,jk

@@ -1,7 +1,7 @@
 subroutine getmeidx(req)
 use modmain
 use mod_nrkp
-use mod_linresp
+use mod_expigqr
 implicit none
 ! arguments
 logical, intent(in) :: req
@@ -86,8 +86,8 @@ do ikloc=1,nkptnrloc
           l12=spinor_ud(1,ist1,ik).eq.1.and.spinor_ud(2,ist2,jk).eq.1
           l21=spinor_ud(2,ist1,ik).eq.1.and.spinor_ud(1,ist2,jk).eq.1
           l22=spinor_ud(2,ist1,ik).eq.1.and.spinor_ud(2,ist2,jk).eq.1
-          if (lrtype.eq.0.and.(l11.or.l22)) laddme=.true.
-          if (lrtype.eq.1.and.(l12.or.l21)) laddme=.true.
+          if (expigqr22.eq.1.and.(l11.or.l22)) laddme=.true.
+          !if (expigqr22.eq.2.and.(l12.or.l21)) laddme=.true.
         endif
       endif
       if (laddme) then

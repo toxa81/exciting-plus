@@ -1,7 +1,6 @@
 subroutine genchi0wan(mexp,chi0wan_k,chi0wan)
 use modmain
-use mod_linresp
-use mod_wannier
+use mod_expigqr
 implicit none
 complex(8), intent(in) :: chi0wan_k(megqwantran%nwt,megqwantran%nwt,nkptnrloc)
 complex(8), intent(in) :: mexp(megqwantran%nwt,megqwantran%nwt,nkptnrloc)

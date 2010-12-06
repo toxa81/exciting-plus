@@ -2,6 +2,7 @@ subroutine response
 use modmain
 use mod_nrkp
 use mod_addons_q
+use mod_expigqr
 use mod_linresp
 use mod_wannier
 implicit none
@@ -98,32 +99,11 @@ else
   call genwfnr(151,lpmat)
 endif
 if (wannier_megq) then
-  !all_wan_ibt=.false.
-  !call getimegqwan(all_wan_ibt)
   call genwantran(megqwantran,megqwan_mindist,megqwan_maxdist)
   !call printwantran(megqwantran)
-  
-! bingings for old code
-!  nmegqwan=megqwantran%nwantran
-!  if (allocated(imegqwan)) deallocate(imegqwan)
-!  allocate(imegqwan(5,nmegqwan))
-!  imegqwan(:,:)=megqwantran%wantran(:,1:nmegqwan)
-!  megqwan_tlim(:,:)=megqwantran%tlim(:,:)
-!  if (allocated(idxmegqwan)) deallocate(idxmegqwan)
-!  allocate(idxmegqwan(nwantot,nwantot,megqwan_tlim(1,1):megqwan_tlim(2,1),&
-!    megqwan_tlim(1,2):megqwan_tlim(2,2),megqwan_tlim(1,3):megqwan_tlim(2,3)))
-!  idxmegqwan(:,:,:,:,:)=megqwantran%iwantran(:,:,:,:,:)
-!  all_wan_ibt=.false.
-  
   if (wproc1) then
     write(151,*)
     write(151,'("Number of Wannier transitions : ",I6)')megqwantran%nwt
-!    write(151,'("List of Wannier transitions (m n T) ")')
-!    do i=1,megqwantran%nwt
-!      write(151,'(I4,4X,I4,4X,3I3)')megqwantran%iwt(:,i)
-!    enddo
-!    call timestamp(151)
-!    write(151,*)
     write(151,'("Translation limits : ",6I6)')megqwantran%tlim(:,1), &
       megqwantran%tlim(:,2),megqwantran%tlim(:,3)
     call flushifc(151)
