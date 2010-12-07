@@ -12,28 +12,31 @@ complex(8), allocatable :: wfir_(:)
 complex(8), allocatable :: a(:,:,:)
 complex(8), allocatable :: b(:,:,:)
 complex(8), allocatable :: expikr(:)
-integer ik,h,ikloc,ig,ir,n,ispn,ist,ias,j
+integer ik,h,ikloc,ig,ir,n,ispn,istfv,istsv,ias,j,i
 
-if (.not.tsic_wv) return
-!if (.not.tsic_wv) then
-!  do ikloc=1,nkptloc
-!    sic_wb(:,:,:,ikloc)=zzero
-!    sic_wvb(:,:,:,ikloc)=zzero
-!    do n=1,nwantot
-!      do ispn=1,nspinor
-!        do ist=1,nstfv
-!          i=ist+(ispn-1)*nstfv
-!          do j=1,nstsv
-!! TODO: zgemm?
-!            sic_wb(n,ist,ispn,ikloc)=sic_wb(n,ist,ispn,ikloc)+&
-!              dconjg(wann_c(n,j,ikloc)*evecsvloc(i,j,ikloc))
-!          enddo !j
-!        enddo !ispn
-!      enddo !i
-!    enddo !n
-!  enddo !ikloc  
-!  return
-!endif
+! on first SIC iteration Wannier functions are generated from LDA Hamiltonian
+!  so we can compute overlap between Wannier states and first-variational
+!  states analytically
+if (.not.tsic_wv) then
+  do ikloc=1,nkptloc
+    sic_wb(:,:,:,ikloc)=zzero
+    sic_wvb(:,:,:,ikloc)=zzero
+    do j=1,sic_wantran%nwan
+      n=sic_wantran%iwan(j)
+      do ispn=1,nspinor
+        do istfv=1,nstfv
+          istsv=istfv+(ispn-1)*nstfv
+          do i=1,nstsv
+! TODO: zgemm?
+            sic_wb(j,istfv,ispn,ikloc)=sic_wb(j,istfv,ispn,ikloc)+&
+              dconjg(wann_c(n,i,ikloc)*evecsvloc(istsv,i,ikloc))
+          enddo !j
+        enddo !ispn
+      enddo !i
+    enddo !n
+  enddo !ikloc  
+  return
+endif
 
 allocate(evecfv1(nmatmax,nstfv,nspnfv))
 allocate(igkig1(ngkmax))
@@ -67,15 +70,15 @@ do ik=1,nkpt
   b=zzero
 ! compute a=<W_n|\phi_{jk}> and b=<W_n|V_n|\phi_{jk}> where phi(r) are firt-
 !  variational Bloch wave-functions
-  do ist=1,nstfv
+  do istfv=1,nstfv
     wfmt=zzero
     wfir=zzero
     do ias=1,natmtot
       call wavefmt(1,lmaxvr,ias2is(ias),ias2ia(ias),ngk(1,ik),apwalm,&
-        evecfv1(1,ist,1),lmmaxvr,wfmt(1,1,ias))
+        evecfv1(1,istfv,1),lmmaxvr,wfmt(1,1,ias))
     enddo
     do ig=1,ngk(1,ik)
-      wfir(igfft(igkig1(ig)))=evecfv1(ig,ist,1)
+      wfir(igfft(igkig1(ig)))=evecfv1(ig,istfv,1)
     enddo
     call zfftifc(3,ngrid,1,wfir)
     call sic_copy_mt_z(.true.,lmmaxvr,wfmt,wfmt_)
@@ -86,13 +89,13 @@ do ik=1,nkpt
     do j=1,sic_wantran%nwan
       n=sic_wantran%iwan(j)
       do ispn=1,nspinor
-        a(j,ist,ispn)=sic_dot_lb(vkc(1,ik),wanmt(1,1,1,ispn,n),&
+        a(j,istfv,ispn)=sic_dot_lb(vkc(1,ik),wanmt(1,1,1,ispn,n),&
           wanir(1,1,ispn,n),twanmt(1,1,n),wfmt_,wfir_)
-        b(j,ist,ispn)=sic_dot_lb(vkc(1,ik),wvmt(1,1,1,ispn,j),&
+        b(j,istfv,ispn)=sic_dot_lb(vkc(1,ik),wvmt(1,1,1,ispn,j),&
           wvir(1,1,ispn,j),twanmt(1,1,n),wfmt_,wfir_)
       enddo
     enddo !j
-  enddo !ist
+  enddo !istfv
   if (mpi_grid_x(dim_k).eq.h) then
     sic_wb(:,:,:,ikloc)=a(:,:,:)
     sic_wvb(:,:,:,ikloc)=b(:,:,:)

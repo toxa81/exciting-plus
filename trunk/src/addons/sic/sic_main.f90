@@ -45,14 +45,19 @@ if (wproc) then
   write(151,'("cutoff radius for Wannier functions : ",F12.6)')sic_wan_cutoff
   write(151,'("cutoff radius for SIC matrix elements : ",F12.6)')sic_me_cutoff
   write(151,*)
-  write(151,'("number of translations : ",I4)')ntr
-  do i=1,ntr
-    write(151,'("  i : ",I4,"    vtl(i) : ",3I4)')i,vtl(:,i)
-  enddo
+  write(151,'("number of translations for real-space functions : ",I4)')ntr
+!  do i=1,ntr
+!    write(151,'("  i : ",I4,"    vtl(i) : ",3I4)')i,vtl(:,i)
+!  enddo
   write(151,*)
   write(151,'("number of included Wannier functions : ",I4)')sic_wantran%nwan
   do j=1,sic_wantran%nwan
     write(151,'("  j : ",I4,"    iwan(j) : ",I4)')j,sic_wantran%iwan(j)
+  enddo
+  write(151,*)
+  write(151,'(" LDA energies of Wannier functions")')
+  do n=1,nwantot
+    write(151,'("  n : ",I4,"    sic_wann_e0(n) : ",F12.6)')n,sic_wann_e0(n)
   enddo
   call flushifc(151)
 endif
@@ -61,6 +66,7 @@ call genwfnr(151,.false.)
 call sic_wan(151)
 allocate(ene(4,sic_wantran%nwan))
 call sic_pot(151,ene)
+deallocate(ene)
 ! save old matrix elements
 allocate(vwanme_old(sic_wantran%nwt))
 vwanme_old=vwanme
@@ -155,11 +161,14 @@ do ik=1,nkpt
   endif
 enddo
 deallocate(vwank)
-if (wproc) close(151)
 ! signal that now we have computed sic potential and wannier functions
 tsic_wv=.true.
 ! write to HDF5 file after last iteration
 if (isclsic.eq.nsclsic) call sic_writevwan
-deallocate(ene)
+if (wproc) then
+  write(151,*)
+  call timestamp(151,"Done.")
+  close(151)
+endif
 return
 end

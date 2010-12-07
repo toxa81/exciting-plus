@@ -5,7 +5,7 @@ use mod_hdf5
 use mod_linresp
 use mod_wannier
 implicit none
-integer it,n,ispn,nwt
+integer it,n,ispn,nwt,j
 character*20 c1,c2,c3
 character*100 path
 logical exist
@@ -30,6 +30,7 @@ call hdf5_read("sic.hdf5","/","sic_etot_correction",sic_etot_correction)
 allocate(fmt(lmmaxvr,nrmtmax,natmtot))
 allocate(fir(ngrtot))
 do n=1,nwantot
+  j=sic_wantran%idxiwan(n)
   do ispn=1,nspinor
     do it=1,ntr
       write(c1,'("n",I4.4)')n
@@ -37,15 +38,17 @@ do n=1,nwantot
       write(c3,'("s",I4.4)')ispn 
       path="/wann/"//trim(adjustl(c1))//"/"//trim(adjustl(c3))//"/"//&
         trim(adjustl(c2))
-      if (mpi_grid_root()) then
-        call hdf5_read("sic.hdf5",path,"wvmt",fmt(1,1,1),&
-          (/lmmaxvr,nrmtmax,natmtot/))
-        call hdf5_read("sic.hdf5",path,"wvir",fir(1),(/ngrtot/))
+      if (j.gt.0) then
+        if (mpi_grid_root()) then
+          call hdf5_read("sic.hdf5",path,"wvmt",fmt(1,1,1),&
+            (/lmmaxvr,nrmtmax,natmtot/))
+          call hdf5_read("sic.hdf5",path,"wvir",fir(1),(/ngrtot/))
+        endif
+        call mpi_grid_bcast(fmt(1,1,1),lmmaxvr*nrmtmax*natmtot)
+        call mpi_grid_bcast(fir(1),ngrtot)
+        call sic_copy_mt_z(.true.,lmmaxvr,fmt,wvmt(1,1,it,ispn,j))
+        call sic_copy_ir_z(.true.,fir,wvir(1,it,ispn,j))
       endif
-      call mpi_grid_bcast(fmt(1,1,1),lmmaxvr*nrmtmax*natmtot)
-      call mpi_grid_bcast(fir(1),ngrtot)
-      call sic_copy_mt_z(.true.,lmmaxvr,fmt,wvmt(1,1,it,ispn,n))
-      call sic_copy_ir_z(.true.,fir,wvir(1,it,ispn,n))
       if (mpi_grid_root()) then
         call hdf5_read("sic.hdf5",path,"wanmt",fmt(1,1,1),&
           (/lmmaxvr,nrmtmax,natmtot/))
