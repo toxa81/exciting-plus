@@ -6,17 +6,13 @@ implicit none
 real(8) orig(3)
 complex(4), allocatable :: wf(:,:,:)
 real(4), allocatable :: wf2(:)
-!complex(4), allocatable :: wfval(:,:)
-!complex(4), allocatable :: wfp(:)
 integer i,nrtot
 integer i1,i2,i3,ir,n
-!real(8), allocatable :: vr(:,:)
 real(8) vrc(3)
 real(4), allocatable :: veff(:)
 real(8) t1
 complex(8), allocatable :: zfft(:)
 character*40 fname
-real(8) x(2),alph,x0,dx
 logical, parameter :: wfprod=.false.
 integer recl
 

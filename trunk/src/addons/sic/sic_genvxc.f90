@@ -219,12 +219,12 @@ do j=1,sic_wantran%nwan
         call xcifc(xctype,n=ngrloc,rho=wfir2,ex=exir_,ec=ecir_,vx=vxir_,vc=vcir_)
       endif
       do ispn=1,nspinor
-        vhxcir(:,it,ispn,j)=vhxcir(:,it,ispn,n)+vxir_(:,ispn)+vcir_(:,ispn)
+        vhxcir(:,it,ispn,j)=vhxcir(:,it,ispn,j)+vxir_(:,ispn)+vcir_(:,ispn)
       enddo
       excwanir(:,it)=exir_(:)+ecir_(:)
     enddo !it
     do ispn=1,nspinor
-      ene(4,n)=ene(4,n)+sic_int_zdz(wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),&
+      ene(4,j)=ene(4,j)+sic_int_zdz(wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),&
         excwanmt,excwanir,wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),twanmtuc(1,n))
     enddo
   endif

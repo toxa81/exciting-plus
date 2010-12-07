@@ -12,7 +12,7 @@ complex(8), allocatable :: wfir_(:)
 complex(8), allocatable :: a(:,:,:)
 complex(8), allocatable :: b(:,:,:)
 complex(8), allocatable :: expikr(:)
-integer ik,h,ikloc,ig,ir,n,ispn,ist,ias
+integer ik,h,ikloc,ig,ir,n,ispn,ist,ias,j
 
 if (.not.tsic_wv) return
 !if (.not.tsic_wv) then
@@ -42,8 +42,8 @@ allocate(wfmt(lmmaxvr,nrmtmax,natmtot))
 allocate(wfir(ngrtot))
 allocate(wfmt_(lmmaxvr,nmtloc))
 allocate(wfir_(ngrloc))
-allocate(a(nwantot,nstfv,nspinor))
-allocate(b(nwantot,nstfv,nspinor))
+allocate(a(sic_wantran%nwan,nstfv,nspinor))
+allocate(b(sic_wantran%nwan,nstfv,nspinor))
 allocate(expikr(ngrloc))
 
 do ik=1,nkpt
@@ -83,14 +83,15 @@ do ik=1,nkpt
     do ir=1,ngrloc
       wfir_(ir)=wfir_(ir)*expikr(ir)/sqrt(omega)
     enddo
-    do n=1,nwantot
+    do j=1,sic_wantran%nwan
+      n=sic_wantran%iwan(j)
       do ispn=1,nspinor
-        a(n,ist,ispn)=sic_dot_lb(vkc(1,ik),wanmt(1,1,1,ispn,n),&
+        a(j,ist,ispn)=sic_dot_lb(vkc(1,ik),wanmt(1,1,1,ispn,n),&
           wanir(1,1,ispn,n),twanmt(1,1,n),wfmt_,wfir_)
-        b(n,ist,ispn)=sic_dot_lb(vkc(1,ik),wvmt(1,1,1,ispn,n),&
-          wvir(1,1,ispn,n),twanmt(1,1,n),wfmt_,wfir_)
+        b(j,ist,ispn)=sic_dot_lb(vkc(1,ik),wvmt(1,1,1,ispn,j),&
+          wvir(1,1,ispn,j),twanmt(1,1,n),wfmt_,wfir_)
       enddo
-    enddo !n
+    enddo !j
   enddo !ist
   if (mpi_grid_x(dim_k).eq.h) then
     sic_wb(:,:,:,ikloc)=a(:,:,:)

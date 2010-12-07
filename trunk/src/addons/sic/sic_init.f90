@@ -64,10 +64,11 @@ ngrloc=mpi_grid_map2(ngrtot,dims=(/dim_k,dim2/),offs=groffs)
 nmtloc=mpi_grid_map2(nrmtmax*natmtot,dims=(/dim_k,dim2/),offs=mtoffs)
 
 if (mpi_grid_root()) then
+  n=ntr*nspinor*(nwantot+sic_wantran%nwan)
   write(*,*)
   write(*,'("[sic_init] total number of translations : ",I3)')ntr
-  !write(*,'("[sic_init] size of Wannier function arrays : ",I6," Mb")') &
-  !  int(2*16.d0*(lmmaxvr*nmtloc+ngrloc)*ntr*nspinor*nwantot/1048576.d0)
+  write(*,'("[sic_init] size of Wannier function arrays : ",I6," Mb")') &
+    int(16.d0*(lmmaxvr*nmtloc+ngrloc)*n/1048576.d0)
 endif
 call mpi_grid_barrier()
 if (.not.tsic_arrays_allocated) then
@@ -117,13 +118,13 @@ if (exist) then
 endif
 ! TODO: these arrays are need only in ground state
 if (allocated(sic_wb)) deallocate(sic_wb)
-allocate(sic_wb(nwantot,nstfv,nspinor,nkptloc))
+allocate(sic_wb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
 sic_wb=zzero
 if (allocated(sic_wvb)) deallocate(sic_wvb)
-allocate(sic_wvb(nwantot,nstfv,nspinor,nkptloc))
+allocate(sic_wvb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
 sic_wvb=zzero
 if (allocated(sic_wann_h0k)) deallocate(sic_wann_h0k)
-allocate(sic_wann_h0k(nwantot,nwantot,nkptloc))
+allocate(sic_wann_h0k(sic_wantran%nwan,sic_wantran%nwan,nkptloc))
 sic_wann_h0k=zzero
 sic_etot_correction=0.d0
 tevecsv=.true.

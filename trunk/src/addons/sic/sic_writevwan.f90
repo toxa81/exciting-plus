@@ -5,7 +5,7 @@ use mod_hdf5
 use mod_linresp
 use mod_wannier
 implicit none
-integer n,ispn,it
+integer n,ispn,it,j
 character*12 c1,c2,c3
 character*100 path
 complex(8), allocatable :: fmt(:,:,:)
@@ -39,6 +39,7 @@ if (wproc) then
   call hdf5_write("sic.hdf5","/","sic_etot_correction",sic_etot_correction)
 endif
 do n=1,nwantot
+  j=sic_wantran%idxiwan(n)
   do ispn=1,nspinor
     do it=1,ntr
       fmt=zzero
@@ -57,18 +58,20 @@ do n=1,nwantot
           (/lmmaxvr,nrmtmax,natmtot/))
         call hdf5_write("sic.hdf5",path,"wanir",fir(1),(/ngrtot/))
       endif
-      fmt=zzero
-      fir=zzero
-      call sic_copy_mt_z(.false.,lmmaxvr,fmt,wvmt(1,1,it,ispn,n))
-      call sic_copy_ir_z(.false.,fir,wvir(1,it,ispn,n))
-      call mpi_grid_reduce(fmt(1,1,1),lmmaxvr*nrmtmax*natmtot)
-      call mpi_grid_reduce(fir(1),ngrtot)
-      if (mpi_grid_root()) then
-        call hdf5_write("sic.hdf5",path,"wvmt",fmt(1,1,1),&
-          (/lmmaxvr,nrmtmax,natmtot/))
-        call hdf5_write("sic.hdf5",path,"wvir",fir(1),(/ngrtot/))
+      if (j.gt.0) then
+        fmt=zzero
+        fir=zzero
+        call sic_copy_mt_z(.false.,lmmaxvr,fmt,wvmt(1,1,it,ispn,j))
+        call sic_copy_ir_z(.false.,fir,wvir(1,it,ispn,j))
+        call mpi_grid_reduce(fmt(1,1,1),lmmaxvr*nrmtmax*natmtot)
+        call mpi_grid_reduce(fir(1),ngrtot)
+        if (mpi_grid_root()) then
+          call hdf5_write("sic.hdf5",path,"wvmt",fmt(1,1,1),&
+            (/lmmaxvr,nrmtmax,natmtot/))
+          call hdf5_write("sic.hdf5",path,"wvir",fir(1),(/ngrtot/))
+        endif
       endif
-    enddo
+    enddo !it
   enddo
 enddo
 deallocate(fmt,fir)

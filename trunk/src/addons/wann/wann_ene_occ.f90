@@ -23,7 +23,7 @@ complex(8), intent(inout) :: wann_ene_m(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot)
 complex(8), intent(inout) :: wann_occ_m(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot)
 ! local variables
 real(8) t(2),w2
-integer n,i,ik,ispn,ias,lm1,lm2,l,j,n1,n2,m1,m2,ispn1,ispn2,ikloc
+integer n,i,ik,ispn,ias,lm1,lm2,l,j,n1,n2,ispn1,ispn2,ikloc
 complex(8) z2
 
 wann_ene=0.d0

@@ -38,9 +38,8 @@ complex(8), intent(in) :: evecsv(nstsv,nstsv)
 complex(8), intent(out) :: pmat(3,nstsv,nstsv)
 ! local variables
 integer ispn,is,ia,ist,jst
-integer i,j,k,l,igp,ifg,ir,ias,lm,ic,io,wfsz
-complex(8) zt1,zt2,zsum,zv(3)
-real(8) t1,t2
+integer i,l,igp,ifg,ir,ias,lm,ic,io,wfsz
+complex(8) zt1,zt2,zsum
 ! allocatable arrays
 complex(8), allocatable :: wfmt(:,:)
 complex(8), allocatable :: gwfmt(:,:,:)

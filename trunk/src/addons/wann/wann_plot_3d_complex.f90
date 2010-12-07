@@ -14,7 +14,6 @@ real(8), allocatable :: veff(:)
 complex(8), allocatable :: zfft(:)
 real(8) t1
 character*40 fname
-real(8) x(2),alph,x0,dx
 logical, parameter :: wfprod=.false.
 
 call init0
