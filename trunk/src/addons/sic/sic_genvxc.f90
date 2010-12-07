@@ -158,7 +158,7 @@ allocate(vcmt_(ntp,nmtloc,nspinor))
 allocate(vcir_(ngrloc,nspinor))
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
-  if (sic_apply(n).eq.1) then
+  if (sic_apply(n).eq.2) then
     excwanmt=0.d0
     excwanir=0.d0
     do it=1,ntr

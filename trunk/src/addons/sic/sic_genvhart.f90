@@ -62,7 +62,7 @@ do iq=1,nvq
       expikt=exp(zi*dot_product(vtc(:,it),vqc(:,iq)))/nkptnr/omega
       do j=1,sic_wantran%nwan
         n=sic_wantran%iwan(j)
-        if (sic_apply(n).eq.1) then
+        if (sic_apply(n).eq.2) then
           zt1=megqwan1(j,ig,iq)*vhgq(ig,iq)*expikt
           do i=1,nmtloc
             ias=(mtoffs+i-1)/nrmtmax+1
@@ -71,7 +71,7 @@ do iq=1,nvq
             endif
           enddo
           call zaxpy(ngrloc,zt1,pwir,1,vhwanir(1,it,1,j),1)
-        endif !sic_apply(n).eq.1
+        endif !sic_apply(n).eq.2
       enddo !n
     enddo !it
   enddo !ig
