@@ -10,7 +10,6 @@ complex(8), intent(in) :: evecsv(nstsv,nstsv)
 ! local variables
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
-complex(8), allocatable :: wfsvit(:,:,:)
 integer :: ik,ierr
 integer, external :: hash
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)

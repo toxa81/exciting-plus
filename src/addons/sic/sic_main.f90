@@ -6,7 +6,7 @@ use mod_sic
 use mod_wannier
 use mod_linresp
 implicit none
-integer n,sz,i,j,i1,j1,n1,ispn,vtrl(3)
+integer n,sz,i,j,i1,j1,j2,n1,n2,ik,ispn,vtrl(3)
 real(8) t1,t2,t3,vtrc(3)
 integer vl(3)
 ! Wannier functions
@@ -14,7 +14,6 @@ complex(8), allocatable :: vwanme_old(:)
 complex(8), allocatable :: ene(:,:)
 complex(8), allocatable :: vwank(:,:)
 complex(8) z1
-integer n2,ik
 
 sic=.true.
 
@@ -62,9 +61,7 @@ call genwfnr(151,.false.)
 call sic_wan(151)
 allocate(ene(4,sic_wantran%nwan))
 call sic_pot(151,ene)
-!----------------------------------!
-! matrix elements of SIC potential !
-!----------------------------------!
+! save old matrix elements
 allocate(vwanme_old(sic_wantran%nwt))
 vwanme_old=vwanme
 ! compute matrix elements of SIC potential
@@ -122,9 +119,10 @@ if (wproc) then
   write(151,'("Diagonal matrix elements")')
   write(151,'(2X,"wann",18X,"V_n")')
   write(151,'(44("-"))')
-  do n=1,nwantot
-    j=sic_wantran%iwtidx(n,n,0,0,0)
-    write(151,'(I4,4X,2G18.10)')n,dreal(vwanme(j)),dimag(vwanme(j))
+  do j=1,sic_wantran%nwan
+    n=sic_wantran%iwan(j)
+    i=sic_wantran%iwtidx(n,n,0,0,0)
+    write(151,'(I4,4X,2G18.10)')n,dreal(vwanme(i)),dimag(vwanme(i))
   enddo  
   t3=sqrt(t3/sic_wantran%nwt)
   write(151,*)
@@ -133,34 +131,27 @@ if (wproc) then
 endif
 deallocate(vwanme_old)
 ! check hermiticity of V_nn'(k)
-allocate(vwank(nwantot,nwantot))
+allocate(vwank(sic_wantran%nwan,sic_wantran%nwan))
 do ik=1,nkpt
   vwank=zzero
   do i=1,sic_wantran%nwt
     n1=sic_wantran%iwt(1,i)
+    j1=sic_wantran%idxiwan(n1)
     n2=sic_wantran%iwt(2,i)
+    j2=sic_wantran%idxiwan(n2)
     vtrl(:)=sic_wantran%iwt(3:5,i)
     vtrc(:)=vtrl(1)*avec(:,1)+vtrl(2)*avec(:,2)+vtrl(3)*avec(:,3)
     z1=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
-    vwank(n1,n2)=vwank(n1,n2)+z1*vwanme(i)
+    vwank(j1,j2)=vwank(j1,j2)+z1*vwanme(i)
   enddo
   t1=0.d0
-  do n1=1,nwantot
-    do n2=1,nwantot
-      t1=max(t1,abs(vwank(n1,n2)-dconjg(vwank(n2,n1))))
+  do j1=1,sic_wantran%nwan
+    do j2=1,sic_wantran%nwan
+      t1=max(t1,abs(vwank(j1,j2)-dconjg(vwank(j2,j1))))
     enddo
   enddo
   if (wproc) then
-    write(151,*)
     write(151,'("ik : ",I4,"   max.herm.err : ",G18.10 )')ik,t1
-!    write(151,*)
-!    do n1=1,nwantot
-!      write(151,'(5X,255F12.7)')(dreal(vwank(n1,n2)),n2=1,nwantot)
-!    enddo
-!    write(151,*)
-!    do n1=1,nwantot
-!      write(151,'(5X,255F12.7)')(dimag(vwank(n1,n2)),n2=1,nwantot)
-!    enddo
   endif
 enddo
 deallocate(vwank)

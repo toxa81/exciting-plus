@@ -5,13 +5,15 @@ use mod_mpi_grid
 use mod_sic
 implicit none
 complex(8), allocatable :: ene0(:,:,:,:,:)
-integer n1,n2,ias,lm1,lm2,ispn1,ispn2,ikloc,ik,ispn,n
+integer n1,n2,ias,lm1,lm2,ispn1,ispn2,ikloc,ik,ispn,n,j1,j2
 
 allocate(ene0(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
 ene0=zzero
 ! collinear (!!!) case only
-do n1=1,nwantot
-  do n2=1,nwantot
+do j1=1,sic_wantran%nwan
+  n1=sic_wantran%iwan(j1)
+   do j2=1,sic_wantran%nwan
+    n2=sic_wantran%iwan(j2)
     if (wan_info(1,n1).eq.wan_info(1,n2)) then
       ias=wan_info(1,n1)
       lm1=wan_info(2,n1)

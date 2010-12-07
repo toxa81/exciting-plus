@@ -3,13 +3,8 @@ use modmain
 use modldapu
 use mod_nrkp
 implicit none
-integer i,j,ik,ikloc,idm,lm,ir,ispn,n,ias,io,l,lm1,lm2
+integer i,j,ik,ikloc
 logical lpmat
-complex(8), allocatable :: wann_rf(:,:,:,:)
-character*20 fname
-complex(8), allocatable :: wann_ene_m(:,:,:,:,:)
-complex(8), allocatable :: wann_occ_m(:,:,:,:,:)
-real t(2)
 call init0
 call init1
 
@@ -114,7 +109,7 @@ if (mpi_grid_root().and.task.eq.807) then
     enddo
     write(200,'("# eigen-values of H")')
     write(200,'(255G18.10)')(wann_e(j,ik),j=1,nwantot)
-  enddo	
+  enddo
   close(200)
 endif
 !deallocate(wann_ene_m,wann_occ_m)

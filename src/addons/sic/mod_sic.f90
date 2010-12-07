@@ -18,6 +18,7 @@ real(8), allocatable :: sic_wann_e0(:)
 integer nsclsic
 data nsclsic/3/
 integer isclsic
+data isclsic/0/
 real(8) sic_etot_correction
 data sic_etot_correction/0.d0/
 real(8) sic_wan_cutoff

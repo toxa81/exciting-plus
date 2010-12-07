@@ -30,16 +30,15 @@ real(8), intent(in) :: vgpl(3,ngkmax,nspnfv)
 complex(8), intent(out) :: evecfv(nmatmax,nstfv,nspnfv)
 ! local variables
 integer isym,lspl,ilspl
-integer ilo,l,m,lm,i,j,ispn
+integer ilo,l,lm,i,j,ispn
 integer ik,igp,igk,ig
 integer is,ia,ja,ias,jas
 integer recl,nmatmax_,nstfv_,nspnfv_
 real(8) vkl_(3),v(3),t1
-real(8) si(3,3),sc(3,3)
+real(8) si(3,3)
 complex(8) zt1
 ! allocatable arrays
 complex(8), allocatable :: evecfvt(:,:)
-complex(8), allocatable :: zflm1(:,:),zflm2(:,:)
 real(8), allocatable :: vgkl_(:,:,:)
 integer, allocatable :: igkig_(:,:)
 allocate(vgkl_(3,ngkmax,nspnfv))

@@ -6,10 +6,6 @@ integer, intent(in) :: nc
 integer, intent(in) :: lda
 complex(8), intent(in) :: a(lda,*)
 integer i,j,fout
-character*20 fmt
-
-!fmt="(255G30.20)"
-
 if (fname.eq."") then
   fout=6
 else
