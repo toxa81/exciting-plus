@@ -70,7 +70,7 @@ if (.not.tsic_arrays_allocated) then
       sic_apply(n)=sicw(j,i)
     enddo
   else
-    sic_apply=1
+    sic_apply=2
   endif
 endif
 ! get local number muffin-tin and interstitial points
