@@ -15,29 +15,7 @@ complex(8) expikt
 complex(8), allocatable :: vwank(:,:)
 complex(8), allocatable :: zm1(:,:),zm2(:,:)
 character*500 fname,msg
-logical, parameter :: tcheckherm=.true.
-
-!if (.not.tsic_wv) return
-! simplified potential correction if we don't have SIC potential yet
-!if (.not.tsic_wv) then
-!  do j1=1,nstfv
-!    do ispn1=1,nspinor
-!      jst1=j1+(ispn1-1)*nstfv
-!      do j2=1,nstfv
-!        do ispn2=1,nspinor
-!          jst2=j2+(ispn2-1)*nstfv
-!          do n=1,nwantot
-!            hunif(jst1,jst2)=hunif(jst1,jst2)+dconjg(sic_wb(n,j1,ispn1,ikloc))*&
-!              sic_wb(n,j2,ispn2,ikloc)*dreal(vwanme(idxmegqwan(n,n,0,0,0)))
-!          enddo
-!        enddo
-!      enddo
-!    enddo
-!  enddo
-!  return
-!endif
-
-
+logical, parameter :: tcheckherm=.false.
 
 ! restore full hermitian matrix
 do j1=2,nstsv
@@ -48,6 +26,15 @@ enddo
 do j1=1,nstsv
   hunif(j1,j1)=zone*dreal(hunif(j1,j1))
 enddo
+! compute H_{nn'}^{0}(k); remember that on input hunif=H0
+allocate(zm1(sic_wantran%nwan,nstsv))
+call zgemm('N','N',sic_wantran%nwan,nstsv,nstsv,zone,sic_wb(1,1,1,ikloc),&
+  sic_wantran%nwan,hunif,nstsv,zzero,zm1,sic_wantran%nwan)
+call zgemm('N','C',sic_wantran%nwan,sic_wantran%nwan,nstsv,zone,zm1,&
+  sic_wantran%nwan,sic_wb(1,1,1,ikloc),sic_wantran%nwan,zzero,&
+  sic_wann_h0k(1,1,ikloc),sic_wantran%nwan)
+deallocate(zm1)
+if (.not.tsic_wv) return
 
 ! compute V_{nn'}(k)
 allocate(vwank(sic_wantran%nwan,sic_wantran%nwan))
@@ -63,14 +50,6 @@ do i=1,sic_wantran%nwt
   expikt=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
   vwank(j1,j2)=vwank(j1,j2)+expikt*vwanme(i)
 enddo
-! compute H_{nn'}^{0}(k); remember that on input hunif=H0
-allocate(zm1(sic_wantran%nwan,nstsv))
-call zgemm('N','N',sic_wantran%nwan,nstsv,nstsv,zone,sic_wb(1,1,1,ikloc),&
-  sic_wantran%nwan,hunif,nstsv,zzero,zm1,sic_wantran%nwan)
-call zgemm('N','C',sic_wantran%nwan,sic_wantran%nwan,nstsv,zone,zm1,&
-  sic_wantran%nwan,sic_wb(1,1,1,ikloc),sic_wantran%nwan,zzero,&
-  sic_wann_h0k(1,1,ikloc),sic_wantran%nwan)
-deallocate(zm1)
 !if (mpi_grid_root((/dim2/))) then
 !  write(fname,'("hlda_n",I2.2,"_k",I4.4".txt")')nproc,ik
 !  call wrmtrx(fname,nstsv,nstsv,hunif,nstsv)
@@ -211,9 +190,6 @@ deallocate(zm1)
 !hunif=hunif+zm1
 
 
-
-
-
 ! setup unified Hamiltonian
 ! 1-st term: LDA Hamiltonian itself
 do istfv1=1,nstfv
@@ -240,12 +216,12 @@ do istfv1=1,nstfv
 ! 3-rd term : \sum_{alpha} P_{\alpha} H^{LDA} P_{\alpha}
 ! 4-th term : \sum_{alpha} P_{\alpha} V_{\alpha} P_{\alpha}
           hunif(ist1,ist2)=hunif(ist1,ist2)+&
-            dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*sic_wb(n1,istfv2,ispn2,ikloc)*&
+            dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*sic_wb(j1,istfv2,ispn2,ikloc)*&
             (dreal(vwanme(sic_wantran%iwtidx(n1,n1,0,0,0)))+sic_wann_e0(n1))
 ! 5-th term, second part: \sum_{\alpha} P_{\alpha}V_{\alpha}+V_{\alpha}P_{\alpha}
           hunif(ist1,ist2)=hunif(ist1,ist2)+&
-            dconjg(sic_wb(n1,istfv1,ispn1,ikloc))*sic_wvb(n1,istfv2,ispn2,ikloc)+&
-            dconjg(sic_wvb(n1,istfv1,ispn1,ikloc))*sic_wb(n1,istfv2,ispn2,ikloc)
+            dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*sic_wvb(j1,istfv2,ispn2,ikloc)+&
+            dconjg(sic_wvb(j1,istfv1,ispn1,ikloc))*sic_wb(j1,istfv2,ispn2,ikloc)
         enddo !j1
       enddo !ispn2
     enddo ! istfv2

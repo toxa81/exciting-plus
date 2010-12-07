@@ -23,7 +23,7 @@ do j1=1,sic_wantran%nwan
       do ikloc=1,nkptloc
         ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)        
         ene0(lm1,lm2,ispn1,ispn2,ias)=ene0(lm1,lm2,ispn1,ispn2,ias)+&
-          sic_wann_h0k(n1,n2,ikloc)*wkpt(ik)
+          sic_wann_h0k(j1,j2,ikloc)*wkpt(ik)
       enddo
     endif
   enddo

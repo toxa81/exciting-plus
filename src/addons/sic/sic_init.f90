@@ -60,17 +60,6 @@ do i=1,ntr
   vtc(:,i)=vtl(1,i)*avec(:,1)+vtl(2,i)*avec(:,2)+vtl(3,i)*avec(:,3)
 end do
 
-ngrloc=mpi_grid_map2(ngrtot,dims=(/dim_k,dim2/),offs=groffs)
-nmtloc=mpi_grid_map2(nrmtmax*natmtot,dims=(/dim_k,dim2/),offs=mtoffs)
-
-if (mpi_grid_root()) then
-  n=ntr*nspinor*(nwantot+sic_wantran%nwan)
-  write(*,*)
-  write(*,'("[sic_init] total number of translations : ",I3)')ntr
-  write(*,'("[sic_init] size of Wannier function arrays : ",I6," Mb")') &
-    int(16.d0*(lmmaxvr*nmtloc+ngrloc)*n/1048576.d0)
-endif
-call mpi_grid_barrier()
 if (.not.tsic_arrays_allocated) then
   allocate(sic_apply(nwantot))
   if (allocated(sicw)) then
@@ -84,9 +73,20 @@ if (.not.tsic_arrays_allocated) then
     sic_apply=1
   endif
 endif
+! get local number muffin-tin and interstitial points
+ngrloc=mpi_grid_map2(ngrtot,dims=(/dim_k,dim2/),offs=groffs)
+nmtloc=mpi_grid_map2(nrmtmax*natmtot,dims=(/dim_k,dim2/),offs=mtoffs)
 ! get all Wannier transitions
 call deletewantran(sic_wantran)
 call genwantran(sic_wantran,-0.d0,sic_me_cutoff,allwt=.true.,waninc=sic_apply)
+if (mpi_grid_root()) then
+  n=ntr*nspinor*(nwantot+sic_wantran%nwan)
+  write(*,*)
+  write(*,'("[sic_init] total number of translations : ",I3)')ntr
+  write(*,'("[sic_init] size of Wannier function arrays : ",I6," Mb")') &
+    int(16.d0*(lmmaxvr*nmtloc+ngrloc)*n/1048576.d0)
+endif
+call mpi_grid_barrier()
 ! allocate once main arrays of SIC code
 !  wan(mt,ir) - Wannier function defined on a real-space grid
 !  wv(mt,ir) - product of a Wannier function with it's potential
