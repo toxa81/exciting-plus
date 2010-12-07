@@ -3,10 +3,10 @@ use modmain
 use mod_sic
 use modxcifc
 implicit none
-real(8), intent(out) :: vhxcmt(lmmaxvr,nmtloc,ntr,nspinor,nwantot)
-real(8), intent(out) :: vhxcir(ngrloc,ntr,nspinor,nwantot)
-complex(8), intent(out) :: ene(4,nwantot)
-integer ntp,itp,lm,n,ispn,it
+real(8), intent(out) :: vhxcmt(lmmaxvr,nmtloc,ntr,nspinor,sic_wantran%nwan)
+real(8), intent(out) :: vhxcir(ngrloc,ntr,nspinor,sic_wantran%nwan)
+complex(8), intent(out) :: ene(4,sic_wantran%nwan)
+integer ntp,itp,lm,n,ispn,it,j
 real(8), allocatable :: tp(:,:)
 complex(8), allocatable :: ylm(:,:)
 complex(8), allocatable :: rlmz(:,:)
@@ -156,7 +156,8 @@ allocate(vxmt_(ntp,nmtloc,nspinor))
 allocate(vxir_(ngrloc,nspinor))
 allocate(vcmt_(ntp,nmtloc,nspinor))
 allocate(vcir_(ngrloc,nspinor))
-do n=1,nwantot
+do j=1,sic_wantran%nwan
+  n=sic_wantran%iwan(j)
   if (sic_apply(n).eq.1) then
     excwanmt=0.d0
     excwanir=0.d0
@@ -190,14 +191,14 @@ do n=1,nwantot
         do ispn=1,nspinor
           vxmt_(:,:,ispn)=vxmt_(:,:,ispn)+vcmt_(:,:,ispn)
         enddo
-! expand XC potential in spherical harmonics and add it to vhxcmt
+! expand XC potential in real spherical harmonics and add it to vhxcmt
         do ispn=1,nspinor
           call dgemm('T','N',lmmaxvr,nmtloc,ntp,1.d0,rlmb,ntp,&
-            vxmt_(1,1,ispn),ntp,1.d0,vhxcmt(1,1,it,ispn,n),lmmaxvr)
+            vxmt_(1,1,ispn),ntp,1.d0,vhxcmt(1,1,it,ispn,j),lmmaxvr)
         enddo
 ! save total XC energy to exmt_
         exmt_(:,:)=exmt_(:,:)+ecmt_(:,:)
-! expand XC energy in spherical harmonics
+! expand XC energy in real spherical harmonics
         call dgemm('T','N',lmmaxvr,nmtloc,ntp,1.d0,rlmb,ntp,exmt_,ntp,0.d0,&
           excwanmt(1,1,it),lmmaxvr)
       endif
@@ -218,7 +219,7 @@ do n=1,nwantot
         call xcifc(xctype,n=ngrloc,rho=wfir2,ex=exir_,ec=ecir_,vx=vxir_,vc=vcir_)
       endif
       do ispn=1,nspinor
-        vhxcir(:,it,ispn,n)=vhxcir(:,it,ispn,n)+vxir_(:,ispn)+vcir_(:,ispn)
+        vhxcir(:,it,ispn,j)=vhxcir(:,it,ispn,n)+vxir_(:,ispn)+vcir_(:,ispn)
       enddo
       excwanir(:,it)=exir_(:)+ecir_(:)
     enddo !it

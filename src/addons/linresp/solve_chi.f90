@@ -13,8 +13,7 @@ complex(8), intent(out) :: f_response_(nf_response)
 complex(8), allocatable :: epsilon(:,:)
 complex(8), allocatable :: mtrx1(:,:)
 complex(8), allocatable :: zm1(:,:),zm2(:,:)
-real(8) d1
-integer i,ig1,ig2,ig
+integer i,ig
 
 ! Note: different epsilons and chis are introduced only to go inside the 
 !   "black box" of non-linear marix equation for chi

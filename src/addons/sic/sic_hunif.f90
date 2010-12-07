@@ -15,9 +15,9 @@ complex(8) expikt
 complex(8), allocatable :: vwank(:,:)
 complex(8), allocatable :: zm1(:,:),zm2(:,:)
 character*500 fname,msg
-logical, parameter :: tcheckherm=.true.
+logical, parameter :: tcheckherm=.false.
 
-if (.not.tsic_wv) return
+!if (.not.tsic_wv) return
 ! simplified potential correction if we don't have SIC potential yet
 !if (.not.tsic_wv) then
 !  do j1=1,nstfv
@@ -77,29 +77,29 @@ deallocate(zm1)
 
 
 
-!allocate(zm1(nstsv,nstsv))
+allocate(zm1(nstsv,nstsv))
 !allocate(zm2(nstsv,nstsv))
 !zm2=zzero
 !! setup unified Hamiltonian
 !! 1-st term: LDA Hamiltonian itself
 !! 2-nd term : -\sum_{\alpha,\alpha'} P_{\alpha} H^{LDA} P_{\alpha'}
-!zm1=zzero
-!do j1=1,nstfv
-!  do ispn1=1,nspinor
-!    jst1=j1+(ispn1-1)*nstfv
-!    do j2=1,nstfv
-!      do ispn2=1,nspinor
-!        jst2=j2+(ispn2-1)*nstfv
-!        do n1=1,nwantot
-!          do n2=1,nwantot
-!            zm1(jst1,jst2)=zm1(jst1,jst2)-sic_wann_h0k(n1,n2,ikloc)*&
-!              dconjg(sic_wb(n1,j1,ispn1,ikloc))*sic_wb(n2,j2,ispn2,ikloc)
-!          enddo
-!        enddo
-!      enddo
-!    enddo
-!  enddo
-!enddo
+zm1=zzero
+do j1=1,nstfv
+  do ispn1=1,nspinor
+    jst1=j1+(ispn1-1)*nstfv
+    do j2=1,nstfv
+      do ispn2=1,nspinor
+        jst2=j2+(ispn2-1)*nstfv
+        do n1=1,nwantot
+          do n2=1,nwantot
+            zm1(jst1,jst2)=zm1(jst1,jst2)-sic_wann_h0k(n1,n2,ikloc)*&
+              dconjg(sic_wb(n1,j1,ispn1,ikloc))*sic_wb(n2,j2,ispn2,ikloc)
+          enddo
+        enddo
+      enddo
+    enddo
+  enddo
+enddo
 !if (tcheckherm) then
 !  call checkherm(nstsv,zm1,i,j)
 !  if (i.gt.0) then
@@ -114,21 +114,20 @@ deallocate(zm1)
 !! 3-rd term : \sum_{alpha} P_{\alpha} H^{LDA} P_{\alpha}
 !! 4-th term : \sum_{alpha} P_{\alpha} V_{\alpha} P_{\alpha}
 !zm1=zzero
-!do j1=1,nstfv
-!  do ispn1=1,nspinor
-!    jst1=j1+(ispn1-1)*nstfv
-!    do j2=1,nstfv
-!      do ispn2=1,nspinor
-!        jst2=j2+(ispn2-1)*nstfv
-!        do n=1,nwantot
-!          zm1(jst1,jst2)=zm1(jst1,jst2)+dconjg(sic_wb(n,j1,ispn1,ikloc))*&
-!            sic_wb(n,j2,ispn2,ikloc)*(dreal(vwanme(idxmegqwan(n,n,0,0,0)))+&
-!            sic_wann_e0(n))
-!        enddo
-!      enddo
-!    enddo
-!  enddo
-!enddo
+do j1=1,nstfv
+  do ispn1=1,nspinor
+    jst1=j1+(ispn1-1)*nstfv
+    do j2=1,nstfv
+      do ispn2=1,nspinor
+        jst2=j2+(ispn2-1)*nstfv
+        do n=1,nwantot
+          zm1(jst1,jst2)=zm1(jst1,jst2)+dconjg(sic_wb(n,j1,ispn1,ikloc))*&
+            sic_wb(n,j2,ispn2,ikloc)*sic_wann_e0(n)
+        enddo
+      enddo
+    enddo
+  enddo
+enddo
 !if (tcheckherm) then
 !  call checkherm(nstsv,zm1,i,j)
 !  if (i.gt.0) then
@@ -140,11 +139,12 @@ deallocate(zm1)
 !endif
 !hunif=hunif+zm1
 !zm2=zm2+zm1
-!if (mpi_grid_root((/dim2/))) then
-!  write(fname,'("hcorr",I2.2,"_k",I4.4".txt")')nproc,ik
-!  call wrmtrx(fname,nstsv,nstsv,zm2,nstsv)
-!endif
-!
+if (mpi_grid_root((/dim2/))) then
+  write(fname,'("hcorr",I2.2,"_k",I4.4".txt")')nproc,ik
+  call wrmtrx(fname,nstsv,nstsv,zm1,nstsv)
+endif
+deallocate(zm1)
+
 !
 !! 5-th term : \sum_{\alpha} P_{\alpha} V_{\alpha} Q + 
 !!             \sum_{\alpha} Q V_{\alpha} P_{\alpha} 
@@ -207,6 +207,9 @@ deallocate(zm1)
 
 
 
+
+
+
 do j1=1,nstfv
   do ispn1=1,nspinor
     jst1=j1+(ispn1-1)*nstfv
@@ -261,6 +264,6 @@ if (tcheckherm) then
     call mpi_grid_msg("sic_hunif",msg)
   endif
 endif
-deallocate(vwank) !,zm1,zm2)
+deallocate(vwank)
 return
 end

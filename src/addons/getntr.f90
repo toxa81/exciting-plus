@@ -4,11 +4,8 @@ implicit none
 real(8), intent(in) :: vrcnr(3)
 integer, intent(out) :: ntr(3)
 real(8), intent(out) :: vrl(3)
-real(8) a(3,3)
 real(8) b(3)
-integer i,j,ipiv(3)
-real(8) work(200)
-integer lwork
+integer i
 logical l1
 ! r=r0+T=r0+n1*a_1+n2*a_2+n3*a_3=f1*a_1+f2*a_2+f3*a_3
 ! a_i*b_j=2pi*\delta_{ij}

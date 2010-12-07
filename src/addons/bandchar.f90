@@ -16,7 +16,7 @@ integer j,isym,lspl,nsym1
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 ! automatic arrays
-complex(8) zt1(ld,nufrmax),zt2(ld),zt3
+complex(8) zt1(ld,nufrmax),zt2(ld)
 integer ik
 
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)

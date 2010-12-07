@@ -8,7 +8,7 @@ use mod_wannier
 implicit none
 integer*8, allocatable :: hw_values(:)
 integer i,j,iq
-integer nvqloc,iqloc,ist,ik
+integer nvqloc,iqloc
 character*100 qnm
 logical wproc1,exist,lpmat
 logical, external :: wann_diel

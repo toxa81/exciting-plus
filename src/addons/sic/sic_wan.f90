@@ -15,8 +15,7 @@ complex(8) z1
 
 if (wproc) then
   write(fout,*)
-  write(fout,'("sic_wan.f90")')
-  write(fout,'("generate Wannier functions on a grid")')
+  write(fout,'("generating Wannier functions on a grid")')
   write(fout,'(80("-"))')
 endif
 call timer_reset(1)
@@ -71,7 +70,8 @@ if (wproc) then
 !    endif
 !  enddo
   write(fout,'("Wannier overlap integrals (<w_n|w_n>)")')
-  do n=1,nwantot
+  do i=1,sic_wantran%nwan
+    n=sic_wantran%iwan(i)
     j=sic_wantran%iwtidx(n,n,0,0,0)
     write(151,'(I4,4X,2G18.10)')n,dreal(ovlp(j)),dimag(ovlp(j))
   enddo

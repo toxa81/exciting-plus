@@ -9,7 +9,7 @@ complex(8), intent(in) :: evecfv(nmatmax,nstfv)
 complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 complex(8), intent(out) :: wffvmt(nstfv,lmmax,nufrmax,natmtot)
 ! local variables
-integer l,m,is,ia,ias,lm,i1,io,ilo,ig
+integer l,m,is,ia,ias,lm,i1,io,ilo
 integer ordl(0:lmax,natmtot)
 ! calculate first-variational coefficients
 wffvmt=zzero

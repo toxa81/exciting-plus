@@ -6,7 +6,7 @@ use mod_expigqr
 use mod_wannier
 implicit none
 integer, intent(in) :: iq
-integer ik,i1,ibloc,xloc,ist1,ist2,i,n1,n2,ig,j,ikloc,n
+integer ik,i1,ibloc,xloc,ist1,ist2,i,n1,n2,ig,j,ikloc
 complex(8) zt2
 complex(8), allocatable :: zm1(:,:)
 complex(8), allocatable :: expkqt(:)

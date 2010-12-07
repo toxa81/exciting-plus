@@ -24,9 +24,8 @@ real(8), intent(in) :: evalsv_(nstsv,nkpt_)
 real(8), intent(out) :: occsv_(nstsv,nkpt_)
 ! local variables
 integer, parameter :: maxit=1000
-integer ik,ist,it,i,j,zval,ik0,ik1
-real(8) e0,e1,chg,x,t1,e
-real(8) etmp(nstsv,2)
+integer ik,ist,it
+real(8) e0,e1,chg,x,t1
 ! external functions
 real(8) sdelta,stheta
 external sdelta,stheta

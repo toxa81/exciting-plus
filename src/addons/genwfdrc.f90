@@ -4,7 +4,7 @@ use mod_nrkp
 use mod_hdf5
 implicit none
 character*100 fname
-character*20 kname,gname
+character*20 kname
 integer ikloc,ik,i
 integer f
 

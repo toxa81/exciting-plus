@@ -79,6 +79,8 @@ type wannier_transitions
   integer :: nwan
 ! global index of taken Wannier functions
   integer, allocatable :: iwan(:)
+! mapping from global to local index
+  integer, allocatable :: idxiwan(:) 
 ! total number of Wannier transitions (total number of <m| |nT> bra-kets)
   integer :: nwt
 ! i-th Wannier transition
@@ -116,6 +118,7 @@ integer m,n,j,nwtmax,i,k,t(3),ias,jas
 logical ladd,allwt_,diagwt_
 integer nwan,nwt,ntr,tlim(2,3)
 integer, allocatable :: iwan(:)
+integer, allocatable :: idxiwan(:)
 integer, allocatable :: iwt(:,:)
 integer, allocatable :: wt(:,:)
 integer, allocatable :: vtr(:,:)
@@ -146,6 +149,15 @@ endif
 twantran%nwan=nwan
 allocate(twantran%iwan(nwan))
 twantran%iwan(1:nwan)=iwan(1:nwan)
+! mapping from global to local index
+allocate(idxiwan(nwantot))
+idxiwan=-1
+do i=1,nwan
+  n=iwan(i)
+  idxiwan(n)=i
+enddo
+allocate(twantran%idxiwan(nwantot))
+twantran%idxiwan=idxiwan
 ! get nearest neighbours
 twantran%mindist=mindist
 twantran%maxdist=maxdist
@@ -234,6 +246,7 @@ twantran%ntr=ntr
 allocate(twantran%vtr(3,ntr))
 twantran%vtr(:,1:ntr)=vtr(:,1:ntr)
 deallocate(iwan)
+deallocate(idxiwan)
 deallocate(iwt)
 deallocate(wt)
 deallocate(vtr)
@@ -245,6 +258,7 @@ implicit none
 type(wannier_transitions), intent(inout) :: twantran
 
 if (allocated(twantran%iwan)) deallocate(twantran%iwan)
+if (allocated(twantran%idxiwan)) deallocate(twantran%idxiwan)
 if (allocated(twantran%iwt)) deallocate(twantran%iwt)
 if (allocated(twantran%iwtidx)) deallocate(twantran%iwtidx)
 if (allocated(twantran%vtr)) deallocate(twantran%vtr)

@@ -60,7 +60,7 @@ use modmain
 implicit none
 integer, intent(in) :: fout
 logical, intent(in) :: lpmat
-integer ik,ikloc,n,j,ik1,isym,ig,i
+integer ik,ikloc,n,j,ik1,isym,i
 complex(8), allocatable :: apwalm(:,:,:,:)
 real(8) w2,t1,sz
 logical, external :: wann_diel

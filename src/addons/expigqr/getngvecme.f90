@@ -3,7 +3,7 @@ use modmain
 use mod_addons_q
 use mod_expigqr
 implicit none
-integer ngsh,gshq0,i,j
+integer ngsh
 integer, allocatable :: igishell(:)
 integer, allocatable :: ishellng(:,:)
 allocate(igishell(ngvec))
