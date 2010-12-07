@@ -2,7 +2,7 @@ subroutine init3
 use modmain
 use mod_wannier
 implicit none
-integer ia,is,lm,l,m,ir,i1,i2,i3,i,n
+integer ia,is,l,m,ir,i1,i2,i3,i,n
 logical l1(maxspst,0:lmaxapw)
 real(8) vl(3)
 if (allocated(rylm)) deallocate(rylm)

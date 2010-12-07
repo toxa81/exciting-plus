@@ -4,8 +4,8 @@ use mod_nrkp
 use mod_sic
 implicit none
 integer is,ic,ias,ir,ig,ikloc,ik,l
-integer io,lm,n,ispn,h,nloc,it
-real(8) v1(3),vtrc(3)
+integer io,lm,n,ispn,it
+real(8) v1(3)
 complex(8), allocatable :: zfir(:,:,:)
 complex(8), allocatable :: wmt(:,:,:,:)
 complex(8), allocatable :: wir(:,:)

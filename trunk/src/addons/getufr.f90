@@ -1,7 +1,7 @@
 subroutine getufr
 use modmain
 implicit none
-integer is,ia,ias,l,io,ilo,ic
+integer is,ias,l,io,ilo,ic
 integer ordl(0:lmaxapw)
 ufr=0.d0
 do ic=1,natmcls

@@ -52,7 +52,7 @@ do is=1,nspecies
 !            call findband(solsc,l,0,nprad,nrmt(is),spr(:,is),vr,deband, &
 !             epsband,apwe(io,l,ias),fnd)
             call findband1(solsc,l,0,nprad,nrmt(is),spr(:,is),vr,deband, &
-             epsband,apwe(io,l,ias),fnd,spnl(l,is))
+             apwe(io,l,ias),fnd,spnl(l,is))
             if (.not.fnd) then
               write(*,*)
               write(*,'("Warning(linengy): linearisation energy not found")')
@@ -90,7 +90,7 @@ do is=1,nspecies
 !            call findband(solsc,l,0,nprad,nrmt(is),spr(:,is),vr,deband, &
 !             epsband,lorbe(io,ilo,ias),fnd)
             call findband1(solsc,l,0,nprad,nrmt(is),spr(:,is),vr,deband, &
-             epsband,lorbe(io,ilo,ias),fnd,spnl(l,is))
+             lorbe(io,ilo,ias),fnd,spnl(l,is))
             if (.not.fnd) then
               write(*,*)
               write(*,'("Warning(linengy): linearisation energy not found")')

@@ -5,7 +5,7 @@ use mod_sic
 use mod_linresp
 use mod_wannier
 implicit none
-integer i,ias,n,jas,i1,i2,i3,vl(3),ish,ir,is,j,iwgrp
+integer i,ias,n,jas,i1,i2,i3,vl(3),ish,ir,is,j
 logical l1,l2,exist
 real(8) v1(3),v2(3)
 logical, external :: vrinmt,sic_include_cell
@@ -66,13 +66,26 @@ nmtloc=mpi_grid_map2(nrmtmax*natmtot,dims=(/dim_k,dim2/),offs=mtoffs)
 if (mpi_grid_root()) then
   write(*,*)
   write(*,'("[sic_init] total number of translations : ",I3)')ntr
-  write(*,'("[sic_init] size of Wannier function arrays : ",I6," Mb")') &
-    int(2*16.d0*(lmmaxvr*nmtloc+ngrloc)*ntr*nspinor*nwantot/1048576.d0)
+  !write(*,'("[sic_init] size of Wannier function arrays : ",I6," Mb")') &
+  !  int(2*16.d0*(lmmaxvr*nmtloc+ngrloc)*ntr*nspinor*nwantot/1048576.d0)
 endif
 call mpi_grid_barrier()
+if (.not.tsic_arrays_allocated) then
+  allocate(sic_apply(nwantot))
+  if (allocated(sicw)) then
+    sic_apply=0
+    do n=1,nwantot
+      i=wan_info(6,n)
+      j=wan_info(7,n)
+      sic_apply(n)=sicw(j,i)
+    enddo
+  else
+    sic_apply=1
+  endif
+endif
 ! get all Wannier transitions
 call deletewantran(sic_wantran)
-call genwantran(sic_wantran,-0.d0,sic_me_cutoff,allwt=.true.)
+call genwantran(sic_wantran,-0.d0,sic_me_cutoff,allwt=.true.,waninc=sic_apply)
 ! allocate once main arrays of SIC code
 !  wan(mt,ir) - Wannier function defined on a real-space grid
 !  wv(mt,ir) - product of a Wannier function with it's potential
@@ -81,20 +94,12 @@ if (.not.tsic_arrays_allocated) then
   wanmt=zzero
   allocate(wanir(ngrloc,ntr,nspinor,nwantot))
   wanir=zzero
-  allocate(wvmt(lmmaxvr,nmtloc,ntr,nspinor,nwantot))
+  allocate(wvmt(lmmaxvr,nmtloc,ntr,nspinor,sic_wantran%nwan))
   wvmt=zzero
-  allocate(wvir(ngrloc,ntr,nspinor,nwantot))
+  allocate(wvir(ngrloc,ntr,nspinor,sic_wantran%nwan))
   wvir=zzero
-  allocate(sic_apply(nwantot))
-  sic_apply=1
   allocate(vwanme(sic_wantran%nwt))
   vwanme=zzero
-  do n=1,nwantot
-    i=wan_info(6,n)
-    j=wan_info(7,n)
-    if (allocated(wann_sic)) sic_apply(n)=wann_sic(j,i)
-    if (allocated(wann_sic_v)) vwanme(sic_wantran%iwtidx(n,n,0,0,0))=zone*wann_sic_v(j,i)
-  enddo
   tsic_arrays_allocated=.true.
 endif
   

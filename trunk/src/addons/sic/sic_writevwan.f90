@@ -5,7 +5,7 @@ use mod_hdf5
 use mod_linresp
 use mod_wannier
 implicit none
-integer n,ispn,it,i,itloc,nloc,j
+integer n,ispn,it
 character*12 c1,c2,c3
 character*100 path
 complex(8), allocatable :: fmt(:,:,:)

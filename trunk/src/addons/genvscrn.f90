@@ -1,4 +1,4 @@
-subroutine genvscrn(iq,iw,chi0,krnl,vscrn,epsilon,chi)
+subroutine genvscrn(iq,chi0,krnl,vscrn,epsilon,chi)
 use modmain
 use mod_addons_q
 use mod_expigqr
@@ -6,7 +6,6 @@ use mod_linresp
 implicit none
 ! arguments
 integer, intent(in) :: iq
-integer, intent(in) :: iw
 complex(8), intent(in) :: chi0(ngvecme,ngvecme)
 complex(8), intent(in) :: krnl(ngvecme,ngvecme)
 complex(8), intent(out) :: vscrn(ngvecme,ngvecme)

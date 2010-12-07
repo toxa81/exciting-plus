@@ -6,9 +6,9 @@ use mod_addons_q
 implicit none
 ! arguments
 integer, intent(in) :: fout
-complex(8), intent(out) :: ene(4,nwantot)
+complex(8), intent(out) :: ene(4,sic_wantran%nwan)
 ! local variables
-integer ispn,i,n
+integer ispn,i,n,j
 ! potential (Hartree+XC) of Wannier function charge density
 real(8), allocatable :: vhxcmt(:,:,:,:,:)
 real(8), allocatable :: vhxcir(:,:,:,:)
@@ -17,8 +17,7 @@ real(8) sic_ekin,sic_epot
 
 if (wproc) then
   write(fout,*)
-  write(fout,'("sic_pot.f90")')
-  write(fout,'("generate potential (Hartree+XC) of Wannier functions")')
+  write(fout,'("generating potential (Hartree+XC) of Wannier functions")')
   write(fout,'(80("-"))')
 endif
 wvmt=zzero
@@ -40,28 +39,27 @@ if (wproc) then
   write(fout,'("ngqmax : ",I4)')ngqmax
   write(fout,'("time for q-vectors : ",F8.3)')timer_get_value(10)
   write(fout,'("time for Hartree potential : ",F8.3)')timer_get_value(11)
-! TODO: change to maximum imaginary part  
-!  write(fout,'("average imaginary part (mt,ir) : ",2G18.10)') &
-!    sum(abs(dimag(wvmt)))/lmmaxvr/nrmtmax/natmtot/ntrloc/nwantot,&
-!    sum(abs(dimag(wvir)))/ngrtot/ntrloc/nwantot
+  write(fout,'("maximum absolute imaginary part (mt,ir) : ",2G18.10)') &
+    maxval(abs(dimag(wvmt))),maxval(abs(dimag(wvir)))
   call timestamp(fout,"done with Hartree potential")
 endif
-allocate(vhxcmt(lmmaxvr,nmtloc,ntr,nspinor,nwantot))
-allocate(vhxcir(ngrloc,ntr,nspinor,nwantot))
-do n=1,nwantot
+allocate(vhxcmt(lmmaxvr,nmtloc,ntr,nspinor,sic_wantran%nwan))
+allocate(vhxcir(ngrloc,ntr,nspinor,sic_wantran%nwan))
+do j=1,sic_wantran%nwan
   do ispn=1,nspinor
-    vhxcmt(:,:,:,ispn,n)=dreal(wvmt(:,:,:,1,n))
-    vhxcir(:,:,ispn,n)=dreal(wvir(:,:,1,n))
+    vhxcmt(:,:,:,ispn,j)=dreal(wvmt(:,:,:,1,j))
+    vhxcir(:,:,ispn,j)=dreal(wvir(:,:,1,j))
   enddo
 enddo
 ene=zzero
 !------------------------------!
 ! Hartree energy <W_n|V^H|W_n> !
 !------------------------------!
-do n=1,nwantot
+do j=1,sic_wantran%nwan
+  n=sic_wantran%iwan(j)
   do ispn=1,nspinor
-    ene(1,n)=ene(1,n)+sic_int_zdz(wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),&
-      vhxcmt(1,1,1,ispn,n),vhxcir(1,1,ispn,n),wanmt(1,1,1,ispn,n),&
+    ene(1,j)=ene(1,j)+sic_int_zdz(wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),&
+      vhxcmt(1,1,1,ispn,j),vhxcir(1,1,ispn,j),wanmt(1,1,1,ispn,n),&
       wanir(1,1,ispn,n),twanmtuc(1,n))
   enddo
 enddo
@@ -75,30 +73,34 @@ if (wproc) then
   write(fout,'("time for XC potential : ",F8.3)')timer_get_value(12)
 endif
 ! compute <W_n|V_n|W_n>
-do n=1,nwantot
+do j=1,sic_wantran%nwan
+  n=sic_wantran%iwan(j)
   do ispn=1,nspinor
-    ene(3,n)=ene(3,n)+sic_int_zdz(wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),&
-      vhxcmt(1,1,1,ispn,n),vhxcir(1,1,ispn,n),wanmt(1,1,1,ispn,n),&
+    ene(3,j)=ene(3,j)+sic_int_zdz(wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),&
+      vhxcmt(1,1,1,ispn,j),vhxcir(1,1,ispn,j),wanmt(1,1,1,ispn,n),&
       wanir(1,1,ispn,n),twanmtuc(1,n))
   enddo
 enddo
 ! compute <W_n|V_n^{XC}|W_n>
-do n=1,nwantot
-  ene(2,n)=ene(3,n)-ene(1,n)
+do j=1,sic_wantran%nwan
+  ene(2,j)=ene(3,j)-ene(1,j)
 enddo
+! note: here Hartree potential has a positive sign and XC potential 
+!  has a negative sign
 sic_ekin=0.d0
 sic_epot=0.d0
-do n=1,nwantot
-  sic_ekin=sic_ekin+dreal(ene(3,n))
-  sic_epot=sic_epot+0.5d0*dreal(ene(1,n))+dreal(ene(4,n))
+do j=1,sic_wantran%nwan
+  sic_ekin=sic_ekin+dreal(ene(3,j))
+  sic_epot=sic_epot+0.5d0*dreal(ene(1,j))+dreal(ene(4,j))
 enddo
+! total energy: engytot=engytot+sic_etot_correction
 sic_etot_correction=sic_ekin-sic_epot
 if (wproc) then
-  do n=1,nwantot
+  do j=1,sic_wantran%nwan
     do i=1,4
-      if (abs(dimag(ene(i,n))).gt.1d-10) then
+      if (abs(dimag(ene(i,j))).gt.1d-10) then
         write(fout,'("Warning : big imaginary part of energy")')
-        write(fout,'(" i, n, img : ",2I4,G18.10)')i,n,dimag(ene(i,n))
+        write(fout,'(" i, j, img : ",2I4,G18.10)')i,j,dimag(ene(i,j))
       endif
     enddo
   enddo
@@ -106,9 +108,10 @@ if (wproc) then
   write(fout,'(2X,"wann",3X,"<W_n|V_n^{H}|W_n>   <W_n|V_n^{XC}|W_n>  &
     &<W_n|V_n|W_n>     <W_n|E_n^{XC}|W_n>")')
   write(fout,'(84("-"))')
-  do n=1,nwantot
-    write(fout,'(I4,4X,4(G18.10,2X))')n,dreal(ene(1,n)),dreal(ene(2,n)),&
-      dreal(ene(3,n)),dreal(ene(4,n))
+  do j=1,sic_wantran%nwan
+    n=sic_wantran%iwan(j)
+    write(fout,'(I4,4X,4(G18.10,2X))')n,dreal(ene(1,j)),dreal(ene(2,j)),&
+      dreal(ene(3,j)),dreal(ene(4,j))
   enddo
   write(fout,*)
   write(fout,'("SIC kinetic energy contribution   : ",G18.10)')sic_ekin
@@ -119,11 +122,12 @@ endif
 wvmt=zzero
 wvir=zzero
 ! multiply Wannier function by potential and change sign
-do n=1,nwantot
+do j=1,sic_wantran%nwan
+  n=sic_wantran%iwan(j)
   do ispn=1,nspinor
     call sic_mul_zd(-zone,wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n), &
-      vhxcmt(1,1,1,ispn,n),vhxcir(1,1,ispn,n),wvmt(1,1,1,ispn,n),&
-      wvir(1,1,ispn,n),twanmtuc(1,n))    
+      vhxcmt(1,1,1,ispn,j),vhxcir(1,1,ispn,j),wvmt(1,1,1,ispn,j),&
+      wvir(1,1,ispn,j),twanmtuc(1,n))    
   enddo
 enddo
 !!allocate(zm1(lmmaxvr,nrmtmax))

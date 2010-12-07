@@ -6,9 +6,9 @@ use mod_expigqr
 use mod_linresp
 use mod_sic
 implicit none
-complex(8), intent(out) :: vhwanmt(lmmaxvr,nmtloc,ntr,nspinor,nwantot)
-complex(8), intent(out) :: vhwanir(ngrloc,ntr,nspinor,nwantot)
-integer nvqloc,iqloc,it,iq,n,ig,ias,i
+complex(8), intent(out) :: vhwanmt(lmmaxvr,nmtloc,ntr,nspinor,sic_wantran%nwan)
+complex(8), intent(out) :: vhwanir(ngrloc,ntr,nspinor,sic_wantran%nwan)
+integer nvqloc,iqloc,it,iq,n,ig,ias,i,j
 complex(8), allocatable :: pwmt(:,:)
 complex(8), allocatable :: pwir(:)
 complex(8), allocatable ::megqwan1(:,:,:)
@@ -32,7 +32,7 @@ wannier_megq=.true.
 megq_include_bands(:)=(/100.1d0,-100.1d0/)
 call deletewantran(megqwantran)
 call genwantran(megqwantran,-0.d0,0.01d0,diagwt=.true.)
-allocate(megqwan1(nwantot,ngqmax,nvq))
+allocate(megqwan1(sic_wantran%nwan,ngqmax,nvq))
 megqwan1=zzero
 ! distribute q-vectors along 2-nd dimention
 nvqloc=mpi_grid_map(nvq,dim_q)
@@ -42,12 +42,13 @@ do iqloc=1,nvqloc
   iq=mpi_grid_map(nvq,dim_q,loc=iqloc)
   call genmegq(iq,.true.,.false.)
 ! save <n,T=0|e^{-i(G+q)r}|n,T=0>
-  do n=1,nwantot
-    megqwan1(n,1:ngq(iq),iq)=megqwan(megqwantran%iwtidx(n,n,0,0,0),1:ngq(iq))
+  do j=1,sic_wantran%nwan
+    n=sic_wantran%iwan(j)
+    megqwan1(j,1:ngq(iq),iq)=megqwan(megqwantran%iwtidx(n,n,0,0,0),1:ngq(iq))
   enddo
 enddo
-call mpi_grid_reduce(megqwan1(1,1,1),nwantot*ngqmax*nvq,dims=(/dim_q/), &
-  all=.true.)
+call mpi_grid_reduce(megqwan1(1,1,1),sic_wantran%nwan*ngqmax*nvq,&
+  dims=(/dim_q/),all=.true.)
 call timer_stop(10)
 ! allocate arrays for plane-wave
 allocate(pwmt(lmmaxvr,nmtloc))
@@ -59,17 +60,18 @@ do iq=1,nvq
     call sic_genpw(vgqc(1,ig,iq),pwmt,pwir)
     do it=1,ntr
       expikt=exp(zi*dot_product(vtc(:,it),vqc(:,iq)))/nkptnr/omega
-      do n=1,nwantot
+      do j=1,sic_wantran%nwan
+        n=sic_wantran%iwan(j)
         if (sic_apply(n).eq.1) then
-          zt1=megqwan1(n,ig,iq)*vhgq(ig,iq)*expikt
+          zt1=megqwan1(j,ig,iq)*vhgq(ig,iq)*expikt
           do i=1,nmtloc
             ias=(mtoffs+i-1)/nrmtmax+1
             if (twanmt(ias,it,n)) then       
-              call zaxpy(lmmaxvr,zt1,pwmt(1,i),1,vhwanmt(1,i,it,1,n),1)
+              call zaxpy(lmmaxvr,zt1,pwmt(1,i),1,vhwanmt(1,i,it,1,j),1)
             endif
           enddo
-          call zaxpy(ngrloc,zt1,pwir,1,vhwanir(1,it,1,n),1)
-        endif
+          call zaxpy(ngrloc,zt1,pwir,1,vhwanir(1,it,1,j),1)
+        endif !sic_apply(n).eq.1
       enddo !n
     enddo !it
   enddo !ig

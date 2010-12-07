@@ -8,9 +8,8 @@ integer, intent(in) :: iq
 integer, intent(in) :: lmaxexp
 integer, intent(in) :: lmmaxexp
 logical, intent(in) :: tg0q
-integer vgq0l(3)
 real(8) v1(3)
-integer i,ig
+integer ig
 real(8) t1
 
 ngvecme=ngq(iq)

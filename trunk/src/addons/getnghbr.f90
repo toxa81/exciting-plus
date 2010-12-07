@@ -5,7 +5,7 @@ real(8), intent(in) :: mindist
 real(8), intent(in) :: maxdist
 
 integer i1,i2,i3,ias,ia,is,jas,ja,js,i,n,j
-real(8) a(3),v1(3),d1,v2(3),v3(3),dst
+real(8) v1(3),d1
 integer llim(3),tmp(5)
 real(8) vrc(3),vrl(3)
 integer ntr(3)

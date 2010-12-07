@@ -14,14 +14,14 @@ allocate(work(2*lwork),ipiv(ndim))
 call zgetrf(ndim,ndim,mtrx,ndim,ipiv,info)
 if (info.ne.0) then
   write(*,*)
-  write(*,'("Error(invzge): error factorization")')
-  stop
+  write(*,'("Error(invzge) zgetrf returned ",I4)')info
+  call pstop
 endif
 call zgetri(ndim,mtrx,ndim,ipiv,work,lwork,info)
 if (info.ne.0) then
   write(*,*)
-  write(*,'("Error(invzge): error inversion")')
-  stop
+  write(*,'("Error(invzge): zgetri returned ",I4)')info
+  call pstop
 endif
 deallocate(work,ipiv)
 end
@@ -44,14 +44,14 @@ allocate(work(lwork))
 call dsytrf('U',n,mtrx,n,ipiv,work,lwork,info)
 if (info.ne.0) then
   write(*,*)
-  write(*,'("Warinig(invdsy) : factorization error")')
-  write(*,*)
+  write(*,'("Error(invdsy) dsytrf returned ",I4)')info
+  call pstop
 endif
 call dsytri('U',n,mtrx,n,ipiv,work,info)
 if (info.ne.0) then
   write(*,*)
-  write(*,'("Warinig(invdsy) : inversion error")')
-  write(*,*)
+  write(*,'("Error(invdsy) dsytri returned ",I4)')info
+  call pstop
 endif
 deallocate(ipiv,work)
 return
@@ -73,8 +73,8 @@ allocate(rwork(3*ndim+2))
 call zheev('V','U',ndim,mtrx,ndim,evalue,work,lwork,rwork,inf)
 if (inf.ne.0) then
   write(*,*)
-  write(*,'("Error(diagzhe): zheev returned : ",I4)')inf
-  stop
+  write(*,'("Error(diagzhe) zheev returned ",I4)')inf
+  call pstop
 endif
 deallocate(work,rwork)
 end
@@ -94,7 +94,7 @@ allocate(work(lwork))
 call dsyev('V','U',n,mtrx,n,eval,work,lwork,info)
 if (info.ne.0) then
   write(*,*)
-  write(*,'("Warning(diagdsy) : info = ",I4)')info
+  write(*,'("Warning(diagdsy) dsyev returned ",I4)')info
   write(*,*)
 endif
 deallocate(work)
@@ -126,9 +126,9 @@ allocate(ev1(ndim))
 call zheev('V','U',ndim,mtrx,ndim,ev1,work,lwork,rwork,info)
 if (info.ne.0) then
   write(*,*)
-  write(*,'("Error(isqrtzhe): zheev failed")')
+  write(*,'("Error(isqrtzhe): zheev returned ",I4)')info
   write(*,*)
-  stop
+  call pstop
 endif
 
 ierr=0
@@ -154,38 +154,32 @@ deallocate(z1,work,rwork,ev,ev1)
 return
 end
 
-      subroutine diagzge(ndim,mtrx,evalue)
-      implicit   none
+subroutine diagzge(ndim,mtrx,evalue)
+implicit   none
+integer, intent(in) :: ndim
+complex*16, intent(inout) :: mtrx(ndim,ndim)
+complex*16, intent(out) :: evalue(ndim)
+integer lwork,inf
+complex(8) zt1
+real*8, allocatable :: rwork(:)
+complex(8), allocatable :: work(:)
+complex(8), allocatable :: evec(:,:)
+integer, external :: ilaenv
 
-!---- passed var
-      integer       ,intent(in   ) :: ndim
-      complex*16    ,intent(inout) :: mtrx(ndim,ndim)
-      complex*16    ,intent(out  ) :: evalue(ndim)
-
-!---- local var
-      integer                      :: nb,lwork,inf
-      real*8        ,allocatable   :: rwork(:)
-      complex(8), allocatable :: work(:)
-      complex(8) zt1
-      complex(8), allocatable :: evec(:,:)
-      
-      integer       ,external      :: ilaenv
-
-      lwork=-1
-      call zgeev('N','V',ndim,mtrx,ndim,evalue,evec,ndim,evec,ndim,zt1,lwork,rwork,inf)
-      lwork=dble(zt1)+1
-      allocate(work(lwork))
-      allocate(rwork(2*ndim))
-      allocate(evec(ndim,ndim))
-      call zgeev('N','V',ndim,mtrx,ndim,evalue,evec,ndim,evec,ndim,work,lwork,rwork,inf)
-      if( inf.ne.0 ) then
-        write(*,*)'diagzge : Error finding eigenvectors.'
-        stop
-      endif
-      mtrx=evec
-      deallocate(work,rwork,evec)
-
-      end
+lwork=-1
+call zgeev('N','V',ndim,mtrx,ndim,evalue,evec,ndim,evec,ndim,zt1,lwork,rwork,inf)
+lwork=dble(zt1)+1
+allocate(work(lwork))
+allocate(rwork(2*ndim))
+allocate(evec(ndim,ndim))
+call zgeev('N','V',ndim,mtrx,ndim,evalue,evec,ndim,evec,ndim,work,lwork,rwork,inf)
+if (inf.ne.0) then
+  write(*,'("Error(diagzge) zgeev returned ",I4)')inf
+  call pstop
+endif
+mtrx=evec
+deallocate(work,rwork,evec)
+end subroutine
 
 
 

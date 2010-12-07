@@ -6,7 +6,7 @@
 !BOP
 ! !ROUTINE: findband
 ! !INTERFACE:
-subroutine findband1(sol,l,k,np,nr,r,vr,de0,eps,e,fnd,n)
+subroutine findband1(sol,l,k,np,nr,r,vr,de0,e,fnd,n)
 ! !INPUT/OUTPUT PARAMETERS:
 !   sol : speed of light in atomic units (in,real)
 !   l   : angular momentum quantum number (in,integer)
@@ -16,7 +16,6 @@ subroutine findband1(sol,l,k,np,nr,r,vr,de0,eps,e,fnd,n)
 !   r   : radial mesh (in,real(nr))
 !   vr  : potential on radial mesh (in,real(nr))
 !   de0 : default energy step size (in,real)
-!   eps : energy search tolerance (in,real)
 !   e   : input energy and returned band energy (inout,real)
 !   fnd : set to .true. if the band energy is found (out,logical)
 ! !DESCRIPTION:
@@ -43,7 +42,6 @@ integer, intent(in) :: nr
 real(8), intent(in) :: r(nr)
 real(8), intent(in) :: vr(nr)
 real(8), intent(in) :: de0
-real(8), intent(in) :: eps
 real(8), intent(inout) :: e
 logical, intent(out) :: fnd
 integer, intent(in) :: n

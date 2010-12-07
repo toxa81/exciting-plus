@@ -30,7 +30,7 @@ do m1=-l,l
 ! project to f(x)=(1+cos(Pi*x/R))
     if (wannier_prjao.eq.1) then
       do ir=1,nrmt(is)
-        fr(ir)=ufr(ir,l,io1,ic)*(1+cos(pi*spr(ir,is)/rmt(is)))*(spr(ir,is)**2)                                                        
+        fr(ir)=ufr(ir,l,io1,ic)*(1+cos(pi*spr(ir,is)/rmt(is)))*(spr(ir,is)**2)
       enddo
       call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
       prjao=prjao+dconjg(wfsvmt(lm1,io1,ias,ispn,i))*gr(nrmt(is))*rylm_lps(lm,lm1,ias)

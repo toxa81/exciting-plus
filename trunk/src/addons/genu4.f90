@@ -9,12 +9,11 @@ integer, intent(in) :: iq
 integer, intent(in) :: nwloc
 integer, intent(in) :: ntrloc
 logical, intent(in) :: u4scrn
-integer iwloc,iw,n,n1,i,ig,ig1,itloc,iloc,vtl(3),j,it
+integer iwloc,iw,n,n1,i,ig,itloc,vtl(3),j,it
 real(8) v2(3),vtc(3)
 complex(8), allocatable :: vscrn(:,:)
 complex(8), allocatable :: megqwan2(:,:)
 complex(8), allocatable :: megqwan3(:,:)
-complex(8), allocatable :: expiqt(:)
 complex(8), allocatable :: zm1(:,:)
 complex(8), allocatable :: zm2(:,:)
 complex(8), allocatable :: krnl(:,:)
@@ -60,7 +59,7 @@ do iwloc=1,nwloc
 ! broadcast chi0
   if (u4scrn) then
     call mpi_grid_bcast(chi0loc(1,1,iwloc),ngvecme*ngvecme,dims=(/dim_b/))
-    call genvscrn(iq,iw,chi0loc(1,1,iwloc),krnl,vscrn,epsilon,chi)
+    call genvscrn(iq,chi0loc(1,1,iwloc),krnl,vscrn,epsilon,chi)
   else
     vscrn=krnl
   endif

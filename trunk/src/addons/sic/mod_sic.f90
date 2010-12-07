@@ -28,8 +28,8 @@ complex(8), allocatable :: sic_wb(:,:,:,:)
 complex(8), allocatable :: sic_wvb(:,:,:,:)
 
 integer, allocatable :: sic_apply(:)
-integer, allocatable :: wann_sic(:,:)
-real(8), allocatable :: wann_sic_v(:,:)
+integer, allocatable :: sicw(:,:)
+!real(8), allocatable :: wann_sic_v(:,:)
 
 logical tsic_wv
 data tsic_wv/.false./
@@ -140,7 +140,7 @@ integer, intent(in) :: t(3)
 logical, intent(in) :: tfmt1(natmtot,ntr)
 logical, intent(in) :: tfmt2(natmtot,ntr)
 ! local variables
-integer v1(3),v2(3),jt,ir,is,ias,it,i
+integer v1(3),v2(3),jt,ir,ias,it,i
 complex(8) zdotmt,zdotir,zt1
 complex(8), external :: zdotc
 zdotmt=zzero
@@ -191,7 +191,7 @@ logical, intent(in) :: tfmtuc(ntr)
 complex(8), allocatable :: f1mt_(:,:),f3mt_(:,:)
 real(8), allocatable :: f2mt_(:,:)
 complex(8) zsummt,zsumir
-integer it,ir,lm,lm1,lm2,lm3,ias
+integer it,ir,lm,lm1,lm2,lm3
 complex(8) zt1
 complex(8), external :: gauntyry
 
@@ -334,11 +334,8 @@ complex(8) ylmgp(lmmaxvr)
 integer ias,is,ia,lm,ias1
 real(8) jl(0:lmaxvr)
 complex(8) zt1
-integer ir,i1,i2,i3,lm1,lm2,i
-real(8) v2(3),v3(3)
+integer ir,i
 complex(8), allocatable :: pwmt_(:,:)
-!complex(8) zt2(lmmaxvr)
-!complex(8), external :: zdotu
 
 allocate(pwmt_(lmmaxvr,nmtloc))
 pwmt_=zzero
