@@ -119,6 +119,7 @@ integer, parameter :: t_seceqnsv_diag=32
 
 integer, parameter :: t_sic_hunif=35
 integer, parameter :: t_sic_genfvprj=36
+integer, parameter :: t_sic_genfvprj_dotp=37
 
 integer, parameter :: t_apw_rad=40
 integer, parameter :: t_rho_mag_sum=41

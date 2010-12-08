@@ -83,6 +83,7 @@ do ik=1,nkpt
       wfir(igfft(igkig1(ig)))=evecfv1(ig,istfv,1)
     enddo
     call zfftifc(3,ngrid,1,wfir)
+    call timer_start(t_sic_genfvprj_dotp)
     call sic_copy_mt_z(.true.,lmmaxvr,wfmt,wfmt_)
     call sic_copy_ir_z(.true.,wfir,wfir_)
     do ir=1,ngrloc
@@ -97,6 +98,7 @@ do ik=1,nkpt
           wvir(1,1,ispn,j),twanmt(1,1,n),wfmt_,wfir_)
       enddo
     enddo !j
+    call timer_stop(t_sic_genfvprj_dotp)
   enddo !istfv
   if (mpi_grid_x(dim_k).eq.h) then
     sic_wb(:,:,:,ikloc)=a(:,:,:)
