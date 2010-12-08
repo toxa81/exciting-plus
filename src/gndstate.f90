@@ -150,6 +150,7 @@ do iscl=1,maxscl
   if (sic) then
     call timer_reset(t_sic_hunif)
     call timer_reset(t_sic_genfvprj)
+    call timer_reset(t_sic_genfvprj_dotp)  
   endif
   if (wproc) then
     write(60,*)
@@ -418,8 +419,10 @@ do iscl=1,maxscl
     write(60,'("  Density matrix setup                      : ",F12.2)')&
       timer_get_value(t_dmat)
     if (sic) then
-      write(60,'("  sic_genfvprj                              : ",F12.2)')&
+      write(60,'("  sic_genfvprj (total)                      : ",F12.2)')&
         timer_get_value(t_sic_genfvprj)
+      write(60,'("  sic_genfvprj (dot product)                : ",F12.2)')&
+        timer_get_value(t_sic_genfvprj_dotp)
       write(60,'("  sic_hunif                                 : ",F12.2)')&
         timer_get_value(t_sic_hunif)
     endif
