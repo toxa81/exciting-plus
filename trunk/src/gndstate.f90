@@ -140,13 +140,17 @@ do iscl=1,maxscl
   call timer_reset(t_seceqnfv_setup_o_it)
   call timer_reset(t_seceqnfv_diag)
   call timer_reset(t_seceqnsv)
-  call timer_reset(t_svhmlt_setup)
-  call timer_reset(t_svhmlt_diag)
+  call timer_reset(t_seceqnsv_setup)
+  call timer_reset(t_seceqnsv_diag)
   call timer_reset(t_rho_mag_sum)
   call timer_reset(t_rho_mag_sym)
   call timer_reset(t_rho_mag_tot)
   call timer_reset(t_pot) 
   call timer_reset(t_dmat)   
+  if (sic) then
+    call timer_reset(t_sic_hunif)
+    call timer_reset(t_sic_genfvprj)
+  endif
   if (wproc) then
     write(60,*)
     write(60,'("+-------------------------+")')
@@ -294,6 +298,7 @@ do iscl=1,maxscl
   end if
 ! compute the energy components
   call energy
+  call timer_stop(t_iter_tot)
 ! output energy components
   if (wproc) then
     call writeengy(60)
@@ -399,9 +404,9 @@ do iscl=1,maxscl
     write(60,'("    second-variational                      : ",F12.2)')&
       timer_get_value(t_seceqnsv)
     write(60,'("      setup                                 : ",F12.2)')&
-      timer_get_value(t_svhmlt_setup)
+      timer_get_value(t_seceqnsv_setup)
     write(60,'("      diagonalization                       : ",F12.2)')&
-      timer_get_value(t_svhmlt_diag)
+      timer_get_value(t_seceqnsv_diag)
     write(60,'("  Total for charge and magnetization        : ",F12.2)')&
       timer_get_value(t_rho_mag_tot)
     write(60,'("    k-point summation                       : ",F12.2)')&
@@ -412,6 +417,12 @@ do iscl=1,maxscl
       timer_get_value(t_pot)
     write(60,'("  Density matrix setup                      : ",F12.2)')&
       timer_get_value(t_dmat)
+    if (sic) then
+      write(60,'("  sic_genfvprj                              : ",F12.2)')&
+        timer_get_value(t_sic_genfvprj)
+      write(60,'("  sic_hunif                                 : ",F12.2)')&
+        timer_get_value(t_sic_hunif)
+    endif
   endif !wproc
 ! end the self-consistent loop
 end do !iscl

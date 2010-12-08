@@ -29,8 +29,8 @@ do is=1,nspecies
     write(50,'(" APW functions :")')
     do l=0,lmaxapw
       do io=1,apword(l,is)
-        write(50,'("  l = ",I2,", order = ",I2," : ",G18.10)') l,io, &
-         apwe(io,l,ias)
+        write(50,'("  l = ",I2,", order = ",I2," : ",G18.10,",  n = ",I2)') l,io, &
+         apwe(io,l,ias),spnl(l,is)
       end do
     end do
     write(50,'(" local-orbital functions :")')
