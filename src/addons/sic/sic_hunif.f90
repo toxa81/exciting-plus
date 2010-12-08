@@ -17,6 +17,7 @@ complex(8), allocatable :: zm1(:,:),zm2(:,:)
 character*500 fname,msg
 logical, parameter :: tcheckherm=.false.
 
+call timer_start(t_sic_hunif)
 ! restore full hermitian matrix
 do j1=2,nstsv
   do j2=1,j1-1
@@ -34,7 +35,10 @@ call zgemm('N','C',sic_wantran%nwan,sic_wantran%nwan,nstsv,zone,zm1,&
   sic_wantran%nwan,sic_wb(1,1,1,ikloc),sic_wantran%nwan,zzero,&
   sic_wann_h0k(1,1,ikloc),sic_wantran%nwan)
 deallocate(zm1)
-if (.not.tsic_wv) return
+if (.not.tsic_wv) then
+  call timer_stop(t_sic_hunif)
+  return
+endif
 
 ! compute V_{nn'}(k)
 allocate(vwank(sic_wantran%nwan,sic_wantran%nwan))
@@ -243,5 +247,6 @@ if (tcheckherm) then
   endif
 endif
 deallocate(vwank)
+call timer_stop(t_sic_hunif)
 return
 end

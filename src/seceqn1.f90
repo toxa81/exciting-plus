@@ -29,6 +29,8 @@ complex(8), intent(out) :: evecfv(nmatmax,nstfv,nspnfv)
 integer ispn,ik,ist
 ! allocatable arrays
 complex(8), allocatable :: apwalm(:,:,:,:,:)
+call timer_start(t_seceqn)
+call timer_start(t_seceqnfv)
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
 ! loop over first-variational spins (nspnfv=2 for spin-spirals only)
@@ -49,6 +51,8 @@ do ispn=1,nspnfv
   end if
 end do
 deallocate(apwalm)
+call timer_stop(t_seceqnfv)
+call timer_stop(t_seceqn)
 return
 end subroutine
 !EOC

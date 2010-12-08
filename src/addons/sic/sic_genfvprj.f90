@@ -14,6 +14,7 @@ complex(8), allocatable :: b(:,:,:)
 complex(8), allocatable :: expikr(:)
 integer ik,h,ikloc,ig,ir,n,ispn,istfv,istsv,ias,j,i
 
+call timer_start(t_sic_genfvprj)
 ! on first SIC iteration Wannier functions are generated from LDA Hamiltonian
 !  so we can compute overlap between Wannier states and first-variational
 !  states analytically
@@ -35,6 +36,7 @@ if (.not.tsic_wv) then
       enddo !i
     enddo !n
   enddo !ikloc  
+  call timer_stop(t_sic_genfvprj)
   return
 endif
 
@@ -103,5 +105,6 @@ do ik=1,nkpt
 enddo !ik
 deallocate(evecfv1,igkig1,apwalm,wfmt,wfir,wfmt_,wfir_,a,b)
 deallocate(expikr)
+call timer_stop(t_sic_genfvprj)
 return
 end

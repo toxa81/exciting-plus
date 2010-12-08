@@ -102,6 +102,7 @@ integer, parameter :: t_iter_tot=2
 integer, parameter :: t_init=10
 
 integer, parameter :: t_seceqn=18
+
 integer, parameter :: t_seceqnfv=19
 integer, parameter :: t_seceqnfv_setup=20
 integer, parameter :: t_seceqnfv_setup_h=21
@@ -113,9 +114,11 @@ integer, parameter :: t_seceqnfv_setup_o_it=26
 integer, parameter :: t_seceqnfv_diag=27
 
 integer, parameter :: t_seceqnsv=30
-integer, parameter :: t_svhmlt_setup=31
-integer, parameter :: t_svhmlt_diag=32
-integer, parameter :: t_svhmlt_tot=33
+integer, parameter :: t_seceqnsv_setup=31
+integer, parameter :: t_seceqnsv_diag=32
+
+integer, parameter :: t_sic_hunif=35
+integer, parameter :: t_sic_genfvprj=36
 
 integer, parameter :: t_apw_rad=40
 integer, parameter :: t_rho_mag_sum=41

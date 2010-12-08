@@ -96,6 +96,7 @@ timemat=timemat+ts1-ts0
 !------------------------------------!
 if (mpi_grid_root((/dim2/))) then
   call timesec(ts0)
+  call timer_start(t_seceqnfv_diag)
   allocate(iwork(5*nmatp))
   allocate(ifail(nmatp))
   allocate(w(nmatp))
@@ -131,6 +132,7 @@ if (mpi_grid_root((/dim2/))) then
     call pstop
   end if
   call timesec(ts1)
+  call timer_stop(t_seceqnfv_diag)
   deallocate(iwork,ifail,w,rwork,work)
 endif
 call mpi_grid_bcast(evecfv(1,1),nmatmax*nstfv,dims=(/dim2/))
