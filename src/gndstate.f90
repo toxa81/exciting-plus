@@ -152,6 +152,8 @@ do iscl=1,maxscl
     call timer_reset(t_sic_hunif)
     call timer_reset(t_sic_genfvprj)
     call timer_reset(t_sic_genfvprj_dotp)  
+    call timer_reset(t_sic_genfvprj_wfmt)
+    call timer_reset(t_sic_genfvprj_wfir)
   endif
   if (wproc) then
     write(60,*)
@@ -424,6 +426,10 @@ do iscl=1,maxscl
         timer_get_value(t_sic_genfvprj)
       write(60,'("  sic_genfvprj (dot product)                : ",F12.2)')&
         timer_get_value(t_sic_genfvprj_dotp)
+      write(60,'("  sic_genfvprj (wfmt)                       : ",F12.2)')&
+        timer_get_value(t_sic_genfvprj_wfmt)
+      write(60,'("  sic_genfvprj (wfir)                       : ",F12.2)')&
+        timer_get_value(t_sic_genfvprj_wfir)
       write(60,'("  sic_hunif                                 : ",F12.2)')&
         timer_get_value(t_sic_hunif)
     endif
