@@ -11,6 +11,7 @@ subroutine bandrlm
 use modmain
 use mod_mpi_grid
 use mod_wannier
+use mod_sic
 ! !DESCRIPTION:
 !   Produces a band structure along the path in reciprocal-space which connects
 !   the vertices in the array {\tt vvlp1d}. The band structure is obtained from
@@ -27,15 +28,14 @@ use mod_wannier
 !BOC
 implicit none
 ! local variables
-integer lmax,lmmax,lm,i,j,n
+integer lmax,lmmax,lm,i,j,n,nsv,isv
 integer ik,ikloc,ispn,is,ia,ias,iv,ist
 real(8) emin,emax
 ! allocatable arrays
 real(8), allocatable :: evalfv(:,:,:)
+real(8), allocatable :: sic_wann_e0k(:,:)
 ! low precision for band character array saves memory
 real(4), allocatable :: bc(:,:,:,:,:)
-!complex(8), allocatable :: evecfv(:,:,:)
-!complex(8), allocatable :: evecsv(:,:)
 ! initialise universal variables
 call init0
 call init1
@@ -46,10 +46,6 @@ allocate(bc(lmmax,natmtot,nspinor,nstsv,nkpt))
 allocate(evalfv(nstfv,nspnfv,nkptloc))
 allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
 allocate(evecsvloc(nstsv,nstsv,nkptloc))
-
-!allocate(evalfv(nstfv,nspnfv))
-!allocate(evecfv(nmatmax,nstfv,nspnfv))
-!allocate(evecsv(nstsv,nstsv))
 ! read density and potentials from file
 call readstate
 ! read Fermi energy from file
@@ -70,7 +66,13 @@ call genbeffmt
 call getufr
 ! get product of radial functions
 call genufrp  
-if (sic) call sic_readvwan
+if (sic) then
+  call sic_readvwan
+  allocate(sic_wann_e0k(sic_wantran%nwan,nkpt))
+  sic_wann_e0k=0.d0
+endif
+nsv=1
+if (sic.and..not.tsic_wv) nsv=2
 ! begin parallel loop over k-points
 bc=0.d0
 evalsv=0.d0
@@ -79,45 +81,37 @@ do ikloc=1,nkptloc
   write(*,'("Info(bandstr,seceqn1): ",I6," of ",I6," k-points")') ik,nkpt
 ! solve the first-variational secular equation
   call seceqn1(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc))
-end do  
-! SIC block to compute <W_n|\phi> 
-if (sic) call sic_genfvprj
-do ikloc=1,nkptloc
-  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-  write(*,'("Info(bandstr,seceqn2): ",I6," of ",I6," k-points")') ik,nkpt
+end do
+do isv=1,nsv
+  if (sic) call sic_genfvprj
+  do ikloc=1,nkptloc
+    ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+    write(*,'("Info(bandstr,seceqn2): ",I6," of ",I6," k-points")') ik,nkpt
 ! solve the second-variational secular equation
-  call seceqn2(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
-    evecsvloc(1,1,ikloc))
-  if (wannier) then
-    if (ldisentangle) call disentangle(evalsv(1,ik),wann_c(1,1,ikloc),&
+    call seceqn2(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
       evecsvloc(1,1,ikloc))
-    call genwann_h(.true.,evalsv(1,ik),wann_c(1,1,ikloc),&
-      wann_h(1,1,ik),wann_e(1,ik))
-  endif
-  call bandchar(.true.,lmax,ikloc,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),&
-    lmmax,bc(1,1,1,1,ik))
-enddo  
-
-!do ikloc=1,nkptloc
-!  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-!  write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ik,nkpt
-!! solve the first- and second-variational secular equations
-!  call seceqn(ikloc,evalfv,evecfv,evecsv)
-!  if (wannier) then
-!    if (ldisentangle) call disentangle(evalsv(1,ik),wann_c(1,1,ikloc),evecsv)
-!    call genwann_h(.true.,evalsv(1,ik),wann_c(1,1,ikloc),&
-!      wann_h(1,1,ik),wann_e(1,ik))
-!  endif
-!!  call diagzhe(nwantot,sic_wann_h0k(1,1,ikloc),wann_e(1,ik))
-!! compute the band characters if required
-!  call bandchar(.true.,lmax,ikloc,evecfv,evecsv,lmmax,bc(1,1,1,1,ik))
-!! end loop over k-points
-!end do
+    if (wannier) then
+      if (ldisentangle) call disentangle(evalsv(1,ik),wann_c(1,1,ikloc),&
+        evecsvloc(1,1,ikloc))
+      call genwann_h(.true.,evalsv(1,ik),wann_c(1,1,ikloc),&
+        wann_h(1,1,ik),wann_e(1,ik))
+    endif
+    if (sic) then
+      call diagzhe(sic_wantran%nwan,sic_wann_h0k(1,1,ikloc),sic_wann_e0k(1,ik))
+    endif
+    call bandchar(.true.,lmax,ikloc,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),&
+      lmmax,bc(1,1,1,1,ik))
+  enddo
+enddo
 deallocate(evalfv,evecfvloc,evecsvloc)
 call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.)
-if (wannier) call mpi_grid_reduce(wann_e(1,1),nwantot*nkpt,dims=(/dim_k/),side=.true.)
+if (wannier) call mpi_grid_reduce(wann_e(1,1),nwantot*nkpt,dims=(/dim_k/),&
+  side=.true.)
+if (sic) call mpi_grid_reduce(sic_wann_e0k(1,1),sic_wantran%nwan*nkpt,&
+  dims=(/dim_k/),side=.true.)
 do ik=1,nkpt
-  call mpi_grid_reduce(bc(1,1,1,1,ik),lmmax*natmtot*nspinor*nstsv,dims=(/dim_k/),side=.true.)
+  call mpi_grid_reduce(bc(1,1,1,1,ik),lmmax*natmtot*nspinor*nstsv,&
+    dims=(/dim_k/),side=.true.)
 enddo
 emin=minval(evalsv)
 emax=maxval(evalsv)
@@ -158,6 +152,16 @@ if (mpi_grid_root()) then
       write(50,*)
     end do
     close(50)
+  endif
+  if (sic) then
+    open(50,file='bands_sic_wann.dat',action='WRITE',form='FORMATTED')
+    do ist=1,sic_wantran%nwan
+      do ik=1,nkpt
+        write(50,'(2G18.10)') dpp1d(ik),(sic_wann_e0k(ist,ik)-efermi)*ha2ev
+      end do
+      write(50,*)
+    end do
+    close(50)  
   endif
   open(50,file='BNDCHR.OUT',action='WRITE',form='FORMATTED')
   write(50,*)lmmax,nspecies,natmtot,nspinor,nstfv,nstsv,nkpt,nvp1d
@@ -220,6 +224,8 @@ if (mpi_grid_root()) then
   write(*,'(" vertex location lines written to BANDLINES.OUT")')
   write(*,*)
 endif
+deallocate(bc)
+if (sic) deallocate(sic_wann_e0k)
 return
 end subroutine
 !EOC
