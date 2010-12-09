@@ -44,6 +44,7 @@ wproc=mpi_grid_root()
 allocate(evalfv(nstfv,nspnfv,nkptloc))
 allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
 allocate(evecsvloc(nstsv,nstsv,nkptloc))
+!allocate(hmltsvloc(nstsv,nstsv,nkptloc))
 ! initialise OEP variables if required
 if (xctype(1).lt.0) call init2
 if (wproc) then

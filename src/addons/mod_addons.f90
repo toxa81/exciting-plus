@@ -89,6 +89,8 @@ integer mpigrid(3)
 complex(8), allocatable :: evecfvloc(:,:,:,:)
 ! local fraction of sv eigen vectors
 complex(8), allocatable :: evecsvloc(:,:,:)
+! second-variational Hamiltonian
+!complex(8), allocatable :: hmltsvloc(:,:,:)
 ! dimension for coarse k-point parallelization
 integer, parameter :: dim_k=1
 integer, parameter :: dim1=1

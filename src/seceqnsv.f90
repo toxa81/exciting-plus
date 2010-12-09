@@ -262,6 +262,7 @@ do ispn=1,nspinor
 end do
 if (mpi_grid_root((/dim2/))) then
   if (sic) call sic_hunif(ikloc,evecsv)
+  !hmltsvloc(:,:,ikloc)=evecsv(:,:)
 ! diagonalise second-variational Hamiltonian
   allocate(rwork(3*nstsv))
   lwork=2*nstsv
