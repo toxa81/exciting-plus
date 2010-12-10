@@ -290,16 +290,16 @@ end subroutine
 ! <f|psi> = \int dr f^{*}(r) psi(r) =
 !   = \sum_R \int_{Omega} dr f^{*}(r+R) psi(r+R) = 
 !     \sum_R e^{ikR} \int_{Omega} dr f^{*}(r+R) psi(r)
-complex(8) function sic_dot_lb(vpc,fmt1,fir1,tfmt1,fmt2,fir2,h)
+complex(8) function sic_dot_lb(treduce,vpc,fmt1,fir1,tfmt1,fmt2,fir2)
 use modmain
 implicit none
+logical, intent(in) :: treduce
 real(8), intent(in) :: vpc(3)
 complex(8), intent(in) :: fmt1(lmmaxvr,nmtloc,ntr)
 complex(8), intent(in) :: fir1(ngrloc,ntr)
 logical, intent(in) :: tfmt1(natmtot,ntr)
 complex(8), intent(in) :: fmt2(lmmaxvr,nmtloc)
 complex(8), intent(in) :: fir2(ngrloc)
-integer, intent(in) :: h
 complex(8) zdotmt,zdotir,zdot
 complex(8), external :: zdotc
 integer it,i,ias,ir
@@ -319,7 +319,7 @@ do it=1,ntr
   enddo
   zdot=zdot+(zdotmt+zdotir*omega/dble(ngrtot))*exp(zi*dot_product(vpc,vtc(:,it)))
 enddo
-call mpi_grid_reduce(zdot,root=(/h,0/))
+if (treduce) call mpi_grid_reduce(zdot,all=.true.)
 sic_dot_lb=zdot
 return
 end function
