@@ -31,33 +31,33 @@ if (wproc) then
 endif
 allocate(ovlp(sic_wantran%nwt))
 ovlp=zzero
-! compute overlap integrals
+! compute overlap integrals (only diagonal elements)
 do i=1,sic_wantran%nwt
   n=sic_wantran%iwt(1,i)
   n1=sic_wantran%iwt(2,i)
   vl(:)=sic_wantran%iwt(3:5,i)
-  do ispn=1,nspinor
-    ovlp(i)=ovlp(i)+sic_dot_ll(wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),&
-      wanmt(1,1,1,ispn,n1),wanir(1,1,ispn,n1),vl,twanmt(1,1,n),&
-      twanmt(1,1,n1))
-  enddo
+  if (n.eq.n1.and.all(vl.eq.0)) then
+    do ispn=1,nspinor
+      ovlp(i)=ovlp(i)+sic_dot_ll(wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),&
+        wanmt(1,1,1,ispn,n1),wanir(1,1,ispn,n1),vl,twanmt(1,1,n),&
+        twanmt(1,1,n1))
+    enddo
+  endif
 enddo
 ! check orthonormality
 t1=0.d0
 t2=0.d0
-t3=0.d0
 do i=1,sic_wantran%nwt
   n=sic_wantran%iwt(1,i)
   n1=sic_wantran%iwt(2,i)
   vl(:)=sic_wantran%iwt(3:5,i)
   j=sic_wantran%iwtidx(n1,n,-vl(1),-vl(2),-vl(3))
   z1=ovlp(i)
-  if (n.eq.n1.and.vl(1).eq.0.and.vl(2).eq.0.and.vl(3).eq.0) then
+  if (n.eq.n1.and.all(vl.eq.0)) then
     z1=z1-zone
   endif
   t2=max(t2,abs(z1))
   t1=t1+abs(z1)
-  t3=max(t3,abs(ovlp(i)-dconjg(ovlp(j))))
 enddo
 if (wproc) then
   write(fout,*)
@@ -77,7 +77,6 @@ if (wproc) then
   enddo
   write(fout,*)
   write(fout,'("Maximum deviation from norm                 : ",F12.6)')t2
-  write(fout,'("Maximum of <w_n|w_{n1,T}> - <w_n1|w_{n,-T}> : ",G18.10)')t3
   call timestamp(fout,"done with Wannier functions")
   call flushifc(151)
 endif
