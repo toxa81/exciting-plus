@@ -22,7 +22,6 @@ complex(8), allocatable :: wffvmt(:,:,:,:)
 
 
 call timer_start(t_sic_genfvprj)
-goto 10
 ! on first SIC iteration Wannier functions are generated from LDA Hamiltonian
 !  so we can compute overlap between Wannier states and first-variational
 !  states analytically
@@ -48,7 +47,6 @@ if (.not.tsic_wv) then
   return
 endif
 
-10 continue
 allocate(igkig1(ngkmax))
 allocate(gkc1(ngkmax))
 allocate(tpgkc1(2,ngkmax))
