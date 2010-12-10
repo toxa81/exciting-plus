@@ -51,6 +51,7 @@ integer, allocatable :: ivtit(:,:,:)
 integer tlim(2,3)
 
 integer :: ngrloc
+!integer :: ngrlocmax
 integer :: groffs
 integer :: nmtloc
 integer :: mtoffs
@@ -381,5 +382,42 @@ enddo
 return
 end subroutine
 
+subroutine sic_wavefmt(wffvmt,ist,fmt)
+use modmain
+implicit none
+complex(8), intent(in) :: wffvmt(nstfv,lmmaxvr,nufrmax,natmtot)
+integer, intent(in) :: ist
+complex(8), intent(out) :: fmt(lmmaxvr,nmtloc)
+integer ias,ias1,ir,is,ia,ic,i,lm,l,io
+fmt=zzero
+
+ias=mtoffs/nrmtmax+1
+ias1=ias
+ir=mod(mtoffs+1,nrmtmax)
+is=ias2is(ias)
+ia=ias2ia(ias)
+ic=ias2ic(ias)
+do i=1,nmtloc
+  ias=(mtoffs+i-1)/nrmtmax+1
+  if (ias.ne.ias1) then
+    is=ias2is(ias)
+    ia=ias2ia(ias)
+    ic=ias2ic(ias)
+    ias1=ias
+    ir=1
+  endif
+  if (ir.le.nrmt(is)) then
+    do lm=1,lmmaxvr
+      l=lm2l(lm)
+      do io=1,nufr(l,is)
+        fmt(lm,i)=fmt(lm,i)+wffvmt(ist,lm,io,ias)*ufr(ir,l,io,ic)
+      enddo
+    enddo
+  endif
+  ir=ir+1
+enddo
+
+
+end subroutine
 
 end module

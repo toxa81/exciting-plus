@@ -75,6 +75,8 @@ if (.not.tsic_arrays_allocated) then
 endif
 ! get local number muffin-tin and interstitial points
 ngrloc=mpi_grid_map2(ngrtot,dims=(/dim_k,dim2/),offs=groffs)
+!ngrlocmax=ngrloc
+!call mpi_grid_reduce(ngrlocmax,op=op_max)
 nmtloc=mpi_grid_map2(nrmtmax*natmtot,dims=(/dim_k,dim2/),offs=mtoffs)
 ! get all Wannier transitions
 call deletewantran(sic_wantran)
