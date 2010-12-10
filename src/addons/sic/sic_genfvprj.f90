@@ -108,14 +108,16 @@ do ik=1,nkpt
     do j=1,sic_wantran%nwan
       n=sic_wantran%iwan(j)
       do ispn=1,nspinor
-        a(j,istfv,ispn)=sic_dot_lb(vkc(1,ik),wanmt(1,1,1,ispn,n),&
-          wanir(1,1,ispn,n),twanmt(1,1,n),wfmt_,wfir_,h)
-        b(j,istfv,ispn)=sic_dot_lb(vkc(1,ik),wvmt(1,1,1,ispn,j),&
-          wvir(1,1,ispn,j),twanmt(1,1,n),wfmt_,wfir_,h)
+        a(j,istfv,ispn)=sic_dot_lb(.false.,vkc(1,ik),wanmt(1,1,1,ispn,n),&
+          wanir(1,1,ispn,n),twanmt(1,1,n),wfmt_,wfir_)
+        b(j,istfv,ispn)=sic_dot_lb(.false.,vkc(1,ik),wvmt(1,1,1,ispn,j),&
+          wvir(1,1,ispn,j),twanmt(1,1,n),wfmt_,wfir_)
       enddo
     enddo !j
     call timer_stop(t_sic_genfvprj_dotp)
   enddo !istfv
+  call mpi_grid_reduce(a(1,1,1),sic_wantran%nwan*nstfv*nspinor,root=(/h,0/))
+  call mpi_grid_reduce(b(1,1,1),sic_wantran%nwan*nstfv*nspinor,root=(/h,0/))
   if (mpi_grid_x(dim_k).eq.h) then
     sic_wb(:,:,:,ikloc)=a(:,:,:)
     sic_wvb(:,:,:,ikloc)=b(:,:,:)
