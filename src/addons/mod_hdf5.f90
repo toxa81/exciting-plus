@@ -509,13 +509,3 @@ call h5fclose_f(h5_root_id,ierr)
 return
 end
 #endif
-
-#ifndef _MPI_
-subroutine pstop
-implicit none
-stop
-return
-end
-#endif
-
-

@@ -347,12 +347,13 @@ call sphcrd(vgpc,gpc,tpgp)
 ! generate spherical harmonics for G+q
 call genylm(lmaxvr,tpgp,ylmgp)
 
-ias=mtoffs/nrmtmax+1
-ias1=ias
-ir=mod(mtoffs+1,nrmtmax)
-is=ias2is(ias)
-ia=ias2ia(ias)
-zt1=fourpi*exp(zi*dot_product(vgpc,atposc(:,ia,is)))  
+!ias=mtoffs/nrmtmax+1
+!ias1=ias
+!ir=mod(mtoffs+1,nrmtmax)
+!is=ias2is(ias)
+!ia=ias2ia(ias)
+!zt1=fourpi*exp(zi*dot_product(vgpc,atposc(:,ia,is)))  
+ias1=-1
 do i=1,nmtloc
   ias=(mtoffs+i-1)/nrmtmax+1
   if (ias.ne.ias1) then
@@ -360,7 +361,8 @@ do i=1,nmtloc
     ia=ias2ia(ias)
     zt1=fourpi*exp(zi*dot_product(vgpc,atposc(:,ia,is)))  
     ias1=ias
-    ir=1
+    !ir=1
+    ir=mod(mtoffs+i,nrmtmax)
   endif
   if (ir.le.nrmt(is)) then
 ! generate Bessel functions j_l(|G+q|x)
