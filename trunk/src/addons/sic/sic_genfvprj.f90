@@ -22,6 +22,7 @@ complex(8), allocatable :: wffvmt(:,:,:,:)
 
 
 call timer_start(t_sic_genfvprj)
+goto 10
 ! on first SIC iteration Wannier functions are generated from LDA Hamiltonian
 !  so we can compute overlap between Wannier states and first-variational
 !  states analytically
@@ -47,6 +48,7 @@ if (.not.tsic_wv) then
   return
 endif
 
+10 continue
 allocate(igkig1(ngkmax))
 allocate(gkc1(ngkmax))
 allocate(tpgkc1(2,ngkmax))
@@ -67,7 +69,7 @@ do ik=1,nkpt
   ikloc=mpi_grid_map(nkpt,dim_k,x=h,glob=ik)
   if (mpi_grid_x(dim_k).eq.h) evecfv1(:,:,:)=evecfvloc(:,:,:,ikloc)
   call mpi_grid_bcast(evecfv1(1,1,1),nmatmax*nstfv*nspnfv,dims=(/dim_k,dim2/),&
-    root=(/h,0/))
+    root=(/h,0,0/))
   call gengpvec(vkl(1,ik),vkc(1,ik),ngk1,igkig1,vgkl1,vgkc1,gkc1,tpgkc1)
   call gensfacgp(ngk1,vgkc1,ngkmax,sfacgk1)
   call match(ngk1,gkc1,tpgkc1,sfacgk1,apwalm)
@@ -107,8 +109,8 @@ do ik=1,nkpt
     call timer_stop(t_sic_genfvprj_dotp)
   enddo !istfv
   call timer_start(t_sic_genfvprj_dotp)
-  call mpi_grid_reduce(a(1,1,1),sic_wantran%nwan*nstfv*nspinor,root=(/h,0/))
-  call mpi_grid_reduce(b(1,1,1),sic_wantran%nwan*nstfv*nspinor,root=(/h,0/))
+  call mpi_grid_reduce(a(1,1,1),sic_wantran%nwan*nstfv*nspinor,root=(/h,0,0/))
+  call mpi_grid_reduce(b(1,1,1),sic_wantran%nwan*nstfv*nspinor,root=(/h,0,0/))
   call timer_stop(t_sic_genfvprj_dotp)
   if (mpi_grid_x(dim_k).eq.h) then
     sic_wb(:,:,:,ikloc)=a(:,:,:)
