@@ -1,6 +1,6 @@
 * clean SHT part
-* response code optimization 
-* clear the code from nmegqwan,imegqwan (crpa, unscreened U)
-* probaly: unify screened/unscreened U
+* test screened/unscreened U
 * scalapack diagonalization
 * regression tests
+* cleanup gndstate
+* flag that Wannier functions were computed correctly; don't output to stdout
