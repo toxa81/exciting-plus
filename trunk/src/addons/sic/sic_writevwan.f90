@@ -40,25 +40,25 @@ if (wproc) then
 endif
 do n=1,nwantot
   j=sic_wantran%idxiwan(n)
-  do ispn=1,nspinor
-    do it=1,sic_orbitals%ntr
-      fmt=zzero
-      fir=zzero
-      call sic_copy_mt_z(.false.,lmmaxvr,fmt,sic_orbitals%wanmt(1,1,it,ispn,n))
-      call sic_copy_ir_z(.false.,fir,sic_orbitals%wanir(1,it,ispn,n))
-      call mpi_grid_reduce(fmt(1,1,1),lmmaxvr*nrmtmax*natmtot)
-      call mpi_grid_reduce(fir(1),ngrtot)
-      if (mpi_grid_root()) then
-        write(c1,'("n",I4.4)')n
-        write(c2,'("s",I4.4)')ispn
-        write(c3,'("t",I4.4)')it
-        path="/wann/"//trim(adjustl(c1))//"/"//trim(adjustl(c2))//"/"//&
-          trim(adjustl(c3))       
-        call hdf5_write("sic.hdf5",path,"wanmt",fmt(1,1,1),&
-          (/lmmaxvr,nrmtmax,natmtot/))
-        call hdf5_write("sic.hdf5",path,"wanir",fir(1),(/ngrtot/))
-      endif
-      if (j.gt.0) then
+  if (j.gt.0) then
+    do ispn=1,nspinor
+      do it=1,sic_orbitals%ntr
+        fmt=zzero
+        fir=zzero
+        call sic_copy_mt_z(.false.,lmmaxvr,fmt,sic_orbitals%wanmt(1,1,it,ispn,j))
+        call sic_copy_ir_z(.false.,fir,sic_orbitals%wanir(1,it,ispn,j))
+        call mpi_grid_reduce(fmt(1,1,1),lmmaxvr*nrmtmax*natmtot)
+        call mpi_grid_reduce(fir(1),ngrtot)
+        if (mpi_grid_root()) then
+          write(c1,'("n",I4.4)')n
+          write(c2,'("s",I4.4)')ispn
+          write(c3,'("t",I4.4)')it
+          path="/wann/"//trim(adjustl(c1))//"/"//trim(adjustl(c2))//"/"//&
+            trim(adjustl(c3))       
+          call hdf5_write("sic.hdf5",path,"wanmt",fmt(1,1,1),&
+            (/lmmaxvr,nrmtmax,natmtot/))
+          call hdf5_write("sic.hdf5",path,"wanir",fir(1),(/ngrtot/))
+        endif
         fmt=zzero
         fir=zzero
         call sic_copy_mt_z(.false.,lmmaxvr,fmt,sic_orbitals%wvmt(1,1,it,ispn,j))
@@ -70,10 +70,10 @@ do n=1,nwantot
             (/lmmaxvr,nrmtmax,natmtot/))
           call hdf5_write("sic.hdf5",path,"wvir",fir(1),(/ngrtot/))
         endif
-      endif
-    enddo !it
-  enddo
-enddo
+      enddo !it
+    enddo !ispn
+  endif !j.gt.0
+enddo !n
 deallocate(fmt,fir)
 return
 end
