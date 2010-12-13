@@ -20,14 +20,14 @@ if (wproc) then
   write(fout,'("generating potential (Hartree+XC) of Wannier functions")')
   write(fout,'(80("-"))')
 endif
-wvmt=zzero
-wvir=zzero
+sic_orbitals%wvmt=zzero
+sic_orbitals%wvir=zzero
 !-------------------!
 ! Hartree potential !
 !-------------------!
 ! generate Hartree potential of Wannier functions
 !   wvmt and wvir arrays are used as temporary
-call sic_genvhart(wvmt,wvir)
+call sic_genvhart(sic_orbitals%wvmt,sic_orbitals%wvir)
 ! deallocate unnecessary arrays
 deallocate(wfsvmtnrloc)
 deallocate(wfsvitnrloc)
@@ -40,15 +40,15 @@ if (wproc) then
   write(fout,'("time for q-vectors : ",F8.3)')timer_get_value(10)
   write(fout,'("time for Hartree potential : ",F8.3)')timer_get_value(11)
   write(fout,'("maximum absolute imaginary part (mt,ir) : ",2G18.10)') &
-    maxval(abs(dimag(wvmt))),maxval(abs(dimag(wvir)))
+    maxval(abs(dimag(sic_orbitals%wvmt))),maxval(abs(dimag(sic_orbitals%wvir)))
   call timestamp(fout,"done with Hartree potential")
 endif
-allocate(vhxcmt(lmmaxvr,nmtloc,ntr,nspinor,sic_wantran%nwan))
-allocate(vhxcir(ngrloc,ntr,nspinor,sic_wantran%nwan))
+allocate(vhxcmt(lmmaxvr,nmtloc,sic_orbitals%ntr,nspinor,sic_wantran%nwan))
+allocate(vhxcir(ngrloc,sic_orbitals%ntr,nspinor,sic_wantran%nwan))
 do j=1,sic_wantran%nwan
   do ispn=1,nspinor
-    vhxcmt(:,:,:,ispn,j)=dreal(wvmt(:,:,:,1,j))
-    vhxcir(:,:,ispn,j)=dreal(wvir(:,:,1,j))
+    vhxcmt(:,:,:,ispn,j)=dreal(sic_orbitals%wvmt(:,:,:,1,j))
+    vhxcir(:,:,ispn,j)=dreal(sic_orbitals%wvir(:,:,1,j))
   enddo
 enddo
 ene=zzero
@@ -58,9 +58,10 @@ ene=zzero
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
   do ispn=1,nspinor
-    ene(1,j)=ene(1,j)+sic_int_zdz(wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),&
-      vhxcmt(1,1,1,ispn,j),vhxcir(1,1,ispn,j),wanmt(1,1,1,ispn,n),&
-      wanir(1,1,ispn,n),twanmtuc(1,n))
+    ene(1,j)=ene(1,j)+sic_int_zdz(sic_orbitals%wanmt(1,1,1,ispn,n),&
+      sic_orbitals%wanir(1,1,ispn,n),vhxcmt(1,1,1,ispn,j),vhxcir(1,1,ispn,j),&
+      sic_orbitals%wanmt(1,1,1,ispn,n),sic_orbitals%wanir(1,1,ispn,n),&
+      sic_orbitals%twanmtuc(1,n))
   enddo
 enddo
 !-------------------------!
@@ -76,9 +77,10 @@ endif
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
   do ispn=1,nspinor
-    ene(3,j)=ene(3,j)+sic_int_zdz(wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),&
-      vhxcmt(1,1,1,ispn,j),vhxcir(1,1,ispn,j),wanmt(1,1,1,ispn,n),&
-      wanir(1,1,ispn,n),twanmtuc(1,n))
+    ene(3,j)=ene(3,j)+sic_int_zdz(sic_orbitals%wanmt(1,1,1,ispn,n),&
+      sic_orbitals%wanir(1,1,ispn,n),vhxcmt(1,1,1,ispn,j),vhxcir(1,1,ispn,j),&
+      sic_orbitals%wanmt(1,1,1,ispn,n),sic_orbitals%wanir(1,1,ispn,n),&
+      sic_orbitals%twanmtuc(1,n))
   enddo
 enddo
 ! compute <W_n|V_n^{XC}|W_n>
@@ -119,15 +121,16 @@ if (wproc) then
   write(fout,'("SIC total energy contribution     : ",G18.10)')sic_etot_correction
   call flushifc(fout)
 endif
-wvmt=zzero
-wvir=zzero
+sic_orbitals%wvmt=zzero
+sic_orbitals%wvir=zzero
 ! multiply Wannier function by potential and change sign
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
   do ispn=1,nspinor
-    call sic_mul_zd(-zone,wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n), &
-      vhxcmt(1,1,1,ispn,j),vhxcir(1,1,ispn,j),wvmt(1,1,1,ispn,j),&
-      wvir(1,1,ispn,j),twanmtuc(1,n))    
+    call sic_mul_zd(-zone,sic_orbitals%wanmt(1,1,1,ispn,n),&
+      sic_orbitals%wanir(1,1,ispn,n),vhxcmt(1,1,1,ispn,j),vhxcir(1,1,ispn,j),&
+      sic_orbitals%wvmt(1,1,1,ispn,j),sic_orbitals%wvir(1,1,ispn,j),&
+      sic_orbitals%twanmtuc(1,n))    
   enddo
 enddo
 !!allocate(zm1(lmmaxvr,nrmtmax))

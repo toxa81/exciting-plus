@@ -1198,8 +1198,9 @@ integer, optional, intent(in) :: loc
 integer, optional, intent(in) :: glob
 integer, optional, intent(out) :: offs
 ! local variables
-integer idx0_,size_,x_
+integer idx0_,size_
 integer i,size1,k,j
+integer, allocatable :: x_(:)
 
 i=0
 if (present(loc)) i=i+1
@@ -1216,13 +1217,6 @@ size1=1
 do i=1,size(dims)
   size1=size1*mpi_grid_size(dims(i))
 enddo
-! make a liner index from coordinates
-k=1
-j=1
-do i=1,size(dims)
-  j=j+mpi_grid_x(dims(i))*k
-  k=k*mpi_grid_size(dims(i))
-enddo
 
 !if (present(glob)) then
 !  call idxloc(length,mpi_grid_size(idim),glob,x_,idx0_)
@@ -1230,13 +1224,30 @@ enddo
 !  mpi_grid_map=idx0_
 !  return
 !endif
-!
-!if (present(x)) then
-!  x_=x
-!else
-!  x_=mpi_grid_x(idim)
-!endif
-!
+
+allocate(x_(size(dims)))
+if (present(x)) then
+  if (size(x).ne.size(dims)) then
+    write(*,'("Error(mpi_grid_map2): size(x).ne.size(dims)")')
+    call pstop
+  endif
+  do i=1,size(dims)
+    x_(i)=x(i)
+  enddo
+else
+  do i=1,size(dims)
+    x_(i)=mpi_grid_x(dims(i))
+  enddo
+endif 
+
+! make a liner index from coordinates
+k=1
+j=1
+do i=1,size(dims)
+  j=j+x_(i)*k
+  k=k*mpi_grid_size(dims(i))
+enddo
+
 !if (present(loc)) then
 !  call idxglob(length,mpi_grid_size(idim),x_+1,loc,idx0_)
 !  mpi_grid_map=idx0_
@@ -1246,6 +1257,8 @@ enddo
 call idxofs(length,size1,j,idx0_,size_)
 if (present(offs)) offs=idx0_
 mpi_grid_map2=size_
+
+deallocate(x_)
 return
 end function
 

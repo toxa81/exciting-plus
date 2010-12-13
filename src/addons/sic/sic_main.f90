@@ -38,32 +38,39 @@ if (wproc) then
 endif
 if (wproc) then
   sz=lmmaxvr*nmtloc+ngrloc
-  sz=16.d0*sz*ntr*nspinor*(nwantot+sic_wantran%nwan)/1024/1024
+  sz=16.d0*sz*sic_orbitals%ntr*nspinor*(2*sic_wantran%nwan)/1024/1024
   write(151,*)
   write(151,'("Required memory for real-space arrays (MB) : ",I6)')sz
-  write(151,*)
-  write(151,'("cutoff radius for Wannier functions : ",F12.6)')sic_wan_cutoff
-  write(151,'("cutoff radius for SIC matrix elements : ",F12.6)')sic_me_cutoff
-  write(151,*)
-  write(151,'("number of translations for real-space functions : ",I4)')ntr
+  write(151,'("number of translations for real-space functions : ",I4)')sic_orbitals%ntr
 !  do i=1,ntr
 !    write(151,'("  i : ",I4,"    vtl(i) : ",3I4)')i,vtl(:,i)
 !  enddo
   write(151,*)
   write(151,'("number of included Wannier functions : ",I4)')sic_wantran%nwan
   do j=1,sic_wantran%nwan
-    write(151,'("  j : ",I4,"    iwan(j) : ",I4)')j,sic_wantran%iwan(j)
+    write(151,'("  j : ",I4,"    iwan : ",I4)')j,sic_wantran%iwan(j)
   enddo
   write(151,*)
-  write(151,'(" LDA energies of Wannier functions")')
-  do n=1,nwantot
-    write(151,'("  n : ",I4,"    sic_wann_e0(n) : ",F12.6)')n,sic_wann_e0(n)
+  write(151,'("cutoff radius for Wannier functions : ",F12.6)')sic_wan_cutoff
+  write(151,'("cutoff radius for SIC matrix elements : ",F12.6)')sic_me_cutoff
+  write(151,'("number of Wannier transitions : ",I6)')sic_wantran%nwt
+  write(151,*)
+  write(151,'("LDA energies of Wannier functions")')
+  do j=1,sic_wantran%nwan
+    n=sic_wantran%iwan(j)
+    write(151,'("  n : ",I4,"    sic_wann_e0 : ",F12.6)')n,sic_wann_e0(n)
   enddo
   call flushifc(151)
+endif
+if (wproc) then
+  write(151,*)
+  write(151,'("generating wave-functions for all k-points")')
+  write(151,'(80("-"))')
 endif
 ! generate wave-functions for all k-points in BZ
 call genwfnr(151,.false.)  
 call sic_wan(151)
+call bstop
 allocate(ene(4,sic_wantran%nwan))
 call sic_pot(151,ene)
 deallocate(ene)
@@ -79,8 +86,10 @@ do i=1,sic_wantran%nwt
   n1=sic_wantran%iwt(2,i)
   vl(:)=sic_wantran%iwt(3:5,i)
   do ispn=1,nspinor    
-    vwanme(i)=vwanme(i)+sic_dot_ll(wvmt(1,1,1,ispn,j),wvir(1,1,ispn,j),&
-      wanmt(1,1,1,ispn,n1),wanir(1,1,ispn,n1),vl,twanmt(1,1,n),twanmt(1,1,n1))
+    vwanme(i)=vwanme(i)+sic_dot_ll(sic_orbitals%wvmt(1,1,1,ispn,j),&
+      sic_orbitals%wvir(1,1,ispn,j),sic_orbitals%wanmt(1,1,1,ispn,n1),&
+      sic_orbitals%wanir(1,1,ispn,n1),vl,sic_orbitals%twanmt(1,1,n),&
+      sic_orbitals%twanmt(1,1,n1))
   enddo
 enddo
 t1=0.d0
@@ -102,7 +111,7 @@ enddo
 if (wproc) then
   call timestamp(151,"done with matrix elements")
   write(151,*)
-  write(151,'("Number of Wannier transitions : ",I6)')sic_wantran%nwt
+!  write(151,'("Number of Wannier transitions : ",I6)')sic_wantran%nwt
 !  write(151,'("Matrix elements of SIC potential (n n1  <w_n|v_n|w_n1}>)")')
 !  do i=1,sic_wantran%nwt
 !    vl(:)=sic_wantran%iwt(3:5,i)

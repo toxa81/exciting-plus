@@ -9,7 +9,7 @@ implicit none
 integer, intent(in) :: fout
 ! local variables
 complex(8), allocatable :: ovlp(:)
-integer n,ispn,vl(3),n1,i,j
+integer n,ispn,vl(3),n1,i,j,j1
 real(8) t1,t2,t3
 complex(8) z1
 
@@ -31,18 +31,19 @@ if (wproc) then
 endif
 allocate(ovlp(sic_wantran%nwt))
 ovlp=zzero
-! compute overlap integrals (only diagonal elements)
+! compute overlap integrals 
 do i=1,sic_wantran%nwt
   n=sic_wantran%iwt(1,i)
+  j=sic_wantran%idxiwan(n)
   n1=sic_wantran%iwt(2,i)
+  j1=sic_wantran%idxiwan(n1)
   vl(:)=sic_wantran%iwt(3:5,i)
-  if (n.eq.n1.and.all(vl.eq.0)) then
-    do ispn=1,nspinor
-      ovlp(i)=ovlp(i)+sic_dot_ll(wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),&
-        wanmt(1,1,1,ispn,n1),wanir(1,1,ispn,n1),vl,twanmt(1,1,n),&
-        twanmt(1,1,n1))
-    enddo
-  endif
+  do ispn=1,nspinor
+    ovlp(i)=ovlp(i)+sic_dot_ll(sic_orbitals%wanmt(1,1,1,ispn,j),&
+      sic_orbitals%wanir(1,1,ispn,j),sic_orbitals%wanmt(1,1,1,ispn,j1),&
+      sic_orbitals%wanir(1,1,ispn,j1),vl,sic_orbitals%twanmt(1,1,n),&
+      sic_orbitals%twanmt(1,1,n1))
+  enddo
 enddo
 ! check orthonormality
 t1=0.d0

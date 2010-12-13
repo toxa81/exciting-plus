@@ -25,7 +25,7 @@ if (wproc) then
       path="/wann/"//trim(adjustl(c1))
       write(c2,'("s",I4.4)')ispn
       call hdf5_create_group("sic.hdf5",path,trim(adjustl(c2)))   
-      do it=1,ntr
+      do it=1,sic_orbitals%ntr
         path="/wann/"//trim(adjustl(c1))//"/"//trim(adjustl(c2))      
         write(c3,'("t",I4.4)')it
         call hdf5_create_group("sic.hdf5",path,trim(adjustl(c3)))
@@ -41,11 +41,11 @@ endif
 do n=1,nwantot
   j=sic_wantran%idxiwan(n)
   do ispn=1,nspinor
-    do it=1,ntr
+    do it=1,sic_orbitals%ntr
       fmt=zzero
       fir=zzero
-      call sic_copy_mt_z(.false.,lmmaxvr,fmt,wanmt(1,1,it,ispn,n))
-      call sic_copy_ir_z(.false.,fir,wanir(1,it,ispn,n))
+      call sic_copy_mt_z(.false.,lmmaxvr,fmt,sic_orbitals%wanmt(1,1,it,ispn,n))
+      call sic_copy_ir_z(.false.,fir,sic_orbitals%wanir(1,it,ispn,n))
       call mpi_grid_reduce(fmt(1,1,1),lmmaxvr*nrmtmax*natmtot)
       call mpi_grid_reduce(fir(1),ngrtot)
       if (mpi_grid_root()) then
@@ -61,8 +61,8 @@ do n=1,nwantot
       if (j.gt.0) then
         fmt=zzero
         fir=zzero
-        call sic_copy_mt_z(.false.,lmmaxvr,fmt,wvmt(1,1,it,ispn,j))
-        call sic_copy_ir_z(.false.,fir,wvir(1,it,ispn,j))
+        call sic_copy_mt_z(.false.,lmmaxvr,fmt,sic_orbitals%wvmt(1,1,it,ispn,j))
+        call sic_copy_ir_z(.false.,fir,sic_orbitals%wvir(1,it,ispn,j))
         call mpi_grid_reduce(fmt(1,1,1),lmmaxvr*nrmtmax*natmtot)
         call mpi_grid_reduce(fir(1),ngrtot)
         if (mpi_grid_root()) then

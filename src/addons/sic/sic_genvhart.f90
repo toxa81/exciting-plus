@@ -6,8 +6,8 @@ use mod_expigqr
 use mod_linresp
 use mod_sic
 implicit none
-complex(8), intent(out) :: vhwanmt(lmmaxvr,nmtloc,ntr,nspinor,sic_wantran%nwan)
-complex(8), intent(out) :: vhwanir(ngrloc,ntr,nspinor,sic_wantran%nwan)
+complex(8), intent(out) :: vhwanmt(lmmaxvr,nmtloc,sic_orbitals%ntr,nspinor,sic_wantran%nwan)
+complex(8), intent(out) :: vhwanir(ngrloc,sic_orbitals%ntr,nspinor,sic_wantran%nwan)
 integer nvqloc,iqloc,it,iq,n,ig,ias,i,j
 complex(8), allocatable :: pwmt(:,:)
 complex(8), allocatable :: pwir(:)
@@ -58,15 +58,15 @@ call timer_start(11,reset=.true.)
 do iq=1,nvq
   do ig=1,ngq(iq)
     call sic_genpw(vgqc(1,ig,iq),pwmt,pwir)
-    do it=1,ntr
-      expikt=exp(zi*dot_product(vtc(:,it),vqc(:,iq)))/nkptnr/omega
+    do it=1,sic_orbitals%ntr
+      expikt=exp(zi*dot_product(sic_orbitals%vtc(:,it),vqc(:,iq)))/nkptnr/omega
       do j=1,sic_wantran%nwan
         n=sic_wantran%iwan(j)
         if (sic_apply(n).eq.2) then
           zt1=megqwan1(j,ig,iq)*vhgq(ig,iq)*expikt
           do i=1,nmtloc
             ias=(mtoffs+i-1)/nrmtmax+1
-            if (twanmt(ias,it,n)) then       
+            if (sic_orbitals%twanmt(ias,it,n)) then       
               call zaxpy(lmmaxvr,zt1,pwmt(1,i),1,vhwanmt(1,i,it,1,j),1)
             endif
           enddo
