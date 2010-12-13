@@ -3,8 +3,8 @@ use modmain
 use mod_sic
 use modxcifc
 implicit none
-real(8), intent(out) :: vhxcmt(lmmaxvr,nmtloc,ntr,nspinor,sic_wantran%nwan)
-real(8), intent(out) :: vhxcir(ngrloc,ntr,nspinor,sic_wantran%nwan)
+real(8), intent(out) :: vhxcmt(lmmaxvr,nmtloc,sic_orbitals%ntr,nspinor,sic_wantran%nwan)
+real(8), intent(out) :: vhxcir(ngrloc,sic_orbitals%ntr,nspinor,sic_wantran%nwan)
 complex(8), intent(out) :: ene(4,sic_wantran%nwan)
 integer ntp,itp,lm,n,ispn,it,j
 real(8), allocatable :: tp(:,:)
@@ -30,8 +30,8 @@ real(8), allocatable :: spx(:,:)
 real(8) t1
 
 ! XC energy density of Wannier function
-allocate(excwanmt(lmmaxvr,nmtloc,ntr))
-allocate(excwanir(ngrloc,ntr))
+allocate(excwanmt(lmmaxvr,nmtloc,sic_orbitals%ntr))
+allocate(excwanir(ngrloc,sic_orbitals%ntr))
 
 !nt=2*lmaxvr+1
 !np=2*lmaxvr+1
@@ -161,11 +161,11 @@ do j=1,sic_wantran%nwan
   if (sic_apply(n).eq.2) then
     excwanmt=0.d0
     excwanir=0.d0
-    do it=1,ntr
+    do it=1,sic_orbitals%ntr
 !-----------------!
 ! muffin-tin part !
 !-----------------!
-      if (twanmtuc(it,n)) then
+      if (sic_orbitals%twanmtuc(it,n)) then
         wfmt=zzero
         vxmt_=0.d0
         vcmt_=0.d0
@@ -174,7 +174,7 @@ do j=1,sic_wantran%nwan
         do ispn=1,nspinor
 ! wfmt(tp,r)=\sum_{lm} f_{lm}(r) * Y_{lm}(tp)
           call zgemm('T','N',ntp,nmtloc,lmmaxvr,zone,ylm,lmmaxvr,&
-            wanmt(1,1,it,ispn,n),lmmaxvr,zzero,wfmt,ntp)
+            sic_orbitals%wanmt(1,1,it,ispn,n),lmmaxvr,zzero,wfmt,ntp)
 ! rho(tp,r)=|wf(tp,r)|^2
           wfmt2(:,:,ispn)=dreal(dconjg(wfmt(:,:))*wfmt(:,:))
         enddo
@@ -206,7 +206,8 @@ do j=1,sic_wantran%nwan
 ! interstitial part !
 !-------------------!
       do ispn=1,nspinor
-        wfir2(:,ispn)=dreal(dconjg(wanir(:,it,ispn,n))*wanir(:,it,ispn,n))
+        wfir2(:,ispn)=dreal(dconjg(sic_orbitals%wanir(:,it,ispn,j))*&
+          sic_orbitals%wanir(:,it,ispn,j))
       enddo
       ecir_=0.d0
       exir_=0.d0
@@ -224,8 +225,10 @@ do j=1,sic_wantran%nwan
       excwanir(:,it)=exir_(:)+ecir_(:)
     enddo !it
     do ispn=1,nspinor
-      ene(4,j)=ene(4,j)+sic_int_zdz(wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),&
-        excwanmt,excwanir,wanmt(1,1,1,ispn,n),wanir(1,1,ispn,n),twanmtuc(1,n))
+      ene(4,j)=ene(4,j)+sic_int_zdz(sic_orbitals%wanmt(1,1,1,ispn,j),&
+        sic_orbitals%wanir(1,1,ispn,j),excwanmt,excwanir,&
+        sic_orbitals%wanmt(1,1,1,ispn,j),sic_orbitals%wanir(1,1,ispn,j),&
+        sic_orbitals%twanmtuc(1,n))
     enddo
   endif
 enddo !n

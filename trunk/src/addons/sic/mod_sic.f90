@@ -1,14 +1,6 @@
 module mod_sic
 use mod_wannier
 
-! product of a Wannier function with it's potential
-complex(8), allocatable :: wvmt(:,:,:,:,:)
-complex(8), allocatable :: wvir(:,:,:,:)
-! Wannier functions
-complex(8), allocatable :: wanmt(:,:,:,:,:)
-complex(8), allocatable :: wanir(:,:,:,:)
-logical, allocatable :: twanmt(:,:,:)
-logical, allocatable :: twanmtuc(:,:)
 ! matrix elements of Wannier potential <W_{n0}|V_{n0}|W_{n'T}>
 complex(8), allocatable :: vwanme(:)
 ! LDA Hamiltonian in k-space in Wannier basis 
@@ -30,35 +22,53 @@ complex(8), allocatable :: sic_wvb(:,:,:,:)
 
 integer, allocatable :: sic_apply(:)
 integer, allocatable :: sicw(:,:)
-!real(8), allocatable :: wann_sic_v(:,:)
 
 logical tsic_wv
 data tsic_wv/.false./
 logical tsic_arrays_allocated
 data tsic_arrays_allocated/.false./
 
-! total number of translations
-integer ntr
 ! maximum number of translation vectors
-integer, parameter :: maxvtl=1000
-! translation vectors in lattice coordinates
-integer, allocatable :: vtl(:,:)
-! translation vectors in Cartesian coordinates
-real(8), allocatable :: vtc(:,:)
-! vector -> index map
-integer, allocatable :: ivtit(:,:,:)
-! translation limits along each lattice vector
-integer tlim(2,3)
+integer, parameter :: sic_maxvtl=1000
 
 integer :: ngrloc
-!integer :: ngrlocmax
+integer :: ngrlocmax
 integer :: groffs
 integer :: nmtloc
+integer :: nmtlocmax
 integer :: mtoffs
 ! weights for radial integration
 real(8), allocatable :: rmtwt(:)
 
 type(wannier_transitions) :: sic_wantran
+
+
+type t_sic_orbitals
+! total number of translations
+  integer ntr
+! translation vectors in lattice coordinates
+  integer, allocatable :: vtl(:,:)
+! translation vectors in Cartesian coordinates
+  real(8), allocatable :: vtc(:,:)
+! vector -> index map
+  integer, allocatable :: ivtit(:,:,:)
+! translation limits along each lattice vector
+  integer tlim(2,3)
+! Wannier functions
+  complex(8), allocatable :: wanmt(:,:,:,:,:)
+  complex(8), allocatable :: wanir(:,:,:,:)
+! product of a Wannier function with it's potential
+  complex(8), allocatable :: wvmt(:,:,:,:,:)
+  complex(8), allocatable :: wvir(:,:,:,:)
+! .true. if Wannier function is expanded inside muffin-tin in the given cell
+  logical, allocatable :: twanmt(:,:,:)
+! .true. if at least one Wannier function is expanded inside muffin-tin in 
+!   the given unit cell
+  logical, allocatable :: twanmtuc(:,:)
+end type t_sic_orbitals
+
+type(t_sic_orbitals) :: sic_orbitals
+
 
 !interface sic_copy_mt
 !  module procedure sic_copy_mt_z,sic_copy_mt_d
@@ -134,26 +144,26 @@ complex(8) function sic_dot_ll(fmt1,fir1,fmt2,fir2,t,tfmt1,tfmt2)
 use modmain
 implicit none
 ! arguments
-complex(8), intent(in) :: fmt1(lmmaxvr,nmtloc,ntr)
-complex(8), intent(in) :: fir1(ngrloc,ntr)
-complex(8), intent(in) :: fmt2(lmmaxvr,nmtloc,ntr)
-complex(8), intent(in) :: fir2(ngrloc,ntr)
+complex(8), intent(in) :: fmt1(lmmaxvr,nmtloc,sic_orbitals%ntr)
+complex(8), intent(in) :: fir1(ngrloc,sic_orbitals%ntr)
+complex(8), intent(in) :: fmt2(lmmaxvr,nmtloc,sic_orbitals%ntr)
+complex(8), intent(in) :: fir2(ngrloc,sic_orbitals%ntr)
 integer, intent(in) :: t(3)
-logical, intent(in) :: tfmt1(natmtot,ntr)
-logical, intent(in) :: tfmt2(natmtot,ntr)
+logical, intent(in) :: tfmt1(natmtot,sic_orbitals%ntr)
+logical, intent(in) :: tfmt2(natmtot,sic_orbitals%ntr)
 ! local variables
 integer v1(3),v2(3),jt,ir,ias,it,i
 complex(8) zdotmt,zdotir,zt1
 complex(8), external :: zdotc
 zdotmt=zzero
 zdotir=zzero
-do it=1,ntr
-  v1(:)=vtl(:,it)
+do it=1,sic_orbitals%ntr
+  v1(:)=sic_orbitals%vtl(:,it)
   v2(:)=v1(:)-t(:)
-  if (v2(1).ge.tlim(1,1).and.v2(1).le.tlim(2,1).and.&
-      v2(2).ge.tlim(1,2).and.v2(2).le.tlim(2,2).and.&
-      v2(3).ge.tlim(1,3).and.v2(3).le.tlim(2,3)) then
-    jt=ivtit(v2(1),v2(2),v2(3))
+  if (v2(1).ge.sic_orbitals%tlim(1,1).and.v2(1).le.sic_orbitals%tlim(2,1).and.&
+      v2(2).ge.sic_orbitals%tlim(1,2).and.v2(2).le.sic_orbitals%tlim(2,2).and.&
+      v2(3).ge.sic_orbitals%tlim(1,3).and.v2(3).le.sic_orbitals%tlim(2,3)) then
+    jt=sic_orbitals%ivtit(v2(1),v2(2),v2(3))
     if (jt.ne.-1) then
       do i=1,nmtloc
         ias=(mtoffs+i-1)/nrmtmax+1
@@ -182,13 +192,13 @@ complex(8) function sic_int_zdz(f1mt,f1ir,f2mt,f2ir,f3mt,f3ir,tfmtuc)
 use modmain
 implicit none
 ! arguments
-complex(8), intent(in) :: f1mt(lmmaxvr,nmtloc,ntr)
-complex(8), intent(in) :: f1ir(ngrloc,ntr)
-real(8), intent(in) :: f2mt(lmmaxvr,nmtloc,ntr)
-real(8), intent(in) :: f2ir(ngrloc,ntr)
-complex(8), intent(in) :: f3mt(lmmaxvr,nmtloc,ntr)
-complex(8), intent(in) :: f3ir(ngrloc,ntr)
-logical, intent(in) :: tfmtuc(ntr)
+complex(8), intent(in) :: f1mt(lmmaxvr,nmtloc,sic_orbitals%ntr)
+complex(8), intent(in) :: f1ir(ngrloc,sic_orbitals%ntr)
+real(8), intent(in) :: f2mt(lmmaxvr,nmtloc,sic_orbitals%ntr)
+real(8), intent(in) :: f2ir(ngrloc,sic_orbitals%ntr)
+complex(8), intent(in) :: f3mt(lmmaxvr,nmtloc,sic_orbitals%ntr)
+complex(8), intent(in) :: f3ir(ngrloc,sic_orbitals%ntr)
+logical, intent(in) :: tfmtuc(sic_orbitals%ntr)
 ! local variables
 complex(8), allocatable :: f1mt_(:,:),f3mt_(:,:)
 real(8), allocatable :: f2mt_(:,:)
@@ -202,7 +212,7 @@ allocate(f2mt_(nmtloc,lmmaxvr))
 allocate(f3mt_(nmtloc,lmmaxvr))
 zsummt=zzero
 zsumir=zzero
-do it=1,ntr
+do it=1,sic_orbitals%ntr
   if (tfmtuc(it)) then
 ! muffin-tin part
     do lm=1,lmmaxvr
@@ -241,13 +251,13 @@ use modmain
 implicit none
 ! arguments
 complex(8), intent(in) :: alpha
-complex(8), intent(in) :: f1mt(lmmaxvr,nmtloc,ntr)
-complex(8), intent(in) :: f1ir(ngrloc,ntr)
-real(8), intent(in) :: f2mt(lmmaxvr,nmtloc,ntr)
-real(8), intent(in) :: f2ir(ngrloc,ntr)
-complex(8), intent(out) :: f3mt(lmmaxvr,nmtloc,ntr)
-complex(8), intent(out) :: f3ir(ngrloc,ntr)
-logical, intent(in) :: tfmtuc(ntr)
+complex(8), intent(in) :: f1mt(lmmaxvr,nmtloc,sic_orbitals%ntr)
+complex(8), intent(in) :: f1ir(ngrloc,sic_orbitals%ntr)
+real(8), intent(in) :: f2mt(lmmaxvr,nmtloc,sic_orbitals%ntr)
+real(8), intent(in) :: f2ir(ngrloc,sic_orbitals%ntr)
+complex(8), intent(out) :: f3mt(lmmaxvr,nmtloc,sic_orbitals%ntr)
+complex(8), intent(out) :: f3ir(ngrloc,sic_orbitals%ntr)
+logical, intent(in) :: tfmtuc(sic_orbitals%ntr)
 ! local variables
 complex(8), allocatable :: f1mt_(:,:),f3mt_(:,:)
 real(8), allocatable :: f2mt_(:,:)
@@ -257,7 +267,7 @@ complex(8), external :: gauntyry
 allocate(f1mt_(nmtloc,lmmaxvr))
 allocate(f2mt_(nmtloc,lmmaxvr))
 allocate(f3mt_(nmtloc,lmmaxvr))
-do it=1,ntr
+do it=1,sic_orbitals%ntr
   if (tfmtuc(it)) then
 ! muffin-tin part
     do lm=1,lmmaxvr
@@ -295,16 +305,16 @@ use modmain
 implicit none
 logical, intent(in) :: treduce
 real(8), intent(in) :: vpc(3)
-complex(8), intent(in) :: fmt1(lmmaxvr,nmtloc,ntr)
-complex(8), intent(in) :: fir1(ngrloc,ntr)
-logical, intent(in) :: tfmt1(natmtot,ntr)
+complex(8), intent(in) :: fmt1(lmmaxvr,nmtloc,sic_orbitals%ntr)
+complex(8), intent(in) :: fir1(ngrloc,sic_orbitals%ntr)
+logical, intent(in) :: tfmt1(natmtot,sic_orbitals%ntr)
 complex(8), intent(in) :: fmt2(lmmaxvr,nmtloc)
 complex(8), intent(in) :: fir2(ngrloc)
 complex(8) zdotmt,zdotir,zdot
 complex(8), external :: zdotc
 integer it,i,ias,ir
 zdot=zzero
-do it=1,ntr
+do it=1,sic_orbitals%ntr
   zdotmt=zzero
   zdotir=zzero
   do i=1,nmtloc
@@ -317,7 +327,8 @@ do it=1,ntr
   do ir=1,ngrloc
     zdotir=zdotir+cfunir(ir+groffs)*dconjg(fir1(ir,it))*fir2(ir)
   enddo
-  zdot=zdot+(zdotmt+zdotir*omega/dble(ngrtot))*exp(zi*dot_product(vpc,vtc(:,it)))
+  zdot=zdot+(zdotmt+zdotir*omega/dble(ngrtot))*&
+    exp(zi*dot_product(vpc,sic_orbitals%vtc(:,it)))
 enddo
 if (treduce) call mpi_grid_reduce(zdot,all=.true.)
 sic_dot_lb=zdot
@@ -347,12 +358,6 @@ call sphcrd(vgpc,gpc,tpgp)
 ! generate spherical harmonics for G+q
 call genylm(lmaxvr,tpgp,ylmgp)
 
-!ias=mtoffs/nrmtmax+1
-!ias1=ias
-!ir=mod(mtoffs+1,nrmtmax)
-!is=ias2is(ias)
-!ia=ias2ia(ias)
-!zt1=fourpi*exp(zi*dot_product(vgpc,atposc(:,ia,is)))  
 ias1=-1
 do i=1,nmtloc
   ias=(mtoffs+i-1)/nrmtmax+1
@@ -361,7 +366,6 @@ do i=1,nmtloc
     ia=ias2ia(ias)
     zt1=fourpi*exp(zi*dot_product(vgpc,atposc(:,ia,is)))  
     ias1=ias
-    !ir=1
     ir=mod(mtoffs+i,nrmtmax)
   endif
   if (ir.le.nrmt(is)) then
@@ -393,12 +397,7 @@ complex(8), intent(out) :: fmt(lmmaxvr,nmtloc)
 integer ias,ias1,ir,is,ia,ic,i,lm,l,io
 fmt=zzero
 
-ias=mtoffs/nrmtmax+1
-ias1=ias
-ir=mod(mtoffs+1,nrmtmax)
-is=ias2is(ias)
-ia=ias2ia(ias)
-ic=ias2ic(ias)
+ias=-1
 do i=1,nmtloc
   ias=(mtoffs+i-1)/nrmtmax+1
   if (ias.ne.ias1) then
@@ -406,7 +405,7 @@ do i=1,nmtloc
     ia=ias2ia(ias)
     ic=ias2ic(ias)
     ias1=ias
-    ir=1
+    ir=mod(mtoffs+i,nrmtmax)
   endif
   if (ir.le.nrmt(is)) then
     do lm=1,lmmaxvr
@@ -418,7 +417,6 @@ do i=1,nmtloc
   endif
   ir=ir+1
 enddo
-
 
 end subroutine
 

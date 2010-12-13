@@ -11,10 +11,27 @@ real(8) v1(3),v2(3)
 logical, external :: vrinmt,sic_include_cell
 real(8), allocatable :: wt1(:,:)
 
-if (allocated(vtl)) deallocate(vtl)
-allocate(vtl(3,maxvtl))
-vtl=-1000000
-ntr=0
+
+if (allocated(sic_apply)) deallocate(sic_apply)
+allocate(sic_apply(nwantot))
+if (allocated(sicw)) then
+  sic_apply=0
+  do n=1,nwantot
+    i=wan_info(6,n)
+    j=wan_info(7,n)
+    sic_apply(n)=sicw(j,i)
+  enddo
+else
+  sic_apply=2
+endif
+call deletewantran(sic_wantran)
+! get Wannier transitions
+call genwantran(sic_wantran,-0.d0,sic_me_cutoff,allwt=.true.,waninc=sic_apply)
+! find neighbouring cells, where Wannier function is computed
+if (allocated(sic_orbitals%vtl)) deallocate(sic_orbitals%vtl)
+allocate(sic_orbitals%vtl(3,sic_maxvtl))
+sic_orbitals%vtl=-1000000
+sic_orbitals%ntr=0
 l2=.true.
 ish=0
 do while (l2)
@@ -26,12 +43,12 @@ do while (l2)
           vl=(/i1,i2,i3/)
           if (sic_include_cell(vl)) then
             l1=.true.            
-            ntr=ntr+1
-            if (ntr.gt.maxvtl) then
-              write(*,'("Error(sic_init) : maxvtl is too small")')
+            sic_orbitals%ntr=sic_orbitals%ntr+1
+            if (sic_orbitals%ntr.gt.sic_maxvtl) then
+              write(*,'("Error(sic_init) : sic_maxvtl is too small")')
               call pstop
             endif
-            vtl(:,ntr)=vl
+            sic_orbitals%vtl(:,sic_orbitals%ntr)=vl
           endif
         endif
       enddo
@@ -43,48 +60,43 @@ do while (l2)
     l2=.false.
   endif
 enddo
-tlim=0
-do i=1,3
-  tlim(1,i)=minval(vtl(i,1:ntr))
-  tlim(2,i)=maxval(vtl(i,1:ntr))
-enddo
-if (allocated(ivtit)) deallocate(ivtit)
-allocate(ivtit(tlim(1,1):tlim(2,1),tlim(1,2):tlim(2,2),tlim(1,3):tlim(2,3)))
-ivtit=-1
-do i=1,ntr
-  ivtit(vtl(1,i),vtl(2,i),vtl(3,i))=i
-enddo
-if (allocated(vtc)) deallocate(vtc)
-allocate(vtc(3,ntr))
-do i=1,ntr
-  vtc(:,i)=vtl(1,i)*avec(:,1)+vtl(2,i)*avec(:,2)+vtl(3,i)*avec(:,3)
+! Cartesian coordinates of translation vectors
+if (allocated(sic_orbitals%vtc)) deallocate(sic_orbitals%vtc)
+allocate(sic_orbitals%vtc(3,sic_orbitals%ntr))
+do i=1,sic_orbitals%ntr
+  sic_orbitals%vtc(:,i)=sic_orbitals%vtl(1,i)*avec(:,1)+&
+                        sic_orbitals%vtl(2,i)*avec(:,2)+&
+                        sic_orbitals%vtl(3,i)*avec(:,3)
 end do
+! find translation limits
+sic_orbitals%tlim=0
+do i=1,3
+  sic_orbitals%tlim(1,i)=minval(sic_orbitals%vtl(i,1:sic_orbitals%ntr))
+  sic_orbitals%tlim(2,i)=maxval(sic_orbitals%vtl(i,1:sic_orbitals%ntr))
+enddo
+! find mapping from translations to linear index
+if (allocated(sic_orbitals%ivtit)) deallocate(sic_orbitals%ivtit)
+allocate(sic_orbitals%ivtit(sic_orbitals%tlim(1,1):sic_orbitals%tlim(2,1),&
+                            sic_orbitals%tlim(1,2):sic_orbitals%tlim(2,2),&
+                            sic_orbitals%tlim(1,3):sic_orbitals%tlim(2,3)))
+sic_orbitals%ivtit=-1
+do i=1,sic_orbitals%ntr
+  sic_orbitals%ivtit(sic_orbitals%vtl(1,i),sic_orbitals%vtl(2,i),&
+    sic_orbitals%vtl(3,i))=i
+enddo
 
-if (.not.tsic_arrays_allocated) then
-  allocate(sic_apply(nwantot))
-  if (allocated(sicw)) then
-    sic_apply=0
-    do n=1,nwantot
-      i=wan_info(6,n)
-      j=wan_info(7,n)
-      sic_apply(n)=sicw(j,i)
-    enddo
-  else
-    sic_apply=2
-  endif
-endif
 ! get local number muffin-tin and interstitial points
 ngrloc=mpi_grid_map2(ngrtot,dims=(/dim_k,dim2/),offs=groffs)
-!ngrlocmax=ngrloc
-!call mpi_grid_reduce(ngrlocmax,op=op_max)
+ngrlocmax=ngrloc
+call mpi_grid_reduce(ngrlocmax,op=op_max)
 nmtloc=mpi_grid_map2(nrmtmax*natmtot,dims=(/dim_k,dim2/),offs=mtoffs)
-! get all Wannier transitions
-call deletewantran(sic_wantran)
-call genwantran(sic_wantran,-0.d0,sic_me_cutoff,allwt=.true.,waninc=sic_apply)
+nmtlocmax=nmtloc
+call mpi_grid_reduce(nmtlocmax,op=op_max)
+
 if (mpi_grid_root()) then
-  n=ntr*nspinor*(nwantot+sic_wantran%nwan)
+  n=sic_orbitals%ntr*nspinor*(2*sic_wantran%nwan)
   write(*,*)
-  write(*,'("[sic_init] total number of translations : ",I3)')ntr
+  write(*,'("[sic_init] total number of translations : ",I3)')sic_orbitals%ntr
   write(*,'("[sic_init] size of Wannier function arrays : ",I6," Mb")') &
     int(16.d0*(lmmaxvr*nmtloc+ngrloc)*n/1048576.d0)
 endif
@@ -93,14 +105,18 @@ call mpi_grid_barrier()
 !  wan(mt,ir) - Wannier function defined on a real-space grid
 !  wv(mt,ir) - product of a Wannier function with it's potential
 if (.not.tsic_arrays_allocated) then
-  allocate(wanmt(lmmaxvr,nmtloc,ntr,nspinor,nwantot))
-  wanmt=zzero
-  allocate(wanir(ngrloc,ntr,nspinor,nwantot))
-  wanir=zzero
-  allocate(wvmt(lmmaxvr,nmtloc,ntr,nspinor,sic_wantran%nwan))
-  wvmt=zzero
-  allocate(wvir(ngrloc,ntr,nspinor,sic_wantran%nwan))
-  wvir=zzero
+  allocate(sic_orbitals%wanmt(lmmaxvr,nmtloc,sic_orbitals%ntr,nspinor,&
+    sic_wantran%nwan))
+  sic_orbitals%wanmt=zzero
+  allocate(sic_orbitals%wanir(ngrloc,sic_orbitals%ntr,nspinor,&
+    sic_wantran%nwan))
+  sic_orbitals%wanir=zzero
+  allocate(sic_orbitals%wvmt(lmmaxvr,nmtloc,sic_orbitals%ntr,nspinor,&
+    sic_wantran%nwan))
+  sic_orbitals%wvmt=zzero
+  allocate(sic_orbitals%wvir(ngrloc,sic_orbitals%ntr,nspinor,&
+    sic_wantran%nwan))
+  sic_orbitals%wvir=zzero
   allocate(vwanme(sic_wantran%nwt))
   vwanme=zzero
   tsic_arrays_allocated=.true.
@@ -130,22 +146,22 @@ allocate(sic_wann_h0k(sic_wantran%nwan,sic_wantran%nwan,nkptloc))
 sic_wann_h0k=zzero
 sic_etot_correction=0.d0
 tevecsv=.true.
-if (allocated(twanmt)) deallocate(twanmt)
-allocate(twanmt(natmtot,ntr,nwantot))
-twanmt=.false.
-if (allocated(twanmtuc)) deallocate(twanmtuc)
-allocate(twanmtuc(ntr,nwantot))
-twanmtuc=.false.
-do i=1,ntr
-  v1(:)=vtl(1,i)*avec(:,1)+vtl(2,i)*avec(:,2)+vtl(3,i)*avec(:,3)
+if (allocated(sic_orbitals%twanmt)) deallocate(sic_orbitals%twanmt)
+allocate(sic_orbitals%twanmt(natmtot,sic_orbitals%ntr,nwantot))
+sic_orbitals%twanmt=.false.
+if (allocated(sic_orbitals%twanmtuc)) deallocate(sic_orbitals%twanmtuc)
+allocate(sic_orbitals%twanmtuc(sic_orbitals%ntr,nwantot))
+sic_orbitals%twanmtuc=.false.
+do i=1,sic_orbitals%ntr
+  v1(:)=sic_orbitals%vtl(1,i)*avec(:,1)+sic_orbitals%vtl(2,i)*avec(:,2)+sic_orbitals%vtl(3,i)*avec(:,3)
   do n=1,nwantot
     jas=wan_info(1,n)
     do ias=1,natmtot  
       v2(:)=atposc(:,ias2ia(ias),ias2is(ias))+v1(:)-&
         atposc(:,ias2ia(jas),ias2is(jas))
-      if (sqrt(sum(v2(:)**2)).le.sic_wan_cutoff) twanmt(ias,i,n)=.true.
+      if (sqrt(sum(v2(:)**2)).le.sic_wan_cutoff) sic_orbitals%twanmt(ias,i,n)=.true.
     enddo
-    twanmtuc(i,n)=any(twanmt(:,i,n))
+    sic_orbitals%twanmtuc(i,n)=any(sic_orbitals%twanmt(:,i,n))
   enddo
 enddo
 if (allocated(rmtwt)) deallocate(rmtwt)
@@ -172,11 +188,12 @@ use mod_sic
 implicit none
 integer, intent(in) :: vl(3)
 logical l1
-integer n,ias,jas,ir
+integer n,ias,jas,ir,j
 real(8) vt(3),v1(3)
 vt(:)=vl(1)*avec(:,1)+vl(2)*avec(:,2)+vl(3)*avec(:,3)
 l1=.false.
-do n=1,nwantot
+do j=1,sic_wantran%nwan
+  n=sic_wantran%iwan(j)
   ias=wan_info(1,n)
   do jas=1,natmtot
     v1(:)=atposc(:,ias2ia(jas),ias2is(jas))+vt(:)-&

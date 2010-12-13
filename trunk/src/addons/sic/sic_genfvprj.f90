@@ -98,10 +98,10 @@ do ik=1,nkpt
     do j=1,sic_wantran%nwan
       n=sic_wantran%iwan(j)
       do ispn=1,nspinor
-        a(j,istfv,ispn)=sic_dot_lb(.false.,vkc(1,ik),wanmt(1,1,1,ispn,n),&
-          wanir(1,1,ispn,n),twanmt(1,1,n),wfmt_,wfir_)
-        b(j,istfv,ispn)=sic_dot_lb(.false.,vkc(1,ik),wvmt(1,1,1,ispn,j),&
-          wvir(1,1,ispn,j),twanmt(1,1,n),wfmt_,wfir_)
+        a(j,istfv,ispn)=sic_dot_lb(.false.,vkc(1,ik),sic_orbitals%wanmt(1,1,1,ispn,j),&
+          sic_orbitals%wanir(1,1,ispn,j),sic_orbitals%twanmt(1,1,n),wfmt_,wfir_)
+        b(j,istfv,ispn)=sic_dot_lb(.false.,vkc(1,ik),sic_orbitals%wvmt(1,1,1,ispn,j),&
+          sic_orbitals%wvir(1,1,ispn,j),sic_orbitals%twanmt(1,1,n),wfmt_,wfir_)
       enddo
     enddo !j
     call timer_stop(t_sic_genfvprj_dotp)

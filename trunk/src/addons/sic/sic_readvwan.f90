@@ -32,7 +32,7 @@ allocate(fir(ngrtot))
 do n=1,nwantot
   j=sic_wantran%idxiwan(n)
   do ispn=1,nspinor
-    do it=1,ntr
+    do it=1,sic_orbitals%ntr
       write(c1,'("n",I4.4)')n
       write(c2,'("t",I4.4)')it
       write(c3,'("s",I4.4)')ispn 
@@ -46,8 +46,8 @@ do n=1,nwantot
         endif
         call mpi_grid_bcast(fmt(1,1,1),lmmaxvr*nrmtmax*natmtot)
         call mpi_grid_bcast(fir(1),ngrtot)
-        call sic_copy_mt_z(.true.,lmmaxvr,fmt,wvmt(1,1,it,ispn,j))
-        call sic_copy_ir_z(.true.,fir,wvir(1,it,ispn,j))
+        call sic_copy_mt_z(.true.,lmmaxvr,fmt,sic_orbitals%wvmt(1,1,it,ispn,j))
+        call sic_copy_ir_z(.true.,fir,sic_orbitals%wvir(1,it,ispn,j))
       endif
       if (mpi_grid_root()) then
         call hdf5_read("sic.hdf5",path,"wanmt",fmt(1,1,1),&
@@ -56,8 +56,8 @@ do n=1,nwantot
       endif
       call mpi_grid_bcast(fmt(1,1,1),lmmaxvr*nrmtmax*natmtot)
       call mpi_grid_bcast(fir(1),ngrtot)
-      call sic_copy_mt_z(.true.,lmmaxvr,fmt,wanmt(1,1,it,ispn,n))
-      call sic_copy_ir_z(.true.,fir,wanir(1,it,ispn,n))
+      call sic_copy_mt_z(.true.,lmmaxvr,fmt,sic_orbitals%wanmt(1,1,it,ispn,n))
+      call sic_copy_ir_z(.true.,fir,sic_orbitals%wanir(1,it,ispn,n))
     enddo
   enddo
 enddo
