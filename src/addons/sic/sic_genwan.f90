@@ -3,17 +3,21 @@ use modmain
 use mod_nrkp
 use mod_sic
 implicit none
-integer is,ic,ias,ir,ig,ikloc,ik,l
-integer io,lm,n,ispn,it,j
+integer is,ic,ias,ir,ig,ikloc,ik,l,i1,i2
+integer io,lm,n,ispn,it,j,ngrloc1,nmtloc1,groffs1,mtoffs1,px(2)
 real(8) v1(3)
 complex(8), allocatable :: zfir(:,:,:)
 complex(8), allocatable :: wmt(:,:,:,:)
 complex(8), allocatable :: wir(:,:)
+complex(8), allocatable :: wmt_(:,:,:)
+complex(8), allocatable :: wir_(:,:)
 complex(8), allocatable :: expikr(:,:)
 complex(8) expikt,zt1
 
 allocate(wmt(lmmaxvr,nrmtmax,natmtot,nspinor))
 allocate(wir(ngrtot,nspinor))
+allocate(wmt_(lmmaxvr,nmtlocmax,nspinor))
+allocate(wir_(ngrlocmax,nspinor))
 allocate(zfir(ngrtot,nspinor,nkptnrloc))
 allocate(expikr(ngrtot,nkptnrloc))
 do ikloc=1,nkptnrloc
@@ -75,21 +79,49 @@ do j=1,sic_wantran%nwan
       end do !ir
       call timer_stop(2)
     end do !ikloc
-    if (mpi_grid_side(dims=(/dim_k/))) then
-      call mpi_grid_reduce(wmt(1,1,1,1),lmmaxvr*nrmtmax*natmtot*nspinor,&
-        dims=(/dim_k/))
-      call mpi_grid_reduce(wir(1,1),ngrtot*nspinor,dims=(/dim_k/))
-    end if
-    call mpi_grid_bcast(wmt(1,1,1,1),lmmaxvr*nrmtmax*natmtot*nspinor)
-    call mpi_grid_bcast(wir(1,1),ngrtot*nspinor)
-    do ispn=1,nspinor
-      call sic_copy_mt_z(.true.,lmmaxvr,wmt(1,1,1,ispn),&
-        sic_orbitals%wanmt(1,1,it,ispn,j))
-      call sic_copy_ir_z(.true.,wir(1,ispn),sic_orbitals%wanir(1,it,ispn,j))
-    end do
+    do i1=0,mpi_grid_size(dim_k)-1
+      do i2=0,mpi_grid_size(dim2)-1
+        px=(/i1,i2/)
+        nmtloc1=mpi_grid_map2(nrmtmax*natmtot,dims=(/dim_k,dim2/),x=px,&
+          offs=mtoffs1)
+        ngrloc1=mpi_grid_map2(ngrtot,dims=(/dim_k,dim2/),x=px,offs=groffs1)
+        do ispn=1,nspinor
+          call sic_copy_mt_z_2(lmmaxvr,nmtloc1,mtoffs1,wmt(1,1,1,ispn),&
+            wmt_(1,1,ispn))
+          call sic_copy_ir_z_2(ngrloc1,groffs1,wir(1,ispn),wir_(1,ispn))
+        enddo
+        if (mpi_grid_x(dim2).eq.i2) then
+          call mpi_grid_reduce(wmt_(1,1,1),lmmaxvr*nmtlocmax*nspinor,&
+            dims=(/dim_k/),root=(/i1/))
+          call mpi_grid_reduce(wir_(1,1),ngrlocmax*nspinor,dims=(/dim_k/),&
+            root=(/i1/))
+        endif
+        if (mpi_grid_x(1).eq.i1.and.mpi_grid_x(2).eq.i2) then
+          do ispn=1,nspinor
+            sic_orbitals%wanmt(1:lmmaxvr,1:nmtloc,it,ispn,j)=&
+              wmt_(1:lmmaxvr,1:nmtloc,ispn)
+            sic_orbitals%wanir(1:ngrloc,it,ispn,j)=&
+              wir_(1:ngrloc,ispn)
+          enddo
+        endif
+      enddo
+    enddo
+!    if (mpi_grid_side(dims=(/dim_k/))) then
+!      call mpi_grid_reduce(wmt(1,1,1,1),lmmaxvr*nrmtmax*natmtot*nspinor,&
+!        dims=(/dim_k/))
+!      call mpi_grid_reduce(wir(1,1),ngrtot*nspinor,dims=(/dim_k/))
+!    end if
+!    call mpi_grid_bcast(wmt(1,1,1,1),lmmaxvr*nrmtmax*natmtot*nspinor)
+!    call mpi_grid_bcast(wir(1,1),ngrtot*nspinor)
+!    do ispn=1,nspinor
+!      call sic_copy_mt_z(.true.,lmmaxvr,wmt(1,1,1,ispn),&
+!        sic_orbitals%wanmt(1,1,it,ispn,j))
+!      call sic_copy_ir_z(.true.,wir(1,ispn),sic_orbitals%wanir(1,it,ispn,j))
+!    end do
   end do !it
 end do !j
 deallocate(wmt,wir,zfir,expikr)
+deallocate(wmt_,wir_)
 ! cutoff in the interstitial
 do it=1,sic_orbitals%ntr
   do j=1,sic_wantran%nwan

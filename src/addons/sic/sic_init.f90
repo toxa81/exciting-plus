@@ -88,10 +88,10 @@ enddo
 ! get local number muffin-tin and interstitial points
 ngrloc=mpi_grid_map2(ngrtot,dims=(/dim_k,dim2/),offs=groffs)
 ngrlocmax=ngrloc
-call mpi_grid_reduce(ngrlocmax,op=op_max)
+call mpi_grid_reduce(ngrlocmax,op=op_max,all=.true.)
 nmtloc=mpi_grid_map2(nrmtmax*natmtot,dims=(/dim_k,dim2/),offs=mtoffs)
 nmtlocmax=nmtloc
-call mpi_grid_reduce(nmtlocmax,op=op_max)
+call mpi_grid_reduce(nmtlocmax,op=op_max,all=.true.)
 
 if (mpi_grid_root()) then
   n=sic_orbitals%ntr*nspinor*(2*sic_wantran%nwan)
@@ -99,6 +99,8 @@ if (mpi_grid_root()) then
   write(*,'("[sic_init] total number of translations : ",I3)')sic_orbitals%ntr
   write(*,'("[sic_init] size of Wannier function arrays : ",I6," Mb")') &
     int(16.d0*(lmmaxvr*nmtloc+ngrloc)*n/1048576.d0)
+!  write(*,'("[sic_init] nmtloc,nmtlocmax,ngrloc,ngrlocmax : ",4I8)')&
+!    nmtloc,nmtlocmax,ngrloc,ngrlocmax
 endif
 call mpi_grid_barrier()
 ! allocate once main arrays of SIC code

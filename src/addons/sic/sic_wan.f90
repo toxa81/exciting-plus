@@ -20,13 +20,16 @@ if (wproc) then
 endif
 call timer_reset(1)
 call timer_reset(2)
+call timer_start(3,reset=.true.)
 call sic_genwan
+call timer_stop(3)
 deallocate(wann_unkmt)
 deallocate(wann_unkit)
 if (wproc) then
   write(fout,*)
-  write(fout,'("time for muffin-tin part (sec.)   : ",F8.3)')timer_get_value(1)
-  write(fout,'("time for interstitial part (sec.) : ",F8.3)')timer_get_value(2)
+  write(fout,'("local time for muffin-tin part (sec.)   : ",F8.3)')timer_get_value(1)
+  write(fout,'("local time for interstitial part (sec.) : ",F8.3)')timer_get_value(2)
+  write(fout,'("total global time : ",F8.3)')timer_get_value(3)
   call flushifc(fout)
 endif
 allocate(ovlp(sic_wantran%nwt))
@@ -70,11 +73,11 @@ if (wproc) then
 !        dreal(ovlp(i)),dimag(ovlp(i))
 !    endif
 !  enddo
-  write(fout,'("Wannier overlap integrals (<w_n|w_n>)")')
+  write(fout,'("Wannier overlap integrals: (<W_n|W_n>)")')
   do i=1,sic_wantran%nwan
     n=sic_wantran%iwan(i)
     j=sic_wantran%iwtidx(n,n,0,0,0)
-    write(151,'(I4,4X,2G18.10)')n,dreal(ovlp(j)),dimag(ovlp(j))
+    write(151,'("  n : ",I4,8X,2G18.10)')n,dreal(ovlp(j)),dimag(ovlp(j))
   enddo
   write(fout,*)
   write(fout,'("Maximum deviation from norm                 : ",F12.6)')t2

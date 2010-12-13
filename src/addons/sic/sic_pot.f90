@@ -58,9 +58,9 @@ ene=zzero
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
   do ispn=1,nspinor
-    ene(1,j)=ene(1,j)+sic_int_zdz(sic_orbitals%wanmt(1,1,1,ispn,n),&
-      sic_orbitals%wanir(1,1,ispn,n),vhxcmt(1,1,1,ispn,j),vhxcir(1,1,ispn,j),&
-      sic_orbitals%wanmt(1,1,1,ispn,n),sic_orbitals%wanir(1,1,ispn,n),&
+    ene(1,j)=ene(1,j)+sic_int_zdz(sic_orbitals%wanmt(1,1,1,ispn,j),&
+      sic_orbitals%wanir(1,1,ispn,j),vhxcmt(1,1,1,ispn,j),vhxcir(1,1,ispn,j),&
+      sic_orbitals%wanmt(1,1,1,ispn,j),sic_orbitals%wanir(1,1,ispn,j),&
       sic_orbitals%twanmtuc(1,n))
   enddo
 enddo
@@ -77,9 +77,9 @@ endif
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
   do ispn=1,nspinor
-    ene(3,j)=ene(3,j)+sic_int_zdz(sic_orbitals%wanmt(1,1,1,ispn,n),&
-      sic_orbitals%wanir(1,1,ispn,n),vhxcmt(1,1,1,ispn,j),vhxcir(1,1,ispn,j),&
-      sic_orbitals%wanmt(1,1,1,ispn,n),sic_orbitals%wanir(1,1,ispn,n),&
+    ene(3,j)=ene(3,j)+sic_int_zdz(sic_orbitals%wanmt(1,1,1,ispn,j),&
+      sic_orbitals%wanir(1,1,ispn,j),vhxcmt(1,1,1,ispn,j),vhxcir(1,1,ispn,j),&
+      sic_orbitals%wanmt(1,1,1,ispn,j),sic_orbitals%wanir(1,1,ispn,j),&
       sic_orbitals%twanmtuc(1,n))
   enddo
 enddo
@@ -127,8 +127,8 @@ sic_orbitals%wvir=zzero
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
   do ispn=1,nspinor
-    call sic_mul_zd(-zone,sic_orbitals%wanmt(1,1,1,ispn,n),&
-      sic_orbitals%wanir(1,1,ispn,n),vhxcmt(1,1,1,ispn,j),vhxcir(1,1,ispn,j),&
+    call sic_mul_zd(-zone,sic_orbitals%wanmt(1,1,1,ispn,j),&
+      sic_orbitals%wanir(1,1,ispn,j),vhxcmt(1,1,1,ispn,j),vhxcir(1,1,ispn,j),&
       sic_orbitals%wvmt(1,1,1,ispn,j),sic_orbitals%wvir(1,1,ispn,j),&
       sic_orbitals%twanmtuc(1,n))    
   enddo

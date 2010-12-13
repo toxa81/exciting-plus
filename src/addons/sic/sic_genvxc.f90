@@ -174,7 +174,7 @@ do j=1,sic_wantran%nwan
         do ispn=1,nspinor
 ! wfmt(tp,r)=\sum_{lm} f_{lm}(r) * Y_{lm}(tp)
           call zgemm('T','N',ntp,nmtloc,lmmaxvr,zone,ylm,lmmaxvr,&
-            sic_orbitals%wanmt(1,1,it,ispn,n),lmmaxvr,zzero,wfmt,ntp)
+            sic_orbitals%wanmt(1,1,it,ispn,j),lmmaxvr,zzero,wfmt,ntp)
 ! rho(tp,r)=|wf(tp,r)|^2
           wfmt2(:,:,ispn)=dreal(dconjg(wfmt(:,:))*wfmt(:,:))
         enddo
