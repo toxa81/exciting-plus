@@ -138,6 +138,33 @@ endif
 return
 end subroutine
 
+
+
+subroutine sic_copy_mt_z_2(ld,nmtloc1,mtoffs1,fmt1,fmt2)
+use modmain
+implicit none
+integer, intent(in) :: ld
+integer, intent(in) :: nmtloc1
+integer, intent(in) :: mtoffs1
+complex(8), intent(in) :: fmt1(ld,nrmtmax*natmtot)
+complex(8), intent(out) :: fmt2(ld,nmtloc1)
+fmt2(1:ld,1:nmtloc1)=fmt1(1:ld,mtoffs1+1:mtoffs1+nmtloc1)
+return
+end subroutine
+
+subroutine sic_copy_ir_z_2(ngrloc1,groffs1,fir1,fir2)
+use modmain
+implicit none
+integer, intent(in) :: ngrloc1
+integer, intent(in) :: groffs1
+complex(8), intent(in) :: fir1(ngrtot)
+complex(8), intent(inout) :: fir2(ngrloc1)
+fir2(1:ngrloc1)=fir1(groffs1+1:groffs1+ngrloc1)
+return
+end subroutine
+
+
+
 ! compute <f1_0|f2_T>=\int_{-\inf}^{\inf} f1^{*}(r)f2(r-T)dr = 
 !   = \sum_{R} \int_{\Omega} f1^{*}(r+R)f2(r+R-T)dr
 complex(8) function sic_dot_ll(fmt1,fir1,fmt2,fir2,t,tfmt1,tfmt2)
