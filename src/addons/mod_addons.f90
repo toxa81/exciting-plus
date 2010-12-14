@@ -124,6 +124,7 @@ integer, parameter :: t_sic_genfvprj=36
 integer, parameter :: t_sic_genfvprj_dotp=37
 integer, parameter :: t_sic_genfvprj_wfmt=38
 integer, parameter :: t_sic_genfvprj_wfir=39
+integer, parameter :: t_sic_genfvprj_wfk=34
 
 integer, parameter :: t_apw_rad=40
 integer, parameter :: t_rho_mag_sum=41

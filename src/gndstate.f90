@@ -11,6 +11,7 @@ subroutine gndstate
 use modmain
 use modldapu
 use mod_wannier
+use mod_sic
 ! !DESCRIPTION:
 !   Computes the self-consistent Kohn-Sham ground-state. General information is
 !   written to the file {\tt INFO.OUT}. First- and second-variational
@@ -85,7 +86,7 @@ endif
 ! initialise or read the charge density and potentials from file
 iscl=0
 if (wproc) write(60,*)
-if ((task.eq.1).or.(task.eq.3)) then
+if ((task.eq.1).or.(task.eq.3).or.(sic.and.isclsic.gt.1)) then
   call readstate
   if (wproc) write(60,'("Potential read in from STATE.OUT")')
   if (autolinengy) call readfermi
@@ -154,6 +155,7 @@ do iscl=1,maxscl
     call timer_reset(t_sic_genfvprj_dotp)  
     call timer_reset(t_sic_genfvprj_wfmt)
     call timer_reset(t_sic_genfvprj_wfir)
+    call timer_reset(t_sic_genfvprj_wfk)
   endif
   if (wproc) then
     write(60,*)
@@ -430,6 +432,8 @@ do iscl=1,maxscl
         timer_get_value(t_sic_genfvprj_wfmt)
       write(60,'("  sic_genfvprj (wfir)                       : ",F12.2)')&
         timer_get_value(t_sic_genfvprj_wfir)
+      write(60,'("  sic_genfvprj (wfk)                        : ",F12.2)')&
+        timer_get_value(t_sic_genfvprj_wfk)
       write(60,'("  sic_hunif                                 : ",F12.2)')&
         timer_get_value(t_sic_hunif)
     endif
