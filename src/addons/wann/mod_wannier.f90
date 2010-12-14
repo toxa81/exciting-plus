@@ -70,6 +70,8 @@ integer wfch(2,200)
 integer wannier_prjao
 data wannier_prjao/0/
 
+integer, allocatable :: wann_err_k(:)
+
 
 
 

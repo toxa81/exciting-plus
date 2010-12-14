@@ -7,15 +7,16 @@ complex(8), allocatable :: vwanme(:)
 complex(8), allocatable :: sic_wann_h0k(:,:,:)
 ! LDA energies of Wannier functions
 real(8), allocatable :: sic_wann_e0(:)
-integer nsclsic
+integer :: nsclsic
 data nsclsic/3/
-integer isclsic
+integer :: isclsic
 data isclsic/0/
-real(8) sic_etot_correction
+real(8) :: etot0 
+real(8) :: sic_etot_correction
 data sic_etot_correction/0.d0/
-real(8) sic_wan_cutoff
+real(8) :: sic_wan_cutoff
 data sic_wan_cutoff/6.d0/
-real(8) sic_me_cutoff
+real(8) :: sic_me_cutoff
 data sic_me_cutoff/0.1d0/
 complex(8), allocatable :: sic_wb(:,:,:,:)
 complex(8), allocatable :: sic_wvb(:,:,:,:)
@@ -23,9 +24,9 @@ complex(8), allocatable :: sic_wvb(:,:,:,:)
 integer, allocatable :: sic_apply(:)
 integer, allocatable :: sicw(:,:)
 
-logical tsic_wv
+logical :: tsic_wv
 data tsic_wv/.false./
-logical tsic_arrays_allocated
+logical :: tsic_arrays_allocated
 data tsic_arrays_allocated/.false./
 
 ! maximum number of translation vectors
@@ -424,7 +425,7 @@ complex(8), intent(out) :: fmt(lmmaxvr,nmtloc)
 integer ias,ias1,ir,is,ia,ic,i,lm,l,io
 fmt=zzero
 
-ias=-1
+ias1=-1
 do i=1,nmtloc
   ias=(mtoffs+i-1)/nrmtmax+1
   if (ias.ne.ias1) then

@@ -138,5 +138,9 @@ if (allocated(wann_occ)) deallocate(wann_occ)
 allocate(wann_occ(nwantot))
 wann_occ=0.d0
 
+if (allocated(wann_err_k)) deallocate(wann_err_k)
+allocate(wann_err_k(nkptloc))
+wann_err_k=0
+
 return
 end

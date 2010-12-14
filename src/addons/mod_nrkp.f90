@@ -60,7 +60,7 @@ use modmain
 implicit none
 integer, intent(in) :: fout
 logical, intent(in) :: lpmat
-integer ik,ikloc,n,j,ik1,isym,i
+integer ik,ikloc,n,j,ik1,isym,i,ierr
 complex(8), allocatable :: apwalm(:,:,:,:)
 real(8) w2,t1,sz
 logical, external :: wann_diel
@@ -185,7 +185,7 @@ do ikloc=1,nkptnrloc
     evecsvnrloc(1,1,ikloc),apwalm,wfsvmtnrloc(1,1,1,1,1,ikloc))
   if (wannier) then
     call genwann_c(ik,vkcnr(:,ik),evalsvnr(1,ik),wfsvmtnrloc(1,1,1,1,1,ikloc),&
-      wanncnrloc(1,1,ikloc))   
+      wanncnrloc(1,1,ikloc),ierr)   
     if (ldisentangle) then
 ! disentangle bands
       call disentangle(evalsvnr(1,ik),wanncnrloc(1,1,ikloc),&
