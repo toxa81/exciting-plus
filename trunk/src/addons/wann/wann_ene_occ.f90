@@ -25,6 +25,15 @@ complex(8), intent(inout) :: wann_occ_m(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot)
 real(8) t(2),w2
 integer n,i,ik,ispn,ias,lm1,lm2,l,j,n1,n2,ispn1,ispn2,ikloc
 complex(8) z2
+integer, allocatable :: wann_err(:)
+
+allocate(wann_err(nkpt))
+wann_err=0
+do ikloc=1,nkptloc
+  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+  wann_err(ik)=wann_err_k(ikloc)
+enddo
+call mpi_grid_reduce(wann_err(1),nkpt,dims=(/dim_k/))
 
 wann_ene=0.d0
 wann_occ=0.d0
@@ -106,6 +115,11 @@ do n=1,nwantot
 enddo
 if (wproc) then
   open(190,file="WANN_ENE_OCC.OUT",form="formatted",status="replace")
+  do ik=1,nkpt
+    if (wann_err(ik).ne.0) then
+      write(190,'(" k-point : ",I4,"  degeneracy : ",I4)')ik,wann_err(ik)
+    endif
+  enddo
   write(190,*)
   write(190,'("On-site matrices in WF basis")')
   do i=1,wann_natom
@@ -162,6 +176,7 @@ if (wproc) then
   enddo !i
   close(190)
 endif
+deallocate(wann_err)
 return
 end
   

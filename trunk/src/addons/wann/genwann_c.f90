@@ -1,4 +1,4 @@
-subroutine genwann_c(ik,vpc,e,wfsvmt,wann_c_)
+subroutine genwann_c(ik,vpc,e,wfsvmt,wann_c_,ierr_)
 use modmain
 use mod_wannier
 implicit none
@@ -8,6 +8,7 @@ real(8), intent(in) :: vpc(3)
 real(8), intent(in) :: e(nstsv)
 complex(8), intent(in) :: wfsvmt(lmmaxvr,nufrmax,natmtot,nspinor,nstsv)
 complex(8), intent(out) :: wann_c_(nwantot,nstsv)
+integer, intent(out) :: ierr_
 ! local variables
 complex(8), allocatable :: prjao(:,:)
 integer ispn,j,ias,lm,itype,n
@@ -32,8 +33,8 @@ if (debug_level.gt.0) then
     write(fdbgout,'("[genwann_c]")')
     write(fdbgout,'("  ik : ",I6)')ik  
     write(fdbgout,'("  hash(e) : ",I16)')hash(e,8*nstsv)
-    write(fdbgout,'("  hash(wfsvmt) : ",I16)')hash(wfsvmt,&
-      16*lmmaxvr*nufrmax*natmtot*nspinor*nstsv)
+    write(fdbgout,'("  hash(wfsvmt) : ",I16)')&
+      hash(wfsvmt,16*lmmaxvr*nufrmax*natmtot*nspinor*nstsv)
     call dbg_close_file
   endif
   if (debug_level.ge.6) then
@@ -109,23 +110,23 @@ if (.false.) then
   enddo
 endif
 
-call wann_ort(ik,prjao)
+call wann_ort(ik,prjao,ierr_)
 wann_c_=prjao
 deallocate(prjao)
 return
 end
 
-subroutine wann_ort(ik,wann_u_mtrx)
+subroutine wann_ort(ik,wann_u_mtrx,ierr_)
 use modmain
 use mod_wannier
 implicit none
 integer, intent(in) :: ik
 complex(8), intent(inout) :: wann_u_mtrx(nwantot,nstsv)
-
+integer, intent(out) :: ierr_
 complex(8), allocatable :: s(:,:)
 complex(8), allocatable :: sdiag(:)
 complex(8), allocatable :: wann_u_mtrx_ort(:,:)
-integer ierr,m1,m2,j
+integer m1,m2,j,ierr
 integer, external :: hash
 
 if (debug_level.gt.0) then
@@ -155,23 +156,24 @@ do m1=1,nwantot
 enddo
 ! compute S^{-1/2}
 call isqrtzhe(nwantot,s,ierr)
-if (ierr.ne.0) then
-  write(*,*)
-  write(*,'("Warning(wann_ort): failed to calculate S^{-1/2}")')
-  write(*,'("  mpi_grid_x : ",10I6)')mpi_grid_x
-  write(*,'("  k-point : ",I4)')ik
-  write(*,'("  iteration : ",I4)')iscl
-  write(*,'("  number of linear dependent WFs : ",I4)')ierr
-  write(*,'("  diagonal elements of overlap matrix : ")')
-  write(*,'(6X,5G18.10)')abs(sdiag)
-  write(*,*)
-!  write(*,'("  initial coefficients:")')
-!  call wrmtrx("",nwantot,nstsv,wann_u_mtrx,nwantot)
+ierr_=ierr
+!if (ierr.ne.0) then
 !  write(*,*)
-!  write(*,'("mpi_grid_x : ",10I4)')mpi_grid_x
-!  call pstop
+!  write(*,'("Warning(wann_ort): failed to calculate S^{-1/2}")')
+!  write(*,'("  mpi_grid_x : ",10I6)')mpi_grid_x
+!  write(*,'("  k-point : ",I4)')ik
+!  write(*,'("  iteration : ",I4)')iscl
+!  write(*,'("  number of linear dependent WFs : ",I4)')ierr
+!  write(*,'("  diagonal elements of overlap matrix : ")')
+!  write(*,'(6X,5G18.10)')abs(sdiag)
 !  write(*,*)
-endif
+!!  write(*,'("  initial coefficients:")')
+!!  call wrmtrx("",nwantot,nstsv,wann_u_mtrx,nwantot)
+!!  write(*,*)
+!!  write(*,'("mpi_grid_x : ",10I4)')mpi_grid_x
+!!  call pstop
+!!  write(*,*)
+!endif
 ! compute Wannier function expansion coefficients
 wann_u_mtrx_ort=zzero
 if (ierr.eq.0) then
