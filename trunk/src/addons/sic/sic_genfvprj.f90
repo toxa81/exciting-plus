@@ -64,6 +64,7 @@ allocate(expikr(ngrloc))
 allocate(wffvmt(nstfv,lmmaxvr,nufrmax,natmtot))
 
 do ik=1,nkpt
+  call timer_start(t_sic_genfvprj_wfk)
   ikloc=mpi_grid_map(nkpt,dim_k,x=h,glob=ik)
   if (mpi_grid_x(dim_k).eq.h) evecfv1(:,:,:)=evecfvloc(:,:,:,ikloc)
   call mpi_grid_bcast(evecfv1(1,1,1),nmatmax*nstfv*nspnfv,dims=(/dim_k,dim2/),&
@@ -73,8 +74,9 @@ do ik=1,nkpt
   call match(ngk1,gkc1,tpgkc1,sfacgk1,apwalm)
   call genwffvmt(lmaxvr,lmmaxvr,ngk1,evecfv1,apwalm,wffvmt)
   do ir=1,ngrloc
-    expikr(ir)=exp(zi*dot_product(vkc(:,ik),vgrc(:,ir+groffs)))
+    expikr(ir)=exp(zi*dot_product(vkc(:,ik),vgrc(:,ir+groffs)))/sqrt(omega)
   enddo
+  call timer_stop(t_sic_genfvprj_wfk)
   a=zzero
   b=zzero
 ! compute a=<W_n|\phi_{jk}> and b=<W_n|V_n|\phi_{jk}> where phi(r) are firt-
@@ -93,7 +95,7 @@ do ik=1,nkpt
     call timer_start(t_sic_genfvprj_dotp)
     call sic_copy_ir_z(.true.,wfir,wfir_)
     do ir=1,ngrloc
-      wfir_(ir)=wfir_(ir)*expikr(ir)/sqrt(omega)
+      wfir_(ir)=wfir_(ir)*expikr(ir)
     enddo
     do j=1,sic_wantran%nwan
       n=sic_wantran%iwan(j)
@@ -109,11 +111,11 @@ do ik=1,nkpt
   call timer_start(t_sic_genfvprj_dotp)
   call mpi_grid_reduce(a(1,1,1),sic_wantran%nwan*nstfv*nspinor,root=(/h,0,0/))
   call mpi_grid_reduce(b(1,1,1),sic_wantran%nwan*nstfv*nspinor,root=(/h,0,0/))
-  call timer_stop(t_sic_genfvprj_dotp)
   if (mpi_grid_x(dim_k).eq.h) then
     sic_wb(:,:,:,ikloc)=a(:,:,:)
     sic_wvb(:,:,:,ikloc)=b(:,:,:)
   endif
+  call timer_stop(t_sic_genfvprj_dotp)
 enddo !ik
 deallocate(igkig1,gkc1,tpgkc1,vgkl1,vgkc1,sfacgk1,evecfv1)
 deallocate(apwalm,wfir,wfmt_,wfir_,a,b,expikr,wffvmt)

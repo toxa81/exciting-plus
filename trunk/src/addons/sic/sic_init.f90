@@ -11,6 +11,7 @@ real(8) v1(3),v2(3)
 logical, external :: vrinmt,sic_include_cell
 real(8), allocatable :: wt1(:,:)
 
+tevecsv=.true.
 
 if (allocated(sic_apply)) deallocate(sic_apply)
 allocate(sic_apply(nwantot))
@@ -85,7 +86,7 @@ do i=1,sic_orbitals%ntr
     sic_orbitals%vtl(3,i))=i
 enddo
 
-! get local number muffin-tin and interstitial points
+! get local number of muffin-tin and interstitial points
 ngrloc=mpi_grid_map2(ngrtot,dims=(/dim_k,dim2/),offs=groffs)
 ngrlocmax=ngrloc
 call mpi_grid_reduce(ngrlocmax,op=op_max,all=.true.)
@@ -99,8 +100,6 @@ if (mpi_grid_root()) then
   write(*,'("[sic_init] total number of translations : ",I3)')sic_orbitals%ntr
   write(*,'("[sic_init] size of Wannier function arrays : ",I6," Mb")') &
     int(16.d0*(lmmaxvr*nmtloc+ngrloc)*n/1048576.d0)
-!  write(*,'("[sic_init] nmtloc,nmtlocmax,ngrloc,ngrlocmax : ",4I8)')&
-!    nmtloc,nmtlocmax,ngrloc,ngrlocmax
 endif
 call mpi_grid_barrier()
 ! allocate once main arrays of SIC code
@@ -121,9 +120,13 @@ if (.not.tsic_arrays_allocated) then
   sic_orbitals%wvir=zzero
   allocate(vwanme(sic_wantran%nwt))
   vwanme=zzero
+  allocate(sic_wb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
+  sic_wb=zzero
+  allocate(sic_wvb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
+  sic_wvb=zzero
   tsic_arrays_allocated=.true.
+  sic_etot_correction=0.d0
 endif
-  
 if (allocated(sic_wann_e0)) deallocate(sic_wann_e0)
 allocate(sic_wann_e0(nwantot))
 sic_wann_e0=0.d0
@@ -136,18 +139,9 @@ if (exist) then
   enddo
   close(170)
 endif
-! TODO: these arrays are need only in ground state
-if (allocated(sic_wb)) deallocate(sic_wb)
-allocate(sic_wb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
-sic_wb=zzero
-if (allocated(sic_wvb)) deallocate(sic_wvb)
-allocate(sic_wvb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
-sic_wvb=zzero
 if (allocated(sic_wann_h0k)) deallocate(sic_wann_h0k)
 allocate(sic_wann_h0k(sic_wantran%nwan,sic_wantran%nwan,nkptloc))
 sic_wann_h0k=zzero
-sic_etot_correction=0.d0
-tevecsv=.true.
 if (allocated(sic_orbitals%twanmt)) deallocate(sic_orbitals%twanmt)
 allocate(sic_orbitals%twanmt(natmtot,sic_orbitals%ntr,nwantot))
 sic_orbitals%twanmt=.false.
