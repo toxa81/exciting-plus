@@ -64,8 +64,9 @@ if (wproc) then
 endif
 if (wproc) then
   write(151,*)
+  write(151,'(80("="))')
   write(151,'("generating wave-functions for all k-points")')
-  write(151,'(80("-"))')
+  write(151,'(80("="))')
 endif
 ! generate wave-functions for all k-points in BZ
 call genwfnr(151,.false.)  

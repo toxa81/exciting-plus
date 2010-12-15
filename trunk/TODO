@@ -4,3 +4,7 @@
 * regression tests
 * cleanup gndstate
 * flag that Wannier functions were computed correctly; don't output to stdout
+* more compact representation for wave-functions
+* parallelize matrix elements over G, not over interband transitions
+* fix gap estimation
+* sic partial energies (XC, Hartree, kinetic)

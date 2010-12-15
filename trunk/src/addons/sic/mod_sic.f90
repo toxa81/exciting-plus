@@ -448,4 +448,83 @@ enddo
 
 end subroutine
 
+
+
+subroutine sic_gen_r(xmt,xir)
+use modmain
+implicit none
+real(8), intent(out) :: xmt(lmmaxvr,nmtloc,sic_orbitals%ntr,4)
+real(8), intent(out) :: xir(ngrloc,sic_orbitals%ntr,4)
+integer ntp,it,itp,i,ias,ias1,ia,is,ir,lm
+real(8), allocatable :: xmt_(:,:,:)
+real(8), allocatable :: tp(:,:)
+real(8), allocatable :: rlmb(:,:)
+real(8), allocatable :: wtp(:)
+real(8), allocatable :: spx(:,:)
+real(8) rlm(lmmaxvr),vrc(3),t1
+
+xmt=0.d0
+xir=0.d0
+
+ntp=266
+allocate(tp(2,ntp))
+allocate(rlmb(ntp,lmmaxvr))
+allocate(wtp(ntp))
+! Lebedev mesh
+allocate(spx(3,ntp))
+call leblaik(ntp,spx,wtp)                                                                   
+do itp=1,ntp                   
+  wtp(itp)=wtp(itp)*fourpi
+  call sphcrd(spx(:,itp),t1,tp(:, itp))                                                     
+enddo 
+! generate spherical harmonics
+do itp=1,ntp 
+  call genrlm(lmaxvr,tp(1,itp),rlm)  
+  do lm=1,lmmaxvr
+    rlmb(itp,lm)=rlm(lm)*wtp(itp)
+  enddo
+enddo
+deallocate(wtp,tp)
+
+allocate(xmt_(ntp,nmtloc,4))
+do it=1,sic_orbitals%ntr
+  xmt_=0.d0
+! compute r in muffin-tins
+  ias1=-1
+  do i=1,nmtloc
+    ias=(mtoffs+i-1)/nrmtmax+1
+    if (ias.ne.ias1) then
+      is=ias2is(ias)
+      ia=ias2ia(ias)
+      ias1=ias
+      ir=mod(mtoffs+i,nrmtmax)
+    endif
+    if (ir.le.nrmt(is)) then
+      do itp=1,ntp
+        vrc(:)=spx(:,itp)*spr(ir,is)+atposc(:,ia,is)+sic_orbitals%vtc(:,it)
+        xmt_(itp,i,1)=vrc(1)
+        xmt_(itp,i,2)=vrc(2)
+        xmt_(itp,i,3)=vrc(3)
+        xmt_(itp,i,4)=sum(vrc(:)**2)
+      enddo
+    endif
+    ir=ir+1
+  enddo !i
+! expand in real spherical harmonics
+  do i=1,4
+    call dgemm('T','N',lmmaxvr,nmtloc,ntp,1.d0,rlmb,ntp,xmt_(1,1,i),ntp,0.d0,&
+      xmt(1,1,it,i),lmmaxvr)
+  enddo
+! interstitial part
+  do ir=1,ngrloc
+    vrc(:)=vgrc(:,ir+groffs)+sic_orbitals%vtc(:,it)
+    xir(ir,it,1)=vrc(1)
+    xir(ir,it,2)=vrc(2)
+    xir(ir,it,3)=vrc(3)
+    xir(ir,it,4)=sum(vrc(:)**2)
+  enddo
+enddo !it
+deallocate(rlmb,spx,xmt_)
+end subroutine
+
 end module
