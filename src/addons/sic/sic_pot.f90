@@ -17,8 +17,9 @@ real(8) sic_ekin,sic_epot
 
 if (wproc) then
   write(fout,*)
+  write(fout,'(80("="))')
   write(fout,'("generating potential (Hartree+XC) of Wannier functions")')
-  write(fout,'(80("-"))')
+  write(fout,'(80("="))')
 endif
 sic_orbitals%wvmt=zzero
 sic_orbitals%wvir=zzero
