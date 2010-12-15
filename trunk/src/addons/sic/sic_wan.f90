@@ -14,7 +14,7 @@ real(8) t1,t2,vrc(3)
 complex(8) z1,z2(4)
 real(8), allocatable :: xmt(:,:,:,:)
 real(8), allocatable :: xir(:,:,:)
-real(8), allocatable :: spread(:)
+real(8), allocatable :: spread(:,:)
 
 if (wproc) then
   write(fout,*)
@@ -91,7 +91,7 @@ deallocate(ovlp)
 allocate(xmt(lmmaxvr,nmtloc,sic_orbitals%ntr,4))
 allocate(xir(ngrloc,sic_orbitals%ntr,4))
 call sic_gen_r(xmt,xir)
-allocate(spread(sic_wantran%nwan))
+allocate(spread(sic_wantran%nwan,6))
 spread=0.d0
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
@@ -107,17 +107,21 @@ do j=1,sic_wantran%nwan
   do i=1,3
     vrc(i)=dreal(z2(i))
   enddo
-  spread(j)=dreal(z2(4))-dot_product(vrc(:),vrc(:))
+  spread(j,1)=dreal(z2(4))-dot_product(vrc(:),vrc(:))
+  spread(j,2)=dreal(z2(4))
+  spread(j,3)=dot_product(vrc(:),vrc(:))
+  spread(j,4:6)=vrc(:)
 enddo
 if (wproc) then
   write(fout,*)
-  write(fout,'("quadratic spreads",3X,"<r^2> - <r>^2  [a.u.]^2")')
-  write(fout,'(60("-"))')
+  write(fout,'("quadratic spreads",3X,"<r^2> - <r>^2  [a.u.]^2&
+  &         (<r^2>  <r>^2  <x> <y> <z>) ")')
+  write(fout,'(90("-"))')
   do j=1,sic_wantran%nwan
     n=sic_wantran%iwan(j)
-    write(151,'("  n : ",I4,8X,G18.10)')n,spread(j)
+    write(151,'("  n : ",I4,8X,G18.10,3X,"(",5F10.5,")")')n,spread(j,:)
   enddo
-  write(fout,'(60("-"))')
+  write(fout,'(90("-"))')
   write(fout,'("total spread : ",F12.6)')sum(spread)
   call timestamp(fout,"done with Wannier functions")
   call flushifc(151)  

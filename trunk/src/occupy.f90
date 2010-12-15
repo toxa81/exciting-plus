@@ -23,11 +23,12 @@ use modtest
 implicit none
 ! local variables
 integer, parameter :: maxit=1000
-integer ik,ist,it
+integer ik,ist,it,nval,i,j
 real(8) e0,e1,e,chg,x,t1
+real(8) etmp(nstsv,2)
 ! external functions
-real(8) sdelta,stheta
-external sdelta,stheta
+real(8), external :: sdelta
+real(8), external :: stheta
 ! determine the smearing width automatically if required
 if ((autoswidth).and.(iscl.gt.1)) call findswidth
 ! find minimum and maximum eigenvalues
@@ -88,19 +89,46 @@ fermidos=fermidos*occmax
 ! write Fermi density of states to test file
 call writetest(500,'DOS at Fermi energy',tol=1.d-3,rv=fermidos)
 ! estimate the band gap (FC)
-e0=-1.d8
-e1=1.d8
-do ik=1,nkpt
-  do ist=1,nstsv
-    e=evalsv(ist,ik)
-    if (e.lt.efermi) then
-      if (e.gt.e0) e0=e
-    else
-      if (e.lt.e1) e1=e
-    end if
-  end do
-end do
-bandgap=e1-e0
+!e0=-1.d8
+!e1=1.d8
+!do ik=1,nkpt
+!  do ist=1,nstsv
+!    e=evalsv(ist,ik)
+!    if (e.lt.efermi) then
+!      if (e.gt.e0) e0=e
+!    else
+!      if (e.lt.e1) e1=e
+!    end if
+!  end do
+!end do
+!bandgap=e1-e0
+! estimate the band gap
+nval=nint(chgval)
+bandgap=0.d0
+if (spinpol.or.(.not.spinpol.and.mod(nval,2).eq.0)) then
+  ist=nval
+  if (.not.spinpol) ist=ist/2
+  do j=1,nstsv
+    etmp(j,1)=minval(evalsv(j,:))
+    etmp(j,2)=maxval(evalsv(j,:))
+  enddo
+! sort bands using maximum band energies
+  do i=1,nstsv-1
+    do j=i+1,nstsv
+      if (etmp(i,2).gt.etmp(j,2)) then
+        t1=etmp(i,2)
+        etmp(i,2)=etmp(j,2)
+        etmp(j,2)=t1
+        t1=etmp(i,1)
+        etmp(i,1)=etmp(j,1)
+        etmp(j,1)=t1
+      endif
+    enddo
+  enddo
+  e0=etmp(ist,2)
+  e1=etmp(ist+1,1)
+  if (e1.gt.e0) bandgap=e1-e0
+endif
 ! write band gap to test file
 call writetest(510,'estimated band gap',tol=1.d-2,rv=bandgap)
 return
