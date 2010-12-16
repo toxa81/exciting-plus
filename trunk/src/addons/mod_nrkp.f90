@@ -55,6 +55,8 @@ enddo
 return
 end subroutine
 
+
+
 subroutine genwfnr(fout,lpmat)
 use modmain
 implicit none

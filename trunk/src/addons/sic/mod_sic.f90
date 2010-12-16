@@ -14,6 +14,8 @@ data isclsic/0/
 real(8) :: etot0 
 real(8) :: sic_etot_correction
 data sic_etot_correction/0.d0/
+real(8) :: sic_epot
+data sic_epot/0.d0/
 real(8) :: sic_wan_cutoff
 data sic_wan_cutoff/6.d0/
 real(8) :: sic_me_cutoff

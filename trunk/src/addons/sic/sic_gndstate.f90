@@ -20,6 +20,9 @@ do isclsic=1,nsclsic
     call system("cp SIC_WANN_E0.OUT SIC_WANN_E0.OUT"//c3)    
   endif
   call sic_main
+  if (mpi_grid_root()) then
+    call system("cp SIC_ETOT.OUT SIC_ETOT.OUT"//c3)    
+  endif
   call mpi_world_barrier
   if (mpi_grid_root()) then
     call system("cp SIC.OUT SIC.OUT"//c3)  

@@ -6,14 +6,15 @@ use mod_sic
 use mod_wannier
 use mod_linresp
 implicit none
-integer n,sz,i,j,i1,j1,j2,n1,n2,ik,ispn,vtrl(3)
+integer n,sz,i,j,i1,j1,j2,n1,n2,ik,ispn,vtrl(3),ikloc
 real(8) t1,t2,t3,vtrc(3)
+real(8) etot_,ekin_
 integer vl(3)
-! Wannier functions
+complex(8) z1
+real(8), allocatable :: laplsv(:) 
+complex(8), allocatable :: vwank(:,:)
 complex(8), allocatable :: vwanme_old(:)
 complex(8), allocatable :: ene(:,:)
-complex(8), allocatable :: vwank(:,:)
-complex(8) z1
 
 sic=.true.
 
@@ -70,6 +71,31 @@ if (wproc) then
 endif
 ! generate wave-functions for all k-points in BZ
 call genwfnr(151,.false.)  
+! compute kinetic energy
+allocate(laplsv(nstsv))
+ekin_=0.d0
+do ikloc=1,nkptnrloc
+  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+  call genlapl(ngknr(ikloc),igkignr(1,ikloc),vgkcnr(1,1,ikloc),&
+    wfsvmtnrloc(1,1,1,1,1,ikloc),wfsvitnrloc(1,1,1,ikloc),laplsv)
+  do j=1,nstsv
+    ekin_=ekin_-0.5d0*laplsv(j)*occsvnr(j,ik)
+  enddo
+enddo
+call mpi_grid_reduce(ekin_,dims=(/dim_k/))
+ekin_=ekin_/nkptnr
+if (wproc) then
+  write(151,*)
+  etot_=ekin_+0.5d0*engyvcl+engyx+engyc-sic_epot
+  write(151,'("kinetic energy : ",G18.10)')ekin_
+  write(151,'("potential      : ",G18.10)')0.5d0*engyvcl+engyx+engyc
+  write(151,'("sic correction : ",G18.10)')sic_epot
+  write(151,'("total energy   : ",G18.10)')etot_
+  open(152,file="SIC_ETOT.OUT",form="FORMATTED",status="REPLACE")
+  write(152,'(G18.10)')etot_
+  close(152)
+endif
+
 call sic_wan(151)
 allocate(ene(4,sic_wantran%nwan))
 call sic_pot(151,ene)

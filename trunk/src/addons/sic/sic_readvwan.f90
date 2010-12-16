@@ -26,6 +26,7 @@ if (nwt.ne.sic_wantran%nwt) then
 endif
 call hdf5_read("sic.hdf5","/","vwanme",vwanme(1),(/sic_wantran%nwt/))
 call hdf5_read("sic.hdf5","/","sic_etot_correction",sic_etot_correction)
+call hdf5_read("sic.hdf5","/","sic_epot",sic_epot)
 
 allocate(fmt(lmmaxvr,nrmtmax,natmtot))
 allocate(fir(ngrtot))
