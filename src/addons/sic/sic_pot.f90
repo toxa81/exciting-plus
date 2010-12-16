@@ -12,7 +12,7 @@ integer ispn,i,n,j
 ! potential (Hartree+XC) of Wannier function charge density
 real(8), allocatable :: vhxcmt(:,:,:,:,:)
 real(8), allocatable :: vhxcir(:,:,:,:)
-real(8) sic_ekin,sic_epot,sic_epot_h,sic_epot_xc
+real(8) sic_ekin,sic_epot_h,sic_epot_xc
 !complex(8), allocatable :: zm1(:,:)
 
 if (wproc) then

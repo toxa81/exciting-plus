@@ -120,7 +120,7 @@ do ist=1,nstfv
       wftmp2(natmtot*nufrmax*lmmaxapw+igp,i)=gwfir(igfft(igpig(igp)))
     end do
   end do !i
-! collect <ket| states
+! collect <bra| states
   do jst=1,ist
 ! muffin tin part
     call memcopy(wffvmt1(1,1,1,jst),wftmp1(1,jst),natmtot*nufrmax*lmmaxapw*16)
