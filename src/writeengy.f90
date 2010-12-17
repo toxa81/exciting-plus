@@ -16,6 +16,7 @@ write(fnum,'(" Fermi",T30,": ",G22.12)') efermi
 write(fnum,'(" sum of eigenvalues",T30,": ",G22.12)') evalsum
 write(fnum,'(" electron kinetic",T30,": ",G22.12)') engykn
 write(fnum,'(" core electron kinetic",T30,": ",G22.12)') engykncr
+write(fnum,'(" valence electron kinetic",T30,": ",G22.12)') engykn-engykncr
 write(fnum,'(" Coulomb",T30,": ",G22.12)') engycl
 write(fnum,'(" Coulomb potential",T30,": ",G22.12)') engyvcl
 write(fnum,'(" nuclear-nuclear",T30,": ",G22.12)') engynn
