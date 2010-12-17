@@ -79,7 +79,7 @@ do ikloc=1,nkptnrloc
   call genlapl(ngknr(ikloc),igkignr(1,ikloc),vgkcnr(1,1,ikloc),&
     wfsvmtnrloc(1,1,1,1,1,ikloc),wfsvitnrloc(1,1,1,ikloc),laplsv)
   do j=1,nstsv
-    ekin_=ekin_-0.5d0*laplsv(j)*occsvnr(j,ik)
+    ekin_=ekin_+0.5d0*laplsv(j)*occsvnr(j,ik)
   enddo
 enddo
 call mpi_grid_reduce(ekin_,dims=(/dim_k/))
