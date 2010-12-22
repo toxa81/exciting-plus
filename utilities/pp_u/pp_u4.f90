@@ -159,7 +159,7 @@ if (mode.eq.0) then
   open(150,file=trim(adjustl(fout)),status="REPLACE",form="FORMATTED")
   write(150,'("# Wannier functions : ",100I4)')iwann_
   write(150,'("#")')
-  write(150,'("# Screened U(w=0) matrix")')
+  write(150,'("# U(w=0) matrix")')
   write(150,'("# real part ")')  
   do i=1,nwann_
     write(150,'("# ",100F16.8)')(dreal(uscrn(i,j,1)),j=1,nwann_)
@@ -169,7 +169,7 @@ if (mode.eq.0) then
     write(150,'("# ",100F16.8)')(dimag(uscrn(i,j,1)-zeps),j=1,nwann_)
   enddo
   write(150,'("#")')    
-  write(150,'("# Screened J(w=0) matrix")')
+  write(150,'("# J(w=0) matrix")')
   write(150,'("# real part ")')  
   do i=1,nwann_
     write(150,'("# ",100F16.8)')(dreal(jscrn(i,j,1)),j=1,nwann_)
