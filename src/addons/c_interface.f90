@@ -1,4 +1,4 @@
-subroutine c_elk_init
+subroutine elk_init
 use modmain
 use mod_nrkp
 implicit none
@@ -28,7 +28,7 @@ return
 end
 
 
-subroutine c_wan_val(n,ispn,r_cutoff,vrc,val)
+subroutine elk_wan_val(n,ispn,r_cutoff,vrc,val)
 use modmain
 use mod_nrkp
 use mod_wannier
