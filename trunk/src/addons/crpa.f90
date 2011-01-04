@@ -15,7 +15,6 @@ integer nwloc,iwloc,iw
 character*8 c1,c2
 logical exist
 integer*8, allocatable :: hw_values(:)
-logical, parameter :: u4scrn=.true.
 
 call init0
 call init1
@@ -29,7 +28,7 @@ if (.not.wannier) then
 endif
 call papi_timer_start(pt_crpa_tot1)
 wannier_megq=.true.
-if (u4scrn) then
+if (screenu4) then
   call init_qbz(tq0bz,8)
 else
   call init_qbz(tq0bz,1)
@@ -80,7 +79,7 @@ else
 endif
 call genwantran(megqwantran,megqwan_mindist,megqwan_maxdist,allwt=.true.)
 ! setup energy mesh
-if (.not.u4scrn) lr_nw=1
+if (.not.screenu4) lr_nw=1
 if (lr_nw.eq.1) then
   lr_dw=0.d0
 else
@@ -109,12 +108,17 @@ endif
 call mpi_grid_barrier()
 allocate(u4(megqwantran%nwt,megqwantran%nwt,ntrloc,nwloc))
 u4=zzero
+if (screenu4) then
+  megq_include_bands=chi0_include_bands
+else
+  megq_include_bands=(/100.1d0,-100.1d0/)
+endif
 call papi_timer_start(pt_crpa_tot2)
 ! main loop over q-points
 do iqloc=1,nvqloc
   iq=mpi_grid_map(nvq,dim_q,loc=iqloc)
   call genmegq(iq,.true.,.false.)
-  call genu4(iq,nwloc, ntrloc,u4scrn)
+  call genu4(iq,nwloc,ntrloc)
 enddo
 do iwloc=1,nwloc
   do itloc=1,ntrloc

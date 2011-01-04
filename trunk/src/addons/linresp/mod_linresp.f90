@@ -19,7 +19,7 @@ data chi0_include_bands/-100.1d0,100.1d0/
 
 ! interval of bands to exclude from chi0
 real(8) chi0_exclude_bands(2)
-data chi0_include_bands/100.1d0,-100.1d0/
+data chi0_exclude_bands/100.1d0,-100.1d0/
 
 complex(8), allocatable :: wann_cc(:,:,:)
 complex(8), allocatable :: wann_cc2(:,:)
@@ -84,5 +84,7 @@ integer, parameter :: nf_response            = 18
 complex(8), allocatable :: f_response(:,:,:)
 
 complex(8), allocatable :: u4(:,:,:,:)
+logical screenu4
+data screenu4/.true./
 
 end module
