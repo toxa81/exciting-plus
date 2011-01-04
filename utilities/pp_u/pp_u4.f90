@@ -346,3 +346,8 @@ endif !mode.eq.1
 !  endif
 call hdf5_finalize
 end
+
+subroutine pstop
+stop
+end subroutine
+

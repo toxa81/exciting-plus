@@ -1,4 +1,4 @@
-subroutine genu4(iq,nwloc,ntrloc,u4scrn)
+subroutine genu4(iq,nwloc,ntrloc)
 use modmain
 use mod_addons_q
 use mod_wannier
@@ -8,7 +8,6 @@ implicit none
 integer, intent(in) :: iq
 integer, intent(in) :: nwloc
 integer, intent(in) :: ntrloc
-logical, intent(in) :: u4scrn
 integer iwloc,iw,n,n1,i,ig,itloc,vtl(3),j,it
 real(8) v2(3),vtc(3)
 complex(8), allocatable :: vscrn(:,:)
@@ -21,7 +20,7 @@ complex(8), allocatable :: epsilon(:,:)
 complex(8), allocatable :: chi(:,:)
 complex(8) zt1
 
-if (u4scrn) call genchi0(iq)
+if (screenu4) call genchi0(iq)
 
 call papi_timer_start(pt_uscrn)
 allocate(vscrn(ngvecme,ngvecme))
@@ -54,10 +53,11 @@ do i=1,megqwantran%nwt
   megqwan3(:,i)=megqwan(i,:)
 enddo
 ! compute 4-index U
+! TODO: comments with formulas
 do iwloc=1,nwloc
   iw=mpi_grid_map(lr_nw,dim_k,loc=iwloc)
 ! broadcast chi0
-  if (u4scrn) then
+  if (screenu4) then
     call mpi_grid_bcast(chi0loc(1,1,iwloc),ngvecme*ngvecme,dims=(/dim_b/))
     call genvscrn(iq,chi0loc(1,1,iwloc),krnl,vscrn,epsilon,chi)
   else

@@ -1076,13 +1076,11 @@ case('sic')
   read(50,*,err=20) sic
 case('sicw')
   allocate(sicw(32,wann_natom))
-  !allocate(wann_sic_v(32,wann_natom))
   do i=1,wann_natom
     read(50,*,err=20) (sicw(j,i),j=1,wann_norb(wann_iprj(2,i)))
-    !read(50,*,err=20) (wann_sic_v(j,i),j=1,wann_norb(wann_iprj(2,i)))
   enddo
 case('nsclsic')
-  read(50,*,err=20) nsclsic 
+  read(50,*,err=20) nsclsic
 case('disentangle')
   read(50,*,err=20) ldisentangle  
 case('scvl')
@@ -1107,6 +1105,8 @@ case('sic_me_cutoff')
   read(50,*,err=20) sic_me_cutoff
 case('debug_level')
   read(50,*,err=20) debug_level  
+case('screenu4')
+  read(50,*,err=20) screenu4
 case('')
   goto 10
 case default
