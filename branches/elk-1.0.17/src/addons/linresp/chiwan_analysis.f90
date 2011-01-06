@@ -1,4 +1,4 @@
-subroutine chiwan_analysis(fout,chi0wan,vcwan,iq,w,thresh)
+subroutine chiwan_analysis(fout,chi0wan,vcwan,iq,iw,w,thresh)
 use modmain
 use mod_addons_q
 
@@ -7,17 +7,29 @@ integer, intent(in) :: fout
 complex(8), intent(in) :: chi0wan(nmegqwan,nmegqwan)
 complex(8), intent(in) :: vcwan(nmegqwan,nmegqwan)
 integer, intent(in) :: iq
+integer, intent(in) :: iw
 real(8), intent(in) :: w
 real(8), intent(in) :: thresh
 
 complex(8), allocatable :: mtrx1(:,:)
 complex(8), allocatable :: mtrx2(:,:)
 complex zt1,zt2
+character*100 :: str,c1
 
 integer i,j
 
 allocate(mtrx1(nmegqwan,nmegqwan))
 allocate(mtrx2(nmegqwan,nmegqwan))
+
+str="omega index: "
+write(c1,'(i6)')iw
+str=trim(str)//adjustl(c1)
+write(fout,'(A)')str
+str="omega value (eV): "
+write(c1,'(f7.3)')w
+str=trim(str)//adjustl(c1)
+write(fout,'(A)')str
+write(fout,'(A)')""
 
 ! commemt:
 ! compute chi0_GqGq using the Wannier functions expansion
