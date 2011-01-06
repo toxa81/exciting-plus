@@ -1,4 +1,4 @@
-subroutine chi0wan_analysis(fout,chi0wan,iq,w,thresh)
+subroutine chi0wan_analysis(fout,chi0wan,iq,iw,w,thresh)
 use modmain
 use mod_addons_q
 
@@ -6,6 +6,7 @@ use mod_addons_q
 integer, intent(in) :: fout
 complex(8), intent(in) :: chi0wan(nmegqwan,nmegqwan)
 integer, intent(in) :: iq
+integer, intent(in) :: iw
 real(8), intent(in) :: w
 real(8), intent(in) :: thresh
 ! local variables
@@ -15,7 +16,7 @@ integer, allocatable :: lindx_i(:)
 integer, allocatable :: lindx_j(:)
 complex(8), allocatable :: zt1(:)
 real(8), allocatable :: rt1(:)
-
+character*100 :: str,c1
 ! square
 nmegqwan2=nmegqwan*nmegqwan
 
@@ -29,6 +30,16 @@ lindx_i=0
 lindx_j=0
 zt1=zzero
 rt1=0.0
+
+str="omega index: "
+write(c1,'(i6)')iw
+str=trim(str)//adjustl(c1)
+write(fout,'(A)')str
+str="omega value (eV): "
+write(c1,'(f7.3)')w
+str=trim(str)//adjustl(c1)
+write(fout,'(A)')str
+write(fout,'(A)')""
 
 ! build array with a linear indx of A_{\lambda} 
 ! \chi_{\lambda \lambda'} A_{\lambda'}
