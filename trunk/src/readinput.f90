@@ -32,7 +32,7 @@ integer is,js,ia,ias,j,lm1,lm2
 integer i,l,k,iv,iostat
 real(8) sc,sc1,sc2,sc3
 real(8) solscf,v(3)
-character(256) block,str
+character(256) block,str,str1
 character*100 fname
 
 !call getarg(1,fname)
@@ -1070,8 +1070,31 @@ case('megqwan_channels')
   enddo
   lrespwffilter=.true.
 case('mpigrid')
+  read(50,'(A256)',err=20) str
+  str=adjustl(str)
+  j=0
+  do
+    i=index(trim(str)," ")
+    if (i.gt.0) then 
+      str1=str(:i)
+    else
+      str1=str
+    endif
+    j=j+1
+    if (j.gt.mpigrid_maxndim) then
+      write(*,'("Error(readinput): number of mpigrid dimensions exceeded")')
+      stop
+    endif
+    read(str1,*,iostat=iostat)mpigrid(j)
+    if (iostat.ne.0) then
+      write(*,'("Error(readinput): error parsing mpigrid")')
+      stop
+    endif
+    str=adjustl(str(i+1:))
+    if (i.le.0) exit
+  end do
+  mpigrid_ndim=j
   lmpigrid=.true.
-  read(50,*,err=20) mpigrid(1),mpigrid(2),mpigrid(3) 
 case('sic')
   read(50,*,err=20) sic
 case('sicw')

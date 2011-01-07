@@ -51,7 +51,15 @@ EXE = elk
 #-------------------------------------------------------------------------------
 # Targets
 #-------------------------------------------------------------------------------
+all: gensrc elk
+
+gensrc:
+	python ../gensrclog.py
+	mv srclog.f90 ./addons
+	python ../ftemplate.py <./addons/mod_mpi_grid.tpl >./addons/mod_mpi_grid.f90
+	
 elk:	$(OBJ_modules) $(OBJ)
+	echo $(OBJ)
 	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) $(LIB_LPK) $(LIB_XC) $(LIB_SYS) $(LIB_LAPACK)
 
 lib:
