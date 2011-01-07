@@ -181,7 +181,7 @@ do iw=1,lr_nw
     root=(/j,0/))
   chi0=chi0/nkptnr/omega
 ! processor j saves chi0 to local array  
-  if (mpi_grid_x(dim_k).eq.j) chi0loc(:,:,jwloc)=chi0(:,:)
+  if (mpi_grid_dim_pos(dim_k).eq.j) chi0loc(:,:,jwloc)=chi0(:,:)
   call timer_stop(2)
 ! for response in Wannier basis
   if (wannier_chi0_chi) then
@@ -202,7 +202,7 @@ do iw=1,lr_nw
 !!! WSTHORNTON
     !call svdchi0(chi0wan,iq,iw,lr_w(iw)*ha2ev)
 ! processor j saves chi0wan to local array  
-    if (mpi_grid_x(dim_k).eq.j) chi0wanloc(:,:,jwloc)=chi0wan(:,:)
+    if (mpi_grid_dim_pos(dim_k).eq.j) chi0wanloc(:,:,jwloc)=chi0wan(:,:)
     call timer_stop(3)
   endif !wannier_chi0_chi
   call timer_stop(10)

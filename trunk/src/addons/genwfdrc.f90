@@ -33,8 +33,8 @@ if (mpi_grid_root()) then
   call hdf5_create_group(fname,"/","kpoints")
 endif
 if (mpi_grid_side(dims=(/dim_k/))) then
-  do i=0,mpi_grid_size(dim_k)-1
-    if (mpi_grid_x(dim_k).eq.i) then
+  do i=0,mpi_grid_dim_size(dim_k)-1
+    if (mpi_grid_dim_pos(dim_k).eq.i) then
       do ikloc=1,nkptnrloc
         ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
         write(kname,'(I10.10)')ik

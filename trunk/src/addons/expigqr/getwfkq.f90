@@ -29,7 +29,7 @@ integer i,ik,jk,nkptnrloc1,jkloc,j,tag
 ! 2) each processor must know the index of other processor, from which 
 !    it gets jk-point; during this phase it executes blocking 'recieve'
 
-do i=0,mpi_grid_size(dim_k)-1
+do i=0,mpi_grid_dim_size(dim_k)-1
 ! number of k-points on the processor i
   nkptnrloc1=mpi_grid_map(nkptnr,dim_k,x=i)
   if (ikstep.le.nkptnrloc1) then
@@ -39,9 +39,9 @@ do i=0,mpi_grid_size(dim_k)-1
     jk=idxkq(1,ik)
 ! find the processor j and local index of k-point jkloc for the k-point jk
     jkloc=mpi_grid_map(nkptnr,dim_k,glob=jk,x=j)
-    if (mpi_grid_x(dim_k).eq.j.and.mpi_grid_x(dim_k).ne.i) then
+    if (mpi_grid_dim_pos(dim_k).eq.j.and.mpi_grid_dim_pos(dim_k).ne.i) then
 ! send to i
-      tag=(ikstep*mpi_grid_size(dim_k)+i)*10
+      tag=(ikstep*mpi_grid_dim_size(dim_k)+i)*10
       call mpi_grid_send(wfsvmtnrloc(1,1,1,1,1,jkloc),&
         lmmaxvr*nufrmax*natmtot*nspinor*nstsv,(/dim_k/),(/i/),tag)
       call mpi_grid_send(wfsvitnrloc(1,1,1,jkloc),ngkmax*nspinor*nstsv,&
@@ -52,10 +52,10 @@ do i=0,mpi_grid_size(dim_k)-1
         call mpi_grid_send(wanncnrloc(1,1,jkloc),nwantot*nstsv,(/dim_k/),(/i/),tag+4)
       endif
     endif
-    if (mpi_grid_x(dim_k).eq.i) then
+    if (mpi_grid_dim_pos(dim_k).eq.i) then
       if (j.ne.i) then
 ! recieve from j
-        tag=(ikstep*mpi_grid_size(dim_k)+i)*10
+        tag=(ikstep*mpi_grid_dim_size(dim_k)+i)*10
         call mpi_grid_recieve(wfsvmt_jk(1,1,1,1,1),&
           lmmaxvr*nufrmax*natmtot*nspinor*nstsv,(/dim_k/),(/j/),tag)
         call mpi_grid_recieve(wfsvit_jk(1,1,1),ngkmax*nspinor*nstsv,&

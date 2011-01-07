@@ -3,7 +3,7 @@ use modmain
 use mod_addons_q
 implicit none
 integer, allocatable :: d(:)
-integer i1,i2,nd
+integer i1,i2,nd,i
 select case(task)
   case(0,1,20,21,805,822)
     nd=2
@@ -45,7 +45,7 @@ endif
 call mpi_grid_initialize(d)
 if (mpi_grid_root()) then
   write(*,*)
-  write(*,'("[initmpigrid] mpi grid size",10I8)')mpi_grid_size(:)
+  write(*,'("[initmpigrid] mpi grid size",10I8)')(mpi_grid_dim_size(i),i=1,mpi_grid_nd)
 endif
 deallocate(d)
 return

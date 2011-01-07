@@ -59,7 +59,6 @@ if (mpi_grid_root()) then
   call timestamp(151)
   write(151,'("Total number of q-vectors        : ",I6)')nvq
   write(151,'("Total number of processors       : ",I6)')nproc
-  write(151,'("MPI grid size                    : ",3I6)')mpi_grid_size
   call flushifc(151)
 endif
 wproc=wproc1
@@ -166,7 +165,7 @@ if (wproc1) call papi_report(151,hw_values,"pt_vscrn")
 deallocate(hw_values)
 
 if (mpi_grid_side(dims=(/dim_k,dim_b/)).and.nwloc.gt.0) then
-  write(fu4,'("u4_",I4.4,".hdf5")')mpi_grid_x(dim_k)
+  write(fu4,'("u4_",I4.4,".hdf5")')mpi_grid_dim_pos(dim_k)
   if (mpi_grid_root(dims=(/dim_b/))) then
     call hdf5_create_file(trim(fu4))
     call hdf5_create_group(trim(fu4),"/","iwloc")
@@ -174,8 +173,8 @@ if (mpi_grid_side(dims=(/dim_k,dim_b/)).and.nwloc.gt.0) then
     call hdf5_write(fu4,"/parameters","nwantot",nwantot)  
     call hdf5_write(fu4,"/parameters","nw",lr_nw)
     call hdf5_write(fu4,"/parameters","nwloc",nwloc)
-    call hdf5_write(fu4,"/parameters","x",mpi_grid_x(dim_k))
-    call hdf5_write(fu4,"/parameters","size",mpi_grid_size(dim_k))
+    call hdf5_write(fu4,"/parameters","x",mpi_grid_dim_pos(dim_k))
+    call hdf5_write(fu4,"/parameters","size",mpi_grid_dim_size(dim_k))
     call hdf5_write(fu4,"/parameters","nwt",megqwantran%nwt)
     call hdf5_write(fu4,"/parameters","iwt",megqwantran%iwt(1,1),&
       (/5,megqwantran%nwt/))  
@@ -197,8 +196,8 @@ if (mpi_grid_side(dims=(/dim_k,dim_b/)).and.nwloc.gt.0) then
       call hdf5_write(fu4,"/iwloc/"//c1,"iw",iw)
       call hdf5_write(fu4,"/iwloc/"//c1,"w",dreal(lr_w(iw)))
     endif
-    do i=0,mpi_grid_size(dim_b)-1
-      if (i.eq.mpi_grid_x(dim_b)) then
+    do i=0,mpi_grid_dim_size(dim_b)-1
+      if (i.eq.mpi_grid_dim_pos(dim_b)) then
         do itloc=1,ntrloc
           it=mpi_grid_map(megqwantran%ntr,dim_b,loc=itloc)
           write(c2,'("t",I7.7)')it

@@ -61,8 +61,8 @@ do ikloc=1,nkptloc
 end do
 ! write the matrix elements to direct-access file
 if (mpi_grid_side(dims=(/dim_k/))) then
-  do i=0,mpi_grid_size(dim_k)-1
-    if (mpi_grid_x(dim_k).eq.i) then
+  do i=0,mpi_grid_dim_size(dim_k)-1
+    if (mpi_grid_dim_pos(dim_k).eq.i) then
       open(50,file='PMAT.OUT',action='WRITE',form='UNFORMATTED',access='DIRECT', &
         recl=recl)
       do ikloc=1,nkptloc

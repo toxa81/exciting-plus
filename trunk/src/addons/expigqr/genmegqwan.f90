@@ -26,7 +26,7 @@ do ikloc=1,nkptnrloc
   do i1=1,nmegqblhwan(ikloc)
     i=imegqblhwan(i1,ikloc)
     ibloc=mpi_grid_map(nmegqblhtot(ikloc),dim_b,glob=i,x=xloc)
-    if (xloc.eq.mpi_grid_x(dim_b)) then
+    if (xloc.eq.mpi_grid_dim_pos(dim_b)) then
       ist1=bmegqblh(1,i,ikloc)
       ist2=bmegqblh(2,i,ikloc)
       do n1=1,nwantot
@@ -42,7 +42,7 @@ do ikloc=1,nkptnrloc
           megqwan(j,ig)=megqwan(j,ig)+zt2*megqblh(ibloc,ig,ikloc)
         enddo !ig 
       enddo !j
-    endif !xloc.eq.mpi_grid_x(dim_b)
+    endif !xloc.eq.mpi_grid_dim_pos(dim_b)
   enddo !i1
 enddo !ikloc
 deallocate(zm1)
