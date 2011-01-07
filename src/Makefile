@@ -63,7 +63,7 @@ elk:	$(OBJ_modules) $(OBJ)
 	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) $(LIB_LPK) $(LIB_XC) $(LIB_SYS) $(LIB_LAPACK)
 
 lib:
-	libtool -static -o libelk.a $(OBJ)
+	ar r libelk.a $(OBJ)
 	
 clean:
 	find . -name \*.o -exec rm {} \;
