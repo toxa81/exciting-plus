@@ -189,8 +189,8 @@ endif
 
 if (wannier) then
   if (mpi_grid_side(dims=(/dim_k/))) then
-    do i=0,mpi_grid_size(dim_k)-1
-      if (mpi_grid_x(dim_k).eq.i) then
+    do i=0,mpi_grid_dim_size(dim_k)-1
+      if (mpi_grid_dim_pos(dim_k).eq.i) then
         open(50,file='BNDCHR.OUT',form='FORMATTED',status='OLD',position='APPEND')
         do ikloc=1,nkptloc
           write(50,*)((abs(wann_c(n,j,ikloc)),n=1,nwantot),j=1,nstfv)

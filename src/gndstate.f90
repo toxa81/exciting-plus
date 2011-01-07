@@ -455,8 +455,8 @@ if (wproc) then
 endif !wproc
 ! write eigenvalues/vectors and occupancies to file
 if (mpi_grid_side(dims=(/dim_k/))) then
-  do i=0,mpi_grid_size(dim_k)-1
-    if (mpi_grid_x(dim_k).eq.i) then
+  do i=0,mpi_grid_dim_size(dim_k)-1
+    if (mpi_grid_dim_pos(dim_k).eq.i) then
       do ikloc=1,nkptloc
         ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
         call putevalfv(ik,evalfv(1,1,ikloc))

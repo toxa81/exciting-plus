@@ -8,7 +8,7 @@
 module mod_mpi_grid
 
 !> print debug information if set to .true.
-logical mpi_grid_debug
+logical, private :: mpi_grid_debug
 data mpi_grid_debug/.false./
 !> number of processes allocated for the job
 integer nproc
@@ -23,11 +23,11 @@ integer, parameter :: ndmax=5
 !> number of grid dimensions
 integer mpi_grid_nd
 !> size of each grid dimension
-integer, allocatable :: mpi_grid_size(:)
+integer, private, allocatable :: mpi_grid_size(:)
 !> coordinates [0;mpi_grid_size(i)-1) of the current process in the grid
-integer, allocatable :: mpi_grid_x(:)
+integer, private, allocatable :: mpi_grid_x(:)
 !> grid communicators
-integer, allocatable :: mpi_grid_comm(:)
+integer, private, allocatable :: mpi_grid_comm(:)
 !> mpi reduction operations: sum
 integer op_sum
 !> mpi reduction operations: min
@@ -102,6 +102,13 @@ public mpi_grid_barrier
 public mpi_grid_map
 public bstop
 public ortdims
+public mpi_grid_dim_size
+public mpi_grid_dim_pos
+public mpi_grid_reduce
+public mpi_grid_bcast
+public mpi_grid_hash
+public mpi_grid_send
+public mpi_grid_recieve
 ! private functions, used internally by the module
 private convert_dims_to_internal
 private mpi_grid_root_internal
@@ -1242,8 +1249,6 @@ implicit none
 integer ierr
 write(*,'("STOP execution")')
 write(*,'("  global index of process : ",I8)')iproc
-if (allocated(mpi_grid_x)) &
-  write(*,'("  coordinates of process : ",10I8)')mpi_grid_x
 call mpi_abort(MPI_COMM_WORLD,-1,ierr)
 call mpi_finalize(ierr)
 #endif

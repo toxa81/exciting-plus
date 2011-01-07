@@ -69,7 +69,7 @@ wproc=wproc1
 if (wproc1) then
   write(151,'("Total number of q-vectors        : ",I6)')nvq
   write(151,'("Total number of processors       : ",I6)')nproc
-  write(151,'("MPI grid size                    : ",3I6)')mpi_grid_size
+!  write(151,'("MPI grid size                    : ",3I6)')mpi_grid_size
   write(151,'("Wannier functions                : ",L1)')wannier
   write(151,'("Response in Wannier basis        : ",L1)')wannier_chi0_chi
   call flushifc(151)

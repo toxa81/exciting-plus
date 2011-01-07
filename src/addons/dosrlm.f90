@@ -49,8 +49,8 @@ evalsv=0.d0
 bndchr=0.0
 sdmat=dcmplx(0.d0,0.d0)
 if (mpi_grid_side(dims=(/dim_k/))) then
-  do i=0,mpi_grid_size(dim_k)-1
-    if (mpi_grid_x(dim_k).eq.i) then
+  do i=0,mpi_grid_dim_size(dim_k)-1
+    if (mpi_grid_dim_pos(dim_k).eq.i) then
       do ikloc=1,nkptloc
         ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
         call getevecfv(vkl(1,ik),vgkl(1,1,1,ikloc),evecfv)
@@ -143,7 +143,7 @@ if (wannier) then
     f=0.d0
     do ik=1,nkpt
       ikloc=mpi_grid_map(nkpt,dim_k,x=x0,glob=ik)
-      if (mpi_grid_x(dim_k).eq.x0) then
+      if (mpi_grid_dim_pos(dim_k).eq.x0) then
         do ist=1,nstsv
           f(ist,ik)=abs(wann_c(n,ist,ikloc))**2
         end do

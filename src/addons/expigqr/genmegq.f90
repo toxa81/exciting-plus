@@ -203,7 +203,7 @@ call mpi_grid_reduce(t5,dims=(/dim_k,dim_b/))
 ! approximate number of matrix elements
 dn1=1.d0*nmegqblhtotmax*ngvecme*nkptnr
 if (wannier_megq) dn1=dn1+1.d0*megqwantran%nwt*ngvecme
-np=mpi_grid_size(dim_k)*mpi_grid_size(dim_b)
+np=mpi_grid_dim_size(dim_k)*mpi_grid_dim_size(dim_b)
 if (wproc) then
   write(150,*)
   write(150,'("Average time (seconds/proc)")')

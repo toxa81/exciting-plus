@@ -17,7 +17,7 @@ complex(8), allocatable :: wfir_(:)
 complex(8), allocatable :: a(:,:,:)
 complex(8), allocatable :: b(:,:,:)
 complex(8), allocatable :: expikr(:)
-integer ik,h,ikloc,ig,ir,n,ispn,istfv,istsv,ias,j,i
+integer ik,h,ikloc,ig,ir,n,ispn,istfv,istsv,j,i
 complex(8), allocatable :: wffvmt(:,:,:,:)
 
 
@@ -66,7 +66,7 @@ allocate(wffvmt(nstfv,lmmaxvr,nufrmax,natmtot))
 do ik=1,nkpt
   call timer_start(t_sic_genfvprj_wfk)
   ikloc=mpi_grid_map(nkpt,dim_k,x=h,glob=ik)
-  if (mpi_grid_x(dim_k).eq.h) evecfv1(:,:,:)=evecfvloc(:,:,:,ikloc)
+  if (mpi_grid_dim_pos(dim_k).eq.h) evecfv1(:,:,:)=evecfvloc(:,:,:,ikloc)
   call mpi_grid_bcast(evecfv1(1,1,1),nmatmax*nstfv*nspnfv,dims=(/dim_k,dim2/),&
     root=(/h,0,0/))
   call gengpvec(vkl(1,ik),vkc(1,ik),ngk1,igkig1,vgkl1,vgkc1,gkc1,tpgkc1)
@@ -111,7 +111,7 @@ do ik=1,nkpt
   call timer_start(t_sic_genfvprj_dotp)
   call mpi_grid_reduce(a(1,1,1),sic_wantran%nwan*nstfv*nspinor,root=(/h,0,0/))
   call mpi_grid_reduce(b(1,1,1),sic_wantran%nwan*nstfv*nspinor,root=(/h,0,0/))
-  if (mpi_grid_x(dim_k).eq.h) then
+  if (mpi_grid_dim_pos(dim_k).eq.h) then
     sic_wb(:,:,:,ikloc)=a(:,:,:)
     sic_wvb(:,:,:,ikloc)=b(:,:,:)
   endif

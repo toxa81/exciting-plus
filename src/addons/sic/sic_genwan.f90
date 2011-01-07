@@ -79,8 +79,8 @@ do j=1,sic_wantran%nwan
       end do !ir
       call timer_stop(2)
     end do !ikloc
-    do i1=0,mpi_grid_size(dim_k)-1
-      do i2=0,mpi_grid_size(dim2)-1
+    do i1=0,mpi_grid_dim_size(dim_k)-1
+      do i2=0,mpi_grid_dim_size(dim2)-1
         px=(/i1,i2/)
         nmtloc1=mpi_grid_map2(nrmtmax*natmtot,dims=(/dim_k,dim2/),x=px,&
           offs=mtoffs1)
@@ -90,13 +90,13 @@ do j=1,sic_wantran%nwan
             wmt_(1,1,ispn))
           call sic_copy_ir_z_2(ngrloc1,groffs1,wir(1,ispn),wir_(1,ispn))
         enddo
-        if (mpi_grid_x(dim2).eq.i2) then
+        if (mpi_grid_dim_pos(dim2).eq.i2) then
           call mpi_grid_reduce(wmt_(1,1,1),lmmaxvr*nmtlocmax*nspinor,&
             dims=(/dim_k/),root=(/i1/))
           call mpi_grid_reduce(wir_(1,1),ngrlocmax*nspinor,dims=(/dim_k/),&
             root=(/i1/))
         endif
-        if (mpi_grid_x(1).eq.i1.and.mpi_grid_x(2).eq.i2) then
+        if (mpi_grid_dim_pos(1).eq.i1.and.mpi_grid_dim_pos(2).eq.i2) then
           do ispn=1,nspinor
             sic_orbitals%wanmt(1:lmmaxvr,1:nmtloc,it,ispn,j)=&
               wmt_(1:lmmaxvr,1:nmtloc,ispn)
