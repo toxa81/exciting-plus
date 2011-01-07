@@ -59,6 +59,8 @@ if (mpi_grid_root()) then
   call timestamp(151)
   write(151,'("Total number of q-vectors        : ",I6)')nvq
   write(151,'("Total number of processors       : ",I6)')nproc
+  write(151,'("MPI grid size                    : ",8I6)')&
+    (mpi_grid_dim_size(i),i=1,mpi_grid_nd)
   call flushifc(151)
 endif
 wproc=wproc1
