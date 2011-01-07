@@ -83,8 +83,12 @@ logical wproc
 ! .true. if mpi grid layout comes from input file
 logical lmpigrid
 data lmpigrid/.false./
+! maximum number of dimensions for the grid
+integer ,parameter :: mpigrid_maxndim=3
+! actual number of dimensions of the grid
+integer mpigrid_ndim
 ! dimensions of mpi grid
-integer mpigrid(3)
+integer mpigrid(mpigrid_maxndim)
 ! local fraction of fv eigen vectors
 complex(8), allocatable :: evecfvloc(:,:,:,:)
 ! local fraction of sv eigen vectors
