@@ -181,6 +181,7 @@ do iw=1,lr_nw
     root=(/j,0/))
   chi0=chi0/nkptnr/omega
 ! processor j saves chi0 to local array  
+! TODO: with new API this can be simplified
   if (mpi_grid_dim_pos(dim_k).eq.j) chi0loc(:,:,jwloc)=chi0(:,:)
   call timer_stop(2)
 ! for response in Wannier basis
