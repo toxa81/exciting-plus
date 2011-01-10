@@ -29,7 +29,7 @@ use mod_expigqr
 implicit none
 ! local variables
 integer is,js,ia,ias,j,lm1,lm2
-integer i,l,k,iv,iostat
+integer i,l,k,iv,iostat,n
 real(8) sc,sc1,sc2,sc3
 real(8) solscf,v(3)
 character(256) block,str,str1
@@ -1048,6 +1048,23 @@ case ('wannier_soft_eint')
     read(50,*,err=20) wannier_soft_eint_e1(i),wannier_soft_eint_e2(i),&
       wannier_soft_eint_w1(i),wannier_soft_eint_w2(i)
   enddo  
+case('wannier_lc')
+  read(50,*,err=20)wannier_lc
+  read(50,*,err=20)nwanlc
+  allocate(wanlc_norb(nwanlc))
+  allocate(wanlc_iorb(4,wanlcmax,nwanlc))
+  allocate(wanlc_iorb_alpha(wanlcmax,nwanlc))
+  do n=1,nwanlc
+    read(50,*,err=20)wanlc_norb(n)
+    if (wanlc_norb(n).gt.wanlcmax) then
+      write(*,'("Error(readinput): number of orbitals for linear combination&
+      & is too big")')
+      stop
+    endif
+    do i=1,wanlc_norb(n)
+      read(50,*,err=20)(wanlc_iorb(l,i,n),l=1,4),wanlc_iorb_alpha(i,n)
+    enddo
+  enddo
 case('wannier_plot')
   read(50,*,err=20)(zero3d(i),i=1,3)
   read(50,*,err=20)(bound3d(i,1),i=1,3)

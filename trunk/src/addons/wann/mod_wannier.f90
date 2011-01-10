@@ -41,9 +41,18 @@ integer nrxyz(3)
 integer nwfplot
 integer firstwf
 logical wannier_lc
-integer nwann_lc
-integer, allocatable :: wann_iorb_lc(:,:,:)
-real(8), allocatable :: wann_iorb_lcc(:,:)
+! linear combination of projected orbitals for Wannier functions
+data wannier_lc/.false./
+! number of linear combinations; this defines the new number of Wannier functions
+integer nwanlc
+! number of atom-centerd orbitals to make each mulipole orbital
+integer, allocatable :: wanlc_norb(:)
+! index and tranlation of each atom-cented orbital
+integer, allocatable :: wanlc_iorb(:,:,:)
+! weight of each atom-cented orbital
+real(8), allocatable :: wanlc_iorb_alpha(:,:)
+! maximum number of orbials to make a mulipole orbital
+integer, parameter :: wanlcmax=100 
 
 integer nwann_h
 integer, allocatable :: iwann_h(:)

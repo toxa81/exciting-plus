@@ -67,10 +67,10 @@ do n=1,nwantot
       endif
     enddo
   else
-    do i=1,wann_iorb_lc(0,1,n)
-      d1=wann_iorb_lcc(i,n)
-      iw=wann_iorb_lc(i,1,n)
-      itr(:)=wann_iorb_lc(i,2:4,n)
+    do i=1,wanlc_norb(n)
+      d1=wanlc_iorb_alpha(i,n)
+      iw=wanlc_iorb(1,i,n)
+      itr(:)=wanlc_iorb(2:4,i,n)
       tr(:)=avec(:,1)*itr(1)+avec(:,2)*itr(2)+avec(:,3)*itr(3)
       ias=wan_info(1,iw)
       lm=wan_info(2,iw)
@@ -79,12 +79,14 @@ do n=1,nwantot
       do j=1,nstsv
         if (bndint(j,e(j),wann_eint(1,itype),wann_eint(2,itype))) then
           call genprjao(ias,lm,ispn,j,wfsvmt,zt1)
+          if (wannier_soft_eint) then
+            zt1=zt1*orbwt(e(j),wannier_soft_eint_e1(itype),&
+              wannier_soft_eint_e2(itype),wannier_soft_eint_w1(itype),&
+              wannier_soft_eint_w2(itype))
+          endif               
 ! <psi_k(r)|g(r-T)>=<psi(r+T)|g(r)>=e^{-ikT}<psi(r)|g(r)>
-          prjao(n,j)=prjao(n,j)+zt1*d1*exp(-zi*dot_product(vpc,tr))*&
-!         TODO: if (wannier_soft_eint) then
-            orbwt(e(j),wannier_soft_eint_e1(itype),wannier_soft_eint_e2(itype),&
-              wannier_soft_eint_w1(itype),wannier_soft_eint_w2(itype))
-        endif
+          prjao(n,j)=prjao(n,j)+zt1*d1*exp(-zi*dot_product(vpc,tr))
+        endif !bndint
       enddo
     enddo !i
   endif
