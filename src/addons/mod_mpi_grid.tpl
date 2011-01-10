@@ -22,6 +22,8 @@ integer mpi_grid_nproc
 integer, parameter :: ndmax=5
 !> number of grid dimensions
 integer mpi_grid_nd
+!> number of grid communicators
+integer mpi_grid_nc
 !> size of each grid dimension
 integer, private, allocatable :: mpi_grid_size(:)
 !> coordinates [0;mpi_grid_size(i)-1) of the current process in the grid
@@ -236,20 +238,21 @@ if (mpi_grid_nproc.gt.nproc) then
   call pstop
 endif
 ! get number of communicators
-nc=2**mpi_grid_nd-1
-allocate(mpi_grid_comm(0:nc))
+nc=2**mpi_grid_nd
+allocate(mpi_grid_comm(nc))
 mpi_grid_comm=MPI_COMM_NULL
 mpi_grid_x=-1
+mpi_grid_nc=nc
 
 allocate(l1(mpi_grid_nd))
 l1=.false.
 ! create mpi grid
 call mpi_cart_create(MPI_COMM_WORLD,mpi_grid_nd,mpi_grid_size,l1, &
-  .false.,mpi_grid_comm(0),ierr)
+  .false.,mpi_grid_comm(nc),ierr)
 
 if (mpi_grid_in()) then
 ! get the coordinates of the current process
-  call mpi_cart_get(mpi_grid_comm(0),mpi_grid_nd,mpi_grid_size,l1, &
+  call mpi_cart_get(mpi_grid_comm(nc),mpi_grid_nd,mpi_grid_size,l1, &
     mpi_grid_x,ierr)
   if (mpi_grid_debug.and.mpi_grid_root()) then
     write(*,*)
@@ -261,16 +264,16 @@ if (mpi_grid_in()) then
 !   for example, for 3D grid we have 7 possibilities:
 !     001,010,100,011,101,110,111
 !   we don't have 000 (null communicator along no direction)
-!   communicator 111 and global group communicator mpi_grid_comm(0)   
+!   communicator 111 and global group communicator mpi_grid_comm(nc)   
 !   behave identically
-  do i=1,nc
+  do i=1,nc-1
     l1=.false.
     i1=i
     do j=1,mpi_grid_nd
       if (mod(i1,2).eq.1) l1(j)=.true.
       i1=i1/2
     enddo
-    call mpi_cart_sub(mpi_grid_comm(0),l1,mpi_grid_comm(i),ierr)
+    call mpi_cart_sub(mpi_grid_comm(nc),l1,mpi_grid_comm(i),ierr)
     if (mpi_grid_debug.and.mpi_grid_root()) then
       write(*,'("[mpi_grid_initialize] index of communicator : ",I3,&
         &", communicator directions : ",10L2)')i,l1
@@ -302,7 +305,7 @@ implicit none
 #ifdef _MPI_
 integer i,ierr
 if (mpi_grid_in()) then
-  do i=0,2**mpi_grid_nd-1
+  do i=1,mpi_grid_nc
     call mpi_comm_free(mpi_grid_comm(i),ierr)
   enddo
 endif
@@ -321,7 +324,7 @@ use mpi
 implicit none
 #ifdef _MPI_
 if (allocated(mpi_grid_comm)) then
-  mpi_grid_in=(mpi_grid_comm(0).ne.MPI_COMM_NULL)
+  mpi_grid_in=(mpi_grid_comm(mpi_grid_nc).ne.MPI_COMM_NULL)
 else
   mpi_grid_in=.false.
 endif
@@ -374,8 +377,10 @@ side_=.false.
 if (present(side)) side_=side
 l1=.true.
 if (side_.and..not.mpi_grid_side_internal(idims)) l1=.false.
-comm=mpi_grid_get_comm_internal(idims)
-if (l1) call mpi_barrier(comm,ierr)
+if (idims(0).ne.0) then
+  comm=mpi_grid_get_comm_internal(idims)
+  if (l1) call mpi_barrier(comm,ierr)
+endif
 #endif
 return
 end subroutine
@@ -475,8 +480,8 @@ implicit none
 integer, optional, dimension(:), intent(in) :: dims
 integer, dimension(0:ndmax) :: convert_dims_to_internal
 integer n,i
-convert_dims_to_internal=0
 if (present(dims)) then
+  convert_dims_to_internal=0
   n=0
   do i=1,size(dims)
     if (dims(i).le.mpi_grid_nd) then
@@ -531,6 +536,10 @@ integer, intent(in) :: idims(0:ndmax)
 ! local variables
 integer i,j
 #ifdef _MPI_
+if (idims(0).eq.0) then
+  write(*,'("Error(mpi_grid_get_comm_internal): no dimensions")')
+  call pstop
+endif
 j=0
 do i=1,idims(0)
   j=j+2**(idims(i)-1)
@@ -918,7 +927,7 @@ end function
 
 integer function mpi_grid_dim_pos(idim)
 implicit none
-!
+! arguments
 integer, intent(in) :: idim
 !
 if (idim.gt.mpi_grid_nd) then
