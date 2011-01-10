@@ -105,17 +105,17 @@ enddo
 if (mpi_grid_root()) then
   if (wannier_lc) then
     write(100,*)
-    write(100,'("number of linear combinations of WF : ",I4)')nwann_lc
-    do n=1,nwann_lc
+    write(100,'("number of linear combinations of WF : ",I4)')nwanlc
+    do n=1,nwanlc
       write(100,'("  wf : ",I4)')n
-      do i=1,wann_iorb_lc(0,1,n)
-        write(100,'("    ",4I4)')(wann_iorb_lc(i,j,n),j=1,4)
+      do i=1,wanlc_norb(n)
+        write(100,'("    ",4I4)')(wanlc_iorb(j,i,n),j=1,4)
       enddo
     enddo  
   endif
   close(100)
 endif
-if (wannier_lc) nwantot=nwann_lc
+if (wannier_lc) nwantot=nwanlc
 
 if (allocated(wann_c)) deallocate(wann_c)
 allocate(wann_c(nwantot,nstsv,nkptloc))

@@ -120,6 +120,8 @@ do itask=1,ntasks
     call wann_plot
   case(863)
     call wann_plot_3d
+  case(888)
+    call test_xc
   case default
     write(*,*)
     write(*,'("Error(main): task not defined : ",I8)') task
