@@ -12,7 +12,7 @@ integer ispn,i,n,j
 ! potential (Hartree+XC) of Wannier function charge density
 real(8), allocatable :: vhxcmt(:,:,:,:,:)
 real(8), allocatable :: vhxcir(:,:,:,:)
-real(8) sic_ekin,sic_epot_h,sic_epot_xc
+real(8) sic_epot_h,sic_epot_xc
 !complex(8), allocatable :: zm1(:,:)
 
 if (wproc) then
@@ -90,17 +90,17 @@ do j=1,sic_wantran%nwan
 enddo
 ! note: here Hartree potential has a positive sign and XC potential 
 !  has a negative sign
-sic_ekin=0.d0
+sic_energy_kin=0.d0
 sic_epot_h=0.d0
 sic_epot_xc=0.d0
 do j=1,sic_wantran%nwan
-  sic_ekin=sic_ekin+dreal(ene(3,j))
+  sic_energy_kin=sic_energy_kin+dreal(ene(3,j))
   sic_epot_h=sic_epot_h+0.5d0*dreal(ene(1,j))
   sic_epot_xc=sic_epot_xc+dreal(ene(4,j))
 enddo
-sic_epot=sic_epot_h+sic_epot_xc
+sic_energy_pot=sic_epot_h+sic_epot_xc
 ! total energy: engytot=engytot+sic_etot_correction
-sic_etot_correction=sic_ekin-sic_epot
+sic_energy_tot=sic_energy_kin-sic_energy_pot
 if (wproc) then
   do j=1,sic_wantran%nwan
     do i=1,4
@@ -121,15 +121,15 @@ if (wproc) then
   enddo
   write(fout,*)
   write(fout,'("SIC kinetic energy contribution    : ",G18.10,&
-    &"  ! sum of <W_n|V_n|W_n>" )')sic_ekin
+    &"  ! sum of <W_n|V_n|W_n>" )')sic_energy_kin
   write(fout,'("SIC potential energy contribution  : ",G18.10,&
-    &"  ! sum of Hartree and XC terms")')sic_epot
+    &"  ! sum of Hartree and XC terms")')sic_energy_pot
   write(fout,'("  Hartree                          : ",G18.10,&
     &"  ! sum of 1/2 <W_n|V_n^{H}|W_n>")')sic_epot_h
   write(fout,'("  XC                               : ",G18.10,&
     &"  ! sum of <W_n|E_n^{XC}|W_n>")')sic_epot_xc 
   write(fout,'("SIC total energy contribution      : ",G18.10,&
-    &"  ! kinetic - potential ")')sic_etot_correction
+    &"  ! kinetic - potential ")')sic_energy_tot
   call flushifc(fout)
 endif
 sic_orbitals%wvmt=zzero

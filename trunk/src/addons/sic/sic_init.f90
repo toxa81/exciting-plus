@@ -125,7 +125,9 @@ if (.not.tsic_arrays_allocated) then
   allocate(sic_wvb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
   sic_wvb=zzero
   tsic_arrays_allocated=.true.
-  sic_etot_correction=0.d0
+  sic_energy_tot=0.d0
+  sic_energy_pot=0.d0
+  sic_energy_kin=0.d0
 endif
 if (allocated(sic_wann_e0)) deallocate(sic_wann_e0)
 allocate(sic_wann_e0(nwantot))

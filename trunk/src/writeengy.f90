@@ -15,8 +15,8 @@ write(fnum,'("Energies :")')
 write(fnum,'(" Fermi",T30,": ",G22.12)') efermi
 write(fnum,'(" sum of eigenvalues",T30,": ",G22.12)') evalsum
 write(fnum,'(" electron kinetic",T30,": ",G22.12)') engykn
-write(fnum,'(" core electron kinetic",T30,": ",G22.12)') engykncr
-write(fnum,'(" valence electron kinetic",T30,": ",G22.12)') engykn-engykncr
+write(fnum,'("   core kinetic",T30,": ",G22.12)') engykncr
+write(fnum,'("   valence kinetic",T30,": ",G22.12)') engykn-engykncr
 write(fnum,'(" Coulomb",T30,": ",G22.12)') engycl
 write(fnum,'(" Coulomb potential",T30,": ",G22.12)') engyvcl
 write(fnum,'(" nuclear-nuclear",T30,": ",G22.12)') engynn
@@ -38,8 +38,8 @@ if (stype.eq.3) then
 end if
 write(fnum,'(" total energy",T30,": ",G22.12)') engytot
 if (sic) then
-  write(fnum,'("   etot0",T30,": ",G22.12)') etot0
-  write(fnum,'("   sic contribution",T30,": ",G22.12)') sic_etot_correction  
+  write(fnum,'("   E0",T30,": ",G22.12)') engytot0
+  write(fnum,'("   sic correction",T30,": ",G22.12)') sic_energy_tot  
 endif
 if (spinpol) then
   write(fnum,'(" (external B-field energy excluded from total)")')

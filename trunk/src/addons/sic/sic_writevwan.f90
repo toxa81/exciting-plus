@@ -36,8 +36,9 @@ if (wproc) then
   call hdf5_write("sic.hdf5","/","iwt",sic_wantran%iwt(1,1),&
     (/5,sic_wantran%nwt/))
   call hdf5_write("sic.hdf5","/","vwanme",vwanme(1),(/sic_wantran%nwt/))
-  call hdf5_write("sic.hdf5","/","sic_etot_correction",sic_etot_correction)
-  call hdf5_write("sic.hdf5","/","sic_epot",sic_epot)
+  call hdf5_write("sic.hdf5","/","sic_energy_tot",sic_energy_tot)
+  call hdf5_write("sic.hdf5","/","sic_energy_pot",sic_energy_pot)
+  call hdf5_write("sic.hdf5","/","sic_energy_kin",sic_energy_kin)  
 endif
 do n=1,nwantot
   j=sic_wantran%idxiwan(n)
