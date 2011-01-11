@@ -49,21 +49,16 @@ evalsv=0.d0
 bndchr=0.0
 sdmat=dcmplx(0.d0,0.d0)
 if (mpi_grid_side(dims=(/dim_k/))) then
-  do i=0,mpi_grid_dim_size(dim_k)-1
-    if (mpi_grid_dim_pos(dim_k).eq.i) then
-      do ikloc=1,nkptloc
-        ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-        call getevecfv(vkl(1,ik),vgkl(1,1,1,ikloc),evecfv)
-        call getevecsv(vkl(1,ik),evecsv)
-        call getevalsv(vkl(1,ik),evalsv(1,ik))
+  do ikloc=1,nkptloc
+    ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+    call getevecfv(vkl(1,ik),vgkl(1,1,1,ikloc),evecfv)
+    call getevecsv(vkl(1,ik),evecsv)
+    call getevalsv(vkl(1,ik),evalsv(1,ik))
 ! compute the band character
-        call bandchar(.true.,lmax,ikloc,evecfv,evecsv,lmmax,bndchr(1,1,1,1,ik))
-        call gensdmat(evecsv,sdmat(:,:,:,ik))
-        if (wannier) call genwann(ikloc,evecfv,evecsv)
-      end do
-    endif
-    call mpi_grid_barrier(dims=(/dim_k/))
-  enddo
+    call bandchar(.true.,ikloc,lmax,lmmax,evecfv,evecsv,bndchr(1,1,1,1,ik))
+    call gensdmat(evecsv,sdmat(:,:,:,ik))
+    if (wannier) call genwann(ikloc,evecfv,evecsv)
+  end do
 endif
 do ik=1,nkpt
   call mpi_grid_reduce(bndchr(1,1,1,1,ik),lmmax*natmtot*nspinor*nstsv,&

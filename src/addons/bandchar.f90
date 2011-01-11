@@ -1,80 +1,64 @@
-subroutine bandchar(dosym,lmax,ikloc,evecfv,evecsv,ld,bndchr)
+subroutine bandchar(tsym,ikloc,lmax,lmmax,evecfv,evecsv,bndchr)
 use modmain
 implicit none
 ! arguments
-logical, intent(in) :: dosym
-integer, intent(in) :: lmax
+logical, intent(in) :: tsym
 integer, intent(in) :: ikloc
+integer, intent(in) :: lmax
+integer, intent(in) :: lmmax
 complex(8), intent(in) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
-integer, intent(in) :: ld
-real(4), intent(out) :: bndchr(ld,natmtot,nspinor,nstsv)
+real(4), intent(out) :: bndchr(lmmax,natmtot,nspinor,nstsv)
 ! local variables
-integer ispn,ias,io1,io2,lm
-integer l,m,lm1
-integer j,isym,lspl,nsym1
+integer io1,io2,ispn1,ispn2,lm1,lm2,m1,m2
+integer l,lm,j,ik,ispn,ias,is,ic
+real(8) d1
+complex(8) z1
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
-! automatic arrays
-complex(8) zt1(ld,nufrmax),zt2(ld)
-integer ik
-
+complex(8), allocatable :: dmatylm(:,:,:,:,:)
+!
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-allocate(wfsvmt(ld,nufrmax,natmtot,nspinor,nstsv))
+allocate(wfsvmt(lmmax,nufrmax,natmtot,nspinor,nstsv))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-
+allocate(dmatylm(lmmax,lmmax,nspinor,nspinor,natmtot))
 call match(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),sfacgk(1,1,1,ikloc),apwalm)
-call genwfsvmt(lmax,ld,ngk(1,ik),evecfv(:,:,1),evecsv,apwalm,wfsvmt)
-
-if (dosym) then
-  nsym1=nsymcrys
-else
-  nsym1=1
-endif
-
-bndchr=0.d0
-do j=1,nstfv
-  do ispn=1,nspinor
-    do ias=1,natmtot
-      if (dosym) then
-        nsym1=nsymsite(ias)
-      else
-        nsym1=1
-      endif
-      do isym=1,nsym1
-        lspl=lsplsyms(isym,ias)
-        zt1=dcmplx(0.d0,0.d0)
-        do io1=1,nufrmax
-          call rotzflm(symlatc(1,1,lspl),3,1,ld,wfsvmt(1:ld,io1,ias,ispn,j+(ispn-1)*nstfv),zt2)
-          do lm=1,ld
-            do lm1=1,ld
-              zt1(lm,io1)=zt1(lm,io1)+yrlm_lps(lm1,lm,ias)*zt2(lm1)
-            enddo
-          enddo
-        enddo !io1
-        do l=0,lmax
-          do m=-l,l
-            lm=idxlm(l,m)
-            do io1=1,nufrmax
-              do io2=1,nufrmax
-                bndchr(lm,ias,ispn,j+(ispn-1)*nstfv)=bndchr(lm,ias,ispn,j+(ispn-1)*nstfv) + &
-                  ufrp(l,io1,io2,ias2ic(ias))*dreal(dconjg(zt1(lm,io1))*zt1(lm,io2))/nsym1
-              enddo
-            enddo
-! not tested: partial contribution from APW (io2=1) or lo (io2=2)
-!            zt3=zzero
-!            do io1=1,nrfmax
-!              zt3=zt3+dconjg(zt1(lm,io1))*urfprod(l,io1,2,ias)/nsym1
-!	        enddo
-!	        bndchr(lm,ias,ispn,j+(ispn-1)*nstfv)=abs(zt3)**2
-          enddo !m
-        enddo !l
-      enddo !isym    
-    enddo
-  enddo
-enddo
-
-deallocate(wfsvmt,apwalm)
+call genwfsvmt(lmax,lmmax,ngk(1,ik),evecfv(:,:,1),evecsv,apwalm,wfsvmt)
+do j=1,nstsv
+  dmatylm=zzero  
+  do ias=1,natmtot
+    is=ias2is(ias)
+    ic=ias2ic(ias)
+    do l=0,lmax
+      do ispn1=1,nspinor; do ispn2=1,nspinor
+        do io1=1,nufr(l,is); do io2=1,nufr(l,is)
+          do m1=-l,l; do m2=-l,l
+            lm1=idxlm(l,m1)
+            lm2=idxlm(l,m2)
+            z1=wfsvmt(lm1,io1,ias,ispn1,j)*dconjg(wfsvmt(lm2,io2,ias,ispn2,j))*&
+              ufrp(l,io1,io2,ic)
+            dmatylm(lm1,lm2,ispn1,ispn2,ias)=dmatylm(lm1,lm2,ispn1,ispn2,ias)+z1
+          enddo; enddo !m
+        enddo; enddo !io
+      enddo; enddo !ispn
+    enddo !l
+  enddo !ias
+  if (tsym) then
+    call symdmat(lmax,lmmax,dmatylm)
+  endif
+! compute matrix in Rlm (in local point symmetry)
+  do ias=1,natmtot
+    do ispn=1,nspinor
+! density matrix is real spherical harmonics (local point symmetry)
+      call unimtrxt(lmmax,rylm_lps(1,1,ias),dmatylm(1,1,ispn,ispn,ias))  
+      do lm=1,lmmax
+        d1=dreal(dmatylm(lm,lm,ispn,ispn,ias))
+        bndchr(lm,ias,ispn,j)=real(d1)
+      enddo
+    enddo !ispn
+  enddo !ias
+enddo !j
+deallocate(wfsvmt,apwalm,dmatylm)
 return
 end subroutine
 !EOC
