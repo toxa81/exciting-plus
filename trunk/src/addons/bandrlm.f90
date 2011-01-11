@@ -99,8 +99,8 @@ do isv=1,nsv
     if (sic) then
       call diagzhe(sic_wantran%nwan,sic_wann_h0k(1,1,ikloc),sic_wann_e0k(1,ik))
     endif
-    call bandchar(.true.,lmax,ikloc,evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),&
-      lmmax,bc(1,1,1,1,ik))
+    call bandchar(.false.,ikloc,lmax,lmmax,evecfvloc(1,1,1,ikloc),&
+      evecsvloc(1,1,ikloc),bc(1,1,1,1,ik))
   enddo
 enddo
 deallocate(evalfv,evecfvloc,evecsvloc)
