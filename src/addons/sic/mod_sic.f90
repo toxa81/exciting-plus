@@ -11,13 +11,20 @@ integer :: nsclsic
 data nsclsic/3/
 integer :: isclsic
 data isclsic/0/
-real(8) :: etot0 
-real(8) :: sic_etot_correction
-data sic_etot_correction/0.d0/
-real(8) :: sic_epot
-data sic_epot/0.d0/
+real(8) :: engytot0
+! total energy correction
+real(8) :: sic_energy_tot
+data sic_energy_tot/0.d0/
+! potential contribution
+real(8) :: sic_energy_pot
+data sic_energy_pot/0.d0/
+! kinetic contribution
+real(8) :: sic_energy_kin
+data sic_energy_kin/0.d0/
+! cutoff distance for Wannier functions
 real(8) :: sic_wan_cutoff
 data sic_wan_cutoff/6.d0/
+! cutoff distance for SIC marix elements <W_n|V_n|W_{n'T}>
 real(8) :: sic_me_cutoff
 data sic_me_cutoff/0.1d0/
 complex(8), allocatable :: sic_wb(:,:,:,:)

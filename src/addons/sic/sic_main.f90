@@ -86,11 +86,11 @@ call mpi_grid_reduce(ekin_,dims=(/dim_k/))
 ekin_=ekin_/nkptnr
 if (wproc) then
   write(151,*)
-  etot_=ekin_+0.5d0*engyvcl+engyx+engyc+engymad-sic_epot
-  write(151,'("kinetic energy : ",G18.10)')ekin_
+  etot_=ekin_+engykncr+0.5d0*engyvcl+engyx+engyc+engymad-sic_energy_pot
+  write(151,'("kinetic energy : ",G18.10)')ekin_+engykncr
   write(151,'("potential      : ",G18.10)')0.5d0*engyvcl+engyx+engyc
   write(151,'("madelung       : ",G18.10)')engymad
-  write(151,'("sic correction : ",G18.10)')sic_epot
+  write(151,'("sic correction : ",G18.10)')sic_energy_pot
   write(151,'("total energy   : ",G18.10)')etot_
   open(152,file="SIC_ETOT.OUT",form="FORMATTED",status="REPLACE")
   write(152,'(G18.10)')etot_
