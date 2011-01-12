@@ -697,14 +697,15 @@ integer, intent(out) :: length_
 integer, intent(out) :: reduceop_
 integer, intent(out) :: comm_
 integer, intent(out) :: rootid_
-integer i,idims(0:ndmax)
+integer idims(0:ndmax)
 !
 idims=convert_dims_to_internal(dims_)
 ! check if a reduction is necessary
-lreduce_=.false.
-do i=1,idims(0)
-  if (mpi_grid_size(idims(i)).ne.1) lreduce_=.true.
-enddo
+!lreduce_=.false.
+!do i=1,idims(0)
+!  if (mpi_grid_size(idims(i)).ne.1) lreduce_=.true.
+!enddo
+lreduce_=.true.
 ! check if only side processes do a reduction
 if (lreduce_) then
   if (present(side_)) then

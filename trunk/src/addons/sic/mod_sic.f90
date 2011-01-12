@@ -29,7 +29,8 @@ real(8) :: sic_me_cutoff
 data sic_me_cutoff/0.1d0/
 complex(8), allocatable :: sic_wb(:,:,:,:)
 complex(8), allocatable :: sic_wvb(:,:,:,:)
-
+complex(8), allocatable :: sic_wgk(:,:,:,:)
+complex(8), allocatable :: sic_wvgk(:,:,:,:)
 integer, allocatable :: sic_apply(:)
 integer, allocatable :: sicw(:,:)
 
@@ -442,7 +443,7 @@ do i=1,nmtloc
     ia=ias2ia(ias)
     ic=ias2ic(ias)
     ias1=ias
-    ir=mod(mtoffs+i,nrmtmax)
+    ir=mod(mtoffs+i-1,nrmtmax)+1
   endif
   if (ir.le.nrmt(is)) then
     do lm=1,lmmaxvr
