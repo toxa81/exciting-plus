@@ -106,6 +106,7 @@ call mpi_grid_barrier()
 !  wan(mt,ir) - Wannier function defined on a real-space grid
 !  wv(mt,ir) - product of a Wannier function with it's potential
 if (.not.tsic_arrays_allocated) then
+  tsic_arrays_allocated=.true.
   allocate(sic_orbitals%wanmt(lmmaxvr,nmtloc,sic_orbitals%ntr,nspinor,&
     sic_wantran%nwan))
   sic_orbitals%wanmt=zzero
@@ -124,10 +125,13 @@ if (.not.tsic_arrays_allocated) then
   sic_wb=zzero
   allocate(sic_wvb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
   sic_wvb=zzero
-  tsic_arrays_allocated=.true.
   sic_energy_tot=0.d0
   sic_energy_pot=0.d0
   sic_energy_kin=0.d0
+  allocate(sic_wgk(ngkmax,sic_wantran%nwan,nspinor,nkptloc))
+  sic_wgk=zzero
+  allocate(sic_wvgk(ngkmax,sic_wantran%nwan,nspinor,nkptloc))
+  sic_wvgk=zzero
 endif
 if (allocated(sic_wann_e0)) deallocate(sic_wann_e0)
 allocate(sic_wann_e0(nwantot))
