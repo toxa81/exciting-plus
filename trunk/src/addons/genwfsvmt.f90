@@ -10,19 +10,23 @@ complex(8), intent(in) :: evecsv(nstsv,nstsv)
 complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 complex(8), intent(out) :: wfsvmt(lmmax,nufrmax,natmtot,nspinor,nstsv)
 ! local variables
-integer ispn,j
+integer ispn,j,nrow
 complex(8), allocatable :: wffvmt(:,:,:,:)
-
-allocate(wffvmt(nstfv,lmmax,nufrmax,natmtot))
+complex(8), allocatable :: wfsvmt_(:,:,:,:)
+!
+allocate(wffvmt(lmmax,nufrmax,natmtot,nstfv))
 call genwffvmt(lmax,lmmax,ngp,evecfv,apwalm,wffvmt)
+allocate(wfsvmt_(lmmax,nufrmax,natmtot,nstsv))
+nrow=lmmax*nufrmax*natmtot
 ! calculate second-variational coefficients
 wfsvmt=zzero
-do j=1,nstsv
-  do ispn=1,nspinor
-    call zgemv('T',nstfv,lmmax*nufrmax*natmtot,zone,wffvmt,nstfv,&
-      evecsv(1+(ispn-1)*nstfv,j),1,zzero,wfsvmt(1,1,1,ispn,j),1)
+do ispn=1,nspinor
+  call zgemm('N','N',nrow,nstsv,nstfv,zone,wffvmt,nrow,&
+    evecsv((ispn-1)*nstfv+1,1),nstsv,zzero,wfsvmt_,nrow)
+  do j=1,nstsv
+    wfsvmt(:,:,:,ispn,j)=wfsvmt_(:,:,:,j) 
   enddo
 enddo
-deallocate(wffvmt)
+deallocate(wffvmt,wfsvmt_)
 return
 end

@@ -46,20 +46,14 @@ complex(8), allocatable :: gwfmt(:,:,:)
 complex(8), allocatable :: gwfir(:)
 complex(8), allocatable :: pm(:,:,:)
 complex(8), allocatable :: wffvmt(:,:,:,:)
-complex(8), allocatable :: wffvmt1(:,:,:,:)
 complex(8), allocatable :: wftmp1(:,:)
 complex(8), allocatable :: wftmp2(:,:)
 complex(8), allocatable :: zm1(:,:)
 complex(8), allocatable :: zm2(:,:)
 complex(8), allocatable :: zv1(:,:)
 
-allocate(wffvmt(nstfv,lmmaxapw,nufrmax,natmtot))
-allocate(wffvmt1(lmmaxapw,nufrmax,natmtot,nstfv))
+allocate(wffvmt(lmmaxapw,nufrmax,natmtot,nstfv))
 call genwffvmt(lmaxapw,lmmaxapw,ngp,evecfv,apwalm,wffvmt)
-do ist=1,nstfv
-  wffvmt1(:,:,:,ist)=wffvmt(ist,:,:,:)
-enddo
-deallocate(wffvmt)
 
 wfsz=lmmaxapw*nufrmax*natmtot+ngp
 allocate(pm(nstfv,nstfv,3))
@@ -123,7 +117,7 @@ do ist=1,nstfv
 ! collect <bra| states
   do jst=1,ist
 ! muffin tin part
-    call memcopy(wffvmt1(1,1,1,jst),wftmp1(1,jst),natmtot*nufrmax*lmmaxapw*16)
+    call memcopy(wffvmt(1,1,1,jst),wftmp1(1,jst),natmtot*nufrmax*lmmaxapw*16)
 ! interstitial part
     call memcopy(evecfv(1,jst),wftmp1(natmtot*nufrmax*lmmaxapw+1,jst),ngp*16)
   enddo !jst
@@ -134,7 +128,7 @@ do ist=1,nstfv
     enddo
   enddo
 end do
-deallocate(wfmt,gwfmt,wffvmt1,wftmp1,wftmp2,zv1)
+deallocate(wfmt,gwfmt,wffvmt,wftmp1,wftmp2,zv1)
 deallocate(gwfir)
 ! multiply by -i and set lower triangular part
 do ist=1,nstfv

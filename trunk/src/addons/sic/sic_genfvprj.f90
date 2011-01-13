@@ -16,7 +16,7 @@ implicit none
 !complex(8), allocatable :: a(:,:,:)
 !complex(8), allocatable :: b(:,:,:)
 !complex(8), allocatable :: expikr(:)
-integer ik,ikloc,ig,ir,n,ispn,istfv,istsv,j,i
+integer ik,ikloc,ir,n,ispn,istfv,istsv,j,i
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wffvmt(:,:,:,:)
 complex(8), allocatable :: wu(:,:,:,:)
@@ -25,18 +25,17 @@ complex(8), allocatable :: wvu(:,:,:,:)
 complex(8), allocatable :: wvuk(:,:,:)
 integer l,lm,io,it,ias
 real(8) d1
-
-
-
+complex(8), external :: zdotu
+!
+sic_wb=zzero
+sic_wvb=zzero
 call timer_start(t_sic_genfvprj)
-! on first SIC iteration Wannier functions are generated from LDA Hamiltonian
+! this code is mainly for tests 
+!  on first SIC iteration Wannier functions are generated from LDA Hamiltonian
 !  so we can compute overlap between Wannier states and first-variational
 !  states analytically
-! this code is mainly for tests 
 if (.not.tsic_wv) then
   do ikloc=1,nkptloc
-    sic_wb(:,:,:,ikloc)=zzero
-    sic_wvb(:,:,:,ikloc)=zzero
     do j=1,sic_wantran%nwan
       n=sic_wantran%iwan(j)
       do ispn=1,nspinor
@@ -54,22 +53,20 @@ if (.not.tsic_wv) then
   call timer_stop(t_sic_genfvprj)
   return
 endif
-allocate(wffvmt(nstfv,lmmaxvr,nufrmax,natmtot))
+allocate(wffvmt(lmmaxvr,nufrmax,natmtot,nstfv))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 ! experimental code
 allocate(wu(lmmaxvr,nufrmax,natmtot,sic_orbitals%ntr))
 allocate(wuk(lmmaxvr,nufrmax,natmtot))
 allocate(wvu(lmmaxvr,nufrmax,natmtot,sic_orbitals%ntr))
 allocate(wvuk(lmmaxvr,nufrmax,natmtot))
-sic_wb=zzero
-sic_wvb=zzero
+! muffin-tin contribution to <W_n|\phi> and <W_n|V_n|\phi>
 do j=1,sic_wantran%nwan
   do ispn=1,nspinor
     wu=zzero
     wvu=zzero
 ! precompute <W_n|u_{l}> and <W_n|V_n|u_{l}>
     do it=1,sic_orbitals%ntr
-! TODO: can be optimized
       do i=1,nmtloc
         ias=(mtoffs+i-1)/nrmtmax+1
         ir=mod(mtoffs+i-1,nrmtmax)+1
@@ -101,32 +98,38 @@ do j=1,sic_wantran%nwan
         sfacgk(1,1,1,ikloc),apwalm)
       call genwffvmt(lmaxvr,lmmaxvr,ngk(1,ik),evecfvloc(1,1,1,ikloc),&
         apwalm,wffvmt)
-! TODO: this may become zgemm after index reordering
       do istfv=1,nstfv
-        do ias=1,natmtot
-          do lm=1,lmmaxvr
-            do io=1,nufr(lm2l(lm),ias2is(ias))
-              sic_wb(j,istfv,ispn,ikloc)=sic_wb(j,istfv,ispn,ikloc)+&
-                wuk(lm,io,ias)*wffvmt(istfv,lm,io,ias)
-              sic_wvb(j,istfv,ispn,ikloc)=sic_wvb(j,istfv,ispn,ikloc)+&
-                wvuk(lm,io,ias)*wffvmt(istfv,lm,io,ias)
-            enddo !io
-          enddo !lm
-        enddo !ias
-! TODO: this is zgemm
-        do ig=1,ngk(1,ik)
-          sic_wb(j,istfv,ispn,ikloc)=sic_wb(j,istfv,ispn,ikloc)+&
-            sic_wgk(ig,j,ispn,ikloc)*evecfvloc(ig,istfv,1,ikloc)
-          sic_wvb(j,istfv,ispn,ikloc)=sic_wvb(j,istfv,ispn,ikloc)+&
-            sic_wvgk(ig,j,ispn,ikloc)*evecfvloc(ig,istfv,1,ikloc)
-        enddo
+        sic_wb(j,istfv,ispn,ikloc)=sic_wb(j,istfv,ispn,ikloc)+& 
+          zdotu(lmmaxvr*nufrmax*natmtot,wuk,1,wffvmt(1,1,1,istfv),1)
+        sic_wvb(j,istfv,ispn,ikloc)=sic_wvb(j,istfv,ispn,ikloc)+& 
+          zdotu(lmmaxvr*nufrmax*natmtot,wvuk,1,wffvmt(1,1,1,istfv),1)          
+!        do ias=1,natmtot
+!          do lm=1,lmmaxvr
+!            do io=1,nufr(lm2l(lm),ias2is(ias))
+!              sic_wb(j,istfv,ispn,ikloc)=sic_wb(j,istfv,ispn,ikloc)+&
+!                wuk(lm,io,ias)*wffvmt(lm,io,ias,istfv)
+!              sic_wvb(j,istfv,ispn,ikloc)=sic_wvb(j,istfv,ispn,ikloc)+&
+!                wvuk(lm,io,ias)*wffvmt(lm,io,ias,istfv)
+!            enddo !io
+!          enddo !lm
+!        enddo !ias
       enddo !istfv
     enddo !ikloc
   enddo !ispn
 enddo !j
 deallocate(wu,wuk,wvu,wvuk)
-
-
+! interstitial contribution to <W_n|\phi> and <W_n|V_n|\phi>
+do ikloc=1,nkptloc
+  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+  do ispn=1,nspinor
+    call zgemm('T','N',sic_wantran%nwan,nstfv,ngk(1,ik),zone,&
+      sic_wgk(1,1,ispn,ikloc),ngkmax,evecfvloc(1,1,1,ikloc),nmatmax,&
+      zone,sic_wb(1,1,ispn,ikloc),sic_wantran%nwan)
+    call zgemm('T','N',sic_wantran%nwan,nstfv,ngk(1,ik),zone,&
+      sic_wvgk(1,1,ispn,ikloc),ngkmax,evecfvloc(1,1,1,ikloc),nmatmax,&
+      zone,sic_wvb(1,1,ispn,ikloc),sic_wantran%nwan)
+  enddo
+enddo
 ! old working code
 !allocate(igkig1(ngkmax))
 !allocate(gkc1(ngkmax))
