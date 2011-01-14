@@ -402,4 +402,9 @@ integer, parameter :: pt_vscrn=11
 integer, parameter :: pt_megqblh_mt=12
 integer, parameter :: pt_megqblh_it=13
 
+! band range for plotting density
+integer bndrangelo, bndrangehi
+data bndrangelo / 0 /
+data bndrangehi / 10000 /
+
 end module

@@ -49,6 +49,16 @@ if ((task.eq.61).or.(task.eq.62).or.(task.eq.63)) then
 ! plotting a single wavefunction
   occsv(:,:)=0.d0
   occsv(ist,ik)=1.d0/wkpt(ik)
+else if (task.eq.864) then
+! use all k-points for plotting, but use only a limited number of bands
+  occsv(:,:)=0.d0
+  do ik=1,nkpt
+    do ist=1,nstsv
+      if ((ist.ge.bndrangelo).and.(ist.le.bndrangehi)) then
+        occsv(ist,ik)=1.d0
+      end if
+    end do
+  end do
 else
 ! plotting an STM image by setting occupancies to be a delta function at the
 ! Fermi energy
@@ -106,7 +116,7 @@ case(162)
   write(*,*)
   write(*,'("Info(wfplot):")')
   write(*,'(" 2D STM image written to STM2D.OUT")')
-case(63)
+case(63,864)
   open(50,file='WF3D.OUT',action='WRITE',form='FORMATTED')
   call plot3d(50,1,lmaxvr,lmmaxvr,rhomt,rhoir)
   close(50)
