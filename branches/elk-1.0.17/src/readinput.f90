@@ -1065,6 +1065,8 @@ case('megqwan_channels')
     read(50,*,err=20) wfch(1,i), wfch(2,i)
   enddo
   lrespwffilter=.true.
+case('bandrange')
+  read(50,*,err=20)bndrangelo,bndrangehi
 case('mpigrid')
   lmpigrid=.true.
   read(50,*,err=20) mpigrid(1),mpigrid(2),mpigrid(3) 
