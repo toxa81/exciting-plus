@@ -3,6 +3,6 @@
 * scalapack diagonalization
 * regression tests
 * cleanup gndstate
-* more compact representation for wave-functions
+* [?] more compact representation for wave-functions
 * parallelize matrix elements over G, not over interband transitions
-* work on mpi grid module
+* symmetry: lattice+magnetic

@@ -24,6 +24,8 @@ complex(8), allocatable :: wann_c(:,:,:)
 ! Bloch-sums of WF
 complex(8), allocatable :: wann_unkmt(:,:,:,:,:,:)
 complex(8), allocatable :: wann_unkit(:,:,:,:)
+complex(8), allocatable :: wann_unkmt1(:,:,:,:,:)
+complex(8), allocatable :: wann_unkit1(:,:,:)
 
 ! H(k) in WF basis
 complex(8), allocatable :: wann_h(:,:,:)

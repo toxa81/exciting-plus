@@ -93,6 +93,7 @@ interface mpi_grid_recieve
 end interface
 
 ! public API
+public mpi_initialize
 public mpi_world_initialize
 public mpi_world_finalize
 public mpi_world_barrier
@@ -151,9 +152,8 @@ private global_index
 contains
 
 !> @brief Initialize MPI library.
-!> @details This subroutine initializes MPI library, gets the total number of
-!! MPI processes and the index of the current process.
-subroutine mpi_world_initialize
+!> @details This subroutine calls mpi_init
+subroutine mpi_initialize
 #ifdef _MPI_
 use mpi
 #endif
@@ -161,6 +161,20 @@ implicit none
 #ifdef _MPI_
 integer ierr
 call mpi_init(ierr)
+#endif
+return
+end subroutine
+
+!> @brief Initialize MPI world.
+!> @details Get the total number of MPI processes, index of the current 
+!! process and MPI reduction operations
+subroutine mpi_world_initialize
+#ifdef _MPI_
+use mpi
+#endif
+implicit none
+#ifdef _MPI_
+integer ierr
 call mpi_comm_size(MPI_COMM_WORLD,nproc,ierr)
 call mpi_comm_rank(MPI_COMM_WORLD,iproc,ierr)
 op_sum=MPI_SUM

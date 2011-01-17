@@ -53,6 +53,15 @@ EXE = elk
 #-------------------------------------------------------------------------------
 all: gensrc elk
 
+serial: F90_OPTS:=$(subst -D_MPI_,,$(F90_OPTS)) 
+serial: gensrc elk lib
+
+madelk: F90_OPTS:=$(F90_OPTS) -D_MAD_
+madelk: gensrc madapi elk1
+
+madapi:
+	cd addons/madness; make
+
 gensrc:
 	python ../gensrclog.py
 	mv srclog.f90 ./addons
@@ -60,7 +69,12 @@ gensrc:
 	
 elk:	$(OBJ_modules) $(OBJ)
 	echo $(OBJ)
-	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) $(LIB_LPK) $(LIB_XC) $(LIB_SYS) $(LIB_LAPACK)
+	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) $(LIB_XC) $(LIB_SYS) $(LIB_LAPACK)
+
+elk1:	$(OBJ_modules) $(OBJ)
+	echo $(OBJ)
+	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) addons/madness/madness.o $(MADNESS_LIB) $(LIB_XC) \
+	$(LIB_SYS) $(LIB_LAPACK)
 
 lib:
 	ar r libelk.a $(OBJ)

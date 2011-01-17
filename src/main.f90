@@ -10,6 +10,11 @@ use mod_hdf5
 implicit none
 ! local variables
 integer itask
+#ifdef _MAD_
+call madness_init
+#else
+call mpi_initialize
+#endif
 call mpi_world_initialize
 if (iproc.eq.0) call timestamp(6,"[main] done mpi_world_initialize")
 call hdf5_initialize
@@ -124,6 +129,10 @@ do itask=1,ntasks
     call test_xc
   case(881)
     call test_bloch_wf
+#ifdef _MAD_
+  case(890)
+    call test_madness
+#endif
   case default
     write(*,*)
     write(*,'("Error(main): task not defined : ",I8)') task
