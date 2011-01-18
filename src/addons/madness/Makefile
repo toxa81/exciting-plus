@@ -1,4 +1,4 @@
 include ../../../make.inc
 
 all:
-	mpicxx -c madness.cc -o madness.o $(MADNESS_INC)
+	mpicxx -c -O2 madness.cc -o madness.o $(MADNESS_INC)
