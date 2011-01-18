@@ -30,8 +30,7 @@ allocate(wann_unkmt1(lmmaxvr,nufrmax,natmtot,nspinor,nwantot))
 allocate(wann_unkit1(ngkmax,nspinor,nwantot))
 
 call madness_init_box
-call mpi_world_barrier
-call madness_resolve_wannier(nwantot,nkptnr)
+call madness_resolve_wannier(nwantot,nkptnr,nspinor)
 
 !call madness_genpot
 !call madness_getpot(d1)
