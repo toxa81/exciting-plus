@@ -24,6 +24,7 @@ SRC_modules = ./addons/mod_mpi_grid.f90 \
               ./addons/linresp/mod_linresp.f90 \
               ./addons/mod_nrkp.f90 \
               ./addons/sic/mod_sic.f90 \
+              ./addons/mod_madness.f90 \
               ./modqpt.f90 \
               ./libxc_funcs.f90 \
               ./libxc.f90 \
@@ -33,7 +34,7 @@ SRC_modules = ./addons/mod_mpi_grid.f90 \
               ./modrdm.f90 \
               ./modphonon.f90 \
               ./modtest.f90
-  
+              
 OBJ_modules = $(SRC_modules:.f90=.o)
 SRC = $(shell python ../gensrclog.py; mv srclog.f90 ./addons; find . -name \*.f90)
 OBJ = $(SRC:.f90=.o)
@@ -73,7 +74,7 @@ elk:	$(OBJ_modules) $(OBJ)
 
 elk1:	$(OBJ_modules) $(OBJ)
 	echo $(OBJ)
-	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) addons/madness/madness.o $(MADNESS_LIB) $(LIB_XC) \
+	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) addons/madness/madness_intrf.o $(MADNESS_LIB) $(LIB_XC) \
 	$(LIB_SYS) $(LIB_LAPACK)
 
 lib:
