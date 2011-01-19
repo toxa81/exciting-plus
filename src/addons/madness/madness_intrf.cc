@@ -7,40 +7,18 @@
 extern "C" void elk_init_(void);
 extern "C" void elk_wan_val_(int*, int*, double*, double*, double*);
 extern "C" void elk_xc_(double*, double*, double*);
-extern "C" void elk_load_wann_unk_(int* ik);
+extern "C" void elk_load_wann_unk_(int* n);
 extern "C" void elk_wann_unk_val_(int* ik, int* n, int* ispn, double* r_cutoff,
   double* vrc,double* val);
+extern "C" void elk_wan_rho_(const int* n,double* r_cutoff,double* vrc,double* wrho);
 
 using namespace madness;
 
-//***************************************************************************
-template <typename Q, int NDIM>
-struct abs_square_op
-{
-  typedef typename TensorTypeData<Q>::scalar_type resultT;
-  Tensor<resultT> operator()(const Key<NDIM>& key, const Tensor<Q>& t) const
-  {
-    Tensor<resultT> result(t.ndim(), t.dims());
-    BINARY_OPTIMIZED_ITERATOR(const Q, t, resultT, result, resultT d = abs(*_p0); *_p1 = d*d);
-    return result;
-  }
-  template <typename Archive>
-  void serialize(Archive& ar) {}
-};
-//***************************************************************************
-
-//***************************************************************************
-template<typename Q, int NDIM>
-Function<typename TensorTypeData<Q>::scalar_type,NDIM> abs_square(const Function<Q,NDIM>& func)
-{
-  return unary_op(func, abs_square_op<Q,NDIM>());
-}
-
-
 World* world;
 std::vector<real_function_3d> wan;
-std::vector<complex_function_3d> wann_unk;
-std::vector<real_function_3d> rho_wan;
+std::vector<real_function_3d> wan_hpot;
+const double thresh = 0.02;
+const int ord_k = 5;
 
 template <typename T>                                                                                   
 static void xc_e_op(const Key<3>& key, Tensor<T>& t) {
@@ -111,26 +89,23 @@ public:
   }
 };
 
-class Wannier_unk: public FunctionFunctorInterface<double_complex,3> {
+
+
+
+class WannierRho: public FunctionFunctorInterface<double,3> {
 public:
-  int _n;
-  int _ik;
-  int _ispn;
+  int n_;
 
-  Wannier_unk(int n, int ik, int ispn) : _n(n), _ik(ik), _ispn(ispn) {}
+  WannierRho(int n) : n_(n) {}
 
-  double_complex operator()(const coord_3d& x) const {
-    double val[2];
-    val[0]=val[1]=0.0;
+  double operator()(const coord_3d& x) const {
+    double val;
     double vrc[3];
     vrc[0]=x[0]; vrc[1]=x[1]; vrc[2]=x[2];
     double r_cutoff=10.0;
-    int ispn=1; //_ispn;
-    int n=_n;
-    int ik=_ik;
     
-    elk_wann_unk_val_(&ik,&n,&ispn,&r_cutoff,&vrc[0],&val[0]);
-    return double_complex(val[0], val[1]);
+    elk_wan_rho_(&n_,&r_cutoff,&vrc[0],&val);
+    return val;
   }
 };
 
@@ -144,7 +119,7 @@ public:
 extern "C" void madness_genpot_(void) {
   // defaults
   int k = 6;
-  double thresh = 0.01;
+  double thresh = 0.15;
   double L = 30.0;
   double ha2ev = 27.21138386;
     
@@ -205,18 +180,19 @@ extern "C" void madness_genpot_(void) {
 
 }
 
+
+
 extern "C" void madness_init_(void) {
   initialize(0, 0);
   world = new World(MPI::COMM_WORLD);
+  printf("Hello from process %i\n", world->rank());
   startup(*world, 0, 0);
 }
 
 extern "C" void madness_init_box_(void) {
-  int k = 6;
-  double thresh = 0.1;
   double L = 30.0;
 
-  FunctionDefaults<3>::set_k(k);
+  FunctionDefaults<3>::set_k(ord_k);
   FunctionDefaults<3>::set_thresh(thresh);
 //  FunctionDefaults<3>::set_refine(true);
 //  FunctionDefaults<3>::set_initial_level(5);
@@ -224,37 +200,21 @@ extern "C" void madness_init_box_(void) {
   FunctionDefaults<3>::set_cubic_cell(-L, L);
 }
 
-extern "C" void madness_resolve_wannier_(int* nwantot, int* nkptnr, int* nspinor) {
-  rho_wan.clear(); //clear list of WF densities
-  for (int n=1;n<=*nwantot;n++) {
-    real_function_3d rho_=real_factory_3d(*world);
-    rho_wan.push_back(rho_);
+extern "C" void madness_gen_hpot_(int* nwantot) {
+  real_convolution_3d op = CoulombOperator(*world, thresh*0.1, thresh*0.1);
+  wan_hpot.clear();
+  for (int n=1;n<=*nwantot;n++) {  
+    elk_load_wann_unk_(&n);
+    real_function_3d rho = real_factory_3d(*world).functor(real_functor_3d(new WannierRho(n)));
+    real_function_3d hpot = op(rho).truncate();
+    wan_hpot.push_back(hpot);
+    double norm = rho.trace();
+    printf(" n : %i , norm : %15.8f\n",n,norm);
+    world->gop.fence(); 
   }
-  printf(" nwantot : %i\n",*nwantot);
-  printf(" nkptnr  : %i\n",*nkptnr);
-  printf(" nspinor : %i\n",*nspinor);
-  
-  for (int ik=1;ik<=*nkptnr;ik++) {
-    elk_load_wann_unk_(&ik);
-    for (int n=1;n<=*nwantot;n++) {
-      for (int ispn=1;ispn<=*nspinor;ispn++) {
-        complex_function_3d unk_ = complex_factory_3d(*world).functor(
-          complex_functor_3d(new Wannier_unk(n,ik,ispn))
-        );
-	real_function_3d rho_=abs_square(unk_);
-	rho_.truncate();
-	rho_wan[n-1]+=rho_;
-      }
-    }
-    world->gop.fence();
-    if (world->rank() == 0) printf("ik= %i resolved\n",ik);
-  }
-  double norm=rho_wan[0].trace();
-  print("norm : %15.8f\n",norm);
-  
 }
 
-extern "C" void madness_getpot_(double* pot) {
+extern "C" void madness_get_hpot_(double *x,double* pot) {
   *pot=wan[0](0.0);
 }
 
