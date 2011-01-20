@@ -27,8 +27,8 @@ call timer_reset(2)
 call timer_start(3,reset=.true.)
 call sic_genwan
 call timer_stop(3)
-deallocate(wann_unkmt)
-deallocate(wann_unkit)
+!deallocate(wann_unkmt)
+!deallocate(wann_unkit)
 if (wproc) then
   write(fout,*)
   write(fout,'("local time for muffin-tin part (sec.)   : ",F8.3)')timer_get_value(1)

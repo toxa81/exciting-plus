@@ -5,8 +5,9 @@ use mod_hdf5
 use mod_sic
 use mod_wannier
 use mod_linresp
+use mod_madness
 implicit none
-integer n,sz,i,j,i1,j1,j2,n1,n2,ik,ispn,vtrl(3),ikloc
+integer n,sz,i,j,i1,j1,j2,n1,n2,ik,ispn,vtrl(3),ikloc,ig
 real(8) t1,t2,t3,vtrc(3)
 real(8) etot_,ekin_
 integer vl(3)
@@ -96,6 +97,33 @@ if (wproc) then
   write(152,'(G18.10)')etot_
   close(152)
 endif
+
+#ifdef _MAD_
+if (allocated(m_ngknr)) deallocate(m_ngknr)
+allocate(m_ngknr(nkptnr))
+m_ngknr=0
+if (allocated(m_igkignr)) deallocate(m_igkignr)
+allocate(m_igkignr(ngkmax,nkptnr))
+m_igkignr=0
+do ikloc=1,nkptnrloc
+  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+  m_ngknr(ik)=ngknr(ikloc)
+  m_igkignr(:,ik)=igkignr(:,ikloc)
+enddo
+call mpi_grid_reduce(m_ngknr(1),nkptnr,dims=(/dim_k/),all=.true.)
+call mpi_grid_reduce(m_igkignr(1,1),ngkmax*nkptnr,dims=(/dim_k/),all=.true.)
+m_ngvec=0
+do ik=1,nkptnr
+  do ig=1,m_ngknr(ik)
+    m_ngvec=max(m_ngvec,m_igkignr(ig,ik))
+  enddo
+enddo
+if (allocated(m_wann_unkmt)) deallocate(m_wann_unkmt)
+allocate(m_wann_unkmt(lmmaxvr,nufrmax,natmtot,nspinor,nkptnr))
+if (allocated(m_wann_unkit)) deallocate(m_wann_unkit)
+allocate(m_wann_unkit(ngkmax,nspinor,nkptnr))
+call madness_init_box
+#endif
 
 call sic_wan(151)
 allocate(ene(4,sic_wantran%nwan))

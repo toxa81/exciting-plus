@@ -15,8 +15,79 @@ complex(8), allocatable ::megqwan1(:,:,:)
 complex(8) expikt,zt1
 character*100 qnm
 
+integer ntp,itp,lm,ia,is,ir
+real(8), allocatable :: fmt(:,:,:)
+real(8), allocatable :: fmt_(:,:,:)
+complex(8), allocatable :: zfmt(:,:,:)
+complex(8), allocatable :: zfir(:)
+real(8), allocatable :: tp(:,:)
+real(8), allocatable :: rlmb(:,:)
+real(8), allocatable :: wtp(:)
+real(8), allocatable :: spx(:,:)
+real(8) rlm(lmmaxvr),vrc(3),t1
+
 vhwanmt=zzero
 vhwanir=zzero
+
+#ifdef _MAD_
+allocate(fmt(lmmaxvr,nrmtmax,natmtot))
+allocate(zfmt(lmmaxvr,nrmtmax,natmtot))
+allocate(zfir(ngrtot))
+
+ntp=266
+allocate(tp(2,ntp))
+allocate(rlmb(ntp,lmmaxvr))
+allocate(wtp(ntp))
+! Lebedev mesh
+allocate(spx(3,ntp))
+call leblaik(ntp,spx,wtp)                                                                   
+do itp=1,ntp                   
+  wtp(itp)=wtp(itp)*fourpi
+  call sphcrd(spx(:,itp),t1,tp(:, itp))                                                     
+enddo 
+! generate spherical harmonics
+do itp=1,ntp 
+  call genrlm(lmaxvr,tp(1,itp),rlm)  
+  do lm=1,lmmaxvr
+    rlmb(itp,lm)=rlm(lm)*wtp(itp)
+  enddo
+enddo
+deallocate(wtp,tp)
+
+allocate(fmt_(ntp,nrmtmax,natmtot))
+do j=1,sic_wantran%nwan
+  n=sic_wantran%iwan(j)
+  call elk_load_wann_unk(n)
+  call madness_gen_hpot(n)
+  
+  do it=1,sic_orbitals%ntr
+    fmt_=0.d0
+    do ias=1,natmtot
+      is=ias2is(ias)
+      ia=ias2ia(ias)
+      do ir=1,nrmt(is)
+        do itp=1,ntp
+          vrc(:)=spx(:,itp)*spr(ir,is)+atposc(:,ia,is)+sic_orbitals%vtc(:,it)
+          call madness_get_hpot(vrc,fmt_(itp,ir,ias))
+        enddo
+      enddo !ir
+    enddo !ias
+    call dgemm('T','N',lmmaxvr,nrmtmax*natmtot,ntp,1.d0,rlmb,ntp,fmt_,ntp,0.d0,&
+      fmt,lmmaxvr)
+    zfmt=dcmplx(fmt,0.d0)
+    call sic_copy_mt_z(.true.,lmmaxvr,zfmt,vhwanmt(1,1,it,1,j))
+    do ir=1,ngrtot
+      vrc(:)=vgrc(:,ir)+sic_orbitals%vtc(:,it)
+      call madness_get_hpot(vrc,t1)
+      zfir(ir)=dcmplx(t1,0.d0)
+    enddo
+    call sic_copy_ir_z(.true.,zfir,vhwanir(1,it,1,j))
+  enddo !it
+enddo !j
+deallocate(fmt_,fmt,zfmt,zfir,spx,rlmb)
+  
+
+#else
 call init_qbz(tq0bz,1)
 call init_q_gq
 ! create q-directories
@@ -78,5 +149,6 @@ do iq=1,nvq
 enddo !iq
 call timer_stop(11)
 deallocate(pwmt,pwir,megqwan1)
+#endif
 return
 end
