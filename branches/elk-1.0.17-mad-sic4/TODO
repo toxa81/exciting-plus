@@ -1,0 +1,8 @@
+* clean SHT part
+* test screened/unscreened U
+* scalapack diagonalization
+* regression tests
+* cleanup gndstate
+* [?] more compact representation for wave-functions
+* parallelize matrix elements over G, not over interband transitions
+* symmetry: lattice+magnetic
