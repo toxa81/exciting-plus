@@ -56,11 +56,11 @@ use mod_nrkp
 use mod_wannier
 use mod_madness
 implicit none
-!
+! arguments
 integer, intent(in) :: n
+! local variables
+integer ikloc,ik,ias
 !
-integer ikloc,ik
-
 m_wann_unkmt=zzero
 m_wann_unkit=zzero
 do ikloc=1,nkptnrloc
@@ -72,15 +72,8 @@ call mpi_grid_reduce(m_wann_unkmt(1,1,1,1,1),&
   lmmaxvr*nufrmax*natmtot*nspinor*nkptnr,dims=(/dim_k/),all=.true.)
 call mpi_grid_reduce(m_wann_unkit(1,1,1),&
   ngkmax*nspinor*nkptnr,dims=(/dim_k/),all=.true.)
-!ikloc=mpi_grid_map(nkptnr,dim_k,glob=ik,x=h)
-!if (mpi_grid_dim_pos(dim_k).eq.h) then
-!  wann_unkmt1(:,:,:,:,:)=wann_unkmt(:,:,:,:,:,ikloc)
-!  wann_unkit1(:,:,:)=wann_unkit(:,:,:,ikloc)
-!endif
-!call mpi_grid_bcast(wann_unkmt1(1,1,1,1,1),&
-!  lmmaxvr*nufrmax*natmtot*nspinor*nwantot,root=(/h/))
-!call mpi_grid_bcast(wann_unkit1(1,1,1),&
-!  ngkmax*nspinor*nwantot,root=(/h/))
+ias=wan_info(1,n)
+m_wanpos(:)=atposc(:,ias2ia(ias),ias2is(ias))
 return
 end subroutine
 
@@ -218,13 +211,12 @@ return
 end
 
 
-subroutine elk_wan_rho(n,r_cutoff,vrc,wrho)
+subroutine elk_wan_rho(r_cutoff,vrc,wrho)
 use modmain
 use mod_nrkp
 use mod_wannier
 use mod_madness
 implicit none
-integer, intent(in) :: n
 real(8), intent(in) :: r_cutoff
 real(8), intent(in) :: vrc(3)
 real(8), intent(out) :: wrho
@@ -239,11 +231,9 @@ real(8), external :: polynom
 logical, external :: vrinmt
 complex(8) expigr(m_ngvec)
 complex(8) zm1(lmmaxvr,nufrmax,nspinor),zm2(nspinor)
-
+!
 wrho=0.d0
-
-ias=wan_info(1,n)
-vrc0(:)=vrc(:)-atposc(:,ias2ia(ias),ias2is(ias))
+vrc0(:)=vrc(:)-m_wanpos(:)
 r0=sqrt(sum(vrc0(:)**2))
 if (r0.gt.r_cutoff) return
 

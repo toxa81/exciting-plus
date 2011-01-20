@@ -6,7 +6,7 @@ use mod_wannier
 use mod_madness
 implicit none
 integer i,ik,ikloc,ig
-real(8) d1,vrc(3),val(2)
+real(8) d1,d2,vrc(3)
 
 call init0
 call init1
@@ -53,26 +53,43 @@ allocate(m_wann_unkmt(lmmaxvr,nufrmax,natmtot,nspinor,nkptnr))
 if (allocated(m_wann_unkit)) deallocate(m_wann_unkit)
 allocate(m_wann_unkit(ngkmax,nspinor,nkptnr))
 
-
-!call timer_start(40,reset=.true.)
+!
+!
 !vrc=0.d0
 !call elk_load_wann_unk(1)
 !do i=1,10000
-!  vrc(1)=1.251d0
-!  call elk_wan_rho(1,8.d0,vrc,val)
+!  vrc(1)=15d0*i/10000.d0
+!  call elk_wan_rho(1,10.d0,vrc,d1)
+!  write(99,*)vrc(1),d1
 !enddo
-!call timer_stop(40)
-!write(*,*)timer_get_value(40)
-!allocate(wann_unkmt1(lmmaxvr,nufrmax,natmtot,nspinor,nwantot))
-!allocate(wann_unkit1(ngkmax,nspinor,nwantot))
+
 
 call madness_init_box
-!call mpi_world_barrier
-call madness_resolve_wannier(nwantot)
 
-!call madness_genpot
-!call madness_getpot(d1)
-!write(*,*)d1
+call elk_load_wann_unk(1)
+call madness_gen_hpot(1)
+open(90,file="wann_s.dat",form="formatted",status="replace")
+vrc=0.d0
+do i=1,10000
+  vrc(1)=10d0*i/10000.d0
+  call madness_get_hpot(vrc,d1)
+  call madness_get_rho(vrc,d2)
+  write(90,'(3G18.10)')vrc(1),d1,d2
+enddo
+close(90)
+
+call elk_load_wann_unk(4)
+call madness_gen_hpot(4)
+open(90,file="wann_px.dat",form="formatted",status="replace")
+vrc=0.d0
+do i=1,10000
+  vrc(1)=10d0*i/10000.d0
+  call madness_get_hpot(vrc,d1)
+  call madness_get_rho(vrc,d2)
+  write(90,'(3G18.10)')vrc(1),d1,d2
+enddo
+close(90)
+
 call bstop
 return
 end
