@@ -404,7 +404,11 @@ integer, parameter :: pt_megqblh_it=13
 
 ! band range for plotting density
 integer bndrangelo, bndrangehi
-data bndrangelo / 0 /
-data bndrangehi / 10000 /
+data bndrangelo/0/
+data bndrangehi/10000/
+
+! wannier function channel analysis
+logical lwf_channel_analysis
+data lwf_channel_analysis/.false./ 
 
 end module

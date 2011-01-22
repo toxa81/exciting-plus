@@ -17,7 +17,7 @@ integer, allocatable :: imegqwan_tmp(:,:)
 integer i,iw,i1,i2,ikloc,n,j
 integer ist1,ist2,nfxcloc,nwloc,jwloc,iwloc
 integer it1(3),it2(3),it(3)
-character*100 qnm,qdir,fout,fstat
+character*100 qnm,qdir,fout,fstat,qdir2,fname,c1
 integer ik,n1,n2
 real(8) vtc(3)
 
@@ -26,13 +26,18 @@ real(8) t1,t2,t3,t4,t5,t6,t7
 call getqdir(iq,vqm(:,iq),qdir)
 call getqname(vqm(:,iq),qnm)
 qnm=trim(qdir)//"/"//trim(qnm)
+qdir2=trim(qnm)//"_chi0_analysis"
 wproc=.false.
 if (mpi_grid_root((/dim_k,dim_b/))) then
   wproc=.true.
   fout=trim(qnm)//"_CHI0.OUT"
   open(150,file=trim(fout),form="FORMATTED",status="REPLACE")
   fstat=trim(qnm)//"_chi0_stat.txt"
+  if (lwf_channel_analysis) then
+    call system("mkdir -p "//trim(qdir2))
+  endif
 endif
+call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 
 call papi_timer_start(pt_chi0)
 
@@ -106,6 +111,7 @@ if (wannier_chi0_chi) then
     write(150,'(65("-"))')    
     call printwanntrans(150,megqwan(1,iig0q))
   endif
+
   allocate(chi0wan(nmegqwan,nmegqwan))
   allocate(chi0wan_k(nmegqwan,nmegqwan,nkptnrloc))
   allocate(mexp(nmegqwan,nmegqwan,nkptnrloc))
@@ -198,7 +204,16 @@ do iw=1,lr_nw
     chi0wan(:,:)=chi0wan(:,:)/nkptnr/omega
     if (wannier_chi0_afm) chi0wan(:,:)=chi0wan(:,:)*2.d0
 !!! WSTHORNTON
-    !call svdchi0(chi0wan,iq,iw,lr_w(iw)*ha2ev)
+    if (lwf_channel_analysis) then
+      !call svdchi0(chi0wan,iq,iw,lr_w(iw)*ha2ev)
+      write(c1,'(I5)')iw
+      fname=trim(qdir2)//"/chi0_iw_"//adjustl(c1)
+      fname=trim(fname)//".dat"
+      open(160+iw,file=fname,status="REPLACE",form="FORMATTED")
+      call chi0wan_analysis(160+iw,chi0wan,iq,iw,lr_w(iw)*ha2ev,0.5d-2)
+      close(160+iw)
+    endif
+
 ! processor j saves chi0wan to local array  
     if (mpi_grid_x(dim_k).eq.j) chi0wanloc(:,:,jwloc)=chi0wan(:,:)
     call timer_stop(3)
