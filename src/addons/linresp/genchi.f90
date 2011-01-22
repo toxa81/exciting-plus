@@ -14,7 +14,7 @@ character, parameter :: orb(4)=(/'s','p','d','f'/)
 integer i,iw,j,ifxc
 integer nfxcloc,ifxcloc,nwloc,iwloc
 integer ig
-character*100 qnm,qdir,fout
+character*100 qnm,qdir,fout,qdir2,fname,c1
 real(8) fxca
 
 real(8) t1,t2,t3,t4,t5,t6,t7
@@ -22,6 +22,7 @@ real(8) t1,t2,t3,t4,t5,t6,t7
 call getqdir(iq,vqm(:,iq),qdir)
 call getqname(vqm(:,iq),qnm)
 qnm=trim(qdir)//"/"//trim(qnm)
+qdir2=trim(qnm)//"_chi_analysis"
 wproc=.false.
 if (mpi_grid_root((/dim_k,dim_b/))) then
   wproc=.true.
@@ -51,7 +52,12 @@ if (wproc) then
   endif
   write(150,*)  
   call flushifc(150)
+  
+  if (lwf_channel_analysis) then
+    call system("mkdir -p "//trim(qdir2))
+  endif
 endif
+call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 
 call papi_timer_start(pt_chi)
   
@@ -114,6 +120,16 @@ do iwloc=1,nwloc
     if (wannier_chi0_chi.and.ifxc.eq.1) then
       call timer_start(7)
       call solve_chi_wan(iq,lr_w(iw),vcwan,chi0wanloc(1,1,iwloc),f_response(1,iw,ifxc))
+      !!! WSTHORNTON
+      if (lwf_channel_analysis) then
+        write(c1,'(I5)')iw
+        fname=trim(qdir2)//"/chi_iw_"//adjustl(c1)
+        fname=trim(fname)//".dat"
+        open(160+iw,file=fname,status="REPLACE",form="FORMATTED")
+        call chiwan_analysis(160+iw,chi0wanloc(1,1,iwloc),vcwan,iq,iw,lr_w(iw)*ha2ev,0.5d-2)
+        close(160)
+      endif
+
       call timer_stop(7)
     endif !wannier_chi0_chi.and.ifxc.eq.1
   enddo !ifxcloc
