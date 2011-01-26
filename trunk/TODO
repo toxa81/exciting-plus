@@ -6,3 +6,5 @@
 * [?] more compact representation for wave-functions
 * parallelize matrix elements over G, not over interband transitions
 * symmetry: lattice+magnetic
+* SIC: list of included WFs: add atom+l+m
+* SIC: add <w|x|w>
