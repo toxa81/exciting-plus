@@ -58,10 +58,10 @@ do ikloc=1,nkptloc
     zt1=zzero
     zt2=zzero
     do ispn=1,nspinor
-      zt1=zt1+zfinp_(s_wankmt(1,1,1,1,j,ikloc),s_wankmt(1,1,1,1,j,ikloc),&
-        s_wankir(1,1,j,ikloc),s_wankir(1,1,j,ikloc))
-      zt2=zt2+zfinp_(s_wvkmt(1,1,1,1,j,ikloc),s_wankmt(1,1,1,1,j,ikloc),&
-        s_wvkir(1,1,j,ikloc),s_wankir(1,1,j,ikloc))
+      zt1=zt1+zfinp_(s_wankmt(1,1,1,ispn,j,ikloc),s_wankmt(1,1,1,ispn,j,ikloc),&
+        s_wankir(1,ispn,j,ikloc),s_wankir(1,ispn,j,ikloc))
+      zt2=zt2+zfinp_(s_wvkmt(1,1,1,ispn,j,ikloc),s_wankmt(1,1,1,ispn,j,ikloc),&
+        s_wvkir(1,ispn,j,ikloc),s_wankir(1,ispn,j,ikloc))
     enddo
     write(*,*)"n =",n," <W_nk|W_nk> =",zt1," <(W*V)_nk|W_nk> = ",zt2
   enddo !j
