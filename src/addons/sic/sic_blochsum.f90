@@ -13,6 +13,8 @@ s_wankir=zzero
 s_wvkmt=zzero
 s_wvkir=zzero
 
+if (.not.tsic_wv) return
+
 allocate(tp(2,lmmaxvr))
 call sphcover(lmmaxvr,tp)
 
