@@ -69,11 +69,9 @@ gensrc:
 	python ../ftemplate.py <./addons/mod_mpi_grid.tpl >./addons/mod_mpi_grid.f90
 	
 elk:	$(OBJ_modules) $(OBJ)
-	echo $(OBJ)
 	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) $(LIB_XC) $(LIB_SYS) $(LIB_LAPACK)
 
 elk1:	$(OBJ_modules) $(OBJ)
-	echo $(OBJ)
 	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) addons/madness/madness_intrf.o $(MADNESS_LIB) $(LIB_XC) \
 	$(LIB_SYS) $(LIB_LAPACK)
 
