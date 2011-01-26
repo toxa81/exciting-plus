@@ -11,7 +11,16 @@ real(8) v1(3),v2(3)
 logical, external :: vrinmt,sic_include_cell
 real(8), allocatable :: wt1(:,:)
 
+integer itp,lm,itp1,lm1
+real(8) a,b,x0,tp(2)
+complex(8) zt1
+!
 tevecsv=.true.
+lmaxwan=4
+lmmaxwan=(lmaxwan+1)**2
+s_ntp=266
+s_nr=800
+x0=1d-6
 
 if (allocated(sic_apply)) deallocate(sic_apply)
 allocate(sic_apply(nwantot))
@@ -28,7 +37,7 @@ endif
 call deletewantran(sic_wantran)
 ! get Wannier transitions
 call genwantran(sic_wantran,-0.d0,sic_me_cutoff,allwt=.true.,waninc=sic_apply)
-! find neighbouring cells, where Wannier function is computed
+
 if (allocated(sic_orbitals%vtl)) deallocate(sic_orbitals%vtl)
 allocate(sic_orbitals%vtl(3,sic_maxvtl))
 sic_orbitals%vtl=-1000000
@@ -70,72 +79,57 @@ do i=1,sic_orbitals%ntr
                         sic_orbitals%vtl(3,i)*avec(:,3)
 end do
 ! find translation limits
-sic_orbitals%tlim=0
-do i=1,3
-  sic_orbitals%tlim(1,i)=minval(sic_orbitals%vtl(i,1:sic_orbitals%ntr))
-  sic_orbitals%tlim(2,i)=maxval(sic_orbitals%vtl(i,1:sic_orbitals%ntr))
-enddo
+!sic_orbitals%tlim=0
+!do i=1,3
+!  sic_orbitals%tlim(1,i)=minval(sic_orbitals%vtl(i,1:sic_orbitals%ntr))
+!  sic_orbitals%tlim(2,i)=maxval(sic_orbitals%vtl(i,1:sic_orbitals%ntr))
+!enddo
 ! find mapping from translations to linear index
-if (allocated(sic_orbitals%ivtit)) deallocate(sic_orbitals%ivtit)
-allocate(sic_orbitals%ivtit(sic_orbitals%tlim(1,1):sic_orbitals%tlim(2,1),&
-                            sic_orbitals%tlim(1,2):sic_orbitals%tlim(2,2),&
-                            sic_orbitals%tlim(1,3):sic_orbitals%tlim(2,3)))
-sic_orbitals%ivtit=-1
-do i=1,sic_orbitals%ntr
-  sic_orbitals%ivtit(sic_orbitals%vtl(1,i),sic_orbitals%vtl(2,i),&
-    sic_orbitals%vtl(3,i))=i
-enddo
+!if (allocated(sic_orbitals%ivtit)) deallocate(sic_orbitals%ivtit)
+!allocate(sic_orbitals%ivtit(sic_orbitals%tlim(1,1):sic_orbitals%tlim(2,1),&
+!                            sic_orbitals%tlim(1,2):sic_orbitals%tlim(2,2),&
+!                            sic_orbitals%tlim(1,3):sic_orbitals%tlim(2,3)))
+!sic_orbitals%ivtit=-1
+!do i=1,sic_orbitals%ntr
+!  sic_orbitals%ivtit(sic_orbitals%vtl(1,i),sic_orbitals%vtl(2,i),&
+!    sic_orbitals%vtl(3,i))=i
+!enddo
 
-! get local number of muffin-tin and interstitial points
-ngrloc=mpi_grid_map2(ngrtot,dims=(/dim_k,dim2/),offs=groffs)
-ngrlocmax=ngrloc
-call mpi_grid_reduce(ngrlocmax,op=op_max,all=.true.)
-nmtloc=mpi_grid_map2(nrmtmax*natmtot,dims=(/dim_k,dim2/),offs=mtoffs)
-nmtlocmax=nmtloc
-call mpi_grid_reduce(nmtlocmax,op=op_max,all=.true.)
-
-if (mpi_grid_root()) then
-  n=sic_orbitals%ntr*nspinor*(2*sic_wantran%nwan)
-  write(*,*)
-  write(*,'("[sic_init] total number of translations : ",I3)')sic_orbitals%ntr
-  write(*,'("[sic_init] size of Wannier function arrays : ",I6," Mb")') &
-    int(16.d0*(lmmaxvr*nmtloc+ngrloc)*n/1048576.d0)
-endif
-call mpi_grid_barrier()
 ! allocate once main arrays of SIC code
-!  wan(mt,ir) - Wannier function defined on a real-space grid
-!  wv(mt,ir) - product of a Wannier function with it's potential
 if (.not.tsic_arrays_allocated) then
   tsic_arrays_allocated=.true.
-  allocate(sic_orbitals%wanmt(lmmaxvr,nmtloc,sic_orbitals%ntr,nspinor,&
-    sic_wantran%nwan))
-  sic_orbitals%wanmt=zzero
-  allocate(sic_orbitals%wanir(ngrloc,sic_orbitals%ntr,nspinor,&
-    sic_wantran%nwan))
-  sic_orbitals%wanir=zzero
-  allocate(sic_orbitals%wvmt(lmmaxvr,nmtloc,sic_orbitals%ntr,nspinor,&
-    sic_wantran%nwan))
-  sic_orbitals%wvmt=zzero
-  allocate(sic_orbitals%wvir(ngrloc,sic_orbitals%ntr,nspinor,&
-    sic_wantran%nwan))
-  sic_orbitals%wvir=zzero
+  allocate(s_tpw(s_ntp))
+  allocate(s_rlmf(lmmaxwan,s_ntp))
+  allocate(s_ylmf(lmmaxwan,s_ntp))
+  allocate(s_rlmb(s_ntp,lmmaxwan))
+  allocate(s_ylmb(s_ntp,lmmaxwan))
+  allocate(s_spx(3,s_ntp))
+  allocate(s_r(s_nr))
+  allocate(s_rw(s_nr))
+  allocate(s_wanlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
+  allocate(s_wvlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
   allocate(vwanme(sic_wantran%nwt))
   vwanme=zzero
   allocate(sic_wb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
   sic_wb=zzero
   allocate(sic_wvb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
   sic_wvb=zzero
+  allocate(sic_wann_e0(nwantot))
+  sic_wann_e0=0.d0
+  allocate(sic_wann_h0k(sic_wantran%nwan,sic_wantran%nwan,nkptloc))
+  sic_wann_h0k=zzero
   sic_energy_tot=0.d0
   sic_energy_pot=0.d0
   sic_energy_kin=0.d0
-  allocate(sic_wgk(ngkmax,sic_wantran%nwan,nspinor,nkptloc))
-  sic_wgk=zzero
-  allocate(sic_wvgk(ngkmax,sic_wantran%nwan,nspinor,nkptloc))
-  sic_wvgk=zzero
 endif
-if (allocated(sic_wann_e0)) deallocate(sic_wann_e0)
-allocate(sic_wann_e0(nwantot))
-sic_wann_e0=0.d0
+if (allocated(s_wankmt)) deallocate(s_wankmt)
+allocate(s_wankmt(lmmaxvr,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
+if (allocated(s_wankir)) deallocate(s_wankir)
+allocate(s_wankir(ngrtot,nspinor,sic_wantran%nwan,nkptloc))
+if (allocated(s_wvkmt)) deallocate(s_wvkmt)
+allocate(s_wvkmt(lmmaxvr,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
+if (allocated(s_wvkir)) deallocate(s_wvkir)
+allocate(s_wvkir(ngrtot,nspinor,sic_wantran%nwan,nkptloc))
 ! TODO: skip reading the file with different WF set
 inquire(file="SIC_WANN_E0.OUT",exist=exist)
 if (exist) then
@@ -145,42 +139,95 @@ if (exist) then
   enddo
   close(170)
 endif
-if (allocated(sic_wann_h0k)) deallocate(sic_wann_h0k)
-allocate(sic_wann_h0k(sic_wantran%nwan,sic_wantran%nwan,nkptloc))
-sic_wann_h0k=zzero
-if (allocated(sic_orbitals%twanmt)) deallocate(sic_orbitals%twanmt)
-allocate(sic_orbitals%twanmt(natmtot,sic_orbitals%ntr,nwantot))
-sic_orbitals%twanmt=.false.
-if (allocated(sic_orbitals%twanmtuc)) deallocate(sic_orbitals%twanmtuc)
-allocate(sic_orbitals%twanmtuc(sic_orbitals%ntr,nwantot))
-sic_orbitals%twanmtuc=.false.
-do i=1,sic_orbitals%ntr
-  v1(:)=sic_orbitals%vtl(1,i)*avec(:,1)+sic_orbitals%vtl(2,i)*avec(:,2)+sic_orbitals%vtl(3,i)*avec(:,3)
-  do n=1,nwantot
-    jas=wan_info(1,n)
-    do ias=1,natmtot  
-      v2(:)=atposc(:,ias2ia(ias),ias2is(ias))+v1(:)-&
-        atposc(:,ias2ia(jas),ias2is(jas))
-      if (sqrt(sum(v2(:)**2)).le.sic_wan_cutoff) sic_orbitals%twanmt(ias,i,n)=.true.
-    enddo
-    sic_orbitals%twanmtuc(i,n)=any(sic_orbitals%twanmt(:,i,n))
-  enddo
+! Lebedev-Laikov mesh
+call leblaik(s_ntp,s_spx,s_tpw)
+! get (theta,phi) of each spx vector and generate spherical harmonics
+do itp=1,s_ntp                   
+  s_tpw(itp)=s_tpw(itp)*fourpi
+  call sphcrd(s_spx(:,itp),a,tp)
+  call genrlm(lmaxwan,tp,s_rlmf(1,itp))  
+  call genylm(lmaxwan,tp,s_ylmf(1,itp))  
+  do lm=1,lmmaxwan
+    s_rlmb(itp,lm)=s_rlmf(lm,itp)*s_tpw(itp)
+    s_ylmb(itp,lm)=dconjg(s_ylmf(lm,itp))*s_tpw(itp) 
+  enddo  
+enddo 
+!a=0.d0
+!do lm=1,lmmaxwan
+!  do lm1=1,lmmaxwan
+!    b=0.d0
+!    zt1=zzero
+!    do itp=1,s_ntp
+!      b=b+s_rlmb(itp,lm)*s_rlmf(lm1,itp)
+!      zt1=zt1+s_ylmb(itp,lm)*s_ylmf(lm1,itp)
+!    enddo
+!    if (lm.eq.lm1) then
+!      b=b-1.d0
+!      zt1=zt1-zone
+!    endif
+!    a=max(a,b)
+!    a=max(a,abs(zt1))
+!  enddo
+!enddo
+!if (mpi_grid_root()) then
+!  write(*,'("[sic_init] Lebedev quadrature orthonormalization&
+!  & error : ",G18.10)')a
+!endif
+!a=0.d0
+!do itp=1,s_ntp
+!  do itp1=1,s_ntp
+!    b=0.d0
+!    do lm=1,lmmaxwan
+!      b=b+s_rlmb(itp,lm)*s_rlmf(lm,itp1)
+!    enddo
+!    if (itp.eq.itp1) b=b-1.d0
+!    a=max(a,b)
+!  enddo
+!enddo
+!if (mpi_grid_root()) then
+!  write(*,'("[sic_init] Lebedev quadrature completeness error : ",G18.10)')a
+!endif
+!do i=4,10
+!  call test1(6,i)
+!  call test1(14,i)
+!  call test1(26,i)
+!  call test1(38,i)
+!  call test1(50,i)
+!  call test1(74,i)
+!  call test1(110,i)
+!  call test1(146,i) 
+!  call test1(170,i)
+!  call test1(194,i)
+!  call test1(230,i)
+!  call test1(266,i)
+!  call test1(302,i)
+!  call test1(350,i)
+!  call test1(434,i)
+!  call test1(590,i)
+!  call test1(770,i)
+!  call test1(974,i)
+!  call test1(1202,i)
+!enddo
+!call bstop
+  
+
+! generate radial mesh
+b=log(sic_wan_cutoff/x0)/(s_nr-1)
+a=x0/exp(b)
+do ir=1,s_nr
+  s_r(ir)=a*exp(ir*b)
 enddo
-if (allocated(rmtwt)) deallocate(rmtwt)
-allocate(rmtwt(nmtloc))
-allocate(wt1(nrmtmax,natmtot))
-wt1=0.d0
-do ias=1,natmtot
-  is=ias2is(ias)
-  do ir=1,nrmt(is)-1
-    wt1(ir,ias)=wt1(ir,ias)+&
-      0.5d0*(spr(ir+1,is)-spr(ir,is))*spr(ir,is)**2
-    wt1(ir+1,ias)=wt1(ir+1,ias)+&
-      0.5d0*(spr(ir+1,is)-spr(ir,is))*spr(ir+1,is)**2
-  enddo
+! generate radial weights for integration
+s_rw=0.d0
+do ir=1,s_nr-1
+  s_rw(ir)=s_rw(ir)+0.5d0*(s_r(ir+1)-s_r(ir))*s_r(ir)**2
+  s_rw(ir+1)=s_rw(ir+1)+0.5d0*(s_r(ir+1)-s_r(ir))*s_r(ir+1)**2
 enddo
-call sic_copy_mt_d(.true.,1,wt1,rmtwt)
-deallocate(wt1)
+
+if (mpi_grid_root()) then
+  write(*,'("[sic_init] Memory usage (Mb) : ",F12.4)')&
+    2*16.d0*lmmaxwan*s_nr*nspinor*sic_wantran%nwan/1024/1024
+endif
 return
 end
 
@@ -208,5 +255,56 @@ do j=1,sic_wantran%nwan
   enddo
 enddo
 sic_include_cell=l1
+return
+end
+
+subroutine test1(ntp,lmax)
+use modmain
+implicit none
+integer, intent(in) :: ntp
+integer, intent(in) :: lmax
+integer itp,lm,lmmax,itp1
+real(8) a,tp(2)
+complex(8) z1
+real(8), allocatable :: spx(:,:)
+real(8), allocatable :: tpw(:)
+complex(8), allocatable :: ylmf(:,:)
+complex(8), allocatable :: ylmb(:,:)
+
+lmmax=(lmax+1)**2
+
+allocate(spx(3,ntp))
+allocate(tpw(ntp))
+allocate(ylmf(lmmax,ntp))
+allocate(ylmb(ntp,lmmax))
+! Lebedev-Laikov mesh
+call leblaik(ntp,spx,tpw)
+! get (theta,phi) of each spx vector and generate spherical harmonics
+do itp=1,ntp                   
+  tpw(itp)=tpw(itp)*fourpi
+  call sphcrd(spx(1,itp),a,tp)
+  call genylm(lmax,tp,ylmf(1,itp))
+  do lm=1,lmmax
+    ylmb(itp,lm)=dconjg(ylmf(lm,itp))*tpw(itp) 
+  enddo  
+enddo 
+a=0.d0
+do itp=1,ntp
+  do itp1=1,ntp
+    z1=zzero
+    do lm=1,lmmax
+      z1=z1+ylmb(itp,lm)*ylmf(lm,itp1)
+    enddo
+    !if (itp.eq.itp1) z1=z1-zone
+    !a=max(a,abs(z1))
+    if (itp.ne.itp1) a=max(a,abs(z1))
+  enddo
+enddo
+if (mpi_grid_root()) then
+  write(*,'("[test1] l = ",I4," ntp = ",I4)')lmax,ntp
+  write(*,'("[test1] Lebedev quadrature completeness error : ",G18.10)')a
+  write(*,*)
+endif
+deallocate(spx,tpw,ylmf,ylmb)
 return
 end

@@ -23,7 +23,6 @@ SRC_modules = ./addons/mod_mpi_grid.f90 \
               ./addons/expigqr/mod_expigqr.f90 \
               ./addons/linresp/mod_linresp.f90 \
               ./addons/mod_nrkp.f90 \
-              ./addons/sic/mod_sic.f90 \
               ./addons/mod_madness.f90 \
               ./modqpt.f90 \
               ./libxc_funcs.f90 \
@@ -33,7 +32,8 @@ SRC_modules = ./addons/mod_mpi_grid.f90 \
               ./modldapu.f90 \
               ./modrdm.f90 \
               ./modphonon.f90 \
-              ./modtest.f90
+              ./modtest.f90 \
+              ./addons/sic/mod_sic.f90
               
 OBJ_modules = $(SRC_modules:.f90=.o)
 SRC = $(shell python ../gensrclog.py; mv srclog.f90 ./addons; find . -name \*.f90)
