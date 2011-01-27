@@ -35,7 +35,6 @@ integer is,ia,ias,ir
 complex(8) zsumir,zsummt
 complex(8) zf1(nrmtmax)
 complex(8), external :: zdotc
-
 ! interstitial contribution
 zsumir=zzero
 do ir=1,ngrtot

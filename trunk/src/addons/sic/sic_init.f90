@@ -142,11 +142,11 @@ endif
 ! Lebedev-Laikov mesh
 call leblaik(s_ntp,s_spx,s_tpw)
 ! get (theta,phi) of each spx vector and generate spherical harmonics
-do itp=1,s_ntp                   
+do itp=1,s_ntp
   s_tpw(itp)=s_tpw(itp)*fourpi
   call sphcrd(s_spx(:,itp),a,tp)
-  call genrlm(lmaxwan,tp,s_rlmf(1,itp))  
-  call genylm(lmaxwan,tp,s_ylmf(1,itp))  
+  call genrlm(lmaxwan,tp,s_rlmf(1,itp))
+  call genylm(lmaxwan,tp,s_ylmf(1,itp))
   do lm=1,lmmaxwan
     s_rlmb(itp,lm)=s_rlmf(lm,itp)*s_tpw(itp)
     s_ylmb(itp,lm)=dconjg(s_ylmf(lm,itp))*s_tpw(itp) 
