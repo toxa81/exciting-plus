@@ -9,21 +9,19 @@ implicit none
 integer, intent(in) :: fout
 ! local variables
 integer n,ispn,vl(3),n1,i,j,j1,itp,ir,nwtloc,iloc,ntp,nr
-real(8) t1,t2,vrc(3),x(3)
+real(8) t1,t2,vrc(3),x(3),x2
 real(8) sic_epot_h,sic_epot_xc
 complex(8) z1,zt1,wanval(nspinor)
 real(8), allocatable :: ene(:,:)
-real(8), allocatable :: xmt(:,:,:,:)
-real(8), allocatable :: xir(:,:,:)
-real(8), allocatable :: spread(:,:)
 real(8), allocatable :: tp(:,:)
 complex(8), allocatable :: ovlp(:)
 complex(8), allocatable :: wantp(:,:,:)
-real(8), allocatable :: wanrms(:)
+real(8), allocatable :: wanrms(:),spread(:)
 
 allocate(wantp(s_ntp,s_nr,nspinor))
 allocate(ene(4,sic_wantran%nwan))
 allocate(wanrms(sic_wantran%nwan))
+allocate(spread(sic_wantran%nwan))
 
 if (wproc) then
   write(fout,*)
@@ -66,6 +64,22 @@ do j=1,sic_wantran%nwan
     enddo
   enddo
   wanrms(j)=sqrt(t1/nr/ntp)
+! estimate the quadratic spread <r^2>-<r>^2
+  x2=0.d0
+  x=0.d0
+  do ir=1,s_nr
+    do itp=1,s_ntp
+      vrc(:)=s_spx(:,itp)*s_r(ir)
+      do ispn=1,nspinor
+        t1=s_tpw(itp)*s_rw(ir)*abs(wantp(itp,ir,ispn))**2
+        x2=x2+t1*dot_product(vrc,vrc)
+        do i=1,3
+          x(i)=x(i)+t1*vrc(i)
+        enddo
+      enddo
+    enddo
+  enddo
+  spread(j)=x2-dot_product(x,x)
 ! generate potentials
   if (sic_apply(n).eq.2) then
     call s_gen_pot(s_wanlm(1,1,1,j),wantp,s_wvlm(1,1,1,j),ene(1,j),ene(2,j),&
@@ -118,24 +132,25 @@ sic_energy_tot=sic_energy_kin-sic_energy_pot
 ! print some info
 if (wproc) then
   write(fout,*)
-  write(fout,'(" n   |   norm     RMS     spread")')
-  write(fout,'(60("-"))')
+  write(fout,'("   n |       norm        RMS     spread")')
+  write(fout,'(80("-"))')
   do i=1,sic_wantran%nwan
     n=sic_wantran%iwan(i)
     j=sic_wantran%iwtidx(n,n,0,0,0)
-    write(151,'(I4," | ",2X,G18.10,2X,G18.10)')n,dreal(ovlp(j)),wanrms(i)
+    write(151,'(I4," | ",3(F10.6,1X))')n,dreal(ovlp(j)),wanrms(i),spread(i)
   enddo
-  write(fout,'(60("-"))')
+  write(fout,'(80("-"))')
   write(fout,'("maximum deviation from norm : ",F12.6)')t1
   write(fout,*)
-  write(fout,'(2X,"n  | ",3X,"V_n^{H}  V_n^{XC} V_n  E_n^{XC}")')
-  write(fout,'(84("-"))')
+  write(fout,'("   n | ",5X,"V_n^{H}     V_n^{XC}          V_n     E_n^{XC}")')
+  write(fout,'(80("-"))')
   do j=1,sic_wantran%nwan
     n=sic_wantran%iwan(j)
-    write(fout,'(I4," | ",4X,4(G18.10,2X))')n,ene(:,j)
+    write(fout,'(I4," | ",4(F12.6,1X))')n,ene(:,j)
   enddo
-  write(fout,'(84("-"))')
-  write(fout,*)
+  write(fout,'(80("-"))')
+  write(fout,'("SIC total energy contribution      : ",G18.10,&
+    &"  ! kinetic - potential ")')sic_energy_tot
   write(fout,'("SIC kinetic energy contribution    : ",G18.10,&
     &"  ! sum of V_n" )')sic_energy_kin
   write(fout,'("SIC potential energy contribution  : ",G18.10,&
@@ -144,12 +159,10 @@ if (wproc) then
     &"  ! sum of V_n^{H}/2")')sic_epot_h
   write(fout,'("  XC                               : ",G18.10,&
     &"  ! sum of E_n^{XC}")')sic_epot_xc 
-  write(fout,'("SIC total energy contribution      : ",G18.10,&
-    &"  ! kinetic - potential ")')sic_energy_tot
   call flushifc(fout)
 endif
 deallocate(ovlp)
-deallocate(wanrms)
+deallocate(wanrms,spread)
 
 !allocate(xmt(lmmaxvr,nmtloc,sic_orbitals%ntr,4))
 !allocate(xir(ngrloc,sic_orbitals%ntr,4))
