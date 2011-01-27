@@ -1121,6 +1121,8 @@ case('sicw')
   enddo
 case('nsclsic')
   read(50,*,err=20) nsclsic
+case('sic_sphere')
+  read(50,*,err=20) lmaxwan,s_nr,s_ntp
 case('disentangle')
   read(50,*,err=20) ldisentangle  
 case('scvl')

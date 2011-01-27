@@ -74,16 +74,19 @@ type(t_sic_orbitals) :: sic_orbitals
 integer s_ngvec
 ! number of radial points in big spheres
 integer s_nr
+data s_nr/600/
 ! radial mesh of big spheres
 real(8), allocatable :: s_r(:)
 ! weights for integration of radial functions
 real(8), allocatable :: s_rw(:)
 ! maximum l for expansion in big spheres
 integer lmaxwan
+data lmaxwan/5/
 ! (lmaxwan+1)^2
 integer lmmaxwan
 ! number of points on the big sphere
 integer s_ntp
+data s_ntp/266/
 ! coordinate of unit vectors on the sphere
 real(8), allocatable :: s_spx(:,:)
 ! weights for spherical integration
@@ -97,7 +100,7 @@ complex(8), allocatable :: s_ylmb(:,:)
 ! forward transformation from complex spherical harmonics to coordinates
 complex(8), allocatable :: s_ylmf(:,:)
 
-!
+
 complex(8), allocatable :: s_wanlm(:,:,:,:)
 complex(8), allocatable :: s_wvlm(:,:,:,:)
 complex(8), allocatable :: s_wankmt(:,:,:,:,:,:)

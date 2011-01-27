@@ -16,11 +16,7 @@ real(8) a,b,x0,tp(2)
 complex(8) zt1
 !
 tevecsv=.true.
-lmaxwan=4
 lmmaxwan=(lmaxwan+1)**2
-s_ntp=266
-s_nr=800
-x0=1d-6
 
 if (allocated(sic_apply)) deallocate(sic_apply)
 allocate(sic_apply(nwantot))
@@ -209,9 +205,9 @@ enddo
 !  call test1(1202,i)
 !enddo
 !call bstop
-  
 
 ! generate radial mesh
+x0=1d-6
 b=log(sic_wan_cutoff/x0)/(s_nr-1)
 a=x0/exp(b)
 do ir=1,s_nr
@@ -225,8 +221,12 @@ do ir=1,s_nr-1
 enddo
 
 if (mpi_grid_root()) then
-  write(*,'("[sic_init] Memory usage (Mb) : ",F12.4)')&
-    2*16.d0*lmmaxwan*s_nr*nspinor*sic_wantran%nwan/1024/1024
+! size of sperical arrays
+  a=2*16.d0*lmmaxwan*s_nr*nspinor*sic_wantran%nwan/1024/1024
+! size of Bloch sums
+  a=a+2*16.d0*lmmaxvr*nrmtmax*natmtot*nspinor*sic_wantran%nwan*nkptloc/1024/1024
+  a=a+2*16.d0*ngrtot*nspinor*sic_wantran%nwan*nkptloc/1024/1204
+  write(*,'("[sic_init] Memory usage (Mb) : ",F12.4)')a
 endif
 return
 end
