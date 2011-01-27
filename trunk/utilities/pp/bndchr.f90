@@ -163,7 +163,7 @@ write(50,'(" set yrange [",F12.6,":",F12.6,"]")')emin,emax
 write(50,'(" set grid ytics")')
 write(50,'(" set ytics ",F12.6)')(emax-emin)/40
 write(50,'(" set xrange [",F12.6,":",F12.6,"]")')0.d0,dpp1d(nkpt)
-write(50,*)"set ylabel 'Energy (eV)'"
+write(50,*)"set ylabel 'Energy ("//e_units//")'"
 write(50,*)"set output 'bnds.ps'"      
 write(50,'("plot ''BNDS.DAT'' with lines lt 1, ''BNDS_xydy.DAT'' &
   &using 1:2:($3*4) with points lt 1 lc 1 pt 6 ps variable")')
