@@ -115,43 +115,35 @@ enddo
 sic_energy_pot=sic_epot_h+sic_epot_xc
 ! total energy: engytot=engytot+sic_etot_correction
 sic_energy_tot=sic_energy_kin-sic_energy_pot
+! print some info
 if (wproc) then
   write(fout,*)
-  write(fout,'("overlap integrals",13X,"<W_n|W_n>")')
+  write(fout,'(" n   |   norm     RMS     spread")')
   write(fout,'(60("-"))')
   do i=1,sic_wantran%nwan
     n=sic_wantran%iwan(i)
     j=sic_wantran%iwtidx(n,n,0,0,0)
-    write(151,'("  n : ",I4,8X,2G18.10)')n,dreal(ovlp(j)),dimag(ovlp(j))
+    write(151,'(I4," | ",2X,G18.10,2X,G18.10)')n,dreal(ovlp(j)),wanrms(i)
   enddo
   write(fout,'(60("-"))')
   write(fout,'("maximum deviation from norm : ",F12.6)')t1
   write(fout,*)
-  write(fout,'("RMS difference")')
-  write(fout,'(60("-"))')
-  do i=1,sic_wantran%nwan
-    n=sic_wantran%iwan(i)
-    write(151,'("  n : ",I4,8X,G18.10)')n,wanrms(i)
-  enddo
-  write(fout,'(60("-"))')
-  write(fout,*)
-  write(fout,'(2X,"wann",3X,"<W_n|V_n^{H}|W_n>   <W_n|V_n^{XC}|W_n>  &
-    &<W_n|V_n|W_n>     <W_n|E_n^{XC}|W_n>")')
+  write(fout,'(2X,"n  | ",3X,"V_n^{H}  V_n^{XC} V_n  E_n^{XC}")')
   write(fout,'(84("-"))')
   do j=1,sic_wantran%nwan
     n=sic_wantran%iwan(j)
-    write(fout,'(I4,4X,4(G18.10,2X))')n,ene(:,j)
+    write(fout,'(I4," | ",4X,4(G18.10,2X))')n,ene(:,j)
   enddo
   write(fout,'(84("-"))')
   write(fout,*)
   write(fout,'("SIC kinetic energy contribution    : ",G18.10,&
-    &"  ! sum of <W_n|V_n|W_n>" )')sic_energy_kin
+    &"  ! sum of V_n" )')sic_energy_kin
   write(fout,'("SIC potential energy contribution  : ",G18.10,&
     &"  ! sum of Hartree and XC terms")')sic_energy_pot
   write(fout,'("  Hartree                          : ",G18.10,&
-    &"  ! sum of 1/2 <W_n|V_n^{H}|W_n>")')sic_epot_h
+    &"  ! sum of V_n^{H}/2")')sic_epot_h
   write(fout,'("  XC                               : ",G18.10,&
-    &"  ! sum of <W_n|E_n^{XC}|W_n>")')sic_epot_xc 
+    &"  ! sum of E_n^{XC}")')sic_epot_xc 
   write(fout,'("SIC total energy contribution      : ",G18.10,&
     &"  ! kinetic - potential ")')sic_energy_tot
   call flushifc(fout)
