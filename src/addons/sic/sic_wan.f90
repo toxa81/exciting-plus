@@ -51,19 +51,29 @@ do j=1,sic_wantran%nwan
   enddo
 ! check expansion
   t1=0.d0
-  do ir=1,nr
-    do itp=1,ntp
-      vrc(:)=(/sin(tp(1,itp))*cos(tp(2,itp)),&
-               sin(tp(1,itp))*sin(tp(2,itp)),&
-               cos(tp(1,itp))/)*ir*sic_wan_cutoff/nr/2.d0
-      call s_get_wanval(n,vrc,wanval)
+!  do ir=1,nr
+!    do itp=1,ntp
+!      vrc(:)=(/sin(tp(1,itp))*cos(tp(2,itp)),&
+!               sin(tp(1,itp))*sin(tp(2,itp)),&
+!               cos(tp(1,itp))/)*ir*sic_wan_cutoff/nr/2.d0
+!      call s_get_wanval(n,vrc,wanval)
+!      do ispn=1,nspinor
+!        z1=wanval(ispn)-s_func_val(vrc,s_wanlm(1,1,ispn,j))
+!        t1=t1+abs(z1)**2
+!      enddo
+!    enddo
+!  enddo
+!  wanrms(j)=sqrt(t1/nr/ntp)
+  do ir=1,s_nr
+    do itp=1,s_ntp
+      vrc(:)=s_spx(:,itp)*s_r(ir)
       do ispn=1,nspinor
-        z1=wanval(ispn)-s_func_val(vrc,s_wanlm(1,1,ispn,j))
+        z1=wantp(itp,ir,ispn)-s_func_val(vrc,s_wanlm(1,1,ispn,j))
         t1=t1+abs(z1)**2
       enddo
     enddo
   enddo
-  wanrms(j)=sqrt(t1/nr/ntp)
+  wanrms(j)=sqrt(t1/s_nr/s_ntp)
 ! estimate the quadratic spread <r^2>-<r>^2
   x2=0.d0
   x=0.d0
