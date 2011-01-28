@@ -9,7 +9,7 @@ complex(8), intent(in) :: wanlm(lmmaxwan,s_nr,nspinor)
 real(8), intent(out) :: wanrms(3)
 ! local variables
 integer nr,ntp,ir,itp,ispn,ias
-real(8) t1
+real(8) t1,vrc1(3)
 complex(8) zt1,wanval(nspinor)
 real(8), allocatable :: tp(:,:),vrc(:,:,:)
 complex(8), allocatable :: rhotp(:,:)
@@ -32,9 +32,9 @@ do ir=1,nr
   do itp=1,ntp
     vrc(:,itp,ir)=(/sin(tp(1,itp))*cos(tp(2,itp)),&
                     sin(tp(1,itp))*sin(tp(2,itp)),&
-                    cos(tp(1,itp))/)*ir*sic_wan_cutoff/nr/2.d0+&
-                  atposc(:,ias2ia(ias),ias2is(ias))
-    call s_get_wanval(n,vrc(1,itp,ir),wanval)
+                    cos(tp(1,itp))/)*ir*sic_wan_cutoff/nr/2.d0
+    vrc1(:)=vrc(:,itp,ir)+atposc(:,ias2ia(ias),ias2is(ias))
+    call s_get_wanval(n,vrc1,wanval)
     wantpc(itp,ir,:)=wanval(:)
   enddo
 enddo
