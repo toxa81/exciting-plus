@@ -199,7 +199,7 @@ do iscl=1,maxscl
   do ikloc=1,nkptloc
 ! solve the first-variational secular equation
     call seceqn1(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc))
-  end do  
+  end do 
 ! SIC block to compute <W_n|\phi> 
   if (sic) call sic_genfvprj
   evalsv=0.d0

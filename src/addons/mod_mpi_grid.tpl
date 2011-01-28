@@ -694,8 +694,8 @@ end subroutine
 
 @template end
 
-subroutine mpi_grid_reduce_common(n_,dims_,side_,all_,op_,root_,lreduce_,&
-  lallreduce_,length_,reduceop_,comm_,rootid_)
+subroutine mpi_grid_reduce_common(n_,dims_,side_,all_,op_,root_,lnulldim_,&
+  lreduce_,lallreduce_,length_,reduceop_,comm_,rootid_)
 #ifdef _MPI_
 use mpi
 implicit none
@@ -705,6 +705,7 @@ logical, optional, intent(in) :: side_
 logical, optional, intent(in) :: all_
 integer, optional, intent(in) :: op_
 integer, optional, dimension(:), intent(in) :: root_
+logical, intent(out) :: lnulldim_
 logical, intent(out) :: lreduce_
 logical, intent(out) :: lallreduce_
 integer, intent(out) :: length_
@@ -715,11 +716,18 @@ integer idims(0:ndmax)
 !
 idims=convert_dims_to_internal(dims_)
 ! check if a reduction is necessary
-!lreduce_=.false.
+lreduce_=.false.
+lnulldim_=.true.
 !do i=1,idims(0)
-!  if (mpi_grid_size(idims(i)).ne.1) lreduce_=.true.
+!  if (mpi_grid_size(idims(i)).ne.1) then
+!    lreduce_=.true.
+!    lnulldim_=.false.
+!  endif
 !enddo
-lreduce_=.true.
+if (idims(0).gt.0) then
+  lreduce_=.true.
+  lnulldim_=.false.
+endif
 ! check if only side processes do a reduction
 if (lreduce_) then
   if (present(side_)) then
@@ -779,14 +787,19 @@ integer, optional, intent(in) :: op
 integer, optional, dimension(:), intent(in) :: root
 ! local variables
 integer comm,rootid,ierr,sz
-logical lreduce,lallreduce
+logical lreduce,lallreduce,lnulldim
 integer length,reduceop
 #ftype, allocatable :: tmp(:)
 #ifdef _MPI_
 call mpi_grid_reduce_common(n_=n,dims_=dims,side_=side,all_=all,op_=op,&
-  root_=root,lreduce_=lreduce,lallreduce_=lallreduce,length_=length,&
-  reduceop_=reduceop,comm_=comm,rootid_=rootid)
-if (.not.lreduce) return
+  root_=root,lnulldim_=lnulldim,lreduce_=lreduce,lallreduce_=lallreduce,&
+  length_=length,reduceop_=reduceop,comm_=comm,rootid_=rootid)
+if (.not.lreduce) then
+  if (lnulldim) then
+    if (present(outb)) outb=inpb
+  endif
+  return
+endif
 ! do a reduction
 if (present(outb)) then
   if (lallreduce) then
