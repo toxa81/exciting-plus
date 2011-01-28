@@ -8,20 +8,19 @@ implicit none
 ! arguments
 integer, intent(in) :: fout
 ! local variables
-integer n,ispn,vl(3),n1,i,j,j1,itp,ir,nwtloc,iloc,ntp,nr
-real(8) t1,t2,vrc(3),x(3),x2
+integer n,ispn,vl(3),n1,i,j,j1,itp,ir,nwtloc,iloc,ias
+real(8) t1,vrc(3),x(3),x2
 real(8) sic_epot_h,sic_epot_xc
-complex(8) z1,zt1,wanval(nspinor)
+complex(8) z1,wanval(nspinor)
 real(8), allocatable :: ene(:,:)
-real(8), allocatable :: tp(:,:)
 complex(8), allocatable :: ovlp(:)
 complex(8), allocatable :: wantp(:,:,:)
-real(8), allocatable :: wanrms(:),spread(:)
+real(8), allocatable :: wanrms(:,:),wanqsp(:)
 
 allocate(wantp(s_ntp,s_nr,nspinor))
 allocate(ene(4,sic_wantran%nwan))
-allocate(wanrms(sic_wantran%nwan))
-allocate(spread(sic_wantran%nwan))
+allocate(wanrms(3,sic_wantran%nwan))
+allocate(wanqsp(sic_wantran%nwan))
 
 if (wproc) then
   write(fout,*)
@@ -30,15 +29,12 @@ if (wproc) then
   write(fout,'(80("="))')
 endif
 call timer_start(3,reset=.true.)
-ntp=250
-nr=300
-allocate(tp(2,ntp))
-call sphcover(ntp,tp)
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
+  ias=wan_info(1,n)
   do ir=1,s_nr
     do itp=1,s_ntp
-      vrc(:)=s_spx(:,itp)*s_r(ir)
+      vrc(:)=s_spx(:,itp)*s_r(ir)+atposc(:,ias2ia(ias),ias2is(ias))
       call s_get_wanval(n,vrc,wanval)
       wantp(itp,ir,:)=wanval(:)
     enddo
@@ -50,30 +46,7 @@ do j=1,sic_wantran%nwan
       s_ntp,zzero,s_wanlm(1,1,ispn,j),lmmaxwan)
   enddo
 ! check expansion
-  t1=0.d0
-!  do ir=1,nr
-!    do itp=1,ntp
-!      vrc(:)=(/sin(tp(1,itp))*cos(tp(2,itp)),&
-!               sin(tp(1,itp))*sin(tp(2,itp)),&
-!               cos(tp(1,itp))/)*ir*sic_wan_cutoff/nr/2.d0
-!      call s_get_wanval(n,vrc,wanval)
-!      do ispn=1,nspinor
-!        z1=wanval(ispn)-s_func_val(vrc,s_wanlm(1,1,ispn,j))
-!        t1=t1+abs(z1)**2
-!      enddo
-!    enddo
-!  enddo
-!  wanrms(j)=sqrt(t1/nr/ntp)
-  do ir=1,s_nr
-    do itp=1,s_ntp
-      vrc(:)=s_spx(:,itp)*s_r(ir)
-      do ispn=1,nspinor
-        z1=wantp(itp,ir,ispn)-s_func_val(vrc,s_wanlm(1,1,ispn,j))
-        t1=t1+abs(z1)**2
-      enddo
-    enddo
-  enddo
-  wanrms(j)=sqrt(t1/s_nr/s_ntp)
+  call sic_wanrms(n,wantp,s_wanlm(1,1,1,j),wanrms(1,j))
 ! estimate the quadratic spread <r^2>-<r>^2
   x2=0.d0
   x=0.d0
@@ -89,7 +62,7 @@ do j=1,sic_wantran%nwan
       enddo
     enddo
   enddo
-  spread(j)=x2-dot_product(x,x)
+  wanqsp(j)=x2-dot_product(x,x)
 ! generate potentials
   if (sic_apply(n).eq.2) then
     call s_gen_pot(s_wanlm(1,1,1,j),wantp,s_wvlm(1,1,1,j),ene(1,j),ene(2,j),&
@@ -100,7 +73,6 @@ do j=1,sic_wantran%nwan
   endif
 enddo !j
 deallocate(wantp)
-deallocate(tp)
 
 allocate(ovlp(sic_wantran%nwt))
 ovlp=zzero
@@ -142,15 +114,17 @@ sic_energy_tot=sic_energy_kin-sic_energy_pot
 ! print some info
 if (wproc) then
   write(fout,*)
-  write(fout,'("   n |       norm        RMS     spread")')
+  write(fout,'("   n |       norm       spread     RMS(wan)     RMS(rho)&
+  &   RMS(rho^{1/3})")')
   write(fout,'(80("-"))')
   do i=1,sic_wantran%nwan
     n=sic_wantran%iwan(i)
     j=sic_wantran%iwtidx(n,n,0,0,0)
-    write(151,'(I4," | ",3(F10.6,1X))')n,dreal(ovlp(j)),wanrms(i),spread(i)
+    write(151,'(I4," | ",5(F10.6,3X))')n,dreal(ovlp(j)),wanqsp(i),wanrms(:,i)
   enddo
   write(fout,'(80("-"))')
   write(fout,'("maximum deviation from norm : ",F12.6)')t1
+  write(fout,'("total quadratic spread : ",F12.6," [a.u.]^2")')sum(wanqsp)
   write(fout,*)
   write(fout,'("   n | ",5X,"V_n^{H}     V_n^{XC}          V_n     E_n^{XC}")')
   write(fout,'(80("-"))')
@@ -172,7 +146,7 @@ if (wproc) then
   call flushifc(fout)
 endif
 deallocate(ovlp)
-deallocate(wanrms,spread)
+deallocate(wanrms,wanqsp)
 
 !allocate(xmt(lmmaxvr,nmtloc,sic_orbitals%ntr,4))
 !allocate(xir(ngrloc,sic_orbitals%ntr,4))
