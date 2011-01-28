@@ -8,6 +8,7 @@ use mod_linresp
 use mod_madness
 implicit none
 integer n,i,j,i1,j1,j2,n1,n2,ik,ispn,vtrl(3),ikloc,ig,nwtloc,iloc
+integer ias,lm
 real(8) t1,t2,t3,vtrc(3)
 real(8) etot_,ekin_
 integer vl(3)
@@ -15,6 +16,8 @@ complex(8) z1
 real(8), allocatable :: laplsv(:) 
 complex(8), allocatable :: vwank(:,:)
 complex(8), allocatable :: vwanme_old(:)
+character*20 c1,c2,c3
+character, parameter :: orb(4)=(/'s','p','d','f'/)
 
 sic=.true.
 
@@ -41,7 +44,15 @@ if (wproc) then
   write(151,*)
   write(151,'("number of included Wannier functions : ",I4)')sic_wantran%nwan
   do j=1,sic_wantran%nwan
-    write(151,'("  j : ",I4,"    n : ",I4)')j,sic_wantran%iwan(j)
+    n=sic_wantran%iwan(j)
+    ias=wan_info(1,n)
+    lm=wan_info(2,n)
+    write(c1,'(I6)')ias2ia(ias)
+    write(c2,'(I1)')lm2m(lm)+lm2l(lm)+1
+    c3=trim(spsymb(ias2is(ias)))//trim(adjustl(c1))//"-"//&
+      orb(lm2l(lm)+1)//trim(adjustl(c2))
+    write(151,'("  j : ",I4,"    n : ",I4,"    ! ",A)')j,&
+      sic_wantran%iwan(j),trim(c3)
   enddo
   write(151,*)
   write(151,'("cutoff radius for Wannier functions   : ",F12.6)')sic_wan_cutoff
