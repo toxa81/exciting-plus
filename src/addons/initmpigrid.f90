@@ -5,7 +5,7 @@ implicit none
 integer, allocatable :: d(:)
 integer i1,i2,nd,i
 select case(task)
-  case(0,1,20,21,805,822)
+  case(0,1,20,21,805,822,809,810)
     nd=2
     allocate(d(nd)); d(:)=1
     if (nproc.le.nkpt) then
@@ -14,7 +14,8 @@ select case(task)
       d(dim1)=nkpt
       d(dim2)=nproc/nkpt
     endif
-  case(800,801,809,810)
+! linear response runs on 3D grid
+  case(800,801)
     nd=3
     allocate(d(nd)); d(:)=1
     i2=nvq

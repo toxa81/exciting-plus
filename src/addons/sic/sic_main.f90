@@ -149,9 +149,9 @@ vwanme_old=vwanme
 ! compute matrix elements of SIC potential
 !  vwanme = <(W*V)_n|W_{n1,T}>
 vwanme=zzero
-nwtloc=mpi_grid_map(sic_wantran%nwt,dim_k)
+nwtloc=mpi_grid_map2(sic_wantran%nwt,dims=(/dim_k,dim2/))
 do iloc=1,nwtloc
-  i=mpi_grid_map(sic_wantran%nwt,dim_k,loc=iloc)
+  i=mpi_grid_map2(sic_wantran%nwt,dims=(/dim_k,dim2/),loc=iloc)
   n=sic_wantran%iwt(1,i)
   j=sic_wantran%idxiwan(n)
   n1=sic_wantran%iwt(2,i)
@@ -161,7 +161,7 @@ do iloc=1,nwtloc
      vwanme(i)=vwanme(i)+s_dot_ll(n,n1,vl,s_wvlm(1,1,ispn,j),s_wanlm(1,1,ispn,j1))
    enddo
 enddo
-call mpi_grid_reduce(vwanme(1),sic_wantran%nwt,dims=(/dim_k/),all=.true.)
+call mpi_grid_reduce(vwanme(1),sic_wantran%nwt,all=.true.)
 ! check localization criterion and compute difference of vwanme
 t2=-1.d0
 t3=0.d0
