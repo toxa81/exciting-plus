@@ -1047,7 +1047,7 @@ integer, optional, intent(out) :: offs
 ! local variables
 integer idx0_,size_
 integer i,size1,k,j
-integer, allocatable :: x_(:)
+!integer, allocatable :: x_(:)
 
 i=0
 if (present(loc)) i=i+1
@@ -1062,7 +1062,7 @@ endif
 ! total number of processes
 size1=1
 do i=1,size(dims)
-  size1=size1*mpi_grid_size(dims(i))
+  size1=size1*mpi_grid_dim_size(dims(i))
 enddo
 
 !if (present(glob)) then
@@ -1072,40 +1072,40 @@ enddo
 !  return
 !endif
 
-allocate(x_(size(dims)))
-if (present(x)) then
-  if (size(x).ne.size(dims)) then
-    write(*,'("Error(mpi_grid_map2): size(x).ne.size(dims)")')
-    call pstop
-  endif
-  do i=1,size(dims)
-    x_(i)=x(i)
-  enddo
-else
-  do i=1,size(dims)
-    x_(i)=mpi_grid_x(dims(i))
-  enddo
-endif 
+!allocate(x_(size(dims)))
+!if (present(x)) then
+!  if (size(x).ne.size(dims)) then
+!    write(*,'("Error(mpi_grid_map2): size(x).ne.size(dims)")')
+!    call pstop
+!  endif
+!  do i=1,size(dims)
+!    x_(i)=x(i)
+!  enddo
+!else
+!  do i=1,size(dims)
+!    x_(i)=mpi_grid_x(dims(i))
+!  enddo
+!endif 
 
 ! make a liner index from coordinates
 k=1
 j=1
 do i=1,size(dims)
-  j=j+x_(i)*k
-  k=k*mpi_grid_size(dims(i))
+  j=j+mpi_grid_dim_pos(dims(i))*k
+  k=k*mpi_grid_dim_size(dims(i))
 enddo
 
-!if (present(loc)) then
-!  call idxglob(length,mpi_grid_size(idim),x_+1,loc,idx0_)
-!  mpi_grid_map=idx0_
-!  return
-!endif
+if (present(loc)) then
+  call global_index(length,size1,j,loc,idx0_)
+  mpi_grid_map2=idx0_
+  return
+endif
 
 call partition_index(length,size1,j,idx0_,size_)
 if (present(offs)) offs=idx0_
 mpi_grid_map2=size_
 
-deallocate(x_)
+!deallocate(x_)
 return
 end function
 

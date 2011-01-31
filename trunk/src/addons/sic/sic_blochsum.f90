@@ -2,7 +2,7 @@ subroutine sic_blochsum
 use modmain
 use mod_sic
 implicit none
-integer ik,ikloc,j,n,jas,it,ias,is,ir,itp,ispn
+integer ik,ikloc,j,n,jas,it,ias,is,ir,itp,ispn,ntrloc,itloc
 real(8) x(3)
 real(8), allocatable :: tp(:,:)
 complex(8), allocatable :: zprod(:,:,:)
@@ -20,13 +20,15 @@ allocate(zprod(2,sic_wantran%nwan,nkpt))
 zprod=zzero
 allocate(tp(2,lmmaxvr))
 call sphcover(lmmaxvr,tp)
+ntrloc=mpi_grid_map(sic_orbitals%ntr,dim2)
 do ikloc=1,nkptloc
   ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 ! make Bloch sums
   do j=1,sic_wantran%nwan
     n=sic_wantran%iwan(j)
     jas=wan_info(1,n)
-    do it=1,sic_orbitals%ntr
+    do itloc=1,ntrloc
+      it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
       expikt=exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
 ! muffin-tins
       do ias=1,natmtot
@@ -56,7 +58,15 @@ do ikloc=1,nkptloc
             s_func_val(x,s_wvlm(1,1,ispn,j))*expikt 
         enddo
       enddo
-    enddo !it
+    enddo !itloc
+    call mpi_grid_reduce(s_wankmt(1,1,1,1,j,ikloc),&
+      lmmaxvr*nrmtmax*natmtot*nspinor,dims=(/dim2/),all=.true.)
+    call mpi_grid_reduce(s_wankir(1,1,j,ikloc),ngrtot*nspinor,&
+      dims=(/dim2/),all=.true.)
+    call mpi_grid_reduce(s_wvkmt(1,1,1,1,j,ikloc),&
+      lmmaxvr*nrmtmax*natmtot*nspinor,dims=(/dim2/),all=.true.)
+    call mpi_grid_reduce(s_wvkir(1,1,j,ikloc),ngrtot*nspinor,&
+      dims=(/dim2/),all=.true.)
     zt1=zzero
     zt2=zzero
     do ispn=1,nspinor
