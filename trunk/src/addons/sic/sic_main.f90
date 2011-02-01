@@ -113,6 +113,7 @@ do ikloc=1,nkptnrloc
     s_ngvec=max(s_ngvec,igkignr(ig,ikloc))
   enddo
 enddo
+! TODO: check if this can be removed; probably yes.
 call mpi_grid_reduce(s_ngvec,dims=(/dim_k/),all=.true.,op=op_max)
 ! init Madness related variables 
 #ifdef _MAD_
