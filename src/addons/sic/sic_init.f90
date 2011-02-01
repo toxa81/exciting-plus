@@ -117,6 +117,10 @@ if (.not.tsic_arrays_allocated) then
   sic_energy_tot=0.d0
   sic_energy_pot=0.d0
   sic_energy_kin=0.d0
+  allocate(sic_wgk(ngkmax,sic_wantran%nwan,nspinor,nkptloc))
+  sic_wgk=zzero
+  allocate(sic_wvgk(ngkmax,sic_wantran%nwan,nspinor,nkptloc))
+  sic_wgk=zzero
 endif
 if (allocated(s_wankmt)) deallocate(s_wankmt)
 allocate(s_wankmt(lmmaxvr,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))

@@ -102,7 +102,8 @@ else
 end if
 if (sic) then
   call sic_readvwan
-  call sic_blochsum
+  call sic_genpwi
+  !call sic_blochsum
 endif
 if (wproc) call flushifc(60)
 ! size of mixing vector
