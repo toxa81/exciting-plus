@@ -156,10 +156,10 @@ do iscl=1,maxscl
   if (sic) then
     call timer_reset(t_sic_hunif)
     call timer_reset(t_sic_genfvprj)
-    call timer_reset(t_sic_genfvprj_dotp)  
-    call timer_reset(t_sic_genfvprj_wfmt)
-    call timer_reset(t_sic_genfvprj_wfir)
-    call timer_reset(t_sic_genfvprj_wfk)
+    !call timer_reset(t_sic_genfvprj_dotp)  
+    !call timer_reset(t_sic_genfvprj_wfmt)
+    !call timer_reset(t_sic_genfvprj_wfir)
+    !call timer_reset(t_sic_genfvprj_wfk)
   endif
   if (wproc) then
     write(60,*)
@@ -428,18 +428,18 @@ do iscl=1,maxscl
     write(60,'("  Density matrix setup                      : ",F12.2)')&
       timer_get_value(t_dmat)
     if (sic) then
-      write(60,'("  sic_genfvprj (total)                      : ",F12.2)')&
+      write(60,'("  sic_genfvprj                              : ",F12.2)')&
         timer_get_value(t_sic_genfvprj)
-      write(60,'("  sic_genfvprj (dot product)                : ",F12.2)')&
-        timer_get_value(t_sic_genfvprj_dotp)
-      write(60,'("  sic_genfvprj (wfmt)                       : ",F12.2)')&
-        timer_get_value(t_sic_genfvprj_wfmt)
-      write(60,'("  sic_genfvprj (wfir)                       : ",F12.2)')&
-        timer_get_value(t_sic_genfvprj_wfir)
-      write(60,'("  sic_genfvprj (wfk)                        : ",F12.2)')&
-        timer_get_value(t_sic_genfvprj_wfk)
-      write(60,'("  sic_hunif                                 : ",F12.2)')&
-        timer_get_value(t_sic_hunif)
+     ! write(60,'("  sic_genfvprj (dot product)                : ",F12.2)')&
+     !   timer_get_value(t_sic_genfvprj_dotp)
+     ! write(60,'("  sic_genfvprj (wfmt)                       : ",F12.2)')&
+     !   timer_get_value(t_sic_genfvprj_wfmt)
+     ! write(60,'("  sic_genfvprj (wfir)                       : ",F12.2)')&
+     !   timer_get_value(t_sic_genfvprj_wfir)
+     ! write(60,'("  sic_genfvprj (wfk)                        : ",F12.2)')&
+     !   timer_get_value(t_sic_genfvprj_wfk)
+     ! write(60,'("  sic_hunif                                 : ",F12.2)')&
+     !   timer_get_value(t_sic_hunif)
     endif
   endif !wproc
 ! end the self-consistent loop
