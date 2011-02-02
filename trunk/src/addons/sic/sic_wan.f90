@@ -83,25 +83,27 @@ allocate(ovlp(sic_wantran%nwt))
 ovlp=zzero
 t1=0.d0
 ! compute overlap integrals 
-nwtloc=mpi_grid_map2(sic_wantran%nwt,dims=(/dim_k,dim2/))
-do iloc=1,nwtloc
-  i=mpi_grid_map2(sic_wantran%nwt,dims=(/dim_k,dim2/),loc=iloc)
-  n=sic_wantran%iwt(1,i)
-  j=sic_wantran%idxiwan(n)
-  n1=sic_wantran%iwt(2,i)
-  j1=sic_wantran%idxiwan(n1)
-  vl(:)=sic_wantran%iwt(3:5,i)
-  do ispn=1,nspinor
-    ovlp(i)=ovlp(i)+s_dot_ll(n,n1,vl,s_wanlm(1,1,ispn,j),s_wanlm(1,1,ispn,j1))
+if (.false.) then
+  nwtloc=mpi_grid_map2(sic_wantran%nwt,dims=(/dim_k,dim2/))
+  do iloc=1,nwtloc
+    i=mpi_grid_map2(sic_wantran%nwt,dims=(/dim_k,dim2/),loc=iloc)
+    n=sic_wantran%iwt(1,i)
+    j=sic_wantran%idxiwan(n)
+    n1=sic_wantran%iwt(2,i)
+    j1=sic_wantran%idxiwan(n1)
+    vl(:)=sic_wantran%iwt(3:5,i)
+    do ispn=1,nspinor
+      ovlp(i)=ovlp(i)+s_dot_ll(n,n1,vl,s_wanlm(1,1,ispn,j),s_wanlm(1,1,ispn,j1))
+    enddo
+    z1=ovlp(i)
+    if (n.eq.n1.and.all(vl.eq.0)) then
+      z1=z1-zone
+    endif
+    t1=max(t1,abs(z1))
   enddo
-  z1=ovlp(i)
-  if (n.eq.n1.and.all(vl.eq.0)) then
-    z1=z1-zone
-  endif
-  t1=max(t1,abs(z1))
-enddo
-call mpi_grid_reduce(ovlp(1),sic_wantran%nwt)
-call mpi_grid_reduce(t1,op=op_max)
+  call mpi_grid_reduce(ovlp(1),sic_wantran%nwt)
+  call mpi_grid_reduce(t1,op=op_max)
+endif
 ! compute energies
 ! note: here Hartree potential has a positive sign and XC potential 
 !  has a negative sign
