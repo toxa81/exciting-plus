@@ -16,7 +16,8 @@ real(8), allocatable :: ene(:,:)
 complex(8), allocatable :: ovlp(:)
 complex(8), allocatable :: wantp(:,:,:)
 real(8), allocatable :: wanrms(:,:),wanqsp(:)
-
+integer, parameter :: iovlp=1 
+integer, parameter :: irms=0
 allocate(wantp(s_ntp,s_nr,nspinor))
 allocate(ene(4,sic_wantran%nwan))
 allocate(wanrms(3,sic_wantran%nwan))
@@ -28,7 +29,10 @@ if (wproc) then
   write(fout,'("generating Wannier functions on a spherical grid")')
   write(fout,'(80("="))')
 endif
-call timer_start(3,reset=.true.)
+call timer_start(t_sic_wan,reset=.true.)
+call timer_reset(t_sic_wan_gen)
+call timer_reset(t_sic_wan_rms)
+call timer_reset(t_sic_wan_pot)
 s_wanlm=zzero
 s_wvlm=zzero
 ene=0.d0
@@ -39,6 +43,7 @@ do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
   ias=wan_info(1,n)
   wantp=zzero
+  call timer_start(t_sic_wan_gen)
   do irloc=1,nrloc
     ir=mpi_grid_map(s_nr,dim2,loc=irloc)
     do itp=1,s_ntp
@@ -53,8 +58,13 @@ do j=1,sic_wantran%nwan
     call zgemm('T','N',lmmaxwan,s_nr,s_ntp,zone,s_ylmb,s_ntp,wantp(1,1,ispn),&
       s_ntp,zzero,s_wanlm(1,1,ispn,j),lmmaxwan)
   enddo
+  call timer_stop(t_sic_wan_gen)
+  if (irms.eq.1) then
+    call timer_start(t_sic_wan_rms)
 ! check expansion
-  call sic_wanrms(n,wantp,s_wanlm(1,1,1,j),wanrms(1,j))
+    call sic_wanrms(n,wantp,s_wanlm(1,1,1,j),wanrms(1,j))
+    call timer_stop(t_sic_wan_rms)
+  endif
 ! estimate the quadratic spread <r^2>-<r>^2
   x2=0.d0
   x=0.d0
@@ -73,8 +83,10 @@ do j=1,sic_wantran%nwan
   wanqsp(j)=x2-dot_product(x,x)
 ! generate potentials
   if (sic_apply(n).eq.2) then
+    call timer_start(t_sic_wan_pot)
     call s_gen_pot(s_wanlm(1,1,1,j),wantp,s_wvlm(1,1,1,j),ene(1,j),ene(2,j),&
       ene(3,j),ene(4,j))
+    call timer_stop(t_sic_wan_pot)
   endif
 enddo !j
 deallocate(wantp)
@@ -82,8 +94,27 @@ deallocate(wantp)
 allocate(ovlp(sic_wantran%nwt))
 ovlp=zzero
 t1=0.d0
+call timer_start(t_sic_wan_ovl,reset=.true.)
 ! compute overlap integrals 
-if (.false.) then
+if (iovlp.eq.1) then
+  do i=1,sic_wantran%nwt
+    n=sic_wantran%iwt(1,i)
+    j=sic_wantran%idxiwan(n)
+    n1=sic_wantran%iwt(2,i)
+    j1=sic_wantran%idxiwan(n1)
+    vl(:)=sic_wantran%iwt(3:5,i)
+    if (all(vl.eq.0)) then
+      do ispn=1,nspinor
+        ovlp(i)=ovlp(i)+s_dot_ll(n,n1,vl,s_wanlm(1,1,ispn,j),s_wanlm(1,1,ispn,j1))
+      enddo
+    endif
+    z1=ovlp(i)
+    if (n.eq.n1.and.all(vl.eq.0)) then
+      z1=z1-zone
+    endif
+    t1=max(t1,abs(z1))
+  enddo
+else if (iovlp.eq.2) then
   nwtloc=mpi_grid_map2(sic_wantran%nwt,dims=(/dim_k,dim2/))
   do iloc=1,nwtloc
     i=mpi_grid_map2(sic_wantran%nwt,dims=(/dim_k,dim2/),loc=iloc)
@@ -104,6 +135,7 @@ if (.false.) then
   call mpi_grid_reduce(ovlp(1),sic_wantran%nwt)
   call mpi_grid_reduce(t1,op=op_max)
 endif
+call timer_stop(t_sic_wan_ovl)
 ! compute energies
 ! note: here Hartree potential has a positive sign and XC potential 
 !  has a negative sign
@@ -155,10 +187,14 @@ endif
 deallocate(ovlp)
 deallocate(wanrms,wanqsp)
 deallocate(ene)
-call timer_stop(3)
+call timer_stop(t_sic_wan)
 if (wproc) then
   write(fout,*)
-  write(fout,'("done in ",F8.3," sec.")')timer_get_value(3)
+  write(fout,'("total time          : ",F8.3," sec.")')timer_get_value(t_sic_wan)
+  write(fout,'("  generation of WFs : ",F8.3," sec.")')timer_get_value(t_sic_wan_gen)
+  write(fout,'("  rms               : ",F8.3," sec.")')timer_get_value(t_sic_wan_rms)
+  write(fout,'("  potential         : ",F8.3," sec.")')timer_get_value(t_sic_wan_pot)
+  write(fout,'("  overlap           : ",F8.3," sec.")')timer_get_value(t_sic_wan_ovl)
   call flushifc(fout)
 endif
 return

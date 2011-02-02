@@ -114,7 +114,7 @@ do ikloc=1,nkptnrloc
   enddo
 enddo
 ! TODO: check if this can be removed; probably yes.
-call mpi_grid_reduce(s_ngvec,dims=(/dim_k/),all=.true.,op=op_max)
+!call mpi_grid_reduce(s_ngvec,dims=(/dim_k/),all=.true.,op=op_max)
 ! init Madness related variables 
 #ifdef _MAD_
 if (allocated(m_ngknr)) deallocate(m_ngknr)
@@ -144,6 +144,13 @@ call madness_init_box
 #endif
 ! generate Wannier functions and corresponding potential
 call sic_wan(151)
+call timer_start(t_sic_me,reset=.true.)
+if (wproc) then
+  write(151,*)
+  write(151,'(80("="))')
+  write(151,'("matrix elements")')
+  write(151,'(80("="))')
+endif
 ! save old matrix elements
 allocate(vwanme_old(sic_wantran%nwt))
 vwanme_old=vwanme
@@ -180,12 +187,11 @@ do i=1,sic_wantran%nwt
   t3=t3+abs(vwanme(i)-vwanme_old(i))**2
 enddo
 deallocate(vwanme_old)
+call timer_stop(t_sic_me)
 if (wproc) then
-  call timestamp(151,"")
   write(151,*)
-  write(151,*)
-  write(151,'("Maximum deviation from ""localization criterion"" : ",F12.6)')t2
-  write(151,'("Matrix elements with maximum difference : ",2I6)')i1,j1
+  write(151,'("maximum deviation from ""localization criterion"" : ",F12.6)')t2
+  write(151,'("matrix elements with maximum difference : ",2I6)')i1,j1
   write(151,'("  n : ",I4,"    n'' : ",I4,"    T : ",3I4,8X,2G18.10)')&
     sic_wantran%iwt(:,i1),dreal(vwanme(i1)),dimag(vwanme(i1))
   write(151,'("  n : ",I4,"    n'' : ",I4,"    T : ",3I4,8X,2G18.10)')&
@@ -199,7 +205,9 @@ if (wproc) then
   enddo  
   t3=sqrt(t3/sic_wantran%nwt)
   write(151,*)
-  write(151,'("SIC matrix elements RMS difference :",G18.10)')t3  
+  write(151,'("matrix elements RMS difference :",G18.10)')t3
+  write(151,*)
+  write(151,'("done in : ",F8.3," sec.")')timer_get_value(t_sic_me)
   write(151,*)
   call flushifc(151)
 endif
