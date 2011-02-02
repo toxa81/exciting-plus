@@ -7,10 +7,13 @@ complex(8), allocatable :: vwanme(:)
 complex(8), allocatable :: sic_wann_h0k(:,:,:)
 ! LDA energies of Wannier functions
 real(8), allocatable :: sic_wann_e0(:)
+! number of SIC iterations
 integer :: nsclsic
 data nsclsic/3/
+! current SIC iteration
 integer :: isclsic
 data isclsic/0/
+! "DFT" energy before the SIC correction
 real(8) :: engytot0
 ! total energy correction
 real(8) :: sic_energy_tot
@@ -23,14 +26,25 @@ real(8) :: sic_energy_kin
 data sic_energy_kin/0.d0/
 ! cutoff distance for Wannier functions
 real(8) :: sic_wan_cutoff
-data sic_wan_cutoff/6.d0/
+data sic_wan_cutoff/8.d0/
 ! cutoff distance for SIC marix elements <W_n|V_n|W_{n'T}>
 real(8) :: sic_me_cutoff
 data sic_me_cutoff/0.1d0/
+! dot-product <W_{n\sigma}|f_{jk}> 
+!  where f_{jk} is the first-variational Bloch state 
 complex(8), allocatable :: sic_wb(:,:,:,:)
+! dot-product <(W*V)_{n\sigma}|f_{jk}> 
+!  where f_{jk} is the first-variational Bloch state 
 complex(8), allocatable :: sic_wvb(:,:,:,:)
+! dot-product <W_{n\sigma}|exp^{i(G+k)r}>
 complex(8), allocatable :: sic_wgk(:,:,:,:)
+! dot-product <(W*V)_{n\sigma}|exp^{i(G+k)r}>
 complex(8), allocatable :: sic_wvgk(:,:,:,:)
+! dot-product <W_{n\sigma}|u_{l}^{\alpha,\mu}*Y_{lm}>
+complex(8), allocatable :: sic_wuy(:,:,:,:,:,:)
+! dot-product <(W*V)_{n\sigma}|u_{l}^{\alpha,\mu}*Y_{lm}>
+complex(8), allocatable :: sic_wvuy(:,:,:,:,:,:)
+
 integer, allocatable :: sic_apply(:)
 integer, allocatable :: sicw(:,:)
 
@@ -55,17 +69,6 @@ type t_sic_orbitals
   integer, allocatable :: ivtit(:,:,:)
 ! translation limits along each lattice vector
   integer tlim(2,3)
-! Wannier functions
-!  complex(8), allocatable :: wanmt(:,:,:,:,:)
-!  complex(8), allocatable :: wanir(:,:,:,:)
-! product of a Wannier function with it's potential
-  !complex(8), allocatable :: wvmt(:,:,:,:,:)
-  !complex(8), allocatable :: wvir(:,:,:,:)
-! .true. if Wannier function is expanded inside muffin-tin in the given cell
-  !logical, allocatable :: twanmt(:,:,:)
-! .true. if at least one Wannier function is expanded inside muffin-tin in 
-!   the given unit cell
-  !logical, allocatable :: twanmtuc(:,:)
 end type t_sic_orbitals
 
 type(t_sic_orbitals) :: sic_orbitals
@@ -164,28 +167,28 @@ return
 end subroutine
 
 
-subroutine s_get_pwval(ikloc,ig,x,pwval)
-use modmain
-implicit none
-integer, intent(in) :: ikloc
-integer, intent(in) :: ig
-real(8), intent(in) :: x(3)
-complex(8), intent(out) :: pwval
-
-integer is,ia,ir0
-integer ntr(3),ik
-real(8) vr0(3),r0
-logical, external :: vrinmt
-
-!ias1=wan_info(1,n1)
-!wanpos1(:)=atposc(:,ias2ia(ias1),ias2is(ias1))
-ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-pwval=zzero
-if (.not.vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
-  pwval=exp(zi*dot_product(x(:),vgkc(:,ig,1,ikloc)))/sqrt(omega)
-endif
-return
-end subroutine
+!subroutine s_get_pwval(ikloc,ig,x,pwval)
+!use modmain
+!implicit none
+!integer, intent(in) :: ikloc
+!integer, intent(in) :: ig
+!real(8), intent(in) :: x(3)
+!complex(8), intent(out) :: pwval
+!
+!integer is,ia,ir0
+!integer ntr(3),ik
+!real(8) vr0(3),r0
+!logical, external :: vrinmt
+!
+!!ias1=wan_info(1,n1)
+!!wanpos1(:)=atposc(:,ias2ia(ias1),ias2is(ias1))
+!ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+!pwval=zzero
+!if (.not.vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
+!  pwval=exp(zi*dot_product(x(:),vgkc(:,ig,1,ikloc)))/sqrt(omega)
+!endif
+!return
+!end subroutine
 
 subroutine s_gen_stepf(stepf)
 use modmain
@@ -208,13 +211,60 @@ enddo
 return
 end subroutine
 
-subroutine s_get_ufrval(ias,x,vpc,ufrval)
+!subroutine s_get_ufrval(ias,x,vpc,ufrval)
+!use modmain
+!implicit none
+!! arguments
+!integer, intent(in) :: ias
+!real(8), intent(in) :: x(3)
+!real(8), intent(in) :: vpc(3)
+!complex(8), intent(out) :: ufrval(lmmaxvr,nufrmax)
+!! local variables
+!integer is,ia,ir0,io,l,j,i,lm,ig,ispn
+!integer ntr(3)
+!real(8) vrc0(3),vtc(3),vr0(3),r0,tp(2),t1
+!real(8) ur(0:lmaxvr,nufrmax)
+!complex(8) zt1,zt2,zt3,ylm(lmmaxvr)
+!real(8) ya(nprad),c(nprad)
+!real(8), external :: polynom
+!logical, external :: vrinmt
+!
+!!ias1=wan_info(1,n1)
+!!wanpos1(:)=atposc(:,ias2ia(ias1),ias2is(ias1))
+!ufrval=zzero
+!if (vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
+!  if (idxas(ia,is).ne.ias) return
+!  call sphcrd(vr0,t1,tp)
+!  call genylm(lmaxvr,tp,ylm)
+!  vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
+!  ur=0.d0
+!  do l=0,lmaxvr
+!    do io=1,nufr(l,is)
+!      do j=1,nprad
+!        i=ir0+j-1
+!        ya(j)=ufr(i,l,io,ias2ic(ias))
+!      end do
+!      ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
+!    enddo !io
+!  enddo !l
+!  zt1=exp(zi*dot_product(vpc(:),vtc(:)))
+!  do lm=1,lmmaxvr
+!    l=lm2l(lm)
+!    do io=1,nufr(l,is)
+!      ufrval(lm,io)=ur(l,io)*ylm(lm)*zt1
+!    enddo !io
+!  enddo !lm
+!endif
+!return
+!end subroutine
+
+subroutine s_get_ufrval(x,vpc,ias,ufrval)
 use modmain
 implicit none
 ! arguments
-integer, intent(in) :: ias
 real(8), intent(in) :: x(3)
 real(8), intent(in) :: vpc(3)
+integer, intent(out) :: ias
 complex(8), intent(out) :: ufrval(lmmaxvr,nufrmax)
 ! local variables
 integer is,ia,ir0,io,l,j,i,lm,ig,ispn
@@ -225,12 +275,11 @@ complex(8) zt1,zt2,zt3,ylm(lmmaxvr)
 real(8) ya(nprad),c(nprad)
 real(8), external :: polynom
 logical, external :: vrinmt
-
-!ias1=wan_info(1,n1)
-!wanpos1(:)=atposc(:,ias2ia(ias1),ias2is(ias1))
+!
 ufrval=zzero
+ias=-1
 if (vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
-  if (idxas(ia,is).ne.ias) return
+  ias=idxas(ia,is)
   call sphcrd(vr0,t1,tp)
   call genylm(lmaxvr,tp,ylm)
   vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
@@ -254,6 +303,9 @@ if (vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
 endif
 return
 end subroutine
+
+
+
 
 subroutine s_get_wanval(n,x,wanval)
 use modmain
