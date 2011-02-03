@@ -9,7 +9,7 @@ use mod_madness
 implicit none
 integer n,i,j,i1,j1,j2,n1,n2,ik,ispn,vtrl(3),ikloc,ig,nwtloc,iloc
 integer ias,lm
-real(8) t1,t2,t3,vtrc(3)
+real(8) t1,t2,t3,vtrc(3),pos1(3),pos2(3)
 real(8) etot_,ekin_
 integer vl(3)
 complex(8) z1
@@ -19,8 +19,8 @@ complex(8), allocatable :: vwanme_old(:)
 character*20 c1,c2,c3
 character, parameter :: orbc(4)=(/'s','p','d','f'/)
 character*2, parameter :: spinc(2)=(/'up','dn'/)
+!
 sic=.true.
-
 ! initialise universal variables
 call init0
 call init1
@@ -45,16 +45,21 @@ if (wproc) then
   write(151,'("number of included Wannier functions : ",I4)')sic_wantran%nwan
   do j=1,sic_wantran%nwan
     n=sic_wantran%iwan(j)
-    ias=wan_info(1,n)
-    lm=wan_info(2,n)
-    ispn=wan_info(3,n)
-    write(c1,'(I6)')ias2ia(ias)
-    write(c2,'(I1)')lm2m(lm)+lm2l(lm)+1
-    c3=trim(spsymb(ias2is(ias)))//trim(adjustl(c1))//"-"//&
-      orbc(lm2l(lm)+1)//trim(adjustl(c2))
-    if (spinpol) c3=trim(adjustl(c3))//"-"//spinc(ispn)
-    write(151,'("  j : ",I4,"    n : ",I4,"    ! ",A)')j,&
-      sic_wantran%iwan(j),trim(c3)
+    if (wannier_lc) then
+      write(151,'("  j : ",I4,"    n : ",I4,"    !  at ",3G18.10)')j,&
+        sic_wantran%iwan(j),wanpos(:,n)
+    else
+      ias=wan_info(1,n)
+      lm=wan_info(2,n)
+      ispn=wan_info(3,n)
+      write(c1,'(I6)')ias2ia(ias)
+      write(c2,'(I1)')lm2m(lm)+lm2l(lm)+1
+      c3=trim(spsymb(ias2is(ias)))//trim(adjustl(c1))//"-"//&
+        orbc(lm2l(lm)+1)//trim(adjustl(c2))
+      if (spinpol) c3=trim(adjustl(c3))//"-"//spinc(ispn)
+      write(151,'("  j : ",I4,"    n : ",I4,"    ! ",A,"  at ",3G18.10)')j,&
+        sic_wantran%iwan(j),trim(c3),wanpos(:,n)
+    endif
   enddo
   write(151,*)
   write(151,'("cutoff radius for Wannier functions   : ",F12.6)')sic_wan_cutoff
@@ -165,9 +170,11 @@ do iloc=1,nwtloc
   n1=sic_wantran%iwt(2,i)
   j1=sic_wantran%idxiwan(n1)
   vl(:)=sic_wantran%iwt(3:5,i)
-   do ispn=1,nspinor
-     vwanme(i)=vwanme(i)+s_dot_ll(n,n1,vl,s_wvlm(1,1,ispn,j),s_wanlm(1,1,ispn,j1))
-   enddo
+  pos1(:)=wanpos(:,n)
+  pos2(:)=wanpos(:,n1)+vl(1)*avec(:,1)+vl(2)*avec(:,2)+vl(3)*avec(:,3)
+  do ispn=1,nspinor
+    vwanme(i)=vwanme(i)+s_dot_ll(pos1,pos2,s_wvlm(1,1,ispn,j),s_wanlm(1,1,ispn,j1))
+  enddo
 enddo
 call mpi_grid_reduce(vwanme(1),sic_wantran%nwt,all=.true.)
 ! check localization criterion and compute difference of vwanme
@@ -236,8 +243,6 @@ do ik=1,nkpt
   endif
 enddo
 deallocate(vwank)
-
-! form Bloch sums
 
 ! signal that now we have computed sic potential and wannier functions
 tsic_wv=.true.

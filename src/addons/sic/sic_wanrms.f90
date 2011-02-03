@@ -33,7 +33,7 @@ do ir=1,nr
     vrc(:,itp,ir)=(/sin(tp(1,itp))*cos(tp(2,itp)),&
                     sin(tp(1,itp))*sin(tp(2,itp)),&
                     cos(tp(1,itp))/)*ir*sic_wan_cutoff/nr/2.d0
-    vrc1(:)=vrc(:,itp,ir)+atposc(:,ias2ia(ias),ias2is(ias))
+    vrc1(:)=vrc(:,itp,ir)+wanpos(:,n)
     call s_get_wanval(n,vrc1,wanval)
     wantpc(itp,ir,:)=wanval(:)
   enddo

@@ -18,7 +18,8 @@ real(8), allocatable :: wann_v(:)
 integer nwantot
 integer, allocatable :: wan_info(:,:)
 integer, allocatable :: nwannias(:)
-  
+! positions of WFs
+real(8), allocatable :: wanpos(:,:)
 ! expansion coefficients of Wannier functions over spinor Bloch eigen-functions  
 complex(8), allocatable :: wann_c(:,:,:)
 ! Bloch-sums of WF

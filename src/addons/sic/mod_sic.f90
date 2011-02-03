@@ -113,58 +113,58 @@ complex(8), allocatable :: s_wvkir(:,:,:,:)
 
 contains
 
-subroutine s_get_wffvval(ikloc,x,wffvmt,wffvit,wffvval)
-use modmain
-implicit none
-integer, intent(in) :: ikloc
-real(8), intent(in) :: x(3)
-complex(8), intent(in) :: wffvmt(lmmaxvr,nufrmax,natmtot)
-complex(8), intent(in) :: wffvit(nmatmax)
-complex(8), intent(out) :: wffvval
-integer is,ia,ias,ir0,io,l,j,i,lm,ig,ispn
-integer ntr(3),ik
-real(8) vrc0(3),vtc(3),vr0(3),r0,tp(2),t1
-real(8) ur(0:lmaxvr,nufrmax)
-complex(8) zt1,zt2,zt3,ylm(lmmaxvr)
-real(8) ya(nprad),c(nprad)
-real(8), external :: polynom
-logical, external :: vrinmt
-
-!ias1=wan_info(1,n1)
-!wanpos1(:)=atposc(:,ias2ia(ias1),ias2is(ias1))
-ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-wffvval=zzero
-if (vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
-  ias=idxas(ia,is)
-  call sphcrd(vr0,t1,tp)
-  call genylm(lmaxvr,tp,ylm)
-  vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
-  ur=0.d0
-  do l=0,lmaxvr
-    do io=1,nufr(l,is)
-      do j=1,nprad
-        i=ir0+j-1
-        ya(j)=ufr(i,l,io,ias2ic(ias))
-      end do
-      ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
-    enddo !io
-  enddo !l
-  zt1=exp(zi*dot_product(vkc(:,ik),vtc(:)))
-  do lm=1,lmmaxvr
-    l=lm2l(lm)
-    do io=1,nufr(l,is)
-      wffvval=wffvval+wffvmt(lm,io,ias)*ur(l,io)*ylm(lm)
-    enddo !io
-  enddo !lm
-  wffvval=wffvval*zt1
-else
-  do ig=1,ngk(1,ik)
-    zt1=exp(zi*dot_product(x(:),vgkc(:,ig,1,ikloc)))/sqrt(omega)
-    wffvval=wffvval+zt1*wffvit(ig)
-  enddo
-endif
-return
-end subroutine
+!subroutine s_get_wffvval(ikloc,x,wffvmt,wffvit,wffvval)
+!use modmain
+!implicit none
+!integer, intent(in) :: ikloc
+!real(8), intent(in) :: x(3)
+!complex(8), intent(in) :: wffvmt(lmmaxvr,nufrmax,natmtot)
+!complex(8), intent(in) :: wffvit(nmatmax)
+!complex(8), intent(out) :: wffvval
+!integer is,ia,ias,ir0,io,l,j,i,lm,ig,ispn
+!integer ntr(3),ik
+!real(8) vrc0(3),vtc(3),vr0(3),r0,tp(2),t1
+!real(8) ur(0:lmaxvr,nufrmax)
+!complex(8) zt1,zt2,zt3,ylm(lmmaxvr)
+!real(8) ya(nprad),c(nprad)
+!real(8), external :: polynom
+!logical, external :: vrinmt
+!
+!!ias1=wan_info(1,n1)
+!!wanpos1(:)=atposc(:,ias2ia(ias1),ias2is(ias1))
+!ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+!wffvval=zzero
+!if (vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
+!  ias=idxas(ia,is)
+!  call sphcrd(vr0,t1,tp)
+!  call genylm(lmaxvr,tp,ylm)
+!  vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
+!  ur=0.d0
+!  do l=0,lmaxvr
+!    do io=1,nufr(l,is)
+!      do j=1,nprad
+!        i=ir0+j-1
+!        ya(j)=ufr(i,l,io,ias2ic(ias))
+!      end do
+!      ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
+!    enddo !io
+!  enddo !l
+!  zt1=exp(zi*dot_product(vkc(:,ik),vtc(:)))
+!  do lm=1,lmmaxvr
+!    l=lm2l(lm)
+!    do io=1,nufr(l,is)
+!      wffvval=wffvval+wffvmt(lm,io,ias)*ur(l,io)*ylm(lm)
+!    enddo !io
+!  enddo !lm
+!  wffvval=wffvval*zt1
+!else
+!  do ig=1,ngk(1,ik)
+!    zt1=exp(zi*dot_product(x(:),vgkc(:,ig,1,ikloc)))/sqrt(omega)
+!    wffvval=wffvval+zt1*wffvit(ig)
+!  enddo
+!endif
+!return
+!end subroutine
 
 
 !subroutine s_get_pwval(ikloc,ig,x,pwval)
@@ -190,26 +190,21 @@ end subroutine
 !return
 !end subroutine
 
-subroutine s_gen_stepf(stepf)
+integer function s_gen_stepf(x)
 use modmain
 implicit none
 ! arguments
-real(8), intent(out) :: stepf(s_ntp,s_nr)
+real(8), intent(in) :: x(3)
 ! local variables
-integer is,ia,ir0,itp,ir
+integer is,ia,ir0
 integer ntr(3),ik
-real(8) vr0(3),r0,x(3)
+real(8) vr0(3),r0
 logical, external :: vrinmt
 !
-stepf=0.d0
-do ir=1,s_nr
-  do itp=1,s_ntp
-    x(:)=s_spx(:,itp)*s_r(ir)
-    if (.not.vrinmt(x,is,ia,ntr,vr0,ir0,r0)) stepf(itp,ir)=1.d0
-  enddo
-enddo
+s_gen_stepf=0
+if (.not.vrinmt(x,is,ia,ntr,vr0,ir0,r0)) s_gen_stepf=1
 return
-end subroutine
+end function
 
 !subroutine s_get_ufrval(ias,x,vpc,ufrval)
 !use modmain
@@ -328,8 +323,7 @@ complex(8) expigr(s_ngvec)
 complex(8) zm1(lmmaxvr,nufrmax,nspinor),zm2(nspinor)
 !
 wanval=zzero
-ias=wan_info(1,n)
-x0(:)=x(:)-atposc(:,ias2ia(ias),ias2is(ias))
+x0(:)=x(:)-wanpos(:,n)
 if (sum(x0(:)**2).gt.(sic_wan_cutoff**2)) return
 if (vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
   ias=idxas(ia,is)
@@ -424,13 +418,12 @@ s_func_val=zval
 return
 end function
 
-complex(8) function s_dot_ll(n1,n2,t,f1lm,f2lm)
+complex(8) function s_dot_ll(pos1,pos2,f1lm,f2lm)
 use modmain
 implicit none
 ! arguments
-integer, intent(in) :: n1
-integer, intent(in) :: n2
-integer, intent(in) :: t(3)
+real(8), intent(in) :: pos1(3)
+real(8), intent(in) :: pos2(3)
 complex(8), intent(in) :: f1lm(lmmaxwan,s_nr)
 complex(8), intent(in) :: f2lm(lmmaxwan,s_nr)
 ! local variables
@@ -439,30 +432,24 @@ complex(8), allocatable :: f1tp_(:,:)
 complex(8), allocatable :: f2lm_(:,:)
 complex(8) zprod
 integer ias1,ias2,ir,itp,lm
-real(8) wanpos1(3),wanpos2(3),vtc(3),vrc1(3),vrc2(3)
+real(8) x1(3),x2(3)
 complex(8), external :: zdotc
-
-ias1=wan_info(1,n1)
-wanpos1(:)=atposc(:,ias2ia(ias1),ias2is(ias1))
-ias2=wan_info(1,n2)
-wanpos2(:)=atposc(:,ias2ia(ias2),ias2is(ias2))
-vtc(:)=t(1)*avec(:,1)+t(2)*avec(:,2)+t(3)*avec(:,3)
-
+!
 zprod=zzero
-if (ias1.eq.ias2.and.all(t.eq.0)) then
+if (abs(sum(pos1-pos2)).lt.1d-10) then 
   do ir=1,s_nr
     zprod=zprod+zdotc(lmmaxwan,f1lm(1,ir),1,f2lm(1,ir),1)*s_rw(ir)
   enddo
 else
   allocate(f1tp_(s_ntp,s_nr))
   allocate(f2tp_(s_ntp,s_nr))
-  allocate(f2lm_(lmmaxwan,s_nr))
+!  allocate(f2lm_(lmmaxwan,s_nr))
   f2tp_=zzero
   do ir=1,s_nr
     do itp=1,s_ntp
-      vrc1(:)=s_spx(:,itp)*s_r(ir)
-      vrc2(:)=wanpos1(:)+vrc1(:)-wanpos2(:)-vtc(:)
-      f2tp_(itp,ir)=s_func_val(vrc2,f2lm)
+      x1(:)=s_spx(:,itp)*s_r(ir)
+      x2(:)=pos1(:)+x1(:)-pos2(:)
+      f2tp_(itp,ir)=s_func_val(x2,f2lm)
     enddo
   enddo !ir
   call zgemm('T','N',s_ntp,s_nr,lmmaxwan,zone,s_ylmf,lmmaxwan,f1lm,&
@@ -477,7 +464,7 @@ else
 !  do ir=1,s_nr
 !    zprod=zprod+zdotc(lmmaxwan,f1lm(1,ir),1,f2lm_(1,ir),1)*s_rw(ir)
 !  enddo
-  deallocate(f1tp_,f2tp_,f2lm_)
+  deallocate(f1tp_,f2tp_)
 endif
 s_dot_ll=zprod
 return

@@ -21,7 +21,6 @@ do i=1,wann_natom
 enddo
 if (allocated(wan_info)) deallocate(wan_info)
 allocate(wan_info(7,nwantot))
-
 n=0
 do i=1,wann_natom
   iatom=wann_iprj(1,i)
@@ -116,6 +115,18 @@ if (mpi_grid_root()) then
   close(100)
 endif
 if (wannier_lc) nwantot=nwanlc
+
+if (allocated(wanpos)) deallocate(wanpos)
+allocate(wanpos(3,nwantot))
+do j=1,nwantot
+  if (wannier_lc) then
+    write(*,'("TODO: positions for linear combinations of WFs")')
+    call pstop
+  else
+    iatom=wan_info(1,j)
+    wanpos(:,j)=atposc(:,ias2ia(iatom),ias2is(iatom))
+  endif
+enddo
 
 if (allocated(wann_c)) deallocate(wann_c)
 allocate(wann_c(nwantot,nstsv,nkptloc))
