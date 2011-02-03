@@ -2,8 +2,8 @@ subroutine sic_genmti
 use modmain
 use mod_sic
 implicit none
-integer ikloc,ik,j,n,ispn,ias,ir,itp
-real(8) x(3)
+integer ikloc,ik,j,n,ispn,ias,ir,itp,nrloc,irloc
+real(8) x(3),x1(3)
 complex(8) ufrval(lmmaxvr,nufrmax)
 complex(8), allocatable :: wtp(:,:)
 complex(8), allocatable :: wvtp(:,:)
@@ -13,7 +13,9 @@ allocate(wtp(sic_wantran%nwan,nspinor))
 allocate(wvtp(sic_wantran%nwan,nspinor))
 sic_wuy=zzero
 sic_wvuy=zzero
-do ir=1,s_nr
+nrloc=mpi_grid_map(s_nr,dim2)
+do irloc=1,nrloc
+  ir=mpi_grid_map(s_nr,dim2,loc=irloc)
   do itp=1,s_ntp
     x(:)=s_spx(:,itp)*s_r(ir)
     wtp=zzero
@@ -30,7 +32,8 @@ do ir=1,s_nr
       ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
       do j=1,sic_wantran%nwan
         n=sic_wantran%iwan(j)
-        call s_get_ufrval(x,vkc(:,ik),ias,ufrval)
+        x1(:)=x(:)+wanpos(:,n)
+        call s_get_ufrval(x1,vkc(:,ik),ias,ufrval)
         if (ias.ne.-1) then
           do ispn=1,nspinor
             sic_wuy(:,:,ias,j,ispn,ikloc)=sic_wuy(:,:,ias,j,ispn,ikloc)+&
@@ -44,6 +47,11 @@ do ir=1,s_nr
   enddo !itp
 enddo !ir
 deallocate(wtp,wvtp)
+n=lmmaxvr*nufrmax*natmtot*sic_wantran%nwan*nspinor
+do ikloc=1,nkptloc
+  call mpi_grid_reduce(sic_wuy(1,1,1,1,1,ikloc),n,dims=(/dim2/))
+  call mpi_grid_reduce(sic_wvuy(1,1,1,1,1,ikloc),n,dims=(/dim2/))
+enddo
 
 !allocate(wantp(s_ntp,s_nr,nspinor))
 !allocate(wvtp(s_ntp,s_nr,nspinor))

@@ -9,7 +9,7 @@ implicit none
 integer, intent(in) :: fout
 ! local variables
 integer n,ispn,vl(3),n1,i,j,j1,itp,ir,nwtloc,iloc,ias,nrloc,irloc
-real(8) t1,vrc(3),x(3),x2
+real(8) t1,vrc(3),x(3),x2,pos1(3),pos2(3)
 real(8) sic_epot_h,sic_epot_xc
 complex(8) z1,wanval(nspinor)
 real(8), allocatable :: ene(:,:)
@@ -41,13 +41,12 @@ wanqsp=0.d0
 nrloc=mpi_grid_map(s_nr,dim2)
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
-  ias=wan_info(1,n)
   wantp=zzero
   call timer_start(t_sic_wan_gen)
   do irloc=1,nrloc
     ir=mpi_grid_map(s_nr,dim2,loc=irloc)
     do itp=1,s_ntp
-      vrc(:)=s_spx(:,itp)*s_r(ir)+atposc(:,ias2ia(ias),ias2is(ias))
+      vrc(:)=s_spx(:,itp)*s_r(ir)+wanpos(:,n)
       call s_get_wanval(n,vrc,wanval)
       wantp(itp,ir,:)=wanval(:)
     enddo
@@ -103,9 +102,11 @@ if (iovlp.eq.1) then
     n1=sic_wantran%iwt(2,i)
     j1=sic_wantran%idxiwan(n1)
     vl(:)=sic_wantran%iwt(3:5,i)
+    pos1(:)=wanpos(:,n)
+    pos2(:)=wanpos(:,n1)+vl(1)*avec(:,1)+vl(2)*avec(:,2)+vl(3)*avec(:,3)
     if (all(vl.eq.0)) then
       do ispn=1,nspinor
-        ovlp(i)=ovlp(i)+s_dot_ll(n,n1,vl,s_wanlm(1,1,ispn,j),s_wanlm(1,1,ispn,j1))
+        ovlp(i)=ovlp(i)+s_dot_ll(pos1,pos2,s_wanlm(1,1,ispn,j),s_wanlm(1,1,ispn,j1))
       enddo
     endif
     z1=ovlp(i)
@@ -123,8 +124,10 @@ else if (iovlp.eq.2) then
     n1=sic_wantran%iwt(2,i)
     j1=sic_wantran%idxiwan(n1)
     vl(:)=sic_wantran%iwt(3:5,i)
+    pos1(:)=wanpos(:,n)
+    pos2(:)=wanpos(:,n1)+vl(1)*avec(:,1)+vl(2)*avec(:,2)+vl(3)*avec(:,3)
     do ispn=1,nspinor
-      ovlp(i)=ovlp(i)+s_dot_ll(n,n1,vl,s_wanlm(1,1,ispn,j),s_wanlm(1,1,ispn,j1))
+      ovlp(i)=ovlp(i)+s_dot_ll(pos1,pos2,s_wanlm(1,1,ispn,j),s_wanlm(1,1,ispn,j1))
     enddo
     z1=ovlp(i)
     if (n.eq.n1.and.all(vl.eq.0)) then
