@@ -68,6 +68,8 @@ call getufr
 call genufrp  
 if (sic) then
   call sic_readvwan
+  call sic_genpwi
+  call sic_genmti
   allocate(sic_wann_e0k(sic_wantran%nwan,nkpt))
   sic_wann_e0k=0.d0
 endif
