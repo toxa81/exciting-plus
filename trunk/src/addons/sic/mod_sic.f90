@@ -436,7 +436,7 @@ real(8) x1(3),x2(3)
 complex(8), external :: zdotc
 !
 zprod=zzero
-if (abs(sum(pos1-pos2)).lt.1d-10) then 
+if (sum(abs(pos1-pos2)).lt.1d-10) then 
   do ir=1,s_nr
     zprod=zprod+zdotc(lmmaxwan,f1lm(1,ir),1,f2lm(1,ir),1)*s_rw(ir)
   enddo
