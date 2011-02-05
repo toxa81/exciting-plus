@@ -13,6 +13,8 @@ complex(8), allocatable :: expigkx0(:,:,:)
 !real(8), allocatable :: stepf(:,:)
 complex(8), external :: zdotu
 !
+if (.not.tsic_wv) return
+
 allocate(wtp(sic_wantran%nwan,nspinor))
 allocate(wvtp(sic_wantran%nwan,nspinor))
 allocate(stepf(sic_wantran%nwan))
