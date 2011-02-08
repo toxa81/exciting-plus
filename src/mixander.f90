@@ -17,10 +17,12 @@ real(8), intent(out) :: d
 ! local variables
 integer j0,j1,j2,k
 real(8) d11,d12,d22,r1,r2,t1,t2
-if (iscl.le.1) then
+logical, save :: tinitialized=.false.
+if (.not.tinitialized) then
   mu(:,1)=nu(:)
   f(:,1)=0.d0
   d=1.d0
+  tinitialized=.true.
   return
 end if
 j0=mod(iscl-1,3)+1
