@@ -33,13 +33,9 @@ integer idm,ias,lm1,lm2
 integer ispn,jspn
 n=0
 call rfpack(tpack,n,1,veffmt,veffir,nu)
-!call rfpack(tpack,n,1,rhomt,rhoir,nu)
 do idm=1,ndmag
   call rfpack(tpack,n,1,bxcmt(:,:,:,idm),bxcir(:,idm),nu)
 end do
-!do idm=1,ndmag
-!  call rfpack(tpack,n,1,magmt(:,:,:,idm),magir(:,idm),nu)
-!end do
 ! pack the LDA+U potential if required
 if (ldapu.ne.0) then
   do ias=1,natmtot
