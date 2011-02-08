@@ -53,12 +53,15 @@ real(8), intent(out) :: d
 ! local variables
 integer i
 real(8) t1
+logical, save :: tinitialized=.false.
 if (n.le.0) return
-if (iscl.le.1) then
+!if (iscl.le.1) then
+if (.not.tinitialized) then
   mu(:)=nu(:)
   f(:)=0.d0
   beta(:)=beta0
   d=1.d0
+  tinitialized=.true.
   return
 end if
 d=0.d0

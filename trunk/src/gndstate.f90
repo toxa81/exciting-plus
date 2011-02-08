@@ -45,7 +45,6 @@ wproc=mpi_grid_root()
 allocate(evalfv(nstfv,nspnfv,nkptloc))
 allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
 allocate(evecsvloc(nstsv,nstsv,nkptloc))
-!allocate(hmltsvloc(nstsv,nstsv,nkptloc))
 ! initialise OEP variables if required
 if (xctype(1).lt.0) call init2
 if (wproc) then
@@ -83,29 +82,6 @@ if (wproc) then
   call writenn
   call writegshells
 endif
-! initialise or read the charge density and potentials from file
-iscl=0
-if (wproc) write(60,*)
-if ((task.eq.1).or.(task.eq.3).or.(sic.and.isclsic.gt.1)) then
-  call readstate
-  if (wproc) write(60,'("Potential read in from STATE.OUT")')
-  if (autolinengy) call readfermi
-else if (task.eq.200) then
-  call phveff
-  if (wproc) write(60,'("Supercell potential constructed from STATE.OUT")')
-else
-  call allatoms
-  call rhoinit
-  call poteff
-  call genveffig
-  if (wproc) write(60,'("Density and potential initialised from atomic data")')
-end if
-if (sic) then
-  call sic_readvwan
-  call sic_genpwi
-  !call sic_blochsum
-endif
-if (wproc) call flushifc(60)
 ! size of mixing vector
 n=lmmaxvr*nrmtmax*natmtot+ngrtot
 if (spinpol) n=n*(1+ndmag)
@@ -116,6 +92,30 @@ allocate(v(n))
 nwork=-1
 call mixerifc(mixtype,n,v,dv,nwork,v)
 allocate(work(nwork))
+! initialise or read the charge density and potentials from file
+iscl=0
+if (wproc) write(60,*)
+if ((task.eq.1).or.(task.eq.3).or.(sic.and.isclsic.gt.1)) then
+  call readstate
+  if (wproc) write(60,'("Potential read in from STATE.OUT")')
+  if (autolinengy) call readfermi
+! initialise mixer with the current potential
+  call mixpack(.true.,n,v)
+  call mixerifc(mixtype,n,v,dv,nwork,work)
+else if (task.eq.200) then
+  call phveff
+  if (wproc) write(60,'("Supercell potential constructed from STATE.OUT")')
+else
+  call allatoms
+  call rhoinit
+  call poteff
+  if (wproc) write(60,'("Density and potential initialised from atomic data")')
+end if
+if (sic) then
+  call sic_readvwan
+  call sic_genpwi
+endif
+if (wproc) call flushifc(60)
 ! set stop flag
 tstop=.false.
 10 continue
@@ -132,35 +132,9 @@ if (wproc) then
   write(60,'("+------------------------------+")')
 endif
 do iscl=1,maxscl
-  call timer_start(t_iter_tot,reset=.true.)
 ! reset all timers
-  call timer_reset(t_apw_rad)
-  call timer_reset(t_seceqn)
-  call timer_reset(t_seceqnfv)
-  call timer_reset(t_seceqnfv_setup)
-  call timer_reset(t_seceqnfv_setup_h)
-  call timer_reset(t_seceqnfv_setup_h_mt)
-  call timer_reset(t_seceqnfv_setup_h_it)
-  call timer_reset(t_seceqnfv_setup_o)
-  call timer_reset(t_seceqnfv_setup_o_mt)
-  call timer_reset(t_seceqnfv_setup_o_it)
-  call timer_reset(t_seceqnfv_diag)
-  call timer_reset(t_seceqnsv)
-  call timer_reset(t_seceqnsv_setup)
-  call timer_reset(t_seceqnsv_diag)
-  call timer_reset(t_rho_mag_sum)
-  call timer_reset(t_rho_mag_sym)
-  call timer_reset(t_rho_mag_tot)
-  call timer_reset(t_pot) 
-  call timer_reset(t_dmat)   
-  if (sic) then
-    call timer_reset(t_sic_hunif)
-    call timer_reset(t_sic_genfvprj)
-    !call timer_reset(t_sic_genfvprj_dotp)  
-    !call timer_reset(t_sic_genfvprj_wfmt)
-    !call timer_reset(t_sic_genfvprj_wfir)
-    !call timer_reset(t_sic_genfvprj_wfk)
-  endif
+  call timer_reset(0)
+  call timer_start(t_iter_tot)
   if (wproc) then
     write(60,*)
     write(60,'("+-------------------------+")')
@@ -196,12 +170,14 @@ do iscl=1,maxscl
   call genufrp  
 ! generate muffin-tin effective magnetic fields and s.o. coupling functions
   call genbeffmt
+! Fourier transform effective potential to G-space
+  call genveffig
 ! begin parallel loop over k-points
   do ikloc=1,nkptloc
 ! solve the first-variational secular equation
     call seceqn1(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc))
   end do 
-! SIC block to compute <W_n|\phi> 
+! compute <W_n|\phi> and <(W*V)_n|\phi>
   if (sic) call sic_genfvprj
   evalsv=0.d0
   do ikloc=1,nkptloc
@@ -299,8 +275,6 @@ do iscl=1,maxscl
   call mixpack(.false.,n,v)
 ! add the fixed spin moment effect field
   if (fixspin.ne.0) call fsmfield
-! Fourier transform effective potential to G-space
-  call genveffig
 ! reduce the external magnetic fields if required
   if (reducebf.lt.1.d0) then
     bfieldc(:)=bfieldc(:)*reducebf
@@ -430,16 +404,6 @@ do iscl=1,maxscl
     if (sic) then
       write(60,'("  sic_genfvprj                              : ",F12.2)')&
         timer_get_value(t_sic_genfvprj)
-     ! write(60,'("  sic_genfvprj (dot product)                : ",F12.2)')&
-     !   timer_get_value(t_sic_genfvprj_dotp)
-     ! write(60,'("  sic_genfvprj (wfmt)                       : ",F12.2)')&
-     !   timer_get_value(t_sic_genfvprj_wfmt)
-     ! write(60,'("  sic_genfvprj (wfir)                       : ",F12.2)')&
-     !   timer_get_value(t_sic_genfvprj_wfir)
-     ! write(60,'("  sic_genfvprj (wfk)                        : ",F12.2)')&
-     !   timer_get_value(t_sic_genfvprj_wfk)
-     ! write(60,'("  sic_hunif                                 : ",F12.2)')&
-     !   timer_get_value(t_sic_hunif)
     endif
   endif !wproc
 ! end the self-consistent loop
