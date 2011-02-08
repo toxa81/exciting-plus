@@ -56,8 +56,13 @@ end subroutine
 subroutine timer_reset(n)
 implicit none
 integer, intent(in) :: n
-timer_value(n,:)=0.d0
-timer_count(n)=0
+if (n.eq.0) then  
+  timer_value=0.d0
+  timer_count=0
+else
+  timer_value(n,:)=0.d0
+  timer_count(n)=0
+endif
 return
 end subroutine
 
@@ -90,3 +95,4 @@ return
 end function
 
 end module
+
