@@ -118,8 +118,6 @@ do ikloc=1,nkptnrloc
     s_ngvec=max(s_ngvec,igkignr(ig,ikloc))
   enddo
 enddo
-! TODO: check if this can be removed; probably yes.
-!call mpi_grid_reduce(s_ngvec,dims=(/dim_k/),all=.true.,op=op_max)
 ! init Madness related variables 
 #ifdef _MAD_
 if (allocated(m_ngknr)) deallocate(m_ngknr)
@@ -246,8 +244,8 @@ deallocate(vwank)
 
 ! signal that now we have computed sic potential and wannier functions
 tsic_wv=.true.
-! write to HDF5 file after last iteration
-if (isclsic.eq.nsclsic) call sic_writevwan
+! write to HDF5 file
+call sic_writevwan
 if (wproc) then
   call timestamp(151,"Done.")
   close(151)
