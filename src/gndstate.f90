@@ -99,9 +99,6 @@ if ((task.eq.1).or.(task.eq.3).or.(sic.and.isclsic.gt.1)) then
   call readstate
   if (wproc) write(60,'("Potential read in from STATE.OUT")')
   if (autolinengy) call readfermi
-! initialise mixer with the current potential
-  call mixpack(.true.,n,v)
-  call mixerifc(mixtype,n,v,dv,nwork,work)
 else if (task.eq.200) then
   call phveff
   if (wproc) write(60,'("Supercell potential constructed from STATE.OUT")')

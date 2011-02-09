@@ -40,7 +40,6 @@ real(8), parameter :: beta=0.5d0
 ! allocatable arrays
 integer, allocatable :: ipiv(:)
 real(8), allocatable :: alpha(:),a(:,:),work(:)
-logical, save :: tinitialized=.false.
 if (n.lt.1) then
   write(*,*)
   write(*,'("Error(mixpulay): n < 1 : ",I8)') n
@@ -53,11 +52,10 @@ if (maxsd.lt.2) then
   write(*,*)
   stop
 end if
-if (.not.tinitialized) then
+if (iscl.le.1) then
   mu(:,1)=nu(:)
   f(:,1)=0.d0
   d=1.d0
-  tinitialized=.true.
   return
 end if
 if (iscl.le.maxsd) then
