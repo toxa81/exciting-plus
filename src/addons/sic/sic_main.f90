@@ -10,7 +10,6 @@ implicit none
 integer n,i,j,i1,j1,j2,n1,n2,ik,ispn,vtrl(3),ikloc,ig,nwtloc,iloc
 integer ias,lm
 real(8) t1,t2,t3,vtrc(3),pos1(3),pos2(3)
-real(8) etot_,ekin_
 integer vl(3)
 complex(8) z1
 real(8), allocatable :: laplsv(:) 

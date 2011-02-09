@@ -5,15 +5,11 @@ use mod_sic
 use mod_linresp
 use mod_wannier
 implicit none
-integer i,ias,n,jas,i1,i2,i3,vl(3),ish,ir,is,j
-logical l1,l2,exist
-real(8) v1(3),v2(3)
+integer i,n,ir,j
+logical texist
 logical, external :: vrinmt,sic_include_cell
-real(8), allocatable :: wt1(:,:)
-
-integer itp,lm,itp1,lm1
+integer itp,lm
 real(8) a,b,x0,tp(2)
-complex(8) zt1
 !
 tevecsv=.true.
 lmmaxwan=(lmaxwan+1)**2
@@ -135,14 +131,17 @@ endif
 !if (allocated(s_wvkir)) deallocate(s_wvkir)
 !allocate(s_wvkir(ngrtot,nspinor,sic_wantran%nwan,nkptloc))
 ! TODO: skip reading the file with different WF set
-inquire(file="SIC_WANN_E0.OUT",exist=exist)
-if (exist) then
+inquire(file="SIC_WANN_E0.OUT",exist=texist)
+if (texist) then
   open(170,file="SIC_WANN_E0.OUT",form="FORMATTED",status="OLD")
   do n=1,nwantot
-    read(170,*)sic_wann_e0(n)
+    read(170,*,err=20)sic_wann_e0(n)
   enddo
   close(170)
+  goto 30
+20 sic_wann_e0=0.d0
 endif
+30 continue
 ! Lebedev-Laikov mesh
 call leblaik(s_ntp,s_spx,s_tpw)
 ! get (theta,phi) of each spx vector and generate spherical harmonics

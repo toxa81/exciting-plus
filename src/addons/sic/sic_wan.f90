@@ -8,7 +8,7 @@ implicit none
 ! arguments
 integer, intent(in) :: fout
 ! local variables
-integer n,ispn,vl(3),n1,i,j,j1,itp,ir,nwtloc,iloc,ias,nrloc,irloc
+integer n,ispn,vl(3),n1,i,j,j1,itp,ir,nwtloc,iloc,nrloc,irloc
 real(8) t1,vrc(3),x(3),x2,pos1(3),pos2(3)
 real(8) sic_epot_h,sic_epot_xc
 complex(8) z1,wanval(nspinor)
@@ -56,14 +56,14 @@ do j=1,sic_wantran%nwan
   enddo
 ! compute norm
   t1=0.d0
-  z1=0.d0
+  z1=zzero
   do ispn=1,nspinor
     do ir=1,s_nr
       do itp=1,s_ntp
         t1=t1+abs(wantp(itp,ir,ispn))**2*s_tpw(itp)*s_rw(ir)
       enddo
-      z1=z1+zdotc(lmmaxwan,s_wanlm(1,1,ispn,j),1,&
-        s_wanlm(1,1,ispn,j),1)*s_rw(ir)
+      z1=z1+zdotc(lmmaxwan,s_wanlm(1,ir,ispn,j),1,&
+        s_wanlm(1,ir,ispn,j),1)*s_rw(ir)
     enddo
   enddo
   wanprop(wp_normtp,j)=t1
@@ -100,7 +100,7 @@ do j=1,sic_wantran%nwan
 enddo !j
 deallocate(wantp)
 ! check <W|\phi> matrix elements
-if (.true.) call sic_test_fvprj(fout)
+if (.false.) call sic_test_fvprj(fout)
 ! compute overlap integrals 
 allocate(ovlp(sic_wantran%nwt))
 ovlp=zzero
@@ -148,12 +148,12 @@ sic_energy_tot=sic_energy_kin-sic_energy_pot
 ! print some info
 if (wproc) then
   write(fout,*)
-  write(fout,'("   n |       normlm      normtp       spread&
-    &     RMS(wan)     RMS(rho)   RMS(rho^{1/3})")')
+  write(fout,'("   n |     normlm      normtp      spread&
+    &       RMS (wan, rho, rho^{1/3})")')
   write(fout,'(80("-"))')
   do j=1,sic_wantran%nwan
     n=sic_wantran%iwan(j)
-    write(151,'(I4," | ",5(F10.6,3X))')n,wanprop(wp_normlm,j),&
+    write(151,'(I4," | ",6(F10.6,2X))')n,wanprop(wp_normlm,j),&
     wanprop(wp_normtp,j),wanprop(wp_spread,j),wanprop(wp_rmswan,j),&
     wanprop(wp_rmsrho,j),wanprop(wp_rmsrho13,j)
   enddo
