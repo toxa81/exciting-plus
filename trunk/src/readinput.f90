@@ -1114,7 +1114,7 @@ case('mpigrid')
   lmpigrid=.true.
 case('sic')
   read(50,*,err=20) sic
-case('sicw')
+case('sic_apply')
   allocate(sicw(32,wann_natom))
   do i=1,wann_natom
     read(50,*,err=20) (sicw(j,i),j=1,wann_norb(wann_iprj(2,i)))
