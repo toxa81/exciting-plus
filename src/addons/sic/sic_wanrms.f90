@@ -1,4 +1,4 @@
-subroutine sic_wanrms(n,wantp,wanlm,wanrms)
+subroutine sic_wanrms(n,wantp,wanlm,wanprop)
 use modmain
 use mod_sic
 implicit none
@@ -6,7 +6,7 @@ implicit none
 integer, intent(in) :: n
 complex(8), intent(in) :: wantp(s_ntp,s_nr,nspinor)
 complex(8), intent(in) :: wanlm(lmmaxwan,s_nr,nspinor)
-real(8), intent(out) :: wanrms(3)
+real(8), intent(out) :: wanprop(nwanprop)
 ! local variables
 integer nr,ntp,ir,itp,ispn,ias
 real(8) t1,vrc1(3)
@@ -17,8 +17,8 @@ complex(8), allocatable :: rholm(:,:)
 complex(8), allocatable :: wantpc(:,:,:)
 complex(8), allocatable :: rhotpc(:,:)
 !
-nr=300
-ntp=200
+nr=50
+ntp=50
 ias=wan_info(1,n)
 allocate(rhotp(s_ntp,s_nr))
 allocate(rholm(lmmaxwan,s_nr))
@@ -49,7 +49,7 @@ do ir=1,nr
     enddo
   enddo
 enddo
-wanrms(1)=sqrt(t1/nr/ntp)
+wanprop(wp_rmswan)=sqrt(t1/nr/ntp)
 ! compute charge density
 rhotp=zzero
 do ispn=1,nspinor
@@ -71,7 +71,7 @@ do ir=1,nr
     t1=t1+abs(zt1)**2
   enddo
 enddo
-wanrms(2)=sqrt(t1/nr/ntp)
+wanprop(wp_rmsrho)=sqrt(t1/nr/ntp)
 ! compute rho^{1/3}
 rhotp(:,:)=rhotp(:,:)**(1/3.d0)
 ! convert to spherical harmonics
@@ -86,7 +86,7 @@ do ir=1,nr
     t1=t1+abs(zt1)**2
   enddo
 enddo
-wanrms(3)=sqrt(t1/nr/ntp)
+wanprop(wp_rmsrho13)=sqrt(t1/nr/ntp)
 deallocate(rhotp,rholm,wantpc,rhotpc,tp,vrc)
 return
 end

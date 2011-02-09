@@ -16,7 +16,7 @@ complex(8), allocatable :: vwank(:,:)
 complex(8), allocatable :: zm1(:,:),zm2(:,:)
 character*500 fname,msg
 logical, parameter :: tcheckherm=.false.
-
+!
 call timer_start(t_sic_hunif)
 ! restore full hermitian matrix
 do j1=2,nstsv

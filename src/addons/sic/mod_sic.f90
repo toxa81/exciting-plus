@@ -58,20 +58,20 @@ integer, parameter :: sic_maxvtl=1000
 
 type(wannier_transitions) :: sic_wantran
 
-type t_sic_orbitals
-! total number of translations
-  integer ntr
-! translation vectors in lattice coordinates
-  integer, allocatable :: vtl(:,:)
-! translation vectors in Cartesian coordinates
-  real(8), allocatable :: vtc(:,:)
-! vector -> index map
-  integer, allocatable :: ivtit(:,:,:)
-! translation limits along each lattice vector
-  integer tlim(2,3)
-end type t_sic_orbitals
-
-type(t_sic_orbitals) :: sic_orbitals
+!type t_sic_orbitals
+!! total number of translations
+!  integer ntr
+!! translation vectors in lattice coordinates
+!  integer, allocatable :: vtl(:,:)
+!! translation vectors in Cartesian coordinates
+!  real(8), allocatable :: vtc(:,:)
+!! vector -> index map
+!  integer, allocatable :: ivtit(:,:,:)
+!! translation limits along each lattice vector
+!  integer tlim(2,3)
+!end type t_sic_orbitals
+!
+!type(t_sic_orbitals) :: sic_orbitals
 
 ! maximum number of G-vectors for plane-wave expansion of Bloch functions
 integer s_ngvec
@@ -111,84 +111,70 @@ complex(8), allocatable :: s_wankir(:,:,:,:)
 complex(8), allocatable :: s_wvkmt(:,:,:,:,:,:)
 complex(8), allocatable :: s_wvkir(:,:,:,:)
 
+integer, parameter :: nwanprop=10
+integer, parameter :: wp_normlm=1
+integer, parameter :: wp_normtp=2
+integer, parameter :: wp_rmswan=3
+integer, parameter :: wp_rmsrho=4
+integer, parameter :: wp_rmsrho13=5
+integer, parameter :: wp_spread=6
+integer, parameter :: wp_vha=7
+integer, parameter :: wp_vxc=8
+integer, parameter :: wp_vsic=9
+integer, parameter :: wp_exc=10
+
 contains
 
-!subroutine s_get_wffvval(ikloc,x,wffvmt,wffvit,wffvval)
-!use modmain
-!implicit none
-!integer, intent(in) :: ikloc
-!real(8), intent(in) :: x(3)
-!complex(8), intent(in) :: wffvmt(lmmaxvr,nufrmax,natmtot)
-!complex(8), intent(in) :: wffvit(nmatmax)
-!complex(8), intent(out) :: wffvval
-!integer is,ia,ias,ir0,io,l,j,i,lm,ig,ispn
-!integer ntr(3),ik
-!real(8) vrc0(3),vtc(3),vr0(3),r0,tp(2),t1
-!real(8) ur(0:lmaxvr,nufrmax)
-!complex(8) zt1,zt2,zt3,ylm(lmmaxvr)
-!real(8) ya(nprad),c(nprad)
-!real(8), external :: polynom
-!logical, external :: vrinmt
+subroutine s_get_wffvval(x,ngp,vpc,vgpc,wffvmt,wffvit,wffvval)
+use modmain
+implicit none
+real(8), intent(in) :: x(3)
+integer, intent(in) :: ngp
+real(8), intent(in) :: vpc(3)
+real(8), intent(in) :: vgpc(3,ngkmax)
+complex(8), intent(in) :: wffvmt(lmmaxvr,nufrmax,natmtot)
+complex(8), intent(in) :: wffvit(nmatmax)
+complex(8), intent(out) :: wffvval
+integer is,ia,ias,ir0,io,l,j,i,lm,ig,ispn
+integer ntr(3)
+real(8) vrc0(3),vtc(3),vr0(3),r0,tp(2),t1
+real(8) ur(0:lmaxvr,nufrmax)
+complex(8) zt1,zt2,zt3,ylm(lmmaxvr)
+real(8) ya(nprad),c(nprad)
+real(8), external :: polynom
+logical, external :: vrinmt
 !
-!!ias1=wan_info(1,n1)
-!!wanpos1(:)=atposc(:,ias2ia(ias1),ias2is(ias1))
-!ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-!wffvval=zzero
-!if (vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
-!  ias=idxas(ia,is)
-!  call sphcrd(vr0,t1,tp)
-!  call genylm(lmaxvr,tp,ylm)
-!  vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
-!  ur=0.d0
-!  do l=0,lmaxvr
-!    do io=1,nufr(l,is)
-!      do j=1,nprad
-!        i=ir0+j-1
-!        ya(j)=ufr(i,l,io,ias2ic(ias))
-!      end do
-!      ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
-!    enddo !io
-!  enddo !l
-!  zt1=exp(zi*dot_product(vkc(:,ik),vtc(:)))
-!  do lm=1,lmmaxvr
-!    l=lm2l(lm)
-!    do io=1,nufr(l,is)
-!      wffvval=wffvval+wffvmt(lm,io,ias)*ur(l,io)*ylm(lm)
-!    enddo !io
-!  enddo !lm
-!  wffvval=wffvval*zt1
-!else
-!  do ig=1,ngk(1,ik)
-!    zt1=exp(zi*dot_product(x(:),vgkc(:,ig,1,ikloc)))/sqrt(omega)
-!    wffvval=wffvval+zt1*wffvit(ig)
-!  enddo
-!endif
-!return
-!end subroutine
-
-
-!subroutine s_get_pwval(ikloc,ig,x,pwval)
-!use modmain
-!implicit none
-!integer, intent(in) :: ikloc
-!integer, intent(in) :: ig
-!real(8), intent(in) :: x(3)
-!complex(8), intent(out) :: pwval
-!
-!integer is,ia,ir0
-!integer ntr(3),ik
-!real(8) vr0(3),r0
-!logical, external :: vrinmt
-!
-!!ias1=wan_info(1,n1)
-!!wanpos1(:)=atposc(:,ias2ia(ias1),ias2is(ias1))
-!ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-!pwval=zzero
-!if (.not.vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
-!  pwval=exp(zi*dot_product(x(:),vgkc(:,ig,1,ikloc)))/sqrt(omega)
-!endif
-!return
-!end subroutine
+wffvval=zzero
+if (vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
+  ias=idxas(ia,is)
+  call sphcrd(vr0,t1,tp)
+  call genylm(lmaxvr,tp,ylm)
+  vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
+  ur=0.d0
+  do l=0,lmaxvr
+    do io=1,nufr(l,is)
+      do j=1,nprad
+        i=ir0+j-1
+        ya(j)=ufr(i,l,io,ias2ic(ias))
+      end do
+      ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
+    enddo !io
+  enddo !l
+  do lm=1,lmmaxvr
+    l=lm2l(lm)
+    do io=1,nufr(l,is)
+      wffvval=wffvval+wffvmt(lm,io,ias)*ur(l,io)*ylm(lm)
+    enddo !io
+  enddo !lm
+  wffvval=wffvval*exp(zi*dot_product(vpc(:),vtc(:)))
+else
+  do ig=1,ngp
+    zt1=exp(zi*dot_product(x(:),vgpc(:,ig)))/sqrt(omega)
+    wffvval=wffvval+zt1*wffvit(ig)
+  enddo
+endif
+return
+end subroutine
 
 integer function s_gen_stepf(x)
 use modmain
@@ -205,53 +191,6 @@ s_gen_stepf=0
 if (.not.vrinmt(x,is,ia,ntr,vr0,ir0,r0)) s_gen_stepf=1
 return
 end function
-
-!subroutine s_get_ufrval(ias,x,vpc,ufrval)
-!use modmain
-!implicit none
-!! arguments
-!integer, intent(in) :: ias
-!real(8), intent(in) :: x(3)
-!real(8), intent(in) :: vpc(3)
-!complex(8), intent(out) :: ufrval(lmmaxvr,nufrmax)
-!! local variables
-!integer is,ia,ir0,io,l,j,i,lm,ig,ispn
-!integer ntr(3)
-!real(8) vrc0(3),vtc(3),vr0(3),r0,tp(2),t1
-!real(8) ur(0:lmaxvr,nufrmax)
-!complex(8) zt1,zt2,zt3,ylm(lmmaxvr)
-!real(8) ya(nprad),c(nprad)
-!real(8), external :: polynom
-!logical, external :: vrinmt
-!
-!!ias1=wan_info(1,n1)
-!!wanpos1(:)=atposc(:,ias2ia(ias1),ias2is(ias1))
-!ufrval=zzero
-!if (vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
-!  if (idxas(ia,is).ne.ias) return
-!  call sphcrd(vr0,t1,tp)
-!  call genylm(lmaxvr,tp,ylm)
-!  vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
-!  ur=0.d0
-!  do l=0,lmaxvr
-!    do io=1,nufr(l,is)
-!      do j=1,nprad
-!        i=ir0+j-1
-!        ya(j)=ufr(i,l,io,ias2ic(ias))
-!      end do
-!      ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
-!    enddo !io
-!  enddo !l
-!  zt1=exp(zi*dot_product(vpc(:),vtc(:)))
-!  do lm=1,lmmaxvr
-!    l=lm2l(lm)
-!    do io=1,nufr(l,is)
-!      ufrval(lm,io)=ur(l,io)*ylm(lm)*zt1
-!    enddo !io
-!  enddo !lm
-!endif
-!return
-!end subroutine
 
 subroutine s_get_ufrval(x,vpc,ias,ufrval)
 use modmain
@@ -298,9 +237,6 @@ if (vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
 endif
 return
 end subroutine
-
-
-
 
 subroutine s_get_wanval(n,x,wanval)
 use modmain
@@ -470,7 +406,7 @@ s_dot_ll=zprod
 return
 end function
 
-subroutine s_gen_pot(wanlm,wantp,wvlm,vha,vxc,vsic,exc)
+subroutine s_gen_pot(wanlm,wantp,wvlm,wanprop)
 use modmain
 use modxcifc
 implicit none
@@ -478,10 +414,7 @@ implicit none
 complex(8), intent(in) :: wanlm(lmmaxwan,s_nr,nspinor)
 complex(8), intent(in) :: wantp(s_ntp,s_nr,nspinor)
 complex(8), intent(out) :: wvlm(lmmaxwan,s_nr,nspinor)
-real(8), intent(out) :: vha
-real(8), intent(out) :: vxc
-real(8), intent(out) :: vsic
-real(8), intent(out) :: exc
+real(8), intent(out) :: wanprop(nwanprop)
 ! local variables
 integer jr,ir,l,lm,ispn,lm1,lm2,lm3
 real(8) t1
@@ -498,6 +431,8 @@ real(8), allocatable :: exclm(:,:)
 real(8), allocatable :: vxclm(:,:,:)
 real(8), external :: ddot
 complex(8), external :: gauntyry
+!
+! TODO: generalize for non-collinear case; vxc will become 2x2 matrix
 !
 allocate(rhotp(s_ntp,s_nr,nspinor))
 allocate(rholm(lmmaxwan,s_nr,nspinor))
@@ -553,24 +488,28 @@ do ispn=1,nspinor
     s_ntp,0.d0,vxclm(1,1,ispn),lmmaxwan)
 enddo
 ! compute vha=<V_h|rho>
-vha=0.d0
+wanprop(wp_vha)=0.d0
 do ir=1,s_nr
-  vha=vha+ddot(lmmaxwan,totrholm(1,ir),1,vhalm(1,ir),1)*s_rw(ir)
+  wanprop(wp_vha)=wanprop(wp_vha)+&
+    ddot(lmmaxwan,totrholm(1,ir),1,vhalm(1,ir),1)*s_rw(ir)
 enddo
 ! compute exc=<E_xc|rho>
-exc=0.d0
+wanprop(wp_exc)=0.d0
 do ir=1,s_nr
-  exc=exc+ddot(lmmaxwan,totrholm(1,ir),1,exclm(1,ir),1)*s_rw(ir)
+  wanprop(wp_exc)=wanprop(wp_exc)+&
+    ddot(lmmaxwan,totrholm(1,ir),1,exclm(1,ir),1)*s_rw(ir)
 enddo
-! compute vxc=<V_xc|rho>
-vxc=0.d0
+! compute vxc=<W_n|V_xc|W_n>; in the collinear case this is 
+!  \sum_{\sigma} <V_xc^{\sigma}|rho${\sigma}>
+wanprop(wp_vxc)=0.d0
 do ispn=1,nspinor
   do ir=1,s_nr
-    vxc=vxc+ddot(lmmaxwan,rholm(1,ir,ispn),1,vxclm(1,ir,ispn),1)*s_rw(ir)
+    wanprop(wp_vxc)=wanprop(wp_vxc)+&
+      ddot(lmmaxwan,rholm(1,ir,ispn),1,vxclm(1,ir,ispn),1)*s_rw(ir)
   enddo
 enddo
 ! compute <V_n|rho>
-vsic=vha+vxc
+wanprop(wp_vsic)=wanprop(wp_vha)+wanprop(wp_vxc)
 ! add Hartree potential to XC
 do ispn=1,nspinor
   vxclm(:,:,ispn)=vxclm(:,:,ispn)+vhalm(:,:)
