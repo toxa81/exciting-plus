@@ -215,6 +215,16 @@ if (wproc) then
   write(151,*)
   call flushifc(151)
 endif
+! symmetrize the potential matrix elements
+do i=1,sic_wantran%nwt
+  n=sic_wantran%iwt(1,i)
+  n1=sic_wantran%iwt(2,i)
+  vl(:)=sic_wantran%iwt(3:5,i)
+  j=sic_wantran%iwtidx(n1,n,-vl(1),-vl(2),-vl(3))
+  z1=0.5d0*(vwanme(i)+dconjg(vwanme(j)))
+  vwanme(i)=z1
+  vwanme(j)=dconjg(z1)
+enddo
 ! check hermiticity of V_nn'(k)
 allocate(vwank(sic_wantran%nwan,sic_wantran%nwan))
 do ik=1,nkpt
