@@ -135,11 +135,11 @@ real(8), intent(in) :: vgpc(3,ngkmax)
 complex(8), intent(in) :: wffvmt(lmmaxvr,nufrmax,natmtot)
 complex(8), intent(in) :: wffvit(nmatmax)
 complex(8), intent(out) :: wffvval
-integer is,ia,ias,ir0,io,l,j,i,lm,ig,ispn
+integer is,ia,ias,ir0,io,l,j,i,lm,ig
 integer ntr(3)
-real(8) vrc0(3),vtc(3),vr0(3),r0,tp(2),t1
+real(8) vtc(3),vr0(3),r0,tp(2),t1
 real(8) ur(0:lmaxvr,nufrmax)
-complex(8) zt1,zt2,zt3,ylm(lmmaxvr)
+complex(8) zt1,ylm(lmmaxvr)
 real(8) ya(nprad),c(nprad)
 real(8), external :: polynom
 logical, external :: vrinmt
@@ -183,7 +183,7 @@ implicit none
 real(8), intent(in) :: x(3)
 ! local variables
 integer is,ia,ir0
-integer ntr(3),ik
+integer ntr(3)
 real(8) vr0(3),r0
 logical, external :: vrinmt
 !
@@ -201,11 +201,11 @@ real(8), intent(in) :: vpc(3)
 integer, intent(out) :: ias
 complex(8), intent(out) :: ufrval(lmmaxvr,nufrmax)
 ! local variables
-integer is,ia,ir0,io,l,j,i,lm,ig,ispn
+integer is,ia,ir0,io,l,j,i,lm
 integer ntr(3)
-real(8) vrc0(3),vtc(3),vr0(3),r0,tp(2),t1
+real(8) vtc(3),vr0(3),r0,tp(2),t1
 real(8) ur(0:lmaxvr,nufrmax)
-complex(8) zt1,zt2,zt3,ylm(lmmaxvr)
+complex(8) zt1,ylm(lmmaxvr)
 real(8) ya(nprad),c(nprad)
 real(8), external :: polynom
 logical, external :: vrinmt
@@ -251,7 +251,7 @@ integer is,ia,ias,ir0,io,l,j,i,lm,ig,ispn
 integer ntr(3),ik,ikloc
 real(8) x0(3),vtc(3),vr0(3),r0,tp(2),t1
 real(8) ur(0:lmaxvr,nufrmax)
-complex(8) zt1,zt2,zt3,ylm(lmmaxvr)
+complex(8) zt1,zt2,ylm(lmmaxvr)
 real(8) ya(nprad),c(nprad)
 real(8), external :: polynom
 logical, external :: vrinmt
@@ -321,7 +321,7 @@ implicit none
 real(8), intent(in) :: x(3)
 complex(8), intent(in) :: flm(lmmaxwan,s_nr)
 ! local variables
-integer ir1,lm,itp,ir
+integer ir1,lm,ir
 real (8) x0,tp(2),dx
 complex(8) ylm(lmmaxwan)
 complex(8) zval 
@@ -365,9 +365,9 @@ complex(8), intent(in) :: f2lm(lmmaxwan,s_nr)
 ! local variables
 complex(8), allocatable :: f2tp_(:,:)
 complex(8), allocatable :: f1tp_(:,:)
-complex(8), allocatable :: f2lm_(:,:)
+!complex(8), allocatable :: f2lm_(:,:)
 complex(8) zprod
-integer ias1,ias2,ir,itp,lm
+integer ir,itp
 real(8) x1(3),x2(3)
 complex(8), external :: zdotc
 !

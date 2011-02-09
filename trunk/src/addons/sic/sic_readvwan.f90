@@ -5,8 +5,8 @@ use mod_hdf5
 use mod_linresp
 use mod_wannier
 implicit none
-integer it,n,ispn,nwt,j
-character*20 c1,c2,c3
+integer n,ispn,nwt,j
+character*20 c1,c2
 character*100 path
 logical exist
 
