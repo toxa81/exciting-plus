@@ -2,15 +2,14 @@ subroutine sic_genpwi
 use modmain
 use mod_sic
 implicit none
-integer n,j,ik,ikloc,ir,itp,ispn,ig,ngvec1,lm
+integer n,j,ik,ikloc,ir,itp,ispn,ig,ngvec1
 real(8) x(3),x1(3)
 integer, allocatable :: stepf(:)
-complex(8) zt1(nspinor),pwtp,expikr
+complex(8) expikr
 complex(8), allocatable :: wtp(:,:)
 complex(8), allocatable :: wvtp(:,:)
 complex(8), allocatable :: expigr(:)
 complex(8), allocatable :: expigkx0(:,:,:)
-!real(8), allocatable :: stepf(:,:)
 complex(8), external :: zdotu
 !
 if (.not.tsic_wv) return
@@ -18,8 +17,6 @@ if (.not.tsic_wv) return
 allocate(wtp(sic_wantran%nwan,nspinor))
 allocate(wvtp(sic_wantran%nwan,nspinor))
 allocate(stepf(sic_wantran%nwan))
-!allocate(stepf(s_ntp,s_nr))
-!call s_gen_stepf(stepf)
 ngvec1=0
 do ikloc=1,nkptloc
   ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
