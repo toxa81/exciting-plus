@@ -2,68 +2,40 @@ subroutine sic_genfvprj
 use modmain
 use mod_sic
 implicit none
-!complex(8), allocatable :: expikr(:)
 integer ik,ikloc,ir,n,ispn,ist,istsv,j,i,jas,is,ig,ld
 real(8) x(3),t1
 complex(8) expikt
 complex(8), allocatable :: apwalm(:,:,:,:)
-!complex(8), allocatable :: wfmt(:,:,:)
-!complex(8), allocatable :: wfmt_(:,:)
-!complex(8), allocatable :: wfir(:)
-!complex(8), allocatable :: wffvtp(:,:)
-!complex(8), allocatable :: wffvlm(:,:)
 complex(8), allocatable :: wffvmt(:,:,:,:)
-!complex(8), allocatable :: wantp(:,:,:)
-!complex(8), allocatable :: wvtp(:,:,:)
-
+integer lm,ias
 !integer l,lm,io,it,ias,itp,i1,i2,i3
-!real(8) d1,vrc(3)
-!complex(8) zt1,zt2
-!complex(8) ufrval(lmmaxvr,nufrmax)
+real(8) d1,vrc(3)
+integer itp
+complex(8) zt1,zt2
 complex(8), external :: zdotu,zdotc,zfinp_
-!real(8), allocatable :: tp(:,:)
 !
 sic_wb=zzero
 sic_wvb=zzero
+if (.not.tsic_wv) return 
 call timer_start(t_sic_genfvprj)
-! this code is mainly for tests 
-!  on first SIC iteration Wannier functions are generated from LDA Hamiltonian
-!  so we can compute overlap between Wannier states and first-variational
-!  states analytically
-if (.not.tsic_wv) then
-  do ikloc=1,nkptloc
-    do j=1,sic_wantran%nwan
-      n=sic_wantran%iwan(j)
-      do ispn=1,nspinor
-        do ist=1,nstfv
-          istsv=ist+(ispn-1)*nstfv
-          do i=1,nstsv
-! TODO: zgemm?
-            sic_wb(j,ist,ispn,ikloc)=sic_wb(j,ist,ispn,ikloc)+&
-              dconjg(wann_c(n,i,ikloc)*evecsvloc(istsv,i,ikloc))
-          enddo !j
-        enddo !ispn
-      enddo !i
-    enddo !n
-  enddo !ikloc  
-  call timer_stop(t_sic_genfvprj)
-  return
-endif
+
+!do ikloc=1,nkptloc
+!  do j=1,sic_wantran%nwan
+!    n=sic_wantran%iwan(j)
+!    do ispn=1,nspinor
+!      do ist=1,nstfv
+!        istsv=ist+(ispn-1)*nstfv
+!        do i=1,nstsv
+!          sic_wb_tmp(j,ist,ispn,ikloc)=sic_wb_tmp(j,ist,ispn,ikloc)+&
+!            dconjg(wann_c(n,i,ikloc)*evecsvloc(istsv,i,ikloc))
+!        enddo !j
+!      enddo !ispn
+!    enddo !i
+!  enddo !n
+!enddo !ikloc  
 
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-!allocate(expikr(ngrtot))
-!allocate(wfmt(lmmaxvr,nrmtmax,natmtot))
-!allocate(wfmt_(lmmaxvr,nrmtmax))
-!allocate(wfir(ngrtot))
-!allocate(tp(2,lmmaxvr))
-!call sphcover(lmmaxvr,tp)
-
-!allocate(wffvtp(s_ntp,s_nr))
-!allocate(wffvlm(lmmaxwan,s_nr))
 allocate(wffvmt(lmmaxvr,nufrmax,natmtot,nstfv))
-!allocate(wantp(s_ntp,s_nr,nspinor))
-!allocate(wvtp(s_ntp,s_nr,nspinor))
-
 
 ! recompute muffin-tin integrals every n iterations
 if (mod(iscl,5).eq.1) call sic_genmti
@@ -112,7 +84,7 @@ do ikloc=1,nkptloc
 !  do ist=1,nstfv
 !    do ir=1,s_nr
 !      do itp=1,s_ntp
-!        vrc(:)=s_spx(:,itp)*s_r(ir)
+!        vrc(:)=s_spx(:,itp)*s_r(ir)+wanpos <---!!!
 !        call s_get_wffvval(ikloc,vrc,wffvmt(1,1,1,ist),&
 !          evecfvloc(1,ist,1,ikloc),wffvtp(itp,ir))
 !      enddo
@@ -130,7 +102,6 @@ do ikloc=1,nkptloc
 !        enddo
 !        sic_wb(j,ist,ispn,ikloc)=zt1
 !        sic_wvb(j,ist,ispn,ikloc)=zt2
-!        !write(*,*)"diff = ",abs(sic_wb(j,ist,ispn,ikloc)-zt1),abs(sic_wvb(j,ist,ispn,ikloc)-zt2)
 !      enddo !ispn
 !    enddo !j
 !  enddo !istfv
@@ -138,42 +109,23 @@ do ikloc=1,nkptloc
 ! == code #3 == optimized version of code #2
   ld=lmmaxvr*nufrmax*natmtot
   do ispn=1,nspinor
+! muffin-tin part of <W_n|\phi>
     call zgemm('T','N',sic_wantran%nwan,nstfv,ld,zone,&
       sic_wuy(1,1,1,1,ispn,ikloc),ld,wffvmt,ld,zzero,&
       sic_wb(1,1,ispn,ikloc),sic_wantran%nwan)
+! interstitial part of <W_n|\phi>
     call zgemm('T','N',sic_wantran%nwan,nstfv,ngk(1,ik),zone,&
-      sic_wgk(1,1,ispn,ikloc),ngkmax,evecfvloc(1,1,1,ikloc),nmatmax,&
-      zone,sic_wb(1,1,ispn,ikloc),sic_wantran%nwan)
+      sic_wgk(1,1,ispn,ikloc),ngkmax,evecfvloc(1,1,1,ikloc),&
+      nmatmax,zone,sic_wb(1,1,ispn,ikloc),sic_wantran%nwan)
+! muffin tin part of <(W*V)_n|\phi>
     call zgemm('T','N',sic_wantran%nwan,nstfv,ld,zone,&
       sic_wvuy(1,1,1,1,ispn,ikloc),ld,wffvmt,ld,zzero,&
       sic_wvb(1,1,ispn,ikloc),sic_wantran%nwan)
+! interstitial part of <(W*V)_n|\phi>
     call zgemm('T','N',sic_wantran%nwan,nstfv,ngk(1,ik),zone,&
-      sic_wvgk(1,1,ispn,ikloc),ngkmax,evecfvloc(1,1,1,ikloc),nmatmax,&
-      zone,sic_wvb(1,1,ispn,ikloc),sic_wantran%nwan)
-  enddo
-!  do ist=1,nstfv
-!    do ispn=1,nspinor
-!      do j=1,sic_wantran%nwan
-!        zt1=zzero
-!        zt2=zzero
-!        do ias=1,natmtot
-!          do io=1,nufrmax
-!            do lm=1,lmmaxvr
-!              zt1=zt1+sic_wuy(lm,io,ias,j,ispn,ikloc)*wffvmt(lm,io,ias,ist)
-!              zt2=zt2+sic_wvuy(lm,io,ias,j,ispn,ikloc)*wffvmt(lm,io,ias,ist)
-!            enddo
-!          enddo
-!        enddo
-!        do ig=1,ngk(1,ik)
-!          zt1=zt1+sic_wgk(ig,j,ispn,ikloc)*evecfvloc(ig,ist,1,ikloc)
-!          zt2=zt2+sic_wvgk(ig,j,ispn,ikloc)*evecfvloc(ig,ist,1,ikloc)
-!        enddo
-!        !write(*,*)"diff = ",abs(sic_wb(j,ist,ispn,ikloc)-zt1),abs(sic_wvb(j,ist,ispn,ikloc)-zt2)
-!        sic_wb(j,ist,ispn,ikloc)=zt1
-!        sic_wvb(j,ist,ispn,ikloc)=zt2
-!      enddo !j
-!    enddo !ispn  
-!  enddo !ist
+      sic_wvgk(1,1,ispn,ikloc),ngkmax,evecfvloc(1,1,1,ikloc),&
+      nmatmax,zone,sic_wvb(1,1,ispn,ikloc),sic_wantran%nwan)
+  enddo !ispn
 enddo !ikloc
 deallocate(apwalm,wffvmt)
 call timer_stop(t_sic_genfvprj)
