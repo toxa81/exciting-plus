@@ -129,8 +129,6 @@ do itask=1,ntasks
     call test_xc
   case(881)
     call test_bloch_wf
-  case(882)
-    call test_spherical
 #ifdef _MAD_
   case(890)
     call test_madness
