@@ -2,17 +2,9 @@ subroutine sic_genfvprj
 use modmain
 use mod_sic
 implicit none
-integer ik,ikloc,ir,n,ispn,ist,istsv,j,i,jas,is,ig,ld
-real(8) x(3),t1
-complex(8) expikt
+integer ik,ikloc,ispn,ld
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wffvmt(:,:,:,:)
-integer lm,ias
-!integer l,lm,io,it,ias,itp,i1,i2,i3
-real(8) d1,vrc(3)
-integer itp
-complex(8) zt1,zt2
-complex(8), external :: zdotu,zdotc,zfinp_
 !
 sic_wb=zzero
 sic_wvb=zzero
