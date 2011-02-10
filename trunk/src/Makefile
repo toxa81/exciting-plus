@@ -36,7 +36,7 @@ SRC_modules = ./addons/mod_mpi_grid.f90 \
               ./addons/sic/mod_sic.f90
               
 OBJ_modules = $(SRC_modules:.f90=.o)
-SRC = $(shell python ../gensrclog.py; mv srclog.f90 ./addons; find . -name \*.f90)
+SRC = $(shell find . -name \*.f90)
 OBJ = $(SRC:.f90=.o)
 
 EXE = elk
@@ -64,8 +64,8 @@ madapi:
 	cd addons/madness; make
 
 gensrc:
-	python ../gensrclog.py
-	mv srclog.f90 ./addons
+#	python ../gensrclog.py
+#	mv srclog.f90 ./addons
 	python ../ftemplate.py <./addons/mod_mpi_grid.tpl >./addons/mod_mpi_grid.f90
 	
 elk:	$(OBJ_modules) $(OBJ)
