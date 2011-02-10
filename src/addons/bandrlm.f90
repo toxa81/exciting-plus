@@ -28,7 +28,7 @@ use mod_sic
 !BOC
 implicit none
 ! local variables
-integer lmax,lmmax,lm,i,j,n,nsv,isv
+integer lmax,lmmax,lm,i,j,n
 integer ik,ikloc,ispn,is,ia,ias,iv,ist
 real(8) emin,emax
 ! allocatable arrays
@@ -73,8 +73,6 @@ if (sic) then
   allocate(sic_wann_e0k(sic_wantran%nwan,nkpt))
   sic_wann_e0k=0.d0
 endif
-nsv=1
-if (sic.and..not.tsic_wv) nsv=2
 ! begin parallel loop over k-points
 bc=0.d0
 evalsv=0.d0
@@ -84,26 +82,24 @@ do ikloc=1,nkptloc
 ! solve the first-variational secular equation
   call seceqn1(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc))
 end do
-do isv=1,nsv
-  if (sic) call sic_genfvprj
-  do ikloc=1,nkptloc
-    ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-    write(*,'("Info(bandstr,seceqn2): ",I6," of ",I6," k-points")') ik,nkpt
+if (sic) call sic_genfvprj
+do ikloc=1,nkptloc
+  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+  write(*,'("Info(bandstr,seceqn2): ",I6," of ",I6," k-points")') ik,nkpt
 ! solve the second-variational secular equation
-    call seceqn2(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
+  call seceqn2(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
+    evecsvloc(1,1,ikloc))
+  if (wannier) then
+    if (ldisentangle) call disentangle(evalsv(1,ik),wann_c(1,1,ikloc),&
       evecsvloc(1,1,ikloc))
-    if (wannier) then
-      if (ldisentangle) call disentangle(evalsv(1,ik),wann_c(1,1,ikloc),&
-        evecsvloc(1,1,ikloc))
-      call genwann_h(.true.,evalsv(1,ik),wann_c(1,1,ikloc),&
-        wann_h(1,1,ik),wann_e(1,ik))
-    endif
-    if (sic) then
-      call diagzhe(sic_wantran%nwan,sic_wann_h0k(1,1,ikloc),sic_wann_e0k(1,ik))
-    endif
-    call bandchar(.false.,ikloc,lmax,lmmax,evecfvloc(1,1,1,ikloc),&
-      evecsvloc(1,1,ikloc),bc(1,1,1,1,ik))
-  enddo
+    call genwann_h(.true.,evalsv(1,ik),wann_c(1,1,ikloc),&
+      wann_h(1,1,ik),wann_e(1,ik))
+  endif
+  if (sic) then
+    call diagzhe(sic_wantran%nwan,sic_wann_h0k(1,1,ikloc),sic_wann_e0k(1,ik))
+  endif
+  call bandchar(.false.,ikloc,lmax,lmmax,evecfvloc(1,1,1,ikloc),&
+    evecsvloc(1,1,ikloc),bc(1,1,1,1,ik))
 enddo
 deallocate(evalfv,evecfvloc,evecsvloc)
 call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.)
