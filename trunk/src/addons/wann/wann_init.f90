@@ -132,6 +132,7 @@ if (allocated(wann_c)) deallocate(wann_c)
 allocate(wann_c(nwantot,nstsv,nkptloc))
 wann_c=zzero
 
+! TODO: distribute over k-points
 if (allocated(wann_h)) deallocate(wann_h)
 allocate(wann_h(nwantot,nwantot,nkpt))
 wann_h=zzero

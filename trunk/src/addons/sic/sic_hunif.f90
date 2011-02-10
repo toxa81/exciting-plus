@@ -16,6 +16,21 @@ complex(8), allocatable :: vwank(:,:),zm1(:,:)
 character*500 msg
 logical, parameter :: tcheckherm=.false.
 !
+ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+! note: we need H_{nn'}(k) to compute energies of WFs: E_n=<W_n|H|W_n>
+!  which is computed as \sum_{k}H_{nn}(k)
+if (.not.tsic_wv) then
+  call genwann_h(.false.,evalsv(1,ik),wann_c(1,1,ikloc),wann_h(1,1,ik),&
+    wann_e(1,ik))
+  do j1=1,sic_wantran%nwan
+    n1=sic_wantran%iwan(j1)
+    do j2=1,sic_wantran%nwan
+      n2=sic_wantran%iwan(j1)
+      sic_wann_h0k(j1,j2,ikloc)=wann_h(n1,n2,ik)
+    enddo
+  enddo
+  return
+endif
 call timer_start(t_sic_hunif)
 ! restore full hermitian matrix
 do j1=2,nstsv
@@ -34,15 +49,9 @@ call zgemm('N','C',sic_wantran%nwan,sic_wantran%nwan,nstsv,zone,zm1,&
   sic_wantran%nwan,sic_wb(1,1,1,ikloc),sic_wantran%nwan,zzero,&
   sic_wann_h0k(1,1,ikloc),sic_wantran%nwan)
 deallocate(zm1)
-if (.not.tsic_wv) then
-  call timer_stop(t_sic_hunif)
-  return
-endif
-
 ! compute V_{nn'}(k)
 allocate(vwank(sic_wantran%nwan,sic_wantran%nwan))
 vwank=zzero
-ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 do i=1,sic_wantran%nwt
   n1=sic_wantran%iwt(1,i)
   j1=sic_wantran%idxiwan(n1)

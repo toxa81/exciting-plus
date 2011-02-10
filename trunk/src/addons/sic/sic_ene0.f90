@@ -7,6 +7,22 @@ implicit none
 complex(8), allocatable :: ene0(:,:,:,:,:)
 integer n1,n2,ias,lm1,lm2,ispn1,ispn2,ikloc,ik,ispn,n,j1,j2
 
+! note: we need H_{nn'}(k) to compute energies of WFs: E_n=<W_n|H|W_n>
+!  which is computed as \sum_{k}H_{nn}(k)
+if (.not.tsic_wv) then
+  do ikloc=1,nkptloc
+    ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+    call genwann_h(.false.,evalsv(1,ik),wann_c(1,1,ikloc),wann_h(1,1,ik),&
+      wann_e(1,ik))
+    do j1=1,sic_wantran%nwan
+      n1=sic_wantran%iwan(j1)
+      do j2=1,sic_wantran%nwan
+        n2=sic_wantran%iwan(j1)
+        sic_wann_h0k(j1,j2,ikloc)=wann_h(n1,n2,ik)
+      enddo
+    enddo
+  enddo !ikloc
+endif
 allocate(ene0(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
 ene0=zzero
 ! collinear (!!!) case only
