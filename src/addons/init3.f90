@@ -86,6 +86,6 @@ if (debug_level.ge.5) then
   write(fdbgout,'("task : ",I4)')task
   close(fdbgout)
 endif
-if (mpi_grid_root()) call srclog
+!if (mpi_grid_root()) call srclog
 return
 end
