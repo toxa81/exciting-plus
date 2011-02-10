@@ -116,7 +116,7 @@ do iloc=1,nwtloc
   vl(:)=sic_wantran%iwt(3:5,i)
   pos1(:)=wanpos(:,n)
   pos2(:)=wanpos(:,n1)+vl(1)*avec(:,1)+vl(2)*avec(:,2)+vl(3)*avec(:,3)
-  if ((iovlp.eq.1.and.abs(sum(pos1-pos2)).lt.1d-10).or.iovlp.eq.2) then
+  if ((iovlp.eq.1.and.sum(abs(pos1-pos2)).lt.1d-10).or.iovlp.eq.2) then
     do ispn=1,nspinor
       ovlp(i)=ovlp(i)+s_dot_ll(pos1,pos2,s_wanlm(1,1,ispn,j),&
         s_wanlm(1,1,ispn,j1))

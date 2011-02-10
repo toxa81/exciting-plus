@@ -174,9 +174,8 @@ do iloc=1,nwtloc
   enddo
 enddo
 call mpi_grid_reduce(vwanme(1),sic_wantran%nwt,all=.true.)
-! check localization criterion and compute difference of vwanme
+! check localization criterion 
 t2=-1.d0
-t3=0.d0
 do i=1,sic_wantran%nwt
   n=sic_wantran%iwt(1,i)
   n1=sic_wantran%iwt(2,i)
@@ -188,6 +187,20 @@ do i=1,sic_wantran%nwt
     i1=i
     j1=j
   endif
+enddo
+! symmetrize the potential matrix elements
+do i=1,sic_wantran%nwt
+  n=sic_wantran%iwt(1,i)
+  n1=sic_wantran%iwt(2,i)
+  vl(:)=sic_wantran%iwt(3:5,i)
+  j=sic_wantran%iwtidx(n1,n,-vl(1),-vl(2),-vl(3))
+  z1=0.5d0*(vwanme(i)+dconjg(vwanme(j)))
+  vwanme(i)=z1
+  vwanme(j)=dconjg(z1)
+enddo
+! compute RMS difference
+t3=0.d0
+do i=1,sic_wantran%nwt
   t3=t3+abs(vwanme(i)-vwanme_old(i))**2
 enddo
 deallocate(vwanme_old)
@@ -215,16 +228,6 @@ if (wproc) then
   write(151,*)
   call flushifc(151)
 endif
-! symmetrize the potential matrix elements
-do i=1,sic_wantran%nwt
-  n=sic_wantran%iwt(1,i)
-  n1=sic_wantran%iwt(2,i)
-  vl(:)=sic_wantran%iwt(3:5,i)
-  j=sic_wantran%iwtidx(n1,n,-vl(1),-vl(2),-vl(3))
-  z1=0.5d0*(vwanme(i)+dconjg(vwanme(j)))
-  vwanme(i)=z1
-  vwanme(j)=dconjg(z1)
-enddo
 ! check hermiticity of V_nn'(k)
 allocate(vwank(sic_wantran%nwan,sic_wantran%nwan))
 do ik=1,nkpt
