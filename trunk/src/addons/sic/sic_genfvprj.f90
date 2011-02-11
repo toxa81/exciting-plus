@@ -2,9 +2,13 @@ subroutine sic_genfvprj
 use modmain
 use mod_sic
 implicit none
-integer ik,ikloc,ispn,ld
+integer ik,ikloc,ispn,ld,ierr,j1,j2,i
+complex(8) zt1
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wffvmt(:,:,:,:)
+complex(8), allocatable :: ovlp(:,:)
+complex(8), allocatable :: wb(:,:,:)
+complex(8), allocatable :: wvb(:,:,:)
 !
 sic_wb=zzero
 sic_wvb=zzero
@@ -28,6 +32,9 @@ call timer_start(t_sic_genfvprj)
 
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 allocate(wffvmt(lmmaxvr,nufrmax,natmtot,nstfv))
+allocate(ovlp(sic_wantran%nwan,sic_wantran%nwan))
+allocate(wb(sic_wantran%nwan,nstfv,nspinor))
+allocate(wvb(sic_wantran%nwan,nstfv,nspinor))
 
 ! recompute muffin-tin integrals every n iterations
 if (mod(iscl,5).eq.1) call sic_genmti
@@ -103,23 +110,47 @@ do ikloc=1,nkptloc
   do ispn=1,nspinor
 ! muffin-tin part of <W_n|\phi>
     call zgemm('T','N',sic_wantran%nwan,nstfv,ld,zone,&
-      sic_wuy(1,1,1,1,ispn,ikloc),ld,wffvmt,ld,zzero,&
-      sic_wb(1,1,ispn,ikloc),sic_wantran%nwan)
+      sic_wuy(1,1,1,1,ispn,ikloc),ld,wffvmt,ld,zzero,wb,&
+      sic_wantran%nwan)
 ! interstitial part of <W_n|\phi>
     call zgemm('T','N',sic_wantran%nwan,nstfv,ngk(1,ik),zone,&
       sic_wgk(1,1,ispn,ikloc),ngkmax,evecfvloc(1,1,1,ikloc),&
-      nmatmax,zone,sic_wb(1,1,ispn,ikloc),sic_wantran%nwan)
+      nmatmax,zone,wb,sic_wantran%nwan)
 ! muffin tin part of <(W*V)_n|\phi>
     call zgemm('T','N',sic_wantran%nwan,nstfv,ld,zone,&
-      sic_wvuy(1,1,1,1,ispn,ikloc),ld,wffvmt,ld,zzero,&
-      sic_wvb(1,1,ispn,ikloc),sic_wantran%nwan)
+      sic_wvuy(1,1,1,1,ispn,ikloc),ld,wffvmt,ld,zzero,sic_wvb,&
+      sic_wantran%nwan)
 ! interstitial part of <(W*V)_n|\phi>
     call zgemm('T','N',sic_wantran%nwan,nstfv,ngk(1,ik),zone,&
       sic_wvgk(1,1,ispn,ikloc),ngkmax,evecfvloc(1,1,1,ikloc),&
-      nmatmax,zone,sic_wvb(1,1,ispn,ikloc),sic_wantran%nwan)
+      nmatmax,zone,wvb,sic_wantran%nwan)
   enddo !ispn
+! compute overlap matrix
+  ovlp=zzero
+  do j1=1,sic_wantran%nwan
+    do j2=1,sic_wantran%nwan
+      do ispn=1,nspinor
+        do i=1,nstfv
+          ovlp(j1,j2)=ovlp(j1,j2)+wb(j1,i,ispn)*dconjg(wb(j2,i,ispn))
+        enddo
+      enddo
+    enddo
+  enddo
+! compute O^{-1/2}
+  call isqrtzhe(sic_wantran%nwan,ovlp,ierr)
+  if (ierr.ne.0) then
+    write(*,'("Error(sic_genfvprj): overlap matrix is degenerate")')
+    call pstop
+  endif
+  do j1=1,sic_wantran%nwan
+    do j2=1,sic_wantran%nwan
+      sic_wb(j1,:,:,ikloc)=sic_wb(j1,:,:,ikloc)+ovlp(j2,j1)*wb(j2,:,:)
+      sic_wvb(j1,:,:,ikloc)=sic_wvb(j1,:,:,ikloc)+ovlp(j2,j1)*wvb(j2,:,:)
+    enddo
+  enddo
 enddo !ikloc
 deallocate(apwalm,wffvmt)
+deallocate(ovlp,wb,wvb)
 call timer_stop(t_sic_genfvprj)
 return
 end

@@ -87,5 +87,6 @@ if (debug_level.ge.5) then
   close(fdbgout)
 endif
 !if (mpi_grid_root()) call srclog
+!if (mpi_grid_root()) call print_info 
 return
 end

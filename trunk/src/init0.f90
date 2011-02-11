@@ -332,10 +332,6 @@ call gencfun
 !-------------------------!
 !     atoms and cores     !
 !-------------------------!
-! solve the Kohn-Sham-Dirac equations for all atoms
-!if (.not.(task.eq.800.or.task.eq.801.or.task.eq.802)) then
-!  call allatoms
-!endif
 ! allocate global species charge density and potential arrays
 if (allocated(sprho)) deallocate(sprho)
 allocate(sprho(spnrmax,nspecies))
