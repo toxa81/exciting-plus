@@ -118,7 +118,7 @@ do ikloc=1,nkptloc
       nmatmax,zone,wb,sic_wantran%nwan)
 ! muffin tin part of <(W*V)_n|\phi>
     call zgemm('T','N',sic_wantran%nwan,nstfv,ld,zone,&
-      sic_wvuy(1,1,1,1,ispn,ikloc),ld,wffvmt,ld,zzero,sic_wvb,&
+      sic_wvuy(1,1,1,1,ispn,ikloc),ld,wffvmt,ld,zzero,wvb,&
       sic_wantran%nwan)
 ! interstitial part of <(W*V)_n|\phi>
     call zgemm('T','N',sic_wantran%nwan,nstfv,ngk(1,ik),zone,&
