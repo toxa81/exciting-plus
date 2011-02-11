@@ -10,8 +10,6 @@ character*20 c1,c2
 character*100 path
 logical exist
 
-! retutn if wannier functions and potential are initialized
-if (tsic_wv) return
 inquire(file="sic.hdf5",exist=exist)
 if (.not.exist) return
 
