@@ -87,41 +87,58 @@ call genwantran(sic_wantran,-0.d0,sic_me_cutoff,allwt=.true.,waninc=sic_apply)
 !    sic_orbitals%vtl(3,i))=i
 !enddo
 
-! allocate once main arrays of SIC code
-if (.not.tsic_arrays_allocated) then
-  tsic_arrays_allocated=.true.
-  allocate(s_tpw(s_ntp))
-  allocate(s_rlmf(lmmaxwan,s_ntp))
-  allocate(s_ylmf(lmmaxwan,s_ntp))
-  allocate(s_rlmb(s_ntp,lmmaxwan))
-  allocate(s_ylmb(s_ntp,lmmaxwan))
-  allocate(s_spx(3,s_ntp))
-  allocate(s_r(s_nr))
-  allocate(s_rw(s_nr))
-  allocate(s_wanlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
-  allocate(s_wvlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
-  allocate(vwanme(sic_wantran%nwt))
-  vwanme=zzero
-  allocate(sic_wb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
-  sic_wb=zzero
-  allocate(sic_wvb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
-  sic_wvb=zzero
-  allocate(sic_wann_e0(nwantot))
-  sic_wann_e0=0.d0
-  allocate(sic_wann_h0k(sic_wantran%nwan,sic_wantran%nwan,nkptloc))
-  sic_wann_h0k=zzero
-  sic_energy_tot=0.d0
-  sic_energy_pot=0.d0
-  sic_energy_kin=0.d0
-  allocate(sic_wgk(ngkmax,sic_wantran%nwan,nspinor,nkptloc))
-  sic_wgk=zzero
-  allocate(sic_wvgk(ngkmax,sic_wantran%nwan,nspinor,nkptloc))
-  sic_wgk=zzero
-  allocate(sic_wuy(lmmaxvr,nufrmax,natmtot,sic_wantran%nwan,nspinor,nkptloc))
-  sic_wuy=zzero
-  allocate(sic_wvuy(lmmaxvr,nufrmax,natmtot,sic_wantran%nwan,nspinor,nkptloc))
-  sic_wvuy=zzero
-endif
+if (allocated(s_tpw)) deallocate(s_tpw)
+allocate(s_tpw(s_ntp))
+if (allocated(s_rlmf)) deallocate(s_rlmf)
+allocate(s_rlmf(lmmaxwan,s_ntp))
+if (allocated(s_ylmf)) deallocate(s_ylmf)
+allocate(s_ylmf(lmmaxwan,s_ntp))
+if (allocated(s_rlmb)) deallocate(s_rlmb)
+allocate(s_rlmb(s_ntp,lmmaxwan))
+if (allocated(s_ylmb)) deallocate(s_ylmb)
+allocate(s_ylmb(s_ntp,lmmaxwan))
+if (allocated(s_spx)) deallocate(s_spx)
+allocate(s_spx(3,s_ntp))
+if (allocated(s_r)) deallocate(s_r)
+allocate(s_r(s_nr))
+if (allocated(s_rw)) deallocate(s_rw)
+allocate(s_rw(s_nr))
+if (allocated(s_wanlm)) deallocate(s_wanlm)
+allocate(s_wanlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
+if (allocated(s_wvlm)) deallocate(s_wvlm)
+allocate(s_wvlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
+if (allocated(vwanme)) deallocate(vwanme)
+allocate(vwanme(sic_wantran%nwt))
+vwanme=zzero
+if (allocated(sic_wb)) deallocate(sic_wb)
+allocate(sic_wb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
+sic_wb=zzero
+if (allocated(sic_wvb)) deallocate(sic_wvb)
+allocate(sic_wvb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
+sic_wvb=zzero
+if (allocated(sic_wann_e0)) deallocate(sic_wann_e0)
+allocate(sic_wann_e0(nwantot))
+sic_wann_e0=0.d0
+if (allocated(sic_wann_h0k)) deallocate(sic_wann_h0k)
+allocate(sic_wann_h0k(sic_wantran%nwan,sic_wantran%nwan,nkptloc))
+sic_wann_h0k=zzero
+if (allocated(sic_wgk)) deallocate(sic_wgk)
+allocate(sic_wgk(ngkmax,sic_wantran%nwan,nspinor,nkptloc))
+sic_wgk=zzero
+if (allocated(sic_wvgk)) deallocate(sic_wvgk)
+allocate(sic_wvgk(ngkmax,sic_wantran%nwan,nspinor,nkptloc))
+sic_wgk=zzero
+if (allocated(sic_wuy)) deallocate(sic_wuy)
+allocate(sic_wuy(lmmaxvr,nufrmax,natmtot,sic_wantran%nwan,nspinor,nkptloc))
+sic_wuy=zzero
+if (allocated(sic_wvuy)) deallocate(sic_wvuy)
+allocate(sic_wvuy(lmmaxvr,nufrmax,natmtot,sic_wantran%nwan,nspinor,nkptloc))
+sic_wvuy=zzero
+
+sic_energy_tot=0.d0
+sic_energy_pot=0.d0
+sic_energy_kin=0.d0
+
 !if (allocated(s_wankmt)) deallocate(s_wankmt)
 !allocate(s_wankmt(lmmaxvr,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
 !if (allocated(s_wankir)) deallocate(s_wankir)
@@ -130,7 +147,6 @@ endif
 !allocate(s_wvkmt(lmmaxvr,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
 !if (allocated(s_wvkir)) deallocate(s_wvkir)
 !allocate(s_wvkir(ngrtot,nspinor,sic_wantran%nwan,nkptloc))
-! TODO: skip reading the file with different WF set
 inquire(file="SIC_WANN_E0.OUT",exist=texist)
 if (texist) then
   open(170,file="SIC_WANN_E0.OUT",form="FORMATTED",status="OLD")

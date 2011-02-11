@@ -23,7 +23,7 @@ allocate(wffvtp(s_ntp,s_nr))
 allocate(wffvlm(lmmaxwan,s_nr))
 !open(220,file="sic_test1.out",form="formatted",status="replace")
 t1=0.d0
-do ikloc=1,nkptnr
+do ikloc=1,nkptnrloc
   ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
   !write(220,'("ik : ",I4,"  vklnr : ",3G18.10)')ik,vklnr(:,ik)
   call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfvnr)

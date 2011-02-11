@@ -50,8 +50,6 @@ integer, allocatable :: sicw(:,:)
 
 logical :: tsic_wv
 data tsic_wv/.false./
-logical :: tsic_arrays_allocated
-data tsic_arrays_allocated/.false./
 
 ! maximum number of translation vectors
 integer, parameter :: sic_maxvtl=1000
