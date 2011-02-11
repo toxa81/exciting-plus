@@ -135,10 +135,6 @@ if (allocated(sic_wvuy)) deallocate(sic_wvuy)
 allocate(sic_wvuy(lmmaxvr,nufrmax,natmtot,sic_wantran%nwan,nspinor,nkptloc))
 sic_wvuy=zzero
 
-sic_energy_tot=0.d0
-sic_energy_pot=0.d0
-sic_energy_kin=0.d0
-
 !if (allocated(s_wankmt)) deallocate(s_wankmt)
 !allocate(s_wankmt(lmmaxvr,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
 !if (allocated(s_wankir)) deallocate(s_wankir)
