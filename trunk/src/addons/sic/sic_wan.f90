@@ -100,7 +100,7 @@ do j=1,sic_wantran%nwan
 enddo !j
 deallocate(wantp)
 ! check <W|\phi> matrix elements
-if (.false.) call sic_test_fvprj(fout)
+!if (.true.) call sic_test_fvprj(fout)
 ! compute overlap integrals 
 allocate(ovlp(sic_wantran%nwt))
 ovlp=zzero
