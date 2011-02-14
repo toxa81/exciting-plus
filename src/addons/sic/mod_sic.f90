@@ -56,20 +56,20 @@ integer, parameter :: sic_maxvtl=1000
 
 type(wannier_transitions) :: sic_wantran
 
-!type t_sic_orbitals
-!! total number of translations
-!  integer ntr
-!! translation vectors in lattice coordinates
-!  integer, allocatable :: vtl(:,:)
-!! translation vectors in Cartesian coordinates
-!  real(8), allocatable :: vtc(:,:)
-!! vector -> index map
-!  integer, allocatable :: ivtit(:,:,:)
-!! translation limits along each lattice vector
-!  integer tlim(2,3)
-!end type t_sic_orbitals
-!
-!type(t_sic_orbitals) :: sic_orbitals
+type t_sic_orbitals
+! total number of translations
+  integer ntr
+! translation vectors in lattice coordinates
+  integer, allocatable :: vtl(:,:)
+! translation vectors in Cartesian coordinates
+  real(8), allocatable :: vtc(:,:)
+! vector -> index map
+  integer, allocatable :: ivtit(:,:,:)
+! translation limits along each lattice vector
+  integer tlim(2,3)
+end type t_sic_orbitals
+
+type(t_sic_orbitals) :: sic_orbitals
 
 ! maximum number of G-vectors for plane-wave expansion of Bloch functions
 integer s_ngvec
