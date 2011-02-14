@@ -110,7 +110,8 @@ else
 end if
 if (sic) then
   call sic_readvwan
-  call sic_genpwi
+  !call sic_genpwi
+  call sic_blochsum
 endif
 if (wproc) call flushifc(60)
 ! set stop flag
