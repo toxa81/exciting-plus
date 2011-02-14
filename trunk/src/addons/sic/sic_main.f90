@@ -64,7 +64,7 @@ if (wproc) then
   write(151,'("cutoff radius for Wannier functions   : ",F12.6)')sic_wan_cutoff
   write(151,'("cutoff radius for SIC matrix elements : ",F12.6)')sic_me_cutoff
   write(151,'("number of Wannier transitions         : ",I6)')sic_wantran%nwt
-  write(151,'("number of translations for Bloch sums : ",I4)')sic_wantran%ntr
+  write(151,'("number of translations for Bloch sums : ",I4)')sic_orbitals%ntr
   write(151,*)
   write(151,'("LDA energies of Wannier functions")')
   do j=1,sic_wantran%nwan
