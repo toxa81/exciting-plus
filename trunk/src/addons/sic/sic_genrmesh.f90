@@ -8,7 +8,7 @@ integer maxdens
 integer nrpt,i,j,ir
 real(8) r0,x,alpha,d1,r0ratio,x0,a,b
 real(8), allocatable :: rpt(:,:)
-integer, parameter :: imesh=1
+integer, parameter :: imesh=3
 
 if (allocated(s_r)) deallocate(s_r)
 
@@ -21,11 +21,11 @@ if (imesh.eq.1) then
 !  rpole(4)=10.25062d0
 !  rpole(5)=11.83640d0
 !  rpole(6)=13.23349d0
-  maxdens=700
+  maxdens=1000
   nrpt=int(2*sic_wan_cutoff*maxdens)
 
   r0=1.8d0
-  r0ratio=1/3.d0
+  r0ratio=1/2.d0
   alpha=-log(r0ratio)/r0
 
   x=0.d0
@@ -91,12 +91,6 @@ s_rw=0.d0
 do ir=1,s_nr-1
   s_rw(ir)=s_rw(ir)+0.5d0*(s_r(ir+1)-s_r(ir))*s_r(ir)**2
   s_rw(ir+1)=s_rw(ir+1)+0.5d0*(s_r(ir+1)-s_r(ir))*s_r(ir+1)**2
-enddo
-do ir=1,s_nr
-  write(99,*)ir,s_r(ir)
-enddo
-do ir=1,s_nr
-  write(100,*)s_r(ir),s_rw(ir)
 enddo
 return
 end
