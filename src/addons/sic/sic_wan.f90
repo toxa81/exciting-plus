@@ -9,7 +9,7 @@ implicit none
 integer, intent(in) :: fout
 ! local variables
 integer n,ispn,vl(3),n1,i,j,j1,itp,ir,nwtloc,iloc,nrloc,irloc
-real(8) t1,vrc(3),x(3),x2,pos1(3),pos2(3)
+real(8) t1,t2,vrc(3),x(3),x2,pos1(3),pos2(3)
 real(8) sic_epot_h,sic_epot_xc
 complex(8) z1,wanval(nspinor)
 real(8), allocatable :: wanprop(:,:)
@@ -26,7 +26,17 @@ if (wproc) then
   write(fout,'(80("="))')
   write(fout,'("generating Wannier functions on a spherical grid")')
   write(fout,'(80("="))')
+  write(fout,*)
+  t1=0.d0
+  t2=fourpi*sic_wan_cutoff**3/3.d0
+  do ir=1,s_nr
+    do itp=1,s_ntp
+      t1=t1+s_tpw(itp)*s_rw(ir)/t2
+    enddo
+  enddo
+  write(fout,'("spherical grid error : ",G18.10)')abs(1.d0-t1)
 endif
+
 call timer_start(t_sic_wan,reset=.true.)
 call timer_reset(t_sic_wan_gen)
 call timer_reset(t_sic_wan_rms)
