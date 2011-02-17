@@ -79,7 +79,7 @@ if (imesh.eq.2) then
 endif
 if (imesh.eq.3) then
   allocate(s_r(s_nr))
-  x0=1d-6
+  x0=1d-9
   do ir=1,s_nr
     s_r(ir)=x0+(sic_wan_cutoff-x0)*dble(ir-1)/dble(s_nr-1)
   enddo
