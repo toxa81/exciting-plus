@@ -14,6 +14,7 @@ real(8) sic_epot_h,sic_epot_xc
 complex(8) z1,wanval(nspinor)
 real(8), allocatable :: wanprop(:,:)
 complex(8), allocatable :: ovlp(:)
+complex(8), allocatable :: om(:,:)
 complex(8), allocatable :: wantp(:,:,:)
 integer, parameter :: iovlp=1 
 integer, parameter :: irms=1
@@ -35,8 +36,8 @@ if (wproc) then
     enddo
   enddo
   write(fout,'("spherical grid error : ",G18.10)')abs(1.d0-t1)
+  call flushifc(fout)
 endif
-
 call timer_start(t_sic_wan,reset=.true.)
 call timer_reset(t_sic_wan_gen)
 call timer_reset(t_sic_wan_rms)
@@ -141,6 +142,27 @@ enddo
 call mpi_grid_reduce(ovlp(1),sic_wantran%nwt)
 call mpi_grid_reduce(t1,op=op_max)
 call timer_stop(t_sic_wan_ovl)
+! print overlap matrix for T=0
+if (wproc) then
+  allocate(om(sic_wantran%nwan,sic_wantran%nwan))
+  om=zzero
+  do i=1,sic_wantran%nwt
+    n=sic_wantran%iwt(1,i)
+    j=sic_wantran%idxiwan(n)
+    n1=sic_wantran%iwt(2,i)
+    j1=sic_wantran%idxiwan(n1)
+    vl(:)=sic_wantran%iwt(3:5,i)
+    if (all(vl.eq.0)) then
+      om(j,j1)=ovlp(i)
+    endif
+  enddo
+  write(fout,*)
+  write(fout,'("overlap matrix for T=0")')
+  do j=1,sic_wantran%nwan
+    write(fout,'(255F12.6)')(abs(om(j,j1)),j1=1,sic_wantran%nwan)
+  enddo
+  deallocate(om)
+endif
 ! compute energies
 ! note: here Hartree potential has a positive sign and XC potential 
 !  has a negative sign
