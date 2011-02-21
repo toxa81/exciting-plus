@@ -87,12 +87,12 @@ tmtrx2=zzero
 do j=1,nstsv
   do i=1,nwantot
     do n=1,nwantot
-      tmtrx2(j,i)=tmtrx2(j,i)+dconjg(hwann(n,i))*tmtrx1(j,n)
+      tmtrx2(j,i)=tmtrx2(j,i)+hwann(n,i)*tmtrx1(j,n)
     enddo
   enddo
   do i=1,nstsv-nwantot
     do n=1,nstsv-nwantot
-      tmtrx2(j,i+nwantot)=tmtrx2(j,i+nwantot)+dconjg(hrest(n,i))*tmtrx1(j,n+nwantot)
+      tmtrx2(j,i+nwantot)=tmtrx2(j,i+nwantot)+hrest(n,i)*tmtrx1(j,n+nwantot)
     enddo
   enddo
 enddo
