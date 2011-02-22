@@ -312,6 +312,40 @@ endif
 return
 end subroutine
 
+!complex(8) function s_rinteg()
+!use modmain
+!implicit none
+!complex(8), intent(in) :: fr(s_nr)
+!real(8), allocatable :: fr1(:),fr2(:),gr(:),cf(:,:)
+!
+!allocate(fr1(s_nr))
+!allocate(fr2(s_nr))
+!allocate(gr(s_nr))
+!allocate(cf(4,s_nr))
+!zsummt=zzero
+!do is=1,nspecies
+!  do ia=1,natoms(is)
+!    ias=idxas(ia,is)
+!    do ir=1,nrmt(is)
+!      zf1(ir)=zdotc(lmmaxvr,zfmt1(1,ir,ias),1,zfmt2(1,ir,ias),1)*spr(ir,is)**2
+!      fr1(ir)=dreal(zf1(ir))
+!      fr2(ir)=dimag(zf1(ir))
+!    enddo
+!    call fderiv(-1,nrmt(is),spr(1,is),fr1,gr,cf)
+!    t1=gr(nrmt(is))
+!    call fderiv(-1,nrmt(is),spr(1,is),fr2,gr,cf)
+!    t2=gr(nrmt(is))
+!    zsummt=zsummt+dcmplx(t1,t2)
+!    !do ir=1,nrmt(is)-1
+!    !  zsummt=zsummt+0.5d0*(zf1(ir)+zf1(ir+1))*(spr(ir+1,is)-spr(ir,is))
+!    !enddo
+!  end do
+!end do
+!!
+!
+!return
+!end function
+!
 complex(8) function s_func_val(x,flm)
 use modmain
 implicit none
@@ -319,10 +353,12 @@ implicit none
 real(8), intent(in) :: x(3)
 complex(8), intent(in) :: flm(lmmaxwan,s_nr)
 ! local variables
-integer ir1,lm,ir
+integer ir1,lm,ir,np2,ir0,i,j
 real (8) x0,tp(2),dx
-complex(8) ylm(lmmaxwan)
+complex(8) ylm(lmmaxwan),f3(lmmaxwan)
 complex(8) zval 
+real(8) c(nprad),f1(nprad),f2(nprad),t1,t2
+real(8), external :: polynom
 !
 if (sum(x(:)**2).gt.(sic_wan_cutoff**2)) then
   s_func_val=zzero
@@ -331,6 +367,34 @@ endif
 
 call sphcrd(x,x0,tp)
 call genylm(lmaxwan,tp,ylm)
+
+!np2=nprad/2
+!do ir=1,s_nr
+!  if (s_r(ir).ge.x0) then
+!    if (ir.le.np2) then
+!      ir0=1
+!    else if (ir.gt.(s_nr-np2)) then
+!      ir0=s_nr-nprad+1
+!    else
+!      ir0=ir-np2
+!    endif
+!    x0=max(x0,s_r(1))
+!    exit
+!  endif
+!enddo
+!zval=zzero
+!do lm=1,lmmaxwan
+!  do j=1,nprad
+!    i=ir0+j-1
+!    f1(j)=dreal(flm(lm,i))
+!    f2(j)=dimag(flm(lm,i))
+!  enddo
+!  t1=polynom(0,nprad,s_r(ir0),f1,c,x0)
+!  t2=polynom(0,nprad,s_r(ir0),f2,c,x0)
+!  zval=zval+dcmplx(t1,t2)*ylm(lm)
+!enddo
+!s_func_val=zval
+
 ir1=0
 do ir=s_nr-1,1,-1
   if (s_r(ir).le.x0) then
@@ -349,6 +413,7 @@ do lm=1,lmmaxwan
   zval=zval+(flm(lm,ir1)+dx*(flm(lm,ir1+1)-flm(lm,ir1)))*ylm(lm)
 enddo
 s_func_val=zval
+
 return
 end function
 
