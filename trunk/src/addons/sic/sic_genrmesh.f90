@@ -6,71 +6,30 @@ integer nrpole,npt
 real(8), allocatable :: rpole(:)
 integer maxdens
 integer nrpt,i,j,ir
-real(8) r0,x,alpha,d1,r0ratio,x0,a,b
+real(8) r0,x,alpha,d1,r0ratio,x0,a,b,c,dens0,dens1
 real(8), allocatable :: rpt(:,:)
-integer, parameter :: imesh=3
+integer, parameter :: imesh=1
 
 if (allocated(s_r)) deallocate(s_r)
 
 if (imesh.eq.1) then
-  nrpole=1
-  allocate(rpole(nrpole))
-  rpole(1)=0.d0
-!  rpole(2)=5.9182d0
-!  rpole(3)=8.3696d0
-!  rpole(4)=10.25062d0
-!  rpole(5)=11.83640d0
-!  rpole(6)=13.23349d0
-  maxdens=1000
-  nrpt=int(2*sic_wan_cutoff*maxdens)
-
-  r0=1.8d0
-  r0ratio=1/2.d0
-  alpha=-log(r0ratio)/r0
-
-  x=0.d0
-  allocate(rpt(2,nrpt))
-  do i=1,nrpt
-    x=dble(i-1)*sic_wan_cutoff/dble(nrpt-1)
-    rpt(1,i)=x
-    d1=0.d0
-    do j=1,nrpole
-      d1=d1+maxdens*exp(-alpha*abs(x-rpole(j)))
-    enddo
-    rpt(2,i)=d1
-  enddo
-  d1=0.d0
-  do i=1,nrpt-1
-    d1=d1+0.5d0*(rpt(2,i)+rpt(2,i+1))*sic_wan_cutoff/dble(nrpt-1)
-  enddo
-  s_nr=int(d1)
-  if (allocated(s_r)) deallocate(s_r)
+  x0=1d-7
+  dens0=500.d0
+  dens1=50.d0
+  a=(dens1-dens0)/(sic_wan_cutoff-x0)
+  b=dens1-a*sic_wan_cutoff
+  c=1-x0*(0.5d0*a*x0+b)
+  s_nr=int(sic_wan_cutoff*(0.5d0*a*sic_wan_cutoff+b)+c)+1
   allocate(s_r(s_nr))
-  d1=0.d0
-  j=0
-  do i=1,nrpt-1
-    d1=d1+0.5d0*(rpt(2,i)+rpt(2,i+1))*sic_wan_cutoff/dble(nrpt-1)
-    if (int(d1).gt.j) then
-      j=j+1
-      if (j.gt.s_nr) then
-        write(*,'("Error(sic_genrmesh): j.gt.s_nr")')
-        call pstop
-      endif
-      s_r(j)=rpt(1,i)
-    endif
+  do ir=1,s_nr
+    s_r(ir)=(-b+sqrt(b**2-2*a*c+2*a*ir))/a
   enddo
-  if (j.ne.s_nr) then
-    write(*,'("Error(sic_genrmesh): j.ne.s_nr")')
-    call pstop
-  endif
-  if (mpi_grid_root()) then
-    write(*,*)
-    write(*,'("[sic_genrmesh] number of radial points : ",I6)')s_nr
-  endif
+  s_r(1)=x0
+  s_r(s_nr)=sic_wan_cutoff
 endif
 if (imesh.eq.2) then
   allocate(s_r(s_nr))
-  x0=1d-6
+  x0=1d-9
   b=log(sic_wan_cutoff/x0)/(s_nr-1)
   a=x0/exp(b)
   do ir=1,s_nr
