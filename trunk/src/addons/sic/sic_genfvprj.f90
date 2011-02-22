@@ -8,7 +8,7 @@ complex(8) zt1
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wffvmt(:,:,:,:)
 complex(8), allocatable :: ovlp(:,:)
-complex(8), allocatable :: ovlp1(:,:)
+complex(8), allocatable :: ovlp1(:,:,:)
 complex(8), allocatable :: wb(:,:,:)
 complex(8), allocatable :: wvb(:,:,:)
 complex(8), allocatable :: expikr(:)
@@ -40,7 +40,7 @@ call timer_start(t_sic_genfvprj)
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 allocate(wffvmt(lmmaxvr,nufrmax,natmtot,nstfv))
 allocate(ovlp(sic_wantran%nwan,sic_wantran%nwan))
-allocate(ovlp1(sic_wantran%nwan,sic_wantran%nwan))
+allocate(ovlp1(sic_wantran%nwan,sic_wantran%nwan,nkpt))
 allocate(wb(sic_wantran%nwan,nstfv,nspinor))
 allocate(wvb(sic_wantran%nwan,nstfv,nspinor))
 
@@ -50,8 +50,9 @@ allocate(wfmt(lmmaxvr,nrmtmax,natmtot))
 allocate(wfir(ngrtot))
 
 ! recompute muffin-tin integrals every n iterations
-!if (mod(iscl,5).eq.1) call sic_genmti
+if (mod(iscl,5).eq.1) call sic_genmti
 
+ovlp1=zzero
 do ikloc=1,nkptloc
   ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
   call match(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),sfacgk(1,1,1,ikloc),&
@@ -69,8 +70,9 @@ do ikloc=1,nkptloc
       call wavefmt(1,lmaxvr,ias2is(ias),ias2ia(ias),ngk(1,ik),apwalm,&
         evecfvloc(1,ist,1,ikloc),lmmaxvr,wfmt_)
 ! convert to spherical coordinates
-      call zgemm('N','N',lmmaxvr,nrmt(ias2is(ias)),lmmaxvr,zone,zbshtvr,lmmaxvr, &
-       wfmt_,lmmaxvr,zzero,wfmt(1,1,ias),lmmaxvr)
+!      call zgemm('N','N',lmmaxvr,nrmt(ias2is(ias)),lmmaxvr,zone,zbshtvr,lmmaxvr, &
+!       wfmt_,lmmaxvr,zzero,wfmt(1,1,ias),lmmaxvr)
+      wfmt(:,:,ias)=wfmt_(:,:)
     enddo
     do ig=1,ngk(1,ik)
       wfir(igfft(igkig(ig,1,ikloc)))=evecfvloc(ig,ist,1,ikloc)/sqrt(omega)
@@ -89,9 +91,8 @@ do ikloc=1,nkptloc
     enddo
   enddo
 
-!  call genwffvmt(lmaxvr,lmmaxvr,ngk(1,ik),evecfvloc(1,1,1,ikloc),&
-
-!    apwalm,wffvmt)
+  call genwffvmt(lmaxvr,lmmaxvr,ngk(1,ik),evecfvloc(1,1,1,ikloc),&
+    apwalm,wffvmt)
 
 ! == code #2 == expansion of fv function in the big sphere
 !  do ist=1,nstfv
@@ -126,10 +127,12 @@ do ikloc=1,nkptloc
 !    call zgemm('T','N',sic_wantran%nwan,nstfv,ld,zone,&
 !      sic_wuy(1,1,1,1,ispn,ikloc),ld,wffvmt,ld,zzero,wb(1,1,ispn),&
 !      sic_wantran%nwan)
+!      write(*,*)"mt:",wb(1,1,1)
 !! interstitial part of <W_n|\phi>
 !    call zgemm('T','N',sic_wantran%nwan,nstfv,ngk(1,ik),zone,&
 !      sic_wgk(1,1,ispn,ikloc),ngkmax,evecfvloc(1,1,1,ikloc),&
 !      nmatmax,zone,wb(1,1,ispn),sic_wantran%nwan)
+!      write(*,*)"tot:",wb(1,1,1)     
 !! muffin tin part of <(W*V)_n|\phi>
 !    call zgemm('T','N',sic_wantran%nwan,nstfv,ld,zone,&
 !      sic_wvuy(1,1,1,1,ispn,ikloc),ld,wffvmt,ld,zzero,wvb(1,1,ispn),&
@@ -139,18 +142,25 @@ do ikloc=1,nkptloc
 !      sic_wvgk(1,1,ispn,ikloc),ngkmax,evecfvloc(1,1,1,ikloc),&
 !      nmatmax,zone,wvb(1,1,ispn),sic_wantran%nwan)
 !  enddo !ispn
-!! compute overlap matrix
-!  ovlp=zzero
-!  do j1=1,sic_wantran%nwan
-!    do j2=1,sic_wantran%nwan
-!      do ispn=1,nspinor
-!        do i=1,nstfv
-!          ovlp(j1,j2)=ovlp(j1,j2)+wb(j1,i,ispn)*dconjg(wb(j2,i,ispn))
-!        enddo
-!      enddo
-!    enddo
-!  enddo
-!  ovlp1=ovlp
+!  sic_wb(:,:,:,ikloc)=wb(:,:,:)
+!  sic_wvb(:,:,:,ikloc)=wvb(:,:,:)
+
+  wb=sic_wb(:,:,:,ikloc)
+  wvb=sic_wvb(:,:,:,ikloc)
+  write(*,*)"tot:",wb(1,1,1)
+
+! compute overlap matrix
+  ovlp=zzero
+  do j1=1,sic_wantran%nwan
+    do j2=1,sic_wantran%nwan
+      do ispn=1,nspinor
+        do i=1,nstfv
+          ovlp(j1,j2)=ovlp(j1,j2)+wb(j1,i,ispn)*dconjg(wb(j2,i,ispn))
+        enddo
+      enddo
+    enddo
+  enddo
+  ovlp1(:,:,ik)=ovlp(:,:)
 !! compute O^{-1/2}
 !  call isqrtzhe(sic_wantran%nwan,ovlp,ierr)
 !  if (ierr.ne.0) then
@@ -170,6 +180,18 @@ do ikloc=1,nkptloc
 !    enddo
 !  endif
 enddo !ikloc
+call mpi_grid_reduce(ovlp1(1,1,1),sic_wantran%nwan*sic_wantran%nwan*nkpt,dims=(/dim_k/))
+if (mpi_grid_root()) then
+  open(210,file="SIC_GENFVPRJ.OUT",form="formatted",status="replace")
+  do ik=1,nkpt
+    write(210,'(" ik : ",I4)')ik
+    do j1=1,sic_wantran%nwan
+      write(210,'(255F12.6)')(abs(ovlp1(j1,j2,ik)),j2=1,sic_wantran%nwan)
+    enddo
+    write(210,*)
+  enddo
+  close(210)
+endif
 deallocate(apwalm,wffvmt)
 deallocate(ovlp,wb,wvb,ovlp1)
 deallocate(expikr,wfmt_,wfmt,wfir)
