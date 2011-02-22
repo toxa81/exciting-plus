@@ -128,14 +128,14 @@ if (allocated(sic_wvuy)) deallocate(sic_wvuy)
 allocate(sic_wvuy(lmmaxvr,nufrmax,natmtot,sic_wantran%nwan,nspinor,nkptloc))
 sic_wvuy=zzero
 
-!if (allocated(s_wankmt)) deallocate(s_wankmt)
-!allocate(s_wankmt(lmmaxvr,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
-!if (allocated(s_wankir)) deallocate(s_wankir)
-!allocate(s_wankir(ngrtot,nspinor,sic_wantran%nwan,nkptloc))
-!if (allocated(s_wvkmt)) deallocate(s_wvkmt)
-!allocate(s_wvkmt(lmmaxvr,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
-!if (allocated(s_wvkir)) deallocate(s_wvkir)
-!allocate(s_wvkir(ngrtot,nspinor,sic_wantran%nwan,nkptloc))
+if (allocated(s_wankmt)) deallocate(s_wankmt)
+allocate(s_wankmt(lmmaxvr,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
+if (allocated(s_wankir)) deallocate(s_wankir)
+allocate(s_wankir(ngrtot,nspinor,sic_wantran%nwan,nkptloc))
+if (allocated(s_wvkmt)) deallocate(s_wvkmt)
+allocate(s_wvkmt(lmmaxvr,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
+if (allocated(s_wvkir)) deallocate(s_wvkir)
+allocate(s_wvkir(ngrtot,nspinor,sic_wantran%nwan,nkptloc))
 
 inquire(file="SIC_WANN_E0.OUT",exist=texist)
 if (texist) then
