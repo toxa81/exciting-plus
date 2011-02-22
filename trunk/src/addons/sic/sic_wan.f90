@@ -9,7 +9,8 @@ implicit none
 integer, intent(in) :: fout
 ! local variables
 integer n,ispn,vl(3),n1,i,j,j1,itp,ir,nwtloc,iloc,nrloc,irloc
-real(8) t1,t2,vrc(3),x(3),x2,pos1(3),pos2(3)
+integer lm
+real(8) t1,t2,vrc(3),x(3),x2,pos1(3),pos2(3),a,b
 real(8) sic_epot_h,sic_epot_xc
 complex(8) z1,wanval(nspinor)
 real(8), allocatable :: wanprop(:,:)
@@ -61,10 +62,7 @@ do j=1,sic_wantran%nwan
   enddo
   call mpi_grid_reduce(wantp(1,1,1),s_ntp*s_nr*nspinor,all=.true.)
 ! convert to spherical harmonics
-  do ispn=1,nspinor
-    call zgemm('T','N',lmmaxwan,s_nr,s_ntp,zone,s_ylmb,s_ntp,&
-      wantp(1,1,ispn),s_ntp,zzero,s_wanlm(1,1,ispn,j),lmmaxwan)
-  enddo
+call sic_genwanlm(fout,n,wantp,s_wanlm(1,1,1,j))
 ! compute norm
   t1=0.d0
   z1=zzero
