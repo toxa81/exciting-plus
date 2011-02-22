@@ -2,12 +2,15 @@ subroutine sic_blochsum
 use modmain
 use mod_sic
 implicit none
-integer ik,ikloc,j,n,jas,it,ias,is,ir,itp,ispn,ntrloc,itloc
+integer ik,ikloc,j,n,jas,it,ias,is,ir,itp,ispn,ntrloc,itloc,lm
 real(8) x(3)
 real(8), allocatable :: tp(:,:)
 complex(8), allocatable :: zprod(:,:,:)
 complex(8) zt1,zt2,expikt
 complex(8), external :: zfinp_
+complex(8), allocatable :: wfmt(:,:)
+complex(8), allocatable :: wftp(:,:,:)
+complex(8), allocatable :: wflm(:,:,:)
 !
 s_wankmt=zzero
 s_wankir=zzero
@@ -17,6 +20,12 @@ s_wvkir=zzero
 if (.not.tsic_wv) return
 
 allocate(zprod(2,sic_wantran%nwan,nkpt))
+allocate(wfmt(lmmaxvr,nrmtmax))
+allocate(wftp(s_ntp,nrmtmax,nspinor))
+allocate(wflm(lmmaxvr,nrmtmax,nspinor))
+
+
+
 zprod=zzero
 allocate(tp(2,lmmaxvr))
 call sphcover(lmmaxvr,tp)
@@ -27,28 +36,39 @@ do ikloc=1,nkptloc
   do j=1,sic_wantran%nwan
     n=sic_wantran%iwan(j)
     jas=wan_info(1,n)
-    do itloc=1,ntrloc
-      it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
-      expikt=exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
+    do ias=1,natmtot
+      is=ias2is(ias)
+      wftp=zzero
+      do itloc=1,ntrloc
+        it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
+        expikt=exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
 ! muffin-tins
-      do ias=1,natmtot
-        is=ias2is(ias)
         do ir=1,nrmt(is)
-          do itp=1,lmmaxvr
-            x(:)=(/sin(tp(1,itp))*cos(tp(2,itp)), &
-                   sin(tp(1,itp))*sin(tp(2,itp)), &
-                   cos(tp(1,itp))/)*spr(ir,is)+atposc(:,ias2ia(ias),ias2is(ias))+&
-                   sic_orbitals%vtc(:,it)-atposc(:,ias2ia(jas),ias2is(jas))
+          do itp=1,s_ntp
+            x(:)=s_spx(:,itp)*spr(ir,is)+atposc(:,ias2ia(ias),ias2is(ias))+&
+                 sic_orbitals%vtc(:,it)-atposc(:,ias2ia(jas),ias2is(jas))
             do ispn=1,nspinor
-              s_wankmt(itp,ir,ias,ispn,j,ikloc)=s_wankmt(itp,ir,ias,ispn,j,ikloc)+&
-                expikt*s_func_val(x,s_wanlm(1,1,ispn,j))
-              s_wvkmt(itp,ir,ias,ispn,j,ikloc)=s_wvkmt(itp,ir,ias,ispn,j,ikloc)+&
-                expikt*s_func_val(x,s_wvlm(1,1,ispn,j))
+              wftp(itp,ir,ispn)=wftp(itp,ir,ispn)+expikt*s_func_val(x,s_wanlm(1,1,ispn,j)) 
+              !s_wankmt(itp,ir,ias,ispn,j,ikloc)=s_wankmt(itp,ir,ias,ispn,j,ikloc)+&
+              !  expikt*s_func_val(x,s_wanlm(1,1,ispn,j))
+              !s_wvkmt(itp,ir,ias,ispn,j,ikloc)=s_wvkmt(itp,ir,ias,ispn,j,ikloc)+&
+              !  expikt*s_func_val(x,s_wvlm(1,1,ispn,j))
             enddo
           enddo !itp
         enddo !ir
-      enddo !ias
+      enddo !itloc
+      if (ik.eq.1) write(*,*)"image part of wnk",sum(abs(dimag(wftp)))/s_ntp/nrmtmax
+ ! convert to spherical harmonics
+      do ispn=1,nspinor
+        call zgemm('T','N',lmmaxvr,nrmt(is),s_ntp,zone,s_ylmb,s_ntp,&
+          wftp(1,1,ispn),s_ntp,zzero,wflm(1,1,ispn),lmmaxvr)
+        s_wankmt(:,:,ias,ispn,j,ikloc)=wflm(:,:,ispn)
+      enddo !ispn
+    enddo !ias
 ! interstitial
+    do itloc=1,ntrloc
+      it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
+      expikt=exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
       do ir=1,ngrtot
         x(:)=vgrc(:,ir)+sic_orbitals%vtc(:,it)-atposc(:,ias2ia(jas),ias2is(jas))
         do ispn=1,nspinor
@@ -67,6 +87,25 @@ do ikloc=1,nkptloc
       lmmaxvr*nrmtmax*natmtot*nspinor,dims=(/dim2/),all=.true.)
     call mpi_grid_reduce(s_wvkir(1,1,j,ikloc),ngrtot*nspinor,&
       dims=(/dim2/),all=.true.)
+!    do ispn=1,nspinor
+!      do ias=1,natmtot
+!        call zgemm('N','N',lmmaxvr,nrmt(ias2is(ias)),lmmaxvr,zone,&
+!          zfshtvr,lmmaxvr,s_wankmt(1,1,ias,ispn,j,ikloc),lmmaxvr,&
+!          zzero,wfmt,lmmaxvr)
+!        s_wankmt(:,:,ias,ispn,j,ikloc)=wfmt
+!      enddo
+!    enddo
+!    if (ikloc.eq.1) then
+!    do lm=1,lmmaxvr
+!    do ir=1,nrmt(1)
+!      write(100+j,*)spr(ir,1),dreal(s_wankmt(lm,ir,1,1,j,1))
+!      write(200+j,*)spr(ir,1),dimag(s_wankmt(lm,ir,1,1,j,1))
+!    enddo
+!    write(100+j,*)
+!    write(200+j,*)
+!    enddo
+!    endif
+ 
     zt1=zzero
     zt2=zzero
     do ispn=1,nspinor
@@ -86,7 +125,8 @@ if (mpi_grid_root()) then
     write(210,'(" ik : ",I4)')ik
     do j=1,sic_wantran%nwan
       n=sic_wantran%iwan(j)
-      write(210,'("  n : ",I4,6X," <W_nk|W_nk> : ",2G18.10)')n,dreal(zprod(1,j,ik)),dimag(zprod(1,j,ik))
+      write(210,'("  n : ",I4,6X," <W_nk|W_nk> : ",2G18.10)')&
+        n,dreal(zprod(1,j,ik)),dimag(zprod(1,j,ik))
     enddo
     write(210,*)
   enddo !ik
