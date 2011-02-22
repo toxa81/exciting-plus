@@ -32,7 +32,7 @@ do ir=1,nr
   do itp=1,ntp
     vrc(:,itp,ir)=(/sin(tp(1,itp))*cos(tp(2,itp)),&
                     sin(tp(1,itp))*sin(tp(2,itp)),&
-                    cos(tp(1,itp))/)*ir*sic_wan_cutoff/nr/2.d0
+                    cos(tp(1,itp))/)*ir*sic_wan_cutoff/nr
     vrc1(:)=vrc(:,itp,ir)+wanpos(:,n)
     call s_get_wanval(n,vrc1,wanval)
     wantpc(itp,ir,:)=wanval(:)
@@ -45,11 +45,13 @@ do ir=1,nr
   do itp=1,ntp
     do ispn=1,nspinor
       zt1=wantpc(itp,ir,ispn)-s_func_val(vrc(1,itp,ir),wanlm(1,1,ispn))
-      t1=t1+abs(zt1)**2
+      !t1=t1+abs(zt1)**2
+      t1=t1+abs(zt1)
     enddo
   enddo
 enddo
-wanprop(wp_rmswan)=sqrt(t1/nr/ntp)
+!wanprop(wp_rmswan)=sqrt(t1/nr/ntp)
+wanprop(wp_rmswan)=t1/nr/ntp
 ! compute charge density
 rhotp=zzero
 do ispn=1,nspinor
