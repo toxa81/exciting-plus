@@ -54,7 +54,6 @@ do is=1,nspecies
     enddo
   end do
 end do
-zsummt=zsummt*fourpi/dble(lmmaxvr)
 zfinp_=zsumir+zsummt
 return
 end function
