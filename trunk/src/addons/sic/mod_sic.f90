@@ -174,21 +174,21 @@ endif
 return
 end subroutine
 
-integer function s_gen_stepf(x)
-use modmain
-implicit none
-! arguments
-real(8), intent(in) :: x(3)
-! local variables
-integer is,ia,ir0
-integer ntr(3)
-real(8) vr0(3),r0
-logical, external :: vrinmt
-!
-s_gen_stepf=0
-if (.not.vrinmt(x,is,ia,ntr,vr0,ir0,r0)) s_gen_stepf=1
-return
-end function
+!integer function s_gen_stepf(x)
+!use modmain
+!implicit none
+!! arguments
+!real(8), intent(in) :: x(3)
+!! local variables
+!integer is,ia,ir0
+!integer ntr(3)
+!real(8) vr0(3),r0
+!logical, external :: vrinmt
+!!
+!s_gen_stepf=0
+!if (.not.vrinmt(x,is,ia,ntr,vr0,ir0,r0)) s_gen_stepf=1
+!return
+!end function
 
 subroutine s_get_ufrval(x,vpc,ias,ufrval)
 use modmain
@@ -341,11 +341,11 @@ end subroutine
 !    !enddo
 !  end do
 !end do
-!!
 !
+
 !return
-!end function
-!
+!end
+
 complex(8) function s_func_val(x,flm)
 use modmain
 implicit none
@@ -413,7 +413,6 @@ do lm=1,lmmaxwan
   zval=zval+(flm(lm,ir1)+dx*(flm(lm,ir1+1)-flm(lm,ir1)))*ylm(lm)
 enddo
 s_func_val=zval
-
 return
 end function
 
