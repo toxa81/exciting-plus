@@ -62,7 +62,7 @@ do j=1,sic_wantran%nwan
   enddo
   call mpi_grid_reduce(wantp(1,1,1),s_ntp*s_nr*nspinor,all=.true.)
 ! convert to spherical harmonics
-call sic_genwanlm(fout,n,wantp,s_wanlm(1,1,1,j))
+  call sic_genwanlm(fout,n,wantp,s_wanlm(1,1,1,j))
 ! compute norm
   t1=0.d0
   z1=zzero
