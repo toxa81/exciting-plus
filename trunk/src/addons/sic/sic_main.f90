@@ -81,7 +81,6 @@ if (wproc) then
 endif
 ! generate wave-functions for all k-points in BZ
 call genwfnr(151,.false.)  
-
 ! compute kinetic energy
 !allocate(laplsv(nstsv))
 !ekin_=0.d0
@@ -117,6 +116,10 @@ do ikloc=1,nkptnrloc
     s_ngvec=max(s_ngvec,igkignr(ig,ikloc))
   enddo
 enddo
+call sic_test_fvprj(151)
+call sic_test_blochsum 
+call bstop
+
 ! init Madness related variables 
 #ifdef _MAD_
 if (allocated(m_ngknr)) deallocate(m_ngknr)
