@@ -7,7 +7,7 @@ integer, intent(in) :: fout
 integer ikloc,ik,ist,ir,itp,i,j,n,ispn,istsv,lm,io,ig,ias
 integer io1,io2
 real(8) vrc(3),t1
-complex(8) zt1,zt2
+complex(8) zt1,zt2(2)
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wffvmt(:,:,:,:)
 complex(8), allocatable :: evecfvnr(:,:,:)
@@ -20,8 +20,7 @@ complex(8), allocatable :: fvmt(:,:,:)
 complex(8), allocatable :: fvir(:)
 complex(8), allocatable :: wnkmt(:,:,:,:,:)
 complex(8), allocatable :: wnkir(:,:,:)
-      
-complex(8), external :: zdotc,zfinp_
+complex(8), allocatable :: zprod(:,:,:)      
 !
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 !allocate(wffvmt(lmmaxvr,nufrmax,natmtot,nstfv))
@@ -35,13 +34,11 @@ allocate(wfmt(lmmaxvr,nrmtmax))
 !allocate(fvir(ngrtot))
 allocate(wnkmt(lmmaxvr,nrmtmax,natmtot,nspinor,sic_wantran%nwan))
 allocate(wnkir(ngrtot,nspinor,sic_wantran%nwan))
-  
-!open(220,file="sic_test_fvprj.out",form="formatted",status="replace")
-! == test1: W_{nk} is analytical, integration is numerical ==
-!write(220,'("test1")')
-do ikloc=1,1!nkptnrloc
+allocate(zprod(3,sic_wantran%nwan,nkptnr))
+zprod=zzero
+
+do ikloc=1,nkptnrloc
   ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-  !write(220,'("ik : ",I4,"  vklnr : ",3G18.10)')ik,vklnr(:,ik)
   call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfvnr)
   call getevecsv(vklnr(1,ik),evecsvnr)
   call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),&
@@ -61,8 +58,6 @@ do ikloc=1,1!nkptnrloc
             enddo
           enddo !lm
         enddo !ir
-        !call zgemm('N','N',lmmaxvr,nrmt(ias2is(ias)),lmmaxvr,zone,zbshtvr,&
-        !  lmmaxvr,wfmt,lmmaxvr,zzero,wnkmt(1,1,ias,ispn,j),lmmaxvr)
         wnkmt(:,:,ias,ispn,j)=wfmt(:,:)
       enddo !ias
       do ig=1,ngknr(ikloc)
@@ -72,26 +67,13 @@ do ikloc=1,1!nkptnrloc
       call zfftifc(3,ngrid,1,wnkir(1,ispn,j))
     enddo !ispn
     zt1=zzero
+    zt2=zzero
     do ispn=1,nspinor
-      zt1=zt1+zfinp_(wnkmt(1,1,1,ispn,j),wnkmt(1,1,1,ispn,j),wnkir(1,ispn,j),&
-        wnkir(1,ispn,j))
+      zt1=zt1+s_zfinp(.true.,lmmaxvr,wnkmt(1,1,1,ispn,j),wnkmt(1,1,1,ispn,j),&
+        wnkir(1,ispn,j),wnkir(1,ispn,j),zt2)
     enddo
-    write(*,*)" n : ",n,"   norm : ",zt1
-    !write(220,'(" n : ",I4,"   <W_nk|W_nk> : ",2G18.10)')n,dreal(zt1),dimag(zt1)
-    if (mpi_grid_root((/dim2/)).and.ik.eq.1.and.j.eq.1) then
-      open(220,file="re_wnkmt_exact.dat",form="formatted",status="replace")
-      open(221,file="im_wnkmt_exact.dat",form="formatted",status="replace")
-      do lm=1,lmmaxvr
-        do ir=1,nrmt(1)
-          write(220,'(2G18.10)')spr(ir,1),dreal(wnkmt(lm,ir,1,1,1))
-          write(221,'(2G18.10)')spr(ir,1),dimag(wnkmt(lm,ir,1,1,1))
-        enddo
-        write(220,*)
-        write(221,*)
-      enddo
-      close(220)
-      close(221)
-    endif
+    zprod(1,j,ik)=zt1
+    zprod(2:3,j,ik)=zt2(1:2)
   enddo !j
 
 !  do ist=1,nstfv
@@ -132,7 +114,22 @@ do ikloc=1,1!nkptnrloc
 !  write(220,*)
 !  call flushifc(220)
 enddo !ikloc
-!write(220,*)
+call mpi_grid_reduce(zprod(1,1,1),3*sic_wantran%nwan*nkptnr,dims=(/dim_k/))
+if (mpi_grid_root()) then
+  open(210,file="sic_blochsum.out",form="formatted",status="replace")
+  do ik=1,nkptnr
+    write(210,'(" ik : ",I4)')ik
+    do j=1,sic_wantran%nwan
+      n=sic_wantran%iwan(j)
+      write(210,'("  n : ",I4,6X," <W_nk|W_nk> : ",3G18.10)')&
+        n,dreal(zprod(1,j,ik)),dreal(zprod(2,j,ik)),dreal(zprod(3,j,ik))
+    enddo
+    write(210,*)
+  enddo !ik
+  close(210)
+endif
+
+
 
 !! == test2: W_{nk} is analytical, integration is analytical ==
 !write(220,'("test2")')
@@ -269,6 +266,7 @@ deallocate(evecsvnr)
 !deallocate(wantp)
 deallocate(wnkmt,wnkir)
 deallocate(wfmt)
+deallocate(zprod)
 return
 end
 

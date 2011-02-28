@@ -64,6 +64,15 @@ do while (l2)
     l2=.false.
   endif
 enddo
+!do i1=-2,2
+!  do i2=-2,2
+!    do i3=-2,2
+!      vl=(/i1,i2,i3/)
+!      sic_orbitals%ntr=sic_orbitals%ntr+1
+!      sic_orbitals%vtl(:,sic_orbitals%ntr)=vl
+!    enddo
+!  enddo
+!enddo
 ! Cartesian coordinates of translation vectors
 if (allocated(sic_orbitals%vtc)) deallocate(sic_orbitals%vtc)
 allocate(sic_orbitals%vtc(3,sic_orbitals%ntr))
@@ -72,34 +81,22 @@ do i=1,sic_orbitals%ntr
                         sic_orbitals%vtl(2,i)*avec(:,2)+&
                         sic_orbitals%vtl(3,i)*avec(:,3)
 end do
-!! find translation limits
-!sic_orbitals%tlim=0
-!do i=1,3
-!  sic_orbitals%tlim(1,i)=minval(sic_orbitals%vtl(i,1:sic_orbitals%ntr))
-!  sic_orbitals%tlim(2,i)=maxval(sic_orbitals%vtl(i,1:sic_orbitals%ntr))
-!enddo
-!! find mapping from translations to linear index
-!if (allocated(sic_orbitals%ivtit)) deallocate(sic_orbitals%ivtit)
-!allocate(sic_orbitals%ivtit(sic_orbitals%tlim(1,1):sic_orbitals%tlim(2,1),&
-!                            sic_orbitals%tlim(1,2):sic_orbitals%tlim(2,2),&
-!                            sic_orbitals%tlim(1,3):sic_orbitals%tlim(2,3)))
-!sic_orbitals%ivtit=-1
-!do i=1,sic_orbitals%ntr
-!  sic_orbitals%ivtit(sic_orbitals%vtl(1,i),sic_orbitals%vtl(2,i),&
-!    sic_orbitals%vtl(3,i))=i
-!enddo
 
 call sic_genrmesh
 call sic_gensmesh
 
-!call sic_test_mesh
-
 if (allocated(s_wanlm)) deallocate(s_wanlm)
 allocate(s_wanlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
 s_wanlm=zzero
+if (allocated(s_pwanlm)) deallocate(s_pwanlm)
+allocate(s_pwanlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
+s_pwanlm=zzero
 if (allocated(s_wvlm)) deallocate(s_wvlm)
 allocate(s_wvlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
 s_wvlm=zzero
+if (allocated(s_pwvlm)) deallocate(s_pwvlm)
+allocate(s_pwvlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
+s_pwvlm=zzero
 if (allocated(vwanme)) deallocate(vwanme)
 allocate(vwanme(sic_wantran%nwt))
 vwanme=zzero
@@ -129,11 +126,11 @@ allocate(sic_wvuy(lmmaxvr,nufrmax,natmtot,sic_wantran%nwan,nspinor,nkptloc))
 sic_wvuy=zzero
 
 if (allocated(s_wankmt)) deallocate(s_wankmt)
-allocate(s_wankmt(lmmaxvr,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
+allocate(s_wankmt(mt_ntp,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
 if (allocated(s_wankir)) deallocate(s_wankir)
 allocate(s_wankir(ngrtot,nspinor,sic_wantran%nwan,nkptloc))
 if (allocated(s_wvkmt)) deallocate(s_wvkmt)
-allocate(s_wvkmt(lmmaxvr,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
+allocate(s_wvkmt(mt_ntp,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
 if (allocated(s_wvkir)) deallocate(s_wvkir)
 allocate(s_wvkir(ngrtot,nspinor,sic_wantran%nwan,nkptloc))
 

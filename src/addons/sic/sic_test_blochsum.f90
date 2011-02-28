@@ -1,160 +1,154 @@
-subroutine sic_test_blochsum
+subroutine sic_test_blochsum(itest,twan,fname)
 use modmain
 use mod_sic
 implicit none
-integer ik,ikloc,j,n,jas,it,ias,is,ir,itp,ispn,ntrloc,itloc,lm
+integer, intent(in) :: itest
+logical, intent(in) :: twan
+character*(*), intent(in) :: fname
+integer ik,ikloc,j,n,jas,it,ias,is,ia,ir,itp,ispn,ntrloc,itloc,lm
+integer ig
 real(8) x(3),t1
 real(8), allocatable :: tp(:,:)
 complex(8), allocatable :: zprod(:,:,:)
-complex(8) zt1,zt2,expikt,wanval(nspinor)
-complex(8), external :: zfinp_
-complex(8), allocatable :: wfmt(:,:)
-complex(8), allocatable :: wftp(:,:,:)
-complex(8), allocatable :: wflm(:,:,:)
+complex(8) zt1,zt2(2),expikt,wanval(nspinor)
+complex(8), allocatable :: wgk(:,:)
+real(8), allocatable :: jl(:,:)
+complex(8),allocatable :: ylmgk(:)
+complex(8), allocatable :: wankmt(:,:,:,:)
+complex(8), allocatable :: wankir(:,:)
 !
-s_wankmt=zzero
-s_wankir=zzero
-s_wvkmt=zzero
-s_wvkir=zzero
-
-
-allocate(zprod(2,sic_wantran%nwan,nkpt))
-allocate(wfmt(lmmaxvr,nrmtmax))
-allocate(wftp(s_ntp,nrmtmax,nspinor))
-!allocate(wftp(lmmaxvr,nrmtmax,nspinor))
-allocate(wflm(lmmaxvr,nrmtmax,nspinor))
-
+allocate(zprod(3,sic_wantran%nwan,nkpt))
+allocate(wgk(ngkmax,nspinor))
+allocate(jl(s_nr,0:lmaxwan))
+allocate(ylmgk(lmmaxwan))
+allocate(wankmt(mt_ntp,nrmtmax,natmtot,nspinor))
+allocate(wankir(ngrtot,nspinor))
 
 zprod=zzero
-allocate(tp(2,lmmaxvr))
-call sphcover(lmmaxvr,tp)
-
 ntrloc=mpi_grid_map(sic_orbitals%ntr,dim2)
-do ikloc=1,1 !nkptloc
-  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-! make Bloch sums
-  do j=1,sic_wantran%nwan
-    n=sic_wantran%iwan(j)
-    jas=wan_info(1,n)
-    do ias=1,natmtot
-      is=ias2is(ias)
-      wftp=zzero
+! test Bloch sum using exact values of WFs
+if (itest.eq.1) then
+  do ik=1,1 !nkpt
+    do j=1,sic_wantran%nwan
+      n=sic_wantran%iwan(j)
+      wankmt=zzero
+      wankir=zzero
+      do ias=1,natmtot
+        is=ias2is(ias)
+        ia=ias2ia(ias)
+        do itloc=1,ntrloc
+          it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
+          expikt=exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
+          do ir=1,nrmt(is)
+            do itp=1,mt_ntp
+              x(:)=mt_spx(:,itp)*spr(ir,is)+atposc(:,ia,is)+&
+                   sic_orbitals%vtc(:,it)
+              call s_get_wanval(.true.,n,x,wanval)
+              wankmt(itp,ir,ias,:)=wankmt(itp,ir,ias,:)+expikt*wanval(:)
+            enddo !itp
+          enddo !ir
+        enddo !itloc
+      enddo !ias
+      call mpi_grid_reduce(wankmt(1,1,1,1),mt_ntp*nrmtmax*natmtot*nspinor,&
+        dims=(/dim2/),all=.true.)
       do itloc=1,ntrloc
         it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
         expikt=exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
-! muffin-tins
-!        do ir=1,nrmt(is)
-!          do itp=1,lmmaxvr
-!            x(:)=(/sin(tp(1,itp))*cos(tp(2,itp)),&
-!                   sin(tp(1,itp))*sin(tp(2,itp)),&
-!                   cos(tp(1,itp))/)*spr(ir,is)+&
-!                   atposc(:,ias2ia(ias),ias2is(ias))+sic_orbitals%vtc(:,it)
-!            call s_get_wanval(n,x,wanval)
-!            wftp(itp,ir,:)=wftp(itp,ir,:)+wanval(:)*expikt
-!          enddo !itp
-!        enddo !ir
-        do ir=1,nrmt(is)
-          do itp=1,s_ntp
-            x(:)=s_spx(:,itp)*spr(ir,is)+atposc(:,ias2ia(ias),ias2is(ias))+&
-                 sic_orbitals%vtc(:,it) !-atposc(:,ias2ia(jas),ias2is(jas))
-            do ispn=1,nspinor
-              !wftp(itp,ir,ispn)=wftp(itp,ir,ispn)+expikt*s_func_val(x,s_wanlm(1,1,ispn,j)) 
-              call s_get_wanval(n,x,wanval)
-              wftp(itp,ir,:)=wftp(itp,ir,:)+wanval(:)*expikt
-              !s_wankmt(itp,ir,ias,ispn,j,ikloc)=s_wankmt(itp,ir,ias,ispn,j,ikloc)+&
-              !  expikt*s_func_val(x,s_wanlm(1,1,ispn,j))
-              !s_wvkmt(itp,ir,ias,ispn,j,ikloc)=s_wvkmt(itp,ir,ias,ispn,j,ikloc)+&
-              !  expikt*s_func_val(x,s_wvlm(1,1,ispn,j))
-            enddo
-          enddo !itp
-        enddo !ir
-      enddo !itloc
- ! convert to spherical harmonics
-      do ispn=1,nspinor
-        call zgemm('T','N',lmmaxvr,nrmt(is),s_ntp,zone,s_ylmb,s_ntp,&
-          wftp(1,1,ispn),s_ntp,zzero,wflm(1,1,ispn),lmmaxvr)
-          s_wankmt(:,:,ias,ispn,j,ikloc)=wflm(:,:,ispn)
-      enddo !ispn
-      !do ispn=1,nspinor
-      !  call zgemm('N','N',lmmaxvr,nrmt(is),lmmaxvr,zone,zfshtvr,lmmaxvr, &
-      !    wftp(1,1,ispn),lmmaxvr,zzero,s_wankmt(1,1,ias,ispn,j,ikloc),lmmaxvr)
-      !enddo
-    enddo !ias
-! interstitial
-    do itloc=1,ntrloc
-      it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
-      expikt=exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
-      do ir=1,ngrtot
-        x(:)=vgrc(:,ir)+sic_orbitals%vtc(:,it)
-        call s_get_wanval(n,x,wanval)
-        s_wankir(ir,:,j,ikloc)=s_wankir(ir,:,j,ikloc)+wanval(:)*expikt
-        !x(:)=vgrc(:,ir)+sic_orbitals%vtc(:,it)-atposc(:,ias2ia(jas),ias2is(jas))
-        !do ispn=1,nspinor
-        !  s_wankir(ir,ispn,j,ikloc)=s_wankir(ir,ispn,j,ikloc)+&
-        !    s_func_val(x,s_wanlm(1,1,ispn,j))*expikt 
-        !  s_wvkir(ir,ispn,j,ikloc)=s_wvkir(ir,ispn,j,ikloc)+&
-        !    s_func_val(x,s_wvlm(1,1,ispn,j))*expikt 
-        !enddo
-      enddo
-    enddo !itloc
-    call mpi_grid_reduce(s_wankmt(1,1,1,1,j,ikloc),&
-      lmmaxvr*nrmtmax*natmtot*nspinor,dims=(/dim2/),all=.true.)
-    call mpi_grid_reduce(s_wankir(1,1,j,ikloc),ngrtot*nspinor,&
-      dims=(/dim2/),all=.true.)
-    call mpi_grid_reduce(s_wvkmt(1,1,1,1,j,ikloc),&
-      lmmaxvr*nrmtmax*natmtot*nspinor,dims=(/dim2/),all=.true.)
-    call mpi_grid_reduce(s_wvkir(1,1,j,ikloc),ngrtot*nspinor,&
-      dims=(/dim2/),all=.true.)
-!    do ispn=1,nspinor
-!      do ias=1,natmtot
-!        call zgemm('N','N',lmmaxvr,nrmt(ias2is(ias)),lmmaxvr,zone,&
-!          zfshtvr,lmmaxvr,s_wankmt(1,1,ias,ispn,j,ikloc),lmmaxvr,&
-!          zzero,wfmt,lmmaxvr)
-!        s_wankmt(:,:,ias,ispn,j,ikloc)=wfmt
-!      enddo
-!    enddo
-    if (mpi_grid_root((/dim2/)).and.ik.eq.1.and.j.eq.1) then
-      open(220,file="re_wnkmt.dat",form="formatted",status="replace")
-      open(221,file="im_wnkmt.dat",form="formatted",status="replace")
-      do lm=1,lmmaxvr
-        do ir=1,nrmt(1)
-          write(220,'(2G18.10)')spr(ir,1),dreal(s_wankmt(lm,ir,1,1,1,1)) 
-          write(221,'(2G18.10)')spr(ir,1),dimag(s_wankmt(lm,ir,1,1,1,1)) 
+        do ir=1,ngrtot
+          x(:)=vgrc(:,ir)+sic_orbitals%vtc(:,it)
+          call s_get_wanval(twan,n,x,wanval)
+          wankir(ir,:)=wankir(ir,:)+wanval(:)*expikt
         enddo
-        write(220,*)
-        write(221,*)
+      enddo !itloc
+      call mpi_grid_reduce(wankir(1,1),ngrtot*nspinor,dims=(/dim2/),&
+        all=.true.)
+      zt1=zzero
+      zt2=zzero
+      do ispn=1,nspinor
+        zt1=zt1+s_zfinp(.false.,mt_ntp,wankmt(1,1,1,ispn),wankmt(1,1,1,ispn),&
+          wankir(1,ispn),wankir(1,ispn),zt2)
       enddo
-      close(220)
-      close(221)
-    endif 
- 
-    zt1=zzero
-    zt2=zzero
-    do ispn=1,nspinor
-      zt1=zt1+zfinp_(s_wankmt(1,1,1,ispn,j,ikloc),s_wankmt(1,1,1,ispn,j,ikloc),&
-        s_wankir(1,ispn,j,ikloc),s_wankir(1,ispn,j,ikloc))
-      zt2=zt2+zfinp_(s_wvkmt(1,1,1,ispn,j,ikloc),s_wankmt(1,1,1,ispn,j,ikloc),&
-        s_wvkir(1,ispn,j,ikloc),s_wankir(1,ispn,j,ikloc))
-    enddo
-    zprod(1,j,ik)=zt1
-    zprod(2,j,ik)=zt2
-  enddo !j
-enddo !ikloc 
-call mpi_grid_reduce(zprod(1,1,1),2*sic_wantran%nwan*nkpt,dims=(/dim_k/))
+      zprod(1,j,ik)=zt1
+      zprod(2:3,j,ik)=zt2(1:2)
+    enddo !j
+  enddo !ik
+endif
+if (itest.eq.2) then
+  do ikloc=1,1 !nkptloc
+    ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+    do j=1,sic_wantran%nwan
+      n=sic_wantran%iwan(j)
+      wgk=zzero
+      do ig=1,ngk(1,ik)
+! generate Bessel functions j_l(|G+k|x)
+        do ir=1,s_nr
+          call sbessel(lmaxwan,gkc(ig,1,ikloc)*s_r(ir),jl(ir,0))
+        enddo
+        call genylm(lmaxwan,tpgkc(1,ig,1,ikloc),ylmgk)
+        do ispn=1,nspinor
+          do ir=1,s_nr
+            do lm=1,lmmaxwan
+              wgk(ig,ispn)=wgk(ig,ispn)+fourpi*(zi**lm2l(lm))*jl(ir,lm2l(lm))*&
+                dconjg(s_pwanlm(lm,ir,ispn,j))*dconjg(ylmgk(lm))*s_rw(ir)/sqrt(omega)
+            enddo
+          enddo
+        enddo
+      enddo !ig
+      wankmt=zzero
+      wankir=zzero
+      do ias=1,natmtot
+        is=ias2is(ias)
+        ia=ias2ia(ias)
+        do itloc=1,ntrloc
+          it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
+          expikt=exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
+          do ir=1,nrmt(is)
+            do itp=1,mt_ntp
+              x(:)=mt_spx(:,itp)*spr(ir,is)+atposc(:,ia,is)+&
+                   sic_orbitals%vtc(:,it)-wanpos(:,n)
+              do ispn=1,nspinor
+                wankmt(itp,ir,ias,ispn)=wankmt(itp,ir,ias,ispn)+&
+                    expikt*s_func_val(x,s_wanlm(1,1,ispn,j))
+              enddo
+            enddo !itp
+          enddo !ir
+        enddo !itloc
+      enddo !ias
+      call mpi_grid_reduce(wankmt(1,1,1,1),mt_ntp*nrmtmax*natmtot*nspinor,&
+        dims=(/dim2/),all=.true.)
+      do ispn=1,nspinor
+        do ig=1,ngk(1,ik)
+          wankir(igfft(igkig(ig,1,ikloc)),ispn)=wgk(ig,ispn)/sqrt(omega)
+        enddo
+        call zfftifc(3,ngrid,1,wankir(1,ispn))
+      enddo
+      zt1=zzero
+      zt2=zzero
+      do ispn=1,nspinor
+        zt1=zt1+s_zfinp(.false.,mt_ntp,wankmt(1,1,1,ispn),wankmt(1,1,1,ispn),&
+          wankir(1,ispn),wankir(1,ispn),zt2)
+      enddo
+      zprod(1,j,ik)=zt1
+      zprod(2:3,j,ik)=zt2(1:2)
+    enddo !j
+  enddo !ikloc 
+endif
+call mpi_grid_reduce(zprod(1,1,1),3*sic_wantran%nwan*nkpt,dims=(/dim_k/))
 if (mpi_grid_root()) then
-  open(210,file="SIC_BLOCHSUM.OUT",form="formatted",status="replace")
+  open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
   do ik=1,nkpt
     write(210,'(" ik : ",I4)')ik
     do j=1,sic_wantran%nwan
       n=sic_wantran%iwan(j)
-      write(210,'("  n : ",I4,6X," <W_nk|W_nk> : ",2G18.10)')&
-        n,dreal(zprod(1,j,ik)),dimag(zprod(1,j,ik))
+      write(210,'("  n : ",I4,6X," <W_nk|W_nk> : ",3G18.10)')&
+        n,dreal(zprod(1,j,ik)),dreal(zprod(2,j,ik)),dreal(zprod(3,j,ik))
     enddo
     write(210,*)
   enddo !ik
   close(210)
 endif
-deallocate(tp)
 deallocate(zprod)
+deallocate(wgk,jl,ylmgk)
+deallocate(wankmt,wankir)
 return
 end

@@ -17,11 +17,13 @@ real(8), allocatable :: wanprop(:,:)
 complex(8), allocatable :: ovlp(:)
 complex(8), allocatable :: om(:,:)
 complex(8), allocatable :: wantp(:,:,:)
+complex(8), allocatable :: pwantp(:,:,:)
 integer, parameter :: iovlp=1 
 integer, parameter :: irms=1
 complex(8), external :: zdotc
 !
 allocate(wantp(s_ntp,s_nr,nspinor))
+allocate(pwantp(s_ntp,s_nr,nspinor))
 allocate(wanprop(nwanprop,sic_wantran%nwan))
 if (wproc) then
   write(fout,*)
@@ -51,18 +53,22 @@ do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
 ! generate WF on a spherical mesh
   wantp=zzero
+  pwantp=zzero
   call timer_start(t_sic_wan_gen)
   do irloc=1,nrloc
     ir=mpi_grid_map(s_nr,dim2,loc=irloc)
     do itp=1,s_ntp
       vrc(:)=s_spx(:,itp)*s_r(ir)+wanpos(:,n)
-      call s_get_wanval(n,vrc,wanval)
+      call s_get_wanval(.true.,n,vrc,wanval)
       wantp(itp,ir,:)=wanval(:)
+      call s_get_wanval(.false.,n,vrc,wanval)
+      pwantp(itp,ir,:)=wanval(:)
     enddo
   enddo
   call mpi_grid_reduce(wantp(1,1,1),s_ntp*s_nr*nspinor,all=.true.)
 ! convert to spherical harmonics
   call sic_genwanlm(fout,n,wantp,s_wanlm(1,1,1,j))
+  call sic_genwanlm(fout,n,pwantp,s_pwanlm(1,1,1,j))
 ! compute norm
   t1=0.d0
   z1=zzero
@@ -103,11 +109,23 @@ do j=1,sic_wantran%nwan
 ! generate potentials
   if (sic_apply(n).eq.2) then
     call timer_start(t_sic_wan_pot)
+    call s_gen_pot(s_pwanlm(1,1,1,j),pwantp,s_pwvlm(1,1,1,j),wanprop(1,j))
     call s_gen_pot(s_wanlm(1,1,1,j),wantp,s_wvlm(1,1,1,j),wanprop(1,j))
     call timer_stop(t_sic_wan_pot)
   endif
 enddo !j
 deallocate(wantp)
+
+call s_func_plot1d("__wan_s.dat",2000,(/0.d0,0.d0,0.d0/),&
+  (/0.d0,0.d0,0.d0/),(/10.d0,0.d0,0.d0/),s_wanlm(1,1,1,1))
+call s_func_plot1d("__pwan_s.dat",2000,(/0.d0,0.d0,0.d0/),&
+  (/0.d0,0.d0,0.d0/),(/10.d0,0.d0,0.d0/),s_pwanlm(1,1,1,1))
+
+call s_func_plot1d("__wv_s.dat",2000,(/0.d0,0.d0,0.d0/),&
+  (/0.d0,0.d0,0.d0/),(/10.d0,0.d0,0.d0/),s_wvlm(1,1,1,1))
+call s_func_plot1d("__pwv_s.dat",2000,(/0.d0,0.d0,0.d0/),&
+  (/0.d0,0.d0,0.d0/),(/10.d0,0.d0,0.d0/),s_pwvlm(1,1,1,1))
+
 ! check <W|\phi> matrix elements
 !if (.true.) call sic_test_fvprj(fout)
 ! compute overlap integrals 

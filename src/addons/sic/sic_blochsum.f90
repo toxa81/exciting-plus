@@ -109,10 +109,10 @@ do ikloc=1,nkptloc
     zt1=zzero
     zt2=zzero
     do ispn=1,nspinor
-      zt1=zt1+zfinp_(s_wankmt(1,1,1,ispn,j,ikloc),s_wankmt(1,1,1,ispn,j,ikloc),&
-        s_wankir(1,ispn,j,ikloc),s_wankir(1,ispn,j,ikloc))
-      zt2=zt2+zfinp_(s_wvkmt(1,1,1,ispn,j,ikloc),s_wankmt(1,1,1,ispn,j,ikloc),&
-        s_wvkir(1,ispn,j,ikloc),s_wankir(1,ispn,j,ikloc))
+      !zt1=zt1+zfinp_(s_wankmt(1,1,1,ispn,j,ikloc),s_wankmt(1,1,1,ispn,j,ikloc),&
+      !  s_wankir(1,ispn,j,ikloc),s_wankir(1,ispn,j,ikloc))
+      !zt2=zt2+zfinp_(s_wvkmt(1,1,1,ispn,j,ikloc),s_wankmt(1,1,1,ispn,j,ikloc),&
+      !  s_wvkir(1,ispn,j,ikloc),s_wankir(1,ispn,j,ikloc))
     enddo
     zprod(1,j,ik)=zt1
     zprod(2,j,ik)=zt2
