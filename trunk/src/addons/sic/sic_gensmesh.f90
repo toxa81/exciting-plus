@@ -2,7 +2,7 @@ subroutine sic_gensmesh
 use modmain
 use mod_sic
 implicit none
-integer itp,lm
+integer itp,lm,l
 real(8) a,tp(2)
 real(8), allocatable :: tp1(:,:)
 !
@@ -32,6 +32,15 @@ do itp=1,s_ntp
   enddo
 enddo
 
+if (allocated(mt_spx)) deallocate(mt_spx)
+allocate(mt_spx(3,mt_ntp))
+if (allocated(mt_tpw)) deallocate(mt_tpw)
+allocate(mt_tpw(mt_ntp))
+call leblaik(mt_ntp,mt_spx,mt_tpw)
+do itp=1,mt_ntp
+  mt_tpw(itp)=mt_tpw(itp)*fourpi
+enddo
+
 ! uniform cover
 !allocate(tp1(2,s_ntp))
 !call sphcover(s_ntp,tp1)
@@ -48,59 +57,62 @@ enddo
 !  enddo
 !enddo
 !deallocate(tp1)
-
+!do l=1,20
+!  call test1(590,l)
+!enddo
+!call bstop
 return
 end
 
-!
-!subroutine test1(ntp,lmax)
-!use modmain
-!implicit none
-!integer, intent(in) :: ntp
-!integer, intent(in) :: lmax
-!integer itp,lm,lmmax,itp1
-!real(8) a,tp(2)
-!complex(8) z1
-!real(8), allocatable :: spx(:,:)
-!real(8), allocatable :: tpw(:)
-!complex(8), allocatable :: ylmf(:,:)
-!complex(8), allocatable :: ylmb(:,:)
-!
-!lmmax=(lmax+1)**2
-!
-!allocate(spx(3,ntp))
-!allocate(tpw(ntp))
-!allocate(ylmf(lmmax,ntp))
-!allocate(ylmb(ntp,lmmax))
-!! Lebedev-Laikov mesh
-!call leblaik(ntp,spx,tpw)
-!! get (theta,phi) of each spx vector and generate spherical harmonics
-!do itp=1,ntp                   
-!  tpw(itp)=tpw(itp)*fourpi
-!  call sphcrd(spx(1,itp),a,tp)
-!  call genylm(lmax,tp,ylmf(1,itp))
-!  do lm=1,lmmax
-!    ylmb(itp,lm)=dconjg(ylmf(lm,itp))*tpw(itp) 
-!  enddo  
-!enddo 
-!a=0.d0
-!do itp=1,ntp
-!  do itp1=1,ntp
-!    z1=zzero
-!    do lm=1,lmmax
-!      z1=z1+ylmb(itp,lm)*ylmf(lm,itp1)
-!    enddo
-!    !if (itp.eq.itp1) z1=z1-zone
-!    !a=max(a,abs(z1))
-!    if (itp.ne.itp1) a=max(a,abs(z1))
-!  enddo
-!enddo
-!if (mpi_grid_root()) then
-!  write(*,'("[test1] l = ",I4," ntp = ",I4)')lmax,ntp
-!  write(*,'("[test1] Lebedev quadrature completeness error : ",G18.10)')a
-!  write(*,*)
-!endif
-!deallocate(spx,tpw,ylmf,ylmb)
-!return
-!end
+
+subroutine test1(ntp,lmax)
+use modmain
+implicit none
+integer, intent(in) :: ntp
+integer, intent(in) :: lmax
+integer itp,lm,lmmax,itp1
+real(8) a,tp(2)
+complex(8) z1
+real(8), allocatable :: spx(:,:)
+real(8), allocatable :: tpw(:)
+complex(8), allocatable :: ylmf(:,:)
+complex(8), allocatable :: ylmb(:,:)
+
+lmmax=(lmax+1)**2
+
+allocate(spx(3,ntp))
+allocate(tpw(ntp))
+allocate(ylmf(lmmax,ntp))
+allocate(ylmb(ntp,lmmax))
+! Lebedev-Laikov mesh
+call leblaik(ntp,spx,tpw)
+! get (theta,phi) of each spx vector and generate spherical harmonics
+do itp=1,ntp                   
+  tpw(itp)=tpw(itp)*fourpi
+  call sphcrd(spx(1,itp),a,tp)
+  call genylm(lmax,tp,ylmf(1,itp))
+  do lm=1,lmmax
+    ylmb(itp,lm)=dconjg(ylmf(lm,itp))*tpw(itp) 
+  enddo  
+enddo 
+a=0.d0
+do itp=1,ntp
+  do itp1=1,ntp
+    z1=zzero
+    do lm=1,lmmax
+      z1=z1+ylmb(itp,lm)*ylmf(lm,itp1)
+    enddo
+    if (itp.eq.itp1) z1=z1-zone
+    a=max(a,abs(z1))
+    !if (itp.ne.itp1) a=max(a,abs(z1))
+  enddo
+enddo
+if (mpi_grid_root()) then
+  write(*,'("[test1] l = ",I4," ntp = ",I4)')lmax,ntp
+  write(*,'("[test1] Lebedev quadrature completeness error : ",G18.10)')a
+  write(*,*)
+endif
+deallocate(spx,tpw,ylmf,ylmb)
+return
+end
 

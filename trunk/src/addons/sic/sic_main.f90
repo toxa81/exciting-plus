@@ -9,9 +9,9 @@ use mod_madness
 implicit none
 integer n,i,j,i1,j1,j2,n1,n2,ik,ispn,vtrl(3),ikloc,ig,nwtloc,iloc
 integer ias,lm
-real(8) t1,t2,t3,vtrc(3),pos1(3),pos2(3)
+real(8) t1,t2,t3,vtrc(3),pos1(3),pos2(3),vrc(3)
 integer vl(3)
-complex(8) z1
+complex(8) z1,z2(nspinor)
 real(8), allocatable :: laplsv(:) 
 complex(8), allocatable :: vwank(:,:)
 complex(8), allocatable :: vwanme_old(:)
@@ -62,6 +62,7 @@ if (wproc) then
   enddo
   write(151,*)
   write(151,'("cutoff radius for Wannier functions   : ",F12.6)')sic_wan_cutoff
+  write(151,'("number of radial points               : ",I6)')s_nr
   write(151,'("cutoff radius for SIC matrix elements : ",F12.6)')sic_me_cutoff
   write(151,'("number of Wannier transitions         : ",I6)')sic_wantran%nwt
   write(151,'("number of translations for Bloch sums : ",I6)')sic_orbitals%ntr
@@ -116,8 +117,9 @@ do ikloc=1,nkptnrloc
     s_ngvec=max(s_ngvec,igkignr(ig,ikloc))
   enddo
 enddo
+
 call sic_test_fvprj(151)
-call sic_test_blochsum 
+call sic_test_blochsum(1,.false.,"sic_blochsum_wan.out")
 call bstop
 
 ! init Madness related variables 
@@ -256,6 +258,8 @@ do ik=1,nkpt
   endif
 enddo
 deallocate(vwank)
+
+call sic_test_blochsum(2)
 
 ! signal that now we have computed sic potential and wannier functions
 tsic_wv=.true.

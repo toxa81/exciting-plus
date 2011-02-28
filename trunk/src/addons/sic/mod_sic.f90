@@ -88,7 +88,7 @@ integer lmmaxwan
 ! number of points on the big sphere
 integer s_ntp
 data s_ntp/266/
-! coordinate of unit vectors on the sphere
+! coordinates of the unit vectors of the big sphere
 real(8), allocatable :: s_spx(:,:)
 ! weights for spherical integration
 real(8), allocatable :: s_tpw(:)
@@ -101,9 +101,20 @@ complex(8), allocatable :: s_ylmb(:,:)
 ! forward transformation from complex spherical harmonics to coordinates
 complex(8), allocatable :: s_ylmf(:,:)
 
+! number of points for Lebedev mesh for LAPW muffin-tins 
+integer mt_ntp
+data mt_ntp/74/
+! radial weights for LAPW muffin-tins
+real(8), allocatable :: mt_rw(:,:)
+! coordinates of the unit vectors of the MT-sphere
+real(8), allocatable :: mt_spx(:,:)
+! weights of Lebedev mesh for LAPW muffin-tins 
+real(8), allocatable :: mt_tpw(:)
 
 complex(8), allocatable :: s_wanlm(:,:,:,:)
+complex(8), allocatable :: s_pwanlm(:,:,:,:)
 complex(8), allocatable :: s_wvlm(:,:,:,:)
+complex(8), allocatable :: s_pwvlm(:,:,:,:)
 complex(8), allocatable :: s_wankmt(:,:,:,:,:,:)
 complex(8), allocatable :: s_wankir(:,:,:,:)
 complex(8), allocatable :: s_wvkmt(:,:,:,:,:,:)
@@ -236,11 +247,12 @@ endif
 return
 end subroutine
 
-subroutine s_get_wanval(n,x,wanval)
+subroutine s_get_wanval(twan,n,x,wanval)
 use modmain
 use mod_nrkp
 use mod_wannier
 implicit none
+logical, intent(in) :: twan
 integer, intent(in) :: n
 real(8), intent(in) :: x(3)
 complex(8), intent(out) :: wanval(nspinor)
@@ -259,7 +271,7 @@ complex(8) zm1(lmmaxvr,nufrmax,nspinor),zm2(nspinor)
 wanval=zzero
 x0(:)=x(:)-wanpos(:,n)
 if (sum(x0(:)**2).gt.(sic_wan_cutoff**2)) return
-if (vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
+if (vrinmt(x,is,ia,ntr,vr0,ir0,r0).and.twan) then
   ias=idxas(ia,is)
   call sphcrd(vr0,t1,tp)
   call genylm(lmaxvr,tp,ylm)
@@ -415,6 +427,31 @@ enddo
 s_func_val=zval
 return
 end function
+
+subroutine s_func_plot1d(fname,np,p0,p1,p2,flm)
+implicit none
+character*(*), intent(in) :: fname
+integer, intent(in) :: np
+real(8), intent(in) :: p0(3)
+real(8), intent(in) :: p1(3)
+real(8), intent(in) :: p2(3)
+complex(8), intent(in) :: flm(lmmaxwan,s_nr)
+
+integer i
+real(8) x(3),dx
+complex(8) zt1
+x(:)=(p2(:)-p1(:))/dble(np-1)
+dx=sqrt(sum(x(:)**2))
+open(220,file=trim(adjustl(fname)),form="formatted",status="replace")
+do i=1,np
+ x(:)=(p2(:)-p1(:))*(i-1)/dble(np-1)
+ x(:)=x(:)-p0(:)
+ zt1=s_func_val(x,flm)
+ write(220,'(3G18.10)')dx*(i-1),dreal(zt1),dimag(zt1)
+enddo
+close(220)
+return
+end subroutine
 
 complex(8) function s_dot_ll(pos1,pos2,f1lm,f2lm)
 use modmain
@@ -574,7 +611,7 @@ enddo
 wanprop(wp_vsic)=wanprop(wp_vha)+wanprop(wp_vxc)
 ! add Hartree potential to XC
 do ispn=1,nspinor
-  vxclm(:,:,ispn)=vxclm(:,:,ispn)+vhalm(:,:)
+  vxclm(:,:,ispn)=vhalm(:,:) !vxclm(:,:,ispn)+vhalm(:,:)
 enddo
 ! multiply Wannier function with potential and change sign
 wvlm=zzero
@@ -597,5 +634,72 @@ enddo
 deallocate(rhotp,rholm,totrholm)
 deallocate(vhalm,extp,ectp,exclm,vxtp,vctp,vxclm)
 end subroutine     
+
+complex(8) function s_zfinp(tsh,ld,zfmt1,zfmt2,zfir1,zfir2,zfrac)
+use modmain
+implicit none
+logical, intent(in) :: tsh
+integer, intent(in) :: ld
+complex(8), intent(in) :: zfmt1(ld,nrmtmax,natmtot)
+complex(8), intent(in) :: zfmt2(ld,nrmtmax,natmtot)
+complex(8), intent(in) :: zfir1(ngrtot)
+complex(8), intent(in) :: zfir2(ngrtot)
+complex(8), optional, intent(inout) :: zfrac(2)
+!
+integer is,ias,ir,itp
+complex(8) zsumir,zsummt,zt1
+complex(8) zfr(nrmtmax) 
+complex(8), external :: zdotc
+! interstitial contribution
+zsumir=zzero
+do ir=1,ngrtot
+  zsumir=zsumir+cfunir(ir)*conjg(zfir1(ir))*zfir2(ir)
+enddo
+zsumir=zsumir*omega/dble(ngrtot)
+! muffin-tin contribution
+zsummt=zzero
+do ias=1,natmtot
+  is=ias2is(ias)
+  do ir=1,nrmt(is)
+    if (tsh) then
+      zt1=zdotc(ld,zfmt1(1,ir,ias),1,zfmt2(1,ir,ias),1)
+    else
+      zt1=zzero
+      do itp=1,mt_ntp
+        zt1=zt1+mt_tpw(itp)*dconjg(zfmt1(itp,ir,ias))*zfmt2(itp,ir,ias)
+      enddo
+    endif
+    zsummt=zsummt+zt1*mt_rw(ir,is)
+  enddo
+enddo !ias
+s_zfinp=zsumir+zsummt
+if (present(zfrac)) then
+  zfrac(1)=zfrac(1)+zsummt
+  zfrac(2)=zfrac(2)+zsumir
+endif
+return
+end function
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 end module

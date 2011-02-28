@@ -83,10 +83,10 @@ do ikloc=1,nkptloc
     enddo 
     do j=1,sic_wantran%nwan
       do ispn=1,nspinor
-        sic_wb(j,ist,ispn,ikloc)=zfinp_(s_wankmt(1,1,1,ispn,j,ikloc),wfmt,&
-          s_wankir(1,ispn,j,ikloc),wfir)
-        sic_wvb(j,ist,ispn,ikloc)=zfinp_(s_wvkmt(1,1,1,ispn,j,ikloc),wfmt,&
-          s_wvkir(1,ispn,j,ikloc),wfir)
+        !sic_wb(j,ist,ispn,ikloc)=zfinp_(s_wankmt(1,1,1,ispn,j,ikloc),wfmt,&
+        !  s_wankir(1,ispn,j,ikloc),wfir)
+        !sic_wvb(j,ist,ispn,ikloc)=zfinp_(s_wvkmt(1,1,1,ispn,j,ikloc),wfmt,&
+        !  s_wvkir(1,ispn,j,ikloc),wfir)
       enddo
     enddo
   enddo
