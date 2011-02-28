@@ -120,7 +120,7 @@ enddo
 
 call sic_test_fvprj(151)
 call sic_test_blochsum(1,.false.,"sic_blochsum_wan.out")
-call bstop
+!call bstop
 
 ! init Madness related variables 
 #ifdef _MAD_
@@ -259,7 +259,7 @@ do ik=1,nkpt
 enddo
 deallocate(vwank)
 
-call sic_test_blochsum(2)
+call sic_test_blochsum(2,.false.,"sic_blochsum_wan_.out")
 
 ! signal that now we have computed sic potential and wannier functions
 tsic_wv=.true.

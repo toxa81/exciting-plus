@@ -17,6 +17,8 @@ do ispn=1,nspinor
   call zgemm('T','N',lmmaxwan,s_nr,s_ntp,zone,s_ylmb,s_ntp,&
     wantp(1,1,ispn),s_ntp,zzero,wanlm,lmmaxwan)
 enddo
+return
+
 ! convert back to spherical coordinates
 allocate(wantp1(s_ntp,s_nr,nspinor))
 do ispn=1,nspinor

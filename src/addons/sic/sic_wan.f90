@@ -66,6 +66,7 @@ do j=1,sic_wantran%nwan
     enddo
   enddo
   call mpi_grid_reduce(wantp(1,1,1),s_ntp*s_nr*nspinor,all=.true.)
+  call mpi_grid_reduce(pwantp(1,1,1),s_ntp*s_nr*nspinor,all=.true.)
 ! convert to spherical harmonics
   call sic_genwanlm(fout,n,wantp,s_wanlm(1,1,1,j))
   call sic_genwanlm(fout,n,pwantp,s_pwanlm(1,1,1,j))
@@ -116,15 +117,15 @@ do j=1,sic_wantran%nwan
 enddo !j
 deallocate(wantp)
 
-call s_func_plot1d("__wan_s.dat",2000,(/0.d0,0.d0,0.d0/),&
-  (/0.d0,0.d0,0.d0/),(/10.d0,0.d0,0.d0/),s_wanlm(1,1,1,1))
-call s_func_plot1d("__pwan_s.dat",2000,(/0.d0,0.d0,0.d0/),&
-  (/0.d0,0.d0,0.d0/),(/10.d0,0.d0,0.d0/),s_pwanlm(1,1,1,1))
-
-call s_func_plot1d("__wv_s.dat",2000,(/0.d0,0.d0,0.d0/),&
-  (/0.d0,0.d0,0.d0/),(/10.d0,0.d0,0.d0/),s_wvlm(1,1,1,1))
-call s_func_plot1d("__pwv_s.dat",2000,(/0.d0,0.d0,0.d0/),&
-  (/0.d0,0.d0,0.d0/),(/10.d0,0.d0,0.d0/),s_pwvlm(1,1,1,1))
+!call s_func_plot1d("__wan_s.dat",2000,(/0.d0,0.d0,0.d0/),&
+!  (/0.d0,0.d0,0.d0/),(/10.d0,0.d0,0.d0/),s_wanlm(1,1,1,1))
+!call s_func_plot1d("__pwan_s.dat",2000,(/0.d0,0.d0,0.d0/),&
+!  (/0.d0,0.d0,0.d0/),(/10.d0,0.d0,0.d0/),s_pwanlm(1,1,1,1))
+!
+!call s_func_plot1d("__wv_s.dat",2000,(/0.d0,0.d0,0.d0/),&
+!  (/0.d0,0.d0,0.d0/),(/10.d0,0.d0,0.d0/),s_wvlm(1,1,1,1))
+!call s_func_plot1d("__pwv_s.dat",2000,(/0.d0,0.d0,0.d0/),&
+!  (/0.d0,0.d0,0.d0/),(/10.d0,0.d0,0.d0/),s_pwvlm(1,1,1,1))
 
 ! check <W|\phi> matrix elements
 !if (.true.) call sic_test_fvprj(fout)
