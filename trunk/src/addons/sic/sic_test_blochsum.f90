@@ -16,6 +16,8 @@ real(8), allocatable :: jl(:,:)
 complex(8),allocatable :: ylmgk(:)
 complex(8), allocatable :: wankmt(:,:,:,:)
 complex(8), allocatable :: wankir(:,:)
+complex(8), allocatable :: wantp(:,:,:,:)
+complex(8), allocatable :: wanir(:,:)
 !
 allocate(zprod(3,sic_wantran%nwan,nkpt))
 allocate(wgk(ngkmax,nspinor))
@@ -23,6 +25,9 @@ allocate(jl(s_nr,0:lmaxwan))
 allocate(ylmgk(lmmaxwan))
 allocate(wankmt(mt_ntp,nrmtmax,natmtot,nspinor))
 allocate(wankir(ngrtot,nspinor))
+allocate(wantp(mt_ntp,nrmtmax,natmtot,nspinor))
+allocate(wanir(ngrtot,nspinor))
+
 
 zprod=zzero
 ntrloc=mpi_grid_map(sic_orbitals%ntr,dim2)
@@ -39,26 +44,33 @@ if (itest.eq.1) then
         do itloc=1,ntrloc
           it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
           expikt=exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
+          wantp=zzero
           do ir=1,nrmt(is)
             do itp=1,mt_ntp
               x(:)=mt_spx(:,itp)*spr(ir,is)+atposc(:,ia,is)+&
                    sic_orbitals%vtc(:,it)
               call s_get_wanval(.true.,n,x,wanval)
-              wankmt(itp,ir,ias,:)=wankmt(itp,ir,ias,:)+expikt*wanval(:)
+              wantp(itp,ir,ias,:)=wanval(:)
             enddo !itp
           enddo !ir
+          call mpi_grid_reduce(wantp(1,1,1,1),mt_ntp*nrmtmax*natmtot*nspinor,&
+            dims=(/dim_k/))
+          wankmt(:,:,:,:)=wankmt(:,:,:,:)+expikt*wantp(:,:,:,:)
         enddo !itloc
       enddo !ias
       call mpi_grid_reduce(wankmt(1,1,1,1),mt_ntp*nrmtmax*natmtot*nspinor,&
-        dims=(/dim2/),all=.true.)
+        dims=(/dim2/))
       do itloc=1,ntrloc
         it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
         expikt=exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
+        wanir=zzero
         do ir=1,ngrtot
           x(:)=vgrc(:,ir)+sic_orbitals%vtc(:,it)
           call s_get_wanval(twan,n,x,wanval)
-          wankir(ir,:)=wankir(ir,:)+wanval(:)*expikt
+          wanir(ir,:)=wanval(:)
         enddo
+        call mpi_grid_reduce(wanir(1,1),ngrtot*nspinor,dims=(/dim_k/))
+        wankir(:,:)=wankir(:,:)+expikt*wanir(:,:)
       enddo !itloc
       call mpi_grid_reduce(wankir(1,1),ngrtot*nspinor,dims=(/dim2/),&
         all=.true.)
@@ -150,5 +162,6 @@ endif
 deallocate(zprod)
 deallocate(wgk,jl,ylmgk)
 deallocate(wankmt,wankir)
+deallocate(wantp,wanir)
 return
 end
