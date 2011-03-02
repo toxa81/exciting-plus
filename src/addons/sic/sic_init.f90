@@ -88,15 +88,15 @@ call sic_gensmesh
 if (allocated(s_wanlm)) deallocate(s_wanlm)
 allocate(s_wanlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
 s_wanlm=zzero
-if (allocated(s_pwanlm)) deallocate(s_pwanlm)
-allocate(s_pwanlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
-s_pwanlm=zzero
+!if (allocated(s_pwanlm)) deallocate(s_pwanlm)
+!allocate(s_pwanlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
+!s_pwanlm=zzero
 if (allocated(s_wvlm)) deallocate(s_wvlm)
 allocate(s_wvlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
 s_wvlm=zzero
-if (allocated(s_pwvlm)) deallocate(s_pwvlm)
-allocate(s_pwvlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
-s_pwvlm=zzero
+!if (allocated(s_pwvlm)) deallocate(s_pwvlm)
+!allocate(s_pwvlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
+!s_pwvlm=zzero
 if (allocated(vwanme)) deallocate(vwanme)
 allocate(vwanme(sic_wantran%nwt))
 vwanme=zzero
@@ -128,11 +128,11 @@ sic_wvuy=zzero
 if (allocated(s_wankmt)) deallocate(s_wankmt)
 allocate(s_wankmt(mt_ntp,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
 if (allocated(s_wankir)) deallocate(s_wankir)
-allocate(s_wankir(ngrtot,nspinor,sic_wantran%nwan,nkptloc))
+allocate(s_wankir(ngkmax,nspinor,sic_wantran%nwan,nkptloc))
 if (allocated(s_wvkmt)) deallocate(s_wvkmt)
 allocate(s_wvkmt(mt_ntp,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
 if (allocated(s_wvkir)) deallocate(s_wvkir)
-allocate(s_wvkir(ngrtot,nspinor,sic_wantran%nwan,nkptloc))
+allocate(s_wvkir(ngkmax,nspinor,sic_wantran%nwan,nkptloc))
 
 inquire(file="SIC_WANN_E0.OUT",exist=texist)
 if (texist) then

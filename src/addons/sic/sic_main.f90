@@ -119,7 +119,7 @@ do ikloc=1,nkptnrloc
 enddo
 
 call sic_test_fvprj(151)
-call sic_test_blochsum(1,.false.,"sic_blochsum_wan.out")
+!call sic_test_blochsum(1,.true.,"sic_blochsum_wan.out")
 !call bstop
 
 ! init Madness related variables 
@@ -151,6 +151,7 @@ call madness_init_box
 #endif
 ! generate Wannier functions and corresponding potential
 call sic_wan(151)
+! matrix elements
 call timer_start(t_sic_me,reset=.true.)
 if (wproc) then
   write(151,*)
@@ -259,7 +260,8 @@ do ik=1,nkpt
 enddo
 deallocate(vwank)
 
-call sic_test_blochsum(2,.false.,"sic_blochsum_wan_.out")
+!call sic_gengk
+!call sic_test_blochsum(2,.false.,"sic_blochsum_wan_backward.out")
 
 ! signal that now we have computed sic potential and wannier functions
 tsic_wv=.true.

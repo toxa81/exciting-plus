@@ -4,7 +4,7 @@ use mod_sic
 implicit none
 integer ik,ikloc,ispn,ld,ierr,j1,j2,i
 integer ias,ig,ist,ir,j
-complex(8) zt1
+complex(8) zt1,zt2(2)
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wffvmt(:,:,:,:)
 complex(8), allocatable :: ovlp(:,:)
@@ -45,12 +45,14 @@ allocate(wb(sic_wantran%nwan,nstfv,nspinor))
 allocate(wvb(sic_wantran%nwan,nstfv,nspinor))
 
 allocate(expikr(ngrtot))
-allocate(wfmt_(lmmaxvr,nrmtmax))
-allocate(wfmt(lmmaxvr,nrmtmax,natmtot))
 allocate(wfir(ngrtot))
 
+
+allocate(wfmt_(lmmaxvr,nrmtmax))
+allocate(wfmt(mt_ntp,nrmtmax,natmtot))
+
 ! recompute muffin-tin integrals every n iterations
-if (mod(iscl,5).eq.1) call sic_genmti
+!if (mod(iscl,5).eq.1) call sic_genmti
 
 ovlp1=zzero
 do ikloc=1,nkptloc
@@ -59,40 +61,35 @@ do ikloc=1,nkptloc
     apwalm)
 
 ! == code #1 == Bloch sums of W_n and (W*V)_n
-  do ir=1,ngrtot
-    expikr(ir)=exp(zi*dot_product(vkc(:,ik),vgrc(:,ir)))
-  enddo
+  !do ir=1,ngrtot
+  !  expikr(ir)=exp(zi*dot_product(vkc(:,ik),vgrc(:,ir)))
+  !enddo
+
   do ist=1,nstfv
     wfmt=zzero
-    wfir=zzero
 ! generate first-variational wave function
     do ias=1,natmtot
       call wavefmt(1,lmaxvr,ias2is(ias),ias2ia(ias),ngk(1,ik),apwalm,&
         evecfvloc(1,ist,1,ikloc),lmmaxvr,wfmt_)
 ! convert to spherical coordinates
-!      call zgemm('N','N',lmmaxvr,nrmt(ias2is(ias)),lmmaxvr,zone,zbshtvr,lmmaxvr, &
-!       wfmt_,lmmaxvr,zzero,wfmt(1,1,ias),lmmaxvr)
-      wfmt(:,:,ias)=wfmt_(:,:)
+      call zgemm('T','N',mt_ntp,nrmt(ias2is(ias)),lmmaxvr,zone,mt_ylmf,lmmaxvr,&
+       wfmt_,lmmaxvr,zzero,wfmt(1,1,ias),mt_ntp)
     enddo
-    do ig=1,ngk(1,ik)
-      wfir(igfft(igkig(ig,1,ikloc)))=evecfvloc(ig,ist,1,ikloc)/sqrt(omega)
-    enddo
-    call zfftifc(3,ngrid,1,wfir)
-    do ir=1,ngrtot
-      wfir(ir)=wfir(ir)*expikr(ir)
-    enddo 
     do j=1,sic_wantran%nwan
+      zt2=zzero
       do ispn=1,nspinor
-        !sic_wb(j,ist,ispn,ikloc)=zfinp_(s_wankmt(1,1,1,ispn,j,ikloc),wfmt,&
-        !  s_wankir(1,ispn,j,ikloc),wfir)
+        sic_wb(j,ist,ispn,ikloc)=s_zfinp(.false.,.true.,mt_ntp,ngk(1,ik),&
+          s_wankmt(1,1,1,ispn,j,ikloc),wfmt,s_wankir(1,ispn,j,ikloc),&
+          evecfvloc(1,ist,1,ikloc),zt2)
         !sic_wvb(j,ist,ispn,ikloc)=zfinp_(s_wvkmt(1,1,1,ispn,j,ikloc),wfmt,&
         !  s_wvkir(1,ispn,j,ikloc),wfir)
       enddo
+      write(*,*)"partial : ",dreal(zt2)
     enddo
   enddo
 
-  call genwffvmt(lmaxvr,lmmaxvr,ngk(1,ik),evecfvloc(1,1,1,ikloc),&
-    apwalm,wffvmt)
+!  call genwffvmt(lmaxvr,lmmaxvr,ngk(1,ik),evecfvloc(1,1,1,ikloc),&
+!    apwalm,wffvmt)
 
 ! == code #2 == expansion of fv function in the big sphere
 !  do ist=1,nstfv
