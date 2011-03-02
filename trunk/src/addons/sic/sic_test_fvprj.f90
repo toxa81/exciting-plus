@@ -30,14 +30,14 @@ allocate(evecsvnr(nstsv,nstsv))
 !allocate(wantp(s_ntp,s_nr))
 !allocate(wffvlm(lmmaxwan,s_nr))
 allocate(wfmt(lmmaxvr,nrmtmax))
-!allocate(fvmt(lmmaxvr,nrmtmax,natmtot))
-!allocate(fvir(ngrtot))
+allocate(fvmt(lmmaxvr,nrmtmax,natmtot))
+allocate(fvir(ngrtot))
 allocate(wnkmt(lmmaxvr,nrmtmax,natmtot,nspinor,sic_wantran%nwan))
 allocate(wnkir(ngrtot,nspinor,sic_wantran%nwan))
 allocate(zprod(3,sic_wantran%nwan,nkptnr))
 zprod=zzero
 
-do ikloc=1,nkptnrloc
+do ikloc=1,1 !nkptnrloc
   ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
   call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfvnr)
   call getevecsv(vklnr(1,ik),evecsvnr)
@@ -69,54 +69,56 @@ do ikloc=1,nkptnrloc
     zt1=zzero
     zt2=zzero
     do ispn=1,nspinor
-      zt1=zt1+s_zfinp(.true.,lmmaxvr,wnkmt(1,1,1,ispn,j),wnkmt(1,1,1,ispn,j),&
-        wnkir(1,ispn,j),wnkir(1,ispn,j),zt2)
+      zt1=zt1+s_zfinp(.true.,.false.,lmmaxvr,ngrtot,wnkmt(1,1,1,ispn,j),&
+        wnkmt(1,1,1,ispn,j),wnkir(1,ispn,j),wnkir(1,ispn,j),zt2)
     enddo
     zprod(1,j,ik)=zt1
     zprod(2:3,j,ik)=zt2(1:2)
   enddo !j
 
-!  do ist=1,nstfv
-!    write(220,'("  ist : ",I4)')ist
-!    fvmt=zzero
-!    fvir=zzero
-!! generate first-variational wave function
-!    do ias=1,natmtot
-!      call wavefmt(1,lmaxvr,ias2is(ias),ias2ia(ias),ngknr(ikloc),apwalm,&
-!        evecfvnr(1,ist,1),lmmaxvr,wfmt)
-!! convert to spherical coordinates
-!      !call zgemm('N','N',lmmaxvr,nrmt(ias2is(ias)),lmmaxvr,zone,zbshtvr,&
-!      !  lmmaxvr,wfmt,lmmaxvr,zzero,fvmt(1,1,ias),lmmaxvr)
-!      fvmt(:,:,ias)=wfmt(:,:)
-!    enddo
-!    do ig=1,ngknr(ikloc)
-!      fvir(igfft(igkignr(ig,ikloc)))=evecfvnr(ig,ist,1)/sqrt(omega)
-!    enddo
-!    call zfftifc(3,ngrid,1,fvir)
-!    zt1=zfinp_(fvmt,fvmt,fvir,fvir)
-!    write(220,'("  norm : ",2G18.10)')dreal(zt1),dimag(zt1) 
-!    do j=1,sic_wantran%nwan
-!      n=sic_wantran%iwan(j)
-!      do ispn=1,nspinor
-!        zt1=zfinp_(wnkmt(1,1,1,ispn,j),fvmt,wnkir(1,ispn,j),fvir)
-!        zt2=zzero
-!        istsv=ist+(ispn-1)*nstfv
-!        do i=1,nstsv
-!          zt2=zt2+dconjg(wanncnrloc(n,i,ikloc)*evecsvnr(istsv,i))
-!        enddo !i
-!        write(220,'("    n : ",I4,"  ispn : ",I4,&
-!          &"  numerical : ",2G18.10,"  analytical : ",2G18.10,&
-!          &"  diff : ",G18.10)')n,ispn,dreal(zt1),dimag(zt1),&
-!          dreal(zt2),dimag(zt2),abs(zt1-zt2)
-!      enddo
-!    enddo
-!  enddo !ist
-!  write(220,*)
-!  call flushifc(220)
+  do ist=1,nstfv
+    !write(220,'("  ist : ",I4)')ist
+    fvmt=zzero
+    fvir=zzero
+! generate first-variational wave function
+    do ias=1,natmtot
+      call wavefmt(1,lmaxvr,ias2is(ias),ias2ia(ias),ngknr(ikloc),apwalm,&
+        evecfvnr(1,ist,1),lmmaxvr,wfmt)
+! convert to spherical coordinates
+      !call zgemm('N','N',lmmaxvr,nrmt(ias2is(ias)),lmmaxvr,zone,zbshtvr,&
+      !  lmmaxvr,wfmt,lmmaxvr,zzero,fvmt(1,1,ias),lmmaxvr)
+      fvmt(:,:,ias)=wfmt(:,:)
+    enddo
+    do ig=1,ngknr(ikloc)
+      fvir(igfft(igkignr(ig,ikloc)))=evecfvnr(ig,ist,1)/sqrt(omega)
+    enddo
+    call zfftifc(3,ngrid,1,fvir)
+    zt2=zzero
+    zt1=s_zfinp(.true.,.false.,lmmaxvr,ngrtot,fvmt,fvmt,fvir,fvir,zt2)
+    !write(*,*)"ist:",ist,"norm:",zt1,"partial:",dreal(zt2)
+    !write(220,'("  norm : ",2G18.10)')dreal(zt1),dimag(zt1) 
+    !do j=1,sic_wantran%nwan
+    !  n=sic_wantran%iwan(j)
+    !  do ispn=1,nspinor
+    !    zt1=zfinp_(wnkmt(1,1,1,ispn,j),fvmt,wnkir(1,ispn,j),fvir)
+    !    zt2=zzero
+    !    istsv=ist+(ispn-1)*nstfv
+    !    do i=1,nstsv
+    !      zt2=zt2+dconjg(wanncnrloc(n,i,ikloc)*evecsvnr(istsv,i))
+    !    enddo !i
+    !    !write(220,'("    n : ",I4,"  ispn : ",I4,&
+    !    !  &"  numerical : ",2G18.10,"  analytical : ",2G18.10,&
+    !    !  &"  diff : ",G18.10)')n,ispn,dreal(zt1),dimag(zt1),&
+    !    !  dreal(zt2),dimag(zt2),abs(zt1-zt2)
+    !  enddo
+    !enddo
+  enddo !ist
+  !write(220,*)
+  !call flushifc(220)
 enddo !ikloc
 call mpi_grid_reduce(zprod(1,1,1),3*sic_wantran%nwan*nkptnr,dims=(/dim_k/))
 if (mpi_grid_root()) then
-  open(210,file="sic_blochsum.out",form="formatted",status="replace")
+  open(210,file="sic_blochsum_exact.out",form="formatted",status="replace")
   do ik=1,nkptnr
     write(210,'(" ik : ",I4)')ik
     do j=1,sic_wantran%nwan
@@ -267,6 +269,7 @@ deallocate(evecsvnr)
 deallocate(wnkmt,wnkir)
 deallocate(wfmt)
 deallocate(zprod)
+deallocate(fvmt,fvir)
 return
 end
 

@@ -6,13 +6,13 @@ integer, intent(in) :: itest
 logical, intent(in) :: twan
 character*(*), intent(in) :: fname
 integer ik,ikloc,j,n,jas,it,ias,is,ia,ir,itp,ispn,ntrloc,itloc,lm
-integer ig
-real(8) x(3),t1
-real(8), allocatable :: tp(:,:)
+integer ig,ig1,l
+real(8) x(3),t1,tp(2),vg(3)
 complex(8), allocatable :: zprod(:,:,:)
 complex(8) zt1,zt2(2),expikt,wanval(nspinor)
 complex(8), allocatable :: wgk(:,:)
 real(8), allocatable :: jl(:,:)
+complex(8), allocatable :: zf(:)
 complex(8),allocatable :: ylmgk(:)
 complex(8), allocatable :: wankmt(:,:,:,:)
 complex(8), allocatable :: wankir(:,:)
@@ -22,6 +22,7 @@ complex(8), allocatable :: wanir(:,:)
 allocate(zprod(3,sic_wantran%nwan,nkpt))
 allocate(wgk(ngkmax,nspinor))
 allocate(jl(s_nr,0:lmaxwan))
+allocate(zf(s_nr))
 allocate(ylmgk(lmmaxwan))
 allocate(wankmt(mt_ntp,nrmtmax,natmtot,nspinor))
 allocate(wankir(ngrtot,nspinor))
@@ -77,8 +78,8 @@ if (itest.eq.1) then
       zt1=zzero
       zt2=zzero
       do ispn=1,nspinor
-        zt1=zt1+s_zfinp(.false.,mt_ntp,wankmt(1,1,1,ispn),wankmt(1,1,1,ispn),&
-          wankir(1,ispn),wankir(1,ispn),zt2)
+        zt1=zt1+s_zfinp(.false.,.false.,mt_ntp,ngrtot,wankmt(1,1,1,ispn),&
+          wankmt(1,1,1,ispn),wankir(1,ispn),wankir(1,ispn),zt2)
       enddo
       zprod(1,j,ik)=zt1
       zprod(2:3,j,ik)=zt2(1:2)
@@ -92,42 +93,58 @@ if (itest.eq.2) then
       n=sic_wantran%iwan(j)
       wgk=zzero
       do ig=1,ngk(1,ik)
-! generate Bessel functions j_l(|G+k|x)
+        vg(:)=vgkc(:,ig,1,ikloc)
+        call sphcrd(vg,t1,tp)
+! generate Bessel functions j_l(|G+G'+k|x)
         do ir=1,s_nr
-          call sbessel(lmaxwan,gkc(ig,1,ikloc)*s_r(ir),jl(ir,0))
+          call sbessel(lmaxwan,t1*s_r(ir),jl(ir,:))
         enddo
-        call genylm(lmaxwan,tpgkc(1,ig,1,ikloc),ylmgk)
+        call genylm(lmaxwan,tp,ylmgk)
         do ispn=1,nspinor
-          do ir=1,s_nr
-            do lm=1,lmmaxwan
-              wgk(ig,ispn)=wgk(ig,ispn)+fourpi*(zi**lm2l(lm))*jl(ir,lm2l(lm))*&
-                dconjg(s_pwanlm(lm,ir,ispn,j))*dconjg(ylmgk(lm))*s_rw(ir)/sqrt(omega)
+          zt1=zzero
+          do l=0,lmaxwan
+            zf=zzero
+            do ir=1,s_nr
+              do lm=l**2+1,(l+1)**2
+                zf(ir)=zf(ir)+s_wanlm(lm,ir,ispn,j)*ylmgk(lm)
+              enddo
             enddo
-          enddo
-        enddo
+            zf=zf*fourpi*((-zi)**l)/sqrt(omega)
+            do ir=1,s_nr
+              zt1=zt1+jl(ir,l)*zf(ir)*s_rw(ir)
+            enddo
+          enddo !l
+          wgk(ig,ispn)=zt1
+        enddo !ispn
       enddo !ig
+      if (ik.eq.1) then
+        do ig=1,ngk(1,ik)
+          write(*,*)"j:",j,"ig:",ig,"1,2,diff:",wann_unkit(ig,1,n,1),wgk(ig,1),&
+            abs(wann_unkit(ig,1,n,1)-wgk(ig,1))
+        enddo
+      endif
       wankmt=zzero
       wankir=zzero
-      do ias=1,natmtot
-        is=ias2is(ias)
-        ia=ias2ia(ias)
-        do itloc=1,ntrloc
-          it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
-          expikt=exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
-          do ir=1,nrmt(is)
-            do itp=1,mt_ntp
-              x(:)=mt_spx(:,itp)*spr(ir,is)+atposc(:,ia,is)+&
-                   sic_orbitals%vtc(:,it)-wanpos(:,n)
-              do ispn=1,nspinor
-                wankmt(itp,ir,ias,ispn)=wankmt(itp,ir,ias,ispn)+&
-                    expikt*s_func_val(x,s_wanlm(1,1,ispn,j))
-              enddo
-            enddo !itp
-          enddo !ir
-        enddo !itloc
-      enddo !ias
-      call mpi_grid_reduce(wankmt(1,1,1,1),mt_ntp*nrmtmax*natmtot*nspinor,&
-        dims=(/dim2/),all=.true.)
+!      do ias=1,natmtot
+!        is=ias2is(ias)
+!        ia=ias2ia(ias)
+!        do itloc=1,ntrloc
+!          it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
+!          expikt=exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
+!          do ir=1,nrmt(is)
+!            do itp=1,mt_ntp
+!              x(:)=mt_spx(:,itp)*spr(ir,is)+atposc(:,ia,is)+&
+!                   sic_orbitals%vtc(:,it)-wanpos(:,n)
+!              do ispn=1,nspinor
+!                wankmt(itp,ir,ias,ispn)=wankmt(itp,ir,ias,ispn)+&
+!                    expikt*s_func_val(x,s_wanlm(1,1,ispn,j))
+!              enddo
+!            enddo !itp
+!          enddo !ir
+!        enddo !itloc
+!      enddo !ias
+!      call mpi_grid_reduce(wankmt(1,1,1,1),mt_ntp*nrmtmax*natmtot*nspinor,&
+!        dims=(/dim2/),all=.true.)
       do ispn=1,nspinor
         do ig=1,ngk(1,ik)
           wankir(igfft(igkig(ig,1,ikloc)),ispn)=wgk(ig,ispn)/sqrt(omega)
@@ -137,8 +154,8 @@ if (itest.eq.2) then
       zt1=zzero
       zt2=zzero
       do ispn=1,nspinor
-        zt1=zt1+s_zfinp(.false.,mt_ntp,wankmt(1,1,1,ispn),wankmt(1,1,1,ispn),&
-          wankir(1,ispn),wankir(1,ispn),zt2)
+        zt1=zt1+s_zfinp(.false.,.false.,mt_ntp,ngrtot,wankmt(1,1,1,ispn),&
+          wankmt(1,1,1,ispn),wankir(1,ispn),wankir(1,ispn),zt2)
       enddo
       zprod(1,j,ik)=zt1
       zprod(2:3,j,ik)=zt2(1:2)
@@ -163,5 +180,6 @@ deallocate(zprod)
 deallocate(wgk,jl,ylmgk)
 deallocate(wankmt,wankir)
 deallocate(wantp,wanir)
+deallocate(zf)
 return
 end

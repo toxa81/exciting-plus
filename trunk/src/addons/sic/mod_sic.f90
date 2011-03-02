@@ -63,10 +63,10 @@ type t_sic_orbitals
   integer, allocatable :: vtl(:,:)
 ! translation vectors in Cartesian coordinates
   real(8), allocatable :: vtc(:,:)
-! vector -> index map
-  integer, allocatable :: ivtit(:,:,:)
-! translation limits along each lattice vector
-  integer tlim(2,3)
+!! vector -> index map
+!  integer, allocatable :: ivtit(:,:,:)
+!! translation limits along each lattice vector
+!  integer tlim(2,3)
 end type t_sic_orbitals
 
 type(t_sic_orbitals) :: sic_orbitals
@@ -110,11 +110,15 @@ real(8), allocatable :: mt_rw(:,:)
 real(8), allocatable :: mt_spx(:,:)
 ! weights of Lebedev mesh for LAPW muffin-tins 
 real(8), allocatable :: mt_tpw(:)
+! forward transformation from complex spherical harmonics to coordinates
+complex(8), allocatable :: mt_ylmf(:,:)
+
 
 complex(8), allocatable :: s_wanlm(:,:,:,:)
-complex(8), allocatable :: s_pwanlm(:,:,:,:)
+!complex(8), allocatable :: s_pwanlm(:,:,:,:)
 complex(8), allocatable :: s_wvlm(:,:,:,:)
-complex(8), allocatable :: s_pwvlm(:,:,:,:)
+!complex(8), allocatable :: s_pwvlm(:,:,:,:)
+
 complex(8), allocatable :: s_wankmt(:,:,:,:,:,:)
 complex(8), allocatable :: s_wankir(:,:,:,:)
 complex(8), allocatable :: s_wvkmt(:,:,:,:,:,:)
@@ -635,27 +639,35 @@ deallocate(rhotp,rholm,totrholm)
 deallocate(vhalm,extp,ectp,exclm,vxtp,vctp,vxclm)
 end subroutine     
 
-complex(8) function s_zfinp(tsh,ld,zfmt1,zfmt2,zfir1,zfir2,zfrac)
+complex(8) function s_zfinp(tsh,tpw,ld,ng,zfmt1,zfmt2,zfir1,zfir2,zfrac)
 use modmain
 implicit none
 logical, intent(in) :: tsh
+logical, intent(in) :: tpw
 integer, intent(in) :: ld
+integer, intent(in) :: ng
 complex(8), intent(in) :: zfmt1(ld,nrmtmax,natmtot)
 complex(8), intent(in) :: zfmt2(ld,nrmtmax,natmtot)
-complex(8), intent(in) :: zfir1(ngrtot)
-complex(8), intent(in) :: zfir2(ngrtot)
+complex(8), intent(in) :: zfir1(*)
+complex(8), intent(in) :: zfir2(*)
 complex(8), optional, intent(inout) :: zfrac(2)
 !
-integer is,ias,ir,itp
+integer is,ias,ir,itp,ig
 complex(8) zsumir,zsummt,zt1
 complex(8) zfr(nrmtmax) 
 complex(8), external :: zdotc
 ! interstitial contribution
 zsumir=zzero
-do ir=1,ngrtot
-  zsumir=zsumir+cfunir(ir)*conjg(zfir1(ir))*zfir2(ir)
-enddo
-zsumir=zsumir*omega/dble(ngrtot)
+if (tpw) then
+  do ig=1,ng
+    zsumir=zsumir+dconjg(zfir1(ig))*zfir2(ig)
+  enddo
+else
+  do ir=1,ngrtot
+    zsumir=zsumir+cfunir(ir)*conjg(zfir1(ir))*zfir2(ir)
+  enddo
+  zsumir=zsumir*omega/dble(ngrtot)
+endif
 ! muffin-tin contribution
 zsummt=zzero
 do ias=1,natmtot

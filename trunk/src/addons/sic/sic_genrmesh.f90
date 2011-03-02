@@ -15,7 +15,7 @@ if (allocated(s_r)) deallocate(s_r)
 
 if (imesh.eq.1) then
   x0=1d-7
-  dens0=300.d0
+  dens0=500.d0
   dens1=50.d0
   a=(dens1-dens0)/(sic_wan_cutoff-x0)
   b=dens1-a*sic_wan_cutoff
