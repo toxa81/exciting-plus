@@ -1,5 +1,5 @@
 
-! Copyright (C) 2002-2009 J. K. Dewhurst, S. Sharma and C. Ambrosch-Draxl.
+! Copyright (C) 2002-2010 J. K. Dewhurst, S. Sharma and C. Ambrosch-Draxl.
 ! This file is distributed under the terms of the GNU General Public License.
 ! See the file COPYING for license details.
 
@@ -30,6 +30,7 @@ use modmain
 !   Removed conversion to spherical harmonics, January 2009 (JKD)
 !   Partially de-phased the muffin-tin magnetisation for spin-spirals,
 !    February 2009 (FC, FB & LN)
+!   Optimisations, July 2010 (JKD)
 !EOP
 !BOC
 implicit none
@@ -38,35 +39,25 @@ integer, intent(in) :: ikloc
 complex(8), intent(in) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
 ! local variables
-integer nsd,ispn,jspn,is,ia,ias,ist,nstsvloc,jloc
-integer ir,irc,itp,igk,ifg,i,j,n,ik,natmtotloc,iasloc
+integer ispn,jspn,ist
+integer is,ia,ias,i,j,n,ik,natmtotloc,iasloc,nstsvloc,jloc
+integer ir,irc,itp,igk,ifg
 real(8) wo,t1,t2,t3
 real(8) ts0,ts1
 complex(8) zq(2),zt1,zt2,zt3
 ! automatic arrays
 logical done(nstfv,nspnfv)
 ! allocatable arrays
-real(8), allocatable :: rfmt(:,:,:)
 complex(8), allocatable :: apwalm(:,:,:,:,:)
 complex(8), allocatable :: wfmt1(:,:)
 complex(8), allocatable :: wfmt2(:,:,:,:)
 complex(8), allocatable :: wfmt3(:,:,:)
-complex(8), allocatable :: zfft(:,:)
-ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+complex(8), allocatable :: wfir(:,:)
 call timesec(ts0)
-if (spinpol) then
-  if (ncmag) then
-    nsd=4
-  else
-    nsd=2
-  end if
-else
-  nsd=1
-end if
-!----------------------------!
-!     muffin-tin density     !
-!----------------------------!
-allocate(rfmt(lmmaxvr,nrcmtmax,nsd))
+ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+!----------------------------------------------!
+!     muffin-tin density and magnetisation     !
+!----------------------------------------------!
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
 allocate(wfmt1(lmmaxvr,nrcmtmax))
 if (tevecsv) allocate(wfmt2(lmmaxvr,nrcmtmax,nstfv,nspnfv))
@@ -83,13 +74,12 @@ do iasloc=1,natmtotloc
   ia=ias2ia(ias)
   n=lmmaxvr*nrcmt(is)
 ! de-phasing factor for spin-spirals
-  if (spinsprl) then
+  if (spinsprl.and.ssdph) then
     t1=-0.5d0*dot_product(vqcss(:),atposc(:,ia,is))
     zq(1)=cmplx(cos(t1),sin(t1),8)
     zq(2)=conjg(zq(1))
   end if
   done(:,:)=.false.
-  rfmt(:,:,:)=0.d0
   do j=1,nstsv
     wo=wkpt(ik)*occsv(j,ik)
     if (abs(wo).gt.epsocc) then
@@ -129,66 +119,64 @@ do iasloc=1,natmtotloc
         call zgemm('N','N',lmmaxvr,nrcmt(is),lmmaxvr,zone,zbshtvr,lmmaxvr, &
          wfmt1,lmmaxvr,zzero,wfmt3,lmmaxvr)
       end if
-! add to the spin density matrix
+! add to density and magnetisation
       if (spinpol) then
 ! spin-polarised
-        do irc=1,nrcmt(is)
-          do itp=1,lmmaxvr
-            zt1=wfmt3(itp,irc,1)
-            zt2=wfmt3(itp,irc,2)
-            rfmt(itp,irc,1)=rfmt(itp,irc,1)+wo*(dble(zt1)**2+aimag(zt1)**2)
-            rfmt(itp,irc,2)=rfmt(itp,irc,2)+wo*(dble(zt2)**2+aimag(zt2)**2)
-            if (ncmag) then
+        if (ncmag) then
+! non-collinear
+          irc=0
+          do ir=1,nrmt(is),lradstp
+            irc=irc+1
+            do itp=1,lmmaxvr
+              zt1=wfmt3(itp,irc,1)
+              zt2=wfmt3(itp,irc,2)
               zt3=zt1*conjg(zt2)
-              rfmt(itp,irc,3)=rfmt(itp,irc,3)+wo*dble(zt3)
-              rfmt(itp,irc,4)=rfmt(itp,irc,4)+wo*aimag(zt3)
-            end if
+              t1=dble(zt1)**2+aimag(zt1)**2
+              t2=dble(zt2)**2+aimag(zt2)**2
+              rhomt(itp,ir,ias)=rhomt(itp,ir,ias)+wo*(t1+t2)
+              magmt(itp,ir,ias,1)=magmt(itp,ir,ias,1)+2.d0*wo*dble(zt3)
+              magmt(itp,ir,ias,2)=magmt(itp,ir,ias,2)-2.d0*wo*aimag(zt3)
+              magmt(itp,ir,ias,3)=magmt(itp,ir,ias,3)+wo*(t1-t2)
+            end do
           end do
-        end do
+        else
+! collinear
+          irc=0
+          do ir=1,nrmt(is),lradstp
+            irc=irc+1
+            do itp=1,lmmaxvr
+              t1=dble(wfmt3(itp,irc,1))**2+aimag(wfmt3(itp,irc,1))**2
+              t2=dble(wfmt3(itp,irc,2))**2+aimag(wfmt3(itp,irc,2))**2
+              rhomt(itp,ir,ias)=rhomt(itp,ir,ias)+wo*(t1+t2)
+              magmt(itp,ir,ias,1)=magmt(itp,ir,ias,1)+wo*(t1-t2)
+            end do
+          end do
+        end if
       else
 ! spin-unpolarised
-        do irc=1,nrcmt(is)
-          do itp=1,lmmaxvr
-            zt1=wfmt3(itp,irc,1)
-            rfmt(itp,irc,1)=rfmt(itp,irc,1)+wo*(dble(zt1)**2+aimag(zt1)**2)
-          end do
+        irc=0
+        do ir=1,nrmt(is),lradstp
+          irc=irc+1
+          rhomt(:,ir,ias)=rhomt(:,ir,ias) &
+           +wo*(dble(wfmt3(:,irc,1))**2+aimag(wfmt3(:,irc,1))**2)
         end do
       end if
-    end if
-  end do
-! add to rhomt and magmt
-  irc=0
-  do ir=1,nrmt(is),lradstp
-    irc=irc+1
-    if (spinpol) then
-! spin-polarised
-      if (ncmag) then
-        magmt(:,ir,ias,1)=magmt(:,ir,ias,1)+2.d0*rfmt(:,irc,3)
-        magmt(:,ir,ias,2)=magmt(:,ir,ias,2)-2.d0*rfmt(:,irc,4)
-        magmt(:,ir,ias,3)=magmt(:,ir,ias,3)+rfmt(:,irc,1)-rfmt(:,irc,2)
-      else
-        magmt(:,ir,ias,1)=magmt(:,ir,ias,1)+rfmt(:,irc,1)-rfmt(:,irc,2)
-      end if
-      rhomt(:,ir,ias)=rhomt(:,ir,ias)+rfmt(:,irc,1)+rfmt(:,irc,2)
-    else
-! spin-unpolarised
-      rhomt(:,ir,ias)=rhomt(:,ir,ias)+rfmt(:,irc,1)
     end if
   end do
 end do
-deallocate(rfmt,apwalm,wfmt1,wfmt3)
+deallocate(apwalm,wfmt1,wfmt3)
 if (tevecsv) deallocate(wfmt2)
-!------------------------------!
-!     interstitial density     !
-!------------------------------!
-allocate(zfft(ngrtot,nspinor))
+!------------------------------------------------!
+!     interstitial density and magnetisation     !
+!------------------------------------------------!
+allocate(wfir(ngrtot,nspinor))
 nstsvloc=mpi_grid_map(nstsv,dim2)
 do jloc=1,nstsvloc
   j=mpi_grid_map(nstsv,dim2,loc=jloc)
   wo=wkpt(ik)*occsv(j,ik)
   if (abs(wo).gt.epsocc) then
-    t1=wo/omega
-    zfft(:,:)=0.d0
+    t3=wo/omega
+    wfir(:,:)=0.d0
     if (tevecsv) then
 ! generate spinor wavefunction from second-variational eigenvectors
       i=0
@@ -204,7 +192,7 @@ do jloc=1,nstsvloc
           if (abs(dble(zt1))+abs(aimag(zt1)).gt.epsocc) then
             do igk=1,ngk(jspn,ik)
               ifg=igfft(igkig(igk,jspn,ikloc))
-              zfft(ifg,ispn)=zfft(ifg,ispn)+zt1*evecfv(igk,ist,jspn)
+              wfir(ifg,ispn)=wfir(ifg,ispn)+zt1*evecfv(igk,ist,jspn)
             end do
           end if
         end do
@@ -213,40 +201,45 @@ do jloc=1,nstsvloc
 ! spin-unpolarised wavefunction
       do igk=1,ngk(1,ik)
         ifg=igfft(igkig(igk,1,ikloc))
-        zfft(ifg,1)=evecfv(igk,j,1)
+        wfir(ifg,1)=evecfv(igk,j,1)
       end do
     end if
 ! Fourier transform wavefunction to real-space
     do ispn=1,nspinor
-      call zfftifc(3,ngrid,1,zfft(:,ispn))
+      call zfftifc(3,ngrid,1,wfir(:,ispn))
     end do
+! add to density and magnetisation
     if (spinpol) then
 ! spin-polarised
-      do ir=1,ngrtot
-        zt1=zfft(ir,1)
-        zt2=zfft(ir,2)
-        t2=dble(zt1)**2+aimag(zt1)**2
-        t3=dble(zt2)**2+aimag(zt2)**2
-        rhoir(ir)=rhoir(ir)+t1*(t2+t3)
-        if (ncmag) then
+      if (ncmag) then
+! non-collinear
+        do ir=1,ngrtot
+          zt1=wfir(ir,1)
+          zt2=wfir(ir,2)
           zt3=zt1*conjg(zt2)
-          magir(ir,1)=magir(ir,1)+2.d0*t1*dble(zt3)
-          magir(ir,2)=magir(ir,2)-2.d0*t1*aimag(zt3)
-          magir(ir,3)=magir(ir,3)+t1*(t2-t3)
-        else
-          magir(ir,1)=magir(ir,1)+t1*(t2-t3)
-        end if
-      end do
+          t1=dble(zt1)**2+aimag(zt1)**2
+          t2=dble(zt2)**2+aimag(zt2)**2
+          rhoir(ir)=rhoir(ir)+t3*(t1+t2)
+          magir(ir,1)=magir(ir,1)+2.d0*t3*dble(zt3)
+          magir(ir,2)=magir(ir,2)-2.d0*t3*aimag(zt3)
+          magir(ir,3)=magir(ir,3)+t3*(t1-t2)
+        end do
+      else
+! collinear
+        do ir=1,ngrtot
+          t1=dble(wfir(ir,1))**2+aimag(wfir(ir,1))**2
+          t2=dble(wfir(ir,2))**2+aimag(wfir(ir,2))**2
+          rhoir(ir)=rhoir(ir)+t3*(t1+t2)
+          magir(ir,1)=magir(ir,1)+t3*(t1-t2)
+        end do
+      end if
     else
 ! spin-unpolarised
-      do ir=1,ngrtot
-        zt1=zfft(ir,1)
-        rhoir(ir)=rhoir(ir)+t1*(dble(zt1)**2+aimag(zt1)**2)
-      end do
+      rhoir(:)=rhoir(:)+t3*(dble(wfir(:,1))**2+aimag(wfir(:,1))**2)
     end if
   end if
 end do
-deallocate(zfft)
+deallocate(wfir)
 call timesec(ts1)
 timerho=timerho+ts1-ts0
 return
