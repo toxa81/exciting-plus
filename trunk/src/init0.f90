@@ -340,14 +340,7 @@ allocate(spvr(spnrmax,nspecies))
 ! allocate core state eigenvalue array and set to default
 if (allocated(evalcr)) deallocate(evalcr)
 allocate(evalcr(spnstmax,natmtot))
-do is=1,nspecies
-  do ia=1,natoms(is)
-    ias=idxas(ia,is)
-    do ist=1,spnst(is)
-      evalcr(ist,ias)=speval(ist,is)
-    end do
-  end do
-end do
+evalcr=0.d0
 ! allocate core state radial wavefunction array
 if (allocated(rwfcr)) deallocate(rwfcr)
 allocate(rwfcr(spnrmax,2,spnstmax,natmtot))
