@@ -3,8 +3,9 @@ use modmain
 use mod_sic
 implicit none
 integer ik,ikloc,ispn,ld,ierr,j1,j2,i
-integer ias,ig,ist,ir,j
+integer ias,ig,ist,ir,j,itp
 complex(8) zt1,zt2(2)
+real(8) t1
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wffvmt(:,:,:,:)
 complex(8), allocatable :: ovlp(:,:)
@@ -61,10 +62,6 @@ do ikloc=1,nkptloc
     apwalm)
 
 ! == code #1 == Bloch sums of W_n and (W*V)_n
-  !do ir=1,ngrtot
-  !  expikr(ir)=exp(zi*dot_product(vkc(:,ik),vgrc(:,ir)))
-  !enddo
-
   do ist=1,nstfv
     wfmt=zzero
 ! generate first-variational wave function
@@ -75,6 +72,21 @@ do ikloc=1,nkptloc
       call zgemm('T','N',mt_ntp,nrmt(ias2is(ias)),lmmaxvr,zone,mt_ylmf,lmmaxvr,&
        wfmt_,lmmaxvr,zzero,wfmt(1,1,ias),mt_ntp)
     enddo
+    !if (ist.eq.1.and.ik.eq.1) then
+    !  do ir=1,nrmt(1)
+    !    t1=0.d0
+    !    do itp=1,mt_ntp
+    !      t1=t1+abs(abs(s_wankmt(itp,ir,1,1,1,ikloc))-abs(wfmt(itp,ir,1)))
+    !    enddo
+    !    itp=3
+    !    write(100,*)spr(ir,1),t1,ir
+    !    write(101,*)spr(ir,1),dreal(s_wankmt(itp,ir,1,1,1,ikloc)),&
+    !      dimag(s_wankmt(itp,ir,1,1,1,ikloc))
+    !    write(102,*)spr(ir,1),dreal(wfmt(itp,ir,1)),dimag(wfmt(itp,ir,1))
+    !  enddo
+    !  call bstop
+    !endif
+
     do j=1,sic_wantran%nwan
       zt2=zzero
       do ispn=1,nspinor
@@ -84,8 +96,20 @@ do ikloc=1,nkptloc
         !sic_wvb(j,ist,ispn,ikloc)=zfinp_(s_wvkmt(1,1,1,ispn,j,ikloc),wfmt,&
         !  s_wvkir(1,ispn,j,ikloc),wfir)
       enddo
-      write(*,*)"partial : ",dreal(zt2)
+      write(*,*)"total :",sic_wb(j,ist,1,ikloc),"partial : ",dreal(zt2)
     enddo
+   ! if (ist.eq.1.and.ik.eq.1) then
+   !     zt1=s_zfinp(.false.,.true.,mt_ntp,ngk(1,ik),&
+   !       s_wankmt(1,1,1,1,1,ikloc),s_wankmt(1,1,1,1,1,ikloc),&
+   !       s_wankir(1,ispn,j,ikloc),evecfvloc(1,ist,1,ikloc),zt2)
+   !     write(*,*)"<w_nk|w_nk>:",zt1
+   !      
+   !      zt1=s_zfinp(.false.,.true.,mt_ntp,ngk(1,ik),&
+   !       wfmt,wfmt,&
+   !       s_wankir(1,ispn,j,ikloc),evecfvloc(1,ist,1,ikloc),zt2)
+   !     write(*,*)"<fv|fv>:",zt1
+   !   endif
+ 
   enddo
 
 !  call genwffvmt(lmaxvr,lmmaxvr,ngk(1,ik),evecfvloc(1,1,1,ikloc),&
@@ -143,8 +167,8 @@ do ikloc=1,nkptloc
 !  sic_wvb(:,:,:,ikloc)=wvb(:,:,:)
 
   wb=sic_wb(:,:,:,ikloc)
-  wvb=sic_wvb(:,:,:,ikloc)
-  write(*,*)"tot:",wb(1,1,1)
+  !wvb=sic_wvb(:,:,:,ikloc)
+  !write(*,*)"tot:",wb(1,1,1)
 
 ! compute overlap matrix
   ovlp=zzero

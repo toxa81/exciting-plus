@@ -3,8 +3,9 @@ use modmain
 use mod_sic
 implicit none
 integer ik,ikloc,j,n,it,ias,is,ia,ir,itp,ispn,ntrloc,itloc
+integer itp1
 real(8) x(3)
-complex(8) expikt
+complex(8) expikt,zt1
 !
 s_wankmt=zzero
 s_wvkmt=zzero
@@ -37,5 +38,19 @@ do ikloc=1,nkptloc
       dims=(/dim2/),all=.true.)
   enddo !j
 enddo !ikloc
+!if (mpi_grid_root()) then
+!  open(210,file="blochsum_from_bt_wannier.dat",form="formatted",&
+!    status="replace")
+!  do ir=1,nrmt(1)
+!    !t1=0.d0
+!    !do itp=1,mt_ntp
+!    !  t1=t1+abs(abs(s_wankmt(itp,ir,1,1,1,ikloc))-abs(wfmt(itp,ir,1)))
+!    !enddo
+!    itp=3
+!    write(210,'(3G18.10)')spr(ir,1),dreal(s_wankmt(itp,ir,1,1,1,1)),&
+!      dimag(s_wankmt(itp,ir,1,1,1,1))
+!  enddo
+!  close(210)
+!endif
 return
 end

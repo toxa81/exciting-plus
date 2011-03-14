@@ -88,18 +88,20 @@ integer lmmaxwan
 ! number of points on the big sphere
 integer s_ntp
 data s_ntp/266/
-! coordinates of the unit vectors of the big sphere
-real(8), allocatable :: s_spx(:,:)
+! spherical (theta,phi) coordinates of the covering points
+real(8), allocatable :: s_tp(:,:)
+! Cartesian coordinates of the covering points
+real(8), allocatable :: s_x(:,:)
 ! weights for spherical integration
 real(8), allocatable :: s_tpw(:)
 ! forward transformation from real spherical harmonics to coordinates
 real(8), allocatable :: s_rlmf(:,:)
 ! backward transformation from coordinates to real spherical harmonics
 real(8), allocatable :: s_rlmb(:,:)
-! backward transformation from coordinates to complex spherical harmonics
-complex(8), allocatable :: s_ylmb(:,:)
 ! forward transformation from complex spherical harmonics to coordinates
 complex(8), allocatable :: s_ylmf(:,:)
+! backward transformation from coordinates to complex spherical harmonics
+complex(8), allocatable :: s_ylmb(:,:)
 
 ! number of points for Lebedev mesh for LAPW muffin-tins 
 integer mt_ntp
@@ -113,11 +115,8 @@ real(8), allocatable :: mt_tpw(:)
 ! forward transformation from complex spherical harmonics to coordinates
 complex(8), allocatable :: mt_ylmf(:,:)
 
-
 complex(8), allocatable :: s_wanlm(:,:,:,:)
-!complex(8), allocatable :: s_pwanlm(:,:,:,:)
 complex(8), allocatable :: s_wvlm(:,:,:,:)
-!complex(8), allocatable :: s_pwvlm(:,:,:,:)
 
 complex(8), allocatable :: s_wankmt(:,:,:,:,:,:)
 complex(8), allocatable :: s_wankir(:,:,:,:)
@@ -138,118 +137,102 @@ integer, parameter :: wp_exc=10
 
 contains
 
-subroutine s_get_wffvval(x,ngp,vpc,vgpc,wffvmt,wffvit,wffvval)
-use modmain
-implicit none
-real(8), intent(in) :: x(3)
-integer, intent(in) :: ngp
-real(8), intent(in) :: vpc(3)
-real(8), intent(in) :: vgpc(3,ngkmax)
-complex(8), intent(in) :: wffvmt(lmmaxvr,nufrmax,natmtot)
-complex(8), intent(in) :: wffvit(nmatmax)
-complex(8), intent(out) :: wffvval
-integer is,ia,ias,ir0,io,l,j,i,lm,ig
-integer ntr(3)
-real(8) vtc(3),vr0(3),r0,tp(2),t1
-real(8) ur(0:lmaxvr,nufrmax)
-complex(8) zt1,ylm(lmmaxvr)
-real(8) ya(nprad),c(nprad)
-real(8), external :: polynom
-logical, external :: vrinmt
-!
-wffvval=zzero
-if (vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
-  ias=idxas(ia,is)
-  call sphcrd(vr0,t1,tp)
-  call genylm(lmaxvr,tp,ylm)
-  vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
-  ur=0.d0
-  do l=0,lmaxvr
-    do io=1,nufr(l,is)
-      do j=1,nprad
-        i=ir0+j-1
-        ya(j)=ufr(i,l,io,ias2ic(ias))
-      end do
-      ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
-    enddo !io
-  enddo !l
-  do lm=1,lmmaxvr
-    l=lm2l(lm)
-    do io=1,nufr(l,is)
-      wffvval=wffvval+wffvmt(lm,io,ias)*ur(l,io)*ylm(lm)
-    enddo !io
-  enddo !lm
-  wffvval=wffvval*exp(zi*dot_product(vpc(:),vtc(:)))
-else
-  do ig=1,ngp
-    zt1=exp(zi*dot_product(x(:),vgpc(:,ig)))/sqrt(omega)
-    wffvval=wffvval+zt1*wffvit(ig)
-  enddo
-endif
-return
-end subroutine
+!subroutine s_get_wffvval(x,ngp,vpc,vgpc,wffvmt,wffvit,wffvval)
+!use modmain
+!implicit none
+!real(8), intent(in) :: x(3)
+!integer, intent(in) :: ngp
+!real(8), intent(in) :: vpc(3)
+!real(8), intent(in) :: vgpc(3,ngkmax)
+!complex(8), intent(in) :: wffvmt(lmmaxvr,nufrmax,natmtot)
+!complex(8), intent(in) :: wffvit(nmatmax)
+!complex(8), intent(out) :: wffvval
+!integer is,ia,ias,ir0,io,l,j,i,lm,ig
+!integer ntr(3)
+!real(8) vtc(3),vr0(3),r0,tp(2),t1
+!real(8) ur(0:lmaxvr,nufrmax)
+!complex(8) zt1,ylm(lmmaxvr)
+!real(8) ya(nprad),c(nprad)
+!real(8), external :: polynom
+!logical, external :: vrinmt
+!!
+!wffvval=zzero
+!if (vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
+!  ias=idxas(ia,is)
+!  call sphcrd(vr0,t1,tp)
+!  call genylm(lmaxvr,tp,ylm)
+!  vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
+!  ur=0.d0
+!  do l=0,lmaxvr
+!    do io=1,nufr(l,is)
+!      do j=1,nprad
+!        i=ir0+j-1
+!        ya(j)=ufr(i,l,io,ias2ic(ias))
+!      end do
+!      ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
+!    enddo !io
+!  enddo !l
+!  do lm=1,lmmaxvr
+!    l=lm2l(lm)
+!    do io=1,nufr(l,is)
+!      wffvval=wffvval+wffvmt(lm,io,ias)*ur(l,io)*ylm(lm)
+!    enddo !io
+!  enddo !lm
+!  wffvval=wffvval*exp(zi*dot_product(vpc(:),vtc(:)))
+!else
+!  do ig=1,ngp
+!    zt1=exp(zi*dot_product(x(:),vgpc(:,ig)))/sqrt(omega)
+!    wffvval=wffvval+zt1*wffvit(ig)
+!  enddo
+!endif
+!return
+!end subroutine
 
-!integer function s_gen_stepf(x)
+!subroutine s_get_ufrval(x,vpc,ias,ufrval)
 !use modmain
 !implicit none
 !! arguments
 !real(8), intent(in) :: x(3)
+!real(8), intent(in) :: vpc(3)
+!integer, intent(out) :: ias
+!complex(8), intent(out) :: ufrval(lmmaxvr,nufrmax)
 !! local variables
-!integer is,ia,ir0
+!integer is,ia,ir0,io,l,j,i,lm
 !integer ntr(3)
-!real(8) vr0(3),r0
+!real(8) vtc(3),vr0(3),r0,tp(2),t1
+!real(8) ur(0:lmaxvr,nufrmax)
+!complex(8) zt1,ylm(lmmaxvr)
+!real(8) ya(nprad),c(nprad)
+!real(8), external :: polynom
 !logical, external :: vrinmt
 !!
-!s_gen_stepf=0
-!if (.not.vrinmt(x,is,ia,ntr,vr0,ir0,r0)) s_gen_stepf=1
+!ufrval=zzero
+!ias=-1
+!if (vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
+!  ias=idxas(ia,is)
+!  call sphcrd(vr0,t1,tp)
+!  call genylm(lmaxvr,tp,ylm)
+!  vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
+!  ur=0.d0
+!  do l=0,lmaxvr
+!    do io=1,nufr(l,is)
+!      do j=1,nprad
+!        i=ir0+j-1
+!        ya(j)=ufr(i,l,io,ias2ic(ias))
+!      end do
+!      ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
+!    enddo !io
+!  enddo !l
+!  zt1=exp(zi*dot_product(vpc(:),vtc(:)))
+!  do lm=1,lmmaxvr
+!    l=lm2l(lm)
+!    do io=1,nufr(l,is)
+!      ufrval(lm,io)=ur(l,io)*ylm(lm)*zt1
+!    enddo !io
+!  enddo !lm
+!endif
 !return
-!end function
-
-subroutine s_get_ufrval(x,vpc,ias,ufrval)
-use modmain
-implicit none
-! arguments
-real(8), intent(in) :: x(3)
-real(8), intent(in) :: vpc(3)
-integer, intent(out) :: ias
-complex(8), intent(out) :: ufrval(lmmaxvr,nufrmax)
-! local variables
-integer is,ia,ir0,io,l,j,i,lm
-integer ntr(3)
-real(8) vtc(3),vr0(3),r0,tp(2),t1
-real(8) ur(0:lmaxvr,nufrmax)
-complex(8) zt1,ylm(lmmaxvr)
-real(8) ya(nprad),c(nprad)
-real(8), external :: polynom
-logical, external :: vrinmt
-!
-ufrval=zzero
-ias=-1
-if (vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
-  ias=idxas(ia,is)
-  call sphcrd(vr0,t1,tp)
-  call genylm(lmaxvr,tp,ylm)
-  vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
-  ur=0.d0
-  do l=0,lmaxvr
-    do io=1,nufr(l,is)
-      do j=1,nprad
-        i=ir0+j-1
-        ya(j)=ufr(i,l,io,ias2ic(ias))
-      end do
-      ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
-    enddo !io
-  enddo !l
-  zt1=exp(zi*dot_product(vpc(:),vtc(:)))
-  do lm=1,lmmaxvr
-    l=lm2l(lm)
-    do io=1,nufr(l,is)
-      ufrval(lm,io)=ur(l,io)*ylm(lm)*zt1
-    enddo !io
-  enddo !lm
-endif
-return
-end subroutine
+!end subroutine
 
 subroutine s_get_wanval(twan,n,x,wanval)
 use modmain
@@ -269,9 +252,13 @@ complex(8) zt1,zt2,ylm(lmmaxvr)
 real(8) ya(nprad),c(nprad)
 real(8), external :: polynom
 logical, external :: vrinmt
+complex(8), external :: ylm_val
 complex(8) expigr(s_ngvec)
 complex(8) zm1(lmmaxvr,nufrmax,nspinor),zm2(nspinor)
 !
+!call sphcrd(x,t1,tp)
+!wanval=ylm_val(2,0,tp(1),tp(2))
+!return
 wanval=zzero
 x0(:)=x(:)-wanpos(:,n)
 if (sum(x0(:)**2).gt.(sic_wan_cutoff**2)) return
@@ -328,40 +315,6 @@ endif
 return
 end subroutine
 
-!complex(8) function s_rinteg()
-!use modmain
-!implicit none
-!complex(8), intent(in) :: fr(s_nr)
-!real(8), allocatable :: fr1(:),fr2(:),gr(:),cf(:,:)
-!
-!allocate(fr1(s_nr))
-!allocate(fr2(s_nr))
-!allocate(gr(s_nr))
-!allocate(cf(4,s_nr))
-!zsummt=zzero
-!do is=1,nspecies
-!  do ia=1,natoms(is)
-!    ias=idxas(ia,is)
-!    do ir=1,nrmt(is)
-!      zf1(ir)=zdotc(lmmaxvr,zfmt1(1,ir,ias),1,zfmt2(1,ir,ias),1)*spr(ir,is)**2
-!      fr1(ir)=dreal(zf1(ir))
-!      fr2(ir)=dimag(zf1(ir))
-!    enddo
-!    call fderiv(-1,nrmt(is),spr(1,is),fr1,gr,cf)
-!    t1=gr(nrmt(is))
-!    call fderiv(-1,nrmt(is),spr(1,is),fr2,gr,cf)
-!    t2=gr(nrmt(is))
-!    zsummt=zsummt+dcmplx(t1,t2)
-!    !do ir=1,nrmt(is)-1
-!    !  zsummt=zsummt+0.5d0*(zf1(ir)+zf1(ir+1))*(spr(ir+1,is)-spr(ir,is))
-!    !enddo
-!  end do
-!end do
-!
-
-!return
-!end
-
 complex(8) function s_func_val(x,flm)
 use modmain
 implicit none
@@ -410,6 +363,16 @@ call genylm(lmaxwan,tp,ylm)
 !  zval=zval+dcmplx(t1,t2)*ylm(lm)
 !enddo
 !s_func_val=zval
+
+!if (x0.ge.sic_wan_cutoff) then
+!  zval=zzero
+!  ir1=s_nr
+!  do lm=1,lmmaxwan
+!   zval=zval+flm(lm,ir1)*ylm(lm)
+!  enddo
+!  s_func_val=zval
+!  return
+!endif
 
 ir1=0
 do ir=s_nr-1,1,-1
@@ -468,7 +431,7 @@ complex(8), intent(in) :: f2lm(lmmaxwan,s_nr)
 ! local variables
 complex(8), allocatable :: f2tp_(:,:)
 complex(8), allocatable :: f1tp_(:,:)
-!complex(8), allocatable :: f2lm_(:,:)
+complex(8), allocatable :: f2lm_(:,:)
 complex(8) zprod
 integer ir,itp
 real(8) x1(3),x2(3)
@@ -480,30 +443,32 @@ if (sum(abs(pos1-pos2)).lt.1d-10) then
     zprod=zprod+zdotc(lmmaxwan,f1lm(1,ir),1,f2lm(1,ir),1)*s_rw(ir)
   enddo
 else
-  allocate(f1tp_(s_ntp,s_nr))
+  !allocate(f1tp_(s_ntp,s_nr))
   allocate(f2tp_(s_ntp,s_nr))
-!  allocate(f2lm_(lmmaxwan,s_nr))
+  allocate(f2lm_(lmmaxwan,s_nr))
   f2tp_=zzero
   do ir=1,s_nr
     do itp=1,s_ntp
-      x1(:)=s_spx(:,itp)*s_r(ir)
+      x1(:)=s_x(:,itp)*s_r(ir)
       x2(:)=pos1(:)+x1(:)-pos2(:)
       f2tp_(itp,ir)=s_func_val(x2,f2lm)
     enddo
   enddo !ir
-  call zgemm('T','N',s_ntp,s_nr,lmmaxwan,zone,s_ylmf,lmmaxwan,f1lm,&
-    lmmaxwan,zzero,f1tp_,s_ntp)
-  do ir=1,s_nr
-    do itp=1,s_ntp
-      zprod=zprod+dconjg(f1tp_(itp,ir))*f2tp_(itp,ir)*s_tpw(itp)*s_rw(ir)
-    enddo
-  enddo
-!  call zgemm('T','N',lmmaxwan,s_nr,s_ntp,zone,s_ylmb,s_ntp,f2tp_,&
-!    s_ntp,zzero,f2lm_,lmmaxwan)
+!! convert to spherical coordinates
+!  call zgemm('T','N',s_ntp,s_nr,lmmaxwan,zone,s_ylmf,lmmaxwan,f1lm,&
+!    lmmaxwan,zzero,f1tp_,s_ntp)
 !  do ir=1,s_nr
-!    zprod=zprod+zdotc(lmmaxwan,f1lm(1,ir),1,f2lm_(1,ir),1)*s_rw(ir)
+!    do itp=1,s_ntp
+!      zprod=zprod+dconjg(f1tp_(itp,ir))*f2tp_(itp,ir)*s_tpw(itp)*s_rw(ir)
+!    enddo
 !  enddo
-  deallocate(f1tp_,f2tp_)
+! convert f2 to spherical harmonics
+  call zgemm('T','N',lmmaxwan,s_nr,s_ntp,zone,s_ylmb,s_ntp,f2tp_,&
+    s_ntp,zzero,f2lm_,lmmaxwan)
+  do ir=1,s_nr
+    zprod=zprod+zdotc(lmmaxwan,f1lm(1,ir),1,f2lm_(1,ir),1)*s_rw(ir)
+  enddo
+  deallocate(f2tp_,f2lm_)
 endif
 s_dot_ll=zprod
 return
@@ -519,7 +484,7 @@ complex(8), intent(in) :: wantp(s_ntp,s_nr,nspinor)
 complex(8), intent(out) :: wvlm(lmmaxwan,s_nr,nspinor)
 real(8), intent(out) :: wanprop(nwanprop)
 ! local variables
-integer jr,ir,l,lm,ispn,lm1,lm2,lm3
+integer jr,ir,l,lm,ispn,lm1,lm2,lm3,lmmaxwanloc,lmloc
 real(8) t1
 complex(8) zt1
 real(8), allocatable :: rhotp(:,:,:)
@@ -558,7 +523,9 @@ do ispn=1,nspinor
 enddo
 ! compute Hartree potential
 vhalm=0.d0
-do lm=1,lmmaxwan
+lmmaxwanloc=mpi_grid_map2(lmmaxwan,dims=(/dim_k,dim2/))
+do lmloc=1,lmmaxwanloc
+  lm=mpi_grid_map2(lmmaxwan,dims=(/dim_k,dim2/),loc=lmloc)
   l=lm2l(lm)
   do ir=1,s_nr
     t1=0.d0
@@ -571,6 +538,7 @@ do lm=1,lmmaxwan
     vhalm(lm,ir)=t1*fourpi/(2*l+1)
   enddo
 enddo
+call mpi_grid_reduce(vhalm(1,1),lmmaxwan*s_nr,all=.true.)
 ! compute XC potential
 if (spinpol) then
   call xcifc(xctype,n=s_ntp*s_nr,rhoup=rhotp(1,1,1),rhodn=rhotp(1,1,2),&
@@ -615,7 +583,7 @@ enddo
 wanprop(wp_vsic)=wanprop(wp_vha)+wanprop(wp_vxc)
 ! add Hartree potential to XC
 do ispn=1,nspinor
-  vxclm(:,:,ispn)=vhalm(:,:) !vxclm(:,:,ispn)+vhalm(:,:)
+  vxclm(:,:,ispn)=vxclm(:,:,ispn)+vhalm(:,:)
 enddo
 ! multiply Wannier function with potential and change sign
 wvlm=zzero
@@ -691,27 +659,5 @@ if (present(zfrac)) then
 endif
 return
 end function
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 end module

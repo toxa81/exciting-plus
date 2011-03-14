@@ -9,7 +9,7 @@ integer ik,ikloc,j,n,jas,it,ias,is,ia,ir,itp,ispn,ntrloc,itloc,lm
 integer ig,ig1,l
 real(8) x(3),t1,tp(2),vg(3)
 complex(8), allocatable :: zprod(:,:,:)
-complex(8) zt1,zt2(2),expikt,wanval(nspinor)
+complex(8) zt1,zt2(2),expikt,wanval(nspinor),z4
 complex(8), allocatable :: wgk(:,:)
 real(8), allocatable :: jl(:,:)
 complex(8), allocatable :: zf(:)
@@ -29,7 +29,7 @@ allocate(wankir(ngrtot,nspinor))
 allocate(wantp(mt_ntp,nrmtmax,natmtot,nspinor))
 allocate(wanir(ngrtot,nspinor))
 
-
+z4=zzero
 zprod=zzero
 ntrloc=mpi_grid_map(sic_orbitals%ntr,dim2)
 ! test Bloch sum using exact values of WFs
@@ -50,8 +50,17 @@ if (itest.eq.1) then
             do itp=1,mt_ntp
               x(:)=mt_spx(:,itp)*spr(ir,is)+atposc(:,ia,is)+&
                    sic_orbitals%vtc(:,it)
-              call s_get_wanval(.true.,n,x,wanval)
+              
+              !call s_get_wanval(.true.,n,x,wanval)
+              zt1=s_func_val(x,s_wanlm(1,1,1,j))
+              wanval=zt1
+
               wantp(itp,ir,ias,:)=wanval(:)
+
+              !zt1=s_func_val(x,s_wanlm(1,1,1,j))
+              !z4=z4+zt1
+              !write(*,*)"bt val : ",dreal(zt1),"true val : ",dreal(wanval(1)),"diff : ",&
+              !  abs(zt1-wanval(1)),"  ! x : ",x,sqrt(sum(x**2))
             enddo !itp
           enddo !ir
           call mpi_grid_reduce(wantp(1,1,1,1),mt_ntp*nrmtmax*natmtot*nspinor,&
@@ -61,20 +70,20 @@ if (itest.eq.1) then
       enddo !ias
       call mpi_grid_reduce(wankmt(1,1,1,1),mt_ntp*nrmtmax*natmtot*nspinor,&
         dims=(/dim2/))
-      do itloc=1,ntrloc
-        it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
-        expikt=exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
-        wanir=zzero
-        do ir=1,ngrtot
-          x(:)=vgrc(:,ir)+sic_orbitals%vtc(:,it)
-          call s_get_wanval(twan,n,x,wanval)
-          wanir(ir,:)=wanval(:)
-        enddo
-        call mpi_grid_reduce(wanir(1,1),ngrtot*nspinor,dims=(/dim_k/))
-        wankir(:,:)=wankir(:,:)+expikt*wanir(:,:)
-      enddo !itloc
-      call mpi_grid_reduce(wankir(1,1),ngrtot*nspinor,dims=(/dim2/),&
-        all=.true.)
+      !do itloc=1,ntrloc
+      !  it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
+      !  expikt=exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
+      !  wanir=zzero
+      !  do ir=1,ngrtot
+      !    x(:)=vgrc(:,ir)+sic_orbitals%vtc(:,it)
+      !    call s_get_wanval(twan,n,x,wanval)
+      !    wanir(ir,:)=wanval(:)
+      !  enddo
+      !  call mpi_grid_reduce(wanir(1,1),ngrtot*nspinor,dims=(/dim_k/))
+      !  wankir(:,:)=wankir(:,:)+expikt*wanir(:,:)
+      !enddo !itloc
+      !call mpi_grid_reduce(wankir(1,1),ngrtot*nspinor,dims=(/dim2/),&
+      !  all=.true.)
       zt1=zzero
       zt2=zzero
       do ispn=1,nspinor
@@ -85,6 +94,21 @@ if (itest.eq.1) then
       zprod(2:3,j,ik)=zt2(1:2)
     enddo !j
   enddo !ik
+  !if (mpi_grid_root()) then
+  !  open(210,file="blochsum_from_true_wannier.dat",form="formatted",&
+  !    status="replace")
+  !  do ir=1,nrmt(1)
+  !    !t1=0.d0
+  !    !do itp=1,mt_ntp
+  !    !  t1=t1+abs(abs(s_wankmt(itp,ir,1,1,1,ikloc))-abs(wfmt(itp,ir,1)))
+  !    !enddo
+  !    itp=3
+  !    write(210,'(3G18.10)')spr(ir,1),dreal(wankmt(itp,ir,1,1)),&
+  !      dimag(wankmt(itp,ir,1,1))
+  !  enddo
+  !  close(210)
+  !endif
+
 endif
 if (itest.eq.2) then
   do ikloc=1,1 !nkptloc

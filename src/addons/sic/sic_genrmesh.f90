@@ -2,21 +2,23 @@ subroutine sic_genrmesh
 use modmain
 use mod_sic
 implicit none
-integer nrpole,npt
+integer npole,npt
 real(8), allocatable :: rpole(:)
+real(8), allocatable :: dpole(:)
 integer maxdens
-integer nrpt,i,j,ir,is
-real(8) r0,x,alpha,d1,r0ratio,x0,a,b,c,dens0,dens1
+integer nrpt,i,j,ir,is,nr2,nr4
+real(8) r0,x,alpha,d1,r0ratio,x0,a,b,c,dens0,dens1,t,dx,d,norm
 real(8), allocatable :: rpt(:,:)
-integer, parameter :: imesh=1
+integer, parameter :: imesh=4
 real(8) x1,x2,x3
+real(8), external :: x_aux
 
 if (allocated(s_r)) deallocate(s_r)
 
 if (imesh.eq.1) then
   x0=1d-7
-  dens0=500.d0
-  dens1=50.d0
+  dens0=5000.d0
+  dens1=10.d0
   a=(dens1-dens0)/(sic_wan_cutoff-x0)
   b=dens1-a*sic_wan_cutoff
   c=1-x0*(0.5d0*a*x0+b)
@@ -29,13 +31,28 @@ if (imesh.eq.1) then
   s_r(s_nr)=sic_wan_cutoff
 endif
 if (imesh.eq.2) then
+  x0=1d-7
+  nr2=s_nr/2
+  nr4=nr2/2
+! position of the nearest neigbour
+  x1=8.36960d0 !5.91820d0
+  x2=(x1-x0)/2.d0
+  b=log(x2)-log(x0)
   allocate(s_r(s_nr))
-  x0=1d-9
-  b=log(sic_wan_cutoff/x0)/(s_nr-1)
-  a=x0/exp(b)
-  do ir=1,s_nr
-    s_r(ir)=a*exp(ir*b)
+  do ir=1,nr2
+   t=(ir-1)/dble(nr2-1)
+   s_r(ir)=x0*exp(b*t)
   enddo
+  do ir=nr2+1,nr2+nr4
+   t=(nr2+nr4-ir)/dble(nr4)
+   s_r(ir)=x1-x0*exp(b*abs(t))
+  enddo
+  do ir=nr2+nr4+1,s_nr
+    t=(ir-nr2-nr4)/dble(nr4)
+    s_r(ir)=x1+x0*exp(b*abs(t))
+  enddo
+  sic_wan_cutoff=s_r(s_nr)
+!  b=log(sic_wan_cutoff)-log(x0)
 endif
 if (imesh.eq.3) then
   allocate(s_r(s_nr))
@@ -43,6 +60,28 @@ if (imesh.eq.3) then
   do ir=1,s_nr
     s_r(ir)=x0+(sic_wan_cutoff-x0)*dble(ir-1)/dble(s_nr-1)
   enddo
+endif
+if (imesh.eq.4) then
+  npole=2
+  allocate(rpole(npole))
+  rpole(1)=0.d0
+  rpole(2)=5.91820d0
+  !rpole(3)=8.36960d0
+  !rpole(4)=10.25062d0
+  allocate(s_r(s_nr))
+  b=15.d0
+  do ir=1,s_nr
+    t=(dble(npole)*(ir-1)/dble(s_nr-1))-1.d0
+    x=x_aux(1.d0*(npole-1),2.d0*(sic_wan_cutoff-rpole(npole)),b,t)
+    do j=2,npole
+      x=x+x_aux(1.d0*(j-2),rpole(j)-rpole(j-1),b,t)
+    enddo
+    s_r(ir)=x
+  enddo
+  deallocate(rpole)
+  if (mpi_grid_root()) then
+    write(*,'("[sic_genrmesh] first radial point : ",G18.10)')s_r(1)
+  endif
 endif
 ! generate radial weights for integration
 if (allocated(s_rw)) deallocate(s_rw)
@@ -59,12 +98,7 @@ enddo
 x1=s_r(s_nr-1)
 x2=s_r(s_nr)
 s_rw(s_nr)=-((x1-x2)*(x1**2+2*x1*x2+3*x2**2))/12.d0
- 
-!do ir=1,s_nr-1
-!  s_rw(ir)=s_rw(ir)+0.5d0*(s_r(ir+1)-s_r(ir))*s_r(ir)**2
-!  s_rw(ir+1)=s_rw(ir+1)+0.5d0*(s_r(ir+1)-s_r(ir))*s_r(ir+1)**2
-!enddo
-
+! radial weights for muffin-tins
 if (allocated(mt_rw)) deallocate(mt_rw)
 allocate(mt_rw(nrmtmax,nspecies))
 do is=1,nspecies
@@ -85,7 +119,16 @@ do is=1,nspecies
     call pstop
   endif
 enddo 
-
 return
 end
+
+real(8) function x_aux(t0,h,b,t)
+implicit none
+real(8), intent(in) :: t0
+real(8), intent(in) :: h
+real(8), intent(in) :: b
+real(8), intent(in) :: t
+x_aux=h*(1.d0-1.d0/(exp(b*(t-t0))+1.d0))
+return
+end function
 

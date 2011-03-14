@@ -118,7 +118,8 @@ do ikloc=1,nkptnrloc
   enddo
 enddo
 
-call sic_test_fvprj(151)
+!call sic_readvwan
+!call sic_test_fvprj(151)
 !call sic_test_blochsum(1,.true.,"sic_blochsum_wan.out")
 !call bstop
 
@@ -259,10 +260,7 @@ do ik=1,nkpt
   endif
 enddo
 deallocate(vwank)
-
-!call sic_gengk
 !call sic_test_blochsum(2,.false.,"sic_blochsum_wan_backward.out")
-
 ! signal that now we have computed sic potential and wannier functions
 tsic_wv=.true.
 ! write to HDF5 file
@@ -273,3 +271,4 @@ if (wproc) then
 endif
 return
 end
+
