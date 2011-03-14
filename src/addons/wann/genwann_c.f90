@@ -151,7 +151,7 @@ s=zzero
 do m1=1,nwantot
   do m2=1,nwantot
     do j=1,nstsv
-      s(m1,m2)=s(m1,m2)+wann_u_mtrx(m1,j)*dconjg(wann_u_mtrx(m2,j))
+      s(m1,m2)=s(m1,m2)+dconjg(wann_u_mtrx(m1,j))*wann_u_mtrx(m2,j)
     enddo
   enddo
   sdiag(m1)=s(m1,m1)
@@ -181,8 +181,7 @@ wann_u_mtrx_ort=zzero
 if (ierr.eq.0) then
   do m1=1,nwantot
     do m2=1,nwantot
-      wann_u_mtrx_ort(m1,:)=wann_u_mtrx_ort(m1,:)+wann_u_mtrx(m2,:)*&
-        dconjg(s(m2,m1))
+      wann_u_mtrx_ort(m1,:)=wann_u_mtrx_ort(m1,:)+wann_u_mtrx(m2,:)*s(m2,m1)
     enddo
   enddo
   wann_u_mtrx=wann_u_mtrx_ort
