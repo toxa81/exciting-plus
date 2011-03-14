@@ -17,13 +17,11 @@ real(8), allocatable :: wanprop(:,:)
 complex(8), allocatable :: ovlp(:)
 complex(8), allocatable :: om(:,:)
 complex(8), allocatable :: wantp(:,:,:)
-!complex(8), allocatable :: pwantp(:,:,:)
-integer, parameter :: iovlp=2 
-integer, parameter :: irms=1
+integer, parameter :: iovlp=1 
+integer, parameter :: irms=0
 complex(8), external :: zdotc
 !
 allocate(wantp(s_ntp,s_nr,nspinor))
-!allocate(pwantp(s_ntp,s_nr,nspinor))
 allocate(wanprop(nwanprop,sic_wantran%nwan))
 if (wproc) then
   write(fout,*)
@@ -41,6 +39,25 @@ if (wproc) then
   write(fout,'("spherical grid error : ",G18.10)')abs(1.d0-t1)
   call flushifc(fout)
 endif
+
+!open(210,file="wannier_Ne_s__[100].dat",form="formatted",status="replace")
+!do ir=1,s_nr
+!  x(:)=(/1.d0,0.d0,0.d0/)*s_r(ir)
+!  call s_get_wanval(.true.,1,x,wanval)
+!  z1=wanval(1)
+!  write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
+!enddo
+!close(210)
+!
+!open(210,file="wannier_Ne_s__[110].dat",form="formatted",status="replace")
+!do ir=1,s_nr
+!  x(:)=((/1.d0,1.d0,0.d0/)/sqrt(2.d0))*s_r(ir)
+!  call s_get_wanval(.true.,1,x,wanval)
+!  z1=wanval(1)
+!  write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
+!enddo
+!close(210)
+
 call timer_start(t_sic_wan,reset=.true.)
 call timer_reset(t_sic_wan_gen)
 call timer_reset(t_sic_wan_rms)
@@ -53,23 +70,18 @@ do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
 ! generate WF on a spherical mesh
   wantp=zzero
-  !pwantp=zzero
   call timer_start(t_sic_wan_gen)
   do irloc=1,nrloc
     ir=mpi_grid_map(s_nr,dim2,loc=irloc)
     do itp=1,s_ntp
-      vrc(:)=s_spx(:,itp)*s_r(ir)+wanpos(:,n)
+      vrc(:)=s_x(:,itp)*s_r(ir)+wanpos(:,n)
       call s_get_wanval(.true.,n,vrc,wanval)
       wantp(itp,ir,:)=wanval(:)
-      !call s_get_wanval(.false.,n,vrc,wanval)
-      !pwantp(itp,ir,:)=wanval(:)
     enddo
   enddo
   call mpi_grid_reduce(wantp(1,1,1),s_ntp*s_nr*nspinor,all=.true.)
-  !call mpi_grid_reduce(pwantp(1,1,1),s_ntp*s_nr*nspinor,all=.true.)
 ! convert to spherical harmonics
   call sic_genwanlm(fout,n,wantp,s_wanlm(1,1,1,j))
-  !call sic_genwanlm(fout,n,pwantp,s_pwanlm(1,1,1,j))
 ! compute norm
   t1=0.d0
   z1=zzero
@@ -96,7 +108,7 @@ do j=1,sic_wantran%nwan
   x=0.d0
   do ir=1,s_nr
     do itp=1,s_ntp
-      vrc(:)=s_spx(:,itp)*s_r(ir)
+      vrc(:)=s_x(:,itp)*s_r(ir)
       do ispn=1,nspinor
         t1=s_tpw(itp)*s_rw(ir)*abs(wantp(itp,ir,ispn))**2
         x2=x2+t1*dot_product(vrc,vrc)
@@ -110,12 +122,49 @@ do j=1,sic_wantran%nwan
 ! generate potentials
   if (sic_apply(n).eq.2) then
     call timer_start(t_sic_wan_pot)
-    !call s_gen_pot(s_pwanlm(1,1,1,j),pwantp,s_pwvlm(1,1,1,j),wanprop(1,j))
     call s_gen_pot(s_wanlm(1,1,1,j),wantp,s_wvlm(1,1,1,j),wanprop(1,j))
     call timer_stop(t_sic_wan_pot)
   endif
 enddo !j
 deallocate(wantp)
+
+!open(210,file="wan_bt_on_mt_mesh.dat",form="formatted",status="replace")
+!do ir=1,nrmt(1)
+!  itp=3
+!  x(:)=mt_spx(:,itp)*spr(ir,1)
+!  z1=s_func_val(x,s_wanlm(1,1,1,1))
+!  write(210,'(3G18.10)')spr(ir,1),dreal(z1),dimag(z1)
+!enddo
+!close(210)
+!
+!open(210,file="wan_on_mt_mesh.dat",form="formatted",status="replace")
+!do ir=1,nrmt(1)
+!  itp=3
+!  x(:)=mt_spx(:,itp)*spr(ir,1)
+!  call s_get_wanval(.true.,1,x,wanval)
+!  z1=wanval(1)
+!  write(210,'(3G18.10)')spr(ir,1),dreal(z1),dimag(z1)
+!enddo
+!close(210)
+!
+!open(210,file="wan_on_s_mesh.dat",form="formatted",status="replace")
+!do ir=1,s_nr
+!  !x(:)=((/1.d0,1.d0,0.d0/)/sqrt(2.d0))*s_r(ir)
+!  x(:)=(/1.d0,0.d0,0.d0/)*s_r(ir)
+!  call s_get_wanval(.true.,1,x,wanval)
+!  z1=wanval(1)
+!  write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
+!enddo
+!close(210)
+!
+!open(210,file="wan_bt_on_s_mesh.dat",form="formatted",status="replace")
+!do ir=1,s_nr
+!  !x(:)=((/1.d0,1.d0,0.d0/)/sqrt(2.d0))*s_r(ir)
+!  x(:)=(/1.d0,0.d0,0.d0/)*s_r(ir)
+!  z1=s_func_val(x,s_wanlm(1,1,1,1))  
+!  write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
+!enddo
+!close(210)
 
 !call s_func_plot1d("__wan_s.dat",2000,(/0.d0,0.d0,0.d0/),&
 !  (/0.d0,0.d0,0.d0/),(/10.d0,0.d0,0.d0/),s_wanlm(1,1,1,1))
@@ -245,3 +294,4 @@ if (wproc) then
 endif
 return
 end
+

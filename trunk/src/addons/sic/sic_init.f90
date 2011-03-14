@@ -46,7 +46,7 @@ do while (l2)
         if (abs(i1).eq.ish.or.abs(i2).eq.ish.or.abs(i3).eq.ish) then
           vl=(/i1,i2,i3/)
           if (sic_include_cell(vl)) then
-            l1=.true.            
+            l1=.true.
             sic_orbitals%ntr=sic_orbitals%ntr+1
             if (sic_orbitals%ntr.gt.sic_maxvtl) then
               write(*,'("Error(sic_init) : sic_maxvtl is too small")')
@@ -88,15 +88,9 @@ call sic_gensmesh
 if (allocated(s_wanlm)) deallocate(s_wanlm)
 allocate(s_wanlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
 s_wanlm=zzero
-!if (allocated(s_pwanlm)) deallocate(s_pwanlm)
-!allocate(s_pwanlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
-!s_pwanlm=zzero
 if (allocated(s_wvlm)) deallocate(s_wvlm)
 allocate(s_wvlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
 s_wvlm=zzero
-!if (allocated(s_pwvlm)) deallocate(s_pwvlm)
-!allocate(s_pwvlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
-!s_pwvlm=zzero
 if (allocated(vwanme)) deallocate(vwanme)
 allocate(vwanme(sic_wantran%nwt))
 vwanme=zzero
@@ -169,11 +163,11 @@ l1=.false.
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
   jas=wan_info(1,n)
-!  do ias=1,natmtot
-!    v1(:)=atposc(:,ias2ia(ias),ias2is(ias))+vt(:)-&
-!      atposc(:,ias2ia(jas),ias2is(jas))
-!    if (sqrt(sum(v1(:)**2)).le.sic_wan_cutoff) l1=.true.
-!  enddo
+  do ias=1,natmtot
+    v1(:)=atposc(:,ias2ia(ias),ias2is(ias))+vt(:)-&
+      atposc(:,ias2ia(jas),ias2is(jas))
+    if (sqrt(sum(v1(:)**2)).le.sic_wan_cutoff) l1=.true.
+  enddo
   do ir=1,ngrtot
     v1(:)=vgrc(:,ir)+vt(:)-atposc(:,ias2ia(jas),ias2is(jas))
     if (sqrt(sum(v1(:)**2)).le.sic_wan_cutoff) l1=.true.

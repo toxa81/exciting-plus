@@ -37,7 +37,7 @@ allocate(wnkir(ngrtot,nspinor,sic_wantran%nwan))
 allocate(zprod(3,sic_wantran%nwan,nkptnr))
 zprod=zzero
 
-do ikloc=1,1 !nkptnrloc
+do ikloc=1,nkptnrloc
   ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
   call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfvnr)
   call getevecsv(vklnr(1,ik),evecsvnr)
