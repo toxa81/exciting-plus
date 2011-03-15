@@ -37,7 +37,8 @@ SRC_modules = ./addons/mod_mpi_grid.f90 \
               
 OBJ_modules = $(SRC_modules:.f90=.o)
 SRC = $(shell find . -name \*.f90)
-OBJ = $(SRC:.f90=.o)
+OBJ_extras = addons/nfft/nfft_intrf.o addons/madness/madness_intrf.o
+OBJ = $(SRC:.f90=.o) $(OBJ_extras) 
 
 EXE = elk
 
@@ -52,32 +53,26 @@ EXE = elk
 #-------------------------------------------------------------------------------
 # Targets
 #-------------------------------------------------------------------------------
-all: gensrc elk
+all: gensrc extras elk
 
 serial: F90_OPTS:=$(subst -D_MPI_,,$(F90_OPTS)) 
 serial: gensrc elk lib
-
-madelk: F90_OPTS:=$(F90_OPTS) -D_MAD_
-madelk: gensrc madapi elk1
-
-madapi:
-	cd addons/madness; make
 
 gensrc:
 #	python ../gensrclog.py
 #	mv srclog.f90 ./addons
 	python ../ftemplate.py <./addons/mod_mpi_grid.tpl >./addons/mod_mpi_grid.f90
-	
-elk:	$(OBJ_modules) $(OBJ)
-	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) $(LIB_XC) $(LIB_SYS) $(LIB_LAPACK)
 
-elk1:	$(OBJ_modules) $(OBJ)
-	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) addons/madness/madness_intrf.o $(MADNESS_LIB) $(LIB_XC) \
-	$(LIB_SYS) $(LIB_LAPACK)
+extras:
+	cd addons/nfft; make
+	cd addons/madness; make
+
+elk:	$(OBJ_modules) $(OBJ)
+	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) $(LIBS)
 
 lib:
 	ar r libelk.a $(OBJ)
-	
+
 clean:
 	find . -name \*.o -exec rm {} \;
 	rm -f *.mod *~ fort.* ifc* *.gcno gmon.out *.aux *.dvi *.log \

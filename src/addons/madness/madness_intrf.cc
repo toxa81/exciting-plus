@@ -1,3 +1,5 @@
+#ifdef _MAD_
+
 #define WORLD_INSTANTIATE_STATIC_TEMPLATES
 
 #include <mra/mra.h>
@@ -82,3 +84,5 @@ extern "C" void madness_get_rho_(double *vrc,double* rho) {
     *rho=wan_rho(x);
   }
 }
+
+#endif

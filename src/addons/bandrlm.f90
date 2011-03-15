@@ -68,8 +68,6 @@ call getufr
 call genufrp  
 if (sic) then
   call sic_readvwan
-  !call sic_genpwi
-  !call sic_genmti
   call sic_blochsum_mt
   call sic_blochsum_it
   allocate(sic_wann_e0k(sic_wantran%nwan,nkpt))
@@ -80,16 +78,8 @@ bc=0.d0
 evalsv=0.d0
 do ikloc=1,nkptloc
   ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-  write(*,'("Info(bandstr,seceqn1): ",I6," of ",I6," k-points")') ik,nkpt
-! solve the first-variational secular equation
-  call seceqn1(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc))
-end do
-if (sic) call sic_genfvprj
-do ikloc=1,nkptloc
-  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-  write(*,'("Info(bandstr,seceqn2): ",I6," of ",I6," k-points")') ik,nkpt
-! solve the second-variational secular equation
-  call seceqn2(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
+  write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ik,nkpt
+  call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
     evecsvloc(1,1,ikloc))
   if (wannier) then
     if (ldisentangle) call disentangle(evalsv(1,ik),wann_c(1,1,ikloc),&

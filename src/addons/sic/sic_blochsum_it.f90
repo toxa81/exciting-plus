@@ -11,12 +11,14 @@ integer, allocatable :: ggdone(:)
 integer, allocatable :: ggidx(:,:,:)
 real(8), allocatable :: jl(:,:)
 complex(8), allocatable :: wggk(:,:,:)
+complex(8), allocatable :: wvggk(:,:,:)
 complex(8), allocatable :: zf(:)
 complex(8), allocatable :: ylmgk(:)
 !
 s_wankir=zzero
 s_wvkir=zzero
 if (.not.tsic_wv) return
+call timer_start(90,reset=.true.)
 allocate(jl(s_nr,0:lmaxwan))
 allocate(zf(s_nr))
 allocate(ylmgk(lmmaxwan))
@@ -46,8 +48,10 @@ do ikloc=1,nkptloc
     enddo
   enddo
   allocate(wggk(ngg,nspinor,sic_wantran%nwan))
+  allocate(wvggk(ngg,nspinor,sic_wantran%nwan))
   allocate(ggdone(ngg))
   wggk=zzero
+  wvggk=zzero
   ggdone=0
   do ig=1,ngk(1,ik)
     do ig1=1,ngrtot
@@ -64,6 +68,7 @@ do ikloc=1,nkptloc
         call genylm(lmaxwan,tp,ylmgk)
         do j=1,sic_wantran%nwan
           do ispn=1,nspinor
+! compute <G+G'+k|W_n>
             zt1=zzero
             do l=0,lmaxwan
               zf=zzero
@@ -79,7 +84,23 @@ do ikloc=1,nkptloc
               zt1=zt1+zt2*fourpi*((-zi)**l)/sqrt(omega)
             enddo !l
             wggk(igg,ispn,j)=zt1
-          enddo !ispn
+! compute <G+G'+k|(WV)_n>
+            zt1=zzero
+            do l=0,lmaxwan
+              zf=zzero
+              do ir=1,s_nr
+                do lm=l**2+1,(l+1)**2
+                  zf(ir)=zf(ir)+s_wvlm(lm,ir,ispn,j)*ylmgk(lm)
+                enddo
+              enddo
+              zt2=zzero
+              do ir=1,s_nr
+                zt2=zt2+jl(ir,l)*zf(ir)*s_rw(ir)
+              enddo
+              zt1=zt1+zt2*fourpi*((-zi)**l)/sqrt(omega)
+            enddo !l
+            wvggk(igg,ispn,j)=zt1
+           enddo !ispn
         enddo !j
       endif
     enddo !ig1
@@ -88,17 +109,26 @@ do ikloc=1,nkptloc
     do ig1=1,ngrtot
       vgl(:)=ivg(:,igkig(ig,1,ikloc))+ivg(:,ig1)
       igg=ggidx(vgl(1),vgl(2),vgl(3))
-      if (igg.ne.0) s_wankir(ig,:,:,ikloc)=s_wankir(ig,:,:,ikloc)+&
-        wggk(igg,:,:)*cfunig(ig1)
+      if (igg.ne.0) then
+        s_wankir(ig,:,:,ikloc)=s_wankir(ig,:,:,ikloc)+&
+          wggk(igg,:,:)*cfunig(ig1)
+        s_wvkir(ig,:,:,ikloc)=s_wvkir(ig,:,:,ikloc)+&
+          wvggk(igg,:,:)*cfunig(ig1)
+      endif
     enddo
   enddo
   deallocate(ggidx)
   deallocate(ggdone)
   deallocate(wggk)
+  deallocate(wvggk)
 enddo !ikloc
 deallocate(jl)
 deallocate(zf)
 deallocate(ylmgk)
+call timer_stop(90)
+if (mpi_grid_root()) then
+  write(*,'("[sic_blochsum_it] total time : ",F12.4," sec.")')timer_get_value(90)
+endif
 return
 end
 
