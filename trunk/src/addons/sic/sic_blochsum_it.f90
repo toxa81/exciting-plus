@@ -3,7 +3,7 @@ use modmain
 use mod_sic
 use mod_nrkp
 implicit none
-integer ikloc,ik,j,igg,ig,ig1,ir,i,ispn,l,lm
+integer ikloc,ik,j,igg,ig,ig1,ir,i,ispn,l,lm,n
 integer vgl(3),glim(2,3),gglim(2,3),ngg
 real(8) vg(3),t1,tp(2)
 complex(8) zt1,zt2
@@ -67,6 +67,7 @@ do ikloc=1,nkptloc
         enddo
         call genylm(lmaxwan,tp,ylmgk)
         do j=1,sic_wantran%nwan
+          n=sic_wantran%iwan(j)
           do ispn=1,nspinor
 ! compute <G+G'+k|W_n>
             zt1=zzero
@@ -83,7 +84,7 @@ do ikloc=1,nkptloc
               enddo
               zt1=zt1+zt2*fourpi*((-zi)**l)/sqrt(omega)
             enddo !l
-            wggk(igg,ispn,j)=zt1
+            wggk(igg,ispn,j)=zt1*exp(-zi*dot_product(wanpos(:,n),vg(:)))
 ! compute <G+G'+k|(WV)_n>
             zt1=zzero
             do l=0,lmaxwan
@@ -99,7 +100,7 @@ do ikloc=1,nkptloc
               enddo
               zt1=zt1+zt2*fourpi*((-zi)**l)/sqrt(omega)
             enddo !l
-            wvggk(igg,ispn,j)=zt1
+            wvggk(igg,ispn,j)=zt1*exp(-zi*dot_product(wanpos(:,n),vg(:)))
            enddo !ispn
         enddo !j
       endif

@@ -15,7 +15,7 @@ complex(8), allocatable :: wantp1(:,:,:)
 ! convert to spherical harmonics
 do ispn=1,nspinor
   call zgemm('T','N',lmmaxwan,s_nr,s_ntp,zone,s_ylmb,s_ntp,&
-    wantp(1,1,ispn),s_ntp,zzero,wanlm,lmmaxwan)
+    wantp(1,1,ispn),s_ntp,zzero,wanlm(1,1,ispn),lmmaxwan)
   !call nfsft_bt(lmaxwan,s_ntp,s_nr,wantp,wanlm) 
 enddo
 ! convert back to spherical coordinates
