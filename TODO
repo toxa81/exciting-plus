@@ -7,3 +7,7 @@
 * parallelize matrix elements over G, not over interband transitions
 * symmetry: lattice+magnetic
 * timers in new sic code
+
+* the main Elk code is diverging; at least, merge the k-point generation
+* [???] Light version of the code without EXX, OEP, Hartree-Fock...
+* [?] slit source to levels (like in blas): basic subroutines, generic lapw subroutiens, main elk subroutines
