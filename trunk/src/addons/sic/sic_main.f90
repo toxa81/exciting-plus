@@ -11,7 +11,7 @@ integer n,i,j,i1,j1,j2,n1,n2,ik,ispn,vtrl(3),ikloc,ig,nwtloc,iloc
 integer ias,lm
 real(8) t1,t2,t3,vtrc(3),pos1(3),pos2(3),vrc(3)
 integer vl(3)
-complex(8) z1,z2(nspinor)
+complex(8) z1,z2(nspinor),me1,me2
 real(8), allocatable :: laplsv(:) 
 complex(8), allocatable :: vwank(:,:)
 complex(8), allocatable :: vwanme_old(:)
@@ -193,6 +193,8 @@ do i=1,sic_wantran%nwt
     t2=t1
     i1=i
     j1=j
+    me1=vwanme(i)
+    me2=vwanme(j)
   endif
 enddo
 ! symmetrize the potential matrix elements
@@ -217,9 +219,9 @@ if (wproc) then
   write(151,'("maximum deviation from ""localization criterion"" : ",F12.6)')t2
   write(151,'("matrix elements with maximum difference : ",2I6)')i1,j1
   write(151,'("  n : ",I4,"    n'' : ",I4,"    T : ",3I4,8X,2G18.10)')&
-    sic_wantran%iwt(:,i1),dreal(vwanme(i1)),dimag(vwanme(i1))
+    sic_wantran%iwt(:,i1),dreal(me1),dimag(me1)
   write(151,'("  n : ",I4,"    n'' : ",I4,"    T : ",3I4,8X,2G18.10)')&
-    sic_wantran%iwt(:,j1),dreal(vwanme(j1)),dimag(vwanme(j1))
+    sic_wantran%iwt(:,j1),dreal(me2),dimag(me2)
   write(151,*)
   write(151,'("diagonal matrix elements (<(W*V)_n|W_n>) :")')
   do j=1,sic_wantran%nwan

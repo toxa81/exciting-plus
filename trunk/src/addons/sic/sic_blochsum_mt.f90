@@ -3,41 +3,90 @@ use modmain
 use mod_sic
 implicit none
 integer ik,ikloc,j,n,it,ias,is,ia,ir,itp,ispn,ntrloc,itloc
-integer itp1
 real(8) x(3)
-complex(8) expikt,zt1
+complex(8) zt1,zt2
+complex(8), allocatable :: expikt(:,:)
 !
 s_wankmt=zzero
 s_wvkmt=zzero
 if (.not.tsic_wv) return
+call timer_start(90,reset=.true.)
 ntrloc=mpi_grid_map(sic_orbitals%ntr,dim2)
+allocate(expikt(nkptloc,ntrloc))
+do itloc=1,ntrloc
+  it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
+  do ikloc=1,nkptloc
+    ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+    expikt(ikloc,itloc)=&
+      exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
+  enddo
+enddo
+do j=1,sic_wantran%nwan
+  n=sic_wantran%iwan(j)
+  do ias=1,natmtot
+    is=ias2is(ias)
+    ia=ias2ia(ias)
+    do itloc=1,ntrloc
+      it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
+      do ir=1,nrmt(is)
+        do itp=1,mt_ntp
+          x(:)=mt_spx(:,itp)*spr(ir,is)+atposc(:,ia,is)+&
+               sic_orbitals%vtc(:,it)-wanpos(:,n)
+          do ispn=1,nspinor
+            zt1=s_func_val(x,s_wanlm(1,1,ispn,j))
+            zt2=s_func_val(x,s_wvlm(1,1,ispn,j))
+            do ikloc=1,nkptloc
+              s_wankmt(itp,ir,ias,ispn,j,ikloc)=&
+                s_wankmt(itp,ir,ias,ispn,j,ikloc)+&
+                expikt(ikloc,itloc)*zt1
+               s_wvkmt(itp,ir,ias,ispn,j,ikloc)=&
+                s_wvkmt(itp,ir,ias,ispn,j,ikloc)+&
+                expikt(ikloc,itloc)*zt2
+            enddo !ikloc
+          enddo !ispn
+        enddo !itp
+      enddo !ir
+    enddo !itloc
+  enddo !ias
+enddo !j
 do ikloc=1,nkptloc
-  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-! make Bloch sums
   do j=1,sic_wantran%nwan
-    n=sic_wantran%iwan(j)
-    do ias=1,natmtot
-      is=ias2is(ias)
-      ia=ias2ia(ias)
-      do itloc=1,ntrloc
-        it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
-        expikt=exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
-        do ir=1,nrmt(is)
-          do itp=1,mt_ntp
-            x(:)=mt_spx(:,itp)*spr(ir,is)+atposc(:,ia,is)+&
-                 sic_orbitals%vtc(:,it)-wanpos(:,n)
-            do ispn=1,nspinor
-              s_wankmt(itp,ir,ias,ispn,j,ikloc)=s_wankmt(itp,ir,ias,ispn,j,ikloc)+&
-                expikt*s_func_val(x,s_wanlm(1,1,ispn,j))
-            enddo
-          enddo
-        enddo
-      enddo !itloc
-    enddo !ias
-    call mpi_grid_reduce(s_wankmt(1,1,1,1,j,ikloc),mt_ntp*nrmtmax*natmtot*nspinor,&
-      dims=(/dim2/),all=.true.)
+    call mpi_grid_reduce(s_wankmt(1,1,1,1,j,ikloc),&
+      mt_ntp*nrmtmax*natmtot*nspinor,dims=(/dim2/),all=.true.)
+    call mpi_grid_reduce(s_wvkmt(1,1,1,1,j,ikloc),&
+      mt_ntp*nrmtmax*natmtot*nspinor,dims=(/dim2/),all=.true.)
   enddo !j
 enddo !ikloc
+deallocate(expikt)
+
+!ntrloc=mpi_grid_map(sic_orbitals%ntr,dim2)
+!do ikloc=1,nkptloc
+!  ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+!! make Bloch sums
+!  do j=1,sic_wantran%nwan
+!    n=sic_wantran%iwan(j)
+!    do ias=1,natmtot
+!      is=ias2is(ias)
+!      ia=ias2ia(ias)
+!      do itloc=1,ntrloc
+!        it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
+!        expikt=exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
+!        do ir=1,nrmt(is)
+!          do itp=1,mt_ntp
+!            x(:)=mt_spx(:,itp)*spr(ir,is)+atposc(:,ia,is)+&
+!                 sic_orbitals%vtc(:,it)-wanpos(:,n)
+!            do ispn=1,nspinor
+!              s_wankmt(itp,ir,ias,ispn,j,ikloc)=s_wankmt(itp,ir,ias,ispn,j,ikloc)+&
+!                expikt*s_func_val(x,s_wanlm(1,1,ispn,j))
+!            enddo
+!          enddo
+!        enddo
+!      enddo !itloc
+!    enddo !ias
+!    call mpi_grid_reduce(s_wankmt(1,1,1,1,j,ikloc),mt_ntp*nrmtmax*natmtot*nspinor,&
+!      dims=(/dim2/),all=.true.)
+!  enddo !j
+!enddo !ikloc
 !if (mpi_grid_root()) then
 !  open(210,file="blochsum_from_bt_wannier.dat",form="formatted",&
 !    status="replace")
@@ -52,5 +101,9 @@ enddo !ikloc
 !  enddo
 !  close(210)
 !endif
+call timer_stop(90)
+if (mpi_grid_root()) then
+  write(*,'("[sic_blochsum_mt] total time : ",F12.4," sec.")')timer_get_value(90)
+endif
 return
 end

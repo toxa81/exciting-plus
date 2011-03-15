@@ -110,7 +110,6 @@ else
 end if
 if (sic) then
   call sic_readvwan
-  !call sic_genpwi
   call sic_blochsum_mt
   call sic_blochsum_it
 endif
@@ -171,17 +170,11 @@ do iscl=1,maxscl
   call genbeffmt
 ! Fourier transform effective potential to G-space
   call genveffig
+  evalsv=0.d0
 ! begin parallel loop over k-points
   do ikloc=1,nkptloc
-! solve the first-variational secular equation
-    call seceqn1(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc))
-  end do 
-! compute <W_n|\phi> and <(W*V)_n|\phi>
-  if (sic) call sic_genfvprj
-  evalsv=0.d0
-  do ikloc=1,nkptloc
-! solve the second-variational secular equation
-    call seceqn2(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
+! solve the secular equation
+    call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
       evecsvloc(1,1,ikloc))
   end do  
   call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),all=.true.)

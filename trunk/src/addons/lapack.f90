@@ -154,6 +154,44 @@ deallocate(z1,work,rwork,ev,ev1)
 return
 end
 
+subroutine isqrtdsy(n,mtrx,ierr)
+use mod_mpi_grid
+implicit   none
+! arguments
+integer, intent(in) :: n
+integer, intent(out) :: ierr
+real(8), intent(inout) :: mtrx(n,n)
+!
+integer i,j,k
+real(8), allocatable :: eval(:),eval_isq(:)
+real(8), allocatable :: evec(:,:)
+
+allocate(evec(n,n))
+allocate(eval(n),eval_isq(n))
+call diagdsy(n,mtrx,eval)
+
+ierr=0
+do i=1,n
+  if (eval(i).lt.1.d-12) then
+    ierr=i
+    eval_isq(i)=0.d0
+  else
+    eval_isq(i)=1.d0/dsqrt(eval(i))
+  endif
+enddo
+evec(:,:)=mtrx(:,:)
+mtrx=0.d0
+do i=1,n
+  do j=1,n
+    do k=1,n
+      mtrx(i,j)=mtrx(i,j)+evec(i,k)*evec(j,k)*eval_isq(k) 
+    enddo
+  enddo
+enddo
+deallocate(evec,eval,eval_isq)
+return
+end
+
 subroutine diagzge(ndim,mtrx,evalue)
 implicit   none
 integer, intent(in) :: ndim

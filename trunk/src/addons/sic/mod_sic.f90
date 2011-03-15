@@ -78,6 +78,10 @@ integer s_nr
 data s_nr/600/
 ! radial mesh of big spheres
 real(8), allocatable :: s_r(:)
+! number of poles on r-mesh
+integer s_nrpole
+! poles of r-mesh
+real(8), allocatable :: s_rpole(:)
 ! weights for integration of radial functions
 real(8), allocatable :: s_rw(:)
 ! maximum l for expansion in big spheres

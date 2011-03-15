@@ -67,67 +67,7 @@ if (wproc) then
   call flushifc(fout)
 endif
 call mpi_grid_bcast(t2)
-wanlm=wanlm/sqrt(t2)
-wantp=wantp/sqrt(t2)
-return
-
-! filter out small lm- contributions
-flm=1
-t2=0.d0
-do lm=1,lmmaxwan
-  do ispn=1,nspinor
-    t1=0.d0
-    do ir=1,s_nr
-      t1=t1+(abs(wanlm(lm,ir,ispn))**2)*s_rw(ir)
-    enddo
-    if (t1.le.1d-8) then
-      !wanlm(lm,:,ispn)=zzero
-      flm(lm,ispn)=0
-    !else
-    !  t2=t2+t1
-    endif
-  enddo !ispn
-enddo !lm
-!write(*,*)"remaining weight : ",t2
-! renormalize
 !wanlm=wanlm/sqrt(t2)
-!! fix tails
-zt1=zzero
-do ir=1,s_nr
-  do ispn=1,nspinor
-    zt1=zt1+zdotc(lmmaxwan,wanlm(1,ir,ispn),1,wanlm(1,ir,ispn),1)*s_rw(ir)
-  enddo
-  if (abs(zt1-1.d0).lt.0.01d0) exit
-enddo
-write(*,*)"tail radius : ",s_r(ir)
-do ispn=1,nspinor
-  do lm=1,lmmaxwan
-    if (flm(lm,ispn).eq.1) then
-      b=abs(wanlm(lm,ir,ispn))/abs(wanlm(lm,ir-1,ispn))
-      b=log(b)/(s_r(ir-1)-s_r(ir))
-      a=exp(b*s_r(ir))*abs(wanlm(lm,ir,ispn))
-      write(*,*)"lm=",lm,"a,b=",a,b
-      do j=ir,s_nr
-        zt1=wanlm(lm,j,ispn)
-        if (abs(zt1).gt.1d-10) then
-          wanlm(lm,j,ispn)=a*exp(-b*s_r(j))*(zt1/abs(zt1))
-        else
-          wanlm(lm,j,ispn)=zzero
-        endif
-      enddo
-    endif
-  enddo
-enddo
-! renormalize
-!zt1=zzero
-!do ispn=1,nspinor
-!  do ir=1,s_nr
-!    zt1=zt1+zdotc(lmmaxwan,wanlm(1,ir,ispn),1,wanlm(1,ir,ispn),1)*s_rw(ir)
-!  enddo
-!enddo
-!wanlm=wanlm/sqrt(abs(zt1))
-!! convert to spherical coordinates
-!call zgemm('T','N',s_ntp,s_nr,lmmaxwan,zone,s_ylmf,lmmaxwan,wanlm,&
-!  lmmaxwan,zzero,wantp,s_ntp)
+!wantp=wantp/sqrt(t2)
 return
 end
