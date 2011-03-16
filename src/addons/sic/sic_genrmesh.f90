@@ -43,6 +43,12 @@ if (imesh.eq.2) then
     enddo
     s_r(ir)=x
   enddo
+  if (abs(s_r(s_nr)-sic_wan_cutoff).gt.1d-6) then
+    write(*,'("Error(sic_genrmesh): last point of radial mesh is wrong")')
+    write(*,'("  s_r(s_nr) : ",G18.10)')s_r(s_nr)
+    write(*,'("  sic_wan_cutoff : ",G18.10)')sic_wan_cutoff
+    call pstop
+  endif
   if (mpi_grid_root()) then
     write(*,'("[sic_genrmesh] first radial point : ",G18.10)')s_r(1)
   endif

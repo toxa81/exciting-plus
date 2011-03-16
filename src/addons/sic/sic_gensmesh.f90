@@ -5,29 +5,39 @@ implicit none
 integer itp,lm
 real(8) a,tp(2),x1(3)
 real(8), allocatable :: x(:,:)
-integer n,i,j,ias,jas
+integer n,i,j,ias,jas,s1
 logical lfound
 !
-call getnghbr(-0.d0,30.d0)
+call getnghbr(-0.d0,50.d0)
 allocate(x(3,nnghbr(1)))
 x=0.d0
 n=0
 ias=1
-do j=2,nnghbr(1)
-  jas=inghbr(1,j,1)
-  x1(:)=atposc(:,ias2ia(jas),ias2is(jas))+&
-    inghbr(3,j,1)*avec(:,1)+&
-    inghbr(4,j,1)*avec(:,2)+&
-    inghbr(5,j,1)*avec(:,3)-atposc(:,ias2ia(ias),ias2is(ias))
-  lfound=.false.
-  do i=1,n
-    if (sum(abs(x1(:)-x(:,i))).lt.1d-10) lfound=.true.
-  enddo
-  if (.not.lfound) then
-    n=n+1
-    x(:,n)=x1(:)
+s1=inghbr(6,nnghbr(ias),ias)
+do j=2,nnghbr(ias)
+  if (inghbr(6,j,ias).lt.s1) then
+    jas=inghbr(1,j,ias)
+    x1(:)=atposc(:,ias2ia(jas),ias2is(jas))+&
+      inghbr(3,j,ias)*avec(:,1)+&
+      inghbr(4,j,ias)*avec(:,2)+&
+      inghbr(5,j,ias)*avec(:,3)-atposc(:,ias2ia(ias),ias2is(ias))
+    lfound=.false.
+    do i=1,n
+      if (sum(abs(x1(:)-x(:,i))).lt.1d-10) lfound=.true.
+    enddo
+    if (.not.lfound) then
+      n=n+1
+      x(:,n)=x1(:)
+    endif
+    if (n.ge.s_ntp.and.inghbr(6,j+1,ias).gt.inghbr(6,j,ias)) exit
   endif
 enddo
+if (n.lt.s_ntp) then
+  write(*,'("Error(sic_gensmesh): not enough covering points")')
+  write(*,'("  found : ",I6)')n
+  write(*,'("  minimum : ",I6)')s_ntp
+  call pstop
+endif
 if (mpi_grid_root()) then
   write(*,'("[sic_gensmesh] number of covering points : ",I4)')n
 endif

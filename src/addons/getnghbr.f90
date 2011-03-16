@@ -65,11 +65,12 @@ do ias=1,natmtot
   enddo
 ! find shells
   ish=1
-  i=0
+  i=1
+  inghbr(6,i,ias)=ish
   do while (i.lt.nnghbr(ias))
     i=i+1
+    if (inghbr(2,i,ias).gt.inghbr(2,i-1,ias)) ish=ish+1
     inghbr(6,i,ias)=ish
-    if (inghbr(2,i+1,ias).gt.inghbr(2,i,ias)) ish=ish+1
   enddo
 enddo    
 return
