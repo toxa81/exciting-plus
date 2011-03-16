@@ -6,9 +6,9 @@ real(8), intent(in) :: maxdist
 
 integer i1,i2,i3,ias,ia,is,jas,ja,js,i,n,j
 real(8) v1(3),d1
-integer llim(3),tmp(5)
+integer llim(3),tmp(6)
 real(8) vrc(3),vrl(3)
-integer ntr(3)
+integer ntr(3),ish
 
 ! find lattice limits
 llim=0
@@ -25,7 +25,7 @@ if (allocated(nnghbr)) deallocate(nnghbr)
 allocate(nnghbr(natmtot))
 nnghbr=0
 if (allocated(inghbr)) deallocate(inghbr)
-allocate(inghbr(5,natmtot*(2*llim(1)+1)*(2*llim(2)+1)*(2*llim(3)+1),natmtot))
+allocate(inghbr(6,natmtot*(2*llim(1)+1)*(2*llim(2)+1)*(2*llim(3)+1),natmtot))
 inghbr=0
 
 do ias=1,natmtot
@@ -62,6 +62,14 @@ do ias=1,natmtot
         inghbr(:,i2,ias)=tmp(:)
       endif
     enddo
+  enddo
+! find shells
+  ish=1
+  i=0
+  do while (i.lt.nnghbr(ias))
+    i=i+1
+    inghbr(6,i,ias)=ish
+    if (inghbr(2,i+1,ias).gt.inghbr(2,i,ias)) ish=ish+1
   enddo
 enddo    
 return
