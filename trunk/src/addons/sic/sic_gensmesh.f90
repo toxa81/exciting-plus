@@ -132,8 +132,7 @@ if (texist) then
     close(300)
     deallocate(s_tp_)
   endif
-  call mpi_grid_bcast(s_ylmb(1,1),s_ntp*lmmaxwan)
-  call mpi_grid_bcast(s_rlmb(1,1),s_ntp*lmmaxwan)
+  call mpi_grid_bcast(tgen)
 else
   tgen=.true.
 endif
@@ -175,6 +174,9 @@ if (tgen) then
   call dgemm('T','T',s_ntp,lmmaxwan,lmmaxwan,1.d0,s_rlmf,lmmaxwan,a,lmmaxwan,&
     0.d0,s_rlmb,s_ntp)
    deallocate(a,o)
+else
+  call mpi_grid_bcast(s_ylmb(1,1),s_ntp*lmmaxwan)
+  call mpi_grid_bcast(s_rlmb(1,1),s_ntp*lmmaxwan)
 endif
 if (mpi_grid_root().and.tgen) then
   open(300,file="bsht",form="unformatted",status="replace")
@@ -187,9 +189,6 @@ if (mpi_grid_root().and.tgen) then
 endif
 return
 end
-
-
-
 
 
 !subroutine test_sht1
