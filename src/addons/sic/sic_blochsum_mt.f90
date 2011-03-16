@@ -4,7 +4,7 @@ use mod_sic
 implicit none
 integer ik,ikloc,j,n,it,ias,is,ia,ir,itp,ispn,ntrloc,itloc
 real(8) x(3)
-complex(8) zt1,zt2
+complex(8) zt1(nspinor),zt2(nspinor)
 complex(8), allocatable :: expikt(:,:)
 !
 s_wankmt=zzero
@@ -32,16 +32,18 @@ do j=1,sic_wantran%nwan
         do itp=1,mt_ntp
           x(:)=mt_spx(:,itp)*spr(ir,is)+atposc(:,ia,is)+&
                sic_orbitals%vtc(:,it)-wanpos(:,n)
+          call s_func_val2(x,s_wanlm(1,1,1,j),s_wvlm(1,1,1,j),&
+            zt1,zt2)
           do ispn=1,nspinor
-            zt1=s_func_val(x,s_wanlm(1,1,ispn,j))
-            zt2=s_func_val(x,s_wvlm(1,1,ispn,j))
+            !zt1=s_func_val(x,s_wanlm(1,1,ispn,j))
+            !zt2=s_func_val(x,s_wvlm(1,1,ispn,j))
             do ikloc=1,nkptloc
               s_wankmt(itp,ir,ias,ispn,j,ikloc)=&
                 s_wankmt(itp,ir,ias,ispn,j,ikloc)+&
-                expikt(ikloc,itloc)*zt1
-               s_wvkmt(itp,ir,ias,ispn,j,ikloc)=&
+                expikt(ikloc,itloc)*zt1(ispn)
+              s_wvkmt(itp,ir,ias,ispn,j,ikloc)=&
                 s_wvkmt(itp,ir,ias,ispn,j,ikloc)+&
-                expikt(ikloc,itloc)*zt2
+                expikt(ikloc,itloc)*zt2(ispn)
             enddo !ikloc
           enddo !ispn
         enddo !itp

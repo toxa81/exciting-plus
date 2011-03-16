@@ -399,6 +399,60 @@ s_func_val=zval
 return
 end function
 
+subroutine s_func_val2(x,f1lm,f2lm,zval1,zval2)
+use modmain
+implicit none
+! arguments
+real(8), intent(in) :: x(3)
+complex(8), intent(in) :: f1lm(lmmaxwan,s_nr,nspinor)
+complex(8), intent(in) :: f2lm(lmmaxwan,s_nr,nspinor)
+complex(8), intent(out) :: zval1(nspinor)
+complex(8), intent(out) :: zval2(nspinor)
+! local variables
+integer ir1,lm,ir,np2,ir0,i,j,ispn
+real (8) x0,tp(2),dx
+complex(8) ylm(lmmaxwan)
+complex(8) z1,z2
+real(8) c(nprad),f1(nprad),f2(nprad),t1,t2
+real(8), external :: polynom
+!
+if (sum(x(:)**2).gt.(sic_wan_cutoff**2)) then
+  zval1=zzero
+  zval2=zzero
+  return
+endif
+
+call sphcrd(x,x0,tp)
+call genylm(lmaxwan,tp,ylm)
+
+ir1=0
+do ir=s_nr-1,1,-1
+  if (s_r(ir).le.x0) then
+    ir1=ir
+    exit
+  endif
+enddo
+if (ir1.eq.0) then
+  ir1=1
+  dx=0.d0
+else
+  dx=(x0-s_r(ir1))/(s_r(ir1+1)-s_r(ir1))
+endif
+do ispn=1,nspinor
+  z1=zzero
+  z2=zzero
+  do lm=1,lmmaxwan
+    z1=z1+(f1lm(lm,ir1,ispn)+dx*(f1lm(lm,ir1+1,ispn)-f1lm(lm,ir1,ispn)))*ylm(lm)
+    z2=z2+(f2lm(lm,ir1,ispn)+dx*(f2lm(lm,ir1+1,ispn)-f2lm(lm,ir1,ispn)))*ylm(lm)
+  enddo
+  zval1(ispn)=z1
+  zval2(ispn)=z2
+enddo
+return
+end subroutine 
+
+
+
 subroutine s_func_plot1d(fname,np,p0,p1,p2,flm)
 implicit none
 character*(*), intent(in) :: fname
