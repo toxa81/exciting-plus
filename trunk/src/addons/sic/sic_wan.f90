@@ -40,7 +40,7 @@ if (wproc) then
   call flushifc(fout)
 endif
 
-!open(210,file="wannier_Ne_s__[100].dat",form="formatted",status="replace")
+!open(210,file="wannier_[100].dat",form="formatted",status="replace")
 !do ir=1,s_nr
 !  x(:)=(/1.d0,0.d0,0.d0/)*s_r(ir)
 !  call s_get_wanval(.true.,1,x,wanval)
@@ -48,6 +48,7 @@ endif
 !  write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
 !enddo
 !close(210)
+!stop "stop in sic_wan"
 !
 !open(210,file="wannier_Ne_s__[110].dat",form="formatted",status="replace")
 !do ir=1,s_nr

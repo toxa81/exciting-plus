@@ -24,8 +24,8 @@ do ias=1,natmtot
   ia=ias2ia(ias)
   write(50,*)
   write(50,'("Cluster around ",A," (is ia ias : ",I2,1X,I2,1X,I3")")')trim(spsymb(is)),is,ia,ias
-  write(50,'(" jatom (js ja jas)   D(a.u.)     D(A)",8(" "),"T",18(" "),"R(Cart)")')
-  write(50,'(82("-"))')
+  write(50,'(" jatom (js ja jas)   D(a.u.)     D(A)",8(" "),"T",18(" "),"R(Cart)",12(" "),"shell")')
+  write(50,'(88("-"))')
   do i=1,nnghbr(ias)
     jas=inghbr(1,i,ias)
     js=ias2is(jas)
@@ -35,8 +35,8 @@ do ias=1,natmtot
       inghbr(4,i,ias)*avec(:,2)+inghbr(5,i,ias)*avec(:,3)
     v3=v2(:)-atposc(:,ia,is)
     dist=inghbr(2,i,ias)/1000000.d0
-    write(50,'(3X,A,T6," (",I2,1X,I2,1X,I3") ",2F10.5,2X,3I3,2X,3F10.5)') &
-      trim(spsymb(js)),js,ja,jas,dist,dist*au2ang,inghbr(3:5,i,ias),v3
+    write(50,'(3X,A,T6," (",I2,1X,I2,1X,I3") ",2F10.5,2X,3I3,2X,3F10.5,2X,I4)') &
+      trim(spsymb(js)),js,ja,jas,dist,dist*au2ang,inghbr(3:5,i,ias),v3,inghbr(6,i,ias)
   enddo
 enddo    
 close(50)
