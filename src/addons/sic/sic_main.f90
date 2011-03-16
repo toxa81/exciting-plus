@@ -63,6 +63,7 @@ if (wproc) then
   write(151,*)
   write(151,'("cutoff radius for Wannier functions   : ",F12.6)')sic_wan_cutoff
   write(151,'("number of radial points               : ",I6)')s_nr
+  write(151,'("number of spherical points            : ",I6)')s_ntp
   write(151,'("cutoff radius for SIC matrix elements : ",F12.6)')sic_me_cutoff
   write(151,'("number of Wannier transitions         : ",I6)')sic_wantran%nwt
   write(151,'("number of translations for Bloch sums : ",I6)')sic_orbitals%ntr
