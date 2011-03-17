@@ -132,11 +132,12 @@ inquire(file="SIC_WANN_E0.OUT",exist=texist)
 if (texist) then
   open(170,file="SIC_WANN_E0.OUT",form="FORMATTED",status="OLD")
   do n=1,nwantot
-    read(170,*,err=20)sic_wann_e0(n)
+    read(170,*,err=20,end=20)sic_wann_e0(n)
   enddo
   close(170)
   goto 30
 20 sic_wann_e0=0.d0
+  close(170)
 endif
 30 continue
 if (mpi_grid_root()) then
