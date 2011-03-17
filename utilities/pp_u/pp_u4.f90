@@ -1,7 +1,7 @@
 program pp_u
 use mod_hdf5
 implicit none
-integer i,j,is1,is2,n1,n2,n,it,iw,nwloc,iwloc
+integer i,j,k,l,is1,is2,n1,n2,n,it,iw,nwloc,iwloc
 integer i1,i2,j1,j2
 character*100 str,fname,fout
 integer mode,vtl_(3),nw,nwantot,size,ngq,ngridk(3)
@@ -26,6 +26,7 @@ complex(8), allocatable :: u4(:,:)
 character*8 c1,c2,c3,c4
 complex(8) uav,jav,zeps
 logical exist
+real(8) d1
 real(8), parameter :: ha2ev = 27.21138386d0
 
 call hdf5_initialize
@@ -45,6 +46,11 @@ else if (trim(adjustl(str)).eq."u4") then
   do i=1,nu4
     read(150,*)iu4(:,i)
   enddo
+else if (trim(adjustl(str)).eq."u4dmft") then
+  mode=2
+  read(150,*)nwann_ 
+  allocate(iwann_(nwann_)) 
+  read(150,*)iwann_
 !else if (trim(adjustl(str)).eq."list") then
 !  mode=2
 !  read(150,*)nlist_
@@ -250,7 +256,7 @@ if (mode.eq.1) then
           i1=iwtidx(iu4(1,i),iu4(2,i),iu4(3,i),iu4(4,i),iu4(5,i))
           i2=iwtidx(iu4(6,i),iu4(7,i),iu4(8,i),iu4(9,i),iu4(10,i))
           it=vtridx(iu4(11,i),iu4(12,i),iu4(13,i))
-          u4(i,iw)=u4mtrx(i1,i2,it)*ha2ev
+	  u4(i,iw)=u4mtrx(i1,i2,it)*ha2ev
         enddo
       enddo !iwloc
     endif !exist
@@ -307,6 +313,48 @@ if (mode.eq.1) then
   enddo
   close(150)
 endif !mode.eq.1
+
+if (mode.eq.2) then
+! check that we have the required translation
+  if (vtridx(0,0,0).lt.0) then
+    write(*,'("Error: translation [000] is not in list")')
+  endif
+  write(fname,'("u4_",I4.4,".hdf5")')0
+  write(c1,'(I8.8)')1
+  call hdf5_read(fname,"/iwloc/"//c1,"iw",iw)
+  call hdf5_read(fname,"/iwloc/"//c1,"w",w(iw))
+  do it=1,ntr
+    write(c2,'("t",I7.7)')it
+    call hdf5_read(fname,"/iwloc/"//c1//"/"//c2,"u4",u4mtrx(1,1,it),&
+      (/nwt,nwt/))
+  enddo
+  open(220,file="U4.DMFT",form="formatted",status="replace")
+  it=vtridx(0,0,0)
+  n=0
+  do i=1,nwann_
+    do j=1,nwann_
+      do k=1,nwann_
+        do l=1,nwann_
+	  i1=iwtidx(iwann_(k),iwann_(i),0,0,0)
+	  i2=iwtidx(iwann_(l),iwann_(j),0,0,0)
+	  d1=dreal(u4mtrx(i1,i2,it))*ha2ev
+	  if (abs(d1).le.1d-10) then
+	    d1=0.d0
+	  else
+	    n=n+1
+	  endif
+	  write(220,'(G18.10,"   : ",4I4)')d1,i,j,k,l
+	  d1=dimag(u4mtrx(i1,i2,it))*ha2ev
+	  if (abs(d1).gt.1d-10) then
+	    write(*,*)"big imaginary part of u4(",i,j,k,l,") : ",u4mtrx(i1,i2,it)
+	  endif
+        enddo
+      enddo
+    enddo
+  enddo
+  close(220)
+  write(*,*)"total number of interactions : ",n
+endif !mode.eq.2
 
 !  if (mode.eq.2) then
 !    allocate(uscrn2_(nlist_,nw))

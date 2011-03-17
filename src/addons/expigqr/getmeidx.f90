@@ -61,8 +61,8 @@ do ikloc=1,nkptnrloc
         if (wann_bnd_k(ist1,ik).ne.0.and.wann_bnd_k(ist2,jk).ne.0) then
 ! check contribution to each Wannier function
 ! NOTE: current implementation works with small overhead; in principle we
-! must check Bloch contribution to particular WF at particular k-point, but
-! this requires much bigger array of "Bloch contribution to WF" flags
+!  must check Bloch contribution to particular WF at particular k-point, but
+!  this requires much bigger array of "Bloch contribution to WF" flags
           do i1=1,megqwantran%nwan
             n1=megqwantran%iwan(i1)
             do i2=1,megqwantran%nwan
