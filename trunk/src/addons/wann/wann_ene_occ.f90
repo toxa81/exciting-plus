@@ -107,11 +107,13 @@ do ias=1,natmtot
     call unimtrxt(lmmaxlu,rylm_lps(1,1,ias),wann_ene_m(1,1,ispn,ispn,ias))
   enddo
 enddo
+wanmom=0.d0
 do n=1,nwantot
   ias=wan_info(1,n)
   lm1=wan_info(2,n)
   ispn1=wan_info(3,n)
   wann_ene(n)=wann_ene_m(lm1,lm1,ispn1,ispn1,ias)
+  if (spinpol) wanmom(n)=wann_occ_m(lm1,lm1,1,1,ias)-wann_occ_m(lm1,lm1,2,2,ias)
 enddo
 if (wproc) then
   open(190,file="WANN_ENE_OCC.OUT",form="formatted",status="replace")
