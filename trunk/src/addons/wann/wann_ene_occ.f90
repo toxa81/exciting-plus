@@ -113,7 +113,10 @@ do n=1,nwantot
   lm1=wan_info(2,n)
   ispn1=wan_info(3,n)
   wann_ene(n)=wann_ene_m(lm1,lm1,ispn1,ispn1,ias)
-  if (spinpol) wanmom(n)=wann_occ_m(lm1,lm1,1,1,ias)-wann_occ_m(lm1,lm1,2,2,ias)
+  if (spinpol) then
+    if (ispn1.eq.1) wanmom(n)=wann_occ_m(lm1,lm1,1,1,ias)
+    if (ispn1.eq.2) wanmom(n)=-wann_occ_m(lm1,lm1,2,2,ias)
+  endif
 enddo
 if (wproc) then
   open(190,file="WANN_ENE_OCC.OUT",form="formatted",status="replace")
