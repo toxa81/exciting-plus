@@ -128,6 +128,9 @@ do j=1,nwantot
   endif
 enddo
 
+if (allocated(wanmom)) deallocate(wanmom)
+allocate(wanmom(nwantot))
+
 if (allocated(wann_c)) deallocate(wann_c)
 allocate(wann_c(nwantot,nstsv,nkptloc))
 wann_c=zzero
