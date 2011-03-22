@@ -72,6 +72,7 @@ do j=1,sic_wantran%nwan
 ! generate WF on a spherical mesh
   wantp=zzero
   call timer_start(t_sic_wan_gen)
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(irloc,ir,itp,vrc,wanval)
   do irloc=1,nrloc
     ir=mpi_grid_map(s_nr,dim2,loc=irloc)
     do itp=1,s_ntp
@@ -80,6 +81,7 @@ do j=1,sic_wantran%nwan
       wantp(itp,ir,:)=wanval(:)
     enddo
   enddo
+!$OMP END PARALLEL DO
   call mpi_grid_reduce(wantp(1,1,1),s_ntp*s_nr*nspinor,all=.true.)
 ! convert to spherical harmonics
   call sic_genwanlm(fout,n,wantp,s_wanlm(1,1,1,j))
@@ -148,12 +150,10 @@ deallocate(wantp)
 !enddo
 !close(210)
 !
-!open(210,file="wan_on_s_mesh.dat",form="formatted",status="replace")
+!open(210,file="wannier_bt_[100].dat",form="formatted",status="replace")
 !do ir=1,s_nr
-!  !x(:)=((/1.d0,1.d0,0.d0/)/sqrt(2.d0))*s_r(ir)
 !  x(:)=(/1.d0,0.d0,0.d0/)*s_r(ir)
-!  call s_get_wanval(.true.,1,x,wanval)
-!  z1=wanval(1)
+!  z1=s_func_val(x,s_wanlm(1,1,1,1))
 !  write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
 !enddo
 !close(210)
