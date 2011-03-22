@@ -72,7 +72,7 @@ do j=1,sic_wantran%nwan
 ! generate WF on a spherical mesh
   wantp=zzero
   call timer_start(t_sic_wan_gen)
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(irloc,ir,itp,vrc,wanval)
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ir,itp,vrc,wanval)
   do irloc=1,nrloc
     ir=mpi_grid_map(s_nr,dim2,loc=irloc)
     do itp=1,s_ntp

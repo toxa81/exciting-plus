@@ -28,6 +28,7 @@ do j=1,sic_wantran%nwan
     ia=ias2ia(ias)
     do itloc=1,ntrloc
       it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(itp,ispn,ikloc,x,zt1,zt2)
       do ir=1,nrmt(is)
         do itp=1,mt_ntp
           x(:)=mt_spx(:,itp)*spr(ir,is)+atposc(:,ia,is)+&
@@ -48,6 +49,7 @@ do j=1,sic_wantran%nwan
           enddo !ispn
         enddo !itp
       enddo !ir
+!$OMP END PARALLEL DO
     enddo !itloc
   enddo !ias
 enddo !j

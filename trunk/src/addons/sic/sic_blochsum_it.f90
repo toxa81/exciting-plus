@@ -17,15 +17,21 @@ s_wankir=zzero
 s_wvkir=zzero
 if (.not.tsic_wv) return
 call timer_start(90,reset=.true.)
-allocate(jl(s_nr,0:lmaxwan))
-allocate(zf(s_nr))
-allocate(ylmgk(lmmaxwan))
+!allocate(jl(s_nr,0:lmaxwan))
+!allocate(zf(s_nr))
+!allocate(ylmgk(lmmaxwan))
 allocate(wgk(ngkmax,nspinor,sic_wantran%nwan))
 allocate(wvgk(ngkmax,nspinor,sic_wantran%nwan))
 do ikloc=1,nkptloc
   ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
   wgk=zzero
   wvgk=zzero
+!$OMP PARALLEL DEFAULT(SHARED) &
+!$OMP PRIVATE(jl,ylmgk,zf,t1,tp,ir,j,n,ispn,zt1,zt2,l,lm,ig1,vgl,igg)
+  allocate(jl(s_nr,0:lmaxwan))
+  allocate(ylmgk(lmmaxwan))
+  allocate(zf(s_nr))
+!$OMP DO
   do ig=1,ngk(1,ik)
     call sphcrd(vgkc(1,ig,1,ikloc),t1,tp)
 ! generate Bessel functions j_l(|G+G'+k|x)
@@ -71,6 +77,9 @@ do ikloc=1,nkptloc
       enddo !ispn
     enddo !j
   enddo !ig
+!$OMP END DO
+  deallocate(jl,ylmgk,zf)
+!$OMP DO 
   do ig=1,ngk(1,ik)
     do ig1=1,ngk(1,ik)
       vgl(:)=ivg(:,igkig(ig,1,ikloc))-ivg(:,igkig(ig1,1,ikloc))
@@ -81,12 +90,14 @@ do ikloc=1,nkptloc
         wvgk(ig1,:,:)*cfunig(igg)
     enddo
   enddo
+!$OMP END DO
+!$OMP END PARALLEL
 enddo !ikloc
 deallocate(wgk)
 deallocate(wvgk)
-deallocate(jl)
-deallocate(zf)
-deallocate(ylmgk)
+!deallocate(jl)
+!deallocate(zf)
+!deallocate(ylmgk)
 call timer_stop(90)
 if (mpi_grid_root()) then
   write(*,'("[sic_blochsum_it] total time : ",F12.4," sec.")')timer_get_value(90)

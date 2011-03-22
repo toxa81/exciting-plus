@@ -326,12 +326,10 @@ implicit none
 real(8), intent(in) :: x(3)
 complex(8), intent(in) :: flm(lmmaxwan,s_nr)
 ! local variables
-integer ir1,lm,ir,np2,ir0,i,j
+integer ir1,lm,ir
 real (8) x0,tp(2),dx
-complex(8) ylm(lmmaxwan),f3(lmmaxwan)
 complex(8) zval 
-real(8) c(nprad),f1(nprad),f2(nprad),t1,t2
-real(8), external :: polynom
+complex(8) ylm(lmmaxwan)
 !
 if (sum(x(:)**2).gt.(sic_wan_cutoff**2)) then
   s_func_val=zzero
@@ -340,43 +338,6 @@ endif
 
 call sphcrd(x,x0,tp)
 call genylm(lmaxwan,tp,ylm)
-
-!np2=nprad/2
-!do ir=1,s_nr
-!  if (s_r(ir).ge.x0) then
-!    if (ir.le.np2) then
-!      ir0=1
-!    else if (ir.gt.(s_nr-np2)) then
-!      ir0=s_nr-nprad+1
-!    else
-!      ir0=ir-np2
-!    endif
-!    x0=max(x0,s_r(1))
-!    exit
-!  endif
-!enddo
-!zval=zzero
-!do lm=1,lmmaxwan
-!  do j=1,nprad
-!    i=ir0+j-1
-!    f1(j)=dreal(flm(lm,i))
-!    f2(j)=dimag(flm(lm,i))
-!  enddo
-!  t1=polynom(0,nprad,s_r(ir0),f1,c,x0)
-!  t2=polynom(0,nprad,s_r(ir0),f2,c,x0)
-!  zval=zval+dcmplx(t1,t2)*ylm(lm)
-!enddo
-!s_func_val=zval
-
-!if (x0.ge.sic_wan_cutoff) then
-!  zval=zzero
-!  ir1=s_nr
-!  do lm=1,lmmaxwan
-!   zval=zval+flm(lm,ir1)*ylm(lm)
-!  enddo
-!  s_func_val=zval
-!  return
-!endif
 
 ir1=0
 do ir=s_nr-1,1,-1
@@ -409,12 +370,10 @@ complex(8), intent(in) :: f2lm(lmmaxwan,s_nr,nspinor)
 complex(8), intent(out) :: zval1(nspinor)
 complex(8), intent(out) :: zval2(nspinor)
 ! local variables
-integer ir1,lm,ir,np2,ir0,i,j,ispn
+integer ir1,lm,ir,ispn
 real (8) x0,tp(2),dx
 complex(8) ylm(lmmaxwan)
 complex(8) z1,z2
-real(8) c(nprad),f1(nprad),f2(nprad),t1,t2
-real(8), external :: polynom
 !
 if (sum(x(:)**2).gt.(sic_wan_cutoff**2)) then
   zval1=zzero
@@ -505,6 +464,7 @@ else
   allocate(f2tp_(s_ntp,s_nr))
   allocate(f2lm_(lmmaxwan,s_nr))
   f2tp_=zzero
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(itp,x1,x2)
   do ir=1,s_nr
     do itp=1,s_ntp
       x1(:)=s_x(:,itp)*s_r(ir)
@@ -512,6 +472,7 @@ else
       f2tp_(itp,ir)=s_func_val(x2,f2lm)
     enddo
   enddo !ir
+!$OMP END PARALLEL DO
 !! convert to spherical coordinates
 !  call zgemm('T','N',s_ntp,s_nr,lmmaxwan,zone,s_ylmf,lmmaxwan,f1lm,&
 !    lmmaxwan,zzero,f1tp_,s_ntp)
@@ -585,6 +546,7 @@ lmmaxwanloc=mpi_grid_map2(lmmaxwan,dims=(/dim_k,dim2/))
 do lmloc=1,lmmaxwanloc
   lm=mpi_grid_map2(lmmaxwan,dims=(/dim_k,dim2/),loc=lmloc)
   l=lm2l(lm)
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(jr,t1)
   do ir=1,s_nr
     t1=0.d0
     do jr=1,ir
@@ -595,6 +557,7 @@ do lmloc=1,lmmaxwanloc
     enddo
     vhalm(lm,ir)=t1*fourpi/(2*l+1)
   enddo
+!$OMP END PARALLEL DO
 enddo
 call mpi_grid_reduce(vhalm(1,1),lmmaxwan*s_nr,all=.true.)
 ! compute XC potential
