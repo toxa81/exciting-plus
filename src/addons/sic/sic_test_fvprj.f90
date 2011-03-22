@@ -20,7 +20,7 @@ complex(8), allocatable :: fvmt(:,:,:)
 complex(8), allocatable :: fvir(:)
 complex(8), allocatable :: wnkmt(:,:,:,:,:)
 complex(8), allocatable :: wnkir(:,:,:)
-complex(8), allocatable :: zprod(:,:,:)      
+complex(8), allocatable :: wb(:,:,:,:)      
 !
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 !allocate(wffvmt(lmmaxvr,nufrmax,natmtot,nstfv))
@@ -34,8 +34,8 @@ allocate(fvmt(lmmaxvr,nrmtmax,natmtot))
 allocate(fvir(ngrtot))
 allocate(wnkmt(lmmaxvr,nrmtmax,natmtot,nspinor,sic_wantran%nwan))
 allocate(wnkir(ngrtot,nspinor,sic_wantran%nwan))
-allocate(zprod(3,sic_wantran%nwan,nkptnr))
-zprod=zzero
+allocate(wb(3,sic_wantran%nwan,nstfv,nkptnr))
+wb=zzero
 
 do ikloc=1,nkptnrloc
   ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
@@ -66,14 +66,14 @@ do ikloc=1,nkptnrloc
       enddo
       call zfftifc(3,ngrid,1,wnkir(1,ispn,j))
     enddo !ispn
-    zt1=zzero
-    zt2=zzero
-    do ispn=1,nspinor
-      zt1=zt1+s_zfinp(.true.,.false.,lmmaxvr,ngrtot,wnkmt(1,1,1,ispn,j),&
-        wnkmt(1,1,1,ispn,j),wnkir(1,ispn,j),wnkir(1,ispn,j),zt2)
-    enddo
-    zprod(1,j,ik)=zt1
-    zprod(2:3,j,ik)=zt2(1:2)
+    !zt1=zzero
+    !zt2=zzero
+    !do ispn=1,nspinor
+    !  zt1=zt1+s_zfinp(.true.,.false.,lmmaxvr,ngrtot,wnkmt(1,1,1,ispn,j),&
+    !    wnkmt(1,1,1,ispn,j),wnkir(1,ispn,j),wnkir(1,ispn,j),zt2)
+    !enddo
+    !zprod(1,j,ik)=zt1
+    !zprod(2:3,j,ik)=zt2(1:2)
   enddo !j
 
   do ist=1,nstfv
@@ -93,8 +93,23 @@ do ikloc=1,nkptnrloc
       fvir(igfft(igkignr(ig,ikloc)))=evecfvnr(ig,ist,1)/sqrt(omega)
     enddo
     call zfftifc(3,ngrid,1,fvir)
-    zt2=zzero
-    zt1=s_zfinp(.true.,.false.,lmmaxvr,ngrtot,fvmt,fvmt,fvir,fvir,zt2)
+    
+    do j=1,sic_wantran%nwan
+      zt1=zzero
+      zt2=zzero
+      do ispn=1,nspinor
+        zt1=zt1+s_zfinp(.true.,.false.,lmmaxvr,ngrtot,wnkmt(1,1,1,ispn,j),&
+          fvmt,wnkir(1,ispn,j),fvir,zt2)
+      enddo
+      wb(1,j,ist,ik)=zt1
+      wb(2:3,j,ist,ik)=zt2(:)
+    enddo
+    
+    !zprod(1,j,ik)=zt1
+    !zprod(2:3,j,ik)=zt2(1:2)
+    
+    !zt2=zzero
+    !zt1=s_zfinp(.true.,.false.,lmmaxvr,ngrtot,fvmt,fvmt,fvir,fvir,zt2)
     !write(*,*)"ist:",ist,"norm:",zt1,"partial:",dreal(zt2)
     !write(220,'("  norm : ",2G18.10)')dreal(zt1),dimag(zt1) 
     !do j=1,sic_wantran%nwan
@@ -116,15 +131,21 @@ do ikloc=1,nkptnrloc
   !write(220,*)
   !call flushifc(220)
 enddo !ikloc
-call mpi_grid_reduce(zprod(1,1,1),3*sic_wantran%nwan*nkptnr,dims=(/dim_k/))
+!call mpi_grid_reduce(zprod(1,1,1),3*sic_wantran%nwan*nkptnr,dims=(/dim_k/))
 if (mpi_grid_root()) then
-  open(210,file="sic_blochsum_exact.out",form="formatted",status="replace")
+  open(210,file="sic_fvprj_exact.out",form="formatted",status="replace")
   do ik=1,nkptnr
-    write(210,'(" ik : ",I4)')ik
+    write(210,'("ik : ",I4)')ik
     do j=1,sic_wantran%nwan
       n=sic_wantran%iwan(j)
-      write(210,'("  n : ",I4,6X," <W_nk|W_nk> : ",3G18.10)')&
-        n,dreal(zprod(1,j,ik)),dreal(zprod(2,j,ik)),dreal(zprod(3,j,ik))
+      write(210,'("  n : ",I4,6X," <W_nk|phi_ik> ")')n
+      do ist=1,nstfv
+        write(210,'("    i : ",I4,"  re,im,abs : ",3F10.6," ! mt,it : ",&
+          2F10.6,",",2F10.6)')ist,dreal(wb(1,j,ist,ik)),dimag(wb(1,j,ist,ik)),&
+          abs(wb(1,j,ist,ik)),dreal(wb(2,j,ist,ik)),dimag(wb(2,j,ist,ik)),&
+          dreal(wb(3,j,ist,ik)),dimag(wb(3,j,ist,ik))
+      enddo
+      write(210,*)
     enddo
     write(210,*)
   enddo !ik
@@ -268,7 +289,7 @@ deallocate(evecsvnr)
 !deallocate(wantp)
 deallocate(wnkmt,wnkir)
 deallocate(wfmt)
-deallocate(zprod)
+deallocate(wb)
 deallocate(fvmt,fvir)
 return
 end
