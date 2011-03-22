@@ -60,6 +60,8 @@ call genlofr
 call olprad
 ! compute the Hamiltonian radial integrals
 call hmlrad
+! generate V_eff(G)
+call genveffig
 ! generate muffin-tin effective magnetic fields and s.o. coupling functions
 call genbeffmt
 ! get radial-muffint tin functions
