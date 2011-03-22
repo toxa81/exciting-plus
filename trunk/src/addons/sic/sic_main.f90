@@ -122,7 +122,6 @@ enddo
 !call sic_readvwan
 !call sic_test_fvprj(151)
 !call sic_test_blochsum(1,.true.,"sic_blochsum_wan.out")
-!call bstop
 
 ! init Madness related variables 
 #ifdef _MAD_
@@ -264,6 +263,7 @@ do ik=1,nkpt
 enddo
 deallocate(vwank)
 !call sic_test_blochsum(2,.false.,"sic_blochsum_wan_backward.out")
+!call sic_diff_blochsum_mt
 ! signal that now we have computed sic potential and wannier functions
 tsic_wv=.true.
 ! write to HDF5 file
