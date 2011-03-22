@@ -9,6 +9,7 @@ complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 ! local variables
 integer ik,ispn
 integer ias,ist,j
+complex(8) zt2(2)
 complex(8), allocatable :: wfmt_(:,:)
 complex(8), allocatable :: wfmt(:,:,:)
 !
@@ -45,15 +46,21 @@ do ist=1,nstfv
   enddo
   do j=1,sic_wantran%nwan
     do ispn=1,nspinor
+      zt2=zzero
       sic_wb(j,ist,ispn,ikloc)=s_zfinp(.false.,.true.,mt_ntp,ngk(1,ik),&
         s_wankmt(1,1,1,ispn,j,ikloc),wfmt,s_wankir(1,ispn,j,ikloc),&
-        evecfv(1,ist,1))
+        evecfv(1,ist,1),zt2)
       sic_wvb(j,ist,ispn,ikloc)=s_zfinp(.false.,.true.,mt_ntp,ngk(1,ik),&
         s_wvkmt(1,1,1,ispn,j,ikloc),wfmt,s_wvkir(1,ispn,j,ikloc),&
         evecfv(1,ist,1))
     enddo
   enddo
+  !write(*,'("    i : ",I4,"  re,im,abs : ",3F10.6," ! mt,it : ",&
+  !        2F10.6,",",2F10.6)')ist,dreal(sic_wb(1,ist,1,ik)),dimag(sic_wb(1,ist,1,ik)),&
+  !        abs(sic_wb(1,ist,1,ik)),dreal(zt2(1)),dimag(zt2(1)),&
+  !        dreal(zt2(2)),dimag(zt2(2))
 enddo !ist
+!write(*,*)
 deallocate(wfmt_,wfmt)
 call timer_stop(t_sic_genfvprj)
 return
