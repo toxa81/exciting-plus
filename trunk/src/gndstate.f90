@@ -310,11 +310,11 @@ do iscl=1,maxscl
     write(60,*)
     write(60,'("Time (CPU seconds) : ",F12.2)') timetot
     write(60,*)
-    write(60,'("Iteration time (seconds)                    : ",F12.2)')&
+    write(60,'("iteration time (seconds)                    : ",F12.2)')&
       timer_get_value(t_iter_tot)
-    write(60,'("  Radial APW setup                          : ",F12.2)')&
+    write(60,'("  radial APW setup                          : ",F12.2)')&
       timer_get_value(t_apw_rad)
-    write(60,'("  Total for secular equation                : ",F12.2)')&
+    write(60,'("  total for secular equation                : ",F12.2)')&
       timer_get_value(t_seceqn)
     write(60,'("    firt-variational                        : ",F12.2)')&
       timer_get_value(t_seceqnfv)
@@ -336,15 +336,15 @@ do iscl=1,maxscl
       timer_get_value(t_seceqnsv_setup)
     write(60,'("      diagonalization                       : ",F12.2)')&
       timer_get_value(t_seceqnsv_diag)
-    write(60,'("  Total for charge and magnetization        : ",F12.2)')&
+    write(60,'("  total for charge and magnetization        : ",F12.2)')&
       timer_get_value(t_rho_mag_tot)
     write(60,'("    k-point summation                       : ",F12.2)')&
       timer_get_value(t_rho_mag_sum)
     write(60,'("    symmetrization                          : ",F12.2)')&
       timer_get_value(t_rho_mag_sym)
-    write(60,'("  Total for potential                       : ",F12.2)')&
+    write(60,'("  total for potential                       : ",F12.2)')&
       timer_get_value(t_pot)
-    write(60,'("  Density matrix setup                      : ",F12.2)')&
+    write(60,'("  density matrix setup                      : ",F12.2)')&
       timer_get_value(t_dmat)
     if (sic) then
       write(60,'("  sic_genfvprj                              : ",F12.2)')&
