@@ -33,6 +33,7 @@ integer ispn,ik,ist
 ! allocatable arrays
 complex(8), allocatable :: apwalm(:,:,:,:,:)
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+call timer_start(t_seceqn)
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
 ! loop over first-variational spins (nspnfv=2 for spin-spirals only)
 do ispn=1,nspnfv
@@ -73,6 +74,7 @@ if (wannier) then
   endif
 endif
 deallocate(apwalm)
+call timer_stop(t_seceqn)
 return
 end subroutine
 !EOC

@@ -63,6 +63,8 @@ endif
 !     Hamiltonian and overlap matrix set up     !
 !-----------------------------------------------!
 call timesec(ts0)
+call timer_start(t_seceqnfv)
+call timer_start(t_seceqnfv_setup)
 allocate(h(np),o(np))
 h(:)=zzero
 o(:)=zzero
@@ -90,6 +92,7 @@ else
   call setovl(ngp,nmatp,igpig,apwalm,o)
 endif
 call timesec(ts1)
+call timer_stop(t_seceqnfv_setup)
 timemat=timemat+ts1-ts0
 !------------------------------------!
 !     solve the secular equation     !
@@ -138,6 +141,7 @@ endif
 call mpi_grid_bcast(evecfv(1,1),nmatmax*nstfv,dims=(/dim2/))
 call mpi_grid_bcast(evalfv(1),nstfv,dims=(/dim2/))
 timefv=timefv+ts1-ts0
+call timer_stop(t_seceqnfv)
 deallocate(h,o)
 return
 end subroutine
