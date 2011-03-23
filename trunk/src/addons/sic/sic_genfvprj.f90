@@ -31,9 +31,11 @@ call timer_start(t_sic_genfvprj)
 !    enddo !i
 !  enddo !n
 !enddo !ikloc  
+ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(wfmt_,wfmt,ias,j,ispn)
 allocate(wfmt_(lmmaxvr,nrmtmax))
 allocate(wfmt(mt_ntp,nrmtmax,natmtot))
-ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+!$OMP DO
 do ist=1,nstfv
   wfmt=zzero
 ! generate first-variational wave function
@@ -46,10 +48,9 @@ do ist=1,nstfv
   enddo
   do j=1,sic_wantran%nwan
     do ispn=1,nspinor
-      zt2=zzero
       sic_wb(j,ist,ispn,ikloc)=s_zfinp(.false.,.true.,mt_ntp,ngk(1,ik),&
         s_wankmt(1,1,1,ispn,j,ikloc),wfmt,s_wankir(1,ispn,j,ikloc),&
-        evecfv(1,ist,1),zt2)
+        evecfv(1,ist,1))
       sic_wvb(j,ist,ispn,ikloc)=s_zfinp(.false.,.true.,mt_ntp,ngk(1,ik),&
         s_wvkmt(1,1,1,ispn,j,ikloc),wfmt,s_wvkir(1,ispn,j,ikloc),&
         evecfv(1,ist,1))
@@ -60,8 +61,10 @@ do ist=1,nstfv
   !        abs(sic_wb(1,ist,1,ik)),dreal(zt2(1)),dimag(zt2(1)),&
   !        dreal(zt2(2)),dimag(zt2(2))
 enddo !ist
+!$OMP END DO
 !write(*,*)
 deallocate(wfmt_,wfmt)
+!$OMP END PARALLEL
 call timer_stop(t_sic_genfvprj)
 return
 end
