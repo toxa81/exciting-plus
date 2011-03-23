@@ -39,6 +39,8 @@ complex(8), allocatable :: work(:)
 complex(8) zdotc,zfmtinp
 external zdotc,zfmtinp
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+call timer_start(t_seceqnsv)
+call timer_start(t_seceqnsv_setup)
 ! no calculation of second-variational eigenvectors
 if (.not.tevecsv) then  
   do i=1,nstsv
@@ -260,9 +262,11 @@ do ispn=1,nspinor
     evecsv(i,i)=evecsv(i,i)+evalfv(ist)
   end do
 end do
+call timer_stop(t_seceqnsv_setup)
 if (mpi_grid_root((/dim2/))) then
   if (sic) call sic_hunif(ikloc,evecsv)
   !hmltsvloc(:,:,ikloc)=evecsv(:,:)
+  call timer_start(t_seceqnsv_diag)
 ! diagonalise second-variational Hamiltonian
   allocate(rwork(3*nstsv))
   lwork=2*nstsv
@@ -286,11 +290,13 @@ if (mpi_grid_root((/dim2/))) then
     if (info.ne.0) goto 20
   end if
   deallocate(rwork,work)
+  call timer_stop(t_seceqnsv_diag)
 endif
 call mpi_grid_bcast(evecsv(1,1),nstsv*nstsv,dims=(/dim2/))
 call mpi_grid_bcast(evalsv(1,ik),nstsv,dims=(/dim2/))
 call timesec(ts1)
 timesv=timesv+ts1-ts0
+call timer_stop(t_seceqnsv)
 return
 20 continue
 write(*,*)

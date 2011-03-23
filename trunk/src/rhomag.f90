@@ -2,6 +2,7 @@ subroutine rhomag
 use modmain
 implicit none
 integer ikloc,idm
+call timer_start(t_rho_mag_tot)
 ! set the charge density and magnetisation to zero
 rhomt(:,:,:)=0.d0
 rhoir(:)=0.d0
@@ -50,5 +51,6 @@ call charge
 if (spinpol) call moment
 ! normalise the density
 call rhonorm
+call timer_stop(t_rho_mag_tot)
 return
 end
