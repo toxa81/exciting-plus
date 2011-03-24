@@ -2,14 +2,17 @@ subroutine sic_gensmesh
 use modmain
 use mod_sic
 implicit none
-integer itp,lm
+integer itp,lm,lm1
 real(8) a,tp(2),x1(3)
 real(8), allocatable :: x(:,:)
+complex(8), allocatable :: clm(:)
 integer n,i,j,ias,jas,s1
 logical lfound
+integer, allocatable :: tptype(:)
 !
 call getnghbr(-0.d0,50.d0)
 allocate(x(3,nnghbr(1)))
+allocate(tptype(nnghbr(1)))
 x=0.d0
 n=0
 ias=1
@@ -21,6 +24,7 @@ do j=2,nnghbr(ias)
       inghbr(3,j,ias)*avec(:,1)+&
       inghbr(4,j,ias)*avec(:,2)+&
       inghbr(5,j,ias)*avec(:,3)-atposc(:,ias2ia(ias),ias2is(ias))
+    x1=x1/sqrt(sum(x1**2))
     lfound=.false.
     do i=1,n
       if (sum(abs(x1(:)-x(:,i))).lt.1d-10) lfound=.true.
@@ -28,6 +32,7 @@ do j=2,nnghbr(ias)
     if (.not.lfound) then
       n=n+1
       x(:,n)=x1(:)
+      tptype(n)=inghbr(6,j,ias)
     endif
     if (n.ge.s_ntp.and.inghbr(6,j+1,ias).gt.inghbr(6,j,ias)) exit
   endif
@@ -58,8 +63,19 @@ if (allocated(s_ylmb)) deallocate(s_ylmb)
 allocate(s_ylmb(s_ntp,lmmaxwan))
 
 do itp=1,s_ntp
-  s_x(:,itp)=x(:,itp)/sqrt(sum(x(:,itp)**2))
+  s_x(:,itp)=x(:,itp)
   call sphcrd(s_x(1,itp),a,s_tp(1,itp))
+enddo
+
+do i=1,s_ntp
+  do j=1,s_ntp
+    if (i.ne.j.and.sum(abs(s_tp(:,i)-s_tp(:,j))).lt.1d-10) then
+      write(*,'("Error(sic_gensmesh): equal points found")')
+      write(*,'("  tp(",I4,") : ",2G18.10)')i,s_tp(:,i)
+      write(*,'("  tp(",I4,") : ",2G18.10)')j,s_tp(:,j)
+      call pstop
+    endif
+  enddo
 enddo
 
 ! generate spherical harmonics
@@ -73,8 +89,34 @@ do itp=1,s_ntp
   !  s_ylmb(itp,lm)=dconjg(s_ylmf(lm,itp))*s_tpw(itp) 
   !enddo
 enddo
+
+!call gen_tpw(tptype)
+
 ! generate backward transformation matrices
 call gen_bsht
+
+!! check backward expansion
+!allocate(clm(lmmaxwan))
+!do lm=1,lmmaxwan
+!  clm=zzero
+!  do lm1=1,lmmaxwan
+!    do itp=1,s_ntp
+!      clm(lm1)=clm(lm1)+s_ylmb(itp,lm1)*s_ylmf(lm,itp)
+!    enddo
+!  enddo
+!  a=0.d0 
+!  do lm1=1,lmmaxwan
+!    if (lm1.eq.lm) clm(lm1)=clm(lm1)-zone
+!    a=a+abs(clm(lm1))
+!  enddo
+!  write(*,*)lm,a
+!enddo
+!deallocate(clm)
+!call bstop
+
+  
+
+
 ! generate Lebedev mesh for muffin-tins
 if (allocated(mt_spx)) deallocate(mt_spx)
 allocate(mt_spx(3,mt_ntp))
@@ -90,7 +132,113 @@ do itp=1,mt_ntp
 enddo
 
 !call nfsft_init(lmaxwan,s_ntp,stp)
+deallocate(x)
+deallocate(tptype)
+return
+end
 
+subroutine gen_tpw(tpid)
+use modmain
+use mod_sic
+implicit none
+integer, intent(inout) :: tpid(*)
+integer i,j,k,maxid,itp,iter
+real(8), allocatable :: w(:),w2(:),gr(:)
+integer, allocatable :: tpid2(:)
+real(8) t1,t2,t3
+real(8), external :: wtp_func
+
+j=minval(tpid(1:s_ntp))
+tpid(1:s_ntp)=tpid(1:s_ntp)-j+1
+maxid=maxval(tpid(1:s_ntp))
+allocate(tpid2(s_ntp))
+tpid2=0
+j=0
+do i=1,maxid
+  if (any(tpid(1:s_ntp).eq.i)) then
+    j=j+1
+    do k=1,s_ntp
+      if (tpid(k).eq.i) then
+        tpid2(k)=j
+        tpid(k)=0
+      endif
+    enddo
+  endif
+enddo
+tpid(1:s_ntp)=tpid2(1:s_ntp)
+deallocate(tpid2)
+maxid=maxval(tpid(1:s_ntp))
+
+allocate(w(maxid))
+w=fourpi/s_ntp
+
+allocate(w2(maxid))
+allocate(gr(maxid))
+
+do iter=1,2000
+  t1=wtp_func(maxid,w,tpid)
+  write(*,*)t1
+
+
+gr=0.d0
+do i=1,maxid
+  w2=w
+  w2(i)=w2(i)+0.00001d0
+  t3=0.d0
+  do itp=1,s_ntp
+    t3=t3+w2(tpid(itp))
+  enddo
+  w2=w2*fourpi/t3
+  t2=wtp_func(maxid,w2,tpid)
+  gr(i)=(t2-t1)/0.00001d0
+enddo
+gr=gr
+w=w-gr*t1*2.d0
+
+  t3=0.d0
+  do itp=1,s_ntp
+    t3=t3+w(tpid(itp))
+  enddo
+  w=w*fourpi/t3
+
+
+enddo
+  
+
+  write(*,*)"w=",w
+
+!do i=1,s_ntp
+!  write(*,*)"tp=",s_tp(:,i)," id=",tpid(i)
+!enddo
+
+
+call bstop
+return
+end
+
+real(8) function wtp_func(n,w,tpid)
+use modmain
+use mod_sic
+implicit none
+integer, intent(in) :: n
+real(8), intent(in) :: w(n)
+integer, intent(in) :: tpid(s_ntp)
+integer lm1,lm2,itp
+real(8) t1
+complex(8) zt1
+
+t1=0.d0
+do lm1=1,lmmaxwan
+  do lm2=1,lmmaxwan
+    zt1=zzero
+    do itp=1,s_ntp
+      zt1=zt1+dconjg(s_ylmf(lm1,itp))*s_ylmf(lm2,itp)*w(tpid(itp))
+    enddo
+    if (lm1.eq.lm2) zt1=zt1-zone
+    t1=t1+abs(zt1)
+  enddo
+enddo
+wtp_func=t1/lmmaxwan/lmmaxwan
 return
 end
 

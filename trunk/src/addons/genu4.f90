@@ -80,6 +80,8 @@ deallocate(megqwan3)
 deallocate(zm1)
 deallocate(zm2)
 deallocate(krnl,epsilon,chi)
+deallocate(vscrn)
 call papi_timer_stop(pt_uscrn)
 return
 end
+
