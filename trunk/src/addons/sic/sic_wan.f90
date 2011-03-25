@@ -63,6 +63,7 @@ call timer_start(t_sic_wan,reset=.true.)
 call timer_reset(t_sic_wan_gen)
 call timer_reset(t_sic_wan_rms)
 call timer_reset(t_sic_wan_pot)
+call timer_reset(t_sic_wvprod)
 s_wanlm=zzero
 s_wvlm=zzero
 wanprop=0.d0
@@ -290,6 +291,7 @@ if (wproc) then
   write(fout,'("  generation of WFs : ",F8.3," sec.")')timer_get_value(t_sic_wan_gen)
   write(fout,'("  rms               : ",F8.3," sec.")')timer_get_value(t_sic_wan_rms)
   write(fout,'("  potential         : ",F8.3," sec.")')timer_get_value(t_sic_wan_pot)
+  write(fout,'("   (W*V)            : ",F8.3," sec.")')timer_get_value(t_sic_wvprod)
   write(fout,'("  overlap           : ",F8.3," sec.")')timer_get_value(t_sic_wan_ovl)
   call flushifc(fout)
 endif
