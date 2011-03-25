@@ -131,6 +131,7 @@ integer, parameter :: t_sic_wan_ovl=39
 integer, parameter :: t_sic_wan_pot=34
 integer, parameter :: t_sic_wan_rms=46
 integer, parameter :: t_sic_me=47
+integer, parameter :: t_sic_wvprod=48
 
 integer, parameter :: t_apw_rad=40
 integer, parameter :: t_rho_mag_sum=41

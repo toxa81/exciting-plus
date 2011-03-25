@@ -516,6 +516,9 @@ real(8), allocatable :: vxtp(:,:,:)
 real(8), allocatable :: vctp(:,:,:)
 real(8), allocatable :: exclm(:,:)
 real(8), allocatable :: vxclm(:,:,:)
+real(8), allocatable :: f2(:,:,:)
+complex(8), allocatable :: f1(:,:,:)
+complex(8), allocatable :: f3(:,:,:)
 real(8), external :: ddot
 complex(8), external :: gauntyry
 !
@@ -606,26 +609,49 @@ wanprop(wp_vsic)=wanprop(wp_vha)+wanprop(wp_vxc)
 do ispn=1,nspinor
   vxclm(:,:,ispn)=vxclm(:,:,ispn)+vhalm(:,:)
 enddo
+deallocate(rhotp,rholm,totrholm)
+deallocate(vhalm,extp,ectp,exclm,vxtp,vctp)
 ! multiply Wannier function with potential and change sign
-wvlm=zzero
-do lm1=1,lmmaxwan
-  do lm2=1,lmmaxwan
-    do lm3=1,lmmaxwan
+call timer_start(t_sic_wvprod)
+allocate(f1(s_nr,lmmaxwan,nspinor))
+allocate(f2(s_nr,lmmaxwan,nspinor))
+allocate(f3(s_nr,lmmaxwan,nspinor))
+! rearrange arrays in memory
+do ispn=1,nspinor
+  do lm=1,lmmaxwan
+    f1(:,lm,ispn)=wanlm(lm,:,ispn)
+    f2(:,lm,ispn)=vxclm(lm,:,ispn)
+  enddo
+enddo
+f3=zzero
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(lm1,lm2,lm3,zt1,ispn)
+do lmloc=1,lmmaxwanloc
+  lm3=mpi_grid_map2(lmmaxwan,dims=(/dim_k,dim2/),loc=lmloc)
+  do lm1=1,lmmaxwan
+    do lm2=1,lmmaxwan
       zt1=gauntyry(lm2l(lm1),lm2l(lm2),lm2l(lm3),&
                lm2m(lm1),lm2m(lm2),lm2m(lm3))
       if (abs(zt1).gt.1d-12) then
         do ispn=1,nspinor
-          do ir=1,s_nr
-            wvlm(lm3,ir,ispn)=wvlm(lm3,ir,ispn)-&
-              wanlm(lm1,ir,ispn)*vxclm(lm2,ir,ispn)*zt1
-          enddo
+          !do ir=1,s_nr
+          !  wvlm(lm3,ir,ispn)=wvlm(lm3,ir,ispn)-&
+          !    wanlm(lm1,ir,ispn)*vxclm(lm2,ir,ispn)*zt1
+          !enddo
+          f3(:,lm3,ispn)=f3(:,lm3,ispn)-f1(:,lm1,ispn)*f2(:,lm2,ispn)*zt1
         enddo !ispn
       endif
     enddo
   enddo
 enddo
-deallocate(rhotp,rholm,totrholm)
-deallocate(vhalm,extp,ectp,exclm,vxtp,vctp,vxclm)
+!$OMP END PARALLEL DO
+call mpi_grid_reduce(f3(1,1,1),s_nr*lmmaxwan*nspinor,all=.true.) 
+do ispn=1,nspinor
+  do lm=1,lmmaxwan
+    wvlm(lm,:,ispn)=f3(:,lm,ispn)
+  enddo
+enddo
+deallocate(f1,f2,f3,vxclm)
+call timer_stop(t_sic_wvprod)
 end subroutine     
 
 complex(8) function s_zfinp(tsh,tpw,ld,ng,zfmt1,zfmt2,zfir1,zfir2,zfrac)
