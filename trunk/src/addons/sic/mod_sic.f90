@@ -446,8 +446,8 @@ real(8), intent(in) :: pos2(3)
 complex(8), intent(in) :: f1lm(lmmaxwan,s_nr)
 complex(8), intent(in) :: f2lm(lmmaxwan,s_nr)
 ! local variables
-complex(8), allocatable :: f2tp_(:,:)
 complex(8), allocatable :: f1tp_(:,:)
+complex(8), allocatable :: f2tp_(:,:)
 complex(8), allocatable :: f2lm_(:,:)
 complex(8) zprod
 integer ir,itp
@@ -460,9 +460,9 @@ if (sum(abs(pos1-pos2)).lt.1d-10) then
     zprod=zprod+zdotc(lmmaxwan,f1lm(1,ir),1,f2lm(1,ir),1)*s_rw(ir)
   enddo
 else
-  !allocate(f1tp_(s_ntp,s_nr))
+  allocate(f1tp_(s_ntp,s_nr))
   allocate(f2tp_(s_ntp,s_nr))
-  allocate(f2lm_(lmmaxwan,s_nr))
+  !allocate(f2lm_(lmmaxwan,s_nr))
   f2tp_=zzero
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(itp,x1,x2)
   do ir=1,s_nr
@@ -473,21 +473,21 @@ else
     enddo
   enddo !ir
 !$OMP END PARALLEL DO
-!! convert to spherical coordinates
-!  call zgemm('T','N',s_ntp,s_nr,lmmaxwan,zone,s_ylmf,lmmaxwan,f1lm,&
-!    lmmaxwan,zzero,f1tp_,s_ntp)
-!  do ir=1,s_nr
-!    do itp=1,s_ntp
-!      zprod=zprod+dconjg(f1tp_(itp,ir))*f2tp_(itp,ir)*s_tpw(itp)*s_rw(ir)
-!    enddo
-!  enddo
-! convert f2 to spherical harmonics
-  call zgemm('T','N',lmmaxwan,s_nr,s_ntp,zone,s_ylmb,s_ntp,f2tp_,&
-    s_ntp,zzero,f2lm_,lmmaxwan)
+! convert to spherical coordinates
+  call zgemm('T','N',s_ntp,s_nr,lmmaxwan,zone,s_ylmf,lmmaxwan,f1lm,&
+    lmmaxwan,zzero,f1tp_,s_ntp)
   do ir=1,s_nr
-    zprod=zprod+zdotc(lmmaxwan,f1lm(1,ir),1,f2lm_(1,ir),1)*s_rw(ir)
+    do itp=1,s_ntp
+      zprod=zprod+dconjg(f1tp_(itp,ir))*f2tp_(itp,ir)*s_tpw(itp)*s_rw(ir)
+    enddo
   enddo
-  deallocate(f2tp_,f2lm_)
+! convert f2 to spherical harmonics
+!  call zgemm('T','N',lmmaxwan,s_nr,s_ntp,zone,s_ylmb,s_ntp,f2tp_,&
+!    s_ntp,zzero,f2lm_,lmmaxwan)
+!  do ir=1,s_nr
+!    zprod=zprod+zdotc(lmmaxwan,f1lm(1,ir),1,f2lm_(1,ir),1)*s_rw(ir)
+!  enddo
+  deallocate(f1tp_,f2tp_)
 endif
 s_dot_ll=zprod
 return
