@@ -284,7 +284,7 @@ if (vrinmt(x,is,ia,ntr,vr0,ir0,r0).and.twan) then
   zm1=zzero
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-    zt1=exp(zi*dot_product(vkcnr(:,ik),vtc(:)))/nkptnr
+    zt1=exp(zi*dot_product(vkcnr(:,ik),vtc(:)))*wkptnr(ik)
     do ispn=1,nspinor
       zm1(:,:,ispn)=zm1(:,:,ispn)+zt1*wann_unkmt(:,:,ias,ispn,n,ikloc)
     enddo
@@ -303,7 +303,7 @@ else
   enddo
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-    zt1=exp(zi*dot_product(x(:),vkcnr(:,ik)))/sqrt(omega)/nkptnr
+    zt1=wkptnr(ik)*exp(zi*dot_product(x(:),vkcnr(:,ik)))/sqrt(omega)
     zm2=zzero
     do ig=1,ngknr(ikloc)
       zt2=expigr(igkignr(ig,ikloc))
