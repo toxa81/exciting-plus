@@ -124,7 +124,7 @@ logical, external :: wann_diel
 complex(8), allocatable :: evecfvnrloc(:,:,:,:)
 complex(8), allocatable :: evecsvnrloc(:,:,:)
 
-call gen_k_sym
+!call gen_k_sym
 ! get energies of states in reduced part of BZ
 call timer_start(3,reset=.true.)
 if (wproc.and.fout.gt.0) then

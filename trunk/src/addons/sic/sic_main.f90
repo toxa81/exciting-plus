@@ -18,6 +18,7 @@ complex(8), allocatable :: vwanme_old(:)
 character*20 c1,c2,c3
 character, parameter :: orbc(4)=(/'s','p','d','f'/)
 character*2, parameter :: spinc(2)=(/'up','dn'/)
+logical texist
 !
 sic=.true.
 ! initialise universal variables
@@ -162,7 +163,9 @@ if (wproc) then
 endif
 ! save old matrix elements
 allocate(vwanme_old(sic_wantran%nwt))
-vwanme_old=vwanme
+inquire(file="sic.hdf5",exist=texist)
+if (texist) call hdf5_read("sic.hdf5","/","vwanme",vwanme_old(1),(/sic_wantran%nwt/))
+!vwanme_old=vwanme
 ! compute matrix elements of SIC potential
 !  vwanme = <(W*V)_n|W_{n1,T}>
 vwanme=zzero
@@ -212,6 +215,17 @@ t3=0.d0
 do i=1,sic_wantran%nwt
   t3=t3+abs(vwanme(i)-vwanme_old(i))**2
 enddo
+! write matrix elements
+!if (wproc) then
+!  write(151,*)
+!  do i=1,sic_wantran%nwt
+!    n=sic_wantran%iwt(1,i)
+!    n1=sic_wantran%iwt(2,i)
+!    vl(:)=sic_wantran%iwt(3:5,i)
+!    write(151,'("  n : ",I4,"    n'' : ",I4,"    T : ",3I4,8X," new : ",&
+!     &G18.10," old : ",G18.10)')n,n1,vl,abs(vwanme(i)),abs(vwanme_old(i))
+!  enddo
+!endif
 deallocate(vwanme_old)
 call timer_stop(t_sic_me)
 if (wproc) then
