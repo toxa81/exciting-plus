@@ -55,6 +55,61 @@ enddo
 return
 end subroutine
 
+subroutine gen_k_sym
+use modmain
+implicit none
+integer nk,ik,isym,i,j
+real(8) s(3,3),v1(3)
+logical lfound
+integer, allocatable :: k0(:)
+integer, allocatable :: nk0(:)
+real(8), allocatable :: vkl_(:,:)
+real(8), allocatable :: wk_(:)
+
+allocate(vkl_(3,nsymcrys*nkpt))
+allocate(k0(nsymcrys*nkpt))
+allocate(nk0(nkpt))
+allocate(wk_(nsymcrys*nkpt))
+nk=0
+nk0=0
+do ik=1,nkpt
+  do isym=1,nsymcrys
+    s(:,:)=dble(symlat(:,:,lsplsymc(isym)))
+    call r3mtv(s,vkl(1,ik),v1)
+    lfound=.false.
+    do i=1,nk
+      if (sum(abs(v1(:)-vkl_(:,i))).lt.1d-8) lfound=.true.
+    enddo
+    if (.not.lfound) then
+      nk=nk+1
+      vkl_(:,nk)=v1
+      k0(nk)=ik
+      nk0(ik)=nk0(ik)+1
+    endif
+  enddo
+enddo
+wk_=0.d0
+do ik=1,nk
+  wk_(ik)=wkpt(k0(ik))/nk0(k0(ik))
+enddo
+
+deallocate(vklnr,vkcnr,wkptnr)
+nkptnr=nk
+nkptnrloc=mpi_grid_map(nkptnr,dim_k)
+allocate(vklnr(3,nkptnr),vkcnr(3,nkptnr),wkptnr(nkptnr))
+
+vklnr(:,1:nkptnr)=vkl_(:,1:nkptnr)
+wkptnr(1:nkptnr)=wk_(1:nkptnr)
+do ik=1,nkptnr
+  call r3mv(bvec,vklnr(1,ik),vkcnr(1,ik))
+enddo
+!do ik=1,nk
+!  write(*,*)vkl_(:,ik)," -- ",k0(ik),wk_(ik)
+!enddo
+deallocate(vkl_,k0,nk0,wk_)
+return
+end subroutine
+
 
 
 subroutine genwfnr(fout,lpmat)
@@ -69,6 +124,7 @@ logical, external :: wann_diel
 complex(8), allocatable :: evecfvnrloc(:,:,:,:)
 complex(8), allocatable :: evecsvnrloc(:,:,:)
 
+call gen_k_sym
 ! get energies of states in reduced part of BZ
 call timer_start(3,reset=.true.)
 if (wproc.and.fout.gt.0) then
@@ -107,6 +163,7 @@ endif
 !  enddo
 !endif
 call gengknr
+
 if (wproc.and.fout.gt.0) then
 ! eigen-vectors
   sz=dble(nmatmax*nstfv*nspnfv)+dble(nstsv*nstsv)
@@ -269,8 +326,8 @@ if (wannier) then
       ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
       do j=1,nstsv
         w2=dreal(dconjg(wanncnrloc(n,j,ikloc))*wanncnrloc(n,j,ikloc))
-        wann_occ(n)=wann_occ(n)+w2*occsvnr(j,ik)/nkptnr
-        wann_ene(n)=wann_ene(n)+w2*evalsvnr(j,ik)/nkptnr
+        wann_occ(n)=wann_occ(n)+w2*occsvnr(j,ik)*wkptnr(ik)
+        wann_ene(n)=wann_ene(n)+w2*evalsvnr(j,ik)*wkptnr(ik)
       enddo
     enddo
   enddo
