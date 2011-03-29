@@ -360,6 +360,50 @@ s_func_val=zval
 return
 end function
 
+subroutine s_spinor_func_val(x,flm,zval)
+use modmain
+implicit none
+! arguments
+real(8), intent(in) :: x(3)
+complex(8), intent(in) :: flm(lmmaxwan,s_nr,nspinor)
+complex(8), intent(out) :: zval(nspinor)
+! local variables
+integer ir1,lm,ir,ispn
+real (8) x0,tp(2),dx
+complex(8) zt1 
+complex(8) ylm(lmmaxwan)
+!
+if (sum(x(:)**2).gt.(sic_wan_cutoff**2)) then
+  zval=zzero
+  return
+endif
+
+call sphcrd(x,x0,tp)
+call genylm(lmaxwan,tp,ylm)
+
+ir1=0
+do ir=s_nr-1,1,-1
+  if (s_r(ir).le.x0) then
+    ir1=ir
+    exit
+  endif
+enddo
+if (ir1.eq.0) then
+  ir1=1
+  dx=0.d0
+else
+  dx=(x0-s_r(ir1))/(s_r(ir1+1)-s_r(ir1))
+endif
+do ispn=1,nspinor
+  zt1=zzero
+  do lm=1,lmmaxwan
+    zt1=zt1+(flm(lm,ir1,ispn)+dx*(flm(lm,ir1+1,ispn)-flm(lm,ir1,ispn)))*ylm(lm)
+  enddo
+  zval(ispn)=zt1
+enddo
+return
+end subroutine
+
 subroutine s_func_val2(x,f1lm,f2lm,zval1,zval2)
 use modmain
 implicit none
@@ -492,6 +536,67 @@ endif
 s_dot_ll=zprod
 return
 end function
+
+complex(8) function s_spinor_dot_ll(pos1,pos2,f1lm,f2lm)
+use modmain
+implicit none
+! arguments
+real(8), intent(in) :: pos1(3)
+real(8), intent(in) :: pos2(3)
+complex(8), intent(in) :: f1lm(lmmaxwan,s_nr,nspinor)
+complex(8), intent(in) :: f2lm(lmmaxwan,s_nr,nspinor)
+! local variables
+complex(8), allocatable :: f1tp_(:,:)
+complex(8), allocatable :: f2tp_(:,:,:)
+complex(8), allocatable :: f2lm_(:,:)
+complex(8) zprod
+integer ir,itp,ispn
+real(8) x1(3),x2(3)
+complex(8), external :: zdotc
+!
+zprod=zzero
+if (sum(abs(pos1-pos2)).lt.1d-10) then 
+  do ispn=1,nspinor
+    do ir=1,s_nr
+      zprod=zprod+zdotc(lmmaxwan,f1lm(1,ir,ispn),1,f2lm(1,ir,ispn),1)*s_rw(ir)
+    enddo
+  enddo
+else
+  allocate(f1tp_(s_ntp,s_nr))
+  allocate(f2tp_(s_ntp,s_nr,nspinor))
+  !allocate(f2lm_(lmmaxwan,s_nr))
+  f2tp_=zzero
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(itp,x1,x2)
+  do ir=1,s_nr
+    do itp=1,s_ntp
+      x1(:)=s_x(:,itp)*s_r(ir)
+      x2(:)=pos1(:)+x1(:)-pos2(:)
+      call s_spinor_func_val(x2,f2lm,f2tp_(itp,ir,:))
+    enddo
+  enddo !ir
+!$OMP END PARALLEL DO
+  do ispn=1,nspinor
+! convert to spherical coordinates
+    call zgemm('T','N',s_ntp,s_nr,lmmaxwan,zone,s_ylmf,lmmaxwan,&
+      f1lm(1,1,ispn),lmmaxwan,zzero,f1tp_,s_ntp)
+    do ir=1,s_nr
+      do itp=1,s_ntp
+        zprod=zprod+dconjg(f1tp_(itp,ir))*f2tp_(itp,ir,ispn)*s_tpw(itp)*s_rw(ir)
+      enddo
+    enddo
+  enddo
+! convert f2 to spherical harmonics
+!  call zgemm('T','N',lmmaxwan,s_nr,s_ntp,zone,s_ylmb,s_ntp,f2tp_,&
+!    s_ntp,zzero,f2lm_,lmmaxwan)
+!  do ir=1,s_nr
+!    zprod=zprod+zdotc(lmmaxwan,f1lm(1,ir),1,f2lm_(1,ir),1)*s_rw(ir)
+!  enddo
+  deallocate(f1tp_,f2tp_)
+endif
+s_spinor_dot_ll=zprod
+return
+end function
+
 
 subroutine s_gen_pot(wanlm,wantp,wvlm,wanprop)
 use modmain

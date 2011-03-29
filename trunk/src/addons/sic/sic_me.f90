@@ -39,9 +39,10 @@ do iloc=1,nwtloc
   vl(:)=sic_wantran%iwt(3:5,i)
   pos1(:)=wanpos(:,n)
   pos2(:)=wanpos(:,n1)+vl(1)*avec(:,1)+vl(2)*avec(:,2)+vl(3)*avec(:,3)
-  do ispn=1,nspinor
-    vwanme(i)=vwanme(i)+s_dot_ll(pos1,pos2,s_wvlm(1,1,ispn,j),s_wanlm(1,1,ispn,j1))
-  enddo
+  !do ispn=1,nspinor
+  !  vwanme(i)=vwanme(i)+s_dot_ll(pos1,pos2,s_wvlm(1,1,ispn,j),s_wanlm(1,1,ispn,j1))
+  !enddo
+  vwanme(i)=s_spinor_dot_ll(pos1,pos2,s_wvlm(1,1,1,j),s_wanlm(1,1,1,j1))
 enddo
 call mpi_grid_reduce(vwanme(1),sic_wantran%nwt,all=.true.)
 ! check localization criterion 
