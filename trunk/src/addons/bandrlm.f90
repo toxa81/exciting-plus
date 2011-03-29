@@ -116,7 +116,11 @@ if (mpi_grid_root()) then
     write(50,'("     ")')
   end do
   close(50)
-  open(50,file='bands.dat',action='WRITE',form='FORMATTED')
+  if (sic) then
+    open(50,file='sic_bands.dat',action='WRITE',form='FORMATTED')
+  else
+    open(50,file='bands.dat',action='WRITE',form='FORMATTED')
+  endif
   do ist=1,nstsv
     do ik=1,nkpt
       write(50,'(2G18.10)') dpp1d(ik),(evalsv(ist,ik)-efermi)*ha2ev
@@ -136,7 +140,11 @@ if (mpi_grid_root()) then
       write(50,*)
     end do
     close(50)
-    open(50,file='bands_wann.dat',action='WRITE',form='FORMATTED')
+    if (sic) then
+      open(50,file='sic_bands_wann.dat',action='WRITE',form='FORMATTED')
+    else
+      open(50,file='bands_wann.dat',action='WRITE',form='FORMATTED')
+    endif
     do ist=1,nwantot
       do ik=1,nkpt
         write(50,'(2G18.10)') dpp1d(ik),(wann_e(ist,ik)-efermi)*ha2ev
@@ -146,7 +154,7 @@ if (mpi_grid_root()) then
     close(50)
   endif
   if (sic) then
-    open(50,file='bands_sic_wann.dat',action='WRITE',form='FORMATTED')
+    open(50,file='sic_bands_wann_h0.dat',action='WRITE',form='FORMATTED')
     do ist=1,sic_wantran%nwan
       do ik=1,nkpt
         write(50,'(2G18.10)') dpp1d(ik),(sic_wann_e0k(ist,ik)-efermi)*ha2ev

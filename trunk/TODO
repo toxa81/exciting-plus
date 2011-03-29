@@ -10,4 +10,10 @@
 
 * the main Elk code is diverging; at least, merge the k-point generation
 * [???] Light version of the code without EXX, OEP, Hartree-Fock...
-* [?] slit source to levels (like in blas): basic subroutines, generic lapw subroutiens, main elk subroutines
+* [?] split source to levels (like in blas): basic subroutines, generic lapw subroutiens, main elk subroutines
+
+* SIC code: optimize dot product
+            xml output of important variables
+            automatic generation of r-poles; different b in exp for r-mesh
+            remove number of spherical points form input
+            
