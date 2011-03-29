@@ -1,24 +1,16 @@
 subroutine sic_main
 use modmain
 use mod_nrkp
-use mod_hdf5
 use mod_sic
 use mod_wannier
-use mod_linresp
 use mod_madness
 implicit none
-integer n,i,j,i1,j1,j2,n1,n2,ik,ispn,vtrl(3),ikloc,ig,nwtloc,iloc
+integer n,j,ik,ispn,ikloc,ig
 integer ias,lm
-real(8) t1,t2,t3,vtrc(3),pos1(3),pos2(3),vrc(3)
-integer vl(3)
-complex(8) z1,z2(nspinor),me1,me2
 real(8), allocatable :: laplsv(:) 
-complex(8), allocatable :: vwank(:,:)
-complex(8), allocatable :: vwanme_old(:)
 character*20 c1,c2,c3
 character, parameter :: orbc(4)=(/'s','p','d','f'/)
 character*2, parameter :: spinc(2)=(/'up','dn'/)
-logical texist
 !
 sic=.true.
 ! initialise universal variables
@@ -65,6 +57,7 @@ if (wproc) then
   write(151,'("cutoff radius for Wannier functions   : ",F12.6)')sic_wan_cutoff
   write(151,'("number of radial points               : ",I6)')s_nr
   write(151,'("number of spherical points            : ",I6)')s_ntp
+  write(151,'("maximum angular momentum              : ",I6)')lmaxwan
   write(151,'("cutoff radius for SIC matrix elements : ",F12.6)')sic_me_cutoff
   write(151,'("number of Wannier transitions         : ",I6)')sic_wantran%nwt
   write(151,'("number of translations for Bloch sums : ",I6)')sic_orbitals%ntr
@@ -154,132 +147,9 @@ call madness_init_box
 ! generate Wannier functions and corresponding potential
 call sic_wan(151)
 ! matrix elements
-call timer_start(t_sic_me,reset=.true.)
-if (wproc) then
-  write(151,*)
-  write(151,'(80("="))')
-  write(151,'("matrix elements")')
-  write(151,'(80("="))')
-endif
-! save old matrix elements
-allocate(vwanme_old(sic_wantran%nwt))
-inquire(file="sic.hdf5",exist=texist)
-if (texist) call hdf5_read("sic.hdf5","/","vwanme",vwanme_old(1),(/sic_wantran%nwt/))
-!vwanme_old=vwanme
-! compute matrix elements of SIC potential
-!  vwanme = <(W*V)_n|W_{n1,T}>
-vwanme=zzero
-nwtloc=mpi_grid_map2(sic_wantran%nwt,dims=(/dim_k,dim2/))
-do iloc=1,nwtloc
-  i=mpi_grid_map2(sic_wantran%nwt,dims=(/dim_k,dim2/),loc=iloc)
-  n=sic_wantran%iwt(1,i)
-  j=sic_wantran%idxiwan(n)
-  n1=sic_wantran%iwt(2,i)
-  j1=sic_wantran%idxiwan(n1)
-  vl(:)=sic_wantran%iwt(3:5,i)
-  pos1(:)=wanpos(:,n)
-  pos2(:)=wanpos(:,n1)+vl(1)*avec(:,1)+vl(2)*avec(:,2)+vl(3)*avec(:,3)
-  do ispn=1,nspinor
-    vwanme(i)=vwanme(i)+s_dot_ll(pos1,pos2,s_wvlm(1,1,ispn,j),s_wanlm(1,1,ispn,j1))
-  enddo
-enddo
-call mpi_grid_reduce(vwanme(1),sic_wantran%nwt,all=.true.)
-! check localization criterion 
-t2=-1.d0
-do i=1,sic_wantran%nwt
-  n=sic_wantran%iwt(1,i)
-  n1=sic_wantran%iwt(2,i)
-  vl(:)=sic_wantran%iwt(3:5,i)
-  j=sic_wantran%iwtidx(n1,n,-vl(1),-vl(2),-vl(3))
-  t1=abs(vwanme(i)-dconjg(vwanme(j)))
-  if (t1.ge.t2) then
-    t2=t1
-    i1=i
-    j1=j
-    me1=vwanme(i)
-    me2=vwanme(j)
-  endif
-enddo
-! symmetrize the potential matrix elements
-do i=1,sic_wantran%nwt
-  n=sic_wantran%iwt(1,i)
-  n1=sic_wantran%iwt(2,i)
-  vl(:)=sic_wantran%iwt(3:5,i)
-  j=sic_wantran%iwtidx(n1,n,-vl(1),-vl(2),-vl(3))
-  z1=0.5d0*(vwanme(i)+dconjg(vwanme(j)))
-  vwanme(i)=z1
-  vwanme(j)=dconjg(z1)
-enddo
-! compute RMS difference
-t3=0.d0
-do i=1,sic_wantran%nwt
-  t3=t3+abs(vwanme(i)-vwanme_old(i))**2
-enddo
-! write matrix elements
-!if (wproc) then
-!  write(151,*)
-!  do i=1,sic_wantran%nwt
-!    n=sic_wantran%iwt(1,i)
-!    n1=sic_wantran%iwt(2,i)
-!    vl(:)=sic_wantran%iwt(3:5,i)
-!    write(151,'("  n : ",I4,"    n'' : ",I4,"    T : ",3I4,8X," new : ",&
-!     &G18.10," old : ",G18.10)')n,n1,vl,abs(vwanme(i)),abs(vwanme_old(i))
-!  enddo
-!endif
-deallocate(vwanme_old)
-call timer_stop(t_sic_me)
-if (wproc) then
-  write(151,*)
-  write(151,'("maximum deviation from ""localization criterion"" : ",F12.6)')t2
-  write(151,'("matrix elements with maximum difference : ",2I6)')i1,j1
-  write(151,'("  n : ",I4,"    n'' : ",I4,"    T : ",3I4,8X,2G18.10)')&
-    sic_wantran%iwt(:,i1),dreal(me1),dimag(me1)
-  write(151,'("  n : ",I4,"    n'' : ",I4,"    T : ",3I4,8X,2G18.10)')&
-    sic_wantran%iwt(:,j1),dreal(me2),dimag(me2)
-  write(151,*)
-  write(151,'("diagonal matrix elements (<(W*V)_n|W_n>) :")')
-  do j=1,sic_wantran%nwan
-    n=sic_wantran%iwan(j)
-    i=sic_wantran%iwtidx(n,n,0,0,0)
-    write(151,'("  n : ",I4,8X,2G18.10)')n,dreal(vwanme(i)),dimag(vwanme(i))
-  enddo  
-  t3=sqrt(t3/sic_wantran%nwt)
-  write(151,*)
-  write(151,'("matrix elements RMS difference :",G18.10)')t3
-  write(151,*)
-  write(151,'("done in : ",F8.3," sec.")')timer_get_value(t_sic_me)
-  write(151,*)
-  call flushifc(151)
-endif
-! check hermiticity of V_nn'(k)
-allocate(vwank(sic_wantran%nwan,sic_wantran%nwan))
-do ik=1,nkpt
-  vwank=zzero
-  do i=1,sic_wantran%nwt
-    n1=sic_wantran%iwt(1,i)
-    j1=sic_wantran%idxiwan(n1)
-    n2=sic_wantran%iwt(2,i)
-    j2=sic_wantran%idxiwan(n2)
-    vtrl(:)=sic_wantran%iwt(3:5,i)
-    vtrc(:)=vtrl(1)*avec(:,1)+vtrl(2)*avec(:,2)+vtrl(3)*avec(:,3)
-    z1=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
-    vwank(j1,j2)=vwank(j1,j2)+z1*vwanme(i)
-  enddo
-  t1=0.d0
-  do j1=1,sic_wantran%nwan
-    do j2=1,sic_wantran%nwan
-      t1=max(t1,abs(vwank(j1,j2)-dconjg(vwank(j2,j1))))
-    enddo
-  enddo
-  if (wproc) then
-    write(151,'("ik : ",I4,"   max.herm.err : ",G18.10 )')ik,t1
-  endif
-enddo
-deallocate(vwank)
+call sic_me(151)
 !call sic_test_blochsum(2,.false.,"sic_blochsum_wan_backward.out")
 !call sic_diff_blochsum_mt
-! signal that now we have computed sic potential and wannier functions
-tsic_wv=.true.
 ! write to HDF5 file
 call sic_writevwan
 if (wproc) then
