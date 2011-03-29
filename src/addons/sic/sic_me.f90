@@ -11,13 +11,23 @@ complex(8) me1,me2,z1
 complex(8), allocatable :: vwanme_old(:)
 complex(8), allocatable :: vwank(:,:)
 !
-call timer_start(t_sic_me,reset=.true.)
 if (wproc) then
   write(fout,*)
   write(fout,'(80("="))')
   write(fout,'("matrix elements")')
   write(fout,'(80("="))')
 endif
+! measure time fo one me
+pos1=0.d0
+pos2=1.d0 
+call timer_start(t_sic_me,reset=.true.)
+me1=s_spinor_dot_ll(pos1,pos2,s_wvlm(1,1,1,1),s_wanlm(1,1,1,1))
+call timer_stop(t_sic_me)
+if (wproc) then
+  write(fout,*)
+  write(fout,'("time for one matrix element : ",F8.3," sec.")')timer_get_value(t_sic_me)
+endif
+call timer_start(t_sic_me,reset=.true.)
 ! save old matrix elements
 allocate(vwanme_old(sic_wantran%nwt))
 inquire(file="sic.hdf5",exist=texist)
