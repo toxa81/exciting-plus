@@ -3,7 +3,8 @@ use modmain
 use mod_sic
 implicit none
 integer is,i,j,ir
-real(8) x,x0,x1,x2,x3,b,t
+real(8) x,x0,x1,x2,x3,t,a
+real(8), allocatable :: b(:)
 integer, parameter :: imesh=2
 real(8), external :: x_aux
 
@@ -32,27 +33,29 @@ if (imesh.eq.2) then
       call pstop
     endif
   enddo
-  allocate(s_r(s_nr))
+  allocate(b(s_nrpole))
   b=15.d0
+  !b(1)=16.d0
+! compute a=x(s_nr)
+  t=dble(s_nrpole)-1.d0
+  a=x_aux(1.d0*(s_nrpole-1),2.d0*(sic_wan_cutoff-s_rpole(s_nrpole)),b(s_nrpole),t)
+  do j=2,s_nrpole
+    a=a+x_aux(1.d0*(j-2),s_rpole(j)-s_rpole(j-1),b(j-1),t)
+  enddo
+  allocate(s_r(s_nr))
   do ir=1,s_nr
 ! t is in interval [-1, s_nrpole-1]
     t=(dble(s_nrpole)*(ir-1)/dble(s_nr-1))-1.d0
-    x=x_aux(1.d0*(s_nrpole-1),2.d0*(sic_wan_cutoff-s_rpole(s_nrpole)),b,t)
+    x=x_aux(1.d0*(s_nrpole-1),2.d0*(sic_wan_cutoff-s_rpole(s_nrpole)),b(s_nrpole),t)
     do j=2,s_nrpole
-      x=x+x_aux(1.d0*(j-2),s_rpole(j)-s_rpole(j-1),b,t)
+      x=x+x_aux(1.d0*(j-2),s_rpole(j)-s_rpole(j-1),b(j-1),t)
     enddo
-    s_r(ir)=x
+    s_r(ir)=x*sic_wan_cutoff/a
   enddo
-  if (abs(s_r(s_nr)-sic_wan_cutoff).gt.1d-5) then
-    write(*,'("Error(sic_genrmesh): last point of radial mesh is wrong")')
-    write(*,'("  s_r(s_nr) : ",G18.10)')s_r(s_nr)
-    write(*,'("  sic_wan_cutoff : ",G18.10)')sic_wan_cutoff
-    call pstop
-  endif
-  s_r(s_nr)=sic_wan_cutoff
-  if (mpi_grid_root()) then
-    write(*,'("[sic_genrmesh] first radial point : ",G18.10)')s_r(1)
-  endif
+  deallocate(b)
+  !if (mpi_grid_root()) then
+  !  write(*,'("[sic_genrmesh] first radial point : ",G18.10)')s_r(1)
+  !endif
 endif
 ! generate radial weights for integration
 if (allocated(s_rw)) deallocate(s_rw)

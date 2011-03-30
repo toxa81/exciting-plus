@@ -51,8 +51,8 @@ deallocate(wantp1)
 
 if (wproc) then
   t2=0.d0
-  do l=0,lmaxwan
-    do ispn=1,nspinor
+  do ispn=1,nspinor
+    do l=0,lmaxwan
       t1=0.d0
       do m=-l,l
         lm=idxlm(l,m)
@@ -66,7 +66,7 @@ if (wproc) then
   enddo
   call flushifc(fout)
 endif
-call mpi_grid_bcast(t2)
+!call mpi_grid_bcast(t2)
 !wanlm=wanlm/sqrt(t2)
 !wantp=wantp/sqrt(t2)
 return
