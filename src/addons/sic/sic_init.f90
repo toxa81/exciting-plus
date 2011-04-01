@@ -13,6 +13,13 @@ integer i1,i2,i3,ish,vl(3)
 real(8) a,b,x0,tp(2)
 logical l1,l2
 !
+if (.not.wannier) then
+  write(*,*)
+  write(*,'("Error(sic_init): no Wannier functions")')
+  write(*,*)
+  call pstop
+endif
+
 tevecsv=.true.
 lmmaxwan=(lmaxwan+1)**2
 
@@ -34,7 +41,6 @@ call genwantran(sic_wantran,-0.d0,sic_me_cutoff,allwt=.true.,waninc=sic_apply)
 
 if (allocated(sic_orbitals%vtl)) deallocate(sic_orbitals%vtl)
 allocate(sic_orbitals%vtl(3,sic_maxvtl))
-sic_orbitals%vtl=-1000000
 sic_orbitals%ntr=0
 l2=.true.
 ish=0
@@ -64,15 +70,6 @@ do while (l2)
     l2=.false.
   endif
 enddo
-!do i1=-2,2
-!  do i2=-2,2
-!    do i3=-2,2
-!      vl=(/i1,i2,i3/)
-!      sic_orbitals%ntr=sic_orbitals%ntr+1
-!      sic_orbitals%vtl(:,sic_orbitals%ntr)=vl
-!    enddo
-!  enddo
-!enddo
 ! Cartesian coordinates of translation vectors
 if (allocated(sic_orbitals%vtc)) deallocate(sic_orbitals%vtc)
 allocate(sic_orbitals%vtc(3,sic_orbitals%ntr))
@@ -163,15 +160,9 @@ vt(:)=vl(1)*avec(:,1)+vl(2)*avec(:,2)+vl(3)*avec(:,3)
 l1=.false.
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
-  jas=wan_info(1,n)
   do ias=1,natmtot
-    v1(:)=atposc(:,ias2ia(ias),ias2is(ias))+vt(:)-&
-      atposc(:,ias2ia(jas),ias2is(jas))
-    if (sqrt(sum(v1(:)**2)).le.sic_wan_cutoff) l1=.true.
-  enddo
-  do ir=1,ngrtot
-    v1(:)=vgrc(:,ir)+vt(:)-atposc(:,ias2ia(jas),ias2is(jas))
-    if (sqrt(sum(v1(:)**2)).le.sic_wan_cutoff) l1=.true.
+    v1(:)=atposc(:,ias2ia(ias),ias2is(ias))+vt(:)- wanpos(:,n)
+    if (sqrt(sum(v1(:)**2)).le.(sic_wan_cutoff+rmt(ias2is(ias)))) l1=.true.
   enddo
 enddo
 sic_include_cell=l1
