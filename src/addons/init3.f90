@@ -74,9 +74,8 @@ do is=1,nspecies
   enddo
 enddo
 if (wannier) call wann_init
-if (.not.wannier) sic=.false.
 if (sic) call sic_init
-if (debug_level.ge.5) then
+if (debug_level.ge.4) then
   fdbgout=999
   write(fdbgname,'("iproc_",I7.7,"__debug.txt")')iproc
   open(fdbgout,file=trim(adjustl(fdbgname)),form="FORMATTED",status="REPLACE")
