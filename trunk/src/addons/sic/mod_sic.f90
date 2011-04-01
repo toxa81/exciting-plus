@@ -141,103 +141,6 @@ integer, parameter :: wp_exc=10
 
 contains
 
-!subroutine s_get_wffvval(x,ngp,vpc,vgpc,wffvmt,wffvit,wffvval)
-!use modmain
-!implicit none
-!real(8), intent(in) :: x(3)
-!integer, intent(in) :: ngp
-!real(8), intent(in) :: vpc(3)
-!real(8), intent(in) :: vgpc(3,ngkmax)
-!complex(8), intent(in) :: wffvmt(lmmaxvr,nufrmax,natmtot)
-!complex(8), intent(in) :: wffvit(nmatmax)
-!complex(8), intent(out) :: wffvval
-!integer is,ia,ias,ir0,io,l,j,i,lm,ig
-!integer ntr(3)
-!real(8) vtc(3),vr0(3),r0,tp(2),t1
-!real(8) ur(0:lmaxvr,nufrmax)
-!complex(8) zt1,ylm(lmmaxvr)
-!real(8) ya(nprad),c(nprad)
-!real(8), external :: polynom
-!logical, external :: vrinmt
-!!
-!wffvval=zzero
-!if (vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
-!  ias=idxas(ia,is)
-!  call sphcrd(vr0,t1,tp)
-!  call genylm(lmaxvr,tp,ylm)
-!  vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
-!  ur=0.d0
-!  do l=0,lmaxvr
-!    do io=1,nufr(l,is)
-!      do j=1,nprad
-!        i=ir0+j-1
-!        ya(j)=ufr(i,l,io,ias2ic(ias))
-!      end do
-!      ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
-!    enddo !io
-!  enddo !l
-!  do lm=1,lmmaxvr
-!    l=lm2l(lm)
-!    do io=1,nufr(l,is)
-!      wffvval=wffvval+wffvmt(lm,io,ias)*ur(l,io)*ylm(lm)
-!    enddo !io
-!  enddo !lm
-!  wffvval=wffvval*exp(zi*dot_product(vpc(:),vtc(:)))
-!else
-!  do ig=1,ngp
-!    zt1=exp(zi*dot_product(x(:),vgpc(:,ig)))/sqrt(omega)
-!    wffvval=wffvval+zt1*wffvit(ig)
-!  enddo
-!endif
-!return
-!end subroutine
-
-!subroutine s_get_ufrval(x,vpc,ias,ufrval)
-!use modmain
-!implicit none
-!! arguments
-!real(8), intent(in) :: x(3)
-!real(8), intent(in) :: vpc(3)
-!integer, intent(out) :: ias
-!complex(8), intent(out) :: ufrval(lmmaxvr,nufrmax)
-!! local variables
-!integer is,ia,ir0,io,l,j,i,lm
-!integer ntr(3)
-!real(8) vtc(3),vr0(3),r0,tp(2),t1
-!real(8) ur(0:lmaxvr,nufrmax)
-!complex(8) zt1,ylm(lmmaxvr)
-!real(8) ya(nprad),c(nprad)
-!real(8), external :: polynom
-!logical, external :: vrinmt
-!!
-!ufrval=zzero
-!ias=-1
-!if (vrinmt(x,is,ia,ntr,vr0,ir0,r0)) then
-!  ias=idxas(ia,is)
-!  call sphcrd(vr0,t1,tp)
-!  call genylm(lmaxvr,tp,ylm)
-!  vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
-!  ur=0.d0
-!  do l=0,lmaxvr
-!    do io=1,nufr(l,is)
-!      do j=1,nprad
-!        i=ir0+j-1
-!        ya(j)=ufr(i,l,io,ias2ic(ias))
-!      end do
-!      ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
-!    enddo !io
-!  enddo !l
-!  zt1=exp(zi*dot_product(vpc(:),vtc(:)))
-!  do lm=1,lmmaxvr
-!    l=lm2l(lm)
-!    do io=1,nufr(l,is)
-!      ufrval(lm,io)=ur(l,io)*ylm(lm)*zt1
-!    enddo !io
-!  enddo !lm
-!endif
-!return
-!end subroutine
-
 subroutine s_get_wanval(twan,n,x,wanval)
 use modmain
 use mod_nrkp
@@ -260,9 +163,6 @@ complex(8), external :: ylm_val
 complex(8) expigr(s_ngvec)
 complex(8) zm1(lmmaxvr,nufrmax,nspinor),zm2(nspinor)
 !
-!call sphcrd(x,t1,tp)
-!wanval=ylm_val(2,0,tp(1),tp(2))
-!return
 wanval=zzero
 x0(:)=x(:)-wanpos(:,n)
 if (sum(x0(:)**2).gt.(sic_wan_cutoff**2)) return
