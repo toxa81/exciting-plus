@@ -6,17 +6,17 @@ integer, intent(in) :: itest
 logical, intent(in) :: twan
 character*(*), intent(in) :: fname
 integer ik,ikloc,j,n,jas,it,ias,is,ia,ir,itp,ispn,ntrloc,itloc,lm
-integer ig,ig1,l
+integer ig,ig1,l,itp1
 real(8) x(3),t1,tp(2),vg(3)
 complex(8), allocatable :: zprod(:,:,:)
-complex(8) zt1,zt2(2),expikt,wanval(nspinor),z4
+complex(8) zt1,zt2(2),expikt,wanval(nspinor),wanval1(nspinor)
 complex(8), allocatable :: wgk(:,:)
 real(8), allocatable :: jl(:,:)
 complex(8), allocatable :: zf(:)
 complex(8),allocatable :: ylmgk(:)
 complex(8), allocatable :: wankmt(:,:,:,:)
 complex(8), allocatable :: wankir(:,:)
-complex(8), allocatable :: wantp(:,:,:,:)
+complex(8), allocatable :: wantp(:,:,:)
 complex(8), allocatable :: wanir(:,:)
 !
 allocate(zprod(3,sic_wantran%nwan,nkpt))
@@ -26,12 +26,11 @@ allocate(zf(s_nr))
 allocate(ylmgk(lmmaxwan))
 allocate(wankmt(mt_ntp,nrmtmax,natmtot,nspinor))
 allocate(wankir(ngrtot,nspinor))
-allocate(wantp(mt_ntp,nrmtmax,natmtot,nspinor))
+allocate(wantp(mt_ntp,nrmtmax,nspinor))
 allocate(wanir(ngrtot,nspinor))
 
-z4=zzero
 zprod=zzero
-ntrloc=mpi_grid_map(sic_orbitals%ntr,dim2)
+ntrloc=mpi_grid_map(sic_blochsum%ntr,dim2)
 ! test Bloch sum using exact values of WFs
 if (itest.eq.1) then
   do ik=1,1 !nkpt
@@ -43,47 +42,39 @@ if (itest.eq.1) then
         is=ias2is(ias)
         ia=ias2ia(ias)
         do itloc=1,ntrloc
-          it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
-          expikt=exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
+          it=mpi_grid_map(sic_blochsum%ntr,dim2,loc=itloc)
+          expikt=exp(-zi*dot_product(vkc(:,ik),sic_blochsum%vtc(:,it)))
           wantp=zzero
           do ir=1,nrmt(is)
             do itp=1,mt_ntp
               x(:)=mt_spx(:,itp)*spr(ir,is)+atposc(:,ia,is)+&
-                   sic_orbitals%vtc(:,it)
-              
-              !call s_get_wanval(.true.,n,x,wanval)
-              zt1=s_func_val(x,s_wanlm(1,1,1,j))
-              wanval=zt1
-
-              wantp(itp,ir,ias,:)=wanval(:)
-
-              !zt1=s_func_val(x,s_wanlm(1,1,1,j))
-              !z4=z4+zt1
-              !write(*,*)"bt val : ",dreal(zt1),"true val : ",dreal(wanval(1)),"diff : ",&
-              !  abs(zt1-wanval(1)),"  ! x : ",x,sqrt(sum(x**2))
+                   sic_blochsum%vtc(:,it)
+              call s_get_wanval(twan,n,x,wanval)
+              wantp(itp,ir,:)=wanval(:)
             enddo !itp
           enddo !ir
-          call mpi_grid_reduce(wantp(1,1,1,1),mt_ntp*nrmtmax*natmtot*nspinor,&
-            dims=(/dim_k/))
-          wankmt(:,:,:,:)=wankmt(:,:,:,:)+expikt*wantp(:,:,:,:)
+          call mpi_grid_reduce(wantp(1,1,1),mt_ntp*nrmtmax*nspinor,dims=(/dim_k/))
+          do ispn=1,nspinor
+            wankmt(:,:,ias,ispn)=wankmt(:,:,ias,ispn)+expikt*wantp(:,:,ispn)
+          enddo
         enddo !itloc
       enddo !ias
       call mpi_grid_reduce(wankmt(1,1,1,1),mt_ntp*nrmtmax*natmtot*nspinor,&
         dims=(/dim2/))
-      !do itloc=1,ntrloc
-      !  it=mpi_grid_map(sic_orbitals%ntr,dim2,loc=itloc)
-      !  expikt=exp(-zi*dot_product(vkc(:,ik),sic_orbitals%vtc(:,it)))
-      !  wanir=zzero
-      !  do ir=1,ngrtot
-      !    x(:)=vgrc(:,ir)+sic_orbitals%vtc(:,it)
-      !    call s_get_wanval(twan,n,x,wanval)
-      !    wanir(ir,:)=wanval(:)
-      !  enddo
-      !  call mpi_grid_reduce(wanir(1,1),ngrtot*nspinor,dims=(/dim_k/))
-      !  wankir(:,:)=wankir(:,:)+expikt*wanir(:,:)
-      !enddo !itloc
-      !call mpi_grid_reduce(wankir(1,1),ngrtot*nspinor,dims=(/dim2/),&
-      !  all=.true.)
+
+     !write(*,*)"in test_blochsum"
+     ! do itp=1,mt_ntp-1
+     !   do itp1=itp+1,mt_ntp
+     !     if (sum(abs(mt_spx(:,itp)+mt_spx(:,itp1))).lt.1d-10) then
+     !       t1=0.d0
+     !       do ir=1,nrmt(1)
+     !         t1=t1+abs(wankmt(itp,ir,1,1)-wankmt(itp1,ir,1,1))
+     !       enddo
+     !       write(*,*)"itp,itp1=",itp,itp1," diff=",t1,"x=",mt_spx(:,itp)
+     !     endif
+     !   enddo
+     ! enddo
+          
       zt1=zzero
       zt2=zzero
       do ispn=1,nspinor
@@ -108,7 +99,6 @@ if (itest.eq.1) then
   !  enddo
   !  close(210)
   !endif
-
 endif
 if (itest.eq.2) then
   do ikloc=1,1 !nkptloc

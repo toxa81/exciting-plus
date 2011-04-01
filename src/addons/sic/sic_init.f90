@@ -39,9 +39,9 @@ call deletewantran(sic_wantran)
 ! get Wannier transitions
 call genwantran(sic_wantran,-0.d0,sic_me_cutoff,allwt=.true.,waninc=sic_apply)
 
-if (allocated(sic_orbitals%vtl)) deallocate(sic_orbitals%vtl)
-allocate(sic_orbitals%vtl(3,sic_maxvtl))
-sic_orbitals%ntr=0
+if (allocated(sic_blochsum%vtl)) deallocate(sic_blochsum%vtl)
+allocate(sic_blochsum%vtl(3,sic_maxvtl))
+sic_blochsum%ntr=0
 l2=.true.
 ish=0
 do while (l2)
@@ -53,12 +53,12 @@ do while (l2)
           vl=(/i1,i2,i3/)
           if (sic_include_cell(vl)) then
             l1=.true.
-            sic_orbitals%ntr=sic_orbitals%ntr+1
-            if (sic_orbitals%ntr.gt.sic_maxvtl) then
+            sic_blochsum%ntr=sic_blochsum%ntr+1
+            if (sic_blochsum%ntr.gt.sic_maxvtl) then
               write(*,'("Error(sic_init) : sic_maxvtl is too small")')
               call pstop
             endif
-            sic_orbitals%vtl(:,sic_orbitals%ntr)=vl
+            sic_blochsum%vtl(:,sic_blochsum%ntr)=vl
           endif
         endif
       enddo
@@ -71,12 +71,12 @@ do while (l2)
   endif
 enddo
 ! Cartesian coordinates of translation vectors
-if (allocated(sic_orbitals%vtc)) deallocate(sic_orbitals%vtc)
-allocate(sic_orbitals%vtc(3,sic_orbitals%ntr))
-do i=1,sic_orbitals%ntr
-  sic_orbitals%vtc(:,i)=sic_orbitals%vtl(1,i)*avec(:,1)+&
-                        sic_orbitals%vtl(2,i)*avec(:,2)+&
-                        sic_orbitals%vtl(3,i)*avec(:,3)
+if (allocated(sic_blochsum%vtc)) deallocate(sic_blochsum%vtc)
+allocate(sic_blochsum%vtc(3,sic_blochsum%ntr))
+do i=1,sic_blochsum%ntr
+  sic_blochsum%vtc(:,i)=sic_blochsum%vtl(1,i)*avec(:,1)+&
+                        sic_blochsum%vtl(2,i)*avec(:,2)+&
+                        sic_blochsum%vtl(3,i)*avec(:,3)
 end do
 
 call sic_genrmesh
@@ -109,12 +109,12 @@ sic_wgk=zzero
 if (allocated(sic_wvgk)) deallocate(sic_wvgk)
 allocate(sic_wvgk(ngkmax,sic_wantran%nwan,nspinor,nkptloc))
 sic_wgk=zzero
-if (allocated(sic_wuy)) deallocate(sic_wuy)
-allocate(sic_wuy(lmmaxvr,nufrmax,natmtot,sic_wantran%nwan,nspinor,nkptloc))
-sic_wuy=zzero
-if (allocated(sic_wvuy)) deallocate(sic_wvuy)
-allocate(sic_wvuy(lmmaxvr,nufrmax,natmtot,sic_wantran%nwan,nspinor,nkptloc))
-sic_wvuy=zzero
+!if (allocated(sic_wuy)) deallocate(sic_wuy)
+!allocate(sic_wuy(lmmaxvr,nufrmax,natmtot,sic_wantran%nwan,nspinor,nkptloc))
+!sic_wuy=zzero
+!if (allocated(sic_wvuy)) deallocate(sic_wvuy)
+!allocate(sic_wvuy(lmmaxvr,nufrmax,natmtot,sic_wantran%nwan,nspinor,nkptloc))
+!sic_wvuy=zzero
 
 if (allocated(s_wankmt)) deallocate(s_wankmt)
 allocate(s_wankmt(mt_ntp,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
