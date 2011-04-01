@@ -44,6 +44,7 @@ do is=1,nspecies
   do ir=1,spnr(is)
     spr(ir,is)=sprmin(is)*exp(dble(ir-1)*t1*t2)
   end do
+  spr(:,is)=spr(:,is)*rmt(is)/spr(nrmt(is),is)
 end do
 ! find the inner part of the muffin-tin (where rho is calculated with lmaxinr)
 do is=1,nspecies
