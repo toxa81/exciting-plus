@@ -25,6 +25,19 @@ if (imesh.eq.2) then
     allocate(s_rpole(1))
     s_rpole=0.d0
   endif
+! test automatic poles  
+  call getnghbr(-0.d0,sic_wan_cutoff-0.1d0)
+  s_nrpole=inghbr(6,nnghbr(1),1)
+  deallocate(s_rpole)
+  allocate(s_rpole(s_nrpole))
+  do i=1,s_nrpole
+    do j=1,nnghbr(1)
+      if (inghbr(6,j,1).eq.i) then
+        s_rpole(i)=inghbr(2,j,1)/1000000.d0
+        exit
+      endif
+    enddo !j
+  enddo !i
   do i=1,s_nrpole
     if (s_rpole(i).ge.sic_wan_cutoff) then
       write(*,'("Error(sic_genrmesh): pole of the radial mesh is greater than cutoff radius")')
