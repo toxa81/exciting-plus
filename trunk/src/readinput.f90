@@ -1122,7 +1122,7 @@ case('sic_apply')
 case('nsclsic')
   read(50,*,err=20) nsclsic
 case('sic_sphere')
-  read(50,*,err=20) lmaxwan,s_nr,s_ntp
+  read(50,*,err=20) lmaxwan,s_nr
 case('sic_rpole')
   read(50,*,err=20) s_nrpole
   s_nrpole=s_nrpole+1
