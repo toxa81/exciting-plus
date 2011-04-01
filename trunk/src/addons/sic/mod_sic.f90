@@ -41,9 +41,9 @@ complex(8), allocatable :: sic_wgk(:,:,:,:)
 ! dot-product <(W*V)_{n\sigma}|exp^{i(G+k)r}>
 complex(8), allocatable :: sic_wvgk(:,:,:,:)
 ! dot-product <W_{n\sigma}|u_{l}^{\alpha,\mu}*Y_{lm}>
-complex(8), allocatable :: sic_wuy(:,:,:,:,:,:)
+!complex(8), allocatable :: sic_wuy(:,:,:,:,:,:)
 ! dot-product <(W*V)_{n\sigma}|u_{l}^{\alpha,\mu}*Y_{lm}>
-complex(8), allocatable :: sic_wvuy(:,:,:,:,:,:)
+!complex(8), allocatable :: sic_wvuy(:,:,:,:,:,:)
 
 integer, allocatable :: sic_apply(:)
 integer, allocatable :: sicw(:,:)
@@ -56,20 +56,16 @@ integer, parameter :: sic_maxvtl=1000
 
 type(wannier_transitions) :: sic_wantran
 
-type t_sic_orbitals
+type t_sic_blochsum
 ! total number of translations
   integer ntr
 ! translation vectors in lattice coordinates
   integer, allocatable :: vtl(:,:)
 ! translation vectors in Cartesian coordinates
   real(8), allocatable :: vtc(:,:)
-!! vector -> index map
-!  integer, allocatable :: ivtit(:,:,:)
-!! translation limits along each lattice vector
-!  integer tlim(2,3)
-end type t_sic_orbitals
+end type t_sic_blochsum
 
-type(t_sic_orbitals) :: sic_orbitals
+type(t_sic_blochsum) :: sic_blochsum
 
 ! maximum number of G-vectors for plane-wave expansion of Bloch functions
 integer s_ngvec
