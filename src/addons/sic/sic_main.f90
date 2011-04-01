@@ -114,9 +114,9 @@ do ikloc=1,nkptnrloc
 enddo
 
 !call sic_readvwan
-call sic_test_fvprj(151)
-call sic_test_blochsum(1,.true.,"sic_blochsum_true_wan.out")
-call bstop
+!call sic_test_fvprj(151)
+!call sic_test_blochsum(1,.true.,"sic_blochsum_true_wan.out")
+!call bstop
 
 ! init Madness related variables 
 #ifdef _MAD_
