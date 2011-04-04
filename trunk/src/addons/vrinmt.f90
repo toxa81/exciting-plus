@@ -54,3 +54,63 @@ do is=1,nspecies
 end do
 return
 end
+
+logical function vrinmt2(vrc,is,ia,ntr,ir0,vrc0,dr)
+use modmain
+implicit none
+! arguments
+real(8), intent(in) :: vrc(3)
+integer, intent(out) :: is
+integer, intent(out) :: ia
+integer, intent(out) :: ntr(3)
+integer, intent(out) :: ir0
+real(8), intent(out) :: vrc0(3)
+real(8), intent(out) :: dr
+! local variables
+real(8) vrl(3),vrc1(3),pos(3),r0
+integer i1,i2,i3,ir
+real(8), parameter :: eps=1d-13
+
+vrinmt2=.false.
+call getntr(vrc,ntr,vrl)
+call r3mv(avec,vrl,vrc1)
+
+do is=1,nspecies
+  do ia=1,natoms(is)
+    do i1=-1,1
+      do i2=-1,1
+        do i3=-1,1
+          pos(:)=atposc(:,ia,is)+dble(i1)*avec(:,1)+&
+                                 dble(i2)*avec(:,2)+&
+                                 dble(i3)*avec(:,3)
+          vrc0(:)=vrc1(:)-pos(:)
+          r0=sqrt(sum(vrc0**2))
+          if (r0.le.(rmt(is)+eps)) then
+            r0=min(r0,rmt(is))
+            r0=max(r0,spr(1,is))
+            do ir=1,nrmt(is)
+              if (spr(ir,is).ge.r0) then
+                if (ir.eq.1) then
+                  dr=0.d0
+                  ir0=1
+                else
+                  dr=(r0-spr(ir-1,is))/(spr(ir,is)-spr(ir-1,is))
+                  ir0=ir-1
+                endif
+                ntr(1)=ntr(1)+i1
+                ntr(2)=ntr(2)+i2
+                ntr(3)=ntr(3)+i3
+                vrinmt2=.true.
+                return
+              end if
+            end do !ir
+          end if
+        end do
+      end do
+    end do
+  end do
+end do
+return
+end
+
+
