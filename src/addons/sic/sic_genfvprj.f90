@@ -7,13 +7,14 @@ integer, intent(in) :: ikloc
 complex(8), intent(in) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 ! local variables
-integer ik,ispn
+integer ik,ispn,ierr
 integer ias,ist,j,j1
 complex(8) zt2(2)
 complex(8), allocatable :: wfmt_(:,:)
 complex(8), allocatable :: wfmt(:,:,:)
 complex(8), allocatable :: wb(:,:,:,:)
 complex(8), allocatable :: om(:,:)
+logical, parameter :: tsic_ort=.true.
 !
 sic_wb(:,:,:,ikloc)=zzero
 sic_wvb(:,:,:,ikloc)=zzero
@@ -107,6 +108,36 @@ if (debug_level.ge.4) then
   enddo
   call dbg_close_file
   deallocate(wb,om)
+endif
+if (tsic_ort) then
+  allocate(om(sic_wantran%nwan,sic_wantran%nwan))
+  allocate(wb(2,sic_wantran%nwan,nstfv,nspinor))
+  wb(1,:,:,:)=sic_wb(:,:,:,ikloc)
+  wb(2,:,:,:)=sic_wvb(:,:,:,ikloc)
+  om=zzero
+  do j=1,sic_wantran%nwan
+    do j1=1,sic_wantran%nwan
+      do ispn=1,nspinor
+        do ist=1,nstfv
+          om(j,j1)=om(j,j1)+wb(1,j,ist,ispn)*dconjg(wb(1,j1,ist,ispn))
+        enddo
+      enddo
+    enddo
+  enddo
+  call isqrtzhe(sic_wantran%nwan,om,ierr)
+  if (ierr.ne.0) then
+    write(*,'("Warning(sic_genfvprj): overlap matrix is degenerate")')
+  else
+    sic_wb(:,:,:,ikloc)=zzero
+    sic_wvb(:,:,:,ikloc)=zzero
+    do j=1,sic_wantran%nwan
+      do j1=1,sic_wantran%nwan
+        sic_wb(j,:,:,ikloc)=sic_wb(j,:,:,ikloc)+om(j1,j)*wb(1,j1,:,:)
+        sic_wvb(j,:,:,ikloc)=sic_wvb(j,:,:,ikloc)+om(j1,j)*wb(2,j1,:,:)
+      enddo
+    enddo
+  endif
+  deallocate(om,wb)
 endif
 return
 end
