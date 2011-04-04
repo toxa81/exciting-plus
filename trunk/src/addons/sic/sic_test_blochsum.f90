@@ -6,7 +6,7 @@ integer, intent(in) :: itest
 logical, intent(in) :: twan
 character*(*), intent(in) :: fname
 integer ik,ikloc,j,n,jas,it,ias,is,ia,ir,itp,ispn,ntrloc,itloc,lm
-integer ig,ig1,l,itp1
+integer ig,io,ig1,l,itp1
 real(8) x(3),t1,tp(2),vg(3)
 complex(8), allocatable :: zprod(:,:,:)
 complex(8) zt1,zt2(2),expikt,wanval(nspinor),wanval1(nspinor)
@@ -18,6 +18,8 @@ complex(8), allocatable :: wankmt(:,:,:,:)
 complex(8), allocatable :: wankir(:,:)
 complex(8), allocatable :: wantp(:,:,:)
 complex(8), allocatable :: wanir(:,:)
+complex(8), allocatable :: wnkmt(:,:,:,:,:)
+complex(8), allocatable :: wnkmt_(:,:)
 !
 allocate(zprod(3,sic_wantran%nwan,nkpt))
 allocate(wgk(ngkmax,nspinor))
@@ -28,12 +30,39 @@ allocate(wankmt(mt_ntp,nrmtmax,natmtot,nspinor))
 allocate(wankir(ngrtot,nspinor))
 allocate(wantp(mt_ntp,nrmtmax,nspinor))
 allocate(wanir(ngrtot,nspinor))
-
+allocate(wnkmt(mt_ntp,nrmtmax,natmtot,nspinor,sic_wantran%nwan))
+allocate(wnkmt_(lmmaxvr,nrmtmax))
 zprod=zzero
 ntrloc=mpi_grid_map(sic_blochsum%ntr,dim2)
 ! test Bloch sum using exact values of WFs
 if (itest.eq.1) then
   do ik=1,1 !nkpt
+    
+    ikloc=1
+    wnkmt=zzero
+    do j=1,sic_wantran%nwan
+      n=sic_wantran%iwan(j)
+      do ispn=1,nspinor
+        do ias=1,natmtot
+          wnkmt_=zzero
+          do ir=1,nrmt(ias2is(ias))
+            do lm=1,lmmaxvr
+              do io=1,nufr(lm2l(lm),ias2is(ias))
+                wnkmt_(lm,ir)=wnkmt_(lm,ir)+&
+                  wann_unkmt(lm,io,ias,ispn,n,ikloc)*&
+                  ufr(ir,lm2l(lm),io,ias2ic(ias))
+              enddo
+            enddo !lm
+          enddo !ir
+! convert to spherical coordinates
+        call zgemm('T','N',mt_ntp,nrmt(ias2is(ias)),lmmaxvr,zone,mt_ylmf,&
+          lmmaxvr,wnkmt_,lmmaxvr,zzero,wnkmt(1,1,ias,ispn,j),mt_ntp)
+         enddo !ias
+     enddo !ispn
+    enddo !j
+   
+
+
     do j=1,sic_wantran%nwan
       n=sic_wantran%iwan(j)
       wankmt=zzero
@@ -61,6 +90,14 @@ if (itest.eq.1) then
       enddo !ias
       call mpi_grid_reduce(wankmt(1,1,1,1),mt_ntp*nrmtmax*natmtot*nspinor,&
         dims=(/dim2/))
+
+      do ir=1,nrmt(1)
+        t1=0.d0
+        do itp=1,mt_ntp
+          t1=t1+abs(wankmt(itp,ir,1,1)-wnkmt(itp,ir,1,1,1))
+        enddo
+        write(500,*)spr(ir,1),t1
+      enddo
 
      !write(*,*)"in test_blochsum"
      ! do itp=1,mt_ntp-1
@@ -195,5 +232,6 @@ deallocate(wgk,jl,ylmgk)
 deallocate(wankmt,wankir)
 deallocate(wantp,wanir)
 deallocate(zf)
+deallocate(wnkmt)
 return
 end
