@@ -4,17 +4,16 @@ implicit none
 real(8), intent(in) :: vrcnr(3)
 integer, intent(out) :: ntr(3)
 real(8), intent(out) :: vrl(3)
-real(8) b(3)
+real(8) f(3)
 integer i
 logical l1
 ! r=r0+T=r0+n1*a_1+n2*a_2+n3*a_3=f1*a_1+f2*a_2+f3*a_3
-! a_i*b_j=2pi*\delta_{ij}
-! f_i=r*b_i/2pi
+! f=a^{-1}*r
+call r3mv(ainv,vrcnr,f)
 l1=.false.
 do i=1,3
-  b(i)=dot_product(bvec(:,i),vrcnr(:))/twopi
-  ntr(i)=floor(b(i))
-  vrl(i)=b(i)-ntr(i)
+  ntr(i)=floor(f(i))
+  vrl(i)=f(i)-dble(ntr(i))
   if (vrl(i).eq.1.d0) then
     vrl(i)=0.d0
     ntr(i)=ntr(i)+1
