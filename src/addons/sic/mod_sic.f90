@@ -148,13 +148,14 @@ real(8), intent(in) :: x(3)
 complex(8), intent(out) :: wanval(nspinor)
 !
 integer is,ia,ias,ir0,io,l,j,i,lm,ig,ispn
-integer ntr(3),ik,ikloc
+integer ntr(3),ik,ikloc,ic
 real(8) x0(3),vtc(3),vr0(3),r0,tp(2),t1
-real(8) ur(0:lmaxvr,nufrmax)
+real(8) ur(0:lmaxvr,nufrmax),dr
 complex(8) zt1,zt2,ylm(lmmaxvr)
 real(8) ya(nprad),c(nprad)
 real(8), external :: polynom
 logical, external :: vrinmt
+logical, external :: vrinmt2
 complex(8), external :: ylm_val
 complex(8) expigr(s_ngvec)
 complex(8) zm1(lmmaxvr,nufrmax,nspinor),zm2(nspinor)
@@ -162,19 +163,47 @@ complex(8) zm1(lmmaxvr,nufrmax,nspinor),zm2(nspinor)
 wanval=zzero
 x0(:)=x(:)-wanpos(:,n)
 if (sum(x0(:)**2).gt.(sic_wan_cutoff**2)) return
-if (vrinmt(x,is,ia,ntr,vr0,ir0,r0).and.twan) then
+!if (vrinmt(x,is,ia,ntr,vr0,ir0,r0).and.twan) then
+!  ias=idxas(ia,is)
+!  call sphcrd(vr0,t1,tp)
+!  call genylm(lmaxvr,tp,ylm)
+!  vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
+!  ur=0.d0
+!  do l=0,lmaxvr
+!    do io=1,nufr(l,is)
+!      do j=1,nprad
+!        i=ir0+j-1
+!        ya(j)=ufr(i,l,io,ias2ic(ias))
+!      end do
+!      ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
+!    enddo !io
+!  enddo !l
+!  zm1=zzero
+!  do ikloc=1,nkptnrloc
+!    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+!    zt1=exp(zi*dot_product(vkcnr(:,ik),vtc(:)))*wkptnr(ik)
+!    do ispn=1,nspinor
+!      zm1(:,:,ispn)=zm1(:,:,ispn)+zt1*wann_unkmt(:,:,ias,ispn,n,ikloc)
+!    enddo
+!  enddo
+!  do ispn=1,nspinor
+!    do lm=1,lmmaxvr
+!      l=lm2l(lm)
+!      do io=1,nufr(l,is)
+!        wanval(ispn)=wanval(ispn)+zm1(lm,io,ispn)*ur(l,io)*ylm(lm)
+!      enddo !io
+!    enddo !lm
+!  enddo !ispn
+if (vrinmt2(x,is,ia,ntr,ir0,vr0,dr).and.twan) then
   ias=idxas(ia,is)
-  call sphcrd(vr0,t1,tp)
+  ic=ias2ic(ias)
+  call sphcrd(vr0,r0,tp)
   call genylm(lmaxvr,tp,ylm)
   vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
   ur=0.d0
   do l=0,lmaxvr
     do io=1,nufr(l,is)
-      do j=1,nprad
-        i=ir0+j-1
-        ya(j)=ufr(i,l,io,ias2ic(ias))
-      end do
-      ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
+      ur(l,io)=ufr(ir0,l,io,ic)+dr*(ufr(ir0+1,l,io,ic)-ufr(ir0,l,io,ic))
     enddo !io
   enddo !l
   zm1=zzero
