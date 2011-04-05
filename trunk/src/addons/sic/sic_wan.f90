@@ -77,8 +77,7 @@ do j=1,sic_wantran%nwan
   do irloc=1,nrloc
     ir=mpi_grid_map(s_nr,dim2,loc=irloc)
     do itp=1,s_ntp
-      vrc(:)=s_x(:,itp)*s_r(ir)+wanpos(:,n)
-      call s_get_wanval(.true.,n,vrc,wanval)
+      call s_get_wanval(.true.,n,vrc,wanval,itp=itp,ir=ir)
       wantp(itp,ir,:)=wanval(:)
     enddo
   enddo
