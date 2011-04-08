@@ -14,7 +14,7 @@ complex(8), allocatable :: wfmt_(:,:)
 complex(8), allocatable :: wfmt(:,:,:)
 complex(8), allocatable :: wb(:,:,:,:)
 complex(8), allocatable :: om(:,:)
-logical, parameter :: tsic_ort=.true.
+logical, parameter :: tsic_ort=.false.
 !
 sic_wb(:,:,:,ikloc)=zzero
 sic_wvb(:,:,:,ikloc)=zzero
