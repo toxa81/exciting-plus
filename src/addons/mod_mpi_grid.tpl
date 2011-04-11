@@ -1267,6 +1267,7 @@ if (allocated(mpi_grid_x)) &
   write(*,'("  coordinates of process : ",10I8)')mpi_grid_x
 #ifdef _MPI_
 call mpi_grid_barrier()
+call mpi_abort(MPI_COMM_WORLD,-1,ierr)
 call mpi_finalize(ierr)
 #endif
 stop
