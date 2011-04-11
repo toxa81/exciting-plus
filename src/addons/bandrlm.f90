@@ -39,6 +39,7 @@ real(4), allocatable :: bc(:,:,:,:,:)
 ! initialise universal variables
 call init0
 call init1
+if (.not.mpi_grid_in()) return
 ! maximum angular momentum for band character
 lmax=min(3,lmaxapw)
 lmmax=(lmax+1)**2
