@@ -106,22 +106,22 @@ do j=1,sic_wantran%nwan
     call sic_wanrms(n,wantp,s_wanlm(1,1,1,j),wanprop(1,j))
     call timer_stop(t_sic_wan_rms)
   endif
-! estimate the quadratic spread <r^2>-<r>^2
-  x2=0.d0
-  x=0.d0
-  do ir=1,s_nr
-    do itp=1,s_ntp
-      vrc(:)=s_x(:,itp)*s_r(ir)
-      do ispn=1,nspinor
-        t1=s_tpw(itp)*s_rw(ir)*abs(wantp(itp,ir,ispn))**2
-        x2=x2+t1*dot_product(vrc,vrc)
-        do i=1,3
-          x(i)=x(i)+t1*vrc(i)
-        enddo
-      enddo
-    enddo
-  enddo
-  wanprop(wp_spread,j)=x2-dot_product(x,x)
+!! estimate the quadratic spread <r^2>-<r>^2
+!  x2=0.d0
+!  x=0.d0
+!  do ir=1,s_nr
+!    do itp=1,s_ntp
+!      vrc(:)=s_x(:,itp)*s_r(ir)
+!      do ispn=1,nspinor
+!        t1=s_tpw(itp)*s_rw(ir)*abs(wantp(itp,ir,ispn))**2
+!        x2=x2+t1*dot_product(vrc,vrc)
+!        do i=1,3
+!          x(i)=x(i)+t1*vrc(i)
+!        enddo
+!      enddo
+!    enddo
+!  enddo
+!  wanprop(wp_spread,j)=x2-dot_product(x,x)
 ! generate potentials
   if (sic_apply(n).eq.2) then
     call timer_start(t_sic_wan_pot)
