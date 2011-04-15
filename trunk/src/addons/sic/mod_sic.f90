@@ -407,9 +407,9 @@ if (sum(abs(pos1-pos2)).lt.1d-10) then
     zprod=zprod+zdotc(lmmaxwan,f1lm(1,ir),1,f2lm(1,ir),1)*s_rw(ir)
   enddo
 else
-  allocate(f1tp_(s_ntp,s_nr))
+  !allocate(f1tp_(s_ntp,s_nr))
   allocate(f2tp_(s_ntp,s_nr))
-  !allocate(f2lm_(lmmaxwan,s_nr))
+  allocate(f2lm_(lmmaxwan,s_nr))
   f2tp_=zzero
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(itp,x1,x2)
   do ir=1,s_nr
@@ -421,20 +421,20 @@ else
   enddo !ir
 !$OMP END PARALLEL DO
 ! convert to spherical coordinates
-  call zgemm('T','N',s_ntp,s_nr,lmmaxwan,zone,s_ylmf,lmmaxwan,f1lm,&
-    lmmaxwan,zzero,f1tp_,s_ntp)
-  do ir=1,s_nr
-    do itp=1,s_ntp
-      zprod=zprod+dconjg(f1tp_(itp,ir))*f2tp_(itp,ir)*s_tpw(itp)*s_rw(ir)
-    enddo
-  enddo
-! convert f2 to spherical harmonics
-!  call zgemm('T','N',lmmaxwan,s_nr,s_ntp,zone,s_ylmb,s_ntp,f2tp_,&
-!    s_ntp,zzero,f2lm_,lmmaxwan)
+!  call zgemm('T','N',s_ntp,s_nr,lmmaxwan,zone,s_ylmf,lmmaxwan,f1lm,&
+!    lmmaxwan,zzero,f1tp_,s_ntp)
 !  do ir=1,s_nr
-!    zprod=zprod+zdotc(lmmaxwan,f1lm(1,ir),1,f2lm_(1,ir),1)*s_rw(ir)
+!    do itp=1,s_ntp
+!      zprod=zprod+dconjg(f1tp_(itp,ir))*f2tp_(itp,ir)*s_tpw(itp)*s_rw(ir)
+!    enddo
 !  enddo
-  deallocate(f1tp_,f2tp_)
+! convert f2 to spherical harmonics
+  call zgemm('T','N',lmmaxwan,s_nr,s_ntp,zone,s_ylmb,s_ntp,f2tp_,&
+    s_ntp,zzero,f2lm_,lmmaxwan)
+  do ir=1,s_nr
+    zprod=zprod+zdotc(lmmaxwan,f1lm(1,ir),1,f2lm_(1,ir),1)*s_rw(ir)
+  enddo
+  deallocate(f2tp_,f2lm_)
 endif
 s_dot_ll=zprod
 return
@@ -512,7 +512,7 @@ complex(8), intent(out) :: wvlm(lmmaxwan,s_nr,nspinor)
 real(8), intent(out) :: wanprop(nwanprop)
 ! local variables
 integer jr,ir,l,lm,ispn,lm1,lm2,lm3,lmmaxwanloc,lmloc
-real(8) t1
+real(8) t1,x(3),x2
 complex(8) zt1
 real(8), allocatable :: rhotp(:,:,:)
 real(8), allocatable :: rholm(:,:,:)
@@ -551,6 +551,17 @@ do ispn=1,nspinor
     s_ntp,0.d0,rholm(1,1,ispn),lmmaxwan)
   totrholm(:,:)=totrholm(:,:)+rholm(:,:,ispn)
 enddo
+
+! estimate the quadratic spread <r^2>-<r>^2
+x2=0.d0
+x=0.d0
+do ir=1,s_nr
+  x(1)=x(1)+2.d0*s_r(ir)*sqrt(pi/3.d0)*totrholm(4,ir)*s_rw(ir)
+  x(2)=x(2)+2.d0*s_r(ir)*sqrt(pi/3.d0)*totrholm(2,ir)*s_rw(ir)
+  x(3)=x(3)+2.d0*s_r(ir)*sqrt(pi/3.d0)*totrholm(3,ir)*s_rw(ir)
+  x2=x2+2.d0*(s_r(ir)**2)*sqrt(pi)*totrholm(1,ir)*s_rw(ir)
+enddo
+wanprop(wp_spread)=x2-dot_product(x,x) 
 ! compute Hartree potential
 vhalm=0.d0
 lmmaxwanloc=mpi_grid_map2(lmmaxwan,dims=(/dim_k,dim2/))
