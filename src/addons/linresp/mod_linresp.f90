@@ -43,7 +43,12 @@ complex(8), allocatable :: lr_w(:)
 ! broadening parameter (eV)
 real(8) lr_eta
 data lr_eta/0.3d0/
-
+! inverse temperature for the matsubara frequency in eV^-1
+real(8) lr_beta
+data lr_beta/30.d0/
+! .true. if matsubara frequency mesh is required
+logical lr_matsubara
+data lr_matsubara/.false./
 real(8) fxca0
 data fxca0/0.d0/
 real(8) fxca1
