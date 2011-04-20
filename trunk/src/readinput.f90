@@ -1006,6 +1006,9 @@ case('chi0_exclude_bands')
 case('response_w')
   read(50,*,err=20) lr_nw
   read(50,*,err=20) lr_w0,lr_w1,lr_eta  
+case('response_iw')
+  lr_matsubara=.true.
+  read(50,*,err=20) lr_nw,lr_beta 
 case('response_fxc')
   read(50,*,err=20) fxctype,nfxca,fxca0,fxca1
 case('response_wann')

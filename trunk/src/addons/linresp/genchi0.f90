@@ -43,9 +43,14 @@ if (wproc) then
   write(150,'("Calculation of chi0")')
   write(150,*)
   write(150,'("Energy mesh parameters:")')
-  write(150,'("  energy interval [eV] : ", 2F9.4)')lr_w0,lr_w1
-  write(150,'("  energy step     [eV] : ", F9.4)')lr_dw
-  write(150,'("  eta             [eV] : ", F9.4)')lr_eta
+  if (lr_matsubara) then
+    write(150,'("  number of Matsubara frequencies : ",I4)')lr_nw
+    write(150,'("  inverse temperature [1/eV]      : ",F9.4)')lr_beta
+  else
+    write(150,'("  energy interval [eV] : ", 2F9.4)')lr_w0,lr_w1
+    write(150,'("  energy step     [eV] : ", F9.4)')lr_dw
+    write(150,'("  eta             [eV] : ", F9.4)')lr_eta
+  endif
   write(150,*)  
   write(150,'("Included band interval (Ha)        : ",2F8.2)')&
     chi0_include_bands(1),chi0_include_bands(2)
