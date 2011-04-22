@@ -25,16 +25,19 @@ me1=s_spinor_dot_ll(pos1,pos2,s_wvlm(1,1,1,1),s_wanlm(1,1,1,1))
 call timer_stop(t_sic_me)
 if (wproc) then
   write(fout,*)
-  write(fout,'("time for one matrix element : ",F8.3," sec.")')timer_get_value(t_sic_me)
+  write(fout,'("time for one matrix element : ",F8.3," sec.")')&
+    timer_get_value(t_sic_me)
 endif
 call timer_start(t_sic_me,reset=.true.)
-! save old matrix elements
+! read old matrix elements
 allocate(vwanme_old(sic_wantran%nwt))
+vwanme_old=zzero
 inquire(file="sic.hdf5",exist=texist)
 if (texist) then
-  call hdf5_read("sic.hdf5","/","vwanme",vwanme_old(1),(/sic_wantran%nwt/))
-else
-  vwanme_old=zzero
+  call hdf5_read("sic.hdf5","/","nwt",i)
+  if (i.eq.sic_wantran%nwt) then
+    call hdf5_read("sic.hdf5","/","vwanme",vwanme_old(1),(/sic_wantran%nwt/))
+  endif
 endif
 ! compute matrix elements of SIC potential
 !  vwanme = <(W*V)_n|W_{n1,T}>
