@@ -67,6 +67,9 @@ end type t_sic_blochsum
 
 type(t_sic_blochsum) :: sic_blochsum
 
+integer sic_debug_level
+data sic_debug_level/0/
+
 ! maximum number of G-vectors for plane-wave expansion of Bloch functions
 integer s_ngvec
 ! number of radial points in big spheres
