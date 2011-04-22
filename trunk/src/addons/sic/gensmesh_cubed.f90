@@ -8,7 +8,7 @@ real(8) x0(3),x1(3),x2(3),x3(3)
 real(8), allocatable :: x(:,:)
 integer, allocatable :: facets(:,:)
 
-n=10
+n=19
 
 nx=2*n*n+2*n*(n-2)+2*(n-2)*(n-2)
 allocate(x(3,nx))
@@ -50,7 +50,6 @@ enddo
 do i=1,nx
   x(:,i)=x(:,i)/sqrt(sum(x(:,i)**2))
 enddo
-
 !allocate(facets(3,nx*5))
 !call find_facets(nx,x,nf,facets)
 
@@ -106,13 +105,7 @@ do itp=1,s_ntp
     s_ylmb(itp,lm)=dconjg(s_ylmf(lm,itp))*s_tpw(itp) 
   enddo
 enddo
-call gen_bsht
-!do itp=1,2
-!  do lm=1,5
-!    write(*,*)"lm=",lm,s_rlmb(itp,lm)/s_rlmf(lm,itp)
-!  enddo
-!enddo
-!call bstop
+!call gen_bsht
 !open(200,file="sph_x.dat",form="formatted",status="replace")
 !do i=1,s_ntp
 !  write(200,'(3(G18.10,","),G18.10)')s_x(:,i),1.d0
