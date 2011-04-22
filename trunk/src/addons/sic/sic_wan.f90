@@ -20,6 +20,7 @@ complex(8), allocatable :: wantp(:,:,:)
 integer, parameter :: iovlp=1 
 integer, parameter :: irms=0
 complex(8), external :: zdotc
+character*100 fname
 !
 allocate(wantp(s_ntp,s_nr,nspinor))
 allocate(wanprop(nwanprop,sic_wantran%nwan))
@@ -40,24 +41,29 @@ if (wproc) then
   call flushifc(fout)
 endif
 
-!open(210,file="wannier_[100].dat",form="formatted",status="replace")
-!do ir=1,s_nr
-!  x(:)=(/1.d0,0.d0,0.d0/)*s_r(ir)
-!  call s_get_wanval(.true.,1,x,wanval)
-!  z1=wanval(1)
-!  write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
-!enddo
-!close(210)
-!stop "stop in sic_wan"
-!
-!open(210,file="wannier_Ne_s__[110].dat",form="formatted",status="replace")
-!do ir=1,s_nr
-!  x(:)=((/1.d0,1.d0,0.d0/)/sqrt(2.d0))*s_r(ir)
-!  call s_get_wanval(.true.,1,x,wanval)
-!  z1=wanval(1)
-!  write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
-!enddo
-!close(210)
+if (sic_debug_level.ge.2) then
+  do j=1,sic_wantran%nwan
+    n=sic_wantran%iwan(j)
+    write(fname,'("wannier_",I4.4,"_[100].dat")')n
+    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
+    do ir=1,s_nr
+      x(:)=(/1.d0,0.d0,0.d0/)*s_r(ir)
+      call s_get_wanval(.true.,n,x,wanval)
+      z1=wanval(1)
+      write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
+    enddo
+    close(210)
+    write(fname,'("wannier_",I4.4,"_[001].dat")')n
+    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
+    do ir=1,s_nr
+      x(:)=(/0.d0,0.d0,1.d0/)*s_r(ir)
+      call s_get_wanval(.true.,n,x,wanval)
+      z1=wanval(1)
+      write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
+    enddo
+    close(210)
+  enddo
+endif
 
 call timer_start(t_sic_wan,reset=.true.)
 call timer_reset(t_sic_wan_gen)
@@ -131,51 +137,27 @@ do j=1,sic_wantran%nwan
 enddo !j
 deallocate(wantp)
 
-!open(210,file="wan_bt_on_mt_mesh.dat",form="formatted",status="replace")
-!do ir=1,nrmt(1)
-!  itp=3
-!  x(:)=mt_spx(:,itp)*spr(ir,1)
-!  z1=s_func_val(x,s_wanlm(1,1,1,1))
-!  write(210,'(3G18.10)')spr(ir,1),dreal(z1),dimag(z1)
-!enddo
-!close(210)
-!
-!open(210,file="wan_on_mt_mesh.dat",form="formatted",status="replace")
-!do ir=1,nrmt(1)
-!  itp=3
-!  x(:)=mt_spx(:,itp)*spr(ir,1)
-!  call s_get_wanval(.true.,1,x,wanval)
-!  z1=wanval(1)
-!  write(210,'(3G18.10)')spr(ir,1),dreal(z1),dimag(z1)
-!enddo
-!close(210)
-!
-!open(210,file="wannier_bt_[100].dat",form="formatted",status="replace")
-!do ir=1,s_nr
-!  x(:)=(/1.d0,0.d0,0.d0/)*s_r(ir)
-!  z1=s_func_val(x,s_wanlm(1,1,1,1))
-!  write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
-!enddo
-!close(210)
-!
-!open(210,file="wan_bt_on_s_mesh.dat",form="formatted",status="replace")
-!do ir=1,s_nr
-!  !x(:)=((/1.d0,1.d0,0.d0/)/sqrt(2.d0))*s_r(ir)
-!  x(:)=(/1.d0,0.d0,0.d0/)*s_r(ir)
-!  z1=s_func_val(x,s_wanlm(1,1,1,1))  
-!  write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
-!enddo
-!close(210)
-
-!call s_func_plot1d("__wan_s.dat",2000,(/0.d0,0.d0,0.d0/),&
-!  (/0.d0,0.d0,0.d0/),(/10.d0,0.d0,0.d0/),s_wanlm(1,1,1,1))
-!call s_func_plot1d("__pwan_s.dat",2000,(/0.d0,0.d0,0.d0/),&
-!  (/0.d0,0.d0,0.d0/),(/10.d0,0.d0,0.d0/),s_pwanlm(1,1,1,1))
-!
-!call s_func_plot1d("__wv_s.dat",2000,(/0.d0,0.d0,0.d0/),&
-!  (/0.d0,0.d0,0.d0/),(/10.d0,0.d0,0.d0/),s_wvlm(1,1,1,1))
-!call s_func_plot1d("__pwv_s.dat",2000,(/0.d0,0.d0,0.d0/),&
-!  (/0.d0,0.d0,0.d0/),(/10.d0,0.d0,0.d0/),s_pwvlm(1,1,1,1))
+if (sic_debug_level.ge.2) then
+  do j=1,sic_wantran%nwan
+    n=sic_wantran%iwan(j)
+    write(fname,'("wannier_",I4.4,"_bt_[100].dat")')n
+    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
+    do ir=1,s_nr
+      x(:)=(/1.d0,0.d0,0.d0/)*s_r(ir)
+      z1=s_func_val(x,s_wanlm(1,1,1,j))
+      write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
+    enddo
+    close(210)
+    write(fname,'("wannier_",I4.4,"_bt_[001].dat")')n
+    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
+    do ir=1,s_nr
+      x(:)=(/0.d0,0.d0,1.d0/)*s_r(ir)
+      z1=s_func_val(x,s_wanlm(1,1,1,j))
+      write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
+    enddo
+    close(210)
+  enddo
+endif
 
 ! check <W|\phi> matrix elements
 !if (.true.) call sic_test_fvprj(fout)
