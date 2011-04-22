@@ -19,7 +19,7 @@ if (.not.wannier) then
   write(*,*)
   call pstop
 endif
-
+!sic_debug_level=2
 tevecsv=.true.
 lmmaxwan=(lmaxwan+1)**2
 
@@ -109,12 +109,6 @@ sic_wgk=zzero
 if (allocated(sic_wvgk)) deallocate(sic_wvgk)
 allocate(sic_wvgk(ngkmax,sic_wantran%nwan,nspinor,nkptloc))
 sic_wgk=zzero
-!if (allocated(sic_wuy)) deallocate(sic_wuy)
-!allocate(sic_wuy(lmmaxvr,nufrmax,natmtot,sic_wantran%nwan,nspinor,nkptloc))
-!sic_wuy=zzero
-!if (allocated(sic_wvuy)) deallocate(sic_wvuy)
-!allocate(sic_wvuy(lmmaxvr,nufrmax,natmtot,sic_wantran%nwan,nspinor,nkptloc))
-!sic_wvuy=zzero
 
 if (allocated(s_wankmt)) deallocate(s_wankmt)
 allocate(s_wankmt(mt_ntp,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
