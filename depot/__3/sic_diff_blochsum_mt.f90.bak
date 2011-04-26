@@ -1,0 +1,117 @@
+subroutine sic_diff_blochsum_mt
+use modmain
+use mod_sic
+use mod_nrkp
+implicit none
+integer ik,ikloc,j,n,ias,ispn,ir,lm,io,it,is,ia,itp
+real(8) t1,x(3)
+complex(8) zt1,wanval(nspinor)
+complex(8), allocatable :: apwalm(:,:,:,:)
+complex(8), allocatable :: evecfvnr(:,:,:)
+complex(8), allocatable :: evecsvnr(:,:)
+complex(8), allocatable :: wfmt(:,:)
+complex(8), allocatable :: wnkmt(:,:,:,:,:)  
+complex(8), allocatable :: wnkmt_bt(:,:,:,:,:)  
+complex(8), allocatable :: expikt(:,:)
+
+allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
+allocate(evecfvnr(nmatmax,nstfv,nspnfv))
+allocate(evecsvnr(nstsv,nstsv))
+allocate(wfmt(lmmaxvr,nrmtmax))
+allocate(wnkmt(mt_ntp,nrmtmax,natmtot,nspinor,sic_wantran%nwan)) 
+allocate(wnkmt_bt(mt_ntp,nrmtmax,natmtot,nspinor,sic_wantran%nwan)) 
+
+allocate(expikt(nkptnrloc,sic_orbitals%ntr))
+do it=1,sic_orbitals%ntr
+  do ikloc=1,nkptnrloc
+    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+    expikt(ikloc,it)=&
+      exp(-zi*dot_product(vkcnr(:,ik),sic_orbitals%vtc(:,it)))
+  enddo
+enddo
+
+do ikloc=1,1 !nkptnrloc
+  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+  call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfvnr)
+  call getevecsv(vklnr(1,ik),evecsvnr)
+  call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),&
+    sfacgknr(1,1,ikloc),apwalm)
+  wnkmt=zzero
+  do j=1,sic_wantran%nwan
+    n=sic_wantran%iwan(j)
+    do ispn=1,nspinor
+      do ias=1,natmtot
+        wfmt=zzero
+        do ir=1,nrmt(ias2is(ias))
+          do lm=1,lmmaxvr
+            do io=1,nufr(lm2l(lm),ias2is(ias))
+              wfmt(lm,ir)=wfmt(lm,ir)+wann_unkmt(lm,io,ias,ispn,n,ikloc)*&
+                ufr(ir,lm2l(lm),io,ias2ic(ias))
+            enddo
+          enddo !lm
+        enddo !ir
+        call zgemm('T','N',mt_ntp,nrmt(ias2is(ias)),lmmaxvr,zone,mt_ylmf,&
+          lmmaxvr,wfmt,lmmaxvr,zzero,wnkmt(1,1,ias,ispn,j),mt_ntp)
+      enddo !ias
+    enddo !ispn
+  enddo !j
+  wnkmt_bt=zzero
+  do j=1,sic_wantran%nwan
+    n=sic_wantran%iwan(j)
+    do ias=1,natmtot
+      is=ias2is(ias)
+      ia=ias2ia(ias)
+      do it=1,sic_orbitals%ntr
+        do ir=1,nrmt(is)
+          do itp=1,mt_ntp
+            x(:)=mt_spx(:,itp)*spr(ir,is)+atposc(:,ia,is)+&
+                 sic_orbitals%vtc(:,it)-wanpos(:,n)
+            !call s_get_wanval(.true.,n,x,wanval)
+            do ispn=1,nspinor
+              zt1=s_func_val(x,s_wanlm(1,1,ispn,j))
+              !zt1=wanval(ispn)
+              wnkmt_bt(itp,ir,ias,ispn,j)=&
+                wnkmt_bt(itp,ir,ias,ispn,j)+expikt(ikloc,it)*zt1
+            enddo !ispn
+          enddo !itp
+        enddo !ir
+      enddo !it
+    enddo !ias
+  enddo !j
+  if (mpi_grid_root()) then
+    open(210,file="diff_blochsum_mt.dat",form="formatted",status="replace")
+    do ir=1,nrmt(1)
+      t1=0.d0
+      do itp=1,mt_ntp
+        t1=t1+abs(wnkmt_bt(itp,ir,1,1,1)-wnkmt(itp,ir,1,1,1))
+      enddo
+      write(210,'(2G18.10)')spr(ir,1),t1
+    enddo !ir
+    close(210)
+    open(210,file="wnkmt.dat",form="formatted",status="replace")
+    do ir=1,nrmt(1)
+      itp=1
+      zt1=wnkmt(itp,ir,1,1,1)
+      write(210,'(3G18.10)')spr(ir,1),dreal(zt1),dimag(zt1)
+    enddo
+    close(210)
+    open(210,file="wnkmt_bt.dat",form="formatted",status="replace")
+    do ir=1,nrmt(1)
+      itp=1
+      zt1=wnkmt_bt(itp,ir,1,1,1)
+      write(210,'(3G18.10)')spr(ir,1),dreal(zt1),dimag(zt1)
+    enddo
+    close(210)
+  endif
+enddo !ikloc
+
+deallocate(apwalm)
+deallocate(evecfvnr)
+deallocate(evecsvnr)
+deallocate(wfmt)
+deallocate(wnkmt) 
+deallocate(wnkmt_bt) 
+deallocate(expikt)
+
+return
+end
