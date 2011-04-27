@@ -1126,12 +1126,16 @@ case('nsclsic')
   read(50,*,err=20) nsclsic
 case('sic_sphere')
   read(50,*,err=20) lmaxwan,s_nr
+case('sic_smesh')
+  read(50,*,err=20) sic_smesh_n,sic_bsht_niter
 case('sic_rpole')
   read(50,*,err=20) s_nrpole
   s_nrpole=s_nrpole+1
   allocate(s_rpole(s_nrpole))
   s_rpole(1)=0.d0
   read(50,*,err=20)(s_rpole(i),i=2,s_nrpole)
+case('sic_debug_level')
+  read(50,*,err=20) sic_debug_level
 case('disentangle')
   read(50,*,err=20) ldisentangle  
 case('scvl')
