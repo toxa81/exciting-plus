@@ -230,13 +230,13 @@ sic_energy_tot=sic_energy_kin-sic_energy_pot
 if (wproc) then
   write(fout,*)
   write(fout,'("   n |     normlm      normtp      spread&
-    &       RMS (wan, rho, rho^{1/3})")')
+    &     normrho       <x>         <y>         <z>")')
   write(fout,'(80("-"))')
   do j=1,sic_wantran%nwan
     n=sic_wantran%iwan(j)
-    write(151,'(I4," | ",6(F10.6,2X))')n,wanprop(wp_normlm,j),&
-    wanprop(wp_normtp,j),wanprop(wp_spread,j),wanprop(wp_rmswan,j),&
-    wanprop(wp_rmsrho,j),wanprop(wp_rmsrho13,j)
+    write(151,'(I4," | ",7(F10.6,2X))')n,wanprop(wp_normlm,j),&
+      wanprop(wp_normtp,j),wanprop(wp_spread,j),wanprop(wp_normrho,j),&
+      wanprop(wp_spread_x,j),wanprop(wp_spread_y,j),wanprop(wp_spread_z,j)
   enddo
   write(fout,'(80("-"))')
   write(fout,'("maximum deviation from norm : ",F12.6)')t1

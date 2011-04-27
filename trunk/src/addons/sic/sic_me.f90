@@ -21,7 +21,7 @@ endif
 pos1=0.d0
 pos2=1.d0 
 call timer_start(t_sic_me,reset=.true.)
-me1=s_spinor_dot_ll(pos1,pos2,s_wvlm(1,1,1,1),s_wanlm(1,1,1,1))
+me1=s_dot_ll_spinor(pos1,pos2,s_wvlm(1,1,1,1),s_wanlm(1,1,1,1))
 call timer_stop(t_sic_me)
 if (wproc) then
   write(fout,*)
@@ -52,10 +52,7 @@ do iloc=1,nwtloc
   vl(:)=sic_wantran%iwt(3:5,i)
   pos1(:)=wanpos(:,n)
   pos2(:)=wanpos(:,n1)+vl(1)*avec(:,1)+vl(2)*avec(:,2)+vl(3)*avec(:,3)
-  !do ispn=1,nspinor
-  !  vwanme(i)=vwanme(i)+s_dot_ll(pos1,pos2,s_wvlm(1,1,ispn,j),s_wanlm(1,1,ispn,j1))
-  !enddo
-  vwanme(i)=s_spinor_dot_ll(pos1,pos2,s_wvlm(1,1,1,j),s_wanlm(1,1,1,j1))
+  vwanme(i)=s_dot_ll_spinor(pos1,pos2,s_wvlm(1,1,1,j),s_wanlm(1,1,1,j1))
 enddo
 call mpi_grid_reduce(vwanme(1),sic_wantran%nwt,all=.true.)
 ! check localization criterion 

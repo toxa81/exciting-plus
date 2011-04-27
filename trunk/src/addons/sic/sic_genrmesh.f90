@@ -48,9 +48,7 @@ if (imesh.eq.2) then
   enddo
   if (mpi_grid_root()) then
     write(*,'("[sic_genrmesh] poles of the radial mesh")')
-    do i=1,s_nrpole
-      write(*,'(4X,G18.10)')s_rpole(i)
-    enddo
+    write(*,'(20F12.6)')s_rpole
   endif
   allocate(b(s_nrpole))
   b=15.d0

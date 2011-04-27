@@ -40,10 +40,6 @@ complex(8), allocatable :: sic_wvb(:,:,:,:)
 complex(8), allocatable :: sic_wgk(:,:,:,:)
 ! dot-product <(W*V)_{n\sigma}|exp^{i(G+k)r}>
 complex(8), allocatable :: sic_wvgk(:,:,:,:)
-! dot-product <W_{n\sigma}|u_{l}^{\alpha,\mu}*Y_{lm}>
-!complex(8), allocatable :: sic_wuy(:,:,:,:,:,:)
-! dot-product <(W*V)_{n\sigma}|u_{l}^{\alpha,\mu}*Y_{lm}>
-!complex(8), allocatable :: sic_wvuy(:,:,:,:,:,:)
 
 integer, allocatable :: sic_apply(:)
 integer, allocatable :: sicw(:,:)
@@ -85,12 +81,11 @@ real(8), allocatable :: s_rpole(:)
 real(8), allocatable :: s_rw(:)
 ! maximum l for expansion in big spheres
 integer lmaxwan
-data lmaxwan/5/
+data lmaxwan/10/
 ! (lmaxwan+1)^2
 integer lmmaxwan
 ! number of points on the big sphere
 integer s_ntp
-data s_ntp/266/
 ! spherical (theta,phi) coordinates of the covering points
 real(8), allocatable :: s_tp(:,:)
 ! Cartesian coordinates of the covering points
@@ -105,6 +100,12 @@ real(8), allocatable :: s_rlmb(:,:)
 complex(8), allocatable :: s_ylmf(:,:)
 ! backward transformation from coordinates to complex spherical harmonics
 complex(8), allocatable :: s_ylmb(:,:)
+! number of iterations for recursive reconstruction of expansion coefficients
+integer sic_bsht_niter
+data sic_bsht_niter/10/
+! integer parameter; controls number of spherical points 
+integer sic_smesh_n
+data sic_smesh_n/7/
 
 ! number of points for Lebedev mesh for LAPW muffin-tins 
 integer mt_ntp
@@ -126,7 +127,7 @@ complex(8), allocatable :: s_wankir(:,:,:,:)
 complex(8), allocatable :: s_wvkmt(:,:,:,:,:,:)
 complex(8), allocatable :: s_wvkir(:,:,:,:)
 
-integer, parameter :: nwanprop=10
+integer, parameter :: nwanprop=14
 integer, parameter :: wp_normlm=1
 integer, parameter :: wp_normtp=2
 integer, parameter :: wp_rmswan=3
@@ -137,6 +138,11 @@ integer, parameter :: wp_vha=7
 integer, parameter :: wp_vxc=8
 integer, parameter :: wp_vsic=9
 integer, parameter :: wp_exc=10
+integer, parameter :: wp_spread_x=11
+integer, parameter :: wp_spread_y=12
+integer, parameter :: wp_spread_z=13
+integer, parameter :: wp_normrho=14
+
 
 contains
 
@@ -443,7 +449,7 @@ s_dot_ll=zprod
 return
 end function
 
-complex(8) function s_spinor_dot_ll(pos1,pos2,f1lm,f2lm)
+complex(8) function s_dot_ll_spinor(pos1,pos2,f1lm,f2lm)
 use modmain
 implicit none
 ! arguments
@@ -499,7 +505,7 @@ else
 !  enddo
   deallocate(f1tp_,f2tp_)
 endif
-s_spinor_dot_ll=zprod
+s_dot_ll_spinor=zprod
 return
 end function
 
@@ -550,11 +556,17 @@ totrholm=0.d0
 do ispn=1,nspinor
   rhotp(:,:,ispn)=abs(wantp(:,:,ispn))**2
 ! convert spin density to real spherical harmonic expansion
-  call dgemm('T','N',lmmaxwan,s_nr,s_ntp,1.d0,s_rlmb,s_ntp,rhotp(1,1,ispn),&
-    s_ntp,0.d0,rholm(1,1,ispn),lmmaxwan)
+  !call dgemm('T','N',lmmaxwan,s_nr,s_ntp,1.d0,s_rlmb,s_ntp,rhotp(1,1,ispn),&
+  !  s_ntp,0.d0,rholm(1,1,ispn),lmmaxwan)
+  call sic_rbsht(s_nr,rhotp(1,1,ispn),rholm(1,1,ispn))
   totrholm(:,:)=totrholm(:,:)+rholm(:,:,ispn)
 enddo
-
+! norm of total charge density
+t1=0.d0
+do ir=1,s_nr
+  t1=t1+totrholm(1,ir)*s_rw(ir)
+enddo
+wanprop(wp_normrho)=t1*fourpi*y00
 ! estimate the quadratic spread <r^2>-<r>^2
 x2=0.d0
 x=0.d0
@@ -564,7 +576,10 @@ do ir=1,s_nr
   x(3)=x(3)+2.d0*s_r(ir)*sqrt(pi/3.d0)*totrholm(3,ir)*s_rw(ir)
   x2=x2+2.d0*(s_r(ir)**2)*sqrt(pi)*totrholm(1,ir)*s_rw(ir)
 enddo
-wanprop(wp_spread)=x2-dot_product(x,x) 
+wanprop(wp_spread)=x2-dot_product(x,x)
+wanprop(wp_spread_x)=x(1)
+wanprop(wp_spread_y)=x(2)
+wanprop(wp_spread_z)=x(3)
 ! compute Hartree potential
 vhalm=0.d0
 lmmaxwanloc=mpi_grid_map2(lmmaxwan,dims=(/dim_k,dim2/))
@@ -596,13 +611,15 @@ endif
 ! save XC energy density in extp
 extp(:,:)=extp(:,:)+ectp(:,:)
 ! expand in real spherical harmonics
-call dgemm('T','N',lmmaxwan,s_nr,s_ntp,1.d0,s_rlmb,s_ntp,extp,s_ntp,0.d0,&
-  exclm,lmmaxwan)
+!call dgemm('T','N',lmmaxwan,s_nr,s_ntp,1.d0,s_rlmb,s_ntp,extp,s_ntp,0.d0,&
+!  exclm,lmmaxwan)
+call sic_rbsht(s_nr,extp,exclm) 
 ! save XC potential in vxtp and expand in real spherical harmonics   
 do ispn=1,nspinor
   vxtp(:,:,ispn)=vxtp(:,:,ispn)+vctp(:,:,ispn)
-  call dgemm('T','N',lmmaxwan,s_nr,s_ntp,1.d0,s_rlmb,s_ntp,vxtp(1,1,ispn),&
-    s_ntp,0.d0,vxclm(1,1,ispn),lmmaxwan)
+  !call dgemm('T','N',lmmaxwan,s_nr,s_ntp,1.d0,s_rlmb,s_ntp,vxtp(1,1,ispn),&
+  !  s_ntp,0.d0,vxclm(1,1,ispn),lmmaxwan)
+  call sic_rbsht(s_nr,vxtp(1,1,ispn),vxclm(1,1,ispn))
 enddo
 ! compute vha=<V_h|rho>
 wanprop(wp_vha)=0.d0
@@ -728,5 +745,97 @@ if (present(zfrac)) then
 endif
 return
 end function
+
+subroutine sic_zbsht(nr,zftp,zflm)
+use modmain
+implicit none
+integer, intent(in) :: nr
+complex(8), intent(in) :: zftp(s_ntp,nr)
+complex(8), intent(inout) :: zflm(lmmaxwan,nr)
+!
+integer iter,nrloc,roffs
+real(8), allocatable :: tdiff(:)
+complex(8), allocatable :: zftp1(:,:)
+!
+nrloc=mpi_grid_map(nr,dim_k,offs=roffs)
+zflm=zzero
+! convert to spherical harmonics
+call zgemm('T','N',lmmaxwan,nrloc,s_ntp,zone,s_ylmb,s_ntp,&
+  zftp(1,roffs+1),s_ntp,zzero,zflm(1,roffs+1),lmmaxwan)
+allocate(zftp1(s_ntp,nrloc))
+allocate(tdiff(sic_bsht_niter))
+tdiff=0.d0
+do iter=1,sic_bsht_niter
+! convert back to spherical coordinates
+  call zgemm('T','N',s_ntp,nrloc,lmmaxwan,zone,s_ylmf,lmmaxwan,zflm(1,1+roffs),&
+    lmmaxwan,zzero,zftp1,s_ntp)
+  zftp1(:,1:nrloc)=zftp(:,roffs+1:roffs+nrloc)-zftp1(:,1:nrloc)
+  tdiff(iter)=sum(abs(zftp1))
+! add difference to spherical harmonic expanson
+  call zgemm('T','N',lmmaxwan,nrloc,s_ntp,zone,s_ylmb,s_ntp,&
+    zftp1,s_ntp,zone,zflm(1,roffs+1),lmmaxwan)
+enddo
+deallocate(zftp1)
+if (sic_bsht_niter.gt.0) then
+  call mpi_grid_reduce(tdiff(1),sic_bsht_niter,dims=(/dim_k/))
+endif
+call mpi_grid_reduce(zflm(1,1),lmmaxwan*nr,dims=(/dim_k/),all=.true.)
+if (sic_bsht_niter.gt.1) then
+  if (tdiff(sic_bsht_niter).gt.tdiff(sic_bsht_niter-1).and.&
+      tdiff(sic_bsht_niter).gt.1d-6) then
+    write(*,'("Warning(sic_zbsht): difference of functions at each iteration")')
+    write(*,'(255F12.6)')tdiff
+  endif
+endif
+deallocate(tdiff)
+return
+end subroutine
+
+subroutine sic_rbsht(nr,ftp,flm)
+use modmain
+implicit none
+integer, intent(in) :: nr
+real(8), intent(in) :: ftp(s_ntp,nr)
+real(8), intent(inout) :: flm(lmmaxwan,nr)
+!
+integer iter,nrloc,roffs
+real(8), allocatable :: tdiff(:)
+real(8), allocatable :: ftp1(:,:)
+!
+nrloc=mpi_grid_map(nr,dim_k,offs=roffs)
+flm=0.d0
+! convert to spherical harmonics
+call dgemm('T','N',lmmaxwan,nrloc,s_ntp,1.d0,s_rlmb,s_ntp,&
+  ftp(1,roffs+1),s_ntp,0.d0,flm(1,roffs+1),lmmaxwan)
+allocate(ftp1(s_ntp,nrloc))
+allocate(tdiff(sic_bsht_niter))
+tdiff=0.d0
+do iter=1,sic_bsht_niter
+! convert back to spherical coordinates
+  call dgemm('T','N',s_ntp,nrloc,lmmaxwan,1.d0,s_rlmf,lmmaxwan,flm(1,1+roffs),&
+    lmmaxwan,0.d0,ftp1,s_ntp)
+  ftp1(:,1:nrloc)=ftp(:,roffs+1:roffs+nrloc)-ftp1(:,1:nrloc)
+  tdiff(iter)=sum(abs(ftp1))
+! add spherical harmonic expanson of the difference to the total expansion
+  call dgemm('T','N',lmmaxwan,nrloc,s_ntp,1.d0,s_rlmb,s_ntp,&
+    ftp1,s_ntp,1.d0,flm(1,roffs+1),lmmaxwan)
+enddo
+deallocate(ftp1)
+if (sic_bsht_niter.gt.0) then
+  call mpi_grid_reduce(tdiff(1),sic_bsht_niter,dims=(/dim_k/))
+endif
+call mpi_grid_reduce(flm(1,1),lmmaxwan*nr,dims=(/dim_k/),all=.true.)
+if (sic_bsht_niter.gt.1) then
+  if (tdiff(sic_bsht_niter).gt.tdiff(sic_bsht_niter-1).and.&
+      tdiff(sic_bsht_niter).gt.1d-6) then
+    write(*,'("Warning(sic_rbsht): difference of functions at each iteration")')
+    write(*,'(255F12.6)')tdiff
+  endif
+endif
+deallocate(tdiff)
+return
+end subroutine
+
+
 
 end module
