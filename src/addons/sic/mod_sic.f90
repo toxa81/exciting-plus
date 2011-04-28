@@ -552,15 +552,57 @@ allocate(vxtp(s_ntp,s_nr,nspinor))
 allocate(vctp(s_ntp,s_nr,nspinor))
 allocate(vxclm(lmmaxwan,s_nr,nspinor))
 
+lmmaxwanloc=mpi_grid_map2(lmmaxwan,dims=(/dim_k,dim2/))
+
 totrholm=0.d0
+rholm=0.d0
 do ispn=1,nspinor
   rhotp(:,:,ispn)=abs(wantp(:,:,ispn))**2
-! convert spin density to real spherical harmonic expansion
+! convert density to real spherical harmonic expansion
   !call dgemm('T','N',lmmaxwan,s_nr,s_ntp,1.d0,s_rlmb,s_ntp,rhotp(1,1,ispn),&
   !  s_ntp,0.d0,rholm(1,1,ispn),lmmaxwan)
-  call sic_rbsht(s_nr,rhotp(1,1,ispn),rholm(1,1,ispn))
+  !call sic_rbsht(s_nr,rhotp(1,1,ispn),rholm(1,1,ispn))
+  !totrholm(:,:)=totrholm(:,:)+rholm(:,:,ispn)
+enddo
+! charge density
+! w(r)=\sum_{L} w_{L}(r) Y_{L}(t,p)
+! rho(r) = \sum_{L2} rho_{L2}(r) R_{L2}(t,p) = 
+!  = \sum_{L1,L3} w_{L1}^{*}(r) Y_{L1}^{*}(t,p) * w_{L3}(r) Y_{L3} (t,p)
+! rho_{L2}(r) = \sum_{L1,L3} w_{L1}^{*}(r) w_{L3}(r)   <Y_{L1} |R_{L2}| Y_{L3}>
+allocate(f1(s_nr,lmmaxwan,nspinor))
+allocate(f2(s_nr,lmmaxwan,nspinor))
+! rearrange wanlm in memory
+do ispn=1,nspinor
+  do lm=1,lmmaxwan
+    f1(:,lm,ispn)=wanlm(lm,:,ispn)
+  enddo
+enddo
+f2=0.d0
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(lm1,lm2,lm3,zt1,ispn)
+do lmloc=1,lmmaxwanloc
+  lm2=mpi_grid_map2(lmmaxwan,dims=(/dim_k,dim2/),loc=lmloc)
+  do lm1=1,lmmaxwan
+    do lm3=1,lmmaxwan
+      zt1=gauntyry(lm2l(lm1),lm2l(lm2),lm2l(lm3),&
+                   lm2m(lm1),lm2m(lm2),lm2m(lm3))
+      if (abs(zt1).gt.1d-12) then
+        do ispn=1,nspinor
+          f2(:,lm2,ispn)=f2(:,lm2,ispn)+&
+            dreal(dconjg(f1(:,lm1,ispn))*f1(:,lm3,ispn)*zt1)
+        enddo !ispn
+      endif
+    enddo
+  enddo
+enddo
+!$OMP END PARALLEL DO
+call mpi_grid_reduce(f2(1,1,1),s_nr*lmmaxwan*nspinor,all=.true.)
+do ispn=1,nspinor
+  do lm=1,lmmaxwan
+    rholm(lm,:,ispn)=f2(:,lm,ispn)
+  enddo
   totrholm(:,:)=totrholm(:,:)+rholm(:,:,ispn)
 enddo
+deallocate(f1,f2)
 ! norm of total charge density
 t1=0.d0
 do ir=1,s_nr
@@ -582,7 +624,6 @@ wanprop(wp_spread_y)=x(2)
 wanprop(wp_spread_z)=x(3)
 ! compute Hartree potential
 vhalm=0.d0
-lmmaxwanloc=mpi_grid_map2(lmmaxwan,dims=(/dim_k,dim2/))
 do lmloc=1,lmmaxwanloc
   lm=mpi_grid_map2(lmmaxwan,dims=(/dim_k,dim2/),loc=lmloc)
   l=lm2l(lm)
@@ -780,7 +821,7 @@ if (sic_bsht_niter.gt.0) then
   call mpi_grid_reduce(tdiff(1),sic_bsht_niter,dims=(/dim_k/))
 endif
 call mpi_grid_reduce(zflm(1,1),lmmaxwan*nr,dims=(/dim_k/),all=.true.)
-if (sic_bsht_niter.gt.1) then
+if (mpi_grid_root().and.sic_bsht_niter.gt.1) then
   if (tdiff(sic_bsht_niter).gt.tdiff(sic_bsht_niter-1).and.&
       tdiff(sic_bsht_niter).gt.1d-6) then
     write(*,'("Warning(sic_zbsht): difference of functions at each iteration")')
@@ -825,7 +866,7 @@ if (sic_bsht_niter.gt.0) then
   call mpi_grid_reduce(tdiff(1),sic_bsht_niter,dims=(/dim_k/))
 endif
 call mpi_grid_reduce(flm(1,1),lmmaxwan*nr,dims=(/dim_k/),all=.true.)
-if (sic_bsht_niter.gt.1) then
+if (mpi_grid_root().and.sic_bsht_niter.gt.1) then
   if (tdiff(sic_bsht_niter).gt.tdiff(sic_bsht_niter-1).and.&
       tdiff(sic_bsht_niter).gt.1d-6) then
     write(*,'("Warning(sic_rbsht): difference of functions at each iteration")')
