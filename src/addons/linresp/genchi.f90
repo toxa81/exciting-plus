@@ -159,6 +159,7 @@ if (wproc) then
   write(150,*)
   write(150,'("Done.")')
   call flushifc(150)
+  close(150)
 endif
 return
 end
