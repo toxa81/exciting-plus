@@ -100,6 +100,13 @@ if (wannier_chi0_chi.and..false.) then
   megqwan(1:nwt,:)=megqwan_tmp(1:nwt,:)
   deallocate(iwt_tmp,megqwan_tmp)
 endif
+!if (wannier_chi0_chi.and..true.) then
+!  do i=1,megqwantran%nwt 
+!    if (.not.(megqwantran%iwt(1,i).le.5.and.&
+!              megqwantran%iwt(2,i).le.5.and.&
+!              all(megqwantran%iwt(3:5,i).eq.0))) megqwan(i,:)=zzero
+!  enddo
+!endif
 
 ! for response in Wannier bais
 if (wannier_chi0_chi) then
@@ -161,6 +168,7 @@ nwloc=mpi_grid_map(lr_nw,dim_k)
 if (allocated(chi0loc)) deallocate(chi0loc)
 allocate(chi0loc(ngvecme,ngvecme,nwloc))
 if (wannier_chi0_chi) then
+  if (allocated(chi0wanloc)) deallocate(chi0wanloc)
   allocate(chi0wanloc(megqwantran%nwt,megqwantran%nwt,nwloc))
 endif
 
@@ -248,6 +256,7 @@ if (wproc) then
   write(150,*)
   write(150,'("Done.")')
   call flushifc(150)
+  close(150)
 endif
 return
 end
