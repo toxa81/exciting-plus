@@ -29,7 +29,7 @@ do i=1,nmegqblhloc(1,ikloc)
       chi0_exclude_bands(2)).and.bndint(ist2,evalsvnr(ist2,jk),&
       chi0_exclude_bands(1),chi0_exclude_bands(2))) l1=.false.
   if (l1) then
-    if (abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-10) then
+    if (abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-6) then
       wt(i)=(occsvnr(ist1,ik)-occsvnr(ist2,jk))/(evalsvnr(ist1,ik) - &
         evalsvnr(ist2,jk)+w)
     endif
