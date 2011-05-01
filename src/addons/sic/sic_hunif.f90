@@ -13,7 +13,7 @@ integer i,j,ik,vtrl(3),n1,n2,j1,j2,ispn1,ispn2,istfv1,istfv2,ist1,ist2
 real(8) vtrc(3),en
 complex(8) expikt
 complex(8), allocatable :: vwank(:,:),zm1(:,:)
-character*500 msg
+character*500 msg,fname
 logical, parameter :: tcheckherm=.false.
 !
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
