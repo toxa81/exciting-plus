@@ -1,5 +1,6 @@
 subroutine genlapl(ngp,igpig,vgpc,wfsvmt,wfsvit,laplsv)
 use modmain
+use mod_sic
 implicit none
 ! arguments
 integer, intent(in) :: ngp
@@ -16,7 +17,6 @@ complex(8) zt1
 complex(8), allocatable :: wfmt(:,:)
 complex(8), allocatable :: gwfmt(:,:,:)
 complex(8), allocatable :: gwfir(:)
-complex(8) zf(nrmtmax)
 complex(8), external :: zdotc
 
 laplsv=0.d0
@@ -43,12 +43,9 @@ do j=1,nstsv
       call gradzfmt(lmaxvr,nrmt(is),spr(:,is),lmmaxvr,nrmtmax,wfmt,gwfmt)
 ! calculate \grad\psi * \grad\psi
       do i=1,3
-        do ir=1,nrmt(is)
-          zf(ir)=zdotc(lmmaxvr,gwfmt(1,ir,i),1,gwfmt(1,ir,i),1)*(spr(ir,is)**2)
-        enddo
         zt1=zzero
-        do ir=1,nrmt(is)-1
-          zt1=zt1+0.5d0*(zf(ir)+zf(ir+1))*(spr(ir+1,is)-spr(ir,is))
+        do ir=1,nrmt(is)
+          zt1=zt1+zdotc(lmmaxvr,gwfmt(1,ir,i),1,gwfmt(1,ir,i),1)*mt_rw(ir,is)
         enddo
         laplsv(j)=laplsv(j)+dreal(zt1)
       enddo !i
