@@ -176,8 +176,13 @@ if (all(vqm(:,iq).eq.0).and.allocated(pmatnrloc)) then
           t1=evalsvnr(ist2,ik)-evalsvnr(ist1,ik)
           if (ist1.eq.ist2) megqblh(i,ig,ikloc)=zone
           if (abs(t1).gt.1d-8) then
+            !if (t1.gt.0.d0) then
+            !  t1=t1+swidth
+            !else
+            !  t1=t1-swidth
+            !endif
             megqblh(i,ig,ikloc)=megqblh(i,ig,ikloc)-&
-              dot_product(vq0c(:,iq),pmatnrloc(:,ist1,ist2,ikloc))/t1          
+              dot_product(vq0c(:,iq),pmatnrloc(:,ist1,ist2,ikloc))/t1
           endif
         enddo
       endif
@@ -227,6 +232,7 @@ if (wproc) then
   write(150,*)
   write(150,'("Done.")')
   call flushifc(150)
+  close(150)
 endif
 return
 end
