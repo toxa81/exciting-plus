@@ -46,9 +46,16 @@ data lr_eta/0.3d0/
 ! inverse temperature for the matsubara frequency in eV^-1
 real(8) lr_beta
 data lr_beta/30.d0/
-! .true. if matsubara frequency mesh is required
-logical lr_matsubara
-data lr_matsubara/.false./
+! .true. if imaginary frequency mesh is required
+logical timgw
+data timgw/.false./
+! first imaginary frequency
+real(8) lr_iw0
+data lr_iw0/0.d0/
+! last imaginary frequency
+real(8) lr_iw1
+data lr_iw1/80.d0/
+
 real(8) fxca0
 data fxca0/0.d0/
 real(8) fxca1

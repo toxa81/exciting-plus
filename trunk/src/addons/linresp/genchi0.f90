@@ -43,9 +43,9 @@ if (wproc) then
   write(150,'("Calculation of chi0")')
   write(150,*)
   write(150,'("Energy mesh parameters:")')
-  if (lr_matsubara) then
-    write(150,'("  number of Matsubara frequencies : ",I4)')lr_nw
-    write(150,'("  inverse temperature [1/eV]      : ",F9.4)')lr_beta
+  if (timgw) then
+    write(150,'("  number of imaginary frequencies : ",I4)')lr_nw
+    write(150,'("  frequency interval [eV] : ", 2F9.4)')lr_iw0,lr_iw1
   else
     write(150,'("  energy interval [eV] : ", 2F9.4)')lr_w0,lr_w1
     write(150,'("  energy step     [eV] : ", F9.4)')lr_dw

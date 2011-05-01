@@ -81,24 +81,24 @@ endif
 call genwantran(megqwantran,megqwan_mindist,megqwan_maxdist,allwt=.true.)
 ! setup energy mesh
 if (.not.screenu4) lr_nw=1
-if (.not.lr_matsubara) then
-  if (lr_nw.eq.1) then
-    lr_dw=0.d0
+if (lr_nw.eq.1) then
+  lr_dw=0.d0
+else
+  if (timgw) then
+    lr_dw=(lr_iw1-lr_iw0)/(lr_nw-1)
   else
     lr_dw=(lr_w1-lr_w0)/(lr_nw-1)
   endif
-  if (allocated(lr_w)) deallocate(lr_w)
-  allocate(lr_w(lr_nw))
-  do i=1,lr_nw
-    lr_w(i)=dcmplx(lr_w0+lr_dw*(i-1),lr_eta)/ha2ev
-  enddo
-else
-  if (allocated(lr_w)) deallocate(lr_w)
-  allocate(lr_w(lr_nw))
-  do i=1,lr_nw
-    lr_w(i)=zi*(2*i-1)*pi/lr_beta/ha2ev
-  enddo
 endif
+if (allocated(lr_w)) deallocate(lr_w)
+allocate(lr_w(lr_nw))
+do i=1,lr_nw
+  if (timgw) then
+    lr_w(i)=zi*(lr_iw0+lr_dw*(i-1))/ha2ev
+  else
+    lr_w(i)=dcmplx(lr_w0+lr_dw*(i-1),lr_eta)/ha2ev
+  endif
+enddo
 ! distribute frequency points over 1-st dimension
 nwloc=mpi_grid_map(lr_nw,dim_k)
 ! distribute q-vectors along 2-nd dimention
@@ -204,7 +204,7 @@ if (mpi_grid_side(dims=(/dim_k,dim_b/)).and.nwloc.gt.0) then
         call hdf5_create_group(trim(fu4),"/iwloc/"//c1,c2)
       enddo
       call hdf5_write(fu4,"/iwloc/"//c1,"iw",iw)
-      if (lr_matsubara) then
+      if (timgw) then
         call hdf5_write(fu4,"/iwloc/"//c1,"w",dimag(lr_w(iw)))
       else
         call hdf5_write(fu4,"/iwloc/"//c1,"w",dreal(lr_w(iw)))
