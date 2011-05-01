@@ -7,6 +7,7 @@ use mod_linresp
 use mod_wannier
 implicit none
 integer*8, allocatable :: hw_values(:)
+integer, allocatable :: waninc(:) 
 integer i,j,iq
 integer nvqloc,iqloc
 character*100 qnm
@@ -100,7 +101,17 @@ else
   call genwfnr(151,lpmat)
 endif
 if (wannier_megq) then
-  call genwantran(megqwantran,megqwan_mindist,megqwan_maxdist)
+  allocate(waninc(nwantot))
+  if (nwann_include.eq.0) then
+    waninc=1
+  else
+    waninc=0
+    do i=1,nwann_include
+      waninc(iwann_include(i))=1
+    enddo
+  endif
+  call genwantran(megqwantran,megqwan_mindist,megqwan_maxdist,waninc=waninc)
+  deallocate(waninc)
   !call printwantran(megqwantran)
   if (wproc1) then
     write(151,*)
