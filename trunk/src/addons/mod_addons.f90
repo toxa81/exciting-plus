@@ -71,6 +71,11 @@ data debug_level/0/
 integer fdbgout
 character*256 fdbgname
 
+real(8) nn_maxdist
+data nn_maxdist/15.d0/
+integer nn_maxsh
+data nn_maxsh/10/
+
 !-----------------------!
 !      MPI parallel     !
 !-----------------------!
@@ -169,4 +174,15 @@ integer, parameter :: pt_vscrn=11
 integer, parameter :: pt_megqblh_mt=12
 integer, parameter :: pt_megqblh_it=13
 
+type t_info
+  real(8) engytot
+  real(8) bandgap
+  real(8) rws
+  real(8) omega
+  real(8), allocatable :: magmom_mt(:)
+  real(8), allocatable :: magmom_wf(:)
+  real(8), allocatable :: wan_spread(:)
+end type t_info
+
 end module
+
