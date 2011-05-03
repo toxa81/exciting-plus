@@ -7,7 +7,10 @@ character*3 c3
 sic=.true.
 do isclsic=1,nsclsic
   write(c3,'(I3.3)')isclsic
-  if (iproc.eq.0) write(*,'("SIC iteration : ",I4)')isclsic
+  if (iproc.eq.0) then
+    write(*,*)
+    write(*,'("SIC iteration : ",I4)')isclsic
+  endif
   call gndstate
   call write_xml_info
   call mpi_world_barrier
