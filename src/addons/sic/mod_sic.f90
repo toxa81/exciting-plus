@@ -612,9 +612,12 @@ wanprop(wp_normrho)=t1*fourpi*y00
 ! estimate the quadratic spread <r^2>-<r>^2
 x2=0.d0
 x=0.d0
+! Ry=-\frac{1}{2} \sqrt{\frac{3}{\pi }} \sin (t) \sin (p)
+! Rz= \frac{1}{2} \sqrt{\frac{3}{\pi }} \cos (t)
+! Rx=-\frac{1}{2} \sqrt{\frac{3}{\pi }} \sin (t) \cos (p) 
 do ir=1,s_nr
-  x(1)=x(1)+2.d0*s_r(ir)*sqrt(pi/3.d0)*totrholm(4,ir)*s_rw(ir)
-  x(2)=x(2)+2.d0*s_r(ir)*sqrt(pi/3.d0)*totrholm(2,ir)*s_rw(ir)
+  x(1)=x(1)-2.d0*s_r(ir)*sqrt(pi/3.d0)*totrholm(4,ir)*s_rw(ir)
+  x(2)=x(2)-2.d0*s_r(ir)*sqrt(pi/3.d0)*totrholm(2,ir)*s_rw(ir)
   x(3)=x(3)+2.d0*s_r(ir)*sqrt(pi/3.d0)*totrholm(3,ir)*s_rw(ir)
   x2=x2+2.d0*(s_r(ir)**2)*sqrt(pi)*totrholm(1,ir)*s_rw(ir)
 enddo
