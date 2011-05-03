@@ -119,18 +119,18 @@ allocate(s_wvkmt(mt_ntp,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
 if (allocated(s_wvkir)) deallocate(s_wvkir)
 allocate(s_wvkir(ngkmax,nspinor,sic_wantran%nwan,nkptloc))
 
-inquire(file="SIC_WANN_E0.OUT",exist=texist)
-if (texist) then
-  open(170,file="SIC_WANN_E0.OUT",form="FORMATTED",status="OLD")
-  do n=1,nwantot
-    read(170,*,err=20,end=20)sic_wann_e0(n)
-  enddo
-  close(170)
-  goto 30
-20 sic_wann_e0=0.d0
-  close(170)
-endif
-30 continue
+!inquire(file="SIC_WANN_E0.OUT",exist=texist)
+!if (texist) then
+!  open(170,file="SIC_WANN_E0.OUT",form="FORMATTED",status="OLD")
+!  do n=1,nwantot
+!    read(170,*,err=20,end=20)sic_wann_e0(n)
+!  enddo
+!  close(170)
+!  goto 30
+!20 sic_wann_e0=0.d0
+!  close(170)
+!endif
+!30 continue
 if (mpi_grid_root()) then
 ! size of sperical arrays
   a=2*16.d0*lmmaxwan*s_nr*nspinor*sic_wantran%nwan/1024/1024
