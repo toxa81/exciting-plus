@@ -7,6 +7,7 @@ use mod_madness
 implicit none
 integer n,j,ik,ispn,ikloc,ig
 integer ias,lm
+real(8) ekin_,etot_
 real(8), allocatable :: laplsv(:) 
 character*20 c1,c2,c3
 character, parameter :: orbc(4)=(/'s','p','d','f'/)
@@ -61,12 +62,12 @@ if (wproc) then
   write(151,'("cutoff radius for SIC matrix elements : ",F12.6)')sic_me_cutoff
   write(151,'("number of Wannier transitions         : ",I6)')sic_wantran%nwt
   write(151,'("number of translations for Bloch sums : ",I6)')sic_blochsum%ntr
-  write(151,*)
-  write(151,'("LDA energies of Wannier functions")')
-  do j=1,sic_wantran%nwan
-    n=sic_wantran%iwan(j)
-    write(151,'("  n : ",I4,"    sic_wann_e0 : ",F12.6)')n,sic_wann_e0(n)
-  enddo
+  !write(151,*)
+  !write(151,'("LDA energies of Wannier functions")')
+  !do j=1,sic_wantran%nwan
+  !  n=sic_wantran%iwan(j)
+  !  write(151,'("  n : ",I4,"    sic_wann_e0 : ",F12.6)')n,sic_wann_e0(n)
+  !enddo
   call flushifc(151)
 endif
 if (wproc) then
@@ -77,7 +78,7 @@ if (wproc) then
 endif
 ! generate wave-functions for all k-points in BZ
 call genwfnr(151,.false.)  
-! compute kinetic energy
+!! compute kinetic energy
 !allocate(laplsv(nstsv))
 !ekin_=0.d0
 !do ikloc=1,nkptnrloc
@@ -98,10 +99,11 @@ call genwfnr(151,.false.)
 !  write(151,'("madelung       : ",G18.10)')engymad
 !  write(151,'("sic correction : ",G18.10)')sic_energy_pot
 !  write(151,'("total energy   : ",G18.10)')etot_
-!  open(152,file="SIC_ETOT.OUT",form="FORMATTED",status="REPLACE")
-!  write(152,'(G18.10)')etot_
-!  close(152)
+!  !open(152,file="SIC_ETOT.OUT",form="FORMATTED",status="REPLACE")
+!  !write(152,'(G18.10)')etot_
+!  !close(152)
 !endif
+!deallocate(laplsv)
 
 ! get maximum number of G-vectors (this is required for the faster generation of 
 !  Wannier functions in the interstitial region)
@@ -147,6 +149,7 @@ call madness_init_box
 #endif
 ! generate Wannier functions and corresponding potential
 call sic_wan(151)
+!call genxme
 ! matrix elements
 call sic_me(151)
 !call sic_test_blochsum(2,.false.,"sic_blochsum_wan_backward.out")
