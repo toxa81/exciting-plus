@@ -2,12 +2,11 @@ subroutine writenn
 use modmain
 implicit none
 integer i,ia,is,ias,ja,js,jas
-real(8) maxdist,dist,v1(3),v2(3),v3(3)
-maxdist=20.d0
-call getnghbr(0.d0,maxdist)
+real(8) dist,v1(3),v2(3),v3(3)
+call getnghbr(-0.d0,nn_maxdist)
 open(50,file='NGHBR.OUT',status='replace',form='formatted')
 write(50,*)
-write(50,'("Radius of cluster of nearest neighbours : ",G18.10)')maxdist
+write(50,'("Radius of cluster of nearest neighbours : ",G18.10)')nn_maxdist
 write(50,*)
 write(50,'("Atom list : ")')
 write(50,'(" iatom (is ia ias)",15(" "),"pos(lat)",24(" "),"pos(Cart)")')
@@ -35,8 +34,10 @@ do ias=1,natmtot
       inghbr(4,i,ias)*avec(:,2)+inghbr(5,i,ias)*avec(:,3)
     v3=v2(:)-atposc(:,ia,is)
     dist=inghbr(2,i,ias)/1000000.d0
-    write(50,'(3X,A,T6," (",I2,1X,I2,1X,I3") ",2F10.5,2X,3I3,2X,3F10.5,2X,I4)') &
-      trim(spsymb(js)),js,ja,jas,dist,dist*au2ang,inghbr(3:5,i,ias),v3,inghbr(6,i,ias)
+    if (inghbr(6,i,ias).le.nn_maxsh) then
+      write(50,'(3X,A,T6," (",I2,1X,I2,1X,I3") ",2F10.5,2X,3I3,2X,3F10.5,2X,I4)') &
+        trim(spsymb(js)),js,ja,jas,dist,dist*au2ang,inghbr(3:5,i,ias),v3,inghbr(6,i,ias)
+    endif
   enddo
 enddo    
 close(50)
