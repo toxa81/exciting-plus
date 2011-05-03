@@ -27,6 +27,7 @@ if (wproc) then
   write(fout,*)
   write(fout,'("time for one matrix element : ",F8.3," sec.")')&
     timer_get_value(t_sic_me)
+  call flushifc(fout)
 endif
 call timer_start(t_sic_me,reset=.true.)
 ! read old matrix elements
@@ -86,6 +87,14 @@ t3=0.d0
 do i=1,sic_wantran%nwt
   t3=t3+abs(vwanme(i)-vwanme_old(i))**2
 enddo
+t3=sqrt(t3/sic_wantran%nwt)
+! get LDA energies for the next iteration
+sic_wann_e0=0.d0
+do j=1,sic_wantran%nwan
+  n=sic_wantran%iwan(j)
+  i=sic_wantran%iwtidx(n,n,0,0,0)
+  sic_wann_e0(n)=wann_ene(n)-dreal(vwanme_old(i))
+enddo
 deallocate(vwanme_old)
 call timer_stop(t_sic_me)
 if (wproc) then
@@ -103,7 +112,12 @@ if (wproc) then
     i=sic_wantran%iwtidx(n,n,0,0,0)
     write(fout,'("  n : ",I4,8X,2G18.10)')n,dreal(vwanme(i)),dimag(vwanme(i))
   enddo  
-  t3=sqrt(t3/sic_wantran%nwt)
+  write(fout,*)
+  write(fout,'("LDA energies (<W_n|H0|W_n>) :")')
+  do j=1,sic_wantran%nwan
+    n=sic_wantran%iwan(j)
+    write(fout,'("  n : ",I4,8X,G18.10)')n,sic_wann_e0(n)
+  enddo  
   write(fout,*)
   write(fout,'("matrix elements RMS difference :",G18.10)')t3
   write(fout,*)
