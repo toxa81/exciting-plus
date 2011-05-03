@@ -193,7 +193,7 @@ do iscl=1,maxscl
   call mpi_grid_bcast(swidth,dims=(/dim_k,dim2/))
   call mpi_grid_bcast(occsv(1,1),nstsv*nkpt,dims=(/dim_k,dim2/))
   if (wannier) call wann_ene_occ  
-  if (sic) call sic_e0
+  !if (sic) call sic_e0
   call rhomag
 ! LDA+U
   if (ldapu.ne.0) then
