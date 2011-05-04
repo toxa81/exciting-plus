@@ -64,7 +64,11 @@ integer scvl(3,3)
 ! r-vectors of fft grid
 real(8), allocatable :: vgrc(:,:)
 
-integer, allocatable :: spnl(:,:)
+! principal quantum number for each l-channel of apw
+integer, allocatable :: apwpqn(:,:)
+! principal quantum number of each local orbital
+integer, allocatable :: lopqn(:,:)
+!integer, allocatable :: spnl(:,:)
 
 integer debug_level
 data debug_level/0/

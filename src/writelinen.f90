@@ -30,14 +30,14 @@ do is=1,nspecies
     do l=0,lmaxapw
       do io=1,apword(l,is)
         write(50,'("  l = ",I2,", order = ",I2," : ",G18.10,",  n = ",I2)') l,io, &
-         apwe(io,l,ias),spnl(l,is)
+         apwe(io,l,ias),apwpqn(l,is)
       end do
     end do
     write(50,'(" local-orbital functions :")')
     do ilo=1,nlorb(is)
       do io=1,lorbord(ilo,is)
-        write(50,'("  l.o. = ",I2,", l = ",I2,", order = ",I2," : ",G18.10)') &
-         ilo,lorbl(ilo,is),io,lorbe(io,ilo,ias)
+        write(50,'("  l.o. = ",I2,", l = ",I2,", order = ",I2," : ",G18.10,", n = ",I2)') &
+         ilo,lorbl(ilo,is),io,lorbe(io,ilo,ias),lopqn(ilo,is)
       end do
     end do
   end do
