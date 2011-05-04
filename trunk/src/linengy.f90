@@ -25,6 +25,7 @@ integer l,ilo,io,jo
 ! automatic arrays
 logical done(natmmax)
 real(8) vr(nrmtmax)
+e0min=100.d0
 ! begin loops over atoms and species
 do is=1,nspecies
   done(:)=.false.
@@ -49,10 +50,8 @@ do is=1,nspecies
             end do
 ! find the band energy starting from default
             apwe(io,l,ias)=apwe0(io,l,is)
-!            call findband(solsc,l,0,nprad,nrmt(is),spr(:,is),vr,deband, &
-!             epsband,apwe(io,l,ias),fnd)
             call findband1(solsc,l,0,nprad,nrmt(is),spr(:,is),vr,deband, &
-             apwe(io,l,ias),fnd,spnl(l,is))
+             apwe(io,l,ias),fnd,apwpqn(l,is))
             if (.not.fnd) then
               write(*,*)
               write(*,'("Warning(linengy): linearisation energy not found")')
@@ -67,8 +66,9 @@ do is=1,nspecies
             if (autolinengy) apwe(io,l,ias)=efermi+dlefe
           end if
 10 continue
-        end do
-      end do
+          e0min=min(e0min,apwe(io,l,ias)) 
+        end do !io
+      end do !l
 !---------------------------------!
 !     local-orbital functions     !
 !---------------------------------!
@@ -87,10 +87,8 @@ do is=1,nspecies
             l=lorbl(ilo,is)
 ! find the band energy starting from default
             lorbe(io,ilo,ias)=lorbe0(io,ilo,is)
-!            call findband(solsc,l,0,nprad,nrmt(is),spr(:,is),vr,deband, &
-!             epsband,lorbe(io,ilo,ias),fnd)
             call findband1(solsc,l,0,nprad,nrmt(is),spr(:,is),vr,deband, &
-             lorbe(io,ilo,ias),fnd,spnl(l,is))
+             lorbe(io,ilo,ias),fnd,lopqn(ilo,is))
             if (.not.fnd) then
               write(*,*)
               write(*,'("Warning(linengy): linearisation energy not found")')
@@ -105,8 +103,9 @@ do is=1,nspecies
             if (autolinengy) lorbe(io,ilo,ias)=efermi+dlefe
           end if
 20 continue
-        end do
-      end do
+          e0min=min(e0min,lorbe(io,ilo,ias))
+        end do !io
+      end do !ilo
       done(ia)=.true.
 ! copy to equivalent atoms
       do ja=1,natoms(is)

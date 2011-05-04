@@ -5,11 +5,17 @@
 
 subroutine readspecies
 use modmain
+use mod_addons
 implicit none
 ! local variables
-integer is,ist,iostat
-integer io,nlx,ilx,lx,ilo
-e0min=0.d0
+integer is,ist,iostat,i
+integer io,nlx,ilx,lx,ilo,n,l,napwpqn,nlopqn
+logical l1(maxspst,0:lmaxapw)
+if (allocated(apwpqn)) deallocate(apwpqn)
+allocate(apwpqn(0:maxlapw,maxspecies))
+if (allocated(lopqn)) deallocate(lopqn)
+allocate(lopqn(maxlorb,maxspecies))
+lopqn=-1
 do is=1,nspecies
   open(50,file=trim(sppath)//trim(spfname(is)),action='READ',status='OLD', &
    form='FORMATTED',iostat=iostat)
@@ -129,7 +135,6 @@ do is=1,nspecies
     apwe0(io,1:lmaxapw,is)=apwe0(io,0,is)
     apwdm(io,1:lmaxapw,is)=apwdm(io,0,is)
     apwve(io,1:lmaxapw,is)=apwve(io,0,is)
-    e0min=min(e0min,apwe0(io,0,is))
   end do
   read(50,*) nlx
   if (nlx.lt.0) then
@@ -186,7 +191,6 @@ do is=1,nspecies
         write(*,*)
         stop
       end if
-      e0min=min(e0min,apwe0(io,lx,is))
     end do
   end do
   read(50,*) nlorb(is)
@@ -252,11 +256,39 @@ do is=1,nspecies
         write(*,*)
         stop
       end if
-      e0min=min(e0min,lorbe0(io,ilo,is))
     end do
   end do
+! find default principal quantum numbers
+  do l=0,lmaxapw
+    apwpqn(l,:)=l+1
+  enddo
+  l1=.false.
+  do ist=1,spnst(is)
+    n=spn(ist,is)
+    l=spl(ist,is)
+    if (spcore(ist,is).and..not.l1(n,l)) then
+      apwpqn(l,is)=apwpqn(l,is)+1
+      l1(n,l)=.true.
+    endif
+  enddo
+! try to read extra information
+  read(50,*,err=20,end=20)napwpqn
+  do i=1,napwpqn
+    read(50,*) l,n
+    apwpqn(l,is)=n
+  enddo
+  read(50,*)nlopqn
+  do i=1,nlopqn
+    read(50,*)ilo,n
+    lopqn(ilo,is)=n
+  enddo
+20 continue
   close(50)
-end do
+! set principal quantum numbers for remaining local orbitals
+  do ilo=1,nlorb(is)
+    if (lopqn(ilo,is).eq.-1) lopqn(ilo,is)=apwpqn(lorbl(ilo,is),is)
+  enddo
+end do !is
 return
 end subroutine
 
