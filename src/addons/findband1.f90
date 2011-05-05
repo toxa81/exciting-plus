@@ -49,35 +49,67 @@ integer, intent(in) :: n
 ! maximum number of steps
 integer maxstp
 logical ttop,tbot
-integer ie,nn
-real(8) de,t,etop,ebot
+integer ie,nn,nnd,nndp,i
+real(8) de,t,tp,etop,ebot
 ! automatic arrays
 real(8) p0(nr),p1(nr),q0(nr),q1(nr)
 fnd=.false.
 de=abs(de0)
 etop=3.d0
-maxstp=(etop+10.d0)/de
+maxstp=(etop+30.d0)/de
 ttop=.false.
 tbot=.false.
+de=0.5d0
+maxstp=2000
 ! find the top of the band
-do ie=1,maxstp
+do i=1,maxstp
   call rschroddme(sol,0,l,k,etop,np,nr,r,vr,nn,p0,p1,q0,q1)
-  if (nn.eq.(n-l-1)) then
+  nnd=nn-(n-l-1)
+  if (nnd.gt.0) then
+    etop=etop-de
+  else
+   etop=etop+de
+  end if
+  if (i.gt.1) then
+    if ((nnd.ne.0).or.(nndp.ne.0)) then
+      if (nnd*nndp.le.0) then
+        de=de*0.5d0
+      else
+        de=de*1.1d0
+      end if
+    end if
+  end if
+  nndp=nnd
+  if (de.lt.1d-9) then
+  !if (nn.eq.(n-l-1)) then
     ttop=.true.
     exit
   endif
-  etop=etop-de
+  !ietop=etop-de
 enddo
-t=p1(nr)
-ebot=etop
-do ie=1,maxstp
+!t=p1(nr)
+de=-0.1d0
+ebot=etop+3*abs(de)
+do i=1,maxstp
+  ebot=ebot+de
   call rschroddme(sol,0,l,k,ebot,np,nr,r,vr,nn,p0,p1,q0,q1)
-  if (p1(nr)*t.le.0) then
-    tbot=.true.
-    exit
-  endif
-  ebot=ebot-de
   t=p1(nr)
+  if (i.gt.1) then
+    if (t*tp.le.0.d0) then
+      if (abs(de).lt.1d-9) then
+        tbot=.true.
+        exit
+      endif
+      de=-0.5*de
+    endif
+  endif
+  tp=t
+  !if (p1(nr)*t.le.0) then
+  !  tbot=.true.
+  !  exit
+  !endif
+  !ebot=ebot-de
+  !t=p1(nr)
 enddo
 if (ttop.and.tbot) then
 ! set the band energy to the mid-point
