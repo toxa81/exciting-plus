@@ -51,6 +51,12 @@ do i=1,wann_natom
     wan_info(7,n)=j
   enddo
 enddo !i
+
+if (.not.allocated(wannier_prjlo)) then
+  allocate(wannier_prjlo(32,wann_natom))
+  wannier_prjlo=1
+endif
+
 ! sort WF by spin (for collinear case)
 !if (.not.ncmag) then
 !  allocate(iwann_tmp(7,nwantot))
@@ -96,6 +102,9 @@ do n=1,nwantot
     write(100,'("      atom : ",I4)')iatom
     write(100,'("      l,m  : ",2I4)')lm2l(lm),lm-lm2l(lm)**2
     write(100,'("      ispn : ",I4)')ispn
+    if (wannier_prjao.eq.0) then
+      write(100,'("        lo : ",I4)')wannier_prjlo(wan_info(7,n),wan_info(6,n))
+    endif
     write(100,'("  interval : [",F8.4,",",F8.4,"]")')wann_eint(:,itype)
     write(100,'("    potential : ",F8.4)')wann_v(itype)
     write(100,*)

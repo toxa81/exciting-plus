@@ -84,7 +84,7 @@ data wannier_prjao/0/
 
 integer, allocatable :: wann_err_k(:)
 
-
+integer, allocatable :: wannier_prjlo(:,:)
 
 
 

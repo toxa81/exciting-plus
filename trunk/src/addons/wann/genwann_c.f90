@@ -11,7 +11,7 @@ complex(8), intent(out) :: wann_c_(nwantot,nstsv)
 integer, intent(out) :: ierr_
 ! local variables
 complex(8), allocatable :: prjao(:,:)
-integer ispn,j,ias,lm,itype,n
+integer ispn,j,ias,lm,itype,n,ilo
 integer itr(3),i,iw,ierr
 real(8) tr(3),d1
 complex(8) zt1
@@ -56,9 +56,10 @@ do n=1,nwantot
     lm=wan_info(2,n)
     ispn=wan_info(3,n)
     itype=wan_info(4,n)
+    ilo=wannier_prjlo(wan_info(7,n),wan_info(6,n))
     do j=1,nstsv
       if (bndint(j,e(j),wann_eint(1,itype),wann_eint(2,itype))) then
-        call genprjao(ias,lm,ispn,j,wfsvmt,prjao(n,j))
+        call genprjao(ias,lm,ispn,j,wfsvmt,prjao(n,j),ilo)
         if (wannier_soft_eint) then
           prjao(n,j)=prjao(n,j)*orbwt(e(j),wannier_soft_eint_e1(itype), &
             wannier_soft_eint_e2(itype),wannier_soft_eint_w1(itype),&
