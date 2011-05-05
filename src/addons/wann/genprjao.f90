@@ -1,4 +1,4 @@
-subroutine genprjao(ias,lm,ispn,i,wfsvmt,prjao)
+subroutine genprjao(ias,lm,ispn,i,wfsvmt,prjao,ilo)
 use modmain
 use mod_wannier
 implicit none
@@ -8,6 +8,7 @@ integer, intent(in) :: ispn
 integer, intent(in) :: i
 complex(8), intent(in) :: wfsvmt(lmmaxvr,nufrmax,natmtot,nspinor,nstsv)
 complex(8), intent(out) :: prjao
+integer, intent(in) :: ilo
 
 integer l,m1,lm1,io1,ir,is,ic
 real(8) fr(nrmtmax),gr(nrmtmax),cf(4,nrmtmax)
@@ -25,7 +26,7 @@ do m1=-l,l
 ! project to local orbital    
     if (wannier_prjao.eq.0) then
       prjao=prjao+dconjg(wfsvmt(lm1,io1,ias,ispn,i))*&
-        ufrp(l,io1,apword(l,is)+1,ic)*rylm_lps(lm,lm1,ias)
+        ufrp(l,io1,apword(l,is)+ilo,ic)*rylm_lps(lm,lm1,ias)
     endif
 ! project to f(x)=(1+cos(Pi*x/R))
     if (wannier_prjao.eq.1) then
