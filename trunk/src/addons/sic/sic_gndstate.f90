@@ -19,7 +19,7 @@ do isclsic=1,nsclsic
     call system("mv EIGVAL.OUT EIGVAL.OUT"//c3)
     call system("mv EFERMI.OUT EFERMI.OUT"//c3)
     call system("mv TOTENERGY.OUT TOTENERGY.OUT"//c3)
-    call system("cp SIC_WANN_E0.OUT SIC_WANN_E0.OUT"//c3)
+    !call system("cp SIC_WANN_E0.OUT SIC_WANN_E0.OUT"//c3)
     call system("mv info.xml info.xml"//c3)
   endif
   call sic_main
