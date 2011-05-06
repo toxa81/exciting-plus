@@ -25,6 +25,7 @@ if (mpi_grid_root()) then
     write(300,'("  </wannier>")')
   enddo
   write(300,'("  <rws units=""a.u."">",F18.10,"</rws>")')rwigner
+  write(300,'("  <omega units=""a.u.^3"">",F18.10,"</omega>")')omega
   write(300,'("  <etot units=""Ha"">",F18.10,"</etot>")')engytot
   write(300,'("  <gap units=""eV"">",F18.10,"</gap>")')bandgap*ha2ev
   write(300,'("</info>")')
