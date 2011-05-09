@@ -62,12 +62,12 @@ if (wproc) then
   write(151,'("cutoff radius for SIC matrix elements : ",F12.6)')sic_me_cutoff
   write(151,'("number of Wannier transitions         : ",I6)')sic_wantran%nwt
   write(151,'("number of translations for Bloch sums : ",I6)')sic_blochsum%ntr
-  !write(151,*)
-  !write(151,'("LDA energies of Wannier functions")')
-  !do j=1,sic_wantran%nwan
-  !  n=sic_wantran%iwan(j)
-  !  write(151,'("  n : ",I4,"    sic_wann_e0 : ",F12.6)')n,sic_wann_e0(n)
-  !enddo
+  write(151,*)
+  write(151,'("LDA energies of Wannier functions")')
+  do j=1,sic_wantran%nwan
+    n=sic_wantran%iwan(j)
+    write(151,'("  n : ",I4,"    sic_wann_e0 : ",F12.6)')n,sic_wann_e0(n)
+  enddo
   call flushifc(151)
 endif
 if (wproc) then
@@ -121,7 +121,6 @@ enddo
 !call bstop
 
 ! init Madness related variables 
-#ifdef _MAD_
 if (allocated(m_ngknr)) deallocate(m_ngknr)
 allocate(m_ngknr(nkptnr))
 m_ngknr=0
@@ -145,6 +144,7 @@ if (allocated(m_wann_unkmt)) deallocate(m_wann_unkmt)
 allocate(m_wann_unkmt(lmmaxvr,nufrmax,natmtot,nspinor,nkptnr))
 if (allocated(m_wann_unkit)) deallocate(m_wann_unkit)
 allocate(m_wann_unkit(ngkmax,nspinor,nkptnr))
+#ifdef _MAD_
 call madness_init_box
 #endif
 ! generate Wannier functions and corresponding potential
