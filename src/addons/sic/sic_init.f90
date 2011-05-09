@@ -19,7 +19,6 @@ if (.not.wannier) then
   write(*,*)
   call pstop
 endif
-!sic_debug_level=2
 tevecsv=.true.
 lmmaxwan=(lmaxwan+1)**2
 
