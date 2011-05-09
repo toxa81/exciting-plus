@@ -73,17 +73,30 @@ call timer_reset(t_sic_wvprod)
 s_wanlm=zzero
 s_wvlm=zzero
 wanprop=0.d0
-nrloc=mpi_grid_map(s_nr,dim2)
+!nrloc=mpi_grid_map(s_nr,dim2)
+nrloc=mpi_grid_map(s_nr,dim_k)
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
 ! generate WF on a spherical mesh
   wantp=zzero
   call timer_start(t_sic_wan_gen)
+! original
+!!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ir,itp,vrc,wanval)
+!  do irloc=1,nrloc
+!    ir=mpi_grid_map(s_nr,dim2,loc=irloc)
+!    do itp=1,s_ntp
+!      call s_get_wanval(.true.,n,vrc,wanval,itp=itp,ir=ir)
+!      wantp(itp,ir,:)=wanval(:)
+!    enddo
+!  enddo
+!!$OMP END PARALLEL DO
+! new: TODO: check parallelism (the way WFs are reduced)
+  call elk_load_wann_unk(n)
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ir,itp,vrc,wanval)
   do irloc=1,nrloc
-    ir=mpi_grid_map(s_nr,dim2,loc=irloc)
+    ir=mpi_grid_map(s_nr,dim_k,loc=irloc)
     do itp=1,s_ntp
-      call s_get_wanval(.true.,n,vrc,wanval,itp=itp,ir=ir)
+      call s_get_wanval2(.true.,n,vrc,wanval,itp=itp,ir=ir)
       wantp(itp,ir,:)=wanval(:)
     enddo
   enddo
