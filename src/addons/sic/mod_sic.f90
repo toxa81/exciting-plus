@@ -231,6 +231,89 @@ endif
 return
 end subroutine
 
+
+subroutine s_get_wanval2(twan,n,x,wanval,itp,ir)
+use modmain
+use mod_nrkp
+use mod_wannier
+use mod_madness
+implicit none
+logical, intent(in) :: twan
+integer, intent(in) :: n
+real(8), intent(inout) :: x(3)
+complex(8), intent(out) :: wanval(nspinor)
+integer, optional, intent(in) :: itp
+integer, optional, intent(in) :: ir
+!
+integer is,ia,ias,ir0,io,l,j,i,lm,ig,ispn
+integer ntr(3),ik,ikloc,ic
+real(8) x0(3),vtc(3),vr0(3),r0,tp(2),t1
+real(8) ur(0:lmaxvr,nufrmax),dr
+complex(8) zt1,zt2,ylm(lmmaxvr)
+logical, external :: vrinmt2
+complex(8), external :: ylm_val
+complex(8) expigr(m_ngvec)
+complex(8) zm1(lmmaxvr,nufrmax,nspinor),zm2(nspinor)
+!
+wanval=zzero
+if (present(itp).and.present(ir)) then
+  x0(:)=s_x(:,itp)*s_r(ir)
+  x(:)=x0(:)+wanpos(:,n)
+else
+  x0(:)=x(:)-wanpos(:,n)
+  if (sum(x0(:)**2).gt.(sic_wan_cutoff**2)) return
+endif
+
+if (vrinmt2(x,is,ia,ntr,ir0,vr0,dr).and.twan) then
+  ias=idxas(ia,is)
+  ic=ias2ic(ias)
+  call sphcrd(vr0,r0,tp)
+  call genylm(lmaxvr,tp,ylm)
+  vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
+  ur=0.d0
+  do l=0,lmaxvr
+    do io=1,nufr(l,is)
+      ur(l,io)=ufr(ir0,l,io,ic)+dr*(ufr(ir0+1,l,io,ic)-ufr(ir0,l,io,ic))
+    enddo !io
+  enddo !l
+  zm1=zzero
+  do ik=1,nkptnr
+    zt1=exp(zi*dot_product(vkcnr(:,ik),vtc(:)))*wkptnr(ik)
+    do ispn=1,nspinor
+      zm1(:,:,ispn)=zm1(:,:,ispn)+zt1*m_wann_unkmt(:,:,ias,ispn,ik)
+    enddo
+  enddo
+  do ispn=1,nspinor
+    do lm=1,lmmaxvr
+      l=lm2l(lm)
+      do io=1,nufr(l,is)
+        wanval(ispn)=wanval(ispn)+zm1(lm,io,ispn)*ur(l,io)*ylm(lm)
+      enddo !io
+    enddo !lm
+  enddo !ispn
+else
+  do ig=1,m_ngvec
+    expigr(ig)=exp(zi*dot_product(x(:),vgc(:,ig)))  
+  enddo
+  do ik=1,nkptnr
+    zt1=wkptnr(ik)*exp(zi*dot_product(vkcnr(:,ik),x(:)))/sqrt(omega)
+    zm2=zzero
+! TODO: check if this can be optimized by switching order of indexes
+    do ig=1,m_ngknr(ik)
+      zt2=expigr(m_igkignr(ig,ik))
+      do ispn=1,nspinor
+        zm2(ispn)=zm2(ispn)+zt2*m_wann_unkit(ig,ispn,ik)
+      enddo
+    enddo
+    do ispn=1,nspinor
+      wanval(ispn)=wanval(ispn)+zt1*zm2(ispn)
+    enddo
+  enddo
+endif
+return
+end subroutine
+
+
 complex(8) function s_func_val(x,flm)
 use modmain
 implicit none
