@@ -36,7 +36,7 @@ do is=1,nspecies
     write(50,'(" local-orbital functions :")')
     do ilo=1,nlorb(is)
       do io=1,lorbord(ilo,is)
-        write(50,'("  l.o. = ",I2,", l = ",I2,", order = ",I2," : ",G18.10,", n = ",I2)') &
+        write(50,'("  l.o. = ",I2,", l = ",I2,", order = ",I2," : ",G18.10,",  n = ",I2)') &
          ilo,lorbl(ilo,is),io,lorbe(io,ilo,ias),lopqn(ilo,is)
       end do
     end do
