@@ -46,7 +46,7 @@ endif
 call mpi_grid_initialize(d)
 if (mpi_grid_root()) then
   write(*,*)
-  write(*,'("[initmpigrid] mpi grid size",10I8)')(mpi_grid_dim_size(i),i=1,mpi_grid_nd)
+  write(*,'("[initmpigrid] mpi grid size : ",10I8)')(mpi_grid_dim_size(i),i=1,mpi_grid_nd)
 endif
 deallocate(d)
 return
