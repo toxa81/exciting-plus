@@ -299,9 +299,10 @@ else
     zt1=wkptnr(ik)*exp(zi*dot_product(vkcnr(:,ik),x(:)))/sqrt(omega)
     zm2=zzero
 ! TODO: check if this can be optimized by switching order of indexes
-    do ig=1,m_ngknr(ik)
+    do ispn=1,nspinor
+      do ig=1,m_ngknr(ik)
       zt2=expigr(m_igkignr(ig,ik))
-      do ispn=1,nspinor
+      !do ispn=1,nspinor
         zm2(ispn)=zm2(ispn)+zt2*m_wann_unkit(ig,ispn,ik)
       enddo
     enddo

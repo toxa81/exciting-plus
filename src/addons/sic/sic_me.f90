@@ -88,13 +88,13 @@ do i=1,sic_wantran%nwt
   t3=t3+abs(vwanme(i)-vwanme_old(i))**2
 enddo
 t3=sqrt(t3/sic_wantran%nwt)
-!! get LDA energies for the next iteration
-!sic_wann_e0=0.d0
-!do j=1,sic_wantran%nwan
-!  n=sic_wantran%iwan(j)
-!  i=sic_wantran%iwtidx(n,n,0,0,0)
-!  sic_wann_e0(n)=wann_ene(n)-dreal(vwanme_old(i))
-!enddo
+! get starting LDA energies for the next iteration
+sic_wann_e0=0.d0
+do j=1,sic_wantran%nwan
+  n=sic_wantran%iwan(j)
+  i=sic_wantran%iwtidx(n,n,0,0,0)
+  sic_wann_e0(n)=wann_ene(n)-dreal(vwanme_old(i))
+enddo
 deallocate(vwanme_old)
 call timer_stop(t_sic_me)
 if (wproc) then
