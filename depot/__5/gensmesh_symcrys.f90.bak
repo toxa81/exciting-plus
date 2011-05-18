@@ -1,0 +1,188 @@
+subroutine gensmesh_symcrys
+use modmain
+use mod_sic
+implicit none
+
+integer i,j,j1,j2,i1,i2,i3,nx,ias,jas,nf,n1,n2,nfp,itp,lm
+!integer facet_(100),facet(100)
+!logical lfound
+real(8) x0(3),x1(3),x2(3),x3(3),norm(3),prod,mprod,a
+real(8) t1,p1,t2,p2,t3,p3,s
+real(8), allocatable :: x(:,:)
+integer, allocatable :: facets(:,:)
+logical tfound
+!
+s_ntp=1615
+
+call getnghbr(-0.d0,50.d0)
+allocate(x(3,nnghbr(1)))
+x=0.d0
+nx=0
+ias=1
+i1=inghbr(6,nnghbr(ias),ias)
+do j=2,nnghbr(ias)
+  if (inghbr(6,j,ias).lt.i1) then
+    jas=inghbr(1,j,ias)
+    x1(:)=atposc(:,ias2ia(jas),ias2is(jas))+&
+      inghbr(3,j,ias)*avec(:,1)+&
+      inghbr(4,j,ias)*avec(:,2)+&
+      inghbr(5,j,ias)*avec(:,3)-atposc(:,ias2ia(ias),ias2is(ias))
+    x1=x1/sqrt(sum(x1**2))
+    tfound=.false.
+    do i=1,nx
+      if (sum(abs(x1(:)-x(:,i))).lt.1d-10) tfound=.true.
+    enddo
+    if (.not.tfound) then
+      nx=nx+1
+      x(:,nx)=x1(:)
+    endif
+    if (nx.ge.s_ntp.and.inghbr(6,j+1,ias).gt.inghbr(6,j,ias)) exit
+  endif
+enddo
+!if (nx.lt.s_ntp) then
+!  write(*,'("Error(sic_gensmesh): not enough covering points")')
+!  write(*,'("  found : ",I6)')nx
+!  write(*,'("  minimum : ",I6)')s_ntp
+!  call pstop
+!endif
+if (mpi_grid_root()) then
+  write(*,'("[sic_gensmesh] number of covering points : ",I4)')nx
+endif
+s_ntp=nx
+
+!allocate(facets(3,nx*5))
+!call find_facets(nx,x,nf,facets)  
+!
+!if (allocated(s_tpw)) deallocate(s_tpw)
+!allocate(s_tpw(s_ntp))
+!s_tpw=0.d0
+!
+!do i=1,nf
+!  x1=x(:,facets(1,i)) 
+!  x2=x(:,facets(2,i)) 
+!  x3=x(:,facets(3,i))
+!  call r3cross(x2,x3,x0)
+!  t2=dot_product(x1,x0)
+!  p1=sqrt(sum(x1**2))
+!  p2=sqrt(sum(x2**2))
+!  p3=sqrt(sum(x3**2))
+!  t3=p1*p2*p3+dot_product(x1,x2)*p3+dot_product(x1,x3)*p2+&
+!    dot_product(x2,x3)*p1
+!  t1=atan(t2/t3)*2.d0
+!  s_tpw(facets(1,i))=s_tpw(facets(1,i))+t1/3.d0
+!  s_tpw(facets(2,i))=s_tpw(facets(2,i))+t1/3.d0
+!  s_tpw(facets(3,i))=s_tpw(facets(3,i))+t1/3.d0
+!enddo
+
+!allocate(facets(0:100,nx))
+!nf=0
+!do i1=1,nx-2
+!  do i2=i1+1,nx-1
+!    do i3=i2+1,nx
+!      x1(:)=x(:,i1)-x(:,i3)
+!      x2(:)=x(:,i2)-x(:,i3)
+!      call r3cross(x1,x2,norm)
+!      x0=0.d0
+!      j1=nx+1
+!      n1=0
+!      n2=0
+!      nfp=0
+!      do j=1,nx
+!        x3(:)=x(:,j)-x(:,i3)
+!        prod=dot_product(x3,norm)
+!        if (abs(prod).lt.1d-10) then
+!          nfp=nfp+1
+!          facet_(nfp)=j
+!          if (j.lt.j1) j1=j
+!          x0(:)=x0(:)+x(:,j)
+!        else if (prod.ge.1d-10) then
+!          n1=n1+1
+!        else 
+!          n2=n2+1
+!        endif
+!      enddo !j
+!      if (n1.eq.0.or.n2.eq.0) then
+!        if (n2.eq.0)  norm=-1.d0*norm
+!        x0=x0/nfp
+!        do n1=1,nfp
+!          x1(:)=x(:,j1)-x0(:)
+!          mprod=-100.d0
+!          do n2=1,nfp
+!            x2(:)=x(:,facet_(n2))-x0(:)
+!            call r3cross(x1,x2,x3)
+!            prod=dot_product(x1,x2)
+!            if (prod.gt.mprod.and.dot_product(x3,norm).gt.0.d0) then
+!              mprod=prod
+!              j2=facet_(n2)
+!            endif
+!          enddo !n2
+!          facet(n1)=j1
+!          j1=j2
+!        enddo !n1
+!        tfound=.false.
+!        do j=1,nf
+!          if (facets(0,j).eq.nfp) then
+!            if (all(facets(1:nfp,j).eq.facet(1:nfp))) tfound=.true.
+!          endif
+!        enddo
+!        if (.not.tfound) then
+!          nf=nf+1
+!          facets(0,nf)=nfp
+!          facets(1:nfp,nf)=facet(1:nfp)
+!        endif
+!      endif
+!    enddo !i3
+!  enddo !i2
+!enddo !i1
+!write(*,*)"number of facets : ",nf
+!if (any(facets(0,1:nf).ne.3)) stop "facet is not triangle"
+!s_ntp=nx
+!
+!
+!
+!
+!
+!
+!
+!
+if (allocated(s_tp)) deallocate(s_tp)
+allocate(s_tp(2,s_ntp))
+if (allocated(s_x)) deallocate(s_x)
+allocate(s_x(3,s_ntp))
+if (allocated(s_tpw)) deallocate(s_tpw)
+allocate(s_tpw(s_ntp))
+if (allocated(s_rlmf)) deallocate(s_rlmf)
+allocate(s_rlmf(lmmaxwan,s_ntp))
+if (allocated(s_ylmf)) deallocate(s_ylmf)
+allocate(s_ylmf(lmmaxwan,s_ntp))
+if (allocated(s_rlmb)) deallocate(s_rlmb)
+allocate(s_rlmb(s_ntp,lmmaxwan))
+if (allocated(s_ylmb)) deallocate(s_ylmb)
+allocate(s_ylmb(s_ntp,lmmaxwan))
+
+do itp=1,s_ntp
+  s_x(:,itp)=x(:,itp)
+  s_tpw(itp)=fourpi/s_ntp
+  call sphcrd(s_x(1,itp),a,s_tp(1,itp))
+  call genrlm(lmaxwan,s_tp(1,itp),s_rlmf(1,itp))
+  call genylm(lmaxwan,s_tp(1,itp),s_ylmf(1,itp))
+  do lm=1,lmmaxwan
+    s_rlmb(itp,lm)=s_rlmf(lm,itp)*s_tpw(itp)
+    s_ylmb(itp,lm)=dconjg(s_ylmf(lm,itp))*s_tpw(itp) 
+  enddo
+enddo
+call gen_bsht
+
+open(200,file="sph_x.dat",form="formatted",status="replace")
+do i=1,s_ntp
+  write(200,'(3(G18.10,","),G18.10)')s_x(:,i),1.d0
+enddo
+close(200)
+open(200,file="sph_tp.dat",form="formatted",status="replace")
+do i=1,s_ntp
+  write(200,'(G18.10,",",G18.10)')s_tp(:,i)
+enddo
+close(200)
+
+return
+end subroutine
