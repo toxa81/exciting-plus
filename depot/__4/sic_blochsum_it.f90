@@ -85,7 +85,8 @@ do ikloc=1,nkptloc
       vgl(:)=ivg(:,igkig(ig,1,ikloc))-ivg(:,igkig(ig1,1,ikloc))
       igg=ivgig(vgl(1),vgl(2),vgl(3))
       if (igg.eq.0) then
-        write(*,'("fak1!")')
+        write(*,*)"igg out of boundaries"
+        call pstop
       endif
       s_wankir(ig,:,:,ikloc)=s_wankir(ig,:,:,ikloc)+&
         wgk(ig1,:,:)*cfunig(igg)
