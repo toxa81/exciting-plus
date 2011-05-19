@@ -58,14 +58,14 @@ do ist=1,nstfv
     do ispn=1,nspinor
       zt2=zzero
       sic_wb(j,ist,ispn,ikloc)=s_zfinp(.false.,.true.,mt_ntp,ngk(1,ik),&
-        s_wankmt(1,1,1,ispn,j,ikloc),wfmt,s_wankir(1,ispn,j,ikloc),&
+        s_wkmt(1,1,1,ispn,j,ikloc),wfmt,s_wkit(1,ispn,j,ikloc),&
         evecfv(1,ist,1),zt2)
       if (debug_level.ge.4) then  
         wb(1,j,ist,ispn)=sic_wb(j,ist,ispn,ikloc)
         wb(2:3,j,ist,ispn)=zt2(:)
       endif
       sic_wvb(j,ist,ispn,ikloc)=s_zfinp(.false.,.true.,mt_ntp,ngk(1,ik),&
-        s_wvkmt(1,1,1,ispn,j,ikloc),wfmt,s_wvkir(1,ispn,j,ikloc),&
+        s_wvkmt(1,1,1,ispn,j,ikloc),wfmt,s_wvkit(1,ispn,j,ikloc),&
         evecfv(1,ist,1))
     enddo
   enddo
