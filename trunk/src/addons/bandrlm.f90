@@ -29,11 +29,11 @@ use mod_sic
 implicit none
 ! local variables
 integer lmax,lmmax,lm,i,j,n
-integer ik,ikloc,ispn,is,ia,ias,iv,ist
+integer ik,ikloc,ispn,is,ia,ias,iv,ist,ig
 real(8) emin,emax
 ! allocatable arrays
 real(8), allocatable :: evalfv(:,:,:)
-real(8), allocatable :: sic_wann_e0k(:,:)
+real(8), allocatable :: sic_wan_e0k(:,:)
 ! low precision for band character array saves memory
 real(4), allocatable :: bc(:,:,:,:,:)
 ! initialise universal variables
@@ -71,10 +71,9 @@ call getufr
 call genufrp  
 if (sic) then
   call sic_readvwan
-  call sic_blochsum_mt
-  call sic_blochsum_it
-  allocate(sic_wann_e0k(sic_wantran%nwan,nkpt))
-  sic_wann_e0k=0.d0
+  call sic_genblochsum
+  allocate(sic_wan_e0k(sic_wantran%nwan,nkpt))
+  sic_wan_e0k=0.d0
 endif
 ! begin parallel loop over k-points
 bc=0.d0
@@ -91,7 +90,7 @@ do ikloc=1,nkptloc
       wann_h(1,1,ik),wann_e(1,ik))
   endif
   if (sic) then
-    call diagzhe(sic_wantran%nwan,sic_wann_h0k(1,1,ikloc),sic_wann_e0k(1,ik))
+    call diagzhe(sic_wantran%nwan,sic_wan_h0k(1,1,ikloc),sic_wan_e0k(1,ik))
   endif
   call bandchar(.false.,ikloc,lmax,lmmax,evecfvloc(1,1,1,ikloc),&
     evecsvloc(1,1,ikloc),bc(1,1,1,1,ik))
@@ -100,7 +99,7 @@ deallocate(evalfv,evecfvloc,evecsvloc)
 call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.)
 if (wannier) call mpi_grid_reduce(wann_e(1,1),nwantot*nkpt,dims=(/dim_k/),&
   side=.true.)
-if (sic) call mpi_grid_reduce(sic_wann_e0k(1,1),sic_wantran%nwan*nkpt,&
+if (sic) call mpi_grid_reduce(sic_wan_e0k(1,1),sic_wantran%nwan*nkpt,&
   dims=(/dim_k/),side=.true.)
 do ik=1,nkpt
   call mpi_grid_reduce(bc(1,1,1,1,ik),lmmax*natmtot*nspinor*nstsv,&
@@ -158,7 +157,7 @@ if (mpi_grid_root()) then
     open(50,file='sic_bands_wann_h0.dat',action='WRITE',form='FORMATTED')
     do ist=1,sic_wantran%nwan
       do ik=1,nkpt
-        write(50,'(2G18.10)') dpp1d(ik),(sic_wann_e0k(ist,ik)-efermi)*ha2ev
+        write(50,'(2G18.10)') dpp1d(ik),(sic_wan_e0k(ist,ik)-efermi)*ha2ev
       end do
       write(50,*)
     end do
@@ -226,7 +225,7 @@ if (mpi_grid_root()) then
   write(*,*)
 endif
 deallocate(bc)
-if (sic) deallocate(sic_wann_e0k)
+if (sic) deallocate(sic_wan_e0k)
 return
 end subroutine
 !EOC
