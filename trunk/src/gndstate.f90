@@ -96,6 +96,7 @@ allocate(work(nwork))
 iscl=0
 if (wproc) write(60,*)
 if ((task.eq.1).or.(task.eq.3).or.(sic.and.isclsic.gt.1)) then
+!if ((task.eq.1).or.(task.eq.3)) then
   call readstate
   if (wproc) write(60,'("Potential read in from STATE.OUT")')
   if (autolinengy) call readfermi
