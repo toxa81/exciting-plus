@@ -72,8 +72,7 @@ call mpi_grid_reduce(m_wann_unkmt(1,1,1,1,1),&
   lmmaxvr*nufrmax*natmtot*nspinor*nkptnr,dims=(/dim_k/),all=.true.)
 call mpi_grid_reduce(m_wann_unkit(1,1,1),&
   ngkmax*nspinor*nkptnr,dims=(/dim_k/),all=.true.)
-ias=wan_info(1,n)
-m_wanpos(:)=atposc(:,ias2ia(ias),ias2is(ias))
+m_wanpos(:)=wanpos(:,n)
 return
 end subroutine
 
