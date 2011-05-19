@@ -12,7 +12,7 @@ complex(8), intent(inout) :: hunif(nstsv,nstsv)
 integer i,j,ik,vtrl(3),n1,n2,j1,j2,ispn1,ispn2,istfv1,istfv2,ist1,ist2
 real(8) vtrc(3),en
 complex(8) expikt
-complex(8), allocatable :: vwank(:,:),zm1(:,:)
+complex(8), allocatable :: vk(:,:),zm1(:,:)
 character*500 msg,fname
 logical, parameter :: tcheckherm=.false.
 !
@@ -33,11 +33,11 @@ call zgemm('N','N',sic_wantran%nwan,nstsv,nstsv,zone,sic_wb(1,1,1,ikloc),&
   sic_wantran%nwan,hunif,nstsv,zzero,zm1,sic_wantran%nwan)
 call zgemm('N','C',sic_wantran%nwan,sic_wantran%nwan,nstsv,zone,zm1,&
   sic_wantran%nwan,sic_wb(1,1,1,ikloc),sic_wantran%nwan,zzero,&
-  sic_wann_h0k(1,1,ikloc),sic_wantran%nwan)
+  sic_wan_h0k(1,1,ikloc),sic_wantran%nwan)
 deallocate(zm1)
 ! compute V_{nn'}(k)
-allocate(vwank(sic_wantran%nwan,sic_wantran%nwan))
-vwank=zzero
+allocate(vk(sic_wantran%nwan,sic_wantran%nwan))
+vk=zzero
 do i=1,sic_wantran%nwt
   n1=sic_wantran%iwt(1,i)
   j1=sic_wantran%idxiwan(n1)
@@ -46,7 +46,7 @@ do i=1,sic_wantran%nwt
   vtrl(:)=sic_wantran%iwt(3:5,i)
   vtrc(:)=vtrl(1)*avec(:,1)+vtrl(2)*avec(:,2)+vtrl(3)*avec(:,3)
   expikt=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
-  vwank(j1,j2)=vwank(j1,j2)+expikt*vwanme(i)
+  vk(j1,j2)=vk(j1,j2)+expikt*sic_vme(i)
 enddo
 
 !if (mpi_grid_root((/dim2/))) then
@@ -68,17 +68,17 @@ do istfv1=1,nstfv
         ist2=istfv2+(ispn2-1)*nstfv
         do j1=1,sic_wantran%nwan
           n1=sic_wantran%iwan(j1)
-          en=dreal(vwanme(sic_wantran%iwtidx(n1,n1,0,0,0)))+sic_wann_e0(n1)
+          en=dreal(sic_vme(sic_wantran%iwtidx(n1,n1,0,0,0)))+sic_wan_e0(n1)
           do j2=1,sic_wantran%nwan
 ! 2-nd term : -\sum_{\alpha,\alpha'} P_{\alpha} H^{LDA} P_{\alpha'}     
-            hunif(ist1,ist2)=hunif(ist1,ist2)-sic_wann_h0k(j1,j2,ikloc)*&
+            hunif(ist1,ist2)=hunif(ist1,ist2)-sic_wan_h0k(j1,j2,ikloc)*&
               dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*sic_wb(j2,istfv2,ispn2,ikloc)
 ! 5-th term, first part: 
 !  -\sum_{\alpha,\alpha'} ( P_{\alpha}V_{\alpha}P_{\alpha'} +
 !                           P_{\alpha'}V_{\alpha}P_{\alpha} )
             hunif(ist1,ist2)=hunif(ist1,ist2)-&
-              vwank(j1,j2)*dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*&
-              sic_wb(j2,istfv2,ispn2,ikloc)-dconjg(vwank(j1,j2))*&
+              vk(j1,j2)*dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*&
+              sic_wb(j2,istfv2,ispn2,ikloc)-dconjg(vk(j1,j2))*&
               dconjg(sic_wb(j2,istfv1,ispn1,ikloc))*sic_wb(j1,istfv2,ispn2,ikloc)
           enddo !j2
 ! 3-rd term : \sum_{alpha} P_{\alpha} H^{LDA} P_{\alpha}
@@ -110,7 +110,7 @@ if (tcheckherm) then
     call mpi_grid_msg("sic_hunif",msg)
   endif
 endif
-deallocate(vwank)
+deallocate(vk)
 call timer_stop(t_sic_hunif)
 return
 end

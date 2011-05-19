@@ -111,8 +111,7 @@ else
 end if
 if (sic) then
   call sic_readvwan
-  call sic_blochsum_mt
-  call sic_blochsum_it
+  call sic_genblochsum
 endif
 if (wproc) call flushifc(60)
 ! set stop flag

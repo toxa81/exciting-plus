@@ -15,7 +15,7 @@ if (imesh.eq.1) then
   allocate(s_r(s_nr))
   x0=1d-9
   do ir=1,s_nr
-    s_r(ir)=x0+(sic_wan_cutoff-x0)*dble(ir-1)/dble(s_nr-1)
+    s_r(ir)=x0+(s_rmax-x0)*dble(ir-1)/dble(s_nr-1)
   enddo
 endif
 ! multi-pole mesh
@@ -25,8 +25,8 @@ if (imesh.eq.2) then
     allocate(s_rpole(1))
     s_rpole=0.d0
   endif
-! test automatic poles  
-  call getnghbr(-0.d0,sic_wan_cutoff-0.1d0)
+! find poles 
+  call getnghbr(-0.d0,s_rmax-0.1d0)
   s_nrpole=inghbr(6,nnghbr(1),1)
   deallocate(s_rpole)
   allocate(s_rpole(s_nrpole))
@@ -39,15 +39,16 @@ if (imesh.eq.2) then
     enddo !j
   enddo !i
   do i=1,s_nrpole
-    if (s_rpole(i).ge.sic_wan_cutoff) then
-      write(*,'("Error(sic_genrmesh): pole of the radial mesh is greater than cutoff radius")')
+    if (s_rpole(i).ge.s_rmax) then
+      write(*,'("Error(sic_genrmesh): pole of the radial mesh is greater &
+        &than sphere radius")')
       write(*,'("  pole(",I1,") : ",G18.10)')i-1,s_rpole(i)
-      write(*,'("  sic_wan_cutoff : ",G18.10)')sic_wan_cutoff
+      write(*,'("  s_rmax : ",G18.10)')s_rmax
       call pstop
     endif
   enddo
   if (mpi_grid_root()) then
-    write(*,'("[sic_genrmesh] poles of the radial mesh")')
+    write(*,'("[sic_genrmesh] poles of the radial mesh : ")')
     write(*,'(20F12.6)')s_rpole
   endif
   allocate(b(s_nrpole))
@@ -55,7 +56,8 @@ if (imesh.eq.2) then
   !b(1)=16.d0
 ! compute a=x(s_nr)
   t=dble(s_nrpole)-1.d0
-  a=x_aux(1.d0*(s_nrpole-1),2.d0*(sic_wan_cutoff-s_rpole(s_nrpole)),b(s_nrpole),t)
+  a=x_aux(1.d0*(s_nrpole-1),2.d0*(s_rmax-s_rpole(s_nrpole)),&
+    b(s_nrpole),t)
   do j=2,s_nrpole
     a=a+x_aux(1.d0*(j-2),s_rpole(j)-s_rpole(j-1),b(j-1),t)
   enddo
@@ -63,17 +65,28 @@ if (imesh.eq.2) then
   do ir=1,s_nr
 ! t is in interval [-1, s_nrpole-1]
     t=(dble(s_nrpole)*(ir-1)/dble(s_nr-1))-1.d0
-    x=x_aux(1.d0*(s_nrpole-1),2.d0*(sic_wan_cutoff-s_rpole(s_nrpole)),b(s_nrpole),t)
+    x=x_aux(1.d0*(s_nrpole-1),2.d0*(s_rmax-s_rpole(s_nrpole)),&
+      b(s_nrpole),t)
     do j=2,s_nrpole
       x=x+x_aux(1.d0*(j-2),s_rpole(j)-s_rpole(j-1),b(j-1),t)
     enddo
-    s_r(ir)=x*sic_wan_cutoff/a
+    s_r(ir)=x*s_rmax/a
   enddo
   deallocate(b)
-  !if (mpi_grid_root()) then
-  !  write(*,'("[sic_genrmesh] first radial point : ",G18.10)')s_r(1)
-  !endif
 endif
+! find number of radial points for s_rmin 
+s_nr_min=s_nr
+do ir=s_nr,1,-1
+  if (s_r(ir).gt.s_rmin) then
+    s_nr_min=ir
+  endif
+enddo
+if (mpi_grid_root()) then
+  write(*,'("[sic_genrmesh] first and last radial points : ")')
+  write(*,'(2G18.10)')s_r(1),s_r(s_nr)
+  write(*,'("[sic_genrmesh] number of points for s_rmin : ",I8)')s_nr_min
+endif
+
 ! generate radial weights for integration
 if (allocated(s_rw)) deallocate(s_rw)
 allocate(s_rw(s_nr))

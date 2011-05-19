@@ -8,8 +8,7 @@ integer i,j,n,i1,j1,n1,i2,j2,n2,ispn,vl(3),nwtloc,iloc,ik
 logical texist
 real(8) t1,t2,t3,pos1(3),pos2(3),vtrc(3)
 complex(8) me1,me2,z1
-complex(8), allocatable :: vwanme_old(:)
-complex(8), allocatable :: vwank(:,:)
+complex(8), allocatable :: vme_old(:)
 !
 if (wproc) then
   write(fout,*)
@@ -21,7 +20,7 @@ endif
 pos1=0.d0
 pos2=1.d0 
 call timer_start(t_sic_me,reset=.true.)
-me1=s_dot_ll_spinor(pos1,pos2,s_wvlm(1,1,1,1),s_wanlm(1,1,1,1))
+me1=s_spinor_dotp(pos1,pos2,s_wvlm(1,1,1,1),s_wlm(1,1,1,1))
 call timer_stop(t_sic_me)
 if (wproc) then
   write(fout,*)
@@ -31,18 +30,18 @@ if (wproc) then
 endif
 call timer_start(t_sic_me,reset=.true.)
 ! read old matrix elements
-allocate(vwanme_old(sic_wantran%nwt))
-vwanme_old=zzero
+allocate(vme_old(sic_wantran%nwt))
+vme_old=zzero
 inquire(file="sic.hdf5",exist=texist)
 if (texist) then
   call hdf5_read("sic.hdf5","/","nwt",i)
   if (i.eq.sic_wantran%nwt) then
-    call hdf5_read("sic.hdf5","/","vwanme",vwanme_old(1),(/sic_wantran%nwt/))
+    call hdf5_read("sic.hdf5","/","vme",vme_old(1),(/sic_wantran%nwt/))
   endif
 endif
 ! compute matrix elements of SIC potential
 !  vwanme = <(W*V)_n|W_{n1,T}>
-vwanme=zzero
+sic_vme=zzero
 nwtloc=mpi_grid_map2(sic_wantran%nwt,dims=(/dim_k,dim2/))
 do iloc=1,nwtloc
   i=mpi_grid_map2(sic_wantran%nwt,dims=(/dim_k,dim2/),loc=iloc)
@@ -53,9 +52,9 @@ do iloc=1,nwtloc
   vl(:)=sic_wantran%iwt(3:5,i)
   pos1(:)=wanpos(:,n)
   pos2(:)=wanpos(:,n1)+vl(1)*avec(:,1)+vl(2)*avec(:,2)+vl(3)*avec(:,3)
-  vwanme(i)=s_dot_ll_spinor(pos1,pos2,s_wvlm(1,1,1,j),s_wanlm(1,1,1,j1))
+  sic_vme(i)=s_spinor_dotp(pos1,pos2,s_wvlm(1,1,1,j),s_wlm(1,1,1,j1))
 enddo
-call mpi_grid_reduce(vwanme(1),sic_wantran%nwt,all=.true.)
+call mpi_grid_reduce(sic_vme(1),sic_wantran%nwt,all=.true.)
 ! check localization criterion 
 t2=-1.d0
 do i=1,sic_wantran%nwt
@@ -63,13 +62,13 @@ do i=1,sic_wantran%nwt
   n1=sic_wantran%iwt(2,i)
   vl(:)=sic_wantran%iwt(3:5,i)
   j=sic_wantran%iwtidx(n1,n,-vl(1),-vl(2),-vl(3))
-  t1=abs(vwanme(i)-dconjg(vwanme(j)))
+  t1=abs(sic_vme(i)-dconjg(sic_vme(j)))
   if (t1.ge.t2) then
     t2=t1
     i1=i
     j1=j
-    me1=vwanme(i)
-    me2=vwanme(j)
+    me1=sic_vme(i)
+    me2=sic_vme(j)
   endif
 enddo
 ! symmetrize the potential matrix elements
@@ -78,24 +77,24 @@ do i=1,sic_wantran%nwt
   n1=sic_wantran%iwt(2,i)
   vl(:)=sic_wantran%iwt(3:5,i)
   j=sic_wantran%iwtidx(n1,n,-vl(1),-vl(2),-vl(3))
-  z1=0.5d0*(vwanme(i)+dconjg(vwanme(j)))
-  vwanme(i)=z1
-  vwanme(j)=dconjg(z1)
+  z1=0.5d0*(sic_vme(i)+dconjg(sic_vme(j)))
+  sic_vme(i)=z1
+  sic_vme(j)=dconjg(z1)
 enddo
 ! compute RMS difference
 t3=0.d0
 do i=1,sic_wantran%nwt
-  t3=t3+abs(vwanme(i)-vwanme_old(i))**2
+  t3=t3+abs(sic_vme(i)-vme_old(i))**2
 enddo
 t3=sqrt(t3/sic_wantran%nwt)
 ! get starting LDA energies for the next iteration
-sic_wann_e0=0.d0
-do j=1,sic_wantran%nwan
-  n=sic_wantran%iwan(j)
-  i=sic_wantran%iwtidx(n,n,0,0,0)
-  sic_wann_e0(n)=wann_ene(n)-dreal(vwanme_old(i))
-enddo
-deallocate(vwanme_old)
+!sic_wann_e0=0.d0
+!do j=1,sic_wantran%nwan
+!  n=sic_wantran%iwan(j)
+!  i=sic_wantran%iwtidx(n,n,0,0,0)
+!  sic_wann_e0(n)=wann_ene(n)-dreal(vwanme_old(i))
+!enddo
+deallocate(vme_old)
 call timer_stop(t_sic_me)
 if (wproc) then
   write(fout,*)
@@ -110,7 +109,7 @@ if (wproc) then
   do j=1,sic_wantran%nwan
     n=sic_wantran%iwan(j)
     i=sic_wantran%iwtidx(n,n,0,0,0)
-    write(fout,'("  n : ",I4,8X,2G18.10)')n,dreal(vwanme(i)),dimag(vwanme(i))
+    write(fout,'("  n : ",I4,8X,2G18.10)')n,dreal(sic_vme(i)),dimag(sic_vme(i))
   enddo  
   !write(fout,*)
   !write(fout,'("LDA energies (<W_n|H0|W_n>) :")')

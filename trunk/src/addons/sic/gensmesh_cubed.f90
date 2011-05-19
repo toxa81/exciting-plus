@@ -8,7 +8,7 @@ real(8) px,py,pz,a,alpha,beta,t1,t2,t3,p1,p2,p3
 n=sic_smesh_n
 s_ntp=2*n*n+2*n*(n-2)+2*(n-2)*(n-2)
 if (mpi_grid_root()) then
-  write(*,'("[gensmesh_cubed] number of points: ",I4)')s_ntp
+  write(*,'("[gensmesh_cubed] number of points : ",I4)')s_ntp
 endif
 if (allocated(s_tp)) deallocate(s_tp)
 allocate(s_tp(2,s_ntp))

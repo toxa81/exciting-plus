@@ -31,7 +31,7 @@ if (wproc) then
   write(fout,'(80("="))')
   write(fout,*)
   t1=0.d0
-  t2=fourpi*sic_wan_cutoff**3/3.d0
+  t2=fourpi*s_rmax**3/3.d0
   do ir=1,s_nr
     do itp=1,s_ntp
       t1=t1+s_tpw(itp)*s_rw(ir)/t2
@@ -41,36 +41,46 @@ if (wproc) then
   call flushifc(fout)
 endif
 
-if (sic_debug_level.ge.2) then
-  do j=1,sic_wantran%nwan
-    n=sic_wantran%iwan(j)
-    write(fname,'("wannier_",I4.4,"_[100].dat")')n
-    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
-    do ir=1,s_nr
-      x(:)=(/1.d0,0.d0,0.d0/)*s_r(ir)
-      call s_get_wanval(.true.,n,x,wanval)
-      z1=wanval(1)
-      write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
-    enddo
-    close(210)
-    write(fname,'("wannier_",I4.4,"_[001].dat")')n
-    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
-    do ir=1,s_nr
-      x(:)=(/0.d0,0.d0,1.d0/)*s_r(ir)
-      call s_get_wanval(.true.,n,x,wanval)
-      z1=wanval(1)
-      write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
-    enddo
-    close(210)
-  enddo
-endif
+!if (sic_debug_level.ge.2) then
+!  do j=1,sic_wantran%nwan
+!    n=sic_wantran%iwan(j)
+!    write(fname,'("wannier_",I4.4,"_[100].dat")')n
+!    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
+!    do ir=1,s_nr
+!      x(:)=(/1.d0,0.d0,0.d0/)*s_r(ir)
+!      call s_get_wanval(.true.,n,x,wanval)
+!      z1=wanval(1)
+!      write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
+!    enddo
+!    close(210)
+!    write(fname,'("wannier_",I4.4,"_[001].dat")')n
+!    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
+!    do ir=1,s_nr
+!      x(:)=(/0.d0,0.d0,1.d0/)*s_r(ir)
+!      call s_get_wanval(.true.,n,x,wanval)
+!      z1=wanval(1)
+!      write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
+!    enddo
+!    close(210)
+!    write(fname,'("wannier_",I4.4,"_[111].dat")')n
+!    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
+!    do ir=1,s_nr
+!      x(:)=(/1.d0,1.d0,1.d0/)*s_r(ir)*200/sqrt(3.d0)/sic_wan_cutoff
+!      write(*,*)x
+!      call s_get_wanval(.true.,n,x,wanval)
+!      z1=wanval(1)
+!      write(210,'(3G18.10)')sqrt(sum(x**2)),dreal(z1),dimag(z1)
+!    enddo
+!    close(210)
+!  enddo
+!endif
 
 call timer_start(t_sic_wan,reset=.true.)
 call timer_reset(t_sic_wan_gen)
 call timer_reset(t_sic_wan_rms)
 call timer_reset(t_sic_wan_pot)
 call timer_reset(t_sic_wvprod)
-s_wanlm=zzero
+s_wlm=zzero
 s_wvlm=zzero
 wanprop=0.d0
 !nrloc=mpi_grid_map(s_nr,dim2)
@@ -96,24 +106,24 @@ do j=1,sic_wantran%nwan
   do irloc=1,nrloc
     ir=mpi_grid_map(s_nr,dim_k,loc=irloc)
     do itp=1,s_ntp
-      call s_get_wanval2(.true.,n,vrc,wanval,itp=itp,ir=ir)
+      call s_get_wanval(vrc,wanval,itp=itp,ir=ir)
       wantp(itp,ir,:)=wanval(:)
     enddo
   enddo
 !$OMP END PARALLEL DO
   call mpi_grid_reduce(wantp(1,1,1),s_ntp*s_nr*nspinor,all=.true.)
 ! convert to spherical harmonics
-  call sic_genwanlm(fout,n,wantp,s_wanlm(1,1,1,j))
+  call sic_genwanlm(fout,n,wantp,s_wlm(1,1,1,j))
 ! compute norm
   t1=0.d0
   z1=zzero
   do ispn=1,nspinor
-    do ir=1,s_nr
+    do ir=1,s_nr_min
       do itp=1,s_ntp
         t1=t1+abs(wantp(itp,ir,ispn))**2*s_tpw(itp)*s_rw(ir)
       enddo
-      z1=z1+zdotc(lmmaxwan,s_wanlm(1,ir,ispn,j),1,&
-        s_wanlm(1,ir,ispn,j),1)*s_rw(ir)
+      z1=z1+zdotc(lmmaxwan,s_wlm(1,ir,ispn,j),1,&
+        s_wlm(1,ir,ispn,j),1)*s_rw(ir)
     enddo
   enddo
   wanprop(wp_normtp,j)=t1
@@ -122,7 +132,7 @@ do j=1,sic_wantran%nwan
   if (irms.eq.1) then
     call timer_start(t_sic_wan_rms)
 ! check expansion
-    call sic_wanrms(n,wantp,s_wanlm(1,1,1,j),wanprop(1,j))
+    call sic_wanrms(n,wantp,s_wlm(1,1,1,j),wanprop(1,j))
     call timer_stop(t_sic_wan_rms)
   endif
 !! estimate the quadratic spread <r^2>-<r>^2
@@ -144,33 +154,33 @@ do j=1,sic_wantran%nwan
 ! generate potentials
   if (sic_apply(n).eq.2) then
     call timer_start(t_sic_wan_pot)
-    call s_gen_pot(s_wanlm(1,1,1,j),wantp,s_wvlm(1,1,1,j),wanprop(1,j))
+    call s_gen_pot(s_wlm(1,1,1,j),wantp,s_wvlm(1,1,1,j),wanprop(1,j))
     call timer_stop(t_sic_wan_pot)
   endif
 enddo !j
 deallocate(wantp)
 
-if (sic_debug_level.ge.2) then
-  do j=1,sic_wantran%nwan
-    n=sic_wantran%iwan(j)
-    write(fname,'("wannier_",I4.4,"_bt_[100].dat")')n
-    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
-    do ir=1,s_nr
-      x(:)=(/1.d0,0.d0,0.d0/)*s_r(ir)
-      z1=s_func_val(x,s_wanlm(1,1,1,j))
-      write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
-    enddo
-    close(210)
-    write(fname,'("wannier_",I4.4,"_bt_[001].dat")')n
-    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
-    do ir=1,s_nr
-      x(:)=(/0.d0,0.d0,1.d0/)*s_r(ir)
-      z1=s_func_val(x,s_wanlm(1,1,1,j))
-      write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
-    enddo
-    close(210)
-  enddo
-endif
+!if (sic_debug_level.ge.2) then
+!  do j=1,sic_wantran%nwan
+!    n=sic_wantran%iwan(j)
+!    write(fname,'("wannier_",I4.4,"_bt_[100].dat")')n
+!    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
+!    do ir=1,s_nr
+!      x(:)=(/1.d0,0.d0,0.d0/)*s_r(ir)
+!      z1=s_func_val(x,s_wlm(1,1,1,j))
+!      write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
+!    enddo
+!    close(210)
+!    write(fname,'("wannier_",I4.4,"_bt_[001].dat")')n
+!    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
+!    do ir=1,s_nr
+!      x(:)=(/0.d0,0.d0,1.d0/)*s_r(ir)
+!      z1=s_func_val(x,s_wlm(1,1,1,j))
+!      write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
+!    enddo
+!    close(210)
+!  enddo
+!endif
 
 ! check <W|\phi> matrix elements
 !if (.true.) call sic_test_fvprj(fout)
@@ -190,10 +200,8 @@ do iloc=1,nwtloc
   pos1(:)=wanpos(:,n)
   pos2(:)=wanpos(:,n1)+vl(1)*avec(:,1)+vl(2)*avec(:,2)+vl(3)*avec(:,3)
   if ((iovlp.eq.1.and.sum(abs(pos1-pos2)).lt.1d-10).or.iovlp.eq.2) then
-    do ispn=1,nspinor
-      ovlp(i)=ovlp(i)+s_dot_ll(pos1,pos2,s_wanlm(1,1,ispn,j),&
-        s_wanlm(1,1,ispn,j1))
-    enddo
+    ovlp(i)=ovlp(i)+s_spinor_dotp(pos1,pos2,s_wlm(1,1,1,j),&
+      s_wlm(1,1,1,j1))
   endif
   z1=ovlp(i)
   if (n.eq.n1.and.all(vl.eq.0)) then
