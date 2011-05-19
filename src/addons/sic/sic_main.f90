@@ -55,18 +55,18 @@ if (wproc) then
     endif
   enddo
   write(151,*)
-  write(151,'("cutoff radius for Wannier functions   : ",F12.6)')sic_wan_cutoff
-  write(151,'("number of radial points               : ",I6)')s_nr
-  write(151,'("number of spherical points            : ",I6)')s_ntp
-  write(151,'("maximum angular momentum              : ",I6)')lmaxwan
-  write(151,'("cutoff radius for SIC matrix elements : ",F12.6)')sic_me_cutoff
-  write(151,'("number of Wannier transitions         : ",I6)')sic_wantran%nwt
-  write(151,'("number of translations for Bloch sums : ",I6)')sic_blochsum%ntr
+  write(151,'("expansion radius for Wannier functions : ",F12.6)')s_rmax
+  write(151,'("radius for radial integrals            : ",F12.6)')s_rmin
+  write(151,'("number of radial points                : ",I6)')s_nr
+  write(151,'("number of spherical points             : ",I6)')s_ntp
+  write(151,'("maximum angular momentum               : ",I6)')lmaxwan
+  write(151,'("cutoff radius for SIC matrix elements  : ",F12.6)')sic_me_cutoff
+  write(151,'("number of Wannier transitions          : ",I6)')sic_wantran%nwt
   write(151,*)
   write(151,'("LDA energies of Wannier functions")')
   do j=1,sic_wantran%nwan
     n=sic_wantran%iwan(j)
-    write(151,'("  n : ",I4,"    sic_wann_e0 : ",F12.6)')n,sic_wann_e0(n)
+    write(151,'("  n : ",I4,"    sic_wan_e0 : ",F12.6)')n,sic_wan_e0(n)
   enddo
   call flushifc(151)
 endif
@@ -107,18 +107,14 @@ call genwfnr(151,.false.)
 
 ! get maximum number of G-vectors (this is required for the faster generation of 
 !  Wannier functions in the interstitial region)
-s_ngvec=0
-do ikloc=1,nkptnrloc
-  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-  do ig=1,ngknr(ikloc)
-    s_ngvec=max(s_ngvec,igkignr(ig,ikloc))
-  enddo
-enddo
+!s_ngvec=0
+!do ikloc=1,nkptnrloc
+!  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+!  do ig=1,ngknr(ikloc)
+!    s_ngvec=max(s_ngvec,igkignr(ig,ikloc))
+!  enddo
+!enddo
 
-!call sic_readvwan
-!call sic_test_fvprj(151)
-!call sic_test_blochsum(1,.true.,"sic_blochsum_true_wan.out")
-!call bstop
 
 ! init Madness related variables 
 if (allocated(m_ngknr)) deallocate(m_ngknr)
@@ -147,6 +143,14 @@ allocate(m_wann_unkit(ngkmax,nspinor,nkptnr))
 #ifdef _MAD_
 call madness_init_box
 #endif
+
+! run some tests
+!call sic_test_blochsum(1,"sic_blochsum_exact.out")
+!call sic_test_blochsum(2,"sic_blochsum_bt_from_exact.out")
+!call sic_readvwan
+!if (tsic_wv) call sic_test_blochsum(3,"sic_blochsum_bt_from_wanlm.out")
+!call bstop
+
 ! generate Wannier functions and corresponding potential
 call sic_wan(151)
 !call genxme

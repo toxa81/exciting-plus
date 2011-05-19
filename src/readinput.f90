@@ -1160,7 +1160,7 @@ case('papi')
   write(*,*)
   stop
 case('sic_wan_cutoff')
-  read(50,*,err=20) sic_wan_cutoff
+  read(50,*,err=20) s_rmax
 case('sic_me_cutoff')
   read(50,*,err=20) sic_me_cutoff
 case('debug_level')
