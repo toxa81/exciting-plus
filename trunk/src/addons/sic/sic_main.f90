@@ -18,6 +18,7 @@ sic=.true.
 call init0
 call init1
 if (.not.mpi_grid_in()) return
+wproc=mpi_grid_root()
 ! read the density and potentials from file
 call readstate
 ! find the new linearisation energies
@@ -28,8 +29,37 @@ call genapwfr
 call genlofr
 call getufr
 call genufrp
+! generate wave-functions for all k-points in BZ
+call genwfnr(-1,.false.)  
+! allocate arrays for Madness-like WF generation (all MPI tasks
+!  can resolve function at arbitrary point, no k-reduction is needed) 
+if (allocated(m_ngknr)) deallocate(m_ngknr)
+allocate(m_ngknr(nkptnr))
+m_ngknr=0
+if (allocated(m_igkignr)) deallocate(m_igkignr)
+allocate(m_igkignr(ngkmax,nkptnr))
+m_igkignr=0
+do ikloc=1,nkptnrloc
+  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+  m_ngknr(ik)=ngknr(ikloc)
+  m_igkignr(:,ik)=igkignr(:,ikloc)
+enddo
+call mpi_grid_reduce(m_ngknr(1),nkptnr,dims=(/dim_k/),all=.true.)
+call mpi_grid_reduce(m_igkignr(1,1),ngkmax*nkptnr,dims=(/dim_k/),all=.true.)
+m_ngvec=0
+do ik=1,nkptnr
+  do ig=1,m_ngknr(ik)
+    m_ngvec=max(m_ngvec,m_igkignr(ig,ik))
+  enddo
+enddo
+if (allocated(m_wann_unkmt)) deallocate(m_wann_unkmt)
+allocate(m_wann_unkmt(lmmaxvr,nufrmax,natmtot,nspinor,nkptnr))
+if (allocated(m_wann_unkit)) deallocate(m_wann_unkit)
+allocate(m_wann_unkit(ngkmax,nspinor,nkptnr))
+#ifdef _MAD_
+call madness_init_box
+#endif
 
-wproc=mpi_grid_root()
 if (wproc) then
   open(151,file="SIC.OUT",form="FORMATTED",status="REPLACE")
 endif
@@ -70,14 +100,12 @@ if (wproc) then
   enddo
   call flushifc(151)
 endif
-if (wproc) then
-  write(151,*)
-  write(151,'(80("="))')
-  write(151,'("generating wave-functions for all k-points")')
-  write(151,'(80("="))')
-endif
-! generate wave-functions for all k-points in BZ
-call genwfnr(151,.false.)  
+!if (wproc) then
+!  write(151,*)
+!  write(151,'(80("="))')
+!  write(151,'("generating wave-functions for all k-points")')
+!  write(151,'(80("="))')
+!endif
 !! compute kinetic energy
 !allocate(laplsv(nstsv))
 !ekin_=0.d0
@@ -105,45 +133,6 @@ call genwfnr(151,.false.)
 !endif
 !deallocate(laplsv)
 
-! get maximum number of G-vectors (this is required for the faster generation of 
-!  Wannier functions in the interstitial region)
-!s_ngvec=0
-!do ikloc=1,nkptnrloc
-!  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-!  do ig=1,ngknr(ikloc)
-!    s_ngvec=max(s_ngvec,igkignr(ig,ikloc))
-!  enddo
-!enddo
-
-
-! init Madness related variables 
-if (allocated(m_ngknr)) deallocate(m_ngknr)
-allocate(m_ngknr(nkptnr))
-m_ngknr=0
-if (allocated(m_igkignr)) deallocate(m_igkignr)
-allocate(m_igkignr(ngkmax,nkptnr))
-m_igkignr=0
-do ikloc=1,nkptnrloc
-  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-  m_ngknr(ik)=ngknr(ikloc)
-  m_igkignr(:,ik)=igkignr(:,ikloc)
-enddo
-call mpi_grid_reduce(m_ngknr(1),nkptnr,dims=(/dim_k/),all=.true.)
-call mpi_grid_reduce(m_igkignr(1,1),ngkmax*nkptnr,dims=(/dim_k/),all=.true.)
-m_ngvec=0
-do ik=1,nkptnr
-  do ig=1,m_ngknr(ik)
-    m_ngvec=max(m_ngvec,m_igkignr(ig,ik))
-  enddo
-enddo
-if (allocated(m_wann_unkmt)) deallocate(m_wann_unkmt)
-allocate(m_wann_unkmt(lmmaxvr,nufrmax,natmtot,nspinor,nkptnr))
-if (allocated(m_wann_unkit)) deallocate(m_wann_unkit)
-allocate(m_wann_unkit(ngkmax,nspinor,nkptnr))
-#ifdef _MAD_
-call madness_init_box
-#endif
-
 ! run some tests
 !call sic_test_blochsum(1,"sic_blochsum_exact.out")
 !call sic_test_blochsum(2,"sic_blochsum_bt_from_exact.out")
@@ -151,15 +140,10 @@ call madness_init_box
 !if (tsic_wv) call sic_test_blochsum(3,"sic_blochsum_bt_from_wanlm.out")
 !call bstop
 
-! generate Wannier functions and corresponding potential
-call sic_wan(151)
-!call genxme
-! matrix elements
-call sic_me(151)
-!call sic_test_blochsum(2,.false.,"sic_blochsum_wan_backward.out")
-!call sic_diff_blochsum_mt
+call sic_iterate(151)
+
 ! write to HDF5 file
-call sic_writevwan
+call sic_write_data
 if (wproc) then
   call timestamp(151,"Done.")
   close(151)

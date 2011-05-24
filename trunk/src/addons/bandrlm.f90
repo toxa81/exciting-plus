@@ -70,7 +70,7 @@ call getufr
 ! get product of radial functions
 call genufrp  
 if (sic) then
-  call sic_readvwan
+  call sic_read_data
   call sic_genblochsum
   allocate(sic_wan_e0k(sic_wantran%nwan,nkpt))
   sic_wan_e0k=0.d0

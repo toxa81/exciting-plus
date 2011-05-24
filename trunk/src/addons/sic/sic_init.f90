@@ -95,14 +95,6 @@ allocate(sic_blochsum%vtl(3,sic_maxvtl))
 !enddo
 
 sic_blochsum%ntr=0
-!do i1=-ngridk(1),ngridk(1)
-!  do i2=-ngridk(2),ngridk(2)
-!    do i3=-ngridk(3),ngridk(3)
-!      sic_blochsum%ntr=sic_blochsum%ntr+1
-!      sic_blochsum%vtl(:,sic_blochsum%ntr)=(/i1,i2,i3/)
-!    enddo
-!  enddo
-!enddo
 do i1=0,ngridk(1)-1
   do i2=0,ngridk(2)-1
     do i3=0,ngridk(3)-1
@@ -138,22 +130,27 @@ sic_wb=zzero
 if (allocated(sic_wvb)) deallocate(sic_wvb)
 allocate(sic_wvb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
 sic_wvb=zzero
-!if (allocated(sic_wann_e0)) deallocate(sic_wann_e0)
-!allocate(sic_wann_e0(nwantot))
-!sic_wann_e0=0.d0
 if (.not.allocated(sic_wan_e0)) then
   allocate(sic_wan_e0(nwantot))
   sic_wan_e0=0.d0
 endif
+if (.not.allocated(sic_wan_umtrx)) then
+  allocate(sic_wan_umtrx(nwantot,nwantot,nkptnrloc))
+  sic_wan_umtrx=zzero
+  do i=1,nwantot
+    sic_wan_umtrx(i,i,:)=zone
+  enddo
+endif
+!if (.not.allocated(sic_wan_u0mtrx)) then
+!  allocate(sic_wan_u0mtrx(sic_wantran%nwan,sic_wantran%nwan))
+!  sic_wan_u0mtrx=zzero
+!  do i=1,sic_wantran%nwan
+!    sic_wan_u0mtrx(i,i)=zone
+!  enddo
+!endif
 if (allocated(sic_wan_h0k)) deallocate(sic_wan_h0k)
 allocate(sic_wan_h0k(sic_wantran%nwan,sic_wantran%nwan,nkptloc))
 sic_wan_h0k=zzero
-!if (allocated(sic_wgk)) deallocate(sic_wgk)
-!allocate(sic_wgk(ngkmax,sic_wantran%nwan,nspinor,nkptloc))
-!sic_wgk=zzero
-!if (allocated(sic_wvgk)) deallocate(sic_wvgk)
-!allocate(sic_wvgk(ngkmax,sic_wantran%nwan,nspinor,nkptloc))
-!sic_wgk=zzero
 
 if (allocated(s_wkmt)) deallocate(s_wkmt)
 allocate(s_wkmt(mt_ntp,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))

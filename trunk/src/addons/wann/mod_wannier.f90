@@ -99,6 +99,12 @@ type wannier_transitions
   integer :: nwt
 ! i-th Wannier transition
   integer, allocatable :: iwt(:,:)
+! number of Wannier transitions with zero translation (on-site transitions)
+  integer :: nwt0
+! transition with zero translation (global index ranging from 1 to nwt)
+  integer, allocatable :: iwt0(:)
+! mapping from global index [1,nwt] to T=0 transitions [1,nwt0]
+  integer, allocatable :: iwt0idx(:)
 ! mapping from {m,n,T} to global index
   integer, allocatable :: iwtidx(:,:,:,:,:) 
 ! translation limits
@@ -130,7 +136,7 @@ logical, optional, intent(in) :: diagwt
 ! local variables
 integer m,n,j,nwtmax,i,k,t(3),ias,jas
 logical ladd,allwt_,diagwt_
-integer nwan,nwt,ntr,tlim(2,3)
+integer nwan,nwt,ntr,tlim(2,3),nwt0
 integer, allocatable :: iwan(:)
 integer, allocatable :: idxiwan(:)
 integer, allocatable :: iwt(:,:)
@@ -264,6 +270,31 @@ deallocate(idxiwan)
 deallocate(iwt)
 deallocate(wt)
 deallocate(vtr)
+! get transitions with zero translation
+nwt0=0
+do i=1,twantran%nwt
+  m=twantran%iwt(1,i)
+  ias=wan_info(1,m)
+  n=twantran%iwt(2,i)
+  jas=wan_info(2,n)
+  if (ias.eq.jas.and.all(twantran%iwt(3:5,i).eq.0)) nwt0=nwt0+1
+enddo
+twantran%nwt0=nwt0
+allocate(twantran%iwt0(nwt0))
+allocate(twantran%iwt0idx(nwt))
+twantran%iwt0idx=-1
+nwt0=0
+do i=1,twantran%nwt
+  m=twantran%iwt(1,i)
+  ias=wan_info(1,m)
+  n=twantran%iwt(2,i)
+  jas=wan_info(2,n)
+  if (ias.eq.jas.and.all(twantran%iwt(3:5,i).eq.0)) then
+    nwt0=nwt0+1
+    twantran%iwt0(nwt0)=i
+    twantran%iwt0idx(i)=nwt0
+  endif
+enddo
 return
 end subroutine
 
@@ -277,6 +308,8 @@ if (allocated(twantran%iwt)) deallocate(twantran%iwt)
 if (allocated(twantran%iwtidx)) deallocate(twantran%iwtidx)
 if (allocated(twantran%vtr)) deallocate(twantran%vtr)
 if (allocated(twantran%wt)) deallocate(twantran%wt)
+if (allocated(twantran%iwt0)) deallocate(twantran%iwt0)
+if (allocated(twantran%iwt0idx)) deallocate(twantran%iwt0idx)
 return
 end subroutine
 

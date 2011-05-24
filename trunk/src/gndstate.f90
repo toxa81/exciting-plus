@@ -110,7 +110,7 @@ else
   if (wproc) write(60,'("Density and potential initialised from atomic data")')
 end if
 if (sic) then
-  call sic_readvwan
+  call sic_read_data
   call sic_genblochsum
 endif
 if (wproc) call flushifc(60)

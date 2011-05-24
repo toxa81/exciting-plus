@@ -111,6 +111,64 @@ return
 end subroutine
 
 
+subroutine wancnr_transform(umtrx)
+use modmain
+complex(8), intent(in) :: umtrx(nwantot,nwantot,nkptnrloc)
+!
+integer ikloc,ik,n,m,j
+real(8) w2
+complex(8), allocatable :: wanc(:,:)
+!
+if (ldisentangle) then
+  write(*,'("Error(wancnr_transform): disentanglement is not implemented here")')
+  call pstop
+endif
+if (allocated(wann_unkmt)) deallocate(wann_unkmt)
+allocate(wann_unkmt(lmmaxvr,nufrmax,natmtot,nspinor,nwantot,nkptnrloc))
+if (allocated(wann_unkit)) deallocate(wann_unkit)
+allocate(wann_unkit(ngkmax,nspinor,nwantot,nkptnrloc))
+wann_unkmt=zzero
+wann_unkit=zzero
+allocate(wanc(nwantot,nstsv))
+do ikloc=1,nkptnrloc
+  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc) 
+  call genwann_c(ik,vkcnr(:,ik),evalsvnr(1,ik),wfsvmtnrloc(1,1,1,1,1,ikloc),&
+    wanncnrloc(1,1,ikloc),ierr)   
+  wanc=zzero
+  do n=1,nwantot
+    do m=1,nwantot
+      wanc(n,:)=wanc(n,:)+umtrx(m,n,ikloc)*wanncnrloc(m,:,ikloc)
+    enddo
+  enddo
+  wanncnrloc(:,:,ikloc)=wanc(:,:)
+  do n=1,nwantot
+    do j=1,nstsv
+      wann_unkmt(:,:,:,:,n,ikloc)=wann_unkmt(:,:,:,:,n,ikloc) + &
+        wfsvmtnrloc(:,:,:,:,j,ikloc)*wanncnrloc(n,j,ikloc)
+      wann_unkit(:,:,n,ikloc)=wann_unkit(:,:,n,ikloc) + &
+        wfsvitnrloc(:,:,j,ikloc)*wanncnrloc(n,j,ikloc)
+    enddo
+  enddo
+enddo
+deallocate(wanc)
+! calculate Wannier function occupancies 
+wann_occ=0.d0
+wann_ene=0.d0
+do n=1,nwantot
+  do ikloc=1,nkptnrloc
+    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+    do j=1,nstsv
+      w2=dreal(dconjg(wanncnrloc(n,j,ikloc))*wanncnrloc(n,j,ikloc))
+      wann_occ(n)=wann_occ(n)+w2*occsvnr(j,ik)*wkptnr(ik)
+      wann_ene(n)=wann_ene(n)+w2*evalsvnr(j,ik)*wkptnr(ik)
+    enddo
+  enddo
+enddo
+call mpi_grid_reduce(wann_occ(1),nwantot,dims=(/dim_k/),all=.true.)
+call mpi_grid_reduce(wann_ene(1),nwantot,dims=(/dim_k/),all=.true.)
+return
+end subroutine
+
 
 subroutine genwfnr(fout,lpmat)
 use modmain
@@ -260,7 +318,7 @@ do ikloc=1,nkptnrloc
     call genpmat(ngknr(ikloc),igkignr(1,ikloc),vgkcnr(1,1,ikloc),&
       apwalm,evecfvnrloc(1,1,1,ikloc),evecsvnrloc(1,1,ikloc),&
       pmatnrloc(1,1,1,ikloc))
-  endif    
+  endif
 enddo !ikloc
 deallocate(apwalm)
 call timer_stop(1)
