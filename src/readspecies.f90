@@ -260,7 +260,7 @@ do is=1,nspecies
   end do
 ! find default principal quantum numbers
   do l=0,lmaxapw
-    apwpqn(l,:)=l+1
+    apwpqn(l,is)=l+1
   enddo
   l1=.false.
   do ist=1,spnst(is)
