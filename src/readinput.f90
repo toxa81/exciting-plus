@@ -1139,6 +1139,9 @@ case('sic_rpole')
   allocate(s_rpole(s_nrpole))
   s_rpole(1)=0.d0
   read(50,*,err=20)(s_rpole(i),i=2,s_nrpole)
+case('sic_localize')
+  read(50,*,err=20) sic_niter_u0,sic_u0_eps
+  read(50,*,err=20) sic_niter_umtrx,sic_umtrx_eps
 case('sic_debug_level')
   read(50,*,err=20) sic_debug_level
 case('disentangle')

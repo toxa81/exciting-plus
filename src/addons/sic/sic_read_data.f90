@@ -1,4 +1,4 @@
-subroutine sic_readvwan
+subroutine sic_read_data
 use modmain
 use mod_sic
 use mod_hdf5

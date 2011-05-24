@@ -1,4 +1,4 @@
-subroutine sic_writevwan
+subroutine sic_write_data
 use modmain
 use mod_sic
 use mod_hdf5
