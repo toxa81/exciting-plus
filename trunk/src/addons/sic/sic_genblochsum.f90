@@ -79,22 +79,41 @@ do j=1,sic_wantran%nwan
     call mpi_grid_reduce(wvkir(1,1,ikloc),ngrtot*nspinor,&
       dims=(/dim2/),all=.true.)
   enddo
-! convert to plane-wave expansion  
+! convert to plane-wave expansion
+! we want to compute <G+k|w_{nk}> where |G+k> = Omega^{-1/2}*exp^{i(G+k)r}
+! straightforward way:
+! do ir=1,ngrtot
+!  expikr=exp(-zi*dot_product(vgkc(:,ig,1,ikloc),vgrc(:,ir)))/sqrt(omega)
+!  z1=z1+expikr*wkir(ir,ispn,ikloc)*cfunir(ir)*omega/dble(ngrtot)
+! enddo
+! but this can be done much faster with FFT
   call timer_start(91)
   do ispn=1,nspinor
     do ikloc=1,nkptloc
       ik=ikloc+koffs
+! remove exp^{-ikr} phase, multiply by step function and by sqrt(omega)
+      do ir=1,ngrtot
+        z1=exp(-zi*dot_product(vkc(:,ik),vgrc(:,ir)))*sqrt(omega)
+        wkir(ir,ispn,ikloc)=wkir(ir,ispn,ikloc)*cfunir(ir)*z1
+        wvkir(ir,ispn,ikloc)=wvkir(ir,ispn,ikloc)*cfunir(ir)*z1
+      enddo
+      call zfftifc(3,ngrid,-1,wkir(1,ispn,ikloc))
+      call zfftifc(3,ngrid,-1,wvkir(1,ispn,ikloc))
+      !do ig=1,ngk(1,ik)
+      !  z1=zzero
+      !  z2=zzero
+      !  do ir=1,ngrtot
+      !    expikr=exp(-zi*dot_product(vgkc(:,ig,1,ikloc),vgrc(:,ir)))/sqrt(omega)
+      !    z1=z1+expikr*wkir(ir,ispn,ikloc)*cfunir(ir)*omega/dble(ngrtot)
+      !    z2=z2+expikr*wvkir(ir,ispn,ikloc)*cfunir(ir)*omega/dble(ngrtot)
+      !  enddo
+      !  s_wkit(ig,ispn,j,ikloc)=z1
+      !  s_wvkit(ig,ispn,j,ikloc)=z2
+      !enddo !ig
       do ig=1,ngk(1,ik)
-        z1=zzero
-        z2=zzero
-        do ir=1,ngrtot
-          expikr=exp(-zi*dot_product(vgkc(:,ig,1,ikloc),vgrc(:,ir)))/sqrt(omega)
-          z1=z1+expikr*wkir(ir,ispn,ikloc)*cfunir(ir)*omega/dble(ngrtot)
-          z2=z2+expikr*wvkir(ir,ispn,ikloc)*cfunir(ir)*omega/dble(ngrtot)
-        enddo
-        s_wkit(ig,ispn,j,ikloc)=z1
-        s_wvkit(ig,ispn,j,ikloc)=z2
-      enddo !ig
+        s_wkit(ig,ispn,j,ikloc)=wkir(igfft(igkig(ig,1,ikloc)),ispn,ikloc)
+        s_wvkit(ig,ispn,j,ikloc)=wvkir(igfft(igkig(ig,1,ikloc)),ispn,ikloc)
+      enddo
     enddo !ikloc
   enddo !ispn
   call timer_stop(91)
