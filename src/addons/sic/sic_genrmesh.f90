@@ -52,8 +52,8 @@ if (imesh.eq.2) then
     write(*,'(20F12.6)')s_rpole
   endif
   allocate(b(s_nrpole))
-  b=15.d0
-  !b(1)=16.d0
+  b=12.d0
+  b(1)=16.d0
 ! compute a=x(s_nr)
   t=dble(s_nrpole)-1.d0
   a=x_aux(1.d0*(s_nrpole-1),2.d0*(s_rmax-s_rpole(s_nrpole)),&
