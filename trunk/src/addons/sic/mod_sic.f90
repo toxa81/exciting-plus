@@ -452,23 +452,25 @@ complex(8), allocatable :: zftp1(:,:)
 !
 nrloc=mpi_grid_map(nr,dim_k,offs=roffs)
 zflm=zzero
-! convert to spherical harmonics
-call zgemm('T','N',lmmaxwan,nrloc,s_ntp,zone,s_ylmb,s_ntp,&
-  zftp(1,roffs+1),s_ntp,zzero,zflm(1,roffs+1),lmmaxwan)
-allocate(zftp1(s_ntp,nrloc))
 allocate(tdiff(sic_bsht_niter))
 tdiff=0.d0
-do iter=1,sic_bsht_niter
-! convert back to spherical coordinates
-  call zgemm('T','N',s_ntp,nrloc,lmmaxwan,zone,s_ylmf,lmmaxwan,zflm(1,1+roffs),&
-    lmmaxwan,zzero,zftp1,s_ntp)
-  zftp1(:,1:nrloc)=zftp(:,roffs+1:roffs+nrloc)-zftp1(:,1:nrloc)
-  tdiff(iter)=sum(abs(zftp1))
-! add difference to spherical harmonic expanson
+if (nrloc.gt.0) then
+! convert to spherical harmonics
   call zgemm('T','N',lmmaxwan,nrloc,s_ntp,zone,s_ylmb,s_ntp,&
-    zftp1,s_ntp,zone,zflm(1,roffs+1),lmmaxwan)
-enddo
-deallocate(zftp1)
+    zftp(1,roffs+1),s_ntp,zzero,zflm(1,roffs+1),lmmaxwan)
+  allocate(zftp1(s_ntp,nrloc))
+  do iter=1,sic_bsht_niter
+! convert back to spherical coordinates
+    call zgemm('T','N',s_ntp,nrloc,lmmaxwan,zone,s_ylmf,lmmaxwan,zflm(1,1+roffs),&
+      lmmaxwan,zzero,zftp1,s_ntp)
+    zftp1(:,1:nrloc)=zftp(:,roffs+1:roffs+nrloc)-zftp1(:,1:nrloc)
+    tdiff(iter)=sum(abs(zftp1))
+! add difference to spherical harmonic expanson
+    call zgemm('T','N',lmmaxwan,nrloc,s_ntp,zone,s_ylmb,s_ntp,&
+      zftp1,s_ntp,zone,zflm(1,roffs+1),lmmaxwan)
+  enddo
+  deallocate(zftp1)
+endif
 if (sic_bsht_niter.gt.0) then
   call mpi_grid_reduce(tdiff(1),sic_bsht_niter,dims=(/dim_k/))
 endif
@@ -497,23 +499,25 @@ real(8), allocatable :: ftp1(:,:)
 !
 nrloc=mpi_grid_map(nr,dim_k,offs=roffs)
 flm=0.d0
-! convert to spherical harmonics
-call dgemm('T','N',lmmaxwan,nrloc,s_ntp,1.d0,s_rlmb,s_ntp,&
-  ftp(1,roffs+1),s_ntp,0.d0,flm(1,roffs+1),lmmaxwan)
-allocate(ftp1(s_ntp,nrloc))
 allocate(tdiff(sic_bsht_niter))
 tdiff=0.d0
-do iter=1,sic_bsht_niter
-! convert back to spherical coordinates
-  call dgemm('T','N',s_ntp,nrloc,lmmaxwan,1.d0,s_rlmf,lmmaxwan,flm(1,1+roffs),&
-    lmmaxwan,0.d0,ftp1,s_ntp)
-  ftp1(:,1:nrloc)=ftp(:,roffs+1:roffs+nrloc)-ftp1(:,1:nrloc)
-  tdiff(iter)=sum(abs(ftp1))
-! add spherical harmonic expanson of the difference to the total expansion
+if (nrloc.gt.0) then
+! convert to spherical harmonics
   call dgemm('T','N',lmmaxwan,nrloc,s_ntp,1.d0,s_rlmb,s_ntp,&
-    ftp1,s_ntp,1.d0,flm(1,roffs+1),lmmaxwan)
-enddo
-deallocate(ftp1)
+    ftp(1,roffs+1),s_ntp,0.d0,flm(1,roffs+1),lmmaxwan)
+  allocate(ftp1(s_ntp,nrloc))
+  do iter=1,sic_bsht_niter
+! convert back to spherical coordinates
+    call dgemm('T','N',s_ntp,nrloc,lmmaxwan,1.d0,s_rlmf,lmmaxwan,flm(1,1+roffs),&
+      lmmaxwan,0.d0,ftp1,s_ntp)
+    ftp1(:,1:nrloc)=ftp(:,roffs+1:roffs+nrloc)-ftp1(:,1:nrloc)
+    tdiff(iter)=sum(abs(ftp1))
+! add spherical harmonic expanson of the difference to the total expansion
+    call dgemm('T','N',lmmaxwan,nrloc,s_ntp,1.d0,s_rlmb,s_ntp,&
+      ftp1,s_ntp,1.d0,flm(1,roffs+1),lmmaxwan)
+  enddo
+  deallocate(ftp1)
+endif
 if (sic_bsht_niter.gt.0) then
   call mpi_grid_reduce(tdiff(1),sic_bsht_niter,dims=(/dim_k/))
 endif
