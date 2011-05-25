@@ -142,6 +142,7 @@ endif
 
 call sic_iterate(151)
 
+call mpi_grid_barrier
 ! write to HDF5 file
 call sic_write_data
 if (wproc) then
