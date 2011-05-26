@@ -396,19 +396,15 @@ complex(8), intent(in) :: zfmt1(ld,nrmtmax,natmtot)
 complex(8), intent(in) :: zfmt2(ld,nrmtmax,natmtot)
 complex(8), intent(in) :: zfir1(*)
 complex(8), intent(in) :: zfir2(*)
-complex(8), optional, intent(inout) :: zfrac(2)
+complex(8), optional, intent(out) :: zfrac(2)
 !
 integer is,ias,ir,itp,ig
 complex(8) zsumir,zsummt,zt1
-complex(8) zfr(nrmtmax) 
 complex(8), external :: zdotc
 ! interstitial contribution
 zsumir=zzero
 if (tpw) then
   zsumir=zdotc(ng,zfir1,1,zfir2,1)
-  !do ig=1,ng
-  !  zsumir=zsumir+dconjg(zfir1(ig))*zfir2(ig)
-  !enddo
 else
   do ir=1,ngrtot
     zsumir=zsumir+cfunir(ir)*dconjg(zfir1(ir))*zfir2(ir)
@@ -433,8 +429,8 @@ do ias=1,natmtot
 enddo !ias
 s_zfinp=zsumir+zsummt
 if (present(zfrac)) then
-  zfrac(1)=zfrac(1)+zsummt
-  zfrac(2)=zfrac(2)+zsumir
+  zfrac(1)=zsummt
+  zfrac(2)=zsumir
 endif
 return
 end function
