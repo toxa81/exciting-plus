@@ -9,7 +9,7 @@ complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 ! local variables
 integer ik,ispn,ierr
 integer ias,ist,j,j1
-complex(8) zt2(2)
+complex(8) zt2(2),z1
 complex(8), allocatable :: wfmt_(:,:)
 complex(8), allocatable :: wfmt(:,:,:)
 complex(8), allocatable :: wb(:,:,:,:)
@@ -25,20 +25,6 @@ if (debug_level.ge.4) then
   allocate(om(sic_wantran%nwan,sic_wantran%nwan))
 endif
 call timer_start(t_sic_genfvprj)
-!do ikloc=1,nkptloc
-!  do j=1,sic_wantran%nwan
-!    n=sic_wantran%iwan(j)
-!    do ispn=1,nspinor
-!      do ist=1,nstfv
-!        istsv=ist+(ispn-1)*nstfv
-!        do i=1,nstsv
-!          sic_wb_tmp(j,ist,ispn,ikloc)=sic_wb_tmp(j,ist,ispn,ikloc)+&
-!            dconjg(wann_c(n,i,ikloc)*evecsvloc(istsv,i,ikloc))
-!        enddo !j
-!      enddo !ispn
-!    enddo !i
-!  enddo !n
-!enddo !ikloc  
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(wfmt_,wfmt,ias,j,ispn)
 allocate(wfmt_(lmmaxvr,nrmtmax))
@@ -56,7 +42,6 @@ do ist=1,nstfv
   enddo
   do j=1,sic_wantran%nwan
     do ispn=1,nspinor
-      zt2=zzero
       sic_wb(j,ist,ispn,ikloc)=s_zfinp(.false.,.true.,mt_ntp,ngk(1,ik),&
         s_wkmt(1,1,1,ispn,j,ikloc),wfmt,s_wkit(1,ispn,j,ikloc),&
         evecfv(1,ist,1),zt2)
