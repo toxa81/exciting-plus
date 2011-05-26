@@ -123,12 +123,16 @@ deallocate(wantp)
 
 call sic_localize(fout,wanprop)
 
-
-!! generate potentials
+!s_wvlm=zzero
+!! generate final potentials
+!do j=1,sic_wantran%nwan
+!  n=sic_wantran%iwan(j)
 !  if (sic_apply(n).eq.2) then
 !    call timer_start(t_sic_wan_pot)
-!    call s_gen_pot(s_wlm(1,1,1,j),wantp,s_wvlm(1,1,1,j),wanprop(1,j))
+!    call sic_genpot(s_wlm(1,1,1,j),s_wvlm(1,1,1,j),wanprop(1,j))
 !    call timer_stop(t_sic_wan_pot)
+!  else
+!    wanprop(:,j)=0.d0
 !  endif
 !enddo !j
 
@@ -154,8 +158,6 @@ call sic_localize(fout,wanprop)
 !  enddo
 !endif
 
-! check <W|\phi> matrix elements
-!if (.true.) call sic_test_fvprj(fout)
 ! compute overlap integrals 
 allocate(ovlp(sic_wantran%nwt))
 ovlp=zzero
