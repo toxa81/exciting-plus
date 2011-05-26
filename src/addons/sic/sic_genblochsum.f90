@@ -99,6 +99,10 @@ do j=1,sic_wantran%nwan
       enddo
       call zfftifc(3,ngrid,-1,wkir(1,ispn,ikloc))
       call zfftifc(3,ngrid,-1,wvkir(1,ispn,ikloc))
+      do ig=1,ngk(1,ik)
+        s_wkit(ig,ispn,j,ikloc)=wkir(igfft(igkig(ig,1,ikloc)),ispn,ikloc)
+        s_wvkit(ig,ispn,j,ikloc)=wvkir(igfft(igkig(ig,1,ikloc)),ispn,ikloc)
+      enddo
       !do ig=1,ngk(1,ik)
       !  z1=zzero
       !  z2=zzero
@@ -110,10 +114,6 @@ do j=1,sic_wantran%nwan
       !  s_wkit(ig,ispn,j,ikloc)=z1
       !  s_wvkit(ig,ispn,j,ikloc)=z2
       !enddo !ig
-      do ig=1,ngk(1,ik)
-        s_wkit(ig,ispn,j,ikloc)=wkir(igfft(igkig(ig,1,ikloc)),ispn,ikloc)
-        s_wvkit(ig,ispn,j,ikloc)=wvkir(igfft(igkig(ig,1,ikloc)),ispn,ikloc)
-      enddo
     enddo !ikloc
   enddo !ispn
   call timer_stop(91)
