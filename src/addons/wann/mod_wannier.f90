@@ -276,7 +276,7 @@ do i=1,twantran%nwt
   m=twantran%iwt(1,i)
   ias=wan_info(1,m)
   n=twantran%iwt(2,i)
-  jas=wan_info(2,n)
+  jas=wan_info(1,n)
   if (ias.eq.jas.and.all(twantran%iwt(3:5,i).eq.0)) nwt0=nwt0+1
 enddo
 twantran%nwt0=nwt0
@@ -288,7 +288,7 @@ do i=1,twantran%nwt
   m=twantran%iwt(1,i)
   ias=wan_info(1,m)
   n=twantran%iwt(2,i)
-  jas=wan_info(2,n)
+  jas=wan_info(1,n)
   if (ias.eq.jas.and.all(twantran%iwt(3:5,i).eq.0)) then
     nwt0=nwt0+1
     twantran%iwt0(nwt0)=i
