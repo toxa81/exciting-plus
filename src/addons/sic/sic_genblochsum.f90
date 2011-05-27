@@ -4,10 +4,18 @@ use mod_sic
 use mod_ws
 implicit none
 integer ik,ikloc,j,n,it,ias,is,ia,ir,itp,ispn,ntrloc,itloc,ig,koffs
+integer irloc,nrloc
 real(8) x(3),vtc(3),x0(3)
 complex(8) zt1(nspinor),zt2(nspinor),z1,z2,expikt,expikr
 complex(8), allocatable :: wkir(:,:,:)
 complex(8), allocatable :: wvkir(:,:,:)
+real(8), allocatable :: vtcmt(:,:,:,:)
+real(8), allocatable :: vtcir(:,:)
+complex(8), allocatable :: f1mt(:,:,:,:)
+complex(8), allocatable :: f2mt(:,:,:,:)
+complex(8), allocatable :: f1ir(:,:)
+complex(8), allocatable :: f2ir(:,:)
+
 !
 s_wkmt=zzero
 s_wvkmt=zzero
@@ -20,51 +28,92 @@ ntrloc=mpi_grid_map(sic_blochsum%ntr,dim2)
 n=mpi_grid_map(nkpt,dim_k,offs=koffs)
 allocate(wkir(ngrtot,nspinor,nkptloc))
 allocate(wvkir(ngrtot,nspinor,nkptloc))
+
+allocate(vtcmt(3,mt_ntp,nrmtmax,natmtot))
+allocate(vtcir(3,ngrtot))
+allocate(f1mt(mt_ntp,nrmtmax,natmtot,nspinor))
+allocate(f2mt(mt_ntp,nrmtmax,natmtot,nspinor))
+allocate(f1ir(ngrtot,nspinor))
+allocate(f2ir(ngrtot,nspinor))
+
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
   wkir=zzero
   wvkir=zzero
   do itloc=1,ntrloc
     it=mpi_grid_map(sic_blochsum%ntr,dim2,loc=itloc)
+    vtcmt=0.d0
+    vtcir=0.d0
+    f1mt=zzero
+    f2mt=zzero
+    f1ir=zzero
+    f2ir=zzero
 ! muffin-tin part
+    do ias=1,natmtot
+      is=ias2is(ias)
+      ia=ias2ia(ias)
+      nrloc=mpi_grid_map(nrmt(is),dim_k)
+      do irloc=1,nrloc
+        ir=mpi_grid_map(nrmt(is),dim_k,loc=irloc)
+        do itp=1,mt_ntp
+          x0(:)=mt_spx(:,itp)*spr(ir,is)+atposc(:,ia,is)-wanpos(:,n)
+          x(:)=x0(:)+sic_blochsum%vtc(:,it)
+          call ws_reduce(x,sic_wan_rwsmax)
+          vtcmt(:,itp,ir,ias)=x(:)-x0(:)
+          call s_spinor_func_val(x,s_wlm(1,1,1,j),zt1,&
+            s_wvlm(1,1,1,j),zt2,rcutoff=s_rmax)
+          f1mt(itp,ir,ias,:)=zt1(:)
+          f2mt(itp,ir,ias,:)=zt2(:)
+        enddo
+      enddo
+    enddo
+    call mpi_grid_reduce(vtcmt(1,1,1,1),3*mt_ntp*nrmtmax*natmtot,&
+      dims=(/dim_k/),all=.true.)
+    call mpi_grid_reduce(f1mt(1,1,1,1),mt_ntp*nrmtmax*natmtot*nspinor,&
+      dims=(/dim_k/),all=.true.)
+    call mpi_grid_reduce(f2mt(1,1,1,1),mt_ntp*nrmtmax*natmtot*nspinor,&
+      dims=(/dim_k/),all=.true.)
     do ias=1,natmtot
       is=ias2is(ias)
       ia=ias2ia(ias)
       do ir=1,nrmt(is)
         do itp=1,mt_ntp
-          x0(:)=mt_spx(:,itp)*spr(ir,is)+atposc(:,ia,is)-wanpos(:,n)
-          x(:)=x0(:)+sic_blochsum%vtc(:,it)
-          call ws_reduce(x,sic_wan_rwsmax)
-          vtc(:)=x(:)-x0(:)
-          call s_spinor_func_val(x,s_wlm(1,1,1,j),zt1,&
-            s_wvlm(1,1,1,j),zt2,rcutoff=s_rmax)
           do ikloc=1,nkptloc
             ik=ikloc+koffs
-            expikt=exp(-zi*dot_product(vkc(:,ik),vtc(:))) 
+            expikt=exp(-zi*dot_product(vkc(:,ik),vtcmt(:,itp,ir,ias))) 
             do ispn=1,nspinor
               s_wkmt(itp,ir,ias,ispn,j,ikloc)=&
-                s_wkmt(itp,ir,ias,ispn,j,ikloc)+zt1(ispn)*expikt
+                s_wkmt(itp,ir,ias,ispn,j,ikloc)+f1mt(itp,ir,ias,ispn)*expikt
               s_wvkmt(itp,ir,ias,ispn,j,ikloc)=&
-                s_wvkmt(itp,ir,ias,ispn,j,ikloc)+zt2(ispn)*expikt
+                s_wvkmt(itp,ir,ias,ispn,j,ikloc)+f2mt(itp,ir,ias,ispn)*expikt
             enddo !ispn
           enddo !ikloc
         enddo !itp
       enddo !ir
     enddo !ias
 ! interstitial part
-    do ir=1,ngrtot
+    nrloc=mpi_grid_map(ngrtot,dim_k)
+    do irloc=1,nrloc
+      ir=mpi_grid_map(ngrtot,dim_k,loc=irloc)
       x0(:)=vgrc(:,ir)-wanpos(:,n)
       x(:)=x0(:)+sic_blochsum%vtc(:,it)
       call ws_reduce(x,sic_wan_rwsmax)
-      vtc(:)=x(:)-x0(:)
+      vtcir(:,ir)=x(:)-x0(:)
       call s_spinor_func_val(x,s_wlm(1,1,1,j),zt1,&
         s_wvlm(1,1,1,j),zt2,rcutoff=s_rmax)
+      f1ir(ir,:)=zt1(:)
+      f2ir(ir,:)=zt2(:)
+    enddo
+    call mpi_grid_reduce(vtcir(1,1),3*ngrtot,dims=(/dim_k/),all=.true.)
+    call mpi_grid_reduce(f1ir(1,1),ngrtot*nspinor,dims=(/dim_k/),all=.true.)
+    call mpi_grid_reduce(f2ir(1,1),ngrtot*nspinor,dims=(/dim_k/),all=.true.)
+    do ir=1,ngrtot
       do ikloc=1,nkptloc
         ik=ikloc+koffs
-        expikt=exp(-zi*dot_product(vkc(:,ik),vtc(:)))
+        expikt=exp(-zi*dot_product(vkc(:,ik),vtcir(:,ir)))
         do ispn=1,nspinor
-          wkir(ir,ispn,ikloc)=wkir(ir,ispn,ikloc)+zt1(ispn)*expikt
-          wvkir(ir,ispn,ikloc)=wvkir(ir,ispn,ikloc)+zt2(ispn)*expikt
+          wkir(ir,ispn,ikloc)=wkir(ir,ispn,ikloc)+f1ir(ir,ispn)*expikt
+          wvkir(ir,ispn,ikloc)=wvkir(ir,ispn,ikloc)+f2ir(ir,ispn)*expikt
         enddo !ispn
       enddo !ikloc
     enddo !ir
@@ -119,6 +168,7 @@ do j=1,sic_wantran%nwan
   call timer_stop(91)
 enddo !j
 deallocate(wkir,wvkir)
+deallocate(vtcmt,vtcir,f1mt,f2mt,f1ir,f2ir)
 call timer_stop(90)
 if (mpi_grid_root()) then
   write(*,'("[sic_blochsum] total time   : ",F12.4," sec.")')timer_get_value(90)
