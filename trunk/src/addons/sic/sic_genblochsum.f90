@@ -15,7 +15,7 @@ complex(8), allocatable :: f1mt(:,:,:,:)
 complex(8), allocatable :: f2mt(:,:,:,:)
 complex(8), allocatable :: f1ir(:,:)
 complex(8), allocatable :: f2ir(:,:)
-
+real(8) t0,t1
 !
 s_wkmt=zzero
 s_wvkmt=zzero
@@ -24,6 +24,8 @@ s_wvkit=zzero
 if (.not.tsic_wv) return
 call timer_start(90,reset=.true.)
 call timer_reset(91)
+call timer_reset(92)
+call timer_reset(93)
 ntrloc=mpi_grid_map(sic_blochsum%ntr,dim2)
 n=mpi_grid_map(nkpt,dim_k,offs=koffs)
 allocate(wkir(ngrtot,nspinor,nkptloc))
@@ -41,6 +43,7 @@ do j=1,sic_wantran%nwan
   wkir=zzero
   wvkir=zzero
   do itloc=1,ntrloc
+    call timer_start(92)
     it=mpi_grid_map(sic_blochsum%ntr,dim2,loc=itloc)
     vtcmt=0.d0
     vtcir=0.d0
@@ -53,6 +56,7 @@ do j=1,sic_wantran%nwan
       is=ias2is(ias)
       ia=ias2ia(ias)
       nrloc=mpi_grid_map(nrmt(is),dim_k)
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(irloc,ir,itp,x0,x,zt1,zt2)
       do irloc=1,nrloc
         ir=mpi_grid_map(nrmt(is),dim_k,loc=irloc)
         do itp=1,mt_ntp
@@ -66,6 +70,7 @@ do j=1,sic_wantran%nwan
           f2mt(itp,ir,ias,:)=zt2(:)
         enddo
       enddo
+!$OMP END PARALLEL DO
     enddo
     call mpi_grid_reduce(vtcmt(1,1,1,1),3*mt_ntp*nrmtmax*natmtot,&
       dims=(/dim_k/),all=.true.)
@@ -73,26 +78,37 @@ do j=1,sic_wantran%nwan
       dims=(/dim_k/),all=.true.)
     call mpi_grid_reduce(f2mt(1,1,1,1),mt_ntp*nrmtmax*natmtot*nspinor,&
       dims=(/dim_k/),all=.true.)
-    do ias=1,natmtot
-      is=ias2is(ias)
-      ia=ias2ia(ias)
-      do ir=1,nrmt(is)
-        do itp=1,mt_ntp
-          do ikloc=1,nkptloc
-            ik=ikloc+koffs
-            expikt=exp(-zi*dot_product(vkc(:,ik),vtcmt(:,itp,ir,ias))) 
+    call timer_stop(92)
+    call timer_start(93)
+    t0=0
+    expikt=zone
+    do ikloc=1,nkptloc
+      ik=ikloc+koffs
+      do ias=1,natmtot
+        is=ias2is(ias)
+        ia=ias2ia(ias)
+        do ir=1,nrmt(is)
+          do itp=1,mt_ntp
+            t1=dot_product(vkc(:,ik),vtcmt(:,itp,ir,ias))
+            if (abs(t1-t0).gt.1d-10) then
+              expikt=exp(-zi*t1)
+              t0=t1
+            endif
             do ispn=1,nspinor
               s_wkmt(itp,ir,ias,ispn,j,ikloc)=&
                 s_wkmt(itp,ir,ias,ispn,j,ikloc)+f1mt(itp,ir,ias,ispn)*expikt
               s_wvkmt(itp,ir,ias,ispn,j,ikloc)=&
                 s_wvkmt(itp,ir,ias,ispn,j,ikloc)+f2mt(itp,ir,ias,ispn)*expikt
             enddo !ispn
-          enddo !ikloc
-        enddo !itp
-      enddo !ir
-    enddo !ias
+          enddo !
+        enddo !
+      enddo !
+    enddo !
+    call timer_stop(93)
+    call timer_start(92)
 ! interstitial part
     nrloc=mpi_grid_map(ngrtot,dim_k)
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(irloc,ir,x0,x,zt1,zt2)
     do irloc=1,nrloc
       ir=mpi_grid_map(ngrtot,dim_k,loc=irloc)
       x0(:)=vgrc(:,ir)-wanpos(:,n)
@@ -104,13 +120,22 @@ do j=1,sic_wantran%nwan
       f1ir(ir,:)=zt1(:)
       f2ir(ir,:)=zt2(:)
     enddo
+!$OMP END PARALLEL DO
     call mpi_grid_reduce(vtcir(1,1),3*ngrtot,dims=(/dim_k/),all=.true.)
     call mpi_grid_reduce(f1ir(1,1),ngrtot*nspinor,dims=(/dim_k/),all=.true.)
     call mpi_grid_reduce(f2ir(1,1),ngrtot*nspinor,dims=(/dim_k/),all=.true.)
-    do ir=1,ngrtot
-      do ikloc=1,nkptloc
-        ik=ikloc+koffs
-        expikt=exp(-zi*dot_product(vkc(:,ik),vtcir(:,ir)))
+    call timer_stop(92)
+    call timer_start(93)
+    t0=0
+    expikt=zone
+    do ikloc=1,nkptloc
+      ik=ikloc+koffs
+      do ir=1,ngrtot
+        t1=dot_product(vkc(:,ik),vtcir(:,ir))
+        if (abs(t1-t0).gt.1d-10) then
+          expikt=exp(-zi*t1)
+          t0=t1
+        endif
         do ispn=1,nspinor
           wkir(ir,ispn,ikloc)=wkir(ir,ispn,ikloc)+f1ir(ir,ispn)*expikt
           wvkir(ir,ispn,ikloc)=wvkir(ir,ispn,ikloc)+f2ir(ir,ispn)*expikt
@@ -118,6 +143,7 @@ do j=1,sic_wantran%nwan
       enddo !ikloc
     enddo !ir
   enddo !itloc
+  call timer_stop(93)
   do ikloc=1,nkptloc
     call mpi_grid_reduce(s_wkmt(1,1,1,1,j,ikloc),&
       mt_ntp*nrmtmax*natmtot*nspinor,dims=(/dim2/),all=.true.)
@@ -172,6 +198,8 @@ deallocate(vtcmt,vtcir,f1mt,f2mt,f1ir,f2ir)
 call timer_stop(90)
 if (mpi_grid_root()) then
   write(*,'("[sic_blochsum] total time   : ",F12.4," sec.")')timer_get_value(90)
+  write(*,'("[sic_blochsum] wf(r)        : ",F12.4," sec.")')timer_get_value(92)
+  write(*,'("[sic_blochsum] summation    : ",F12.4," sec.")')timer_get_value(93)
   write(*,'("[sic_blochsum] pw expansion : ",F12.4," sec.")')timer_get_value(91)
 endif
 return
