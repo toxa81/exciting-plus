@@ -66,8 +66,8 @@ real(8), intent(out) :: g1(nr)
 real(8), intent(out) :: f0(nr)
 real(8), intent(out) :: f1(nr)
 ! local variables
-integer i,ir,ir0,npl
-real(8) ci,e0,t1,t2
+integer ir,ir0,npl
+real(8) ci,e0,t1,t2,t3,t4
 ! automatic arrays
 real(8) c(np)
 ! external functions
@@ -90,15 +90,15 @@ ci=1.d0/sol
 ! electron rest energy
 e0=sol**2
 t1=2.d0*e0+e
-! determine the r -> 0 boundary values of F and G self-consistently
+! determine the r -> 0 boundary values of F and G
 f0(1)=0.d0
 g1(1)=1.d0
 f1(1)=0.d0
 t2=r(1)/dble(kpa)
-do i=1,10
-  g0(1)=t2*(ci*(t1-vr(1))*f0(1)-g1(1))
-  f0(1)=t2*(ci*(e-vr(1))*g0(1)+f1(1))
-end do
+t3=ci*(t1-vr(1))*t2**2
+t4=ci*(e-vr(1))
+g0(1)=(t3*f1(1)-t2*g1(1))/(1.d0-t3*t4)
+f0(1)=t2*(t4*g0(1)+f1(1))
 if (m.ne.0) then
   g1(1)=g1(1)+ci*dble(m)*f0p(1)
   f1(1)=f1(1)-ci*dble(m)*g0p(1)
@@ -106,6 +106,8 @@ end if
 nn=0
 do ir=2,nr
   t2=dble(kpa)/r(ir)
+  t3=ci*(t1-vr(ir))
+  t4=ci*(vr(ir)-e)
 ! predictor-corrector order
   npl=min(ir,np)
   ir0=ir-npl+1
@@ -115,8 +117,8 @@ do ir=2,nr
   g0(ir)=polynom(-1,npl,r(ir0),g1(ir0),c,r(ir))+g0(ir0)
   f0(ir)=polynom(-1,npl,r(ir0),f1(ir0),c,r(ir))+f0(ir0)
 ! compute the derivatives
-  g1(ir)=ci*(t1-vr(ir))*f0(ir)-t2*g0(ir)
-  f1(ir)=ci*(vr(ir)-e)*g0(ir)+t2*f0(ir)
+  g1(ir)=t3*f0(ir)-t2*g0(ir)
+  f1(ir)=t4*g0(ir)+t2*f0(ir)
   if (m.ne.0) then
     g1(ir)=g1(ir)+ci*dble(m)*f0p(ir)
     f1(ir)=f1(ir)-ci*dble(m)*g0p(ir)
@@ -125,8 +127,8 @@ do ir=2,nr
   g0(ir)=polynom(-1,npl,r(ir0),g1(ir0),c,r(ir))+g0(ir0)
   f0(ir)=polynom(-1,npl,r(ir0),f1(ir0),c,r(ir))+f0(ir0)
 ! compute the derivatives again
-  g1(ir)=ci*(t1-vr(ir))*f0(ir)-t2*g0(ir)
-  f1(ir)=ci*(vr(ir)-e)*g0(ir)+t2*f0(ir)
+  g1(ir)=t3*f0(ir)-t2*g0(ir)
+  f1(ir)=t4*g0(ir)+t2*f0(ir)
   if (m.ne.0) then
     g1(ir)=g1(ir)+ci*dble(m)*f0p(ir)
     f1(ir)=f1(ir)-ci*dble(m)*g0p(ir)
