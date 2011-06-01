@@ -96,7 +96,6 @@ allocate(work(nwork))
 iscl=0
 if (wproc) write(60,*)
 if ((task.eq.1).or.(task.eq.3).or.(sic.and.isclsic.gt.1)) then
-!if ((task.eq.1).or.(task.eq.3)) then
   call readstate
   if (wproc) write(60,'("Potential read in from STATE.OUT")')
   if (autolinengy) call readfermi
@@ -167,7 +166,11 @@ do iscl=1,maxscl
 ! get product of radial functions
   call genufrp  
 ! generate muffin-tin effective magnetic fields and s.o. coupling functions
-  call genbeffmt
+  if (sic) then
+    call seceqnsv1_init
+  else
+    call genbeffmt
+  endif
 ! Fourier transform effective potential to G-space
   call genveffig
   evalsv=0.d0
@@ -194,11 +197,14 @@ do iscl=1,maxscl
   call mpi_grid_bcast(occsv(1,1),nstsv*nkpt,dims=(/dim_k,dim2/))
   if (wannier) call wann_ene_occ  
   if (sic) call sic_wan_ene
-  call rhomag
+  if (sic) then
+    call rhomag1
+  else
+    call rhomag
+  endif
 ! LDA+U
   if (ldapu.ne.0) then
 ! generate the LDA+U density matrix
-    !call gendmatlu
     call gendmatrsh
 ! generate the LDA+U potential matrix
     call genvmatlu
