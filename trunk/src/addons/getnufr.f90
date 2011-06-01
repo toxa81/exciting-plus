@@ -1,10 +1,9 @@
-subroutine getnufr(lmax)
+subroutine getnufr
 use modmain
 implicit none
-integer, intent(in) :: lmax
 
 integer ltmp(0:lolmax)
-integer is,ilo,l,nlomaxl
+integer is,ilo,l,nlomaxl,io
 nufr=apwordmax
 ! find maximum number of local orbitals over all l-channels
 nlomaxl=0
@@ -15,11 +14,20 @@ do is=1,nspecies
     nufr(lorbl(ilo,is),is)=nufr(lorbl(ilo,is),is)+1
   enddo
   do l=0,lolmax
-    if (l.le.lmax) then
+    if (l.le.lmaxapw) then
       nlomaxl=max(nlomaxl,ltmp(l))
     endif
   enddo
 enddo
 nufrmax=apwordmax+nlomaxl
+nlufr=0
+do is=1,nspecies
+  do l=0,lmaxvr
+    do io=1,nufr(l,is)
+      nlufr(is)=nlufr(is)+1
+    enddo
+  enddo
+enddo
+nlufrmax=maxval(nlufr)
 return
 end

@@ -3,7 +3,9 @@ use modmain
 use mod_wannier
 implicit none
 integer ia,is,l,m,ir,i1,i2,i3,i
+integer l1,l2,l3,m1,m2,m3,lm1,lm2,lm3
 real(8) vl(3)
+complex(8), external :: gauntyry
 if (allocated(rylm)) deallocate(rylm)
 allocate(rylm(16,16))
 if (allocated(yrlm)) deallocate(yrlm)
@@ -26,7 +28,9 @@ end do
 call getatmcls
 if (allocated(nufr)) deallocate(nufr)
 allocate(nufr(0:lmaxapw,nspecies))
-call getnufr(lmaxapw)
+if (allocated(nlufr)) deallocate(nlufr)
+allocate(nlufr(nspecies))
+call getnufr
 if (allocated(ufr)) deallocate(ufr)
 allocate(ufr(nrmtmax,0:lmaxapw,nufrmax,natmcls))
 if (allocated(ufrp)) deallocate(ufrp)
@@ -55,6 +59,26 @@ do i3=0,ngrid(3)-1
     enddo
   enddo
 enddo
+if (allocated(sv_gntyry)) deallocate(sv_gntyry)
+allocate(sv_gntyry(lmmaxvr,lmmaxvr,lmmaxvr))
+do l1=0,lmaxvr
+  do m1=-l1,l1
+    lm1=idxlm(l1,m1)
+    do l2=0,lmaxvr
+      do m2=-l2,l2
+        lm2=idxlm(l2,m2)
+        do l3=0,lmaxvr
+          do m3=-l3,l3
+            lm3=idxlm(l3,m3)
+            sv_gntyry(lm3,lm2,lm1)=gauntyry(l2,l3,l1,m2,m3,m1)
+          enddo
+        enddo
+      enddo
+    enddo
+  enddo
+enddo
+if (allocated(sv_ubu)) deallocate(sv_ubu)
+allocate(sv_ubu(lmmaxvr,nlufrmax,nlufrmax,natmtot,ndmag))
 if (wannier) call wann_init
 if (sic) call sic_init
 if (debug_level.ge.4) then

@@ -32,6 +32,10 @@ real(8), allocatable :: ufrp(:,:,:,:)
 !  1-st index: l (from 0 to lmaxvr)
 !  2-nd index: atom species (from 1 to nspecies)
 integer, allocatable :: nufr(:,:)
+! total number of u_{l,io} radial functions (lapw + lo over all l- channels)
+integer, allocatable :: nlufr(:)
+! maximum nlufr over all species
+integer nlufrmax
 ! number of atoms with local point symmetry
 integer natlps
 ! transformation matrices for real spherical harmonics
@@ -68,7 +72,6 @@ real(8), allocatable :: vgrc(:,:)
 integer, allocatable :: apwpqn(:,:)
 ! principal quantum number of each local orbital
 integer, allocatable :: lopqn(:,:)
-!integer, allocatable :: spnl(:,:)
 
 integer debug_level
 data debug_level/0/
@@ -79,6 +82,9 @@ real(8) nn_maxdist
 data nn_maxdist/15.d0/
 integer nn_maxsh
 data nn_maxsh/10/
+
+complex(8), allocatable :: sv_gntyry(:,:,:)
+real(8), allocatable :: sv_ubu(:,:,:,:,:)
 
 !-----------------------!
 !      MPI parallel     !
