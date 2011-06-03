@@ -845,17 +845,18 @@ integer, external :: hash
 integer i,sz
 #ifdef _MPI_
 ierr=0
-allocate(tmp(0:mpi_grid_size(d)-1))
+if (mpi_grid_dim_size(d).eq.1) return
+allocate(tmp(0:mpi_grid_dim_size(d)-1))
 tmp=0
 sz=sizeof(val)
-tmp(mpi_grid_x(d))=hash(val,n*sz)
-call mpi_grid_reduce(tmp(0),mpi_grid_size(d),dims=(/d/),all=.true.)
-if (mpi_grid_x(d).eq.0) then
-  do i=0,mpi_grid_size(d)-1
+tmp(mpi_grid_dim_pos(d))=hash(val,n*sz)
+call mpi_grid_reduce(tmp(0),mpi_grid_dim_size(d),dims=(/d/),all=.true.)
+if (mpi_grid_dim_pos(d).eq.0) then
+  do i=0,mpi_grid_dim_size(d)-1
     if (tmp(i).ne.tmp(0)) ierr=1
   enddo
 else
-  if (tmp(mpi_grid_x(d)).ne.tmp(0)) ierr=1
+  if (tmp(mpi_grid_dim_pos(d)).ne.tmp(0)) ierr=1
 endif
 deallocate(tmp)
 #endif
