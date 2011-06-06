@@ -58,7 +58,7 @@ if (spinsprl) then
   call seceqnss(ikloc,apwalm,evalfv,evecfv,evecsv)
 else
 ! solve the second-variational secular equation
-  if (sic) then
+  if (texactrho) then
     call seceqnsv1(ikloc,apwalm,evalfv,evecfv,evecsv)
   else
     call seceqnsv(ikloc,apwalm,evalfv,evecfv,evecsv)

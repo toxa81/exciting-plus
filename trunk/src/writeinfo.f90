@@ -217,8 +217,10 @@ write(fnum,'("Maximum |G| for potential and density : ",G18.10)') gmaxvr
 write(fnum,'("Polynomial order for pseudocharge density : ",I4)') npsden
 write(fnum,'("Radial integration step length : ",I4)') lradstp
 write(fnum,*)
-write(fnum,'("G-vector grid sizes : ",3I6)') ngrid(1),ngrid(2),ngrid(3)
+write(fnum,'("G-vector grid sizes       : ",3I6)') ngrid(1),ngrid(2),ngrid(3)
 write(fnum,'("Total number of G-vectors : ",I8)') ngvec
+write(fnum,'("Total number of points    : ",I8)') ngrtot
+write(fnum,'("FFT grid density          : ",F12.2," [1/a.u.^3]")')dble(ngrtot)/omega
 write(fnum,*)
 write(fnum,'("Maximum angular momentum used for")')
 write(fnum,'(" APW functions                      : ",I4)') lmaxapw
