@@ -1172,6 +1172,8 @@ case('screenu4')
   read(50,*,err=20) screenu4
 case('nnghbr')
   read(50,*,err=20) nn_maxdist,nn_maxsh
+case('exactrho')
+  read(50,*,err=20) texactrho
 case('')
   goto 10
 case default

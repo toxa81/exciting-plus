@@ -166,7 +166,7 @@ do iscl=1,maxscl
 ! get product of radial functions
   call genufrp  
 ! generate muffin-tin effective magnetic fields and s.o. coupling functions
-  if (sic) then
+  if (texactrho) then
     call seceqnsv1_init
   else
     call genbeffmt
@@ -197,7 +197,7 @@ do iscl=1,maxscl
   call mpi_grid_bcast(occsv(1,1),nstsv*nkpt,dims=(/dim_k,dim2/))
   if (wannier) call wann_ene_occ  
   if (sic) call sic_wan_ene
-  if (sic) then
+  if (texactrho) then
     call rhomag1
   else
     call rhomag
@@ -340,12 +340,24 @@ do iscl=1,maxscl
       timer_get_value(t_seceqnsv)
     write(60,'("      setup                                 : ",F12.2)')&
       timer_get_value(t_seceqnsv_setup)
+    if (texactrho) then
+      write(60,'("        (MT)                                : ",F12.2)')&
+        timer_get_value(t_seceqnsv_setup_mt)
+      write(60,'("        (IT)                                : ",F12.2)')&
+        timer_get_value(t_seceqnsv_setup_it)
+    endif
     write(60,'("      diagonalization                       : ",F12.2)')&
       timer_get_value(t_seceqnsv_diag)
     write(60,'("  total for charge and magnetization        : ",F12.2)')&
       timer_get_value(t_rho_mag_tot)
     write(60,'("    k-point summation                       : ",F12.2)')&
       timer_get_value(t_rho_mag_sum)
+    if (texactrho) then
+      write(60,'("      (MT)                                  : ",F12.2)')&
+        timer_get_value(t_rho_mag_mt)
+      write(60,'("      (IT)                                  : ",F12.2)')&
+        timer_get_value(t_rho_mag_it)
+    endif
     write(60,'("    symmetrization                          : ",F12.2)')&
       timer_get_value(t_rho_mag_sym)
     write(60,'("  total for potential                       : ",F12.2)')&
