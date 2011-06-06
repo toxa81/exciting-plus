@@ -68,11 +68,11 @@ do istfv1=1,nstfv
         ist2=istfv2+(ispn2-1)*nstfv
         do j1=1,sic_wantran%nwan
           n1=sic_wantran%iwan(j1)
-          en=dreal(sic_vme(sic_wantran%iwtidx(n1,n1,0,0,0)))+sic_wan_e0(n1)
+          en=dreal(sic_vme(sic_wantran%iwtidx(n1,n1,0,0,0)))!+sic_wan_e0(n1)
           do j2=1,sic_wantran%nwan
 ! 2-nd term : -\sum_{\alpha,\alpha'} P_{\alpha} H^{LDA} P_{\alpha'}     
-            hunif(ist1,ist2)=hunif(ist1,ist2)-sic_wan_h0k(j1,j2,ikloc)*&
-              dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*sic_wb(j2,istfv2,ispn2,ikloc)
+            !hunif(ist1,ist2)=hunif(ist1,ist2)-sic_wan_h0k(j1,j2,ikloc)*&
+            !  dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*sic_wb(j2,istfv2,ispn2,ikloc)
 ! 5-th term, first part: 
 !  -\sum_{\alpha,\alpha'} ( P_{\alpha}V_{\alpha}P_{\alpha'} +
 !                           P_{\alpha'}V_{\alpha}P_{\alpha} )

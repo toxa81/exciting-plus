@@ -141,13 +141,6 @@ if (.not.allocated(sic_wan_umtrx)) then
     sic_wan_umtrx(i,i,:)=zone
   enddo
 endif
-!if (.not.allocated(sic_wan_u0mtrx)) then
-!  allocate(sic_wan_u0mtrx(sic_wantran%nwan,sic_wantran%nwan))
-!  sic_wan_u0mtrx=zzero
-!  do i=1,sic_wantran%nwan
-!    sic_wan_u0mtrx(i,i)=zone
-!  enddo
-!endif
 if (allocated(sic_wan_h0k)) deallocate(sic_wan_h0k)
 allocate(sic_wan_h0k(sic_wantran%nwan,sic_wantran%nwan,nkptloc))
 sic_wan_h0k=zzero

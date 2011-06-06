@@ -75,6 +75,8 @@ integer, allocatable :: lopqn(:,:)
 
 integer debug_level
 data debug_level/0/
+logical tdbgout_init
+data tdbgout_init/.false./
 integer fdbgout
 character*256 fdbgname
 
@@ -83,8 +85,24 @@ data nn_maxdist/15.d0/
 integer nn_maxsh
 data nn_maxsh/10/
 
+! exact way to setup second-variational H and compute charge density
+logical texactrho
+data texactrho/.false./
 complex(8), allocatable :: sv_gntyry(:,:,:)
 real(8), allocatable :: sv_ubu(:,:,:,:,:)
+real(8), allocatable :: rhomagmt(:,:,:,:,:)
+
+! number of points for Lebedev mesh for LAPW muffin-tins 
+integer mt_ntp
+data mt_ntp/110/
+! radial weights for LAPW muffin-tins
+real(8), allocatable :: mt_rw(:,:)
+! coordinates of the unit vectors of the MT-sphere
+real(8), allocatable :: mt_spx(:,:)
+! weights of Lebedev mesh for LAPW muffin-tins 
+real(8), allocatable :: mt_tpw(:)
+! forward transformation from complex spherical harmonics to coordinates
+complex(8), allocatable :: mt_ylmf(:,:)
 
 !-----------------------!
 !      MPI parallel     !
@@ -154,6 +172,11 @@ integer, parameter :: t_rho_mag_sym=42
 integer, parameter :: t_rho_mag_tot=43
 integer, parameter :: t_pot=44
 integer, parameter :: t_dmat=45
+
+integer, parameter :: t_seceqnsv_setup_mt=50
+integer, parameter :: t_seceqnsv_setup_it=51
+integer, parameter :: t_rho_mag_mt=52
+integer, parameter :: t_rho_mag_it=53
 
 !-------------!
 !      SIC    !

@@ -30,19 +30,6 @@ do itp=1,s_ntp
     s_ylmb(itp,lm)=dconjg(s_ylmf(lm,itp))*s_tpw(itp) 
   enddo
 enddo
-! generate Lebedev mesh for muffin-tins
-if (allocated(mt_spx)) deallocate(mt_spx)
-allocate(mt_spx(3,mt_ntp))
-if (allocated(mt_tpw)) deallocate(mt_tpw)
-allocate(mt_tpw(mt_ntp))
-if (allocated(mt_ylmf)) deallocate(mt_ylmf)
-allocate(mt_ylmf(lmmaxvr,mt_ntp))
-call leblaik(mt_ntp,mt_spx,mt_tpw)
-do itp=1,mt_ntp
-  mt_tpw(itp)=mt_tpw(itp)*fourpi
-  call sphcrd(mt_spx(:,itp),a,tp)
-  call genylm(lmaxvr,tp,mt_ylmf(1,itp)) 
-enddo
 
 call test_smesh
 
