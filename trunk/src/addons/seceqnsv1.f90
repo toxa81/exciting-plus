@@ -106,7 +106,7 @@ do ig3=1,ngk(1,ik)
   do ig2=1,ngk(1,ik)
     ivg1(:)=ivg(:,igkig(ig3,1,ikloc))-ivg(:,igkig(ig2,1,ikloc))
     ifg1=igfft(ivgig(ivg1(1),ivg1(2),ivg1(3)))
-    zm2(ig2,ig3)=zfft(ifg1)*sqrt(omega)
+    zm2(ig2,ig3)=zfft(ifg1)/sqrt(omega)
   enddo
 enddo
 deallocate(zfft)
