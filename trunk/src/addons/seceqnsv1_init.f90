@@ -27,7 +27,7 @@ do ias=1,natmtot
   ic=ias2ic(ias)
   is=ias2is(ias)
 ! compute radial integrals <u_{l1,io1} | b_{lm3} |  u_{l2,io2}>
-  do lm3=0,lmmaxvr
+  do lm3=1,lmmaxvr
     j1=0
     do l1=0,lmaxvr
       do io1=1,nufr(l1,is) 

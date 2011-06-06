@@ -13,6 +13,8 @@ complex(8) expikt
 complex(8), allocatable :: gm(:,:)
 real(8), allocatable :: eval(:)
 !
+! TODO: more stable way to compute gradient: G=>G+I, so it's eigen values are never zero
+!
 allocate(gm(sic_wantran%nwan,sic_wantran%nwan))
 allocate(eval(sic_wantran%nwan))
 gm=zzero

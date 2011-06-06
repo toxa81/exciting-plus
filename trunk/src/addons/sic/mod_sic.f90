@@ -85,17 +85,6 @@ data sic_energy_kin/0.d0/
 !--------------!
 ! LAPW liaison !
 !--------------!
-! number of points for Lebedev mesh for LAPW muffin-tins 
-integer mt_ntp
-data mt_ntp/74/
-! radial weights for LAPW muffin-tins
-real(8), allocatable :: mt_rw(:,:)
-! coordinates of the unit vectors of the MT-sphere
-real(8), allocatable :: mt_spx(:,:)
-! weights of Lebedev mesh for LAPW muffin-tins 
-real(8), allocatable :: mt_tpw(:)
-! forward transformation from complex spherical harmonics to coordinates
-complex(8), allocatable :: mt_ylmf(:,:)
 ! dot-product <W_{n\sigma}|f_{jk}>, f_{jk} is the first-variational Bloch state 
 complex(8), allocatable :: sic_wb(:,:,:,:)
 ! dot-product <(W*V)_{n\sigma}|f_{jk}>, f_{jk} is the first-variational Bloch state 
