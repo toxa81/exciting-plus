@@ -34,6 +34,20 @@ do ik=1,nkpt
   write(50,*)
 end do
 close(50)
+! write out the valence eigenvalues
+open(50,file='EIGVALFV'//trim(filext),action='WRITE',form='FORMATTED')
+write(50,'(I6," : nkpt")') nkpt
+write(50,'(I6," : nstfv")') nstfv
+do ik=1,nkpt
+  write(50,*)
+  write(50,'(I6,3G18.10," : k-point, vkl")') ik,vkl(:,ik)
+  write(50,'(" (state and eigenvalue)")')
+  do ist=1,nstfv
+    write(50,'(I6,G18.10)') ist,eigvalfv(ist,ik)
+  end do
+  write(50,*)
+end do
+close(50)
 ! write out the core eigenvalues
 open(50,file='EVALCORE'//trim(filext),action='WRITE',form='FORMATTED')
 do is=1,nspecies

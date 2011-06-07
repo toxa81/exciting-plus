@@ -126,8 +126,8 @@ integer mpigrid(mpigrid_maxndim)
 complex(8), allocatable :: evecfvloc(:,:,:,:)
 ! local fraction of sv eigen vectors
 complex(8), allocatable :: evecsvloc(:,:,:)
-! second-variational Hamiltonian
-!complex(8), allocatable :: hmltsvloc(:,:,:)
+! first-variational eigen values
+real(8), allocatable :: eigvalfv(:,:)
 ! dimension for coarse k-point parallelization
 integer, parameter :: dim_k=1
 integer, parameter :: dim1=1

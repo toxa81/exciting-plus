@@ -45,6 +45,7 @@ wproc=mpi_grid_root()
 allocate(evalfv(nstfv,nspnfv,nkptloc))
 allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
 allocate(evecsvloc(nstsv,nstsv,nkptloc))
+allocate(eigvalfv(nstfv,nkpt))
 ! initialise OEP variables if required
 if (xctype(1).lt.0) call init2
 if (wproc) then
@@ -174,6 +175,7 @@ do iscl=1,maxscl
 ! Fourier transform effective potential to G-space
   call genveffig
   evalsv=0.d0
+  eigvalfv=0.d0
 ! begin parallel loop over k-points
   do ikloc=1,nkptloc
 ! solve the secular equation
@@ -181,6 +183,7 @@ do iscl=1,maxscl
       evecsvloc(1,1,ikloc))
   end do  
   call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),all=.true.)
+  call mpi_grid_reduce(eigvalfv(1,1),nstfv*nkpt,dims=(/dim_k/),all=.true.)
   if (wproc) then
 ! find the occupation numbers and Fermi energy
     call occupy
@@ -493,6 +496,7 @@ deallocate(v,work)
 deallocate(evalfv)
 deallocate(evecfvloc)
 deallocate(evecsvloc)
+deallocate(eigvalfv)
 return
 end subroutine
 !EOC
