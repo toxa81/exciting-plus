@@ -1,4 +1,4 @@
-subroutine seceqnsv1_init
+subroutine seceqnsv_init
 use modmain
 use mod_sic
 implicit none

@@ -36,8 +36,10 @@ real(8), allocatable :: evalfv(:,:,:)
 ! require forces for structural optimisation
 if ((task.eq.2).or.(task.eq.3)) tforce=.true.
 ! initialise global variables
+call timer_start(t_init,reset=.true.)
 call init0
 call init1
+call timer_stop(t_init)
 if (.not.mpi_grid_in()) return
 ! only root processor writes
 wproc=mpi_grid_root()
@@ -80,6 +82,8 @@ if (wproc) then
    form='FORMATTED')
 ! write out general information to INFO.OUT
   call writeinfo(60)
+  write(60,*)
+  write(60,'("initialization time : ",F10.2," sec.")')timer_get_value(t_init)
   call writenn
   call writegshells
 endif
@@ -104,10 +108,15 @@ else if (task.eq.200) then
   call phveff
   if (wproc) write(60,'("Supercell potential constructed from STATE.OUT")')
 else
+  call timer_start(t_rhoinit,reset=.true.)
   call allatoms
   call rhoinit
   call poteff
-  if (wproc) write(60,'("Density and potential initialised from atomic data")')
+  call timer_stop(t_rhoinit)
+  if (wproc) then
+    write(60,'("Density and potential initialised from atomic data")')
+    write(60,'(" done in : ",F10.2," sec.")')timer_get_value(t_rhoinit)
+  endif
 end if
 if (sic) then
   call sic_read_data
@@ -168,7 +177,7 @@ do iscl=1,maxscl
   call genufrp  
 ! generate muffin-tin effective magnetic fields and s.o. coupling functions
   if (texactrho) then
-    call seceqnsv1_init
+    call seceqnsv_init
   else
     call genbeffmt
   endif
@@ -201,7 +210,7 @@ do iscl=1,maxscl
   if (wannier) call wann_ene_occ  
   if (sic) call sic_wan_ene
   if (texactrho) then
-    call rhomag1
+    call rhomag_exact
   else
     call rhomag
   endif
@@ -353,13 +362,13 @@ do iscl=1,maxscl
       timer_get_value(t_seceqnsv_diag)
     write(60,'("  total for charge and magnetization        : ",F12.2)')&
       timer_get_value(t_rho_mag_tot)
-    write(60,'("    k-point summation                       : ",F12.2)')&
-      timer_get_value(t_rho_mag_sum)
+    write(60,'("    k-point summation (total, MT, IT)       : ",3F12.2)')&
+      timer_get_value(t_rho_mag_sum),&
+      timer_get_value(t_rho_mag_mt),&
+      timer_get_value(t_rho_mag_it)
     if (texactrho) then
-      write(60,'("      (MT)                                  : ",F12.2)')&
-        timer_get_value(t_rho_mag_mt)
-      write(60,'("      (IT)                                  : ",F12.2)')&
-        timer_get_value(t_rho_mag_it)
+      write(60,'("      convert to r-mesh                     : ",F12.2)')&
+        timer_get_value(t_rho_mag_conv)
     endif
     write(60,'("    symmetrization                          : ",F12.2)')&
       timer_get_value(t_rho_mag_sym)

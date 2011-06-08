@@ -59,7 +59,7 @@ if (spinsprl) then
 else
 ! solve the second-variational secular equation
   if (texactrho) then
-    call seceqnsv1(ikloc,apwalm,evalfv,evecfv,evecsv)
+    call seceqnsv_exact(ikloc,apwalm,evalfv,evecfv,evecsv)
   else
     call seceqnsv(ikloc,apwalm,evalfv,evecfv,evecsv)
   endif

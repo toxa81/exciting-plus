@@ -22,6 +22,7 @@ implicit none
 integer is,ia,ias,ir
 real(8) ts0,ts1
 call timesec(ts0)
+call timer_start(t_pot)
 ! compute the Coulomb potential
 call potcoul
 ! compute the exchange-correlation potential
@@ -43,6 +44,7 @@ do is=1,nspecies
 end do
 ! interstitial part
 veffir(:)=vclir(:)+vxcir(:)
+call timer_stop(t_pot)
 call timesec(ts1)
 timepot=timepot+ts1-ts0
 return

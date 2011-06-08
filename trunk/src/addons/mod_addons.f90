@@ -91,6 +91,7 @@ data texactrho/.false./
 complex(8), allocatable :: sv_gntyry(:,:,:)
 real(8), allocatable :: sv_ubu(:,:,:,:,:)
 real(8), allocatable :: rhomagmt(:,:,:,:,:)
+complex(8), allocatable :: rhomagit(:,:)
 
 ! number of points for Lebedev mesh for LAPW muffin-tins 
 integer mt_ntp
@@ -177,6 +178,9 @@ integer, parameter :: t_seceqnsv_setup_mt=50
 integer, parameter :: t_seceqnsv_setup_it=51
 integer, parameter :: t_rho_mag_mt=52
 integer, parameter :: t_rho_mag_it=53
+integer, parameter :: t_rho_mag_conv=55
+
+integer, parameter :: t_rhoinit=56
 
 !-------------!
 !      SIC    !

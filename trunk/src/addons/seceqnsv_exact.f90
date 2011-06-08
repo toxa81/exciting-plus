@@ -1,4 +1,4 @@
-subroutine seceqnsv1(ikloc,apwalm,evalfv,evecfv,evecsv)
+subroutine seceqnsv_exact(ikloc,apwalm,evalfv,evecfv,evecsv)
 use modmain
 implicit none
 ! arguments

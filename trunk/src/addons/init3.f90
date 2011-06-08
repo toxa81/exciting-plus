@@ -118,6 +118,8 @@ if (texactrho) then
   allocate(sv_ubu(lmmaxvr,nlufrmax,nlufrmax,natmtot,ndmag))
   if (allocated(rhomagmt)) deallocate(rhomagmt)
   allocate(rhomagmt(nlufrmax,nlufrmax,lmmaxvr,natmtot,nspinor))
+  if (allocated(rhomagit)) deallocate(rhomagit)
+  allocate(rhomagit(ngrtot,nspinor))
 endif
 if (wannier) call wann_init
 if (sic) call sic_init
