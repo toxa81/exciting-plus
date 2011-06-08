@@ -152,7 +152,7 @@ if (nlotot.gt.0) then
           lm=idxlm(l,-l)
           i=ngk(ispn,ik)+idxlo(lm,ilo,ias)
           j=ngk(ispn,ik)+idxlo(lm,ilo,jas)
-          call rotzflm_(symlatc(:,:,lspl),l,l,nstfv,nmatmax,evecfvt(j,1), &
+          call rotzflm(symlatc(:,:,lspl),l,l,nstfv,nmatmax,evecfvt(j,1), &
            evecfv(i,1,ispn))
           evecfv(i:i+2*l,:,ispn)=zt1*evecfv(i:i+2*l,:,ispn)
         end do

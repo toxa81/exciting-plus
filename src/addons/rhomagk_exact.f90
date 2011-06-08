@@ -1,4 +1,4 @@
-subroutine rhomagk1(ikloc,evecfv,evecsv)
+subroutine rhomagk_exact(ikloc,evecfv,evecsv)
 use modmain
 implicit none
 ! arguments
@@ -67,9 +67,7 @@ do lm3=1,lmmaxvr
                   enddo
                 endif
               enddo !ist
-              if (spinpol) then
-                rhomagmt(j1,j2,lm3,ias,:)=rhomagmt(j1,j2,lm3,ias,:)+dreal(zt2(:))
-              endif
+              rhomagmt(j1,j2,lm3,ias,:)=rhomagmt(j1,j2,lm3,ias,:)+dreal(zt2(:))
             endif
           enddo
         enddo
@@ -81,8 +79,6 @@ deallocate(gntmp)
 deallocate(wfsvmt)
 call timer_stop(t_rho_mag_mt)
 call timer_start(t_rho_mag_it)
-allocate(rhoitk(ngrtot,2))
-rhoitk=zzero
 do ig1=1,ngk(1,ik)
   do ig2=1,ngk(1,ik)
     ivg3(:)=ivg(:,igkig(ig2,1,ikloc))-ivg(:,igkig(ig1,1,ikloc))
@@ -91,20 +87,20 @@ do ig1=1,ngk(1,ik)
       wo=wkpt(ik)*occsv(ist,ik)
       if (abs(wo).gt.epsocc) then
         do ispn=1,nspinor
-          rhoitk(ifg3,ispn)=rhoitk(ifg3,ispn)+&
+          rhomagit(ifg3,ispn)=rhomagit(ifg3,ispn)+&
             dconjg(wfsvit(ig1,ispn,ist))*wfsvit(ig2,ispn,ist)*wo/omega
         enddo
       endif
     enddo
   enddo
 enddo
-do ispn=1,nspinor
-  call zfftifc(3,ngrid,1,rhoitk(1,ispn))
-enddo
-rhoir(:)=rhoir(:)+dreal(rhoitk(:,1))+dreal(rhoitk(:,2))
-magir(:,1)=magir(:,1)+dreal(rhoitk(:,1))-dreal(rhoitk(:,2))
+!do ispn=1,nspinor
+!  call zfftifc(3,ngrid,1,rhoitk(1,ispn))
+!enddo
+!rhoir(:)=rhoir(:)+dreal(rhoitk(:,1))+dreal(rhoitk(:,2))
+!magir(:,1)=magir(:,1)+dreal(rhoitk(:,1))-dreal(rhoitk(:,2))
 call timer_stop(t_rho_mag_it)
-deallocate(rhoitk,wfsvit)
+deallocate(wfsvit)
 return
 end subroutine
 
