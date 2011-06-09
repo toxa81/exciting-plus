@@ -30,7 +30,7 @@ use modmain
 implicit none
 ! local variables
 integer is,ia,ias,nr,ir
-integer l1,l2,l3,m2,lm2
+integer l1,l2,l3,m2,m3,lm3
 integer ilo,ilo1,ilo2,io,io1,io2
 real(8) t1
 ! automatic arrays
@@ -46,32 +46,30 @@ do is=1,nspecies
 !---------------------------!
 !     APW-APW integrals     !
 !---------------------------!
-    do l1=0,lmaxmat
+    do l1=0,lmaxapw
       do io1=1,apword(l1,is)
-        do l3=0,lmaxapw
-          do io2=1,apword(l3,is)
-            if (l1.eq.l3) then
+        do l2=0,lmaxapw
+          do io2=1,apword(l2,is)
+            if (l1.eq.l2) then
               do ir=1,nr
-                fr(ir)=apwfr(ir,1,io1,l1,ias)*apwfr(ir,2,io2,l3,ias)*r2(ir)
+                fr(ir)=apwfr(ir,1,io1,l1,ias)*apwfr(ir,2,io2,l2,ias)*r2(ir)
               end do
               call fderiv(-1,nr,spr(:,is),fr,gr,cf)
-              haa(io1,l1,io2,l3,1,ias)=gr(nr)/y00
+              haa(1,io1,l1,io2,l2,ias)=gr(nr)/y00
             else
-              haa(io1,l1,io2,l3,1,ias)=0.d0
+              haa(1,io1,l1,io2,l2,ias)=0.d0
             end if
-            if (l1.ge.l3) then
-              do l2=1,lmaxvr
-                do m2=-l2,l2
-                  lm2=idxlm(l2,m2)
-                  do ir=1,nr
-                    t1=apwfr(ir,1,io1,l1,ias)*apwfr(ir,1,io2,l3,ias)*r2(ir)
-                    fr(ir)=t1*veffmt(lm2,ir,ias)
-                  end do
-                  call fderiv(-1,nr,spr(:,is),fr,gr,cf)
-                  haa(io1,l1,io2,l3,lm2,ias)=gr(nr)
+            do l3=1,lmaxvr
+              do m3=-l3,l3
+                lm3=idxlm(l3,m3)
+                do ir=1,nr
+                  t1=apwfr(ir,1,io1,l1,ias)*apwfr(ir,1,io2,l2,ias)*r2(ir)
+                  fr(ir)=t1*veffmt(lm3,ir,ias)
                 end do
+                call fderiv(-1,nr,spr(:,is),fr,gr,cf)
+                haa(lm3,io1,l1,io2,l2,ias)=gr(nr)
               end do
-            end if
+            end do
           end do
         end do
       end do
@@ -81,26 +79,26 @@ do is=1,nspecies
 !-------------------------------------!
     do ilo=1,nlorb(is)
       l1=lorbl(ilo,is)
-      do l3=0,lmaxmat
-        do io=1,apword(l3,is)
-          if (l1.eq.l3) then
+      do l2=0,lmaxapw
+        do io2=1,apword(l2,is)
+          if (l1.eq.l2) then
             do ir=1,nr
-              fr(ir)=lofr(ir,1,ilo,ias)*apwfr(ir,2,io,l3,ias)*r2(ir)
+              fr(ir)=lofr(ir,1,ilo,ias)*apwfr(ir,2,io2,l2,ias)*r2(ir)
             end do
             call fderiv(-1,nr,spr(:,is),fr,gr,cf)
-            hloa(ilo,io,l3,1,ias)=gr(nr)/y00
+            hloa(1,ilo,io2,l2,ias)=gr(nr)/y00
           else
-            hloa(ilo,io,l3,1,ias)=0.d0
+            hloa(1,ilo,io2,l2,ias)=0.d0
           end if
-          do l2=1,lmaxvr
-            do m2=-l2,l2
-              lm2=idxlm(l2,m2)
+          do l3=1,lmaxvr
+            do m3=-l3,l3
+              lm3=idxlm(l3,m3)
               do ir=1,nr
-                t1=lofr(ir,1,ilo,ias)*apwfr(ir,1,io,l3,ias)*r2(ir)
-                fr(ir)=t1*veffmt(lm2,ir,ias)
+                t1=lofr(ir,1,ilo,ias)*apwfr(ir,1,io2,l2,ias)*r2(ir)
+                fr(ir)=t1*veffmt(lm3,ir,ias)
               end do
               call fderiv(-1,nr,spr(:,is),fr,gr,cf)
-              hloa(ilo,io,l3,lm2,ias)=gr(nr)
+              hloa(lm3,ilo,io2,l2,ias)=gr(nr)
             end do
           end do
         end do
@@ -112,25 +110,25 @@ do is=1,nspecies
     do ilo1=1,nlorb(is)
       l1=lorbl(ilo1,is)
       do ilo2=1,nlorb(is)
-        l3=lorbl(ilo2,is)
-        if (l1.eq.l3) then
+        l2=lorbl(ilo2,is)
+        if (l1.eq.l2) then
           do ir=1,nr
             fr(ir)=lofr(ir,1,ilo1,ias)*lofr(ir,2,ilo2,ias)*r2(ir)
           end do
           call fderiv(-1,nr,spr(:,is),fr,gr,cf)
-          hlolo(ilo1,ilo2,1,ias)=gr(nr)/y00
+          hlolo(1,ilo1,ilo2,ias)=gr(nr)/y00
         else
-          hlolo(ilo1,ilo2,1,ias)=0.d0
+          hlolo(1,ilo1,ilo2,ias)=0.d0
         end if
-        do l2=1,lmaxvr
-          do m2=-l2,l2
-            lm2=idxlm(l2,m2)
+        do l3=1,lmaxvr
+          do m3=-l3,l3
+            lm3=idxlm(l3,m3)
             do ir=1,nr
               t1=lofr(ir,1,ilo1,ias)*lofr(ir,1,ilo2,ias)*r2(ir)
-              fr(ir)=t1*veffmt(lm2,ir,ias)
+              fr(ir)=t1*veffmt(lm3,ir,ias)
             end do
             call fderiv(-1,nr,spr(:,is),fr,gr,cf)
-            hlolo(ilo1,ilo2,lm2,ias)=gr(nr)
+            hlolo(lm3,ilo1,ilo2,ias)=gr(nr)
           end do
         end do
       end do
