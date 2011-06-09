@@ -305,15 +305,15 @@ allocate(oalo(apwordmax,nlomax,natmtot))
 if (allocated(ololo)) deallocate(ololo)
 allocate(ololo(nlomax,nlomax,natmtot))
 if (allocated(haa)) deallocate(haa)
-allocate(haa(apwordmax,0:lmaxmat,apwordmax,0:lmaxapw,lmmaxvr,natmtot))
+allocate(haa(lmmaxvr,apwordmax,0:lmaxapw,apwordmax,0:lmaxapw,natmtot))
 if (allocated(hloa)) deallocate(hloa)
-allocate(hloa(nlomax,apwordmax,0:lmaxmat,lmmaxvr,natmtot))
+allocate(hloa(lmmaxvr,nlomax,apwordmax,0:lmaxapw,natmtot))
 if (allocated(hlolo)) deallocate(hlolo)
-allocate(hlolo(nlomax,nlomax,lmmaxvr,natmtot))
+allocate(hlolo(lmmaxvr,nlomax,nlomax,natmtot))
 ! allocate and generate complex Gaunt coefficient array
 if (allocated(gntyry)) deallocate(gntyry)
-allocate(gntyry(lmmaxmat,lmmaxvr,lmmaxapw))
-do l1=0,lmaxmat
+allocate(gntyry(lmmaxapw,lmmaxvr,lmmaxapw))
+do l1=0,lmaxapw
   do m1=-l1,l1
     lm1=idxlm(l1,m1)
     do l2=0,lmaxvr

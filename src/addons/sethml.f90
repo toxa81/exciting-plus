@@ -9,77 +9,83 @@ integer, intent(in) :: igpig(ngkmax)
 complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 complex(8), intent(out) :: h(nmatp,nmatp)
 
-complex(8), allocatable :: zv(:,:,:,:)
+complex(8), allocatable :: zv(:)
+complex(8), allocatable :: zm1(:,:)
+complex(8), allocatable :: zm2(:,:)
 complex(8) zsum,zt1
 real(8) t1
-integer is,ia,ias,ig
+integer is,ia,ias,ig,naa
 integer l1,m1,lm1,l2,m2,lm2,l3,m3,lm3,io1,io2
-integer i,j,ilo1,ilo2,natmtotloc,iasloc
+integer i,j,ilo1,ilo2
 integer iv(3)
 
 call timer_start(t_seceqnfv_setup_h)
 call timer_start(t_seceqnfv_setup_h_mt)
-allocate(zv(ngp,lmmaxmat,apwordmax,natmtot))
-zv=zzero
-natmtotloc=mpi_grid_map(natmtot,dim2)
-do iasloc=1,natmtotloc
-  ias=mpi_grid_map(natmtot,dim2,loc=iasloc)
+allocate(zv(ngp))
+allocate(zm1(lmmaxapw*apwordmax*natmtot,ngp))
+allocate(zm2(lmmaxapw*apwordmax*natmtot,ngp))
+naa=0
+do ias=1,natmtot
   is=ias2is(ias)
   ia=ias2ia(ias)
-  do l1=0,lmaxmat
+  do l1=0,lmaxapw
     do io1=1,apword(l1,is)
       do m1=-l1,l1
         lm1=idxlm(l1,m1)
+        zv=zzero
         do l2=0,lmaxapw
           do m2=-l2,l2
             lm2=idxlm(l2,m2)
-            if (lm1.ge.lm2) then
-              do io2=1,apword(l2,is)
-                zsum=0.d0
-                do l3=0,lmaxvr
-                  if (mod(l1+l2+l3,2).eq.0) then
-                    do m3=-l3,l3
-                      lm3=idxlm(l3,m3)
-                      zsum=zsum+gntyry(lm1,lm3,lm2)*haa(io1,l1,io2,l2,lm3,ias)
-                    enddo !m3
-                  endif !mod(l1+l2+l3,2).eq.0
-                enddo !l3
-                if (lm1.eq.lm2) zsum=zsum*0.5d0
-                if (abs(dble(zsum))+abs(aimag(zsum)).gt.1.d-14) then
-                  call zaxpy(ngp,zsum,apwalm(:,io2,lm2,ias),1,zv(:,lm1,io1,ias),1)
-                endif
-              enddo !io2
-            endif !lm1.ge.lm2
+            do io2=1,apword(l2,is)
+              zsum=0.d0
+              do l3=0,lmaxvr
+                if (mod(l1+l2+l3,2).eq.0) then
+                  do lm3=l3**2+1,(l3+1)**2
+                    zsum=zsum+gntyry(lm2,lm3,lm1)*haa(lm3,io2,l2,io1,l1,ias)
+                  enddo !m3
+                endif !mod(l1+l2+l3,2).eq.0
+              enddo !l3
+              if (abs(zsum).gt.1.d-14) then
+                call zaxpy(ngp,zsum,apwalm(1,io2,lm2,ias),1,zv,1)
+              endif
+            enddo !io2
           enddo !m2
         enddo !l2
 ! kinetic surface contribution
         do io2=1,apword(l1,is)
-          zt1=(0.25d0*rmt(is)**2)*apwfr(nrmt(is),1,io1,l1,ias)*apwdfr(io2,l1,ias)
-          call zaxpy(ngp,zt1,apwalm(:,io2,lm1,ias),1,zv(:,lm1,io1,ias),1)
+          zt1=(0.5d0*rmt(is)**2)*apwfr(nrmt(is),1,io1,l1,ias)*apwdfr(io2,l1,ias)
+          call zaxpy(ngp,zt1,apwalm(1,io2,lm1,ias),1,zv,1)
         enddo !io2
+        naa=naa+1
+        zm1(naa,:)=zv(:)
+        zm2(naa,:)=apwalm(1:ngp,io1,lm1,ias)
       enddo !m1
     enddo !io1
   enddo !l1
 enddo
-
-do iasloc=1,natmtotloc
-  ias=mpi_grid_map(natmtot,dim2,loc=iasloc)
+!----------------------!
+!     APW-APW term     !
+!----------------------!
+call zgemm('C','N',ngp,ngp,naa,zone,zm1,lmmaxapw*apwordmax*natmtot,&
+  zm2,lmmaxapw*apwordmax*natmtot,zone,h(1,1),nmatp)
+deallocate(zm1,zm2,zv)
+do ias=1,natmtot
   is=ias2is(ias)
   ia=ias2ia(ias)
 !----------------------!
 !     APW-APW term     !
 !----------------------!
-  do l1=0,lmaxmat
-    do m1=-l1,l1
-      lm1=idxlm(l1,m1)
-      do io1=1,apword(l1,is)
-        do ig=1,ngp
-          call zaxpy(ig,dconjg(zv(ig,lm1,io1,ias)),apwalm(:,io1,lm1,ias),1,h(:,ig),1)
-          call zaxpy(ig,dconjg(apwalm(ig,io1,lm1,ias)),zv(:,lm1,io1,ias),1,h(:,ig),1)
-        enddo !ig
-      enddo !io1
-    enddo !m1
-  enddo !l1
+!  do l1=0,lmaxmat
+!    do m1=-l1,l1
+!      lm1=idxlm(l1,m1)
+!      do io1=1,apword(l1,is)
+!        do ig=1,ngp
+!          call zaxpy(ig,dconjg(zv(ig,lm1,io1,ias)),apwalm(:,io1,lm1,ias),1,h(:,ig),1)
+!          call zaxpy(ig,dconjg(apwalm(ig,io1,lm1,ias)),zv(:,lm1,io1,ias),1,h(:,ig),1)
+!        enddo !ig
+!      enddo !io1
+!    enddo !m1
+!  enddo !l1
 !---------------------!
 !     APW-lo term     !
 !---------------------!  
@@ -88,21 +94,22 @@ do iasloc=1,natmtotloc
     do m2=-l2,l2
       lm2=idxlm(l2,m2)
       i=ngp+idxlo(lm2,ilo2,ias)
-      do l1=0,lmaxmat
+      do l1=0,lmaxapw
         do m1=-l1,l1
           lm1=idxlm(l1,m1)
           do io1=1,apword(l1,is)
             zsum=0.d0
             do l3=0,lmaxvr
               if (mod(l1+l2+l3,2).eq.0) then
-                do m3=-l3,l3
-                  lm3=idxlm(l3,m3)
-                  zsum=zsum+gntyry(lm2,lm3,lm1)*hloa(ilo2,io1,l1,lm3,ias)
+                do lm3=l3**2+1,(l3+1)**2
+                  zsum=zsum+gntyry(lm1,lm3,lm2)*hloa(lm3,ilo2,io1,l1,ias)
                 end do !m3
               end if
             end do !l3
-            if (abs(dble(zsum))+abs(aimag(zsum)).gt.1.d-14) then
-              call zaxpy(ngp,zsum,apwalm(:,io1,lm1,ias),1,h(:,i),1)
+            if (abs(zsum).gt.1.d-14) then
+              do ig=1,ngp
+                h(ig,i)=h(ig,i)+dconjg(apwalm(ig,io1,lm1,ias))*zsum
+              enddo
             endif
           end do !io1
         end do !m1
@@ -126,20 +133,18 @@ do iasloc=1,natmtotloc
             zsum=0.d0
             do l3=0,lmaxvr
               if (mod(l1+l2+l3,2).eq.0) then
-                do m3=-l3,l3
-                  lm3=idxlm(l3,m3)
-                  zsum=zsum+gntyry(lm1,lm3,lm2)*hlolo(ilo1,ilo2,lm3,ias)
+                do lm3=l3**2+1,(l3+1)**2
+                  zsum=zsum+gntyry(lm1,lm3,lm2)*hlolo(lm3,ilo1,ilo2,ias)
                 end do
               end if
             end do
-            h(i,j)=h(i,j)+dconjg(zsum)
+            h(i,j)=h(i,j)+zsum
           end if
         end do
       end do
     end do
   end do
 enddo
-call mpi_grid_reduce(h(1,1),nmatp*nmatp,dims=(/dim2/))
 call timer_stop(t_seceqnfv_setup_h_mt)
 !---------------------!
 !     interstitial    !
@@ -150,13 +155,11 @@ do j=1,ngp
     iv(:)=ivg(:,igpig(i))-ivg(:,igpig(j))
     ig=ivgig(iv(1),iv(2),iv(3))
     t1=0.5d0*dot_product(vgpc(:,i),vgpc(:,j))
-    h(i,j)=h(i,j)+dconjg(veffig(ig)+t1*cfunig(ig))
+    h(i,j)=h(i,j)+veffig(ig)+t1*cfunig(ig)
   end do
 end do
 call timer_stop(t_seceqnfv_setup_h_it)
-h=dconjg(h)
 call timer_stop(t_seceqnfv_setup_h)
-deallocate(zv)
 return
 end
 
