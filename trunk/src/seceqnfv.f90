@@ -52,7 +52,7 @@ complex(8), allocatable :: work(:)
 complex(8) zt1
 complex(4) ct1
 character*100 fname
-logical, parameter :: packed=.false.
+logical, parameter :: packed=.true.
 integer, external :: ilaenv
 if (packed) then
   np=(nmatp*(nmatp+1))/2

@@ -33,7 +33,7 @@ do ilo=1,nlorb(is)
             if (mod(l1+l2+l3,2).eq.0) then
               do m2=-l2,l2
                 lm2=idxlm(l2,m2)
-                zsum=zsum+gntyry(lm1,lm2,lm3)*hloa(ilo,io,l3,lm2,ias)
+                zsum=zsum+gntyry(lm1,lm2,lm3)*hloa(lm2,ilo,io,l3,ias)
               end do
             end if
           end do
