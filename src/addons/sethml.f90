@@ -46,14 +46,15 @@ do ias=1,natmtot
                 endif !mod(l1+l2+l3,2).eq.0
               enddo !l3
               if (abs(zsum).gt.1.d-14) then
-                call zaxpy(ngp,zsum,apwalm(1,io2,lm2,ias),1,zv,1)
+                call zaxpy(ngp,dconjg(zsum),apwalm(1,io2,lm2,ias),1,zv,1)
               endif
             enddo !io2
           enddo !m2
         enddo !l2
 ! kinetic surface contribution
         do io2=1,apword(l1,is)
-          zt1=(0.5d0*rmt(is)**2)*apwfr(nrmt(is),1,io1,l1,ias)*apwdfr(io2,l1,ias)
+          zt1=zone*(0.5d0*rmt(is)**2)*apwfr(nrmt(is),1,io1,l1,ias)*&
+            apwdfr(io2,l1,ias)
           call zaxpy(ngp,zt1,apwalm(1,io2,lm1,ias),1,zv,1)
         enddo !io2
         naa=naa+1
