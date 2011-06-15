@@ -27,7 +27,7 @@ do jst=1,nstocc
   do ispn=1,nspinor
     call zgemv('N',nrow,nstfv,zone,wffvmt,nrow,&
       evecsv((ispn-1)*nstfv+1,ist),1,zzero,wfsvmt(1,1,1,ispn,jst),1)
-    call zgemv('N',ngp,nstsv,zone,evecfv,nmatmax,&
+    call zgemv('N',ngp,nstfv,zone,evecfv,nmatmax,&
       evecsv((ispn-1)*nstfv+1,ist),1,zzero,wfsvit(1,ispn,jst),1)
   enddo
 enddo
