@@ -350,14 +350,10 @@ do iscl=1,maxscl
       timer_get_value(t_seceqnfv_diag)
     write(60,'("    second-variational                      : ",F12.2)')&
       timer_get_value(t_seceqnsv)
-    write(60,'("      setup                                 : ",F12.2)')&
-      timer_get_value(t_seceqnsv_setup)
-    if (texactrho) then
-      write(60,'("        (MT)                                : ",F12.2)')&
-        timer_get_value(t_seceqnsv_setup_mt)
-      write(60,'("        (IT)                                : ",F12.2)')&
-        timer_get_value(t_seceqnsv_setup_it)
-    endif
+    write(60,'("      setup (total, MT, IT)                 : ",3F12.2)')&
+      timer_get_value(t_seceqnsv_setup),&
+      timer_get_value(t_seceqnsv_setup_mt),&
+      timer_get_value(t_seceqnsv_setup_it)
     write(60,'("      diagonalization                       : ",F12.2)')&
       timer_get_value(t_seceqnsv_diag)
     write(60,'("  total for charge and magnetization        : ",F12.2)')&
