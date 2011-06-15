@@ -66,14 +66,13 @@ do lm3=1,lmmaxvr
             if (mod(l1+l2+l3,2).eq.0) then
               zt2=zzero
               do jst=1,nstocc
-                ist=istocc(jst)
                 do ispn=1,nspinor
                   do lm1=l1**2+1,(l1+1)**2
                     zt1=zzero
                     do lm2=l2**2+1,(l2+1)**2
-                      zt1=zt1+wfsvmt(lm2,io2,ias,ispn,ist)*gntmp(lm2,lm1)
+                      zt1=zt1+wfsvmt(lm2,io2,ias,ispn,jst)*gntmp(lm2,lm1)
                     enddo
-                    zt2(ispn)=zt2(ispn)+dconjg(wfsvmt(lm1,io1,ias,ispn,ist))*zt1*wo(jst)
+                    zt2(ispn)=zt2(ispn)+dconjg(wfsvmt(lm1,io1,ias,ispn,jst))*zt1*wo(jst)
                   enddo
                 enddo
               enddo !jst
@@ -94,10 +93,9 @@ do ig1=1,ngk(1,ik)
     ivg3(:)=ivg(:,igkig(ig2,1,ikloc))-ivg(:,igkig(ig1,1,ikloc))
     ifg3=igfft(ivgig(ivg3(1),ivg3(2),ivg3(3)))
     do jst=1,nstocc
-      ist=istocc(jst)
       do ispn=1,nspinor
         rhomagit(ifg3,ispn)=rhomagit(ifg3,ispn)+&
-          dconjg(wfsvit(ig1,ispn,ist))*wfsvit(ig2,ispn,ist)*wo(jst)/omega
+          dconjg(wfsvit(ig1,ispn,jst))*wfsvit(ig2,ispn,jst)*wo(jst)/omega
       enddo
     enddo
   enddo
