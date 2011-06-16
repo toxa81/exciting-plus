@@ -4,7 +4,7 @@ use mod_sic
 use mod_ws
 implicit none
 integer ik,ikloc,j,n,it,ias,is,ia,itp,ispn,ntrloc,itloc,ig,koffs
-integer irloc,nrloc
+integer ir,irloc,nrloc
 real(8) x(3),vtc(3),x0(3)
 complex(8) zt1(nspinor),zt2(nspinor),z1,z2,expikt,expikr
 real(8), allocatable :: vtcmt(:,:,:,:)
