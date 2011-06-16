@@ -22,7 +22,7 @@ if (mpi_grid_root()) then
   do n=1,nwantot
     write(300,'("  <wannier id=""",I6,""">")')n
     write(300,'("    <magmom units=""a.u."">",F18.10,"</magmom>")')wanmom(n)
-    write(300,'("    <spread=""a.u.^2"">",F18.10,"</spread>")')xml_info%wan_spread(n)
+    write(300,'("    <spread units=""a.u.^2"">",F18.10,"</spread>")')xml_info%wan_spread(n)
     write(300,'("  </wannier>")')
   enddo
   write(300,'("  <rws units=""a.u."">",F18.10,"</rws>")')xml_info%rws
