@@ -15,19 +15,28 @@ if (mpi_grid_root()) then
       if (wan_info(1,n).eq.ias) momwf=momwf+wanmom(n)
     enddo
     write(300,'("  <atom id=""",I6,""">")')ias
-    write(300,'("    <magmom_mt units=""a.u."">",F18.10,"</magmom_mt>")')mommt(1,ias)
+    write(300,'("    <magmom units=""a.u."">",F18.10,"</magmom>")')xml_info%magmom(ias)
     write(300,'("    <magmom_wf units=""a.u."">",F18.10,"</magmom_wf>")')momwf
     write(300,'("  </atom>")')
   enddo
   do n=1,nwantot
     write(300,'("  <wannier id=""",I6,""">")')n
     write(300,'("    <magmom units=""a.u."">",F18.10,"</magmom>")')wanmom(n)
+    write(300,'("    <spread=""a.u.^2"">",F18.10,"</spread>")')xml_info%wan_spread(n)
     write(300,'("  </wannier>")')
   enddo
-  write(300,'("  <rws units=""a.u."">",F18.10,"</rws>")')rwigner
-  write(300,'("  <omega units=""a.u.^3"">",F18.10,"</omega>")')omega
-  write(300,'("  <etot units=""Ha"">",F18.10,"</etot>")')engytot
-  write(300,'("  <gap units=""eV"">",F18.10,"</gap>")')bandgap*ha2ev
+  write(300,'("  <rws units=""a.u."">",F18.10,"</rws>")')xml_info%rws
+  write(300,'("  <omega units=""a.u.^3"">",F18.10,"</omega>")')xml_info%omega
+  write(300,'("  <engytot units=""Ha"">",F18.10,"</engytot>")')xml_info%engytot
+  write(300,'("  <bandgap units=""eV"">",F18.10,"</bandgap>")')xml_info%bandgap*ha2ev
+  write(300,'("  <wan_tot_spread units=""a.u.^2"">",F18.10,"</wan_tot_spread>")')&
+    xml_info%wan_tot_spread
+  write(300,'("  <sic_energy_tot units=""Ha"">",F18.10,"</sic_energy_tot>")')&
+    xml_info%sic_energy_tot
+  write(300,'("  <sic_energy_pot units=""Ha"">",F18.10,"</sic_energy_pot>")')&
+    xml_info%sic_energy_pot
+  write(300,'("  <sic_energy_kin units=""Ha"">",F18.10,"</sic_energy_kin>")')&
+    xml_info%sic_energy_kin
   write(300,'("</info>")')
   close(300)
 endif

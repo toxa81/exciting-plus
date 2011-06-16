@@ -259,6 +259,16 @@ if (wproc) then
   call flushifc(fout)
 endif
 deallocate(ovlp)
+! save some info
+xml_info%wan_spread=0.d0
+do j=1,sic_wantran%nwan
+  n=sic_wantran%iwan(j)
+  xml_info%wan_spread(n)=wanprop(wp_spread,j)
+enddo
+xml_info%wan_tot_spread=sum(wanprop(wp_spread,:))
+xml_info%sic_energy_tot=sic_energy_tot
+xml_info%sic_energy_pot=sic_energy_pot
+xml_info%sic_energy_kin=sic_energy_kin
 deallocate(wanprop)
 call timer_stop(t_sic_wan)
 if (wproc) then
