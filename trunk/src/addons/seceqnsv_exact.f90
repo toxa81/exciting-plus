@@ -113,6 +113,7 @@ deallocate(zfft)
 call zgemm('T','N',ngk(1,ik),nstfv,ngk(1,ik),zone,zm2,ngk(1,ik),&
   evecfv,nmatmax,zzero,wfbfit,ngk(1,ik))
 deallocate(zm2)
+call timer_stop(t_seceqnsv_setup_it)
 evecsv=zzero
 do ist=1,nstfv
   do jst=1,nstfv
@@ -131,7 +132,6 @@ do ist=1,nstfv
   enddo
 enddo
 deallocate(wfmt,wfbfmt,wfbfit)
-call timer_stop(t_seceqnsv_setup_it)
 ! add the diagonal first-variational part
 i=0
 do ispn=1,nspinor

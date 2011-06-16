@@ -211,15 +211,21 @@ integer, parameter :: pt_vscrn=11
 integer, parameter :: pt_megqblh_mt=12
 integer, parameter :: pt_megqblh_it=13
 
-type t_info
+type t_xml_info
   real(8) engytot
   real(8) bandgap
   real(8) rws
   real(8) omega
-  real(8), allocatable :: magmom_mt(:)
-  real(8), allocatable :: magmom_wf(:)
+  real(8), allocatable :: magmom(:)
+  !real(8), allocatable :: wan_magmom(:)
   real(8), allocatable :: wan_spread(:)
-end type t_info
+  real(8) wan_tot_spread
+  real(8) sic_energy_tot
+  real(8) sic_energy_pot
+  real(8) sic_energy_kin
+end type t_xml_info
+
+type(t_xml_info) :: xml_info
 
 end module
 
