@@ -120,7 +120,8 @@ else
 end if
 if (sic) then
   call sic_read_data
-  call sic_genblochsum
+  call sic_genblochsum_mt
+  call sic_genblochsum_it  
 endif
 if (wproc) call flushifc(60)
 ! set stop flag
