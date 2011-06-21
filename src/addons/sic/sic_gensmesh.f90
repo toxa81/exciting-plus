@@ -83,9 +83,7 @@ do i=0,2
 enddo
 ! test 2: backward transformation of spherical harmonics
 if (sic_debug_level.ge.3) then 
-  allocate(zflm(lmmaxwan))
-  allocate(zftp(s_ntp))
-  do lm=1,10 !lmmaxwan
+  do lm=1,lmmaxwan
     zftp(:)=s_ylmf(lm,:) 
     call sic_zbsht(1,zftp,zflm)
     t1=0.d0
@@ -105,9 +103,10 @@ if (sic_debug_level.ge.3) then
     write(*,'("lm=",I4,"    sic_zbsht error : ",G18.10,&
       &"  single summation error : ",G18.10)')lm,t1,t2
   enddo
-  deallocate(zflm)
-  deallocate(zftp)
 endif
+deallocate(zflm_orig)
+deallocate(zflm)
+deallocate(zftp)
 ! test 3: check weights
 !do l=0,lmaxwan
 !  t1=0.d0
