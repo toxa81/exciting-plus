@@ -26,7 +26,7 @@ if (debug_level.ge.4) then
 endif
 call timer_start(t_sic_genfvprj)
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(wfmt_,wfmt,ias,j,ispn)
+!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(wfmt_,wfmt,ias,j,ispn,zt2)
 allocate(wfmt_(lmmaxvr,nrmtmax))
 allocate(wfmt(mt_ntp,nrmtmax,natmtot))
 !$OMP DO
