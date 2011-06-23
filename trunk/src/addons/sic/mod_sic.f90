@@ -15,7 +15,7 @@ real(8) sic_wan_rwsmin
 ! number of radial points
 integer s_nr
 data s_nr/600/
-! number of radial points for sic_wan_rmin
+! number of radial points for s_rmin
 integer s_nr_min
 ! radial mesh of big spheres
 real(8), allocatable :: s_r(:)
