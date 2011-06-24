@@ -481,7 +481,7 @@ iscl=0
 tlast=.false.
 ! if reducebf < 1 then reduce the external magnetic fields immediately for
 ! non-self-consistent calculations
-if ((reducebf.lt.1.d0).and.(task.gt.3)) then
+if ((reducebf.lt.1.d0).and.(task.gt.3).and.(task.ne.810)) then
   bfieldc(:)=0.d0
   bfcmt(:,:,:)=0.d0
 end if
