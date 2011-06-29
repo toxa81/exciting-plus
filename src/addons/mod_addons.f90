@@ -216,6 +216,8 @@ type t_xml_info
   real(8) bandgap
   real(8) rws
   real(8) omega
+  real(8) fftgriddens
+  integer ngrtot
   real(8), allocatable :: magmom(:)
   !real(8), allocatable :: wan_magmom(:)
   real(8), allocatable :: wan_spread(:)
@@ -223,6 +225,8 @@ type t_xml_info
   real(8) sic_energy_tot
   real(8) sic_energy_pot
   real(8) sic_energy_kin
+  real(8) sic_vme_rms
+  real(8) sic_vme_err
 end type t_xml_info
 
 type(t_xml_info) :: xml_info
