@@ -26,7 +26,7 @@ use mod_sic
 implicit none
 ! local variables
 logical exist
-integer ik,is,ia,idm,i,ikloc
+integer ik,is,ia,ias,ist,idm,i,ikloc
 integer n,nwork
 real(8) dv,etp,de,timetot
 ! allocatable arrays
@@ -110,6 +110,12 @@ else if (task.eq.200) then
 else
   call timer_start(t_rhoinit,reset=.true.)
   call allatoms
+  do ias=1,natmtot
+    is=ias2is(ias)
+    do ist=1,spnst(is)
+      evalcr(ist,ias)=speval(ist,is)
+    enddo
+  enddo
   call rhoinit
   call poteff
   call timer_stop(t_rhoinit)
@@ -120,8 +126,9 @@ else
 end if
 if (sic) then
   call sic_read_data
-  call sic_genblochsum_mt
-  call sic_genblochsum_it  
+  call sic_genblochsum
+  !call sic_genblochsum_mt
+  !call sic_genblochsum_it  
 endif
 if (wproc) call flushifc(60)
 ! set stop flag
@@ -209,7 +216,6 @@ do iscl=1,maxscl
   call mpi_grid_bcast(swidth,dims=(/dim_k,dim2/))
   call mpi_grid_bcast(occsv(1,1),nstsv*nkpt,dims=(/dim_k,dim2/))
   if (wannier) call wann_ene_occ  
-  if (sic) call sic_wan_ene
   if (texactrho) then
     call rhomag_exact
   else
