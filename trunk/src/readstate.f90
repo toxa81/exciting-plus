@@ -28,6 +28,7 @@ integer version_(3),nspecies_,lmmaxvr_
 integer natoms_,nrmt_(maxspecies),nrmtmax_
 integer ngrid_(3),ngrtot_,ngvec_,ndmag_
 integer nspinor_,ldapu_,lmmaxlu_
+integer natmtot_,spnstmax_,spnrmax_
 real(8) t1
 ! allocatable arrays
 integer, allocatable :: mapir(:)
@@ -97,14 +98,9 @@ if ((spinpol_).and.(ndmag_.ne.1).and.(ndmag_.ne.3)) then
   write(*,*)
   stop
 end if
-! versions > 0.9.131
-if ((version_(1).gt.0).or.(version_(2).gt.9).or.(version_(3).gt.131)) then
-  read(50) nspinor_
-  read(50) ldapu_
-  read(50) lmmaxlu_
-else
-  ldapu_=0
-end if
+read(50) nspinor_
+read(50) ldapu_
+read(50) lmmaxlu_
 ngrtot_=ngrid_(1)*ngrid_(2)*ngrid_(3)
 allocate(mapir(ngrtot))
 allocate(rhomt_(lmmaxvr_,nrmtmax_,natmtot))
@@ -150,6 +146,35 @@ if ((ldapu.ne.0).and.(ldapu_.ne.0)) then
   end if
   deallocate(vmatlu_)
 end if
+read(50) natmtot_
+if (natmtot_.ne.natmtot) then
+  write(*,*)
+  write(*,'("Error(readstate): differing natmtot")')
+  write(*,'(" current   : ",I4)') natmtot
+  write(*,'(" STATE.OUT : ",I4)') natmtot_
+  write(*,*)
+  stop
+end if
+read(50) spnstmax_
+if (spnstmax_.ne.spnstmax) then
+  write(*,*)
+  write(*,'("Error(readstate): differing spnstmax")')
+  write(*,'(" current   : ",I4)') spnstmax
+  write(*,'(" STATE.OUT : ",I4)') spnstmax_
+  write(*,*)
+  stop
+end if
+read(50) spnrmax_
+if (spnrmax_.ne.spnrmax) then
+  write(*,*)
+  write(*,'("Error(readstate): differing spnrmax")')
+  write(*,'(" current   : ",I4)') spnrmax
+  write(*,'(" STATE.OUT : ",I4)') spnrmax_
+  write(*,*)
+  stop
+end if
+read(50) evalcr
+read(50) spvr
 close(50)
 !---------------------------!
 !     muffin-tin arrays     !

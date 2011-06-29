@@ -56,6 +56,11 @@ end if
 if (ldapu.ne.0) then
   write(50) vmatlu
 end if
+write(50) natmtot
+write(50) spnstmax
+write(50) spnrmax
+write(50) evalcr
+write(50) spvr
 close(50)
 return
 end subroutine
