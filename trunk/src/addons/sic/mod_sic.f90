@@ -109,6 +109,9 @@ data sic_niter_umtrx/1/
 integer sic_niter_u0
 data sic_niter_u0/1/
 
+! .true. if sic branch is activated 
+logical sic
+data sic/.false./
 ! number of SIC iterations
 integer nsclsic
 data nsclsic/3/

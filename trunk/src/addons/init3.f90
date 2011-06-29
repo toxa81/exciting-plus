@@ -1,6 +1,7 @@
 subroutine init3
 use modmain
 use mod_wannier
+use mod_sic
 implicit none
 integer ia,is,l,m,ir,i1,i2,i3,i
 integer l1,l2,l3,m1,m2,m3,lm1,lm2,lm3,itp

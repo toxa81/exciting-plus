@@ -9,6 +9,7 @@ subroutine seceqn(ikloc,evalfv,evecfv,evecsv)
 ! !USES:
 use modmain
 use mod_wannier
+use mod_sic
 ! !INPUT/OUTPUT PARAMETERS:
 !   ik     : k-point number (in,integer)
 !   evalfv : first-variational eigenvalues (out,real(nstfv))

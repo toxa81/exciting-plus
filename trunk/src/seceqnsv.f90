@@ -7,6 +7,7 @@
 subroutine seceqnsv(ikloc,apwalm,evalfv,evecfv,evecsv)
 use modmain
 use modldapu
+use mod_sic
 implicit none
 ! arguments
 integer, intent(in) :: ikloc

@@ -92,6 +92,8 @@ complex(8), allocatable :: sv_gntyry(:,:,:)
 real(8), allocatable :: sv_ubu(:,:,:,:,:)
 real(8), allocatable :: rhomagmt(:,:,:,:,:)
 complex(8), allocatable :: rhomagit(:,:)
+logical tsveqn
+data tsveqn/.false./
 
 ! number of points for Lebedev mesh for LAPW muffin-tins 
 integer mt_ntp
@@ -181,12 +183,6 @@ integer, parameter :: t_rho_mag_it=53
 integer, parameter :: t_rho_mag_conv=55
 
 integer, parameter :: t_rhoinit=56
-
-!-------------!
-!      SIC    !
-!-------------!
-logical sic
-data sic/.false./
 
 !--------------!
 !      PAPI    !
