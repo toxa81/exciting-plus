@@ -1,5 +1,6 @@
 subroutine seceqnsv_exact(ikloc,apwalm,evalfv,evecfv,evecsv)
 use modmain
+use mod_sic
 implicit none
 ! arguments
 integer, intent(in) :: ikloc
