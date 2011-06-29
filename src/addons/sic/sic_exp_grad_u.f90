@@ -13,8 +13,6 @@ complex(8) expikt
 complex(8), allocatable :: gm(:,:)
 real(8), allocatable :: eval(:)
 !
-! TODO: more stable way to compute gradient: G=>G+I, so it's eigen values are never zero
-!
 allocate(gm(sic_wantran%nwan,sic_wantran%nwan))
 allocate(eval(sic_wantran%nwan))
 gm=zzero
@@ -30,6 +28,10 @@ do i=1,sic_wantran%nwt
   gm(j1,j2)=gm(j1,j2)+expikt*(dconjg(sic_vme(j))-sic_vme(i))
 enddo
 gm=gm*zi
+tot_diff=tot_diff+sum(abs(gm))
+do j1=1,sic_wantran%nwan
+  gm(j1,j1)=gm(j1,j1)+zone
+enddo
 do j1=1,sic_wantran%nwan
   do j2=1,sic_wantran%nwan
     if (abs(gm(j1,j2)-dconjg(gm(j2,j1))).gt.1d-10) then
@@ -41,8 +43,12 @@ do j1=1,sic_wantran%nwan
     endif
   enddo
 enddo
-tot_diff=tot_diff+sum(abs(gm))
 call diagzhe(sic_wantran%nwan,gm,eval)
+if (debug_level.ge.4) then
+  call dbg_open_file
+  write(fdbgout,*)"grad eval=",eval
+  call dbg_close_file
+endif
 um=zzero
 ! U=e^{eps*G}=e^{-i*i*eps*G}
 ! H=i*G is a hermitian matrix, so it's decomposition is Z*h*Z^{\dagger}
@@ -50,7 +56,7 @@ um=zzero
 do j1=1,sic_wantran%nwan
   do j2=1,sic_wantran%nwan
     do j=1,sic_wantran%nwan
-      um(j1,j2)=um(j1,j2)+gm(j1,j)*dconjg(gm(j2,j))*exp(-zi*eps*eval(j))
+      um(j1,j2)=um(j1,j2)+gm(j1,j)*dconjg(gm(j2,j))*exp(-zi*eps*(eval(j)-1.d0))
     enddo
   enddo
 enddo
