@@ -116,6 +116,7 @@ use modmain
 complex(8), intent(in) :: umtrx(nwantot,nwantot,nkptnrloc)
 !
 integer ikloc,ik,n,m,j
+complex(8) zt1
 real(8) w2
 complex(8), allocatable :: wanc(:,:)
 !
@@ -131,6 +132,19 @@ wann_unkmt=zzero
 wann_unkit=zzero
 allocate(wanc(nwantot,nstsv))
 do ikloc=1,nkptnrloc
+  do n=1,nwantot
+    do m=1,nwantot
+      zt1=zzero
+      do j=1,nwantot
+        zt1=zt1+umtrx(j,m,ikloc)*dconjg(umtrx(j,n,ikloc))
+      enddo
+      if (n.eq.m) zt1=zt1-zone
+      if (abs(zt1).gt.1d-10) then
+        write(*,'("Error(wancnr_transform): umtrx in not hermitian")')
+        call pstop
+      endif
+    enddo
+  enddo  
   ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc) 
   call genwann_c(ik,vkcnr(:,ik),evalsvnr(1,ik),wfsvmtnrloc(1,1,1,1,1,ikloc),&
     wanncnrloc(1,1,ikloc),ierr)   
