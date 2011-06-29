@@ -18,6 +18,8 @@ do isclsic=1,nsclsic
   xml_info%rws=rwigner
   xml_info%omega=omega
   xml_info%magmom(:)=mommt(1,:)
+  xml_info%fftgriddens=dble(ngrtot)/omega
+  xml_info%ngrtot=ngrtot
   call mpi_world_barrier
   call sic_main
   call write_xml_info

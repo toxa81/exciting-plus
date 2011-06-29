@@ -27,6 +27,8 @@ if (mpi_grid_root()) then
   enddo
   write(300,'("  <rws units=""a.u."">",F18.10,"</rws>")')xml_info%rws
   write(300,'("  <omega units=""a.u.^3"">",F18.10,"</omega>")')xml_info%omega
+  write(300,'("  <fftgriddens units=""1/a.u.^3"">",F18.10,"</fftgriddens>")')xml_info%fftgriddens
+  write(300,'("  <ngrtot>",I8,"</ngrtot>")')xml_info%ngrtot
   write(300,'("  <engytot units=""Ha"">",F18.10,"</engytot>")')xml_info%engytot
   write(300,'("  <bandgap units=""eV"">",F18.10,"</bandgap>")')xml_info%bandgap*ha2ev
   write(300,'("  <wan_tot_spread units=""a.u.^2"">",F18.10,"</wan_tot_spread>")')&
@@ -37,6 +39,8 @@ if (mpi_grid_root()) then
     xml_info%sic_energy_pot
   write(300,'("  <sic_energy_kin units=""Ha"">",F18.10,"</sic_energy_kin>")')&
     xml_info%sic_energy_kin
+  write(300,'("  <sic_vme_rms>",F18.10,"</sic_vme_rms>")')xml_info%sic_vme_rms
+  write(300,'("  <sic_vme_err>",F18.10,"</sic_vme_err>")')xml_info%sic_vme_err  
   write(300,'("</info>")')
   close(300)
 endif

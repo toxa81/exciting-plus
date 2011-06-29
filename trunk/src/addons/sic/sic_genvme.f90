@@ -98,5 +98,7 @@ if (wproc) then
   write(fout,*)
   call flushifc(fout)
 endif
+xml_info%sic_vme_rms=t3
+xml_info%sic_vme_err=t2
 return
 end
