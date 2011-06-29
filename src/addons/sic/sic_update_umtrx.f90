@@ -12,6 +12,14 @@ do ikloc=1,nkptnrloc
   ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
   tot_diff=0.d0
   call sic_exp_grad_u(vkcnr(:,ik),sic_umtrx_eps,tot_diff,um)
+  if (debug_level.ge.4) then
+    call dbg_open_file
+    write(fdbgout,'("k-point : ",I4)')ik
+    do n1=1,nwantot
+      write(fdbgout,'(255F12.6)')(abs(um(n1,n2)),n2=1,nwantot)
+    enddo
+    call dbg_close_file
+  endif
   um2=zzero
   do i=1,nwantot
     um2(i,i)=zone
