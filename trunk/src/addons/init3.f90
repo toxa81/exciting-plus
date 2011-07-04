@@ -97,30 +97,22 @@ do is=1,nspecies
   endif
 enddo 
 if (texactrho) then
-  if (allocated(sv_gntyry)) deallocate(sv_gntyry)
-  allocate(sv_gntyry(lmmaxvr,lmmaxvr,lmmaxvr))
-  do l1=0,lmaxvr
-    do m1=-l1,l1
-      lm1=idxlm(l1,m1)
-      do l2=0,lmaxvr
-        do m2=-l2,l2
-          lm2=idxlm(l2,m2)
-          do l3=0,lmaxvr
-            do m3=-l3,l3
-              lm3=idxlm(l3,m3)
-              sv_gntyry(lm3,lm2,lm1)=gauntyry(l2,l3,l1,m2,m3,m1)
-            enddo
-          enddo
-        enddo
-      enddo
-    enddo
-  enddo
   if (allocated(sv_ubu)) deallocate(sv_ubu)
   allocate(sv_ubu(lmmaxvr,nlufrmax,nlufrmax,natmtot,ndmag))
   if (allocated(rhomagmt)) deallocate(rhomagmt)
   allocate(rhomagmt(nlufrmax,nlufrmax,lmmaxvr,natmtot,nspinor))
   if (allocated(rhomagit)) deallocate(rhomagit)
   allocate(rhomagit(ngrtot,nspinor))
+endif
+if (.not.tsveqn.and.spinpol) then
+  if (allocated(baa)) deallocate(baa)
+  allocate(baa(lmmaxvr,apwordmax,0:lmaxapw,apwordmax,0:lmaxapw,natmtot,ndmag))
+  if (allocated(bloa)) deallocate(bloa)
+  allocate(bloa(lmmaxvr,nlomax,apwordmax,0:lmaxapw,natmtot,ndmag))
+  if (allocated(blolo)) deallocate(blolo)
+  allocate(blolo(lmmaxvr,nlomax,nlomax,natmtot,ndmag))
+  if (allocated(beffig)) deallocate(beffig)
+  allocate(beffig(ngvec,ndmag))
 endif
 if (wannier) call wann_init
 if (sic) call sic_init
