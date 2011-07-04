@@ -410,52 +410,43 @@ integer, intent(in) :: lmax
 integer, intent(in) :: lmmax
 integer, intent(in) :: ngp
 integer, intent(in) :: nwf
-complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)  
+complex(8), intent(in) :: apwalm(ngkmax,lmmaxapw,apwordmax,natmtot)  
 complex(8), intent(in) :: evecfd(nspinor*nmatmax,nwf)
 complex(8), intent(out) :: wfsvmt(lmmax,nufrmax,natmtot,nspinor,nwf)
 complex(8), optional, intent(out) :: wfsvit(ngkmax,nspinor,nwf)
 !
 integer ispn,j,ias,is,l,m,io,ilo,lm,i1,n
-integer ordl(0:lmax,natmtot)  
-complex(8), allocatable :: apwalm_(:,:,:,:)
-complex(8), allocatable :: wfmt_(:,:,:,:)
+integer ordl(0:lmax)  
+complex(8), allocatable :: wfmt(:,:,:,:)
 !
 wfsvmt=zzero
 if (present(wfsvit)) wfsvit=zzero
-allocate(apwalm_(ngkmax,lmmax,apwordmax,natmtot))
-allocate(wfmt_(lmmax,apwordmax,natmtot,nwf))
-do ias=1,natmtot
-  do io=1,apwordmax
-    do lm=1,lmmax
-      apwalm_(:,lm,io,ias)=apwalm(:,io,lm,ias)
-    enddo
-  enddo
-enddo
-n=lmmax*apwordmax*natmtot
+allocate(wfmt(lmmaxapw,apwordmax,natmtot,nwf))
+n=lmmaxapw*apwordmax*natmtot
 do ispn=1,nspinor
   j=(ispn-1)*nmatmax
-  call zgemm('T','N',n,nwf,ngp,zone,apwalm_,ngkmax,evecfd(j+1,1),&
-    nspinor*nmatmax,zzero,wfmt_,n)
-  ordl=0
+  call zgemm('T','N',n,nwf,ngp,zone,apwalm,ngkmax,evecfd(j+1,1),&
+    nspinor*nmatmax,zzero,wfmt,n)
   do ias=1,natmtot
+    ordl=0
     is=ias2is(ias)
     do l=0,lmax
       do io=1,apword(l,is)
-        ordl(l,ias)=ordl(l,ias)+1
         do m=-l,l
           lm=idxlm(l,m)
-          wfsvmt(lm,ordl(l,ias),ias,ispn,:)=wfmt_(lm,io,ias,:)
+          wfsvmt(lm,io,ias,ispn,:)=wfmt(lm,io,ias,:)
         enddo !m
       enddo !io
+      ordl(l)=apword(l,is)
     enddo !l
     do ilo=1,nlorb(is)
       l=lorbl(ilo,is)
       if (l.le.lmax) then
-        ordl(l,ias)=ordl(l,ias)+1
+        ordl(l)=ordl(l)+1
         do m=-l,l
           lm=idxlm(l,m)
           i1=ngp+idxlo(lm,ilo,ias)+j
-          wfsvmt(lm,ordl(l,ias),ias,ispn,:)=evecfd(i1,:)
+          wfsvmt(lm,ordl(l),ias,ispn,:)=evecfd(i1,:)
         enddo !m
       endif
     enddo !ilo    
@@ -464,7 +455,115 @@ do ispn=1,nspinor
     wfsvit(1:ngp,ispn,:)=evecfd(j+1:j+ngp,:)
   endif
 enddo !ispn
-deallocate(apwalm_,wfmt_)
+deallocate(wfmt)
+return
+end subroutine
+
+subroutine genapwalm(ngp,gpc,tpgpc,sfacgp,apwalm)
+use modmain
+implicit none
+! arguments
+integer, intent(in) :: ngp
+real(8), intent(in) :: gpc(ngkmax)
+real(8), intent(in) :: tpgpc(2,ngkmax)
+complex(8), intent(in) :: sfacgp(ngkmax,natmtot)
+complex(8), intent(out) :: apwalm(ngkmax,lmmaxapw,apwordmax,natmtot)
+! local variables
+integer np,is,ia,ias,omax
+integer l,m,lm,io,jo
+integer i,ir,igp,info
+real(8) fpso,t1
+complex(8) zt1,zt2
+! allocatable arrays
+integer, allocatable :: ipiv(:)
+real(8), allocatable :: c(:)
+real(8), allocatable :: djl(:,:,:)
+complex(8), allocatable :: ylmgp(:,:)
+complex(8), allocatable :: zd(:,:)
+complex(8), allocatable :: zb(:,:)
+! external functions
+real(8) polynom
+external polynom
+! polynomial order
+np=max(apwordmax+1,4)
+allocate(ipiv(np))
+allocate(c(np))
+allocate(djl(0:lmaxapw,apwordmax,ngp))
+allocate(ylmgp(lmmaxapw,ngp))
+allocate(zd(apwordmax,apwordmax))
+allocate(zb(apwordmax,ngp*(2*lmaxapw+1)))
+! compute the spherical harmonics of the G+p-vectors
+do igp=1,ngp
+  call genylm(lmaxapw,tpgpc(:,igp),ylmgp(:,igp))
+end do
+fpso=fourpi/sqrt(omega)
+! begin loops over atoms and species
+do is=1,nspecies
+! maximum APW order for this species
+  omax=maxval(apword(1:lmaxapw,is))
+! evaluate the spherical Bessel function derivatives for all G+p-vectors
+  do igp=1,ngp
+    t1=gpc(igp)*rmt(is)
+    do io=1,omax
+      call sbesseldm(io-1,lmaxapw,t1,djl(:,io,igp))
+    end do
+    t1=1.d0
+    do io=2,omax
+      t1=t1*gpc(igp)
+      djl(:,io,igp)=t1*djl(:,io,igp)
+    end do
+  end do
+  do ia=1,natoms(is)
+    ias=idxas(ia,is)
+! begin loop over l
+    do l=0,lmaxapw
+      zt1=fpso*zil(l)
+! set up matrix of derivatives
+      do jo=1,apword(l,is)
+        ir=nrmt(is)-np+1
+        do io=1,apword(l,is)
+          zd(io,jo)=polynom(io-1,np,spr(ir,is),apwfr(ir,1,jo,l,ias),c,rmt(is))
+        end do
+      end do
+! set up target vectors
+      i=0
+      do igp=1,ngp
+        zt2=zt1*sfacgp(igp,ias)
+        do m=-l,l
+          lm=idxlm(l,m)
+          i=i+1
+          do io=1,apword(l,is)
+            zb(io,i)=djl(l,io,igp)*zt2*conjg(ylmgp(lm,igp))
+          end do
+        end do
+      end do
+! solve the general complex linear systems
+      call zgesv(apword(l,is),i,zd,apwordmax,ipiv,zb,apwordmax,info)
+      if (info.ne.0) then
+        write(*,*)
+        write(*,'("Error(genapwalm): could not find APW matching coefficients")')
+        write(*,'(" for species ",I4)') is
+        write(*,'(" and atom ",I4)') ia
+        write(*,'(" ZGESV returned INFO = ",I8)') info
+        write(*,*)
+        call pstop
+      end if
+      i=0
+      do igp=1,ngp
+        do m=-l,l
+          lm=idxlm(l,m)
+          i=i+1
+          do io=1,apword(l,is)
+            apwalm(igp,lm,io,ias)=zb(io,i)
+          end do
+        end do
+      end do
+! end loop over l
+    end do
+! end loops over atoms and species
+  end do
+end do
+deallocate(ipiv,c,djl,ylmgp,zd,zb)
 return
 end subroutine
 

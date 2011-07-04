@@ -14,7 +14,7 @@ integer ig1,ig2,ic,io1,io2,l1,l2,j1,j2,lm1,lm2,lm3,l3
 real(8) t1
 complex(8) zt1,zt2(nspinor)
 ! allocatable arrays
-complex(8), allocatable :: apwalm(:,:,:,:,:)
+complex(8), allocatable :: apwalm(:,:,:,:)
 
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: wfsvit(:,:,:)
@@ -39,19 +39,20 @@ do ist=1,nstsv
 enddo
 allocate(wfsvmt(lmmaxapw,nufrmax,natmtot,nspinor,nstocc))
 allocate(wfsvit(ngkmax,nspinor,nstocc))
-allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
 wfsvmt=zzero
 wfsvit=zzero
-! find the matching coefficients
-do ispn=1,nspnfv
-  call match(ngk(ispn,ik),gkc(:,ispn,ikloc),tpgkc(:,:,ispn,ikloc), &
-   sfacgk(:,:,ispn,ikloc),apwalm(:,:,:,:,ispn))
-end do
 ! generate wave functions in muffin-tins
 if (tsveqn) then
+  allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
+! find the matching coefficients
+  call match(ngk(1,ik),gkc(:,1,ikloc),tpgkc(:,:,1,ikloc),&
+    sfacgk(:,:,1,ikloc),apwalm)
   call genwfsvocc(lmaxapw,lmmaxapw,ngk(1,ik),nstocc,istocc,evecfv,evecsv,&
     apwalm,wfsvmt,wfsvit)
 else
+  allocate(apwalm(ngkmax,lmmaxapw,apwordmax,natmtot))
+  call genapwalm(ngk(1,ik),gkc(:,1,ikloc),tpgkc(:,:,1,ikloc),&
+    sfacgk(:,:,1,ikloc),apwalm)
   allocate(evecfd_(nspinor*nmatmax,nstocc))
   do j=1,nstocc
     evecfd_(:,j)=evecfdloc(:,istocc(j),ikloc)
