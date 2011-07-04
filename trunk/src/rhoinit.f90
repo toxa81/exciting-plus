@@ -21,29 +21,8 @@ use modmain
 !BOC
 implicit none
 ! local variables
-integer, parameter :: lmax=1
-integer lmmax,l,m,lm,ir,irc
-integer is,ia,ias,ig,ifg
-real(8) x,t1,t2
-complex(8) zt1,zt2,zt3
-! automatic arrays
-real(8) fr(spnrmax),gr(spnrmax),cf(4,spnrmax)
-! allocatable arrays
-real(8), allocatable :: jlgr(:,:)
-real(8), allocatable :: th(:)
-real(8), allocatable :: ffacg(:)
-complex(8), allocatable :: zfmt(:,:)
-complex(8), allocatable :: zfft(:)
-! external functions
-real(8) erf
-external erf
-lmmax=(lmax+1)**2
-! allocate local arrays
-allocate(jlgr(0:lmax,nrcmtmax))
-allocate(th(spnrmax))
-allocate(ffacg(ngvec))
-allocate(zfmt(lmmax,nrcmtmax))
-allocate(zfft(ngrtot))
+integer ir,is,ia,ias
+real(8) t1,t2
 ! zero the charge density and magnetisation arrays
 rhomt(:,:,:)=0.d0
 rhoir(:)=0.d0
@@ -51,90 +30,24 @@ if (spinpol) then
   magmt(:,:,:,:)=0.d0
   magir(:,:)=0.d0
 end if
-! compute the superposition of all the atomic density tails
-zfft(:)=0.d0
-do is=1,nspecies
-! generate smooth step function
-  do ir=1,spnr(is)
-    x=0.5d0*gmaxvr*(spr(ir,is)-rmt(is))
-    th(ir)=0.5d0*(1.d0+erf(x))
-  end do
-  do ig=1,ngvec
-    do ir=1,spnr(is)
-! spherical bessel function j_0(x)
-      x=gc(ig)*spr(ir,is)
-      if (x.gt.1.d-6) then
-        t1=sin(x)/x
-      else
-        t1=1.d0
-      end if
-      fr(ir)=t1*th(ir)*sprho(ir,is)*spr(ir,is)**2
-    end do
-    call fderiv(-1,spnr(is),spr(:,is),fr,gr,cf)
-    ffacg(ig)=(fourpi/omega)*gr(spnr(is))
-  end do
-  do ia=1,natoms(is)
-    ias=idxas(ia,is)
-    do ig=1,ngvec
-      ifg=igfft(ig)
-      zfft(ifg)=zfft(ifg)+ffacg(ig)*conjg(sfacg(ig,ias))
-    end do
-  end do
-end do
-! compute the tails in each muffin-tin
-do is=1,nspecies
-  do ia=1,natoms(is)
-    ias=idxas(ia,is)
-    zfmt(:,:)=0.d0
-    do ig=1,ngvec
-      ifg=igfft(ig)
-      do irc=1,nrcmt(is)
-        x=gc(ig)*rcmt(irc,is)
-        call sbessel(lmax,x,jlgr(:,irc))
-      end do
-      zt1=fourpi*zfft(ifg)*sfacg(ig,ias)
-      lm=0
-      do l=0,lmax
-        zt2=zt1*zil(l)
-        do m=-l,l
-          lm=lm+1
-          zt3=zt2*conjg(ylmg(lm,ig))
-          do irc=1,nrcmt(is)
-            zfmt(lm,irc)=zfmt(lm,irc)+jlgr(l,irc)*zt3
-          end do
-        end do
-      end do
-    end do
-    irc=0
-    do ir=1,nrmt(is),lradstp
-      irc=irc+1
-      call ztorflm(lmax,zfmt(:,irc),rhomt(:,ir,ias))
-    end do
-  end do
-end do
-! convert the density from a coarse to a fine radial mesh
-call rfmtctof(rhomt)
-! add the atomic charge density and the excess charge in each muffin-tin
-t1=chgexs/omega
-do is=1,nspecies
-  do ia=1,natoms(is)
-    ias=idxas(ia,is)
-    do ir=1,nrmt(is)
-      t2=(t1+sprho(ir,is))/y00
-      rhomt(1,ir,ias)=rhomt(1,ir,ias)+t2
-    end do
-  end do
-end do
-! interstitial density determined from the atomic tails and excess charge
-call zfftifc(3,ngrid,1,zfft)
+t1=0.d0
+t2=0.d0
+do ias=1,natmtot
+  is=ias2is(ias)
+  ia=ias2ia(ias)
+  do ir=1,nrmt(is)
+    rhomt(1,ir,ias)=sprho(ir,is)/y00
+    t1=t1+fourpi*sprho(ir,is)*mt_rw(ir,is)
+  enddo
+  t2=t2+(fourpi/3)*(rmt(is)**3)
+enddo
 do ir=1,ngrtot
-  rhoir(ir)=dble(zfft(ir))+t1
-end do
+  rhoir(ir)=(chgtot-t1)/(omega-t2)
+enddo
 ! compute the total charge
 call charge
 ! normalise the density
 call rhonorm
-deallocate(jlgr,th,ffacg,zfmt,zfft)
 return
 end subroutine
 !EOC
