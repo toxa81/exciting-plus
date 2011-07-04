@@ -9,6 +9,7 @@
 subroutine seceqnfv(ik,nmatp,ngp,igpig,vgpc,apwalm,evalfv,evecfv)
 ! !USES:
 use modmain
+use mod_seceqn
 ! !INPUT/OUTPUT PARAMETERS:
 !   nmatp  : order of overlap and Hamiltonian matrices (in,integer)
 !   ngp    : number of G+k-vectors for augmented plane waves (in,integer)
@@ -100,43 +101,36 @@ timemat=timemat+ts1-ts0
 if (mpi_grid_root((/dim2/))) then
   call timesec(ts0)
   call timer_start(t_seceqnfv_diag)
-  allocate(iwork(5*nmatp))
-  allocate(ifail(nmatp))
-  allocate(w(nmatp))
-  allocate(rwork(7*nmatp))
-  if (packed) then 
-    allocate(work(2*nmatp))
-  else
-    nb=ilaenv(1,'ZHETRD','U',nmatp,-1,-1,-1)
-    lwork=(nb+1)*nmatp
-    allocate(work(lwork))
-  endif 
   evecfv=zzero
   ! LAPACK 3.x call
   if (packed) then
+    allocate(iwork(5*nmatp))
+    allocate(ifail(nmatp))
+    allocate(w(nmatp))
+    allocate(rwork(7*nmatp))
+    allocate(work(2*nmatp))
     call zhpgvx(1,'V','I','U',nmatp,h,o,vl,vu,1,nstfv,evaltol,m,w,evecfv,nmatmax, &
-     work,rwork,iwork,ifail,info)
-  else
-    call zhegvx(1,'V','I','U',nmatp,h,nmatp,o,nmatp,vl,vu,1,nstfv,evaltol,&
-     m,w,evecfv,nmatmax,work,lwork,rwork,iwork,ifail,info)
-  endif
-  evalfv(1:nstfv)=w(1:nstfv)
-  if (info.ne.0) then
-    write(*,*)
-    write(*,'("Error(seceqnfv): diagonalisation failed")')
-    write(*,'(" ZHPGVX returned INFO = ",I8)') info
-    if (info.gt.nmatp) then
-      i=info-nmatp
-      write(*,'(" The leading minor of the overlap matrix of order ",I8)') i
-      write(*,'("  is not positive definite")')
-      write(*,'(" Order of overlap matrix : ",I8)') nmatp
+      work,rwork,iwork,ifail,info)
+    evalfv(1:nstfv)=w(1:nstfv)
+    deallocate(iwork,ifail,w,rwork,work)
+    if (info.ne.0) then
       write(*,*)
+      write(*,'("Error(seceqnfv): diagonalisation failed")')
+      write(*,'(" ZHPGVX returned INFO = ",I8)') info
+      if (info.gt.nmatp) then
+        i=info-nmatp
+        write(*,'(" The leading minor of the overlap matrix of order ",I8)') i
+        write(*,'("  is not positive definite")')
+        write(*,'(" Order of overlap matrix : ",I8)') nmatp
+        write(*,*)
+      end if
+      call pstop
     end if
-    call pstop
-  end if
+  else
+    call diagzheg(nmatp,nstfv,nmatmax,evaltol,h,o,evalfv,evecfv)
+  endif
   call timesec(ts1)
   call timer_stop(t_seceqnfv_diag)
-  deallocate(iwork,ifail,w,rwork,work)
 endif
 call mpi_grid_bcast(evecfv(1,1),nmatmax*nstfv,dims=(/dim2/))
 call mpi_grid_bcast(evalfv(1),nstfv,dims=(/dim2/))
