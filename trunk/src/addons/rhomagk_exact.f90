@@ -1,13 +1,14 @@
 subroutine rhomagk_exact(ikloc,evecfv,evecsv)
 use modmain
+use mod_seceqn
 implicit none
 ! arguments
 integer, intent(in) :: ikloc
 complex(8), intent(in) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
 ! local variables
-integer ist
-integer is,ias,ik,ispn,jst
+integer ist,j,ilo,ia,io,l,lm,m
+integer is,ias,ik,ispn,jst,n,i1
 integer ivg3(3),ifg3
 integer ig1,ig2,ic,io1,io2,l1,l2,j1,j2,lm1,lm2,lm3,l3
 real(8) t1
@@ -21,6 +22,7 @@ complex(8), allocatable :: rhoitk(:,:)
 complex(8), allocatable :: gntmp(:,:)
 real(8), allocatable :: wo(:)
 integer, allocatable :: istocc(:)
+complex(8), allocatable :: evecfd_(:,:)
 integer nstocc
 
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
@@ -35,32 +37,43 @@ do ist=1,nstsv
     istocc(nstocc)=ist
   endif
 enddo
-allocate(wfsvmt(lmmaxvr,nufrmax,natmtot,nspinor,nstocc))
+allocate(wfsvmt(lmmaxapw,nufrmax,natmtot,nspinor,nstocc))
 allocate(wfsvit(ngkmax,nspinor,nstocc))
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
+wfsvmt=zzero
+wfsvit=zzero
 ! find the matching coefficients
 do ispn=1,nspnfv
   call match(ngk(ispn,ik),gkc(:,ispn,ikloc),tpgkc(:,:,ispn,ikloc), &
    sfacgk(:,:,ispn,ikloc),apwalm(:,:,:,:,ispn))
 end do
 ! generate wave functions in muffin-tins
-call genwfsvocc(lmaxvr,lmmaxvr,ngk(1,ik),nstocc,istocc,evecfv,evecsv,&
-  apwalm,wfsvmt,wfsvit)
+if (tsveqn) then
+  call genwfsvocc(lmaxapw,lmmaxapw,ngk(1,ik),nstocc,istocc,evecfv,evecsv,&
+    apwalm,wfsvmt,wfsvit)
+else
+  allocate(evecfd_(nspinor*nmatmax,nstocc))
+  do j=1,nstocc
+    evecfd_(:,j)=evecfdloc(:,istocc(j),ikloc)
+  enddo
+  call genwfsvc(lmaxapw,lmmaxapw,ngk(1,ik),nstocc,apwalm,evecfd_,wfsvmt,wfsvit) 
+  deallocate(evecfd_)
+endif
 deallocate(apwalm)
 call timer_start(t_rho_mag_mt)
-allocate(gntmp(lmmaxvr,lmmaxvr))
+allocate(gntmp(lmmaxapw,lmmaxapw))
 do lm3=1,lmmaxvr
-  gntmp(:,:)=sv_gntyry(lm3,:,:)
+  gntmp(:,:)=gntyry(lm3,:,:)
   l3=lm2l(lm3)
   do ias=1,natmtot
     ic=ias2ic(ias)
     is=ias2is(ias)
     j1=0
-    do l1=0,lmaxvr
+    do l1=0,lmaxapw
       do io1=1,nufr(l1,is)
         j1=j1+1
         j2=0
-        do l2=0,lmaxvr
+        do l2=0,lmaxapw
           do io2=1,nufr(l2,is)
             j2=j2+1
             if (mod(l1+l2+l3,2).eq.0) then
