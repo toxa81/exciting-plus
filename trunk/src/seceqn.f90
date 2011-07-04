@@ -78,7 +78,6 @@ if (wannier) then
     call genwann(ikloc,evecfv,evecsv)
   endif
 endif
-if (allocated(eigvalfv)) eigvalfv(:,ik)=evalfv(:,1)
 deallocate(apwalm)
 call timer_stop(t_seceqn)
 return
