@@ -61,9 +61,9 @@ do l1=0,lmaxmat
                   do m2=-l2,l2
                     lm2=idxlm(l2,m2)
                     if ((l2.eq.0).or.(l1.ge.l3)) then
-                      zt1=gntyry(lm1,lm2,lm3)*haa(lm2,io1,l1,io2,l3,ias)
+                      zt1=gntyry(lm2,lm1,lm3)*haa(lm2,io1,l1,io2,l3,ias)
                     else
-                      zt1=gntyry(lm1,lm2,lm3)*haa(lm2,io1,l3,io2,l1,ias)
+                      zt1=gntyry(lm2,lm1,lm3)*haa(lm2,io1,l3,io2,l1,ias)
                     end if
                     zsum=zsum+zt1
                   end do
