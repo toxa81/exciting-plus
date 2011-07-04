@@ -74,13 +74,11 @@ if (mpi_grid_root(dims=(/dim_k,dim2/))) then
 ! add the core density to the total density
   call addrhocr
 endif
-call mpi_grid_bcast(rhomt(1,1,1),lmmaxvr*nrmtmax*natmtot,&
-  dims=(/dim_k,dim2/))
-call mpi_grid_bcast(rhoir(1),ngrtot,dims=(/dim_k,dim2/))
+call mpi_grid_bcast(rhomt(1,1,1),lmmaxvr*nrmtmax*natmtot)
+call mpi_grid_bcast(rhoir(1),ngrtot)
 if (spinpol) then
-  call mpi_grid_bcast(magmt(1,1,1,1),lmmaxvr*nrmtmax*natmtot*ndmag,&
-    dims=(/dim_k,dim2/))
-  call mpi_grid_bcast(magir(1,1),ngrtot*ndmag,dims=(/dim_k,dim2/))
+  call mpi_grid_bcast(magmt(1,1,1,1),lmmaxvr*nrmtmax*natmtot*ndmag)
+  call mpi_grid_bcast(magir(1,1),ngrtot*ndmag)
 endif
 ! calculate the charges
 call charge
