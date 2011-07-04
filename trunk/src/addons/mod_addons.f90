@@ -88,12 +88,11 @@ data nn_maxsh/10/
 ! exact way to setup second-variational H and compute charge density
 logical texactrho
 data texactrho/.false./
-complex(8), allocatable :: sv_gntyry(:,:,:)
 real(8), allocatable :: sv_ubu(:,:,:,:,:)
 real(8), allocatable :: rhomagmt(:,:,:,:,:)
 complex(8), allocatable :: rhomagit(:,:)
 logical tsveqn
-data tsveqn/.false./
+data tsveqn/.true./
 
 ! number of points for Lebedev mesh for LAPW muffin-tins 
 integer mt_ntp
@@ -129,8 +128,8 @@ integer mpigrid(mpigrid_maxndim)
 complex(8), allocatable :: evecfvloc(:,:,:,:)
 ! local fraction of sv eigen vectors
 complex(8), allocatable :: evecsvloc(:,:,:)
-! first-variational eigen values
-real(8), allocatable :: eigvalfv(:,:)
+! full-diagonalization eigen-vectors
+complex(8), allocatable :: evecfdloc(:,:,:)
 ! dimension for coarse k-point parallelization
 integer, parameter :: dim_k=1
 integer, parameter :: dim1=1
@@ -226,6 +225,11 @@ type t_xml_info
 end type t_xml_info
 
 type(t_xml_info) :: xml_info
+
+real(8), allocatable :: baa(:,:,:,:,:,:,:)
+real(8), allocatable :: bloa(:,:,:,:,:,:)
+real(8), allocatable :: blolo(:,:,:,:,:)
+complex(8), allocatable :: beffig(:,:)
 
 end module
 
