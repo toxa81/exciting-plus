@@ -64,15 +64,6 @@ else
   rhoir(:)=rhoir(:)+dreal(rhomagit(:,1))
 endif
 call timer_stop(t_rho_mag_conv)
-
-!call mpi_grid_reduce(rhomt(1,1,1),lmmaxvr*nrmtmax*natmtot,&
-!  dims=(/dim_k,dim2/))
-!call mpi_grid_reduce(rhoir(1),ngrtot,dims=(/dim_k,dim2/))
-!if (spinpol) then
-!  call mpi_grid_reduce(magmt(1,1,1,1),lmmaxvr*nrmtmax*natmtot*ndmag,&
-!    dims=(/dim_k,dim2/))
-!  !call mpi_grid_reduce(magir(1,1),ngrtot*ndmag,dims=(/dim_k,dim2/))
-!endif
 if (mpi_grid_root(dims=(/dim_k,dim2/))) then
   call timer_start(t_rho_mag_sym)
 ! symmetrise the density
