@@ -12,6 +12,7 @@ use modmain
 use mod_mpi_grid
 use mod_wannier
 use mod_sic
+use mod_seceqn
 ! !DESCRIPTION:
 !   Produces a band structure along the path in reciprocal-space which connects
 !   the vertices in the array {\tt vvlp1d}. The band structure is obtained from
@@ -47,6 +48,7 @@ allocate(bc(lmmax,natmtot,nspinor,nstsv,nkpt))
 allocate(evalfv(nstfv,nspnfv,nkptloc))
 allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
 allocate(evecsvloc(nstsv,nstsv,nkptloc))
+allocate(evecfdloc(nspinor*nmatmax,nstsv,nkptloc)) 
 ! read density and potentials from file
 call readstate
 ! read Fermi energy from file
@@ -68,7 +70,9 @@ call genbeffmt
 ! get radial-muffint tin functions
 call getufr
 ! get product of radial functions
-call genufrp  
+call genufrp
+! generate effective magntic field integrals for full diagonalization
+call genbeff
 if (sic) then
   call sic_read_data
   call sic_genblochsum
@@ -83,8 +87,12 @@ evalsv=0.d0
 do ikloc=1,nkptloc
   ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
   write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ik,nkpt
-  call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
-    evecsvloc(1,1,ikloc))
+  if (tsveqn) then
+    call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
+      evecsvloc(1,1,ikloc))
+  else
+    call seceqnfd(ikloc,evecfdloc(1,1,ikloc))
+  endif
   if (wannier) then
     if (ldisentangle) call disentangle(evalsv(1,ik),wann_c(1,1,ikloc),&
       evecsvloc(1,1,ikloc))
