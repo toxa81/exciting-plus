@@ -7,13 +7,12 @@ ufr=0.d0
 do ic=1,natmcls
   ias=ic2ias(ic)
   is=ias2is(ias)
-  ordl=0
 ! apw functions
   do l=0,lmaxapw
     do io=1,apword(l,is)
-      ordl(l)=ordl(l)+1
-      ufr(1:nrmt(is),l,ordl(l),ic)=apwfr(1:nrmt(is),1,io,l,ias)
+      ufr(1:nrmt(is),l,io,ic)=apwfr(1:nrmt(is),1,io,l,ias)
     enddo
+    ordl(l)=apword(l,is)
   enddo
 ! lo functions
   do ilo=1,nlorb(is)
