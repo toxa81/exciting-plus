@@ -312,7 +312,7 @@ if (allocated(hlolo)) deallocate(hlolo)
 allocate(hlolo(lmmaxvr,nlomax,nlomax,natmtot))
 ! allocate and generate complex Gaunt coefficient array
 if (allocated(gntyry)) deallocate(gntyry)
-allocate(gntyry(lmmaxapw,lmmaxvr,lmmaxapw))
+allocate(gntyry(lmmaxvr,lmmaxapw,lmmaxapw))
 do l1=0,lmaxapw
   do m1=-l1,l1
     lm1=idxlm(l1,m1)
@@ -322,7 +322,7 @@ do l1=0,lmaxapw
         do l3=0,lmaxapw
           do m3=-l3,l3
             lm3=idxlm(l3,m3)
-            gntyry(lm1,lm2,lm3)=gauntyry(l1,l2,l3,m1,m2,m3)
+            gntyry(lm2,lm1,lm3)=gauntyry(l1,l2,l3,m1,m2,m3)
           end do
         end do
       end do
