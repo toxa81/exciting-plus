@@ -160,23 +160,6 @@ enddo
 ! compute S^{-1/2}
 call isqrtzhe(nwantot,s,ierr)
 ierr_=ierr
-!if (ierr.ne.0) then
-!  write(*,*)
-!  write(*,'("Warning(wann_ort): failed to calculate S^{-1/2}")')
-!  write(*,'("  mpi_grid_x : ",10I6)')mpi_grid_x
-!  write(*,'("  k-point : ",I4)')ik
-!  write(*,'("  iteration : ",I4)')iscl
-!  write(*,'("  number of linear dependent WFs : ",I4)')ierr
-!  write(*,'("  diagonal elements of overlap matrix : ")')
-!  write(*,'(6X,5G18.10)')abs(sdiag)
-!  write(*,*)
-!!  write(*,'("  initial coefficients:")')
-!!  call wrmtrx("",nwantot,nstsv,wann_u_mtrx,nwantot)
-!!  write(*,*)
-!!  write(*,'("mpi_grid_x : ",10I4)')mpi_grid_x
-!!  call pstop
-!!  write(*,*)
-!endif
 ! compute Wannier function expansion coefficients
 wann_u_mtrx_ort=zzero
 if (ierr.eq.0) then
