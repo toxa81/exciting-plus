@@ -65,7 +65,7 @@ do ias=1,natmtot
             do lm2=l2**2+1,(l2+1)**2
               zt2=zzero
               do lm3=1,lmmaxvr
-                zt2=zt2+sv_gntyry(lm3,lm2,lm1)*sv_ubu(lm3,j2,j1,ias,1)
+                zt2=zt2+gntyry(lm3,lm2,lm1)*sv_ubu(lm3,j2,j1,ias,1)
               enddo
               zm1(lm2,lm1,io2,io1)=zt2
             enddo !lm2
