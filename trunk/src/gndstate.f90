@@ -12,6 +12,7 @@ use modmain
 use modldapu
 use mod_wannier
 use mod_sic
+use mod_seceqn
 ! !DESCRIPTION:
 !   Computes the self-consistent Kohn-Sham ground-state. General information is
 !   written to the file {\tt INFO.OUT}. First- and second-variational
@@ -44,10 +45,13 @@ if (.not.mpi_grid_in()) return
 ! only root processor writes
 wproc=mpi_grid_root()
 ! allocate arrays for eigen-values/-vectors
-allocate(evalfv(nstfv,nspnfv,nkptloc))
-allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
-allocate(evecsvloc(nstsv,nstsv,nkptloc))
-allocate(eigvalfv(nstfv,nkpt))
+if (tsveqn) then
+  allocate(evalfv(nstfv,nspnfv,nkptloc))
+  allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
+  allocate(evecsvloc(nstsv,nstsv,nkptloc))
+else
+  allocate(evecfdloc(nspinor*nmatmax,nstsv,nkptloc))
+endif
 ! initialise OEP variables if required
 if (xctype(1).lt.0) call init2
 if (wproc) then
@@ -124,13 +128,13 @@ else
     write(60,'(" done in : ",F10.2," sec.")')timer_get_value(t_rhoinit)
   endif
 end if
+if (wproc) call flushifc(60)
 if (sic) then
   call sic_read_data
   call sic_genblochsum
   !call sic_genblochsum_mt
   !call sic_genblochsum_it  
 endif
-if (wproc) call flushifc(60)
 ! set stop flag
 tstop=.false.
 10 continue
@@ -182,25 +186,29 @@ do iscl=1,maxscl
 ! get radial-muffint tin functions
   call getufr
 ! get product of radial functions
-  call genufrp  
+  call genufrp
+! generate effective magntic field integrals for full diagonalization
+  call genbeff
+! Fourier transform effective potential to G-space
+  call genveffig  
 ! generate muffin-tin effective magnetic fields and s.o. coupling functions
   if (texactrho) then
     call seceqnsv_init
   else
     call genbeffmt
   endif
-! Fourier transform effective potential to G-space
-  call genveffig
   evalsv=0.d0
-  eigvalfv=0.d0
 ! begin parallel loop over k-points
   do ikloc=1,nkptloc
 ! solve the secular equation
-    call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
-      evecsvloc(1,1,ikloc))
+    if (tsveqn) then
+      call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
+        evecsvloc(1,1,ikloc))
+    else
+      call seceqnfd(ikloc,evecfdloc(1,1,ikloc))
+    endif
   end do  
   call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),all=.true.)
-  call mpi_grid_reduce(eigvalfv(1,1),nstfv*nkpt,dims=(/dim_k/),all=.true.)
   if (wproc) then
 ! find the occupation numbers and Fermi energy
     call occupy
@@ -213,10 +221,10 @@ do iscl=1,maxscl
 ! write the Fermi energy to file
     call writefermi
   endif
-  call mpi_grid_bcast(swidth,dims=(/dim_k,dim2/))
-  call mpi_grid_bcast(occsv(1,1),nstsv*nkpt,dims=(/dim_k,dim2/))
+  call mpi_grid_bcast(swidth)
+  call mpi_grid_bcast(occsv(1,1),nstsv*nkpt)
   if (wannier) call wann_ene_occ  
-  if (texactrho) then
+  if (texactrho.or..not.tsveqn) then
     call rhomag_exact
   else
     call rhomag
@@ -405,11 +413,13 @@ if (mpi_grid_side(dims=(/dim_k/))) then
     if (mpi_grid_dim_pos(dim_k).eq.i) then
       do ikloc=1,nkptloc
         ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-        call putevalfv(ik,evalfv(1,1,ikloc))
+        if (tsveqn) then
+          call putevalfv(ik,evalfv(1,1,ikloc))
+          call putevecfv(ik,evecfvloc(1,1,1,ikloc))
+          call putevecsv(ik,evecsvloc(1,1,ikloc))
+        endif
         call putevalsv(ik,evalsv(1,ik))
         call putoccsv(ik,occsv(1,ik))
-        call putevecfv(ik,evecfvloc(1,1,1,ikloc))
-        call putevecsv(ik,evecsvloc(1,1,ikloc))
       end do
     end if
     call mpi_grid_barrier(dims=(/dim_k/))
@@ -505,10 +515,13 @@ if (wproc) then
   if (tmomlu) close(67)
 endif
 deallocate(v,work)
-deallocate(evalfv)
-deallocate(evecfvloc)
-deallocate(evecsvloc)
-deallocate(eigvalfv)
+if (tsveqn) then
+  deallocate(evalfv)
+  deallocate(evecfvloc)
+  deallocate(evecsvloc)
+else
+  deallocate(evecfdloc)
+endif
 return
 end subroutine
 !EOC
