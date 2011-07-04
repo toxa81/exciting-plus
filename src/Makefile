@@ -19,6 +19,7 @@ SRC_modules = ./addons/mod_mpi_grid.f90 \
               ./addons/mod_papi.f90 \
               ./addons/mod_hdf5.f90 \
               ./modmain.f90 \
+              ./addons/mod_seceqn.f90 \
               ./addons/wann/mod_wannier.f90 \
               ./addons/expigqr/mod_expigqr.f90 \
               ./addons/linresp/mod_linresp.f90 \
