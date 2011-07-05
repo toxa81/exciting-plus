@@ -315,6 +315,7 @@ if (mpi_grid_root()) then
           enddo
           write(50,*)
         enddo
+        deallocate(mtrx,eval)
       endif
     enddo
   endif
