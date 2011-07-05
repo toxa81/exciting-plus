@@ -65,12 +65,16 @@ call olprad
 call hmlrad
 ! generate V_eff(G)
 call genveffig
-! generate muffin-tin effective magnetic fields and s.o. coupling functions
-call genbeffmt
 ! get radial-muffint tin functions
 call getufr
 ! get product of radial functions
 call genufrp
+! generate muffin-tin effective magnetic fields and s.o. coupling functions
+if (texactrho) then
+  call seceqnsv_init
+else
+  call genbeffmt
+endif
 ! generate effective magntic field integrals for full diagonalization
 call genbeff
 if (sic) then
