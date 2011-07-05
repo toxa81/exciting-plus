@@ -222,14 +222,13 @@ integer, intent(in) :: nmatp
 integer, intent(in) :: igpig(ngkmax)
 complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 complex(8), intent(out) :: o(nmatp,nmatp)
+!
 complex(8), allocatable :: zm1(:,:)
-
-complex(8) zt1
 integer is,ia,ias,ig,naa
 integer l1,m1,lm1,io1
 integer i,j,ilo1,ilo2
 integer iv(3)
-
+!
 call timer_start(t_seceqnfv_setup_o)
 call timer_start(t_seceqnfv_setup_o_mt)
 allocate(zm1(apwordmax*lmmaxapw*natmtot,ngkmax))
@@ -266,7 +265,6 @@ do ias=1,natmtot
       lm1=idxlm(l1,m1)
       i=ngp+idxlo(lm1,ilo1,ias)
       do io1=1,apword(l1,is)
-        zt1=zone*oalo(io1,ilo1,ias)
         do ig=1,ngp
           o(ig,i)=o(ig,i)+dconjg(apwalm(ig,io1,lm1,ias))*oalo(io1,ilo1,ias)
         end do
@@ -312,6 +310,7 @@ end subroutine
 ! full diagonalization
 subroutine seceqnfd(ikloc,evecfd)
 use modmain
+use mod_wannier
 implicit none
 integer, intent(in) :: ikloc
 complex(8), intent(out) :: evecfd(nspinor*nmatmax,nstsv)
@@ -360,6 +359,9 @@ endif
 call timer_stop(t_seceqnfv_diag)
 deallocate(o,h)
 call timer_start(t_seceqnfv)
+if (wannier) then
+  call wan_gencsv_aux(ikloc,evalsv(1,ik),evecfd=evecfd)
+endif
 call timer_stop(t_seceqn)
 return
 end subroutine
