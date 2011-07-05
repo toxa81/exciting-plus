@@ -325,4 +325,213 @@ enddo
 return
 end subroutine
 
+! auxiliary subroutine to generate WF expansion coefficients over 
+!  second-variational wave-functions 
+subroutine wan_gencsv_aux(ikloc,eval,evecfv,evecsv,evecfd)
+use modmain
+use mod_seceqn
+implicit none
+integer, intent(in) :: ikloc
+real(8), intent(in) :: eval(nstsv)
+complex(8), optional, intent(in) :: evecfv(nmatmax,nstfv)
+complex(8), optional, intent(in) :: evecsv(nstsv,nstsv)
+complex(8), optional, intent(in) :: evecfd(nspinor*nmatmax,nstsv)
+!
+integer ik,lmax,lmmax
+complex(8), allocatable :: apwalm(:,:,:,:)
+complex(8), allocatable :: evec(:,:)
+complex(8), allocatable :: wfsvmt(:,:,:,:,:)
+!
+lmax=3
+lmmax=(lmax+1)**2
+ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+allocate(apwalm(ngkmax,lmmaxapw,apwordmax,natmtot))
+call genapwalm(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),&
+  sfacgk(1,1,1,ikloc),apwalm)
+allocate(wfsvmt(lmmax,nufrmax,natmtot,nspinor,nstsv))
+if (present(evecfv).and.present(evecsv)) then
+  allocate(evec(nspinor*nmatmax,nstsv))
+  call evecsvfd(evecfv,evecsv,evec)
+  call genwfsvc(lmax,lmmax,ngk(1,ik),nstsv,apwalm,evec,wfsvmt)
+  deallocate(evec)
+else
+  call genwfsvc(lmax,lmmax,ngk(1,ik),nstsv,apwalm,evecfd,wfsvmt)
+endif
+call wan_gencsv(lmmax,vkc(1,ik),eval,wfsvmt,wann_c(1,1,ikloc),&
+  wann_err_k(ikloc))
+deallocate(apwalm,wfsvmt)
+return
+end subroutine
+
+subroutine wan_gencsv(lmmax,vpc,eval,wfsvmt,wanc,ierr)
+use modmain
+implicit none
+integer, intent(in) :: lmmax
+real(8), intent(in) :: vpc(3)
+real(8), intent(in) :: eval(nstsv)
+complex(8), intent(in) :: wfsvmt(lmmax,nufrmax,natmtot,nspinor,nstsv)
+complex(8), intent(out) :: wanc(nwantot,nstsv)
+integer, optional, intent(out) :: ierr
+!
+integer n,j,ias,lm,ispn,itype,ilo,ierr_
+logical tbndint 
+real(8) d1
+complex(8), allocatable :: prjlo(:,:)
+logical, external :: bndint
+real(8), external :: orbwt
+!
+allocate(prjlo(nwantot,nstsv))
+prjlo=zzero
+do n=1,nwantot
+  !if (.not.wannier_lc) then
+    ias=wan_info(1,n)
+    lm=wan_info(2,n)
+    ispn=wan_info(3,n)
+    itype=wan_info(4,n)
+    ilo=wannier_prjlo(wan_info(7,n),wan_info(6,n))
+    do j=1,nstsv
+      tbndint=bndint(j,eval(j),wann_eint(1,itype),wann_eint(2,itype))
+      if (tbndint) then
+        call wan_genprjlo(ilo,ias,lm,ispn,lmmax,wfsvmt(1,1,1,1,j),&
+          prjlo(n,j))
+        if (wannier_soft_eint) then
+          prjlo(n,j)=prjlo(n,j)*orbwt(eval(j),wannier_soft_eint_e1(itype), &
+            wannier_soft_eint_e2(itype),wannier_soft_eint_w1(itype),&
+            wannier_soft_eint_w2(itype))
+        endif
+      endif
+    enddo
+  !else
+  !  do i=1,wanlc_norb(n)
+  !    d1=wanlc_iorb_alpha(i,n)
+  !    iw=wanlc_iorb(1,i,n)
+  !    itr(:)=wanlc_iorb(2:4,i,n)
+  !    tr(:)=avec(:,1)*itr(1)+avec(:,2)*itr(2)+avec(:,3)*itr(3)
+  !    ias=wan_info(1,iw)
+  !    lm=wan_info(2,iw)
+  !    ispn=wan_info(3,iw)
+  !    itype=wan_info(4,iw)
+  !    do j=1,nstsv
+  !      if (bndint(j,e(j),wann_eint(1,itype),wann_eint(2,itype))) then
+  !        call genprjao(ias,lm,ispn,j,wfsvmt,zt1)
+  !        if (wannier_soft_eint) then
+  !          zt1=zt1*orbwt(e(j),wannier_soft_eint_e1(itype),&
+  !            wannier_soft_eint_e2(itype),wannier_soft_eint_w1(itype),&
+  !            wannier_soft_eint_w2(itype))
+  !        endif               
+! !<psi_k(r)|g(r-T)>=<psi(r+T)|g(r)>=e^{-ikT}<psi(r)|g(r)>
+  !        prjao(n,j)=prjao(n,j)+zt1*d1*exp(-zi*dot_product(vpc,tr))
+  !      endif !bndint
+  !    enddo
+  !  enddo !i
+  !endif
+enddo !n
+! remove small contribution
+do j=1,nstsv
+  d1=0.d0
+  do n=1,nwantot
+    d1=d1+abs(prjlo(n,j))**2
+  enddo
+  if (d1.lt.wannier_min_prjao) prjlo(:,j)=zzero
+enddo
+!if (.false.) then
+!  write(*,'("Total contribution of projected orbitals : ")')
+!  do j=1,nstsv
+!    d1=0.d0
+!    do n=1,nwantot
+!      d1=d1+abs(prjlo(n,j))**2
+!    enddo
+!    write(*,'("  band : ",I4,"  wt : ",F12.6)')j,d1
+!  enddo
+!endif
+call wan_ort_k(prjlo,ierr_)
+wanc=prjlo
+if (present(ierr)) ierr=ierr_
+deallocate(prjlo)
+return
+end subroutine
+
+
+subroutine wan_genprjlo(ilo,ias,lm,ispn,lmmax,wfsvmt,prjlo)
+use modmain
+implicit none
+integer, intent(in) :: ilo
+integer, intent(in) :: ias
+integer, intent(in) :: lm
+integer, intent(in) :: ispn
+integer, intent(in) :: lmmax
+complex(8), intent(in) :: wfsvmt(lmmax,nufrmax,natmtot,nspinor)
+complex(8), intent(out) :: prjlo
+!
+integer l,m1,lm1,io1,ir,is,ic
+real(8) fr(nrmtmax),gr(nrmtmax),cf(4,nrmtmax)
+!
+! compute <psi_{ik}|phi_n>, where n={ias,lm,ispn} 
+! |psi> is a spinor Bloch-function 
+! |phi> is a valence local orbital
+! 
+l=lm2l(lm)
+is=ias2is(ias)
+ic=ias2ic(ias)
+prjlo=zzero
+do m1=-l,l
+  lm1=idxlm(l,m1)
+  do io1=1,nufr(l,is)
+! project to local orbital    
+    if (wannier_prjao.eq.0) then
+      prjlo=prjlo+dconjg(wfsvmt(lm1,io1,ias,ispn))*&
+        ufrp(l,io1,apword(l,is)+ilo,ic)*rylm_lps(lm,lm1,ias)
+    endif
+! project to f(x)=(1+cos(Pi*x/R))
+    if (wannier_prjao.eq.1) then
+      do ir=1,nrmt(is)
+        fr(ir)=ufr(ir,l,io1,ic)*(1+cos(pi*spr(ir,is)/rmt(is)))*(spr(ir,is)**2)
+      enddo
+      call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
+      prjlo=prjlo+dconjg(wfsvmt(lm1,io1,ias,ispn))*gr(nrmt(is))*rylm_lps(lm,lm1,ias)
+    endif
+  enddo !io1
+enddo !m
+return
+end subroutine
+
+subroutine wan_ort_k(wanc,ierr_)
+use modmain
+implicit none
+complex(8), intent(inout) :: wanc(nwantot,nstsv)
+integer, intent(out) :: ierr_
+!
+complex(8), allocatable :: s(:,:)
+complex(8), allocatable :: wanc_ort(:,:)
+integer m1,m2,j,ierr
+integer, external :: hash
+!
+allocate(s(nwantot,nwantot))
+allocate(wanc_ort(nwantot,nstsv))
+! compute ovelap matrix
+s=zzero
+do m1=1,nwantot
+  do m2=1,nwantot
+    do j=1,nstsv
+      s(m1,m2)=s(m1,m2)+dconjg(wanc(m1,j))*wanc(m2,j)
+    enddo
+  enddo
+enddo
+! compute S^{-1/2}
+call isqrtzhe(nwantot,s,ierr)
+ierr_=ierr
+! compute Wannier function expansion coefficients
+wanc_ort=zzero
+if (ierr.eq.0) then
+  do m1=1,nwantot
+    do m2=1,nwantot
+      wanc_ort(m1,:)=wanc_ort(m1,:)+wanc(m2,:)*s(m2,m1)
+    enddo
+  enddo
+  wanc=wanc_ort
+endif
+deallocate(s,wanc_ort)
+return
+end subroutine
+
 end module
