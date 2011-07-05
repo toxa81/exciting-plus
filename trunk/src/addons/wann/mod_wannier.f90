@@ -327,12 +327,11 @@ end subroutine
 
 ! auxiliary subroutine to generate WF expansion coefficients over 
 !  second-variational wave-functions 
-subroutine wan_gencsv_aux(ikloc,eval,evecfv,evecsv,evecfd)
+subroutine wan_gencsv_aux(ikloc,evecfv,evecsv,evecfd)
 use modmain
 use mod_seceqn
 implicit none
 integer, intent(in) :: ikloc
-real(8), intent(in) :: eval(nstsv)
 complex(8), optional, intent(in) :: evecfv(nmatmax,nstfv)
 complex(8), optional, intent(in) :: evecsv(nstsv,nstsv)
 complex(8), optional, intent(in) :: evecfd(nspinor*nmatmax,nstsv)
@@ -357,7 +356,7 @@ if (present(evecfv).and.present(evecsv)) then
 else
   call genwfsvc(lmax,lmmax,ngk(1,ik),nstsv,apwalm,evecfd,wfsvmt)
 endif
-call wan_gencsv(lmmax,vkc(1,ik),eval,wfsvmt,wann_c(1,1,ikloc),&
+call wan_gencsv(lmmax,vkc(1,ik),evalsv(1,ik),wfsvmt,wann_c(1,1,ikloc),&
   wann_err_k(ikloc))
 deallocate(apwalm,wfsvmt)
 return
