@@ -1,5 +1,6 @@
 subroutine seceqnsv_exact(ikloc,apwalm,evalfv,evecfv,evecsv)
 use modmain
+use modldapu
 use mod_sic
 implicit none
 ! arguments
@@ -9,7 +10,7 @@ real(8), intent(in) :: evalfv(nstfv)
 complex(8), intent(in) :: evecfv(nmatmax,nstfv)
 complex(8), intent(out) :: evecsv(nstsv,nstsv)
 ! local variables
-integer is,ias,ik
+integer is,ias,ik,ic
 integer ist,jst,i,j,ispn
 integer ir,j1,j2,io1,io2,l1,l2,lm1,lm2,lm3
 integer lwork,info,ig2,ig3,ifg1,ivg1(3)
@@ -19,7 +20,7 @@ complex(8) zt1,zt2
 real(8), allocatable :: rwork(:)
 complex(8), allocatable :: work(:)
 complex(8), allocatable :: wfmt(:,:,:,:)
-complex(8), allocatable :: wfbfmt(:,:,:,:)
+complex(8), allocatable :: wfbfmt(:,:,:,:,:)
 complex(8), allocatable :: zfft(:)
 complex(8), allocatable :: wfbfit(:,:)
 complex(8), allocatable :: zm1(:,:,:,:)
@@ -45,52 +46,73 @@ end if
 ! generate first-variational wave functions
 allocate(wfmt(lmmaxvr,nufrmax,natmtot,nstfv))
 call genwffvmt(lmaxvr,lmmaxvr,ngk(1,ik),evecfv,apwalm,wfmt)
-allocate(wfbfmt(lmmaxvr,nufrmax,natmtot,nstfv))
+allocate(wfbfmt(lmmaxvr,nufrmax,natmtot,nstfv,nspinor))
 allocate(zm1(lmmaxvr,lmmaxvr,nufrmax,nufrmax))
 call timer_start(t_seceqnsv_setup_mt)
 ! multiply wave-function with magnetic field
 wfbfmt=zzero
 do ias=1,natmtot
   is=ias2is(ias)
-  zm1=zzero
-  j1=0
-  do l1=0,lmaxvr
-    do io1=1,nufr(l1,is)
-      j1=j1+1
-      do lm1=l1**2+1,(l1+1)**2
-        j2=0
-        do l2=0,lmaxvr
-          do io2=1,nufr(l2,is)
-            j2=j2+1
-            do lm2=l2**2+1,(l2+1)**2
-              zt2=zzero
-              do lm3=1,lmmaxvr
-                zt2=zt2+gntyry(lm3,lm2,lm1)*sv_ubu(lm3,j2,j1,ias,1)
-              enddo
-              zm1(lm2,lm1,io2,io1)=zt2
-            enddo !lm2
-          enddo !io2
-        enddo !l2
-      enddo !lm1
-    enddo !io1
-  enddo !l1
-  do ist=1,nstfv
+  ic=ias2ic(ias)
+  if (spinpol) then
+    zm1=zzero
+    j1=0
     do l1=0,lmaxvr
       do io1=1,nufr(l1,is)
+        j1=j1+1
         do lm1=l1**2+1,(l1+1)**2
-          zt1=zzero
+          j2=0
           do l2=0,lmaxvr
             do io2=1,nufr(l2,is)
+              j2=j2+1
               do lm2=l2**2+1,(l2+1)**2
-                zt1=zt1+wfmt(lm2,io2,ias,ist)*zm1(lm2,lm1,io2,io1)
-              enddo
-            enddo
+                zt2=zzero
+                do lm3=1,lmmaxvr
+                  zt2=zt2+gntyry(lm3,lm2,lm1)*sv_ubu(lm3,j2,j1,ias,1)
+                enddo
+                zm1(lm2,lm1,io2,io1)=zt2
+              enddo !lm2
+            enddo !io2
           enddo !l2
-          wfbfmt(lm1,io1,ias,ist)=zt1
-        enddo
-      enddo
+        enddo !lm1
+      enddo !io1
     enddo !l1
-  enddo
+    do ist=1,nstfv
+      do l1=0,lmaxvr
+        do io1=1,nufr(l1,is)
+          do lm1=l1**2+1,(l1+1)**2
+            zt1=zzero
+            do l2=0,lmaxvr
+              do io2=1,nufr(l2,is)
+                do lm2=l2**2+1,(l2+1)**2
+                  zt1=zt1+wfmt(lm2,io2,ias,ist)*zm1(lm2,lm1,io2,io1)
+                enddo
+              enddo
+            enddo !l2
+            wfbfmt(lm1,io1,ias,ist,1)=zt1
+            wfbfmt(lm1,io1,ias,ist,2)=-zt1
+          enddo
+        enddo
+      enddo !l1
+    enddo
+  endif !spinpol
+  if ((ldapu.ne.0).and.(llu(is).ge.0)) then
+    l1=llu(is)
+    do ispn=1,nspinor
+      do ist=1,nstfv
+        do io1=1,nufr(l1,is)
+          do lm1=l1**2+1,(l1+1)**2
+            do io2=1,nufr(l1,is)
+              do lm2=l2**2+1,(l2+1)**2
+                wfbfmt(lm1,io1,ias,ist,ispn)=wfbfmt(lm1,io1,ias,ist,ispn)+&
+                  ufrp(l1,io1,io2,ic)*vmatlu(lm1,lm2,ispn,ispn,ias)
+              enddo !lm2
+            enddo !lm1
+          enddo !lm1
+        enddo !io1
+      enddo !ist
+    enddo !ispn
+  endif
 enddo !ias
 deallocate(zm1)
 call timer_stop(t_seceqnsv_setup_mt)
@@ -122,13 +144,15 @@ do ist=1,nstfv
     j=jst
     if (i.le.j) then
       evecsv(i,j)=evecsv(i,j)+zdotc(lmmaxvr*nufrmax*natmtot,&
-        wfmt(1,1,1,ist),1,wfbfmt(1,1,1,jst),1)+zdotc(ngk(1,ik),evecfv(1,ist),1,wfbfit(1,jst),1)
+        wfmt(1,1,1,ist),1,wfbfmt(1,1,1,jst,1),1)+zdotc(ngk(1,ik),evecfv(1,ist),1,wfbfit(1,jst),1)
     endif
-    i=ist+nstfv
-    j=jst+nstfv
-    if (i.le.j) then
-      evecsv(i,j)=evecsv(i,j)-zdotc(lmmaxvr*nufrmax*natmtot,&
-        wfmt(1,1,1,ist),1,wfbfmt(1,1,1,jst),1)-zdotc(ngk(1,ik),evecfv(1,ist),1,wfbfit(1,jst),1)
+    if (spinpol) then
+      i=ist+nstfv
+      j=jst+nstfv
+      if (i.le.j) then
+        evecsv(i,j)=evecsv(i,j)+zdotc(lmmaxvr*nufrmax*natmtot,&
+          wfmt(1,1,1,ist),1,wfbfmt(1,1,1,jst,2),1)-zdotc(ngk(1,ik),evecfv(1,ist),1,wfbfit(1,jst),1)
+      endif
     endif
   enddo
 enddo
