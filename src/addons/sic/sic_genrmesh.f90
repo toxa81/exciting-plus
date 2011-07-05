@@ -7,6 +7,7 @@ real(8) x,x0,x1,x2,x3,t,a
 real(8), allocatable :: b(:)
 integer, parameter :: imesh=2
 real(8), external :: x_aux
+integer ias0
 
 if (allocated(s_r)) deallocate(s_r)
 
@@ -20,6 +21,7 @@ if (imesh.eq.1) then
 endif
 ! multi-pole mesh
 if (imesh.eq.2) then
+  ias0=wan_info(1,1)
   if (.not.allocated(s_rpole)) then
     s_nrpole=1
     allocate(s_rpole(1))
@@ -27,13 +29,13 @@ if (imesh.eq.2) then
   endif
 ! find poles 
   call getnghbr(-0.d0,s_rmax-0.1d0)
-  s_nrpole=inghbr(6,nnghbr(1),1)
+  s_nrpole=inghbr(6,nnghbr(ias0),ias0)
   deallocate(s_rpole)
   allocate(s_rpole(s_nrpole))
   do i=1,s_nrpole
-    do j=1,nnghbr(1)
-      if (inghbr(6,j,1).eq.i) then
-        s_rpole(i)=inghbr(2,j,1)/1000000.d0
+    do j=1,nnghbr(ias0)
+      if (inghbr(6,j,ias0).eq.i) then
+        s_rpole(i)=inghbr(2,j,ias0)/1000000.d0
         exit
       endif
     enddo !j

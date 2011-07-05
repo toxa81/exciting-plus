@@ -206,6 +206,9 @@ do iscl=1,maxscl
         evecsvloc(1,1,ikloc))
     else
       call seceqnfd(ikloc,evecfdloc(1,1,ikloc))
+      if (wannier) then
+        call wan_gencsv_aux(ikloc,evecfd=evecfdloc(1,1,ikloc))
+      endif
     endif
   end do  
   call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),all=.true.)

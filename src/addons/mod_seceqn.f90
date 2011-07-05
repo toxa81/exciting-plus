@@ -310,7 +310,6 @@ end subroutine
 ! full diagonalization
 subroutine seceqnfd(ikloc,evecfd)
 use modmain
-use mod_wannier
 implicit none
 integer, intent(in) :: ikloc
 complex(8), intent(out) :: evecfd(nspinor*nmatmax,nstsv)
@@ -359,9 +358,6 @@ endif
 call timer_stop(t_seceqnfv_diag)
 deallocate(o,h)
 call timer_start(t_seceqnfv)
-if (wannier) then
-  call wan_gencsv_aux(ikloc,evalsv(1,ik),evecfd=evecfd)
-endif
 call timer_stop(t_seceqn)
 return
 end subroutine
