@@ -44,10 +44,10 @@ if (.not.tevecsv) then
   return
 end if
 ! generate first-variational wave functions
-allocate(wfmt(lmmaxvr,nufrmax,natmtot,nstfv))
-call genwffvmt(lmaxvr,lmmaxvr,ngk(1,ik),evecfv,apwalm,wfmt)
-allocate(wfbfmt(lmmaxvr,nufrmax,natmtot,nstfv,nspinor))
-allocate(zm1(lmmaxvr,lmmaxvr,nufrmax,nufrmax))
+allocate(wfmt(lmmaxapw,nufrmax,natmtot,nstfv))
+call genwffvmt(lmaxapw,lmmaxapw,ngk(1,ik),evecfv,apwalm,wfmt)
+allocate(wfbfmt(lmmaxapw,nufrmax,natmtot,nstfv,nspinor))
+allocate(zm1(lmmaxapw,lmmaxapw,nufrmax,nufrmax))
 call timer_start(t_seceqnsv_setup_mt)
 ! multiply wave-function with magnetic field
 wfbfmt=zzero
@@ -57,12 +57,12 @@ do ias=1,natmtot
   if (spinpol) then
     zm1=zzero
     j1=0
-    do l1=0,lmaxvr
+    do l1=0,lmaxapw
       do io1=1,nufr(l1,is)
         j1=j1+1
         do lm1=l1**2+1,(l1+1)**2
           j2=0
-          do l2=0,lmaxvr
+          do l2=0,lmaxapw
             do io2=1,nufr(l2,is)
               j2=j2+1
               do lm2=l2**2+1,(l2+1)**2
@@ -78,11 +78,11 @@ do ias=1,natmtot
       enddo !io1
     enddo !l1
     do ist=1,nstfv
-      do l1=0,lmaxvr
+      do l1=0,lmaxapw
         do io1=1,nufr(l1,is)
           do lm1=l1**2+1,(l1+1)**2
             zt1=zzero
-            do l2=0,lmaxvr
+            do l2=0,lmaxapw
               do io2=1,nufr(l2,is)
                 do lm2=l2**2+1,(l2+1)**2
                   zt1=zt1+wfmt(lm2,io2,ias,ist)*zm1(lm2,lm1,io2,io1)
@@ -103,9 +103,10 @@ do ias=1,natmtot
         do io1=1,nufr(l1,is)
           do lm1=l1**2+1,(l1+1)**2
             do io2=1,nufr(l1,is)
-              do lm2=l2**2+1,(l2+1)**2
+              do lm2=l1**2+1,(l1+1)**2
                 wfbfmt(lm1,io1,ias,ist,ispn)=wfbfmt(lm1,io1,ias,ist,ispn)+&
-                  ufrp(l1,io1,io2,ic)*vmatlu(lm1,lm2,ispn,ispn,ias)
+                  ufrp(l1,io1,io2,ic)*vmatlu(lm1,lm2,ispn,ispn,ias)*&
+                  wfmt(lm2,io2,ias,ist)
               enddo !lm2
             enddo !lm1
           enddo !lm1
@@ -143,14 +144,14 @@ do ist=1,nstfv
     i=ist
     j=jst
     if (i.le.j) then
-      evecsv(i,j)=evecsv(i,j)+zdotc(lmmaxvr*nufrmax*natmtot,&
+      evecsv(i,j)=evecsv(i,j)+zdotc(lmmaxapw*nufrmax*natmtot,&
         wfmt(1,1,1,ist),1,wfbfmt(1,1,1,jst,1),1)+zdotc(ngk(1,ik),evecfv(1,ist),1,wfbfit(1,jst),1)
     endif
     if (spinpol) then
       i=ist+nstfv
       j=jst+nstfv
       if (i.le.j) then
-        evecsv(i,j)=evecsv(i,j)+zdotc(lmmaxvr*nufrmax*natmtot,&
+        evecsv(i,j)=evecsv(i,j)+zdotc(lmmaxapw*nufrmax*natmtot,&
           wfmt(1,1,1,ist),1,wfbfmt(1,1,1,jst,2),1)-zdotc(ngk(1,ik),evecfv(1,ist),1,wfbfit(1,jst),1)
       endif
     endif
