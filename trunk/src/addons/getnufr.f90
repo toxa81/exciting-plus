@@ -4,6 +4,9 @@ implicit none
 
 integer ltmp(0:lolmax)
 integer is,ilo,l,nlomaxl,io
+!
+! TODO: fix for the case when some species have APW and some LAPW
+!
 nufr=apwordmax
 ! find maximum number of local orbitals over all l-channels
 nlomaxl=0
@@ -22,7 +25,7 @@ enddo
 nufrmax=apwordmax+nlomaxl
 nlufr=0
 do is=1,nspecies
-  do l=0,lmaxvr
+  do l=0,lmaxapw
     do io=1,nufr(l,is)
       nlufr(is)=nlufr(is)+1
     enddo
