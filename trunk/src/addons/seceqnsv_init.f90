@@ -21,7 +21,6 @@ do ias=1,natmtot
   t1=cb*(bfcmt(3,ia,is)+bfieldc(3))
   bmt(1,:,ias,ndmag)=bmt(1,:,ias,ndmag)+t1/y00
 enddo
-
 sv_ubu=0.d0
 do ias=1,natmtot
   ic=ias2ic(ias)
@@ -29,11 +28,11 @@ do ias=1,natmtot
 ! compute radial integrals <u_{l1,io1} | b_{lm3} |  u_{l2,io2}>
   do lm3=1,lmmaxvr
     j1=0
-    do l1=0,lmaxvr
+    do l1=0,lmaxapw
       do io1=1,nufr(l1,is) 
         j1=j1+1
         j2=0
-        do l2=0,lmaxvr
+        do l2=0,lmaxapw
           do io2=1,nufr(l2,is)
             j2=j2+1
             do i=1,ndmag
@@ -50,7 +49,6 @@ do ias=1,natmtot
     enddo
   enddo
 enddo
-
 deallocate(bmt)
 return
 end subroutine
