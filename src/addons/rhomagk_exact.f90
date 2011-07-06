@@ -7,25 +7,24 @@ integer, intent(in) :: ikloc
 complex(8), intent(in) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(in) :: evecsv(nstsv,nstsv)
 ! local variables
-integer ist,j,ilo,ia,io,l,lm,m
-integer is,ias,ik,ispn,jst,n,i1
+integer ist,j,ia
+integer is,ias,ik,ispn,jst,i1
 integer ivg3(3),ifg3
 integer ig1,ig2,io1,io2,l1,l2,j1,j2,lm1,lm2,lm3,l3
+integer nstocc
 real(8) t1
 complex(8) zt1,zt2(nspinor)
+complex(8) zv1(lmmaxapw,nufrmax)
 ! allocatable arrays
 complex(8), allocatable :: apwalm(:,:,:,:)
-
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: wfsvit(:,:,:)
 complex(8), allocatable :: wfsvit_(:,:,:)
 complex(8), allocatable :: gntmp(:,:)
 complex(8), allocatable :: zdens(:,:,:,:,:,:)
-complex(8) zv1(lmmaxapw,nufrmax)
 real(8), allocatable :: wo(:)
 integer, allocatable :: istocc(:)
 complex(8), allocatable :: evecfd_(:,:)
-integer nstocc
 
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 allocate(wo(nstsv))
