@@ -43,8 +43,8 @@ do ikloc=1,nkptloc
           if (ldensmtrx.or.(occsv(j,ik).gt.epsocc)) then
             do ispn=1,nspinor
             do jspn=1,nspinor
-              do io1=1,nufrmax
-              do io2=1,nufrmax
+              do io1=1,nufr(l,is)
+              do io2=1,nufr(l,is)
                 do m1=-l,l
                 do m2=-l,l
                   lm1=idxlm(l,m1)
