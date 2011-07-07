@@ -51,6 +51,8 @@ else if (trim(adjustl(str)).eq."u4dmft") then
   read(150,*)nwann_ 
   allocate(iwann_(nwann_)) 
   read(150,*)iwann_
+else if (trim(adjustl(str)).eq."u4dmc") then
+  mode=3
 !else if (trim(adjustl(str)).eq."list") then
 !  mode=2
 !  read(150,*)nlist_
@@ -208,6 +210,7 @@ if (mode.eq.0) then
   write(150,'("#  10 : ... ")')
   write(150,'("#")')
   do iw=1,nw
+! Phys. Rev. B 80, 085101 (2009)
     uav=dcmplx(0.d0,0.d0)
     do n1=1,nwann_
       do n2=1,nwann_
@@ -218,10 +221,10 @@ if (mode.eq.0) then
     jav=dcmplx(0.d0,0.d0)
     do n1=1,nwann_
       do n2=1,nwann_
-        if (n1.ne.n2) jav=jav+jscrn(n1,n2,iw)
+        if (n1.ne.n2) jav=jav+(uscrn(n1,n2,iw)-jscrn(n1,n2,iw))
       enddo
     enddo
-    if (nwann_.gt.1) jav=jav/nwann_/(nwann_-1)
+    if (nwann_.gt.1) jav=uav-jav/nwann_/(nwann_-1)
     write(150,'(100F16.8)')w(iw)*ha2ev,dreal(uav),dimag(uav-zeps),&
       dreal(jav),dimag(jav-zeps),(dreal(uscrn(n,n,iw)),&
         dimag(uscrn(n,n,iw)-zeps),n=1,nwann_)
@@ -256,7 +259,7 @@ if (mode.eq.1) then
           i1=iwtidx(iu4(1,i),iu4(2,i),iu4(3,i),iu4(4,i),iu4(5,i))
           i2=iwtidx(iu4(6,i),iu4(7,i),iu4(8,i),iu4(9,i),iu4(10,i))
           it=vtridx(iu4(11,i),iu4(12,i),iu4(13,i))
-	  u4(i,iw)=u4mtrx(i1,i2,it)*ha2ev
+      u4(i,iw)=u4mtrx(i1,i2,it)*ha2ev
         enddo
       enddo !iwloc
     endif !exist
@@ -335,19 +338,19 @@ if (mode.eq.2) then
     do j=1,nwann_
       do k=1,nwann_
         do l=1,nwann_
-	  i1=iwtidx(iwann_(k),iwann_(i),0,0,0)
-	  i2=iwtidx(iwann_(l),iwann_(j),0,0,0)
-	  d1=dreal(u4mtrx(i1,i2,it))*ha2ev
-	  if (abs(d1).le.1d-10) then
-	    d1=0.d0
-	  else
-	    n=n+1
-	  endif
-	  write(220,'(G18.10,"   : ",4I4)')d1,i,j,k,l
-	  d1=dimag(u4mtrx(i1,i2,it))*ha2ev
-	  if (abs(d1).gt.1d-10) then
-	    write(*,*)"big imaginary part of u4(",i,j,k,l,") : ",u4mtrx(i1,i2,it)
-	  endif
+         i1=iwtidx(iwann_(k),iwann_(i),0,0,0)
+      i2=iwtidx(iwann_(l),iwann_(j),0,0,0)
+      d1=dreal(u4mtrx(i1,i2,it))*ha2ev
+      if (abs(d1).le.1d-10) then
+        d1=0.d0
+      else
+        n=n+1
+      endif
+      write(220,'(G18.10,"   : ",4I4)')d1,i,j,k,l
+      d1=dimag(u4mtrx(i1,i2,it))*ha2ev
+      if (abs(d1).gt.1d-10) then
+        write(*,*)"big imaginary part of u4(",i,j,k,l,") : ",u4mtrx(i1,i2,it)
+      endif
         enddo
       enddo
     enddo
@@ -355,6 +358,77 @@ if (mode.eq.2) then
   close(220)
   write(*,*)"total number of interactions : ",n
 endif !mode.eq.2
+
+if (mode.eq.3) then
+  open(220,file="U4.DMC",form="formatted",status="replace")
+  write(220,'("# number of Wannier functions")')
+  write(220,'(I4)')nwantot
+  write(220,'("# number of imaginary frequencies")')
+  write(220,'(I4)')nw
+  !write(220,'("# size of U4 matrix")')
+  !write(220,'(I10)')nwt*nwt*ntr
+  !write(220,'("# U4 indices")')
+  !do it=1,ntr
+  !  do i1=1,nwt
+  !    do i2=1,nwt
+  !      write(220,'("#")')
+  !      write(220,'(4I8)')iwt(1,i1),(/0,0,0/)            ! n, 000
+  !      write(220,'(4I8)')iwt(1,i2),vtr(:,i)             ! m, Textra
+  !      write(220,'(4I8)')iwt(2,i1),iwt(3:5,i1)          ! n',T1
+  !      write(220,'(4I8)')iwt(2,i2),iwt(3:5,i2)+vtr(:,it) ! m',T2+Textra
+  !    enddo
+  !  enddo
+  !enddo
+
+  do n=0,size-1
+    write(fname,'("u4_",I4.4,".hdf5")')n
+    inquire(file=trim(fname),exist=exist)
+    if (.not.exist) cycle
+    call hdf5_read(fname,"/parameters","nwloc",nwloc)
+    do iwloc=1,nwloc
+      write(c1,'(I8.8)')iwloc
+      call hdf5_read(fname,"/iwloc/"//c1,"iw",iw)
+      call hdf5_read(fname,"/iwloc/"//c1,"w",w(iw))
+      write(220,'("# frequency index")')
+      write(220,'(I4)')iw
+      write(220,'("# frequency value")')
+      write(220,'(G18.10)')w(iw)
+      write(220,'("# U4 matrix")')
+      do it=1,ntr
+        write(c2,'("t",I7.7)')it
+        call hdf5_read(fname,"/iwloc/"//c1//"/"//c2,"u4",u4mtrx(1,1,it),&
+          (/nwt,nwt/))
+        if (all(vtr(:,it).eq.0)) then
+          write(220,'(2G18.10)')dreal(u4mtrx(iwtidx(1,1,0,0,0),iwtidx(1,1,0,0,0),it)),&
+                                dimag(u4mtrx(iwtidx(1,1,0,0,0),iwtidx(1,1,0,0,0),it))
+          write(220,'(2G18.10)')dreal(u4mtrx(iwtidx(2,2,0,0,0),iwtidx(2,2,0,0,0),it)),&
+                                dimag(u4mtrx(iwtidx(2,2,0,0,0),iwtidx(2,2,0,0,0),it))
+        endif
+        !do i1=1,nwt
+        !  do i2=1,nwt
+        !    if (abs(u4mtrx(i1,i2,it)).gt.1d-3) then
+        !      write(220,'(4I8)')iwt(1,i1),(/0,0,0/)            ! n, 000
+        !      write(220,'(4I8)')iwt(2,i1),iwt(3:5,i1)          ! n',T1
+        !      write(220,'(4I8)')iwt(1,i2),vtr(:,it)             ! m, Textra
+        !      write(220,'(4I8)')iwt(2,i2),iwt(3:5,i2)+vtr(:,it) ! m',T2+Textra
+        !      write(220,'(2G18.10)')dreal(u4mtrx(i1,i2,it)),dimag(u4mtrx(i1,i2,it))
+        !      write(220,*)
+        !    endif
+        !  enddo
+        !enddo
+      enddo
+    enddo !iwloc
+  enddo !n
+
+  close(220)
+
+
+
+
+
+
+
+endif
 
 !  if (mode.eq.2) then
 !    allocate(uscrn2_(nlist_,nw))
