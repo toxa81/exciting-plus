@@ -307,61 +307,6 @@ call timer_stop(t_seceqnfv_setup_o)
 return
 end subroutine
 
-! full diagonalization
-subroutine seceqnfd(ikloc,evecfd)
-use modmain
-implicit none
-integer, intent(in) :: ikloc
-complex(8), intent(out) :: evecfd(nspinor*nmatmax,nstsv)
-integer ik,i,ispn,j
-! allocatable arrays
-complex(8), allocatable :: apwalm(:,:,:,:)
-complex(8), allocatable :: h(:,:,:)
-complex(8), allocatable :: o(:,:,:)
-!
-ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-call timer_start(t_seceqn)
-call timer_start(t_seceqnfv)
-call timer_start(t_seceqnfv_setup)
-allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
-! find the matching coefficients
-call match(ngk(1,ik),gkc(:,1,ikloc),tpgkc(:,:,1,ikloc),&
-  sfacgk(:,:,1,ikloc),apwalm)
-allocate(h(nmat(1,ik),nmat(1,ik),nspinor))
-allocate(o(nmat(1,ik),nmat(1,ik),nspinor))
-h=zzero
-o=zzero
-call setovl(ngk(1,ik),nmat(1,ik),igkig(1,1,ikloc),apwalm,o)
-if (spinpol) then
-  o(:,:,2)=o(:,:,1)
-endif
-if (spinpol) then
-  do ispn=1,nspinor
-    call sethml(ngk(1,ik),nmat(1,ik),vgkc(1,1,1,ikloc),igkig(1,1,ikloc),&
-      apwalm,h(1,1,ispn),ispn,ispn)
-  enddo
-else
-  call sethml(ngk(1,ik),nmat(1,ik),vgkc(1,1,1,ikloc),igkig(1,1,ikloc),&
-    apwalm,h)
-endif
-call timer_stop(t_seceqnfv_setup)
-call timer_start(t_seceqnfv_diag)
-evecfd=zzero
-if (mpi_grid_root((/dim2/))) then
-  do ispn=1,nspinor
-    i=(ispn-1)*nstfv+1
-    j=(ispn-1)*nmatmax+1
-    call diagzheg(nmat(1,ik),nstfv,nspinor*nmatmax,evaltol,&
-      h(1,1,ispn),o(1,1,ispn),evalsv(i,ik),evecfd(j,i))
-  enddo
-endif
-call timer_stop(t_seceqnfv_diag)
-deallocate(o,h)
-call timer_start(t_seceqnfv)
-call timer_stop(t_seceqn)
-return
-end subroutine
-
 ! transformation from second-variational to full diagonalization 
 !  eigen-vector representaion
 subroutine evecsvfd(evecfv,evecsv,evecfd,nbnd,ibnd)
@@ -417,6 +362,7 @@ integer ispn,j,ias,is,l,m,io,ilo,lm,i1,n
 integer ordl(0:lmax)  
 complex(8), allocatable :: wfmt(:,:,:,:)
 !
+if (nwf.eq.0) return
 wfsvmt=zzero
 if (present(wfsvit)) wfsvit=zzero
 allocate(wfmt(lmmaxapw,apwordmax,natmtot,nwf))
