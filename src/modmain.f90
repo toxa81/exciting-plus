@@ -117,6 +117,9 @@ integer nrmtmax
 logical autormt
 ! parameters for determining muffin-tin radii automatically
 real(8) rmtapm(2)
+! maximum muffin-tin radius in case of automatic determination
+real(8) maxrmt
+data maxrmt/3.0/
 ! muffin-tin radii
 real(8) rmt(maxspecies)
 ! species for which the muffin-tin radius will be used for calculating gkmax
