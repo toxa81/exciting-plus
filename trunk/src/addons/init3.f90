@@ -68,12 +68,15 @@ allocate(mt_spx(3,mt_ntp))
 if (allocated(mt_tpw)) deallocate(mt_tpw)
 allocate(mt_tpw(mt_ntp))
 if (allocated(mt_ylmf)) deallocate(mt_ylmf)
-allocate(mt_ylmf(lmmaxvr,mt_ntp))
+allocate(mt_ylmf(lmmaxapw,mt_ntp))
+if (allocated(mt_ylmb)) deallocate(mt_ylmb)
+allocate(mt_ylmb(mt_ntp,lmmaxapw))
 call leblaik(mt_ntp,mt_spx,mt_tpw)
 do itp=1,mt_ntp
   mt_tpw(itp)=mt_tpw(itp)*fourpi
   call sphcrd(mt_spx(:,itp),a,tp)
-  call genylm(lmaxvr,tp,mt_ylmf(1,itp)) 
+  call genylm(lmaxapw,tp,mt_ylmf(1,itp)) 
+  mt_ylmb(itp,:)=mt_ylmf(:,itp)*mt_tpw(itp)
 enddo
 ! radial weights for muffin-tins
 if (allocated(mt_rw)) deallocate(mt_rw)
