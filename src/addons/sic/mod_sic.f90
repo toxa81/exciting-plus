@@ -91,10 +91,12 @@ complex(8), allocatable :: sic_wb(:,:,:,:)
 complex(8), allocatable :: sic_wvb(:,:,:,:)
 ! Bloch-sum of Wannier functions in muffin-tins
 complex(8), allocatable :: s_wkmt(:,:,:,:,:,:)
+complex(8), allocatable :: s_wkmtlm(:,:,:,:,:,:)
 ! Bloch-sum of Wannier functions in the interstitial expanded in plane waves
 complex(8), allocatable :: s_wkit(:,:,:,:)
 ! Bloch-sum of W*V
 complex(8), allocatable :: s_wvkmt(:,:,:,:,:,:)
+complex(8), allocatable :: s_wvkmtlm(:,:,:,:,:,:)
 ! Bloch-sum of W*V in the interstitial expanded in plane waves
 complex(8), allocatable :: s_wvkit(:,:,:,:)
 ! unitary matrix (for each k-point) which is tuned to satisfy 
@@ -108,6 +110,9 @@ integer sic_niter_umtrx
 data sic_niter_umtrx/1/
 integer sic_niter_u0
 data sic_niter_u0/1/
+
+logical tsicsv
+data tsicsv/.true./
 
 ! .true. if sic branch is activated 
 logical sic
