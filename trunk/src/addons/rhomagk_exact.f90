@@ -1,11 +1,9 @@
-subroutine rhomagk_exact(ikloc,evecfv,evecsv)
+subroutine rhomagk_exact(ikloc)
 use modmain
 use mod_seceqn
 implicit none
 ! arguments
 integer, intent(in) :: ikloc
-complex(8), intent(in) :: evecfv(nmatmax,nstfv,nspnfv)
-complex(8), intent(in) :: evecsv(nstsv,nstsv)
 ! local variables
 integer ist,j,ia
 integer is,ias,ik,ispn,jst,i1
@@ -47,8 +45,8 @@ if (tsveqn) then
 ! find the matching coefficients
   call match(ngk(1,ik),gkc(:,1,ikloc),tpgkc(:,:,1,ikloc),&
     sfacgk(:,:,1,ikloc),apwalm)
-  call genwfsvocc(lmaxapw,lmmaxapw,ngk(1,ik),nstocc,istocc,evecfv,evecsv,&
-    apwalm,wfsvmt,wfsvit)
+  call genwfsvocc(lmaxapw,lmmaxapw,ngk(1,ik),nstocc,istocc,&
+    evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),apwalm,wfsvmt,wfsvit)
 else
   allocate(apwalm(ngkmax,lmmaxapw,apwordmax,natmtot))
   call genapwalm(ngk(1,ik),gkc(:,1,ikloc),tpgkc(:,:,1,ikloc),&
