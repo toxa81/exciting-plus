@@ -22,6 +22,8 @@ endif
 tevecsv=.true.
 lmmaxwan=(lmaxwan+1)**2
 
+tsicsv=.false.
+
 if (allocated(sic_apply)) deallocate(sic_apply)
 allocate(sic_apply(nwantot))
 if (allocated(sicw)) then
@@ -125,10 +127,20 @@ if (allocated(sic_vme)) deallocate(sic_vme)
 allocate(sic_vme(sic_wantran%nwt))
 sic_vme=zzero
 if (allocated(sic_wb)) deallocate(sic_wb)
-allocate(sic_wb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
-sic_wb=zzero
 if (allocated(sic_wvb)) deallocate(sic_wvb)
-allocate(sic_wvb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
+if (tsveqn) then
+  allocate(sic_wb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
+  allocate(sic_wvb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
+else
+  if (tsicsv) then
+    allocate(sic_wb(sic_wantran%nwan,nstsv,1,nkptloc))
+    allocate(sic_wvb(sic_wantran%nwan,nstsv,1,nkptloc))  
+  else
+    allocate(sic_wb(sic_wantran%nwan,nmatmax,nspinor,nkptloc))
+    allocate(sic_wvb(sic_wantran%nwan,nmatmax,nspinor,nkptloc))
+  endif
+endif
+sic_wb=zzero
 sic_wvb=zzero
 if (.not.allocated(sic_wan_e0)) then
   allocate(sic_wan_e0(nwantot))
@@ -153,6 +165,12 @@ if (allocated(s_wvkmt)) deallocate(s_wvkmt)
 allocate(s_wvkmt(mt_ntp,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
 if (allocated(s_wvkit)) deallocate(s_wvkit)
 allocate(s_wvkit(ngkmax,nspinor,sic_wantran%nwan,nkptloc))
+if (.not.tsveqn) then
+  if (allocated(s_wkmtlm)) deallocate(s_wkmtlm)
+  allocate(s_wkmtlm(nrmtmax,lmmaxapw,natmtot,nspinor,sic_wantran%nwan,nkptloc))
+  if (allocated(s_wvkmtlm)) deallocate(s_wvkmtlm)
+  allocate(s_wvkmtlm(nrmtmax,lmmaxapw,natmtot,nspinor,sic_wantran%nwan,nkptloc))
+endif
 if (mpi_grid_root()) then
 ! size of sperical arrays
   a=2*16.d0*lmmaxwan*s_nr*nspinor*sic_wantran%nwan/1024/1024
