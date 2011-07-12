@@ -105,6 +105,8 @@ real(8), allocatable :: mt_spx(:,:)
 real(8), allocatable :: mt_tpw(:)
 ! forward transformation from complex spherical harmonics to coordinates
 complex(8), allocatable :: mt_ylmf(:,:)
+! backward transform
+complex(8), allocatable :: mt_ylmb(:,:)
 
 !-----------------------!
 !      MPI parallel     !
