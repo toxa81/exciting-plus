@@ -8,12 +8,14 @@ complex(8), intent(in) :: evecfv(nmatmax,nstfv,nspnfv)
 complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 ! local variables
 integer ik,ispn,ierr
-integer ias,ist,j,j1
-complex(8) zt2(2),z1
+integer ias,ist,j,j1,is,ilo,ir,l,m,lm,io,i,ig
+complex(8) zt2(2),z1,z2
 complex(8), allocatable :: wfmt_(:,:)
 complex(8), allocatable :: wfmt(:,:,:)
 complex(8), allocatable :: wb(:,:,:,:)
 complex(8), allocatable :: om(:,:)
+complex(8), allocatable :: zv1(:)
+complex(8), allocatable :: zv2(:)
 logical, parameter :: tsic_ort=.false.
 !
 sic_wb(:,:,:,ikloc)=zzero
@@ -26,6 +28,9 @@ if (debug_level.ge.4) then
 endif
 call timer_start(t_sic_genfvprj)
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+
+if (tsveqn)  then
+
 !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(wfmt_,wfmt,ias,j,ispn,zt2)
 allocate(wfmt_(lmmaxvr,nrmtmax))
 allocate(wfmt(mt_ntp,nrmtmax,natmtot))
@@ -58,6 +63,64 @@ enddo !ist
 !$OMP END DO
 deallocate(wfmt_,wfmt)
 !$OMP END PARALLEL
+
+else
+
+allocate(zv1(ngk(1,ik)))
+allocate(zv2(ngk(1,ik)))
+do j=1,sic_wantran%nwan
+  do ispn=1,nspinor
+! interstitial contribution from APW
+    do ig=1,ngk(1,ik)
+      zv1(ig)=dconjg(s_wkit(ig,ispn,j,ikloc))
+      zv2(ig)=dconjg(s_wvkit(ig,ispn,j,ikloc))
+    enddo
+! muffin-tin contribution from APW
+    do ias=1,natmtot
+      is=ias2is(ias)
+      do lm=1,lmmaxapw
+        l=lm2l(lm)
+        do io=1,apword(l,is)
+          z1=zzero
+          z2=zzero
+          do ir=1,nrmt(is)
+            z1=z1+dconjg(s_wkmtlm(ir,lm,ias,ispn,j,ikloc))*&
+              apwfr(ir,1,io,l,ias)*mt_rw(ir,is)
+            z2=z2+dconjg(s_wvkmtlm(ir,lm,ias,ispn,j,ikloc))*&
+              apwfr(ir,1,io,l,ias)*mt_rw(ir,is)
+          enddo
+          do ig=1,ngk(1,ik)
+            zv1(ig)=zv1(ig)+z1*apwalm(ig,io,lm,ias)
+            zv2(ig)=zv2(ig)+z2*apwalm(ig,io,lm,ias)
+          enddo !ig
+        enddo !io
+      enddo !lm
+! muffin-tin contribution from l.o.
+      do ilo=1,nlorb(is)
+        l=lorbl(ilo,is)
+        do m=-l,l
+          lm=idxlm(l,m)
+          i=ngk(1,ik)+idxlo(lm,ilo,ias)
+          z1=zzero
+          z2=zzero
+          do ir=1,nrmt(is)
+            z1=z1+dconjg(s_wkmtlm(ir,lm,ias,ispn,j,ikloc))*&
+              lofr(ir,1,ilo,ias)*mt_rw(ir,is)
+            z2=z2+dconjg(s_wvkmtlm(ir,lm,ias,ispn,j,ikloc))*&
+              lofr(ir,1,ilo,ias)*mt_rw(ir,is)
+          enddo
+          sic_wb(j,i,ispn,ikloc)=z1
+          sic_wvb(j,i,ispn,ikloc)=z2
+        enddo !m
+      enddo !ilo
+    enddo !ias
+    sic_wb(j,1:ngk(1,ik),ispn,ikloc)=zv1(1:ngk(1,ik))
+    sic_wvb(j,1:ngk(1,ik),ispn,ikloc)=zv2(1:ngk(1,ik))
+  enddo !ispn
+enddo !j
+deallocate(zv1,zv2)
+endif
+
 call timer_stop(t_sic_genfvprj)
 if (debug_level.ge.4) then
   call dbg_open_file
