@@ -206,9 +206,6 @@ do iscl=1,maxscl
         evecsvloc(1,1,ikloc))
     else
       call seceqnfd(ikloc,evecfdloc(1,1,ikloc))
-      if (wannier) then
-        call wan_gencsv_aux(ikloc,evecfd=evecfdloc(1,1,ikloc))
-      endif
     endif
   end do  
   call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),all=.true.)
@@ -420,6 +417,8 @@ if (mpi_grid_side(dims=(/dim_k/))) then
           call putevalfv(ik,evalfv(1,1,ikloc))
           call putevecfv(ik,evecfvloc(1,1,1,ikloc))
           call putevecsv(ik,evecsvloc(1,1,ikloc))
+        else
+          call putevecfd(ikloc,evecfdloc(1,1,ikloc))
         endif
         call putevalsv(ik,evalsv(1,ik))
         call putoccsv(ik,occsv(1,ik))
