@@ -3,7 +3,7 @@ use modmain
 use mod_sic
 use mod_ws
 implicit none
-integer ik,ikloc,j,n,it,ias,is,ia,ir,itp,ispn,ntrloc,itloc,ig,koffs
+integer ik,ikloc,j,n,it,ias,is,ia,ir,itp,ispn,ntrloc,itloc,ig,koffs,lm
 integer irloc,nrloc
 real(8) x(3),vtc(3),x0(3)
 complex(8) zt1(nspinor),zt2(nspinor),z1,z2,expikt,expikr
@@ -153,6 +153,18 @@ do j=1,sic_wantran%nwan
       dims=(/dim2/),all=.true.)
     call mpi_grid_reduce(wvkir(1,1,ikloc),ngrtot*nspinor,&
       dims=(/dim2/),all=.true.)
+    if (.not.tsveqn) then
+      do ispn=1,nspinor
+        do ias=1,natmtot
+          call zgemm('T','N',nrmtmax,lmmaxapw,mt_ntp,zone,&
+            s_wkmt(1,1,ias,ispn,j,ikloc),mt_ntp,mt_ylmb,mt_ntp,&
+            zzero,s_wkmtlm(1,1,ias,ispn,j,ikloc),nrmtmax)
+          call zgemm('T','N',nrmtmax,lmmaxapw,mt_ntp,zone,&
+            s_wvkmt(1,1,ias,ispn,j,ikloc),mt_ntp,mt_ylmb,mt_ntp,&
+            zzero,s_wvkmtlm(1,1,ias,ispn,j,ikloc),nrmtmax)
+        enddo
+      enddo
+    endif
   enddo
 ! convert to plane-wave expansion
 ! we want to compute <G+k|w_{nk}> where |G+k> = Omega^{-1/2}*exp^{i(G+k)r}
@@ -178,17 +190,6 @@ do j=1,sic_wantran%nwan
         s_wkit(ig,ispn,j,ikloc)=wkir(igfft(igkig(ig,1,ikloc)),ispn,ikloc)
         s_wvkit(ig,ispn,j,ikloc)=wvkir(igfft(igkig(ig,1,ikloc)),ispn,ikloc)
       enddo
-      !do ig=1,ngk(1,ik)
-      !  z1=zzero
-      !  z2=zzero
-      !  do ir=1,ngrtot
-      !    expikr=exp(-zi*dot_product(vgkc(:,ig,1,ikloc),vgrc(:,ir)))/sqrt(omega)
-      !    z1=z1+expikr*wkir(ir,ispn,ikloc)*cfunir(ir)*omega/dble(ngrtot)
-      !    z2=z2+expikr*wvkir(ir,ispn,ikloc)*cfunir(ir)*omega/dble(ngrtot)
-      !  enddo
-      !  s_wkit(ig,ispn,j,ikloc)=z1
-      !  s_wvkit(ig,ispn,j,ikloc)=z2
-      !enddo !ig
     enddo !ikloc
   enddo !ispn
   call timer_stop(91)
