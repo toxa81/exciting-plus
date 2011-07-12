@@ -1176,6 +1176,8 @@ case('exactrho')
   read(50,*,err=20) texactrho
 case('sveqn')
   read(50,*,err=20) tsveqn
+case('maxrmt')
+  read(50,*,err=20) maxrmt
 case('')
   goto 10
 case default

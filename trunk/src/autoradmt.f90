@@ -65,7 +65,7 @@ do is=1,nspecies
 ! limit number of decimal digits
   t1=s*rmt(is)*10000.d0
   t1=dble(int(t1))/10000.d0
-  rmt(is)=t1
+  rmt(is)=min(t1,maxrmt)
 end do
 return
 end subroutine
