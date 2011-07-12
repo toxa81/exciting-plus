@@ -186,6 +186,7 @@ end subroutine
 
 subroutine genwfnr(fout,lpmat)
 use modmain
+use mod_seceqn
 implicit none
 integer, intent(in) :: fout
 logical, intent(in) :: lpmat
@@ -195,6 +196,7 @@ real(8) w2,t1,sz
 logical, external :: wann_diel
 complex(8), allocatable :: evecfvnrloc(:,:,:,:)
 complex(8), allocatable :: evecsvnrloc(:,:,:)
+complex(8), allocatable :: evecfdnrloc(:,:,:)
 
 !call gen_k_sym
 ! get energies of states in reduced part of BZ
@@ -262,8 +264,12 @@ if (allocated(wfsvmtnrloc)) deallocate(wfsvmtnrloc)
 allocate(wfsvmtnrloc(lmmaxvr,nufrmax,natmtot,nspinor,nstsv,nkptnrloc))
 if (allocated(wfsvitnrloc)) deallocate(wfsvitnrloc)
 allocate(wfsvitnrloc(ngkmax,nspinor,nstsv,nkptnrloc))
-allocate(evecfvnrloc(nmatmax,nstfv,nspnfv,nkptnrloc))
-allocate(evecsvnrloc(nstsv,nstsv,nkptnrloc))
+if (tsveqn) then
+  allocate(evecfvnrloc(nmatmax,nstfv,nspnfv,nkptnrloc))
+  allocate(evecsvnrloc(nstsv,nstsv,nkptnrloc))
+else
+  allocate(evecfdnrloc(nspinor*nmatmax,nstsv,nkptnrloc))
+endif
 if (lpmat) then
   if (allocated(pmatnrloc)) deallocate(pmatnrloc)
   allocate(pmatnrloc(3,nstsv,nstsv,nkptnrloc))
@@ -281,15 +287,24 @@ call timer_start(1,reset=.true.)
 if (mpi_grid_side(dims=(/dim_k/))) then
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-    call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfvnrloc(1,1,1,ikloc))
-    call getevecsv(vklnr(1,ik),evecsvnrloc(1,1,ikloc))
+    if (tsveqn) then
+      call getevecfv(vklnr(1,ik),vgklnr(1,1,ikloc),evecfvnrloc(1,1,1,ikloc))
+      call getevecsv(vklnr(1,ik),evecsvnrloc(1,1,ikloc))
+    else
+      call getevecfd(vklnr(1,ik),vgklnr(1,1,ikloc),evecfdnrloc(1,1,ikloc)) 
+    endif
   enddo !ikloc
 endif !mpi_grid_side(dims=(/dim_k/)
 call mpi_grid_barrier
-call mpi_grid_bcast(evecfvnrloc(1,1,1,1),nmatmax*nstfv*nspnfv*nkptnrloc,&
-  dims=ortdims((/dim_k/)))
-call mpi_grid_bcast(evecsvnrloc(1,1,1),nstsv*nstsv*nkptnrloc,&
-  dims=ortdims((/dim_k/)))
+if (tsveqn) then
+  call mpi_grid_bcast(evecfvnrloc(1,1,1,1),nmatmax*nstfv*nspnfv*nkptnrloc,&
+    dims=ortdims((/dim_k/)))
+  call mpi_grid_bcast(evecsvnrloc(1,1,1),nstsv*nstsv*nkptnrloc,&
+    dims=ortdims((/dim_k/)))
+else
+  call mpi_grid_bcast(evecfdnrloc(1,1,1),nmatmax*nspinor*nstsv*nkptnrloc,&
+    dims=ortdims((/dim_k/)))
+endif
 call timer_stop(1)
 if (wproc.and.fout.gt.0) then
   write(fout,'("Done in ",F8.2," seconds")')timer_get_value(1)
@@ -301,37 +316,54 @@ if (wproc.and.fout.gt.0) then
   write(fout,'("Generating wave-functions")')
   if (fout.ne.6) call flushifc(fout)
 endif
-allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
+if (tsveqn) then
+  allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
+else
+  allocate(apwalm(ngkmax,lmmaxapw,apwordmax,natmtot))
+endif
 ! transform eigen-vectors
 wfsvmtnrloc=zzero
 wfsvitnrloc=zzero
 if (ldisentangle) tevecsv=.true.
 do ikloc=1,nkptnrloc
   ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+  if (tsveqn) then
 ! get apw coeffs 
-  call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),        &
-    sfacgknr(1,1,ikloc),apwalm)
+    call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),&
+      sfacgknr(1,1,ikloc),apwalm)
 ! generate wave functions in muffin-tins
-  call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfvnrloc(1,1,1,ikloc), &
-    evecsvnrloc(1,1,ikloc),apwalm,wfsvmtnrloc(1,1,1,1,1,ikloc))
-  if (wannier) then
-    call genwann_c(ik,vkcnr(:,ik),evalsvnr(1,ik),wfsvmtnrloc(1,1,1,1,1,ikloc),&
-      wanncnrloc(1,1,ikloc),ierr)   
-    if (ldisentangle) then
+    call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfvnrloc(1,1,1,ikloc),&
+      evecsvnrloc(1,1,ikloc),apwalm,wfsvmtnrloc(1,1,1,1,1,ikloc))
+    if (wannier) then
+      call genwann_c(ik,vkcnr(:,ik),evalsvnr(1,ik),wfsvmtnrloc(1,1,1,1,1,ikloc),&
+        wanncnrloc(1,1,ikloc),ierr)   
+      if (ldisentangle) then
 ! disentangle bands
-      call disentangle(evalsvnr(1,ik),wanncnrloc(1,1,ikloc),&
-        evecsvnrloc(1,1,ikloc))
-      call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfvnrloc(1,1,1,ikloc), &
-        evecsvnrloc(1,1,ikloc),apwalm,wfsvmtnrloc(1,1,1,1,1,ikloc))
+        call disentangle(evalsvnr(1,ik),wanncnrloc(1,1,ikloc),&
+          evecsvnrloc(1,1,ikloc))
+        call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfvnrloc(1,1,1,ikloc),&
+          evecsvnrloc(1,1,ikloc),apwalm,wfsvmtnrloc(1,1,1,1,1,ikloc))
+      endif
     endif
-  endif
 ! generate wave functions in interstitial
-  call genwfsvit(ngknr(ikloc),evecfvnrloc(1,1,1,ikloc), &
-    evecsvnrloc(1,1,ikloc),wfsvitnrloc(1,1,1,ikloc))
-  if (lpmat) then
-    call genpmat(ngknr(ikloc),igkignr(1,ikloc),vgkcnr(1,1,ikloc),&
-      apwalm,evecfvnrloc(1,1,1,ikloc),evecsvnrloc(1,1,ikloc),&
-      pmatnrloc(1,1,1,ikloc))
+    call genwfsvit(ngknr(ikloc),evecfvnrloc(1,1,1,ikloc),&
+      evecsvnrloc(1,1,ikloc),wfsvitnrloc(1,1,1,ikloc))
+    if (lpmat) then
+      call genpmat(ngknr(ikloc),igkignr(1,ikloc),vgkcnr(1,1,ikloc),&
+        apwalm,evecfvnrloc(1,1,1,ikloc),evecsvnrloc(1,1,ikloc),&
+        pmatnrloc(1,1,1,ikloc))
+    endif
+  else
+ ! get apw coeffs 
+    call genapwalm(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),&
+      sfacgknr(1,1,ikloc),apwalm)
+    call genwfsvc(lmaxvr,lmmaxvr,ngknr(ikloc),nstsv,apwalm,&
+      evecfdnrloc(1,1,ikloc),wfsvmtnrloc(1,1,1,1,1,ikloc),&
+      wfsvitnrloc(1,1,1,ikloc))
+    if (wannier) then
+      call wan_gencsv(lmmaxvr,vkcnr(1,ik),evalsvnr(1,ik),&
+        wfsvmtnrloc(1,1,1,1,1,ikloc),wanncnrloc(1,1,ikloc)) 
+    endif
   endif
 enddo !ikloc
 deallocate(apwalm)
@@ -421,7 +453,7 @@ if (wannier) then
     if (fout.ne.6) call flushifc(fout)
   endif
 endif
-if (spinpol) then
+if (spinpol.and.tsveqn) then
   if (allocated(spinor_ud)) deallocate(spinor_ud)
   allocate(spinor_ud(2,nstsv,nkptnr))
   spinor_ud=0
@@ -439,7 +471,11 @@ endif
 if (wproc.and.fout.gt.0) then
   write(fout,'("Done.")')
 endif
-deallocate(evecfvnrloc,evecsvnrloc)
+if (tsveqn) then
+  deallocate(evecfvnrloc,evecsvnrloc)
+else
+  deallocate(evecfdnrloc)
+endif
 end subroutine
 
 end module
