@@ -75,6 +75,7 @@ if (texactrho) then
 else
   call genbeffmt
 endif
+call genbeff
 ! generate effective magntic field integrals for full diagonalization
 call genbeff
 if (sic) then
