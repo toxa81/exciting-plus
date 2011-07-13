@@ -32,18 +32,18 @@ ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 if (tsveqn)  then
 
 !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(wfmt_,wfmt,ias,j,ispn,zt2)
-allocate(wfmt_(lmmaxvr,nrmtmax))
+allocate(wfmt_(lmmaxapw,nrmtmax))
 allocate(wfmt(mt_ntp,nrmtmax,natmtot))
 !$OMP DO
 do ist=1,nstfv
   wfmt=zzero
 ! generate first-variational wave function
   do ias=1,natmtot
-    call wavefmt(1,lmaxvr,ias2is(ias),ias2ia(ias),ngk(1,ik),apwalm,&
-      evecfv(1,ist,1),lmmaxvr,wfmt_)
+    call wavefmt(1,lmaxapw,ias2is(ias),ias2ia(ias),ngk(1,ik),apwalm,&
+      evecfv(1,ist,1),lmmaxapw,wfmt_)
 ! convert to spherical coordinates
-    call zgemm('T','N',mt_ntp,nrmt(ias2is(ias)),lmmaxvr,zone,mt_ylmf,&
-      lmmaxvr,wfmt_,lmmaxvr,zzero,wfmt(1,1,ias),mt_ntp)
+    call zgemm('T','N',mt_ntp,nrmt(ias2is(ias)),lmmaxapw,zone,mt_ylmf,&
+      lmmaxapw,wfmt_,lmmaxapw,zzero,wfmt(1,1,ias),mt_ntp)
   enddo
   do j=1,sic_wantran%nwan
     do ispn=1,nspinor
