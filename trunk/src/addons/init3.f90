@@ -4,9 +4,8 @@ use mod_wannier
 use mod_sic
 implicit none
 integer ia,is,l,m,ir,i1,i2,i3,i
-integer l1,l2,l3,m1,m2,m3,lm1,lm2,lm3,itp
+integer itp
 real(8) vl(3),x1,x2,x3,tp(2),a
-complex(8), external :: gauntyry
 !
 if (allocated(rylm)) deallocate(rylm)
 allocate(rylm(16,16))
@@ -76,7 +75,7 @@ do itp=1,mt_ntp
   mt_tpw(itp)=mt_tpw(itp)*fourpi
   call sphcrd(mt_spx(:,itp),a,tp)
   call genylm(lmaxapw,tp,mt_ylmf(1,itp)) 
-  mt_ylmb(itp,:)=mt_ylmf(:,itp)*mt_tpw(itp)
+  mt_ylmb(itp,:)=dconjg(mt_ylmf(:,itp))*mt_tpw(itp)
 enddo
 ! radial weights for muffin-tins
 if (allocated(mt_rw)) deallocate(mt_rw)
