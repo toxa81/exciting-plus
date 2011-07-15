@@ -3,7 +3,7 @@ use modmain
 use mod_sic
 use mod_nrkp
 implicit none
-integer i,j,n,ik,ikloc
+integer j,n,ik,ikloc
 !
 sic_wan_e0=0.d0
 do ikloc=1,nkptloc

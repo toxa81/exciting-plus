@@ -2,7 +2,7 @@ subroutine sic_update_umtrx
 use modmain
 use mod_sic
 implicit none
-integer n,m,ikloc,i,j,n1,n2,j1,j2,vl(3),ik
+integer n,ikloc,i,n1,n2,j1,j2,ik
 real(8) tot_diff
 complex(8), allocatable :: um(:,:),um1(:,:),um2(:,:)
 allocate(um(sic_wantran%nwan,sic_wantran%nwan))

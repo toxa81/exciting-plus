@@ -85,22 +85,26 @@ data sic_energy_kin/0.d0/
 !--------------!
 ! LAPW liaison !
 !--------------!
-! dot-product <W_{n\sigma}|f_{jk}>, f_{jk} is the first-variational Bloch state 
+! dot-product <W_{n\sigma}|b_{jk}>, b_{jk} is the basis Bloch orbital 
 complex(8), allocatable :: sic_wb(:,:,:,:)
-! dot-product <(W*V)_{n\sigma}|f_{jk}>, f_{jk} is the first-variational Bloch state 
+! dot-product <(W*V)_{n\sigma}|b_{jk}>, b_{jk} is the basis Bloch orbital
 complex(8), allocatable :: sic_wvb(:,:,:,:)
-! Bloch-sum of Wannier functions in muffin-tins
+! lm-expanded Bloch-sum of Wannier functions in muffin-tins
+! note: order of indexes is optimized for dot-product with (L)APW basis
 complex(8), allocatable :: s_wkmt(:,:,:,:,:,:)
-complex(8), allocatable :: s_wkmtlm(:,:,:,:,:,:)
 ! Bloch-sum of Wannier functions in the interstitial expanded in plane waves
 complex(8), allocatable :: s_wkit(:,:,:,:)
-! Bloch-sum of W*V
+! lm-expanded Bloch-sum of W*V
 complex(8), allocatable :: s_wvkmt(:,:,:,:,:,:)
-complex(8), allocatable :: s_wvkmtlm(:,:,:,:,:,:)
 ! Bloch-sum of W*V in the interstitial expanded in plane waves
 complex(8), allocatable :: s_wvkit(:,:,:,:)
-! unitary matrix (for each k-point) which is tuned to satisfy 
-!  localization criterion
+! number of translations for Bloch-sums
+integer sic_ntr
+! translation vectors in lattice coordinates
+integer, allocatable :: sic_vtl(:,:)
+! translation vectors in Cartesian coordinates
+real(8), allocatable :: sic_vtc(:,:)
+! unitary matrix for the localization criterion
 complex(8), allocatable :: sic_wan_umtrx(:,:,:)
 real(8) sic_umtrx_eps
 data sic_umtrx_eps/1.d0/
@@ -112,7 +116,7 @@ integer sic_niter_u0
 data sic_niter_u0/1/
 
 logical tsicsv
-data tsicsv/.true./
+data tsicsv/.false./
 
 ! .true. if sic branch is activated 
 logical sic
@@ -129,20 +133,6 @@ logical :: tsic_wv
 data tsic_wv/.false./
 integer sic_debug_level
 data sic_debug_level/0/
-
-! maximum number of translation vectors
-integer, parameter :: sic_maxvtl=1000
-
-type t_sic_blochsum
-! total number of translations
-  integer ntr
-! translation vectors in lattice coordinates
-  integer, allocatable :: vtl(:,:)
-! translation vectors in Cartesian coordinates
-  real(8), allocatable :: vtc(:,:)
-end type t_sic_blochsum
-
-type(t_sic_blochsum) :: sic_blochsum
 
 integer, parameter :: nwanprop=14
 integer, parameter :: wp_normlm=1
@@ -175,15 +165,15 @@ integer, optional, intent(in) :: ir
 real(8), optional, intent(in) :: rmax
 real(8), optional, intent(in) :: rcutoff
 !
-integer is,ia,ias,ir0,io,l,j,i,lm,ig,ispn
-integer ntr(3),ik,ikloc,ic
-real(8) x0(3),vtc(3),vr0(3),r0,tp(2),t1
-real(8) ur(0:lmaxvr,nufrmax),dr
-complex(8) zt1,zt2,ylm(lmmaxvr)
+integer is,ia,ias,ir0,io,l,lm,ig,ispn
+integer ntr(3),ik,ic
+real(8) x0(3),vtc(3),vr0(3),r0,tp(2)
+real(8) ur(0:lmaxapw,nufrmax),dr
+complex(8) zt1,zt2,ylm(lmmaxapw)
 logical, external :: vrinmt2
 complex(8), external :: ylm_val
 complex(8) expigr(m_ngvec)
-complex(8) zm1(lmmaxvr,nufrmax,nspinor),zm2(nspinor)
+complex(8) zm1(lmmaxapw,nufrmax,nspinor),zm2(nspinor)
 !
 wanval=zzero
 if (present(itp).and.present(ir)) then
@@ -209,10 +199,10 @@ if (vrinmt2(x,is,ia,ntr,ir0,vr0,dr)) then
   ias=idxas(ia,is)
   ic=ias2ic(ias)
   call sphcrd(vr0,r0,tp)
-  call genylm(lmaxvr,tp,ylm)
+  call genylm(lmaxapw,tp,ylm)
   vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
   ur=0.d0
-  do l=0,lmaxvr
+  do l=0,lmaxapw
     do io=1,nufr(l,is)
       ur(l,io)=ufr(ir0,l,io,ic)+dr*(ufr(ir0+1,l,io,ic)-ufr(ir0,l,io,ic))
     enddo !io
@@ -225,7 +215,7 @@ if (vrinmt2(x,is,ia,ntr,ir0,vr0,dr)) then
     enddo
   enddo
   do ispn=1,nspinor
-    do lm=1,lmmaxvr
+    do lm=1,lmmaxapw
       l=lm2l(lm)
       do io=1,nufr(l,is)
         wanval(ispn)=wanval(ispn)+zm1(lm,io,ispn)*ur(l,io)*ylm(lm)
@@ -395,7 +385,7 @@ complex(8), intent(in) :: zfir1(*)
 complex(8), intent(in) :: zfir2(*)
 complex(8), optional, intent(out) :: zfrac(2)
 !
-integer is,ias,ir,itp,ig
+integer is,ias,ir,itp
 complex(8) zsumir,zsummt,zt1
 complex(8), external :: zdotc
 ! interstitial contribution

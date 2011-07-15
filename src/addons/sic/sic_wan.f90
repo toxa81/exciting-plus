@@ -9,8 +9,7 @@ implicit none
 integer, intent(in) :: fout
 ! local variables
 integer n,ispn,vl(3),n1,i,j,j1,itp,ir,nwtloc,iloc,nrloc,irloc
-integer lm
-real(8) t1,t2,vrc(3),x(3),x2,pos1(3),pos2(3),a,b
+real(8) t1,t2,vrc(3),pos1(3),pos2(3)
 real(8) sic_epot_h,sic_epot_xc
 complex(8) z1,wanval(nspinor)
 real(8), allocatable :: wanprop(:,:)

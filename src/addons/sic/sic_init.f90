@@ -2,16 +2,10 @@ subroutine sic_init
 use modmain
 use mod_wannier
 use mod_sic
-!use mod_linresp
 use mod_ws
 implicit none
-integer i,n,ir,j
-!logical texist
-!logical, external :: sic_include_cell
-integer itp,lm
-integer i1,i2,i3,ish,vl(3)
-real(8) a,b,x0,tp(2),wsv(3,3)
-logical l1,l2
+integer i,n,j,i1,i2,i3
+real(8) a,wsv(3,3)
 !
 if (.not.wannier) then
   write(*,*)
@@ -21,8 +15,6 @@ if (.not.wannier) then
 endif
 tevecsv=.true.
 lmmaxwan=(lmaxwan+1)**2
-
-tsicsv=.false.
 
 if (allocated(sic_apply)) deallocate(sic_apply)
 allocate(sic_apply(nwantot))
@@ -58,65 +50,28 @@ if (s_rmax.gt.sic_wan_rwsmin) then
 else
   s_rmin=s_rmax
 endif
-
 if (mpi_grid_root()) then
   write(*,'("[sic_init] sic_wan_rwsmin : ",G18.10)')sic_wan_rwsmin
   write(*,'("[sic_init] sic_wan_rwsmax : ",G18.10)')sic_wan_rwsmax
 endif
-
-if (allocated(sic_blochsum%vtl)) deallocate(sic_blochsum%vtl)
-allocate(sic_blochsum%vtl(3,sic_maxvtl))
-!sic_blochsum%ntr=0
-!l2=.true.
-!ish=0
-!do while (l2)
-!  l1=.false.
-!  do i1=-ish,ish
-!    do i2=-ish,ish
-!      do i3=-ish,ish
-!        if (abs(i1).eq.ish.or.abs(i2).eq.ish.or.abs(i3).eq.ish) then
-!          vl=(/i1,i2,i3/)
-!          if (sic_include_cell(vl)) then
-!            l1=.true.
-!            sic_blochsum%ntr=sic_blochsum%ntr+1
-!            if (sic_blochsum%ntr.gt.sic_maxvtl) then
-!              write(*,'("Error(sic_init) : sic_maxvtl is too small")')
-!              call pstop
-!            endif
-!            sic_blochsum%vtl(:,sic_blochsum%ntr)=vl
-!          endif
-!        endif
-!      enddo
-!    enddo
-!  enddo !i1
-!  if (l1) then
-!    ish=ish+1
-!  else
-!    l2=.false.
-!  endif
-!enddo
-
-sic_blochsum%ntr=0
+call sic_genrmesh
+call sic_gensmesh
+! translation vectors for Bloch-sums
+if (allocated(sic_vtl)) deallocate(sic_vtl)
+allocate(sic_vtl(3,ngridk(1)*ngridk(2)*ngridk(3)))
+if (allocated(sic_vtc)) deallocate(sic_vtc)
+allocate(sic_vtc(3,ngridk(1)*ngridk(2)*ngridk(3)))
+sic_ntr=0
 do i1=0,ngridk(1)-1
   do i2=0,ngridk(2)-1
     do i3=0,ngridk(3)-1
-      sic_blochsum%ntr=sic_blochsum%ntr+1
-      sic_blochsum%vtl(:,sic_blochsum%ntr)=(/i1,i2,i3/)
+      sic_ntr=sic_ntr+1
+      sic_vtl(:,sic_ntr)=(/i1,i2,i3/)
+      call r3mv(avec,sic_vtl(1,sic_ntr),sic_vtc(1,sic_ntr))
     enddo
   enddo
 enddo
-! Cartesian coordinates of translation vectors
-if (allocated(sic_blochsum%vtc)) deallocate(sic_blochsum%vtc)
-allocate(sic_blochsum%vtc(3,sic_blochsum%ntr))
-do i=1,sic_blochsum%ntr
-  sic_blochsum%vtc(:,i)=sic_blochsum%vtl(1,i)*avec(:,1)+&
-                        sic_blochsum%vtl(2,i)*avec(:,2)+&
-                        sic_blochsum%vtl(3,i)*avec(:,3)
-end do
-
-call sic_genrmesh
-call sic_gensmesh
-
+! main arrays
 if (allocated(s_wlm)) deallocate(s_wlm)
 allocate(s_wlm(lmmaxwan,s_nr,nspinor,sic_wantran%nwan))
 s_wlm=zzero
@@ -158,49 +113,20 @@ allocate(sic_wan_h0k(sic_wantran%nwan,sic_wantran%nwan,nkptloc))
 sic_wan_h0k=zzero
 
 if (allocated(s_wkmt)) deallocate(s_wkmt)
-allocate(s_wkmt(mt_ntp,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
+allocate(s_wkmt(nrmtmax,lmmaxapw,natmtot,nspinor,sic_wantran%nwan,nkptloc))
 if (allocated(s_wkit)) deallocate(s_wkit)
 allocate(s_wkit(ngkmax,nspinor,sic_wantran%nwan,nkptloc))
 if (allocated(s_wvkmt)) deallocate(s_wvkmt)
-allocate(s_wvkmt(mt_ntp,nrmtmax,natmtot,nspinor,sic_wantran%nwan,nkptloc))
+allocate(s_wvkmt(nrmtmax,lmmaxapw,natmtot,nspinor,sic_wantran%nwan,nkptloc))
 if (allocated(s_wvkit)) deallocate(s_wvkit)
 allocate(s_wvkit(ngkmax,nspinor,sic_wantran%nwan,nkptloc))
-if (.not.tsveqn) then
-  if (allocated(s_wkmtlm)) deallocate(s_wkmtlm)
-  allocate(s_wkmtlm(nrmtmax,lmmaxapw,natmtot,nspinor,sic_wantran%nwan,nkptloc))
-  if (allocated(s_wvkmtlm)) deallocate(s_wvkmtlm)
-  allocate(s_wvkmtlm(nrmtmax,lmmaxapw,natmtot,nspinor,sic_wantran%nwan,nkptloc))
-endif
 if (mpi_grid_root()) then
 ! size of sperical arrays
   a=2*16.d0*lmmaxwan*s_nr*nspinor*sic_wantran%nwan/1024/1024
 ! size of Bloch sums
-  a=a+2*16.d0*mt_ntp*nrmtmax*natmtot*nspinor*sic_wantran%nwan*nkptloc/1024/1024
+  a=a+2*16.d0*lmmaxapw*nrmtmax*natmtot*nspinor*sic_wantran%nwan*nkptloc/1024/1024
   a=a+2*16.d0*ngkmax*nspinor*sic_wantran%nwan*nkptloc/1024/1204
   write(*,'("[sic_init] Memory usage (Mb) : ",F12.4)')a
 endif
 return
 end subroutine
-
-!logical function sic_include_cell(vl)
-!use modmain
-!use mod_sic
-!implicit none
-!integer, intent(in) :: vl(3)
-!logical l1
-!integer n,jas,ias,ir,j
-!real(8) vt(3),v1(3)
-!vt(:)=vl(1)*avec(:,1)+vl(2)*avec(:,2)+vl(3)*avec(:,3)
-!l1=.false.
-!do j=1,sic_wantran%nwan
-!  n=sic_wantran%iwan(j)
-!  do ias=1,natmtot
-!    v1(:)=atposc(:,ias2ia(ias),ias2is(ias))+vt(:)- wanpos(:,n)
-!    if (sqrt(sum(v1(:)**2)).le.(sic_wan_cutoff+rmt(ias2is(ias)))) l1=.true.
-!  enddo
-!enddo
-!sic_include_cell=l1
-!return
-!end
-!
-

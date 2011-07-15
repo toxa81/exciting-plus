@@ -3,12 +3,6 @@ use modmain
 use mod_sic
 implicit none
 integer itp,lm
-real(8) a,tp(2)
-integer nt,np,it,ip,l,m,lm1
-real(8) t1
-complex(8) zt1
-complex(8), allocatable :: clm(:)
-complex(8), allocatable :: zftp(:)
 !
 !call gensmesh_icos
 call gensmesh_cubed
@@ -40,10 +34,6 @@ call test_smesh
 !call gensmesh_healpix
 !call gensmesh_icos
 
-!call bstop
-
-
-!call bstop
 !call nfsft_init(lmaxwan,s_ntp,stp)
 return
 end subroutine

@@ -2,7 +2,7 @@ subroutine sic_genrmesh
 use modmain
 use mod_sic
 implicit none
-integer is,i,j,ir
+integer i,j,ir
 real(8) x,x0,x1,x2,x3,t,a
 real(8), allocatable :: b(:)
 integer, parameter :: imesh=2

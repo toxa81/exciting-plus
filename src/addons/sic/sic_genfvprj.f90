@@ -12,6 +12,7 @@ integer ias,ist,j,j1,is,ilo,ir,l,m,lm,io,i,ig
 complex(8) zt2(2),z1,z2
 complex(8), allocatable :: wfmt_(:,:)
 complex(8), allocatable :: wfmt(:,:,:)
+complex(8), allocatable :: wfmt2(:,:,:)
 complex(8), allocatable :: wb(:,:,:,:)
 complex(8), allocatable :: om(:,:)
 complex(8), allocatable :: zv1(:)
@@ -31,9 +32,11 @@ ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 
 if (tsveqn)  then
 
-!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(wfmt_,wfmt,ias,j,ispn,zt2)
+!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(wfmt_,wfmt,wfmt2,ias,j,ispn,zt2)
 allocate(wfmt_(lmmaxapw,nrmtmax))
-allocate(wfmt(mt_ntp,nrmtmax,natmtot))
+!allocate(wfmt(mt_ntp,nrmtmax,natmtot))
+allocate(wfmt(lmmaxapw,nrmtmax,natmtot))
+allocate(wfmt2(lmmaxapw,nrmtmax,natmtot))
 !$OMP DO
 do ist=1,nstfv
   wfmt=zzero
@@ -41,27 +44,36 @@ do ist=1,nstfv
   do ias=1,natmtot
     call wavefmt(1,lmaxapw,ias2is(ias),ias2ia(ias),ngk(1,ik),apwalm,&
       evecfv(1,ist,1),lmmaxapw,wfmt_)
+    wfmt(:,:,ias)=wfmt_(:,:)
 ! convert to spherical coordinates
-    call zgemm('T','N',mt_ntp,nrmt(ias2is(ias)),lmmaxapw,zone,mt_ylmf,&
-      lmmaxapw,wfmt_,lmmaxapw,zzero,wfmt(1,1,ias),mt_ntp)
+    !call zgemm('T','N',mt_ntp,nrmt(ias2is(ias)),lmmaxapw,zone,mt_ylmf,&
+    !  lmmaxapw,wfmt_,lmmaxapw,zzero,wfmt(1,1,ias),mt_ntp)
   enddo
   do j=1,sic_wantran%nwan
     do ispn=1,nspinor
-      sic_wb(j,ist,ispn,ikloc)=s_zfinp(.false.,.true.,mt_ntp,ngk(1,ik),&
-        s_wkmt(1,1,1,ispn,j,ikloc),wfmt,s_wkit(1,ispn,j,ikloc),&
+      do ias=1,natmtot
+        do lm=1,lmmaxapw
+          wfmt2(lm,:,ias)=s_wkmt(:,lm,ias,ispn,j,ikloc)
+        enddo
+      enddo
+      sic_wb(j,ist,ispn,ikloc)=s_zfinp(.true.,.true.,lmmaxapw,ngk(1,ik),&
+        wfmt2,wfmt,s_wkit(1,ispn,j,ikloc),&
         evecfv(1,ist,1),zt2)
+      !sic_wb(j,ist,ispn,ikloc)=s_zfinp(.false.,.true.,mt_ntp,ngk(1,ik),&
+      !  s_wkmt(1,1,1,ispn,j,ikloc),wfmt,s_wkit(1,ispn,j,ikloc),&
+      !  evecfv(1,ist,1),zt2)
       if (debug_level.ge.4) then  
         wb(1,j,ist,ispn)=sic_wb(j,ist,ispn,ikloc)
         wb(2:3,j,ist,ispn)=zt2(:)
       endif
-      sic_wvb(j,ist,ispn,ikloc)=s_zfinp(.false.,.true.,mt_ntp,ngk(1,ik),&
-        s_wvkmt(1,1,1,ispn,j,ikloc),wfmt,s_wvkit(1,ispn,j,ikloc),&
-        evecfv(1,ist,1))
+      !sic_wvb(j,ist,ispn,ikloc)=s_zfinp(.false.,.true.,mt_ntp,ngk(1,ik),&
+      !  s_wvkmt(1,1,1,ispn,j,ikloc),wfmt,s_wvkit(1,ispn,j,ikloc),&
+      !  evecfv(1,ist,1))
     enddo
   enddo
 enddo !ist
 !$OMP END DO
-deallocate(wfmt_,wfmt)
+deallocate(wfmt_,wfmt,wfmt2)
 !$OMP END PARALLEL
 
 else
@@ -84,9 +96,9 @@ do j=1,sic_wantran%nwan
           z1=zzero
           z2=zzero
           do ir=1,nrmt(is)
-            z1=z1+dconjg(s_wkmtlm(ir,lm,ias,ispn,j,ikloc))*&
+            z1=z1+dconjg(s_wkmt(ir,lm,ias,ispn,j,ikloc))*&
               apwfr(ir,1,io,l,ias)*mt_rw(ir,is)
-            z2=z2+dconjg(s_wvkmtlm(ir,lm,ias,ispn,j,ikloc))*&
+            z2=z2+dconjg(s_wvkmt(ir,lm,ias,ispn,j,ikloc))*&
               apwfr(ir,1,io,l,ias)*mt_rw(ir,is)
           enddo
           do ig=1,ngk(1,ik)
@@ -104,9 +116,9 @@ do j=1,sic_wantran%nwan
           z1=zzero
           z2=zzero
           do ir=1,nrmt(is)
-            z1=z1+dconjg(s_wkmtlm(ir,lm,ias,ispn,j,ikloc))*&
+            z1=z1+dconjg(s_wkmt(ir,lm,ias,ispn,j,ikloc))*&
               lofr(ir,1,ilo,ias)*mt_rw(ir,is)
-            z2=z2+dconjg(s_wvkmtlm(ir,lm,ias,ispn,j,ikloc))*&
+            z2=z2+dconjg(s_wvkmt(ir,lm,ias,ispn,j,ikloc))*&
               lofr(ir,1,ilo,ias)*mt_rw(ir,is)
           enddo
           sic_wb(j,i,ispn,ikloc)=z1

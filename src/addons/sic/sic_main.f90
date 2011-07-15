@@ -30,7 +30,7 @@ call genlofr
 call getufr
 call genufrp
 ! generate wave-functions for all k-points in BZ
-call genwfnr(-1,.false.)  
+call genwfnr(-1,.false.,lmaxapw)  
 ! allocate arrays for Madness-like WF generation (all MPI tasks
 !  can resolve function at arbitrary point, no k-reduction is needed) 
 if (allocated(m_ngknr)) deallocate(m_ngknr)
@@ -53,7 +53,7 @@ do ik=1,nkptnr
   enddo
 enddo
 if (allocated(m_wann_unkmt)) deallocate(m_wann_unkmt)
-allocate(m_wann_unkmt(lmmaxvr,nufrmax,natmtot,nspinor,nkptnr))
+allocate(m_wann_unkmt(lmmaxapw,nufrmax,natmtot,nspinor,nkptnr))
 if (allocated(m_wann_unkit)) deallocate(m_wann_unkit)
 allocate(m_wann_unkit(ngkmax,nspinor,nkptnr))
 #ifdef _MAD_
@@ -142,6 +142,8 @@ endif
 
 call sic_iterate(151)
 
+call mpi_grid_barrier
+call sic_wan_blochsum
 call mpi_grid_barrier
 ! write to HDF5 file
 call sic_write_data
