@@ -98,7 +98,7 @@ if (exist) then
   endif
 else
 ! generate wave-functions for entire BZ
-  call genwfnr(151,lpmat)
+  call genwfnr(151,lpmat,lmaxvr)
 endif
 if (wannier_megq) then
   allocate(waninc(nwantot))

@@ -18,7 +18,7 @@ call genlofr
 call getufr
 call genufrp
 wproc=mpi_grid_root()
-call genwfnr(6,.true.)
+call genwfnr(6,.true.,lmaxvr)
 
 fname="wfnrkp.hdf5"
 if (mpi_grid_root()) then

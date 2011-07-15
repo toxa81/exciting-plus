@@ -76,7 +76,7 @@ if (exist) then
   endif
 else
 ! generate wave-functions for entire BZ
-  call genwfnr(151,tq0bz)
+  call genwfnr(151,tq0bz,lmaxvr)
 endif
 call genwantran(megqwantran,megqwan_mindist,megqwan_maxdist,allwt=.true.)
 ! setup energy mesh

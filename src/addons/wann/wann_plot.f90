@@ -37,7 +37,7 @@ call genlofr
 call getufr
 call genufrp
 
-call genwfnr(-1,.false.)
+call genwfnr(-1,.false.,lmaxvr)
 
 if (task.eq.861) then
   nrtot=nrxyz(1)

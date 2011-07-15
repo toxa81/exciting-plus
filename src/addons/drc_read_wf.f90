@@ -15,7 +15,7 @@ call pstop
 
 fname="wfnrkp.hdf5"
 
-call gengknr
+call gengknr(lmaxvr,lmmaxvr)
 call hdf5_read(fname,"/parameters","wannier",flg_wan)
 call hdf5_read(fname,"/parameters","pmat",flg_pmat)
 

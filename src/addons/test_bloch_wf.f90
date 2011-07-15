@@ -18,7 +18,7 @@ call genlofr
 call getufr
 call genufrp
 wproc=mpi_grid_root()
-call genwfnr(6,.false.)
+call genwfnr(6,.false.,lmaxapw)
 allocate(wfir1(ngrtot,nspinor))
 allocate(wfir2(ngrtot,nspinor))
 allocate(maxdev(nkptnr))
@@ -47,7 +47,7 @@ do ikloc=1,nkptnrloc
         do ias=1,natmtot
           is=ias2is(ias)
           ic=ias2ic(ias)
-          do l=0,lmaxvr
+          do l=0,lmaxapw
             do io1=1,nufr(l,is); do io2=1,nufr(l,is)
               do m=-l,l
                 lm=idxlm(l,m)
