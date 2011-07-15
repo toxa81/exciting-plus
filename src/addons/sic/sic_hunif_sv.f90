@@ -27,39 +27,40 @@ call genapwalm(ngk(1,ik),gkc(:,1,ikloc),tpgkc(:,:,1,ikloc),&
   sfacgk(:,:,1,ikloc),apwalm)
 call genwfsvc(lmaxapw,lmmaxapw,ngk(1,ik),nstsv,apwalm,evecfd,wfsvmt,wfsvit) 
 deallocate(apwalm)
-sic_wb(:,:,:,ikloc)=zzero
-sic_wvb(:,:,:,ikloc)=zzero
-do j=1,sic_wantran%nwan
-  do ispn=1,nspinor
-    do ias=1,natmtot
-      is=ias2is(ias)
-      ic=ias2ic(ias)
-      do lm=1,lmmaxapw
-        l=lm2l(lm)
-        do io=1,nufr(l,is)
-          zt1=zzero
-          zt2=zzero
-          do ir=1,nrmt(is)
-            zt1=zt1+dconjg(s_wkmt(ir,lm,ias,ispn,j,ikloc))*ufr(ir,l,io,ic)*mt_rw(ir,is)
-            zt2=zt2+dconjg(s_wvkmt(ir,lm,ias,ispn,j,ikloc))*ufr(ir,l,io,ic)*mt_rw(ir,is)
-          enddo
-          do ist=1,nstsv
-            sic_wb(j,ist,1,ikloc)=sic_wb(j,ist,1,ikloc)+zt1*wfsvmt(lm,io,ias,ispn,ist)
-            sic_wvb(j,ist,1,ikloc)=sic_wvb(j,ist,1,ikloc)+zt2*wfsvmt(lm,io,ias,ispn,ist)
-          enddo
-        enddo
-      enddo
-    enddo
-    do ist=1,nstsv
-      do ig=1,ngk(1,ik)
-        sic_wb(j,ist,1,ikloc)=sic_wb(j,ist,1,ikloc)+&
-          dconjg(s_wkit(ig,ispn,j,ikloc))*wfsvit(ig,ispn,ist)
-        sic_wvb(j,ist,1,ikloc)=sic_wvb(j,ist,1,ikloc)+&
-          dconjg(s_wvkit(ig,ispn,j,ikloc))*wfsvit(ig,ispn,ist)
-      enddo
-    enddo
-  enddo
-enddo
+!sic_wb(:,:,:,ikloc)=zzero
+!sic_wvb(:,:,:,ikloc)=zzero
+!do j=1,sic_wantran%nwan
+!  do ispn=1,nspinor
+!    do ias=1,natmtot
+!      is=ias2is(ias)
+!      ic=ias2ic(ias)
+!      do lm=1,lmmaxapw
+!        l=lm2l(lm)
+!        do io=1,nufr(l,is)
+!          zt1=zzero
+!          zt2=zzero
+!          do ir=1,nrmt(is)
+!            zt1=zt1+dconjg(s_wkmt(ir,lm,ias,ispn,j,ikloc))*ufr(ir,l,io,ic)*mt_rw(ir,is)
+!            zt2=zt2+dconjg(s_wvkmt(ir,lm,ias,ispn,j,ikloc))*ufr(ir,l,io,ic)*mt_rw(ir,is)
+!          enddo
+!          do ist=1,nstsv
+!            sic_wb(j,ist,1,ikloc)=sic_wb(j,ist,1,ikloc)+zt1*wfsvmt(lm,io,ias,ispn,ist)
+!            sic_wvb(j,ist,1,ikloc)=sic_wvb(j,ist,1,ikloc)+zt2*wfsvmt(lm,io,ias,ispn,ist)
+!          enddo
+!        enddo
+!      enddo
+!    enddo
+!    do ist=1,nstsv
+!      do ig=1,ngk(1,ik)
+!        sic_wb(j,ist,1,ikloc)=sic_wb(j,ist,1,ikloc)+&
+!          dconjg(s_wkit(ig,ispn,j,ikloc))*wfsvit(ig,ispn,ist)
+!        sic_wvb(j,ist,1,ikloc)=sic_wvb(j,ist,1,ikloc)+&
+!          dconjg(s_wvkit(ig,ispn,j,ikloc))*wfsvit(ig,ispn,ist)
+!      enddo
+!    enddo
+!  enddo
+!enddo
+call sic_genbprj(ikloc,wfsvmt=wfsvmt,wfsvit=wfsvit)
 
 write(*,*)"in sic_hunif_sv"
 do j1=1,sic_wantran%nwan
