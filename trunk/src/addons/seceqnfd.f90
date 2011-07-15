@@ -39,7 +39,7 @@ else
     apwalm,h)
 endif
 if (sic.and..not.tsicsv) then
-  call sic_genfvprj(ikloc,zt1,apwalm)
+  call sic_genbprj(ikloc,apwalm=apwalm)
   call sic_hunif_fd(ikloc,nmat(1,ik),h,o)
 endif
 deallocate(apwalm)
