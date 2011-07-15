@@ -516,4 +516,156 @@ deallocate(tdiff)
 return
 end subroutine
 
+
+subroutine sic_genbprj(ikloc,evecfv,apwalm,wfsvmt,wfsvit)
+use modmain
+implicit none
+! arguments
+integer, intent(in) :: ikloc
+complex(8), optional, intent(in) :: evecfv(nmatmax,nstfv)
+complex(8), optional, intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
+complex(8), optional, intent(in) :: wfsvmt(lmmaxapw,nufrmax,natmtot,nspinor,nstsv)
+complex(8), optional, intent(in) :: wfsvit(ngkmax,nspinor,nstsv)
+! local variables
+integer ik,i,j,ispn,l,m,lm,io,ilo,ias,is,ic,ist,ir,ig
+complex(8) z1,z2
+complex(8), allocatable :: wfmt1(:,:,:)
+complex(8), allocatable :: wfmt2(:,:,:)
+complex(8), allocatable :: zv1(:),zv2(:)
+!
+sic_wb(:,:,:,ikloc)=zzero
+sic_wvb(:,:,:,ikloc)=zzero
+if (.not.tsic_wv) return 
+ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+! project to first-variational states
+if (tsveqn)  then
+!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(wfmt1,wfmt2,ias,j,ispn)
+  allocate(wfmt1(lmmaxapw,nrmtmax,natmtot))
+  allocate(wfmt2(lmmaxapw,nrmtmax,natmtot))
+!$OMP DO
+  do ist=1,nstfv
+    wfmt1=zzero
+! generate first-variational wave function
+    do ias=1,natmtot
+      call wavefmt(1,lmaxapw,ias2is(ias),ias2ia(ias),ngk(1,ik),apwalm,&
+        evecfv(1,ist),lmmaxapw,wfmt1(1,1,ias))
+    enddo
+    do j=1,sic_wantran%nwan
+      do ispn=1,nspinor
+! rearrange indexes
+        do ias=1,natmtot
+          do lm=1,lmmaxapw
+            wfmt2(lm,:,ias)=s_wkmt(:,lm,ias,ispn,j,ikloc)
+          enddo
+        enddo
+        sic_wb(j,ist,ispn,ikloc)=s_zfinp(.true.,.true.,lmmaxapw,ngk(1,ik),&
+          wfmt2,wfmt1,s_wkit(1,ispn,j,ikloc),evecfv(1,ist))
+! rearrange indexes
+        do ias=1,natmtot
+          do lm=1,lmmaxapw
+            wfmt2(lm,:,ias)=s_wvkmt(:,lm,ias,ispn,j,ikloc)
+          enddo
+        enddo
+        sic_wvb(j,ist,ispn,ikloc)=s_zfinp(.true.,.true.,lmmaxapw,ngk(1,ik),&
+          wfmt2,wfmt1,s_wvkit(1,ispn,j,ikloc),evecfv(1,ist))
+      enddo
+    enddo
+  enddo !ist
+!$OMP END DO
+  deallocate(wfmt1,wfmt2)
+!$OMP END PARALLEL
+else
+  if (tsicsv) then
+! project to second-variational states
+    do j=1,sic_wantran%nwan
+      do ispn=1,nspinor
+        do ias=1,natmtot
+          is=ias2is(ias)
+          ic=ias2ic(ias)
+          do lm=1,lmmaxapw
+            l=lm2l(lm)
+            do io=1,nufr(l,is)
+              z1=zzero
+              z2=zzero
+              do ir=1,nrmt(is)
+                z1=z1+dconjg(s_wkmt(ir,lm,ias,ispn,j,ikloc))*ufr(ir,l,io,ic)*mt_rw(ir,is)
+                z2=z2+dconjg(s_wvkmt(ir,lm,ias,ispn,j,ikloc))*ufr(ir,l,io,ic)*mt_rw(ir,is)
+              enddo !ir
+              do ist=1,nstsv
+                sic_wb(j,ist,1,ikloc)=sic_wb(j,ist,1,ikloc)+z1*wfsvmt(lm,io,ias,ispn,ist)
+                sic_wvb(j,ist,1,ikloc)=sic_wvb(j,ist,1,ikloc)+z2*wfsvmt(lm,io,ias,ispn,ist)
+              enddo !ist
+            enddo !io
+          enddo !lm
+        enddo !ias
+        do ist=1,nstsv
+          do ig=1,ngk(1,ik)
+            sic_wb(j,ist,1,ikloc)=sic_wb(j,ist,1,ikloc)+&
+              dconjg(s_wkit(ig,ispn,j,ikloc))*wfsvit(ig,ispn,ist)
+            sic_wvb(j,ist,1,ikloc)=sic_wvb(j,ist,1,ikloc)+&
+              dconjg(s_wvkit(ig,ispn,j,ikloc))*wfsvit(ig,ispn,ist)
+          enddo !ig
+        enddo !ist
+      enddo !ispn
+    enddo !j  
+  else
+! project to (L)APW basis
+    allocate(zv1(ngk(1,ik)))
+    allocate(zv2(ngk(1,ik)))
+    do j=1,sic_wantran%nwan
+      do ispn=1,nspinor
+! interstitial contribution from APW
+        do ig=1,ngk(1,ik)
+          zv1(ig)=dconjg(s_wkit(ig,ispn,j,ikloc))
+          zv2(ig)=dconjg(s_wvkit(ig,ispn,j,ikloc))
+        enddo
+! muffin-tin contribution from APW
+        do ias=1,natmtot
+          is=ias2is(ias)
+          do lm=1,lmmaxapw
+            l=lm2l(lm)
+            do io=1,apword(l,is)
+              z1=zzero
+              z2=zzero
+              do ir=1,nrmt(is)
+                z1=z1+dconjg(s_wkmt(ir,lm,ias,ispn,j,ikloc))*&
+                  apwfr(ir,1,io,l,ias)*mt_rw(ir,is)
+                z2=z2+dconjg(s_wvkmt(ir,lm,ias,ispn,j,ikloc))*&
+                  apwfr(ir,1,io,l,ias)*mt_rw(ir,is)
+              enddo !ir
+              do ig=1,ngk(1,ik)
+                zv1(ig)=zv1(ig)+z1*apwalm(ig,io,lm,ias)
+                zv2(ig)=zv2(ig)+z2*apwalm(ig,io,lm,ias)
+              enddo !ig
+            enddo !io
+          enddo !lm
+! muffin-tin contribution from l.o.
+          do ilo=1,nlorb(is)
+            l=lorbl(ilo,is)
+            do m=-l,l
+              lm=idxlm(l,m)
+              i=ngk(1,ik)+idxlo(lm,ilo,ias)
+              z1=zzero
+              z2=zzero
+              do ir=1,nrmt(is)
+                z1=z1+dconjg(s_wkmt(ir,lm,ias,ispn,j,ikloc))*&
+                  lofr(ir,1,ilo,ias)*mt_rw(ir,is)
+                z2=z2+dconjg(s_wvkmt(ir,lm,ias,ispn,j,ikloc))*&
+                  lofr(ir,1,ilo,ias)*mt_rw(ir,is)
+              enddo
+              sic_wb(j,i,ispn,ikloc)=z1
+              sic_wvb(j,i,ispn,ikloc)=z2
+            enddo !m
+          enddo !ilo
+        enddo !ias
+        sic_wb(j,1:ngk(1,ik),ispn,ikloc)=zv1(1:ngk(1,ik))
+        sic_wvb(j,1:ngk(1,ik),ispn,ikloc)=zv2(1:ngk(1,ik))
+      enddo !ispn
+    enddo !j
+    deallocate(zv1,zv2)
+  endif
+endif
+return
+end subroutine
+
 end module

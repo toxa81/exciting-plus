@@ -5,7 +5,7 @@ use mod_sic
 use mod_ws
 implicit none
 integer i,n,j,i1,i2,i3
-real(8) a,wsv(3,3)
+real(8) a,wsv(3,3),vl(3)
 !
 if (.not.wannier) then
   write(*,*)
@@ -57,17 +57,19 @@ endif
 call sic_genrmesh
 call sic_gensmesh
 ! translation vectors for Bloch-sums
+sic_ntr=ngridk(1)*ngridk(2)*ngridk(3)
 if (allocated(sic_vtl)) deallocate(sic_vtl)
-allocate(sic_vtl(3,ngridk(1)*ngridk(2)*ngridk(3)))
+allocate(sic_vtl(3,sic_ntr))
 if (allocated(sic_vtc)) deallocate(sic_vtc)
-allocate(sic_vtc(3,ngridk(1)*ngridk(2)*ngridk(3)))
-sic_ntr=0
+allocate(sic_vtc(3,sic_ntr))
+i=0
 do i1=0,ngridk(1)-1
   do i2=0,ngridk(2)-1
     do i3=0,ngridk(3)-1
-      sic_ntr=sic_ntr+1
-      sic_vtl(:,sic_ntr)=(/i1,i2,i3/)
-      call r3mv(avec,sic_vtl(1,sic_ntr),sic_vtc(1,sic_ntr))
+      i=i+1
+      sic_vtl(:,i)=(/i1,i2,i3/)
+      vl(:)=dble(sic_vtl(:,i))
+      call r3mv(avec,vl,sic_vtc(1,i))
     enddo
   enddo
 enddo
