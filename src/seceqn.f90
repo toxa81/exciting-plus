@@ -53,7 +53,7 @@ do ispn=1,nspnfv
      vgkc(:,:,ispn,ikloc),apwalm(:,:,:,:,ispn),evalfv(:,ispn),evecfv(:,:,ispn))
   end if
 end do
-if (sic) call sic_genfvprj(ikloc,evecfv,apwalm)
+if (sic) call sic_genbprj(ikloc,evecfv=evecfv(:,:,1),apwalm=apwalm)
 if (spinsprl) then
 ! solve the spin-spiral second-variational secular equation
   call seceqnss(ikloc,apwalm,evalfv,evecfv,evecsv)
