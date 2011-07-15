@@ -21,9 +21,13 @@ integer, allocatable :: spinor_ud(:,:,:)
 
 contains
 
-subroutine gengknr
+subroutine gengknr(lmax,lmmax)
 use modmain
 implicit none
+!
+integer, intent(in) :: lmax
+integer, intent(in) :: lmmax
+!
 integer ik,ikloc,ig
 ! generate G+k vectors for entire BZ (this is required to compute 
 !   wave-functions at each k-point)
@@ -42,77 +46,78 @@ allocate(sfacgknr(ngkmax,natmtot,nkptnrloc))
 if (allocated(igkignr)) deallocate(igkignr)
 allocate(igkignr(ngkmax,nkptnrloc))
 if (allocated(ylmgknr)) deallocate(ylmgknr)
-allocate(ylmgknr(lmmaxvr,ngkmax,nkptnrloc))
+allocate(ylmgknr(lmmax,ngkmax,nkptnrloc))
 do ikloc=1,nkptnrloc
   ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
   call gengpvec(vklnr(1,ik),vkcnr(1,ik),ngknr(ikloc),igkignr(1,ikloc), &
     vgklnr(1,1,ikloc),vgkcnr(1,1,ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc))
   call gensfacgp(ngknr(ikloc),vgkcnr(1,1,ikloc),ngkmax,sfacgknr(1,1,ikloc))
   do ig=1,ngknr(ikloc)
-    call genylm(lmaxvr,tpgknr(1,ig,ikloc),ylmgknr(1,ig,ikloc))
+    call genylm(lmax,tpgknr(1,ig,ikloc),ylmgknr(1,ig,ikloc))
   enddo
 enddo
 return
 end subroutine
 
-subroutine gen_k_sym
-use modmain
-implicit none
-integer nk,ik,isym,i,j
-real(8) s(3,3),v1(3)
-logical lfound
-integer, allocatable :: k0(:)
-integer, allocatable :: nk0(:)
-real(8), allocatable :: vkl_(:,:)
-real(8), allocatable :: wk_(:)
-
-allocate(vkl_(3,nsymcrys*nkpt))
-allocate(k0(nsymcrys*nkpt))
-allocate(nk0(nkpt))
-allocate(wk_(nsymcrys*nkpt))
-nk=0
-nk0=0
-do ik=1,nkpt
-  do isym=1,nsymcrys
-    s(:,:)=dble(symlat(:,:,lsplsymc(isym)))
-    call r3mtv(s,vkl(1,ik),v1)
-    lfound=.false.
-    do i=1,nk
-      if (sum(abs(v1(:)-vkl_(:,i))).lt.1d-8) lfound=.true.
-    enddo
-    if (.not.lfound) then
-      nk=nk+1
-      vkl_(:,nk)=v1
-      k0(nk)=ik
-      nk0(ik)=nk0(ik)+1
-    endif
-  enddo
-enddo
-wk_=0.d0
-do ik=1,nk
-  wk_(ik)=wkpt(k0(ik))/nk0(k0(ik))
-enddo
-
-deallocate(vklnr,vkcnr,wkptnr)
-nkptnr=nk
-nkptnrloc=mpi_grid_map(nkptnr,dim_k)
-allocate(vklnr(3,nkptnr),vkcnr(3,nkptnr),wkptnr(nkptnr))
-
-vklnr(:,1:nkptnr)=vkl_(:,1:nkptnr)
-wkptnr(1:nkptnr)=wk_(1:nkptnr)
-do ik=1,nkptnr
-  call r3mv(bvec,vklnr(1,ik),vkcnr(1,ik))
-enddo
-!do ik=1,nk
-!  write(*,*)vkl_(:,ik)," -- ",k0(ik),wk_(ik)
+!subroutine gen_k_sym
+!use modmain
+!implicit none
+!integer nk,ik,isym,i,j
+!real(8) s(3,3),v1(3)
+!logical lfound
+!integer, allocatable :: k0(:)
+!integer, allocatable :: nk0(:)
+!real(8), allocatable :: vkl_(:,:)
+!real(8), allocatable :: wk_(:)
+!
+!allocate(vkl_(3,nsymcrys*nkpt))
+!allocate(k0(nsymcrys*nkpt))
+!allocate(nk0(nkpt))
+!allocate(wk_(nsymcrys*nkpt))
+!nk=0
+!nk0=0
+!do ik=1,nkpt
+!  do isym=1,nsymcrys
+!    s(:,:)=dble(symlat(:,:,lsplsymc(isym)))
+!    call r3mtv(s,vkl(1,ik),v1)
+!    lfound=.false.
+!    do i=1,nk
+!      if (sum(abs(v1(:)-vkl_(:,i))).lt.1d-8) lfound=.true.
+!    enddo
+!    if (.not.lfound) then
+!      nk=nk+1
+!      vkl_(:,nk)=v1
+!      k0(nk)=ik
+!      nk0(ik)=nk0(ik)+1
+!    endif
+!  enddo
 !enddo
-deallocate(vkl_,k0,nk0,wk_)
-return
-end subroutine
+!wk_=0.d0
+!do ik=1,nk
+!  wk_(ik)=wkpt(k0(ik))/nk0(k0(ik))
+!enddo
+!
+!deallocate(vklnr,vkcnr,wkptnr)
+!nkptnr=nk
+!nkptnrloc=mpi_grid_map(nkptnr,dim_k)
+!allocate(vklnr(3,nkptnr),vkcnr(3,nkptnr),wkptnr(nkptnr))
+!
+!vklnr(:,1:nkptnr)=vkl_(:,1:nkptnr)
+!wkptnr(1:nkptnr)=wk_(1:nkptnr)
+!do ik=1,nkptnr
+!  call r3mv(bvec,vklnr(1,ik),vkcnr(1,ik))
+!enddo
+!!do ik=1,nk
+!!  write(*,*)vkl_(:,ik)," -- ",k0(ik),wk_(ik)
+!!enddo
+!deallocate(vkl_,k0,nk0,wk_)
+!return
+!end subroutine
 
 
 subroutine wancnr_transform(umtrx)
 use modmain
+use mod_wannier
 complex(8), intent(in) :: umtrx(nwantot,nwantot,nkptnrloc)
 !
 integer ikloc,ik,n,m,j
@@ -125,7 +130,7 @@ if (ldisentangle) then
   call pstop
 endif
 if (allocated(wann_unkmt)) deallocate(wann_unkmt)
-allocate(wann_unkmt(lmmaxvr,nufrmax,natmtot,nspinor,nwantot,nkptnrloc))
+allocate(wann_unkmt(lmmaxapw,nufrmax,natmtot,nspinor,nwantot,nkptnrloc))
 if (allocated(wann_unkit)) deallocate(wann_unkit)
 allocate(wann_unkit(ngkmax,nspinor,nwantot,nkptnrloc))
 wann_unkmt=zzero
@@ -146,8 +151,8 @@ do ikloc=1,nkptnrloc
     enddo
   enddo  
   ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc) 
-  call genwann_c(ik,vkcnr(:,ik),evalsvnr(1,ik),wfsvmtnrloc(1,1,1,1,1,ikloc),&
-    wanncnrloc(1,1,ikloc),ierr)   
+  call wan_gencsv(lmmaxapw,vkcnr(1,ik),evalsvnr(1,ik),&
+        wfsvmtnrloc(1,1,1,1,1,ikloc),wanncnrloc(1,1,ikloc)) 
   wanc=zzero
   do n=1,nwantot
     do m=1,nwantot
@@ -184,20 +189,22 @@ return
 end subroutine
 
 
-subroutine genwfnr(fout,lpmat)
+subroutine genwfnr(fout,lpmat,lmax)
 use modmain
 use mod_seceqn
 implicit none
 integer, intent(in) :: fout
 logical, intent(in) :: lpmat
-integer ik,ikloc,n,j,ik1,isym,i,ierr
+integer, intent(in) :: lmax
+integer ik,ikloc,n,j,ik1,isym,i,ierr,lmmax
 complex(8), allocatable :: apwalm(:,:,:,:)
 real(8) w2,t1,sz
 logical, external :: wann_diel
 complex(8), allocatable :: evecfvnrloc(:,:,:,:)
 complex(8), allocatable :: evecsvnrloc(:,:,:)
 complex(8), allocatable :: evecfdnrloc(:,:,:)
-
+!
+lmmax=(lmax+1)**2
 !call gen_k_sym
 ! get energies of states in reduced part of BZ
 call timer_start(3,reset=.true.)
@@ -236,16 +243,20 @@ endif
 !      &", vkl(jk) : ",3F10.6)')ik,vklnr(:,ik),ik1,vkl(:,ik1)
 !  enddo
 !endif
-call gengknr
+call gengknr(lmax,lmmax)
 
 if (wproc.and.fout.gt.0) then
 ! eigen-vectors
-  sz=dble(nmatmax*nstfv*nspnfv)+dble(nstsv*nstsv)
+  if (tsveqn) then
+    sz=dble(nmatmax*nstfv*nspnfv)+dble(nstsv*nstsv)
+  else
+    sz=dble(nspinor*nmatmax*nstsv)
+  endif
 ! wave-functions
-  sz=sz+dble(lmmaxvr*nufrmax*natmtot*nstsv*nspinor)+dble(ngkmax*nstsv*nspinor)
+  sz=sz+dble(lmmax*nufrmax*natmtot*nstsv*nspinor)+dble(ngkmax*nstsv*nspinor)
 ! wannier functions
   if (wannier) then
-    sz=sz+dble(nwantot*nstsv)+dble(lmmaxvr*nufrmax*natmtot*nspinor*nwantot)+&
+    sz=sz+dble(nwantot*nstsv)+dble(lmmax*nufrmax*natmtot*nspinor*nwantot)+&
       dble(ngkmax*nspinor*nwantot)
   endif
 ! momentum operator matrix
@@ -261,7 +272,7 @@ if (wproc.and.fout.gt.0) then
 endif
 call mpi_grid_barrier()
 if (allocated(wfsvmtnrloc)) deallocate(wfsvmtnrloc)
-allocate(wfsvmtnrloc(lmmaxvr,nufrmax,natmtot,nspinor,nstsv,nkptnrloc))
+allocate(wfsvmtnrloc(lmmax,nufrmax,natmtot,nspinor,nstsv,nkptnrloc))
 if (allocated(wfsvitnrloc)) deallocate(wfsvitnrloc)
 allocate(wfsvitnrloc(ngkmax,nspinor,nstsv,nkptnrloc))
 if (tsveqn) then
@@ -278,7 +289,7 @@ if (wannier) then
   if (allocated(wanncnrloc)) deallocate(wanncnrloc)
   allocate(wanncnrloc(nwantot,nstsv,nkptnrloc))
   if (allocated(wann_unkmt)) deallocate(wann_unkmt)
-  allocate(wann_unkmt(lmmaxvr,nufrmax,natmtot,nspinor,nwantot,nkptnrloc))
+  allocate(wann_unkmt(lmmax,nufrmax,natmtot,nspinor,nwantot,nkptnrloc))
   if (allocated(wann_unkit)) deallocate(wann_unkit)
   allocate(wann_unkit(ngkmax,nspinor,nwantot,nkptnrloc))
 endif
@@ -296,6 +307,7 @@ if (mpi_grid_side(dims=(/dim_k/))) then
   enddo !ikloc
 endif !mpi_grid_side(dims=(/dim_k/)
 call mpi_grid_barrier
+! broadcast arrays
 if (tsveqn) then
   call mpi_grid_bcast(evecfvnrloc(1,1,1,1),nmatmax*nstfv*nspnfv*nkptnrloc,&
     dims=ortdims((/dim_k/)))
@@ -310,6 +322,9 @@ if (wproc.and.fout.gt.0) then
   write(fout,'("Done in ",F8.2," seconds")')timer_get_value(1)
   if (fout.ne.6) call flushifc(fout)
 endif
+! generate wave functions from eigen vectors
+wfsvmtnrloc=zzero
+wfsvitnrloc=zzero
 call timer_start(1,reset=.true.)
 if (wproc.and.fout.gt.0) then
   write(fout,*)
@@ -321,9 +336,6 @@ if (tsveqn) then
 else
   allocate(apwalm(ngkmax,lmmaxapw,apwordmax,natmtot))
 endif
-! transform eigen-vectors
-wfsvmtnrloc=zzero
-wfsvitnrloc=zzero
 if (ldisentangle) tevecsv=.true.
 do ikloc=1,nkptnrloc
   ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
@@ -332,7 +344,7 @@ do ikloc=1,nkptnrloc
     call match(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),&
       sfacgknr(1,1,ikloc),apwalm)
 ! generate wave functions in muffin-tins
-    call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfvnrloc(1,1,1,ikloc),&
+    call genwfsvmt(lmax,lmmax,ngknr(ikloc),evecfvnrloc(1,1,1,ikloc),&
       evecsvnrloc(1,1,ikloc),apwalm,wfsvmtnrloc(1,1,1,1,1,ikloc))
     if (wannier) then
       call genwann_c(ik,vkcnr(:,ik),evalsvnr(1,ik),wfsvmtnrloc(1,1,1,1,1,ikloc),&
@@ -341,7 +353,7 @@ do ikloc=1,nkptnrloc
 ! disentangle bands
         call disentangle(evalsvnr(1,ik),wanncnrloc(1,1,ikloc),&
           evecsvnrloc(1,1,ikloc))
-        call genwfsvmt(lmaxvr,lmmaxvr,ngknr(ikloc),evecfvnrloc(1,1,1,ikloc),&
+        call genwfsvmt(lmax,lmmax,ngknr(ikloc),evecfvnrloc(1,1,1,ikloc),&
           evecsvnrloc(1,1,ikloc),apwalm,wfsvmtnrloc(1,1,1,1,1,ikloc))
       endif
     endif
@@ -357,13 +369,16 @@ do ikloc=1,nkptnrloc
  ! get apw coeffs 
     call genapwalm(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),&
       sfacgknr(1,1,ikloc),apwalm)
-    call genwfsvc(lmaxvr,lmmaxvr,ngknr(ikloc),nstsv,apwalm,&
+    call genwfsvc(lmax,lmmax,ngknr(ikloc),nstsv,apwalm,&
       evecfdnrloc(1,1,ikloc),wfsvmtnrloc(1,1,1,1,1,ikloc),&
       wfsvitnrloc(1,1,1,ikloc))
     if (wannier) then
-      call wan_gencsv(lmmaxvr,vkcnr(1,ik),evalsvnr(1,ik),&
-        wfsvmtnrloc(1,1,1,1,1,ikloc),wanncnrloc(1,1,ikloc)) 
+      call wan_gencsv(lmmax,vkcnr(1,ik),evalsvnr(1,ik),&
+        wfsvmtnrloc(1,1,1,1,1,ikloc),wanncnrloc(1,1,ikloc),ierr) 
     endif
+  endif
+  if (wannier.and.ierr.ne.0) then
+    write(*,'("Warning(genwfnr): Wannier functions are wrong at k-point : ",I4)')ik
   endif
 enddo !ikloc
 deallocate(apwalm)
@@ -377,7 +392,7 @@ endif
 if (wannier) then
   call timer_start(1,reset=.true.)
   if (allocated(wann_unkmt)) deallocate(wann_unkmt)
-  allocate(wann_unkmt(lmmaxvr,nufrmax,natmtot,nspinor,nwantot,nkptnrloc))
+  allocate(wann_unkmt(lmmax,nufrmax,natmtot,nspinor,nwantot,nkptnrloc))
   if (allocated(wann_unkit)) deallocate(wann_unkit)
   allocate(wann_unkit(ngkmax,nspinor,nwantot,nkptnrloc))
   wann_unkmt=zzero

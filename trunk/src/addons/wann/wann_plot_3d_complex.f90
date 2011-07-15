@@ -36,7 +36,7 @@ call genlofr
 call getufr
 call genufrp
 
-call genwfnr(-1,.false.)
+call genwfnr(-1,.false.,lmaxvr)
 
 nrtot=nrxyz(1)*nrxyz(2)*nrxyz(3)
 orig(:)=zero3d(:)-(bound3d(:,1)+bound3d(:,2)+bound3d(:,3))/2.d0
