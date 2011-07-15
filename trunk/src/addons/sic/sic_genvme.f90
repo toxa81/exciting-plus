@@ -4,10 +4,11 @@ use mod_sic
 use mod_hdf5
 implicit none
 integer, intent(in) :: fout
-integer i,j,n,i1,j1,n1,i2,j2,n2,ispn,vl(3),nwtloc,iloc,ik
+!
+integer i,j,n,i1,j1,n1,vl(3)
 logical texist
-real(8) t1,t2,t3,pos1(3),pos2(3),vtrc(3)
-complex(8) me1,me2,z1
+real(8) t1,t2,t3,pos1(3),pos2(3)
+complex(8) me1,me2
 complex(8), allocatable :: vme_old(:)
 !
 if (wproc) then

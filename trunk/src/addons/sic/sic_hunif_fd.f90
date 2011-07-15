@@ -9,10 +9,10 @@ integer, intent(in) :: nmatp
 complex(8), intent(inout) :: hunif(nmatp,nmatp,nspinor)
 complex(8), intent(inout) :: om(nmatp,nmatp)
 ! local variables
-integer i,j,ik,vtrl(3),n1,n2,i1,i2,j1,j2,ispn1,ispn2,istfv1,istfv2,ist1,ist2,ispn
+integer i,ik,vtrl(3),n1,n2,i1,i2,j1,j2,ispn
 real(8) vtrc(3),en
 complex(8) expikt
-complex(8), allocatable :: vk(:,:),zm1(:,:),zm2(:,:)
+complex(8), allocatable :: vk(:,:)
 character*500 msg,fname
 logical, parameter :: tcheckherm=.false.
 !
@@ -40,7 +40,7 @@ call timer_start(t_sic_hunif)
 ! compute H_{nn'}^{0}(k); remember that on input hunif=H0
 !allocate(zm1(sic_wantran%nwan,nmatp))
 !allocate(zm2(sic_wantran%nwan,sic_wantran%nwan))
-!sic_wan_h0k(:,:,ikloc)=zzero
+sic_wan_h0k(:,:,ikloc)=zzero
 !do ispn=1,nspinor
 !  call zgemm('N','N',sic_wantran%nwan,nmatp,nmatp,zone,sic_wb(1,1,ispn,ikloc),&
 !    sic_wantran%nwan,hunif(1,1,ispn),nmatp,zzero,zm1,sic_wantran%nwan)

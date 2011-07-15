@@ -5,7 +5,7 @@ use mod_hdf5
 use mod_linresp
 use mod_wannier
 implicit none
-integer n,ispn,j
+integer n,ispn,j,i,ikloc,ik
 character*12 c1,c2
 character*100 path
 !
@@ -19,6 +19,18 @@ if (wproc) then
     do ispn=1,nspinor
       path="/wann/"//trim(adjustl(c1))
       write(c2,'("s",I4.4)')ispn
+      call hdf5_create_group("sic.hdf5",path,trim(adjustl(c2)))   
+    enddo
+  enddo
+  call hdf5_create_group("sic.hdf5","/","kpoint")
+  call hdf5_write("sic.hdf5","/kpoint","nkpt",nkpt)
+  do ik=1,nkpt
+    path="/kpoint"
+    write(c1,'(I4.4)')ik
+    call hdf5_create_group("sic.hdf5",path,trim(adjustl(c1)))
+    do n=1,nwantot
+      path="/kpoint/"//trim(adjustl(c1))
+      write(c2,'("n",I4.4)')n
       call hdf5_create_group("sic.hdf5",path,trim(adjustl(c2)))   
     enddo
   enddo
@@ -45,5 +57,28 @@ if (wproc) then
     endif
   enddo
 endif
+if (mpi_grid_side(dims=(/dim_k/))) then
+  do i=0,mpi_grid_dim_size(dim_k)-1
+    if (mpi_grid_dim_pos(dim_k).eq.i) then
+      do ikloc=1,nkptloc
+        ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+        write(c1,'(I4.4)')ik
+        do n=1,nwantot
+          j=sic_wantran%idxiwan(n)
+          if (j.gt.0) then
+            write(c2,'("n",I4.4)')n
+            path="/kpoint/"//trim(adjustl(c1))//"/"//trim(adjustl(c2))
+            call hdf5_write("sic.hdf5",path,"wkmt",s_wkmt(1,1,1,1,j,ikloc),&
+              (/nrmtmax,lmmaxapw,natmtot,nspinor/))
+            call hdf5_write("sic.hdf5",path,"wkit",s_wkit(1,1,j,ikloc),&
+              (/ngkmax,nspinor/))
+          endif
+        enddo !n
+      enddo !ikloc
+    end if
+    call mpi_grid_barrier(dims=(/dim_k/))
+  end do
+endif
+
 return
 end

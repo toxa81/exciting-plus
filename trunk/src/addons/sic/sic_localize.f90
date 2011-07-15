@@ -5,7 +5,7 @@ implicit none
 integer, intent(in) :: fout
 real(8), intent(out) :: wanprop(nwanprop,sic_wantran%nwan)
 !
-integer iter,i,j,n,n1,j1,n2,j2,ispn,ir,ikloc
+integer iter,i,j,n,n1,j1,n2,j2,ikloc
 real(8) tot_diff
 complex(8), allocatable :: um(:,:),um1(:,:),um0(:,:)
 !

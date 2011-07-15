@@ -40,8 +40,8 @@ do j=1,sic_wantran%nwan
           zt1=zzero
           zt2=zzero
           do ir=1,nrmt(is)
-            zt1=zt1+dconjg(s_wkmtlm(ir,lm,ias,ispn,j,ikloc))*ufr(ir,l,io,ic)*mt_rw(ir,is)
-            zt2=zt2+dconjg(s_wvkmtlm(ir,lm,ias,ispn,j,ikloc))*ufr(ir,l,io,ic)*mt_rw(ir,is)
+            zt1=zt1+dconjg(s_wkmt(ir,lm,ias,ispn,j,ikloc))*ufr(ir,l,io,ic)*mt_rw(ir,is)
+            zt2=zt2+dconjg(s_wvkmt(ir,lm,ias,ispn,j,ikloc))*ufr(ir,l,io,ic)*mt_rw(ir,is)
           enddo
           do ist=1,nstsv
             sic_wb(j,ist,1,ikloc)=sic_wb(j,ist,1,ikloc)+zt1*wfsvmt(lm,io,ias,ispn,ist)
@@ -60,7 +60,29 @@ do j=1,sic_wantran%nwan
     enddo
   enddo
 enddo
+
+write(*,*)"in sic_hunif_sv"
+do j1=1,sic_wantran%nwan
+  do j2=1,sic_wantran%nwan
+    zt1=zzero
+    do j=1,nstsv
+      zt1=zt1+dconjg(sic_wb(j1,j,1,ikloc))*sic_wb(j2,j,1,ikloc)
+    enddo
+    write(*,*)j1,j2,zt1
+  enddo
+enddo
+
 deallocate(wfsvmt,wfsvit)
+
+sic_wan_h0k(:,:,ikloc)=zzero
+do j1=1,sic_wantran%nwan 
+  do j2=1,sic_wantran%nwan 
+    do ist=1,nstsv
+      sic_wan_h0k(j1,j2,ikloc)=sic_wan_h0k(j1,j2,ikloc)+&
+        sic_wb(j1,ist,1,ikloc)*dconjg(sic_wb(j2,ist,1,ikloc))*evalsv(ist,ik)
+    enddo
+  enddo
+enddo
 
 allocate(h(nstsv,nstsv))
 h=zzero
@@ -81,21 +103,6 @@ do i=1,sic_wantran%nwt
   expikt=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
   vk(j1,j2)=vk(j1,j2)+expikt*sic_vme(i)
 enddo
-!
-!write(*,*)"in sic_hunif_sv"
-!do j1=1,sic_wantran%nwan
-!  do j2=1,sic_wantran%nwan
-!    zt1=zzero
-!    do j=1,nstsv
-!      zt1=zt1+dconjg(sic_wb(j1,j,1,ikloc))*sic_wb(j2,j,1,ikloc)
-!    enddo
-!    write(*,*)j1,j2,zt1
-!  enddo
-!enddo
-!deallocate(wfsvmt,wfsvit)
-!call pstop
-
-
 
 
 
