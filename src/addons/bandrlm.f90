@@ -79,10 +79,8 @@ call genbeff
 ! generate effective magntic field integrals for full diagonalization
 call genbeff
 if (sic) then
-  call sic_read_data
-  call sic_genblochsum
-  !call sic_genblochsum_mt
-  !call sic_genblochsum_it  
+  call sic_read_data(.false.)
+  call sic_genblochsum(.true.,.true.)
   allocate(sic_wan_e0k(sic_wantran%nwan,nkpt))
   sic_wan_e0k=0.d0
 endif
