@@ -70,7 +70,7 @@ do ikloc=1,nkptnrloc
   m_wann_unkit(:,:,ik)=wann_unkit(:,:,n,ikloc)
 enddo
 call mpi_grid_reduce(m_wann_unkmt(1,1,1,1,1),&
-  lmmaxvr*nufrmax*natmtot*nspinor*nkptnr,dims=(/dim_k/),all=.true.)
+  lmmaxapw*nufrmax*natmtot*nspinor*nkptnr,dims=(/dim_k/),all=.true.)
 call mpi_grid_reduce(m_wann_unkit(1,1,1),&
   ngkmax*nspinor*nkptnr,dims=(/dim_k/),all=.true.)
 m_wanpos(:)=wanpos(:,n)
