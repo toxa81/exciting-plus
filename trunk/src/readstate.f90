@@ -175,6 +175,7 @@ if (spnrmax_.ne.spnrmax) then
 end if
 read(50) evalcr
 read(50) spvr
+read(50) bfcmt
 close(50)
 !---------------------------!
 !     muffin-tin arrays     !

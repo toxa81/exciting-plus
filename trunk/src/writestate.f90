@@ -61,6 +61,7 @@ write(50) spnstmax
 write(50) spnrmax
 write(50) evalcr
 write(50) spvr
+write(50) bfcmt
 close(50)
 return
 end subroutine
