@@ -143,12 +143,12 @@ else
   call xcifc(xctype,n=s_ntp*s_nr_min,rho=rhotp,ex=extp,ec=ectp,vx=vxtp,vc=vctp)
 endif
 ! save XC energy density in extp
-extp(:,:)=extp(:,:)+ectp(:,:)
+if (.not.sicxo) extp(:,:)=extp(:,:)+ectp(:,:)
 ! expand in real spherical harmonics
 call sic_rbsht(s_nr_min,extp,exclm) 
 ! save XC potential in vxtp and expand in real spherical harmonics   
 do ispn=1,nspinor
-  vxtp(:,:,ispn)=vxtp(:,:,ispn)+vctp(:,:,ispn)
+  if (.not.sicxo) vxtp(:,:,ispn)=vxtp(:,:,ispn)+vctp(:,:,ispn)
   call sic_rbsht(s_nr_min,vxtp(1,1,ispn),vxclm(1,1,ispn))
 enddo
 ! compute vha=<V_h|rho>
