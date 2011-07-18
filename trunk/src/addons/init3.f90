@@ -119,10 +119,10 @@ endif
 if (wannier) call wann_init
 if (sic) call sic_init
 ! init xml_info variables
-if (allocated(xml_info%magmom)) deallocate(xml_info%magmom)
-allocate(xml_info%magmom(natmtot))
-if (allocated(xml_info%wan_spread)) deallocate(xml_info%wan_spread)
-if (wannier) allocate(xml_info%wan_spread(nwantot))
+if (.not.allocated(xml_info%magmom)) allocate(xml_info%magmom(natmtot))
+if (wannier) then
+  if (.not.allocated(xml_info%wan_spread)) allocate(xml_info%wan_spread(nwantot))
+endif
 ! init debug output file
 if (debug_level.ge.4.and..not.tdbgout_init) then
   fdbgout=999
