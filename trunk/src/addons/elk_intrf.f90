@@ -28,26 +28,23 @@
 !end
 !
 
-subroutine elk_xc(dens,vxc,exc)
+subroutine elk_xc(dens,vx,vc,ex,ec)
 use modmain
 use modxcifc
 implicit none
-real(8), intent(in) :: dens(nspinor)
-real(8), intent(out) :: vxc(nspinor)
-real(8), intent(out) :: exc
-! local variables
-real(8) ex(1),ec(1),vx1(1),vc1(1),vx2(1),vc2(1)
+real(8), intent(in) :: dens(1,nspinor)
+real(8), intent(out) :: vx(1,nspinor)
+real(8), intent(out) :: vc(1,nspinor)
+real(8), intent(out) :: ex(1)
+real(8), intent(out) :: ec(1)
 
 if (spinpol) then
-  call xcifc(xctype,n=1,rhoup=dens(1),rhodn=dens(2),ex=ex,ec=ec,&
-    vxup=vx1,vxdn=vx2,vcup=vc1,vcdn=vc2)
-  vxc(1)=vx1(1)+vc1(1)
-  vxc(2)=vx2(1)+vc2(1)
+  call xcifc(xctype,n=1,rhoup=dens(:,1),rhodn=dens(:,2),ex=ex(:),&
+    ec=ec(:),vxup=vx(:,1),vxdn=vx(:,2),vcup=vc(:,1),vcdn=vc(:,2))
 else
-  call xcifc(xctype,n=1,rho=dens(1),ex=ex,ec=ec,vx=vx1,vc=vc1)
-  vxc(1)=vx1(1)+vc1(1)
+  call xcifc(xctype,n=1,rho=dens(:,1),ex=ex(:),ec=ec(:),vx=vx(:,1),&
+    vc=vc(:,1))
 endif
-exc=ex(1)+ec(1)
 return
 end subroutine
 
