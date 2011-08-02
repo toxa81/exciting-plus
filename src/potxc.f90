@@ -108,6 +108,8 @@ do is=1,nspecies
 ! compute rhoup=(rho+m_z)/2 and rhodn=(rho-m_z)/2
           rhoup(i)=0.5d0*(rho(i)+mag(i,1))
           rhodn(i)=0.5d0*(rho(i)-mag(i,1))
+          if (rhoup(i).lt.0.d0) rhoup(i)=0.d0
+          if (rhodn(i).lt.0.d0) rhodn(i)=0.d0
         end do
       end if
 ! call the exchange-correlation interface routine
@@ -206,6 +208,8 @@ if (spinpol) then
     do ir=1,ngrtot
       rhoup(ir)=0.5d0*(rhoir(ir)+magir(ir,1))
       rhodn(ir)=0.5d0*(rhoir(ir)-magir(ir,1))
+      if (rhoup(ir).lt.0.d0) rhoup(ir)=0.d0
+      if (rhodn(ir).lt.0.d0) rhodn(ir)=0.d0
     end do
   end if
   if (xcgrad.le.0) then
