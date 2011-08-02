@@ -129,8 +129,9 @@ if (allocated(wanpos)) deallocate(wanpos)
 allocate(wanpos(3,nwantot))
 do j=1,nwantot
   if (wannier_lc) then
-    write(*,'("TODO: positions for linear combinations of WFs")')
-    call pstop
+    !write(*,'("TODO: positions for linear combinations of WFs")')
+    !call pstop
+    wanpos(:,j)=0.d0
   else
     iatom=wan_info(1,j)
     wanpos(:,j)=atposc(:,ias2ia(iatom),ias2is(iatom))
