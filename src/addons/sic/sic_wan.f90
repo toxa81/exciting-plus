@@ -237,14 +237,16 @@ if (wproc) then
   write(fout,'("total quadratic spread : ",F12.6," [a.u.]^2")')&
     sum(wanprop(wp_spread,:))
   write(fout,*)
-  write(fout,'("   n | ",5X,"V_n^{H}     V_n^{XC}          V_n     E_n^{XC}")')
-  write(fout,'(80("-"))')
+  write(fout,'("   n | ",5X,"V_n^{H}     V_n^{XC}          V_n     E_n^{XC}&
+    &        Ex           Ec")')
+  write(fout,'(84("-"))')
   do j=1,sic_wantran%nwan
     n=sic_wantran%iwan(j)
-    write(fout,'(I4," | ",4(F12.6,1X))')n,wanprop(wp_vha,j),&
-      wanprop(wp_vxc,j),wanprop(wp_vsic,j),wanprop(wp_exc,j)
+    write(fout,'(I4," | ",6(F12.6,1X))')n,wanprop(wp_vha,j),&
+      wanprop(wp_vxc,j),wanprop(wp_vsic,j),wanprop(wp_exc,j),&
+      wanprop(wp_ex,j),wanprop(wp_ec,j)
   enddo
-  write(fout,'(80("-"))')
+  write(fout,'(84("-"))')
   write(fout,'("SIC total energy contribution      : ",G18.10,&
     &"  ! kinetic - potential ")')sic_energy_tot
   write(fout,'("SIC kinetic energy contribution    : ",G18.10,&
@@ -274,7 +276,6 @@ if (wproc) then
   write(fout,*)
   write(fout,'("total time          : ",F8.3," sec.")')timer_get_value(t_sic_wan)
   write(fout,'("  generation of WFs : ",F8.3," sec.")')timer_get_value(t_sic_wan_gen)
-  write(fout,'("  rms               : ",F8.3," sec.")')timer_get_value(t_sic_wan_rms)
   write(fout,'("  potential         : ",F8.3," sec.")')timer_get_value(t_sic_wan_pot)
   write(fout,'("   (W*V)            : ",F8.3," sec.")')timer_get_value(t_sic_wvprod)
   write(fout,'("  overlap           : ",F8.3," sec.")')timer_get_value(t_sic_wan_ovl)
