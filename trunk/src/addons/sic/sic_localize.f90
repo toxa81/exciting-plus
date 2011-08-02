@@ -55,7 +55,7 @@ do iter=1,sic_niter_u0
     n=sic_wantran%iwan(j)  
     if (sic_apply(n).eq.2) then
       call timer_start(t_sic_wan_pot)
-      call sic_genpot(s_wlm(1,1,1,j),s_wvlm(1,1,1,j),wanprop(1,j))
+      call sic_genpot(n,s_wlm(1,1,1,j),s_wvlm(1,1,1,j),wanprop(1,j))
       call timer_stop(t_sic_wan_pot)
     endif
   enddo
