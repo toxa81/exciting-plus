@@ -77,9 +77,10 @@ do n=1,nwantot
       lm=wan_info(2,iw)
       ispn=wan_info(3,iw)
       itype=wan_info(4,iw)
+      ilo=wannier_prjlo(wan_info(7,iw),wan_info(6,iw))
       do j=1,nstsv
         if (bndint(j,e(j),wann_eint(1,itype),wann_eint(2,itype))) then
-          call genprjao(ias,lm,ispn,j,wfsvmt,zt1)
+          call genprjao(ias,lm,ispn,j,wfsvmt,zt1,ilo)
           if (wannier_soft_eint) then
             zt1=zt1*orbwt(e(j),wannier_soft_eint_e1(itype),&
               wannier_soft_eint_e2(itype),wannier_soft_eint_w1(itype),&
