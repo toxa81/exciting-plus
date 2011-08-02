@@ -2,7 +2,6 @@ subroutine sic_write_data
 use modmain
 use mod_sic
 use mod_hdf5
-use mod_linresp
 use mod_wannier
 implicit none
 integer n,ispn,j,i,ikloc,ik
