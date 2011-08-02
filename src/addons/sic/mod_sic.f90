@@ -137,7 +137,7 @@ data tsic_wv/.false./
 integer sic_debug_level
 data sic_debug_level/0/
 
-integer, parameter :: nwanprop=14
+integer, parameter :: nwanprop=16
 integer, parameter :: wp_normlm=1
 integer, parameter :: wp_normtp=2
 integer, parameter :: wp_rmswan=3
@@ -152,6 +152,8 @@ integer, parameter :: wp_spread_x=11
 integer, parameter :: wp_spread_y=12
 integer, parameter :: wp_spread_z=13
 integer, parameter :: wp_normrho=14
+integer, parameter :: wp_ex=15
+integer, parameter :: wp_ec=16
 
 contains
 
