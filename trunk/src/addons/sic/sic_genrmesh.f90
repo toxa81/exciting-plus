@@ -76,6 +76,13 @@ if (imesh.eq.2) then
   enddo
   deallocate(b)
 endif
+! check mesh
+do ir=1,s_nr-1
+  if (s_r(ir).ge.s_r(ir+1)) then
+    write(*,'("Error(sic_genrmesh): s_r(ir).ge.s_r(ir+1)")')
+    call pstop
+  endif
+enddo
 ! find number of radial points for s_rmin 
 s_nr_min=s_nr
 do ir=s_nr,1,-1
