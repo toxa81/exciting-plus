@@ -27,6 +27,39 @@
 !return
 !end
 !
+subroutine elk_m_init
+use modmain
+use mod_nrkp
+use mod_madness
+implicit none
+integer ig,ik,ikloc
+! allocate arrays for Madness-like WF generation (all MPI tasks
+!  can resolve function at arbitrary point, no k-reduction is needed) 
+if (allocated(m_ngknr)) deallocate(m_ngknr)
+allocate(m_ngknr(nkptnr))
+m_ngknr=0
+if (allocated(m_igkignr)) deallocate(m_igkignr)
+allocate(m_igkignr(ngkmax,nkptnr))
+m_igkignr=0
+do ikloc=1,nkptnrloc
+  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+  m_ngknr(ik)=ngknr(ikloc)
+  m_igkignr(:,ik)=igkignr(:,ikloc)
+enddo
+call mpi_grid_reduce(m_ngknr(1),nkptnr,dims=(/dim_k/),all=.true.)
+call mpi_grid_reduce(m_igkignr(1,1),ngkmax*nkptnr,dims=(/dim_k/),all=.true.)
+m_ngvec=0
+do ik=1,nkptnr
+  do ig=1,m_ngknr(ik)
+    m_ngvec=max(m_ngvec,m_igkignr(ig,ik))
+  enddo
+enddo
+if (allocated(m_wann_unkmt)) deallocate(m_wann_unkmt)
+allocate(m_wann_unkmt(lmmaxapw,nufrmax,natmtot,nspinor,nkptnr))
+if (allocated(m_wann_unkit)) deallocate(m_wann_unkit)
+allocate(m_wann_unkit(ngkmax,nspinor,nkptnr))
+return
+end subroutine
 
 subroutine elk_xc(dens,vx,vc,ex,ec)
 use modmain
