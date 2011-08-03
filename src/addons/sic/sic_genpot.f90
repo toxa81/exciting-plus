@@ -167,9 +167,6 @@ do ispn=1,nspinor
   if (.not.sicxo) vxtp(:,:,ispn)=vxtp(:,:,ispn)+vctp(:,:,ispn)
   call sic_rbsht(s_nr_min,vxtp(1,1,ispn),vxclm(1,1,ispn))
 enddo
-if (.true.) then
-  call sic_write_pot(n,vxclm)
-endif
 ! compute vha=<V_h|rho>
 wanprop(wp_vha)=0.d0
 do ir=1,s_nr_min
@@ -197,6 +194,9 @@ wanprop(wp_vsic)=wanprop(wp_vha)+wanprop(wp_vxc)
 do ispn=1,nspinor
   vxclm(:,:,ispn)=vxclm(:,:,ispn)+vhalm(:,:)
 enddo
+if (.true.) then
+  call sic_write_pot(n,vxclm)
+endif
 deallocate(rhotp,rholm,totrholm)
 deallocate(vhalm,extp,ectp,exclm,vxtp,vctp)
 ! multiply Wannier function with potential and change sign
