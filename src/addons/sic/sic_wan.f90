@@ -3,13 +3,13 @@ use modmain
 use mod_sic
 use mod_nrkp
 use mod_wannier
-use mod_linresp
+use modxcifc
 implicit none
 ! arguments
 integer, intent(in) :: fout
 ! local variables
 integer n,ispn,vl(3),n1,i,j,j1,itp,ir,nwtloc,iloc,nrloc,irloc
-real(8) t1,t2,vrc(3),pos1(3),pos2(3)
+real(8) t1,t2,vrc(3),pos1(3),pos2(3),x(3),dens(1),e1(1),e2(1),v1(1),v2(1)
 real(8) sic_epot_h,sic_epot_xc
 complex(8) z1,wanval(nspinor)
 real(8), allocatable :: wanprop(:,:)
@@ -40,39 +40,42 @@ if (wproc) then
   call flushifc(fout)
 endif
 
-!if (sic_debug_level.ge.2) then
+!!if (sic_debug_level.ge.2) then
 !  do j=1,sic_wantran%nwan
 !    n=sic_wantran%iwan(j)
-!    write(fname,'("wannier_",I4.4,"_[100].dat")')n
+!    call elk_load_wann_unk(n)
+!    write(fname,'("wannier_",I4.4,"_[010].dat")')n
 !    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
 !    do ir=1,s_nr
-!      x(:)=(/1.d0,0.d0,0.d0/)*s_r(ir)
-!      call s_get_wanval(.true.,n,x,wanval)
+!      x(:)=(/0.d0,1.d0,0.d0/)*s_r(ir)+wanpos(:,n)
+!      call s_get_wanval(x,wanval)
 !      z1=wanval(1)
-!      write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
+!      dens(1)=abs(z1)**2
+!      call xcifc(xctype,n=1,rho=dens,ex=e1,ec=e2,vx=v1,vc=v2)
+!      write(210,'(3G18.10)')s_r(ir),abs(z1)**2,(v1(1)+v2(1)) !dreal(z1),dimag(z1)
 !    enddo
 !    close(210)
-!    write(fname,'("wannier_",I4.4,"_[001].dat")')n
-!    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
-!    do ir=1,s_nr
-!      x(:)=(/0.d0,0.d0,1.d0/)*s_r(ir)
-!      call s_get_wanval(.true.,n,x,wanval)
-!      z1=wanval(1)
-!      write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
-!    enddo
-!    close(210)
-!    write(fname,'("wannier_",I4.4,"_[111].dat")')n
-!    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
-!    do ir=1,s_nr
-!      x(:)=(/1.d0,1.d0,1.d0/)*s_r(ir)*200/sqrt(3.d0)/sic_wan_cutoff
-!      write(*,*)x
-!      call s_get_wanval(.true.,n,x,wanval)
-!      z1=wanval(1)
-!      write(210,'(3G18.10)')sqrt(sum(x**2)),dreal(z1),dimag(z1)
-!    enddo
-!    close(210)
+!!    write(fname,'("wannier_",I4.4,"_[001].dat")')n
+!!    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
+!!    do ir=1,s_nr
+!!      x(:)=(/0.d0,0.d0,1.d0/)*s_r(ir)
+!!      call s_get_wanval(.true.,n,x,wanval)
+!!      z1=wanval(1)
+!!      write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
+!!    enddo
+!!    close(210)
+!!    write(fname,'("wannier_",I4.4,"_[111].dat")')n
+!!    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
+!!    do ir=1,s_nr
+!!      x(:)=(/1.d0,1.d0,1.d0/)*s_r(ir)*200/sqrt(3.d0)/sic_wan_cutoff
+!!      write(*,*)x
+!!      call s_get_wanval(.true.,n,x,wanval)
+!!      z1=wanval(1)
+!!      write(210,'(3G18.10)')sqrt(sum(x**2)),dreal(z1),dimag(z1)
+!!    enddo
+!!    close(210)
 !  enddo
-!endif
+!!endif
 
 call timer_start(t_sic_wan,reset=.true.)
 call timer_reset(t_sic_wan_gen)
@@ -122,19 +125,6 @@ deallocate(wantp)
 
 call sic_localize(fout,wanprop)
 
-!s_wvlm=zzero
-!! generate final potentials
-!do j=1,sic_wantran%nwan
-!  n=sic_wantran%iwan(j)
-!  if (sic_apply(n).eq.2) then
-!    call timer_start(t_sic_wan_pot)
-!    call sic_genpot(s_wlm(1,1,1,j),s_wvlm(1,1,1,j),wanprop(1,j))
-!    call timer_stop(t_sic_wan_pot)
-!  else
-!    wanprop(:,j)=0.d0
-!  endif
-!enddo !j
-
 !if (sic_debug_level.ge.2) then
 !  do j=1,sic_wantran%nwan
 !    n=sic_wantran%iwan(j)
@@ -156,6 +146,17 @@ call sic_localize(fout,wanprop)
 !    close(210)
 !  enddo
 !endif
+!do j=1,sic_wantran%nwan
+!    write(fname,'("wannier_",I4.4,"_expanded_[010].dat")')n
+!    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
+!    do ir=1,s_nr
+!      x(:)=(/0.d0,1.d0,0.d0/)*s_r(ir)
+!      call s_spinor_func_val(x,s_wlm(1,1,1,1),wanval)
+!      z1=wanval(1)
+!      write(210,'(2G18.10)')s_r(ir),abs(z1)**2 !dreal(z1),dimag(z1)
+!    enddo
+!    close(210)
+!enddo 
 
 ! compute overlap integrals 
 allocate(ovlp(sic_wantran%nwt))
