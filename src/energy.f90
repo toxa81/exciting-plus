@@ -235,7 +235,7 @@ engytot=engykn+0.5d0*engyvcl+engymad+engyx+engyc+engyts
 if (ldapu.ne.0) engytot=engytot+engylu
 if (sic) then
   engytot0=engytot
-  engytot=engytot+sic_energy_tot
+  engytot=engytot-sic_energy_pot+sic_energy_kin
 endif
 ! write total energy to test file
 call writetest(0,'total energy',tol=1.d-6,rv=engytot)
