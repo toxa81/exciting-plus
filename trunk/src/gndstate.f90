@@ -241,6 +241,7 @@ do iscl=1,maxscl
       call flushifc(67)
     end if
   end if
+  if (sic) call sic_ekin
 ! compute the effective potential
   call poteff
 ! pack interstitial and muffin-tin effective potential and field into one array
