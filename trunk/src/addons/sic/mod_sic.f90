@@ -121,9 +121,12 @@ data tsicsv/.false./
 ! .true. if sic branch is activated 
 logical sic
 data sic/.false./
-! exchange-only SIC
-logical sicxo
-data sicxo/.false./
+! include correlation potential
+logical sicvc
+data sicvc/.true./
+! include correlation energy
+logical sicec
+data sicec/.true./
 ! number of SIC iterations
 integer nsclsic
 data nsclsic/3/

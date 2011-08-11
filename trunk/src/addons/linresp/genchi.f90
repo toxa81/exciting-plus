@@ -110,6 +110,9 @@ do iwloc=1,nwloc
           krnl(ig,ig)=krnl(ig,ig)-fxca*vhgq(ig,iq)
         endif
       enddo
+      if (fxctype.eq.3) then
+        call bsfxc(iq,chi0loc(1,1,1),krnl)
+      endif
     endif !lrtype.eq.0 
     call timer_start(6)
     call solve_chi(iq,lr_w(iw),chi0loc(1,1,iwloc),krnl,f_response(1,iw,ifxc))

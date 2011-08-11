@@ -144,27 +144,27 @@ else
   call xcifc(xctype,n=s_ntp*s_nr_min,rho=rhotp,ex=extp,ec=ectp,vx=vxtp,vc=vctp)
 endif
 ! save exchange and correlation energies
-if (.true.) then
-  call sic_rbsht(s_nr_min,extp,exclm) 
-  wanprop(wp_ex)=0.d0
-  do ir=1,s_nr_min
-    wanprop(wp_ex)=wanprop(wp_ex)+&
-      ddot(lmmaxwan,totrholm(1,ir),1,exclm(1,ir),1)*s_rw(ir)
-  enddo
-  call sic_rbsht(s_nr_min,ectp,exclm) 
-  wanprop(wp_ec)=0.d0
-  do ir=1,s_nr_min
-    wanprop(wp_ec)=wanprop(wp_ec)+&
-      ddot(lmmaxwan,totrholm(1,ir),1,exclm(1,ir),1)*s_rw(ir)
-  enddo
-endif
+!if (.true.) then
+!  call sic_rbsht(s_nr_min,extp,exclm) 
+!  wanprop(wp_ex)=0.d0
+!  do ir=1,s_nr_min
+!    wanprop(wp_ex)=wanprop(wp_ex)+&
+!      ddot(lmmaxwan,totrholm(1,ir),1,exclm(1,ir),1)*s_rw(ir)
+!  enddo
+!  call sic_rbsht(s_nr_min,ectp,exclm) 
+!  wanprop(wp_ec)=0.d0
+!  do ir=1,s_nr_min
+!    wanprop(wp_ec)=wanprop(wp_ec)+&
+!      ddot(lmmaxwan,totrholm(1,ir),1,exclm(1,ir),1)*s_rw(ir)
+!  enddo
+!endif
 ! save XC energy density in extp
-if (.not.sicxo) extp(:,:)=extp(:,:)+ectp(:,:)
+if (sicec) extp(:,:)=extp(:,:)+ectp(:,:)
 ! expand in real spherical harmonics
 call sic_rbsht(s_nr_min,extp,exclm) 
 ! save XC potential in vxtp and expand in real spherical harmonics   
 do ispn=1,nspinor
-  if (.not.sicxo) vxtp(:,:,ispn)=vxtp(:,:,ispn)+vctp(:,:,ispn)
+  if (sicvc) vxtp(:,:,ispn)=vxtp(:,:,ispn)+vctp(:,:,ispn)
   call sic_rbsht(s_nr_min,vxtp(1,1,ispn),vxclm(1,1,ispn))
 enddo
 ! compute vha=<V_h|rho>
@@ -194,9 +194,9 @@ wanprop(wp_vsic)=wanprop(wp_vha)+wanprop(wp_vxc)
 do ispn=1,nspinor
   vxclm(:,:,ispn)=vxclm(:,:,ispn)+vhalm(:,:)
 enddo
-if (.true.) then
-  call sic_write_pot(n,vxclm)
-endif
+!if (.true.) then
+!  call sic_write_pot(n,vxclm)
+!endif
 deallocate(rhotp,rholm,totrholm)
 deallocate(vhalm,extp,ectp,exclm,vxtp,vctp)
 ! multiply Wannier function with potential and change sign
