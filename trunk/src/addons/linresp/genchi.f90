@@ -11,8 +11,9 @@ integer, intent(in) :: iq
 complex(8), allocatable :: vcwan(:,:)
 ! Fourier-transform of Ixc(r)=Bxc(r)/m(r)
 complex(8), allocatable :: ixcft(:)
-complex(8), allocatable :: krnl(:,:)
+complex(8), allocatable :: fxckrnl(:,:)
 character, parameter :: orb(4)=(/'s','p','d','f'/)
+complex(8), allocatable :: chi0w0(:,:)
 
 integer i,iw,j,ifxc
 integer nfxcloc,ifxcloc,nwloc,iwloc
@@ -72,8 +73,9 @@ if (wannier_chi0_chi) then
   enddo
 endif !wannier_chi0_chi
 
-allocate(krnl(ngvecme,ngvecme))
+allocate(fxckrnl(ngvecme,ngvecme))
 allocate(ixcft(ngvec))
+allocate(chi0w0(ngvecme,ngvecme))
 if (allocated(f_response)) deallocate(f_response)
 allocate(f_response(nf_response,lr_nw,nfxca))
 f_response=zzero
@@ -91,6 +93,11 @@ call timer_reset(5)
 call timer_reset(6)
 call timer_reset(7)
 call timer_reset(8)
+if (fxctype.eq.3) then
+  chi0w0=zzero
+  if (mpi_grid_root()) chi0w0=chi0loc(:,:,1)
+  call mpi_grid_bcast(chi0w0(1,1),ngvecme*ngvecme)
+endif
 do iwloc=1,nwloc
   iw=mpi_grid_map(lr_nw,dim_k,loc=iwloc)
 ! broadcast chi0
@@ -100,22 +107,22 @@ do iwloc=1,nwloc
     ifxc=mpi_grid_map(nfxca,dim_b,loc=ifxcloc)
     fxca=fxca0+(ifxc-1)*fxca1
 ! prepare fxc kernel
-    krnl=zzero
+    fxckrnl=zzero
     if (lrtype.eq.0) then
       do ig=1,ngvecme
         if (fxctype.eq.1) then
-          krnl(ig,ig)=krnl(ig,ig)-fxca/2.d0
+          fxckrnl(ig,ig)=fxckrnl(ig,ig)-fxca/2.d0
         endif
         if (fxctype.eq.2) then
-          krnl(ig,ig)=krnl(ig,ig)-fxca*vhgq(ig,iq)
+          fxckrnl(ig,ig)=fxckrnl(ig,ig)-fxca*vhgq(ig,iq)
         endif
       enddo
-      if (fxctype.eq.3) then
-        call bsfxc(iq,chi0loc(1,1,1),krnl)
+      if (fxctype.eq.3.and.ifxc.eq.2) then
+        call bsfxc(iq,chi0w0,fxckrnl)
       endif
     endif !lrtype.eq.0 
     call timer_start(6)
-    call solve_chi(iq,lr_w(iw),chi0loc(1,1,iwloc),krnl,f_response(1,iw,ifxc))
+    call solve_chi(iq,lr_w(iw),chi0loc(1,1,iwloc),fxckrnl,f_response(1,iw,ifxc))
     call timer_stop(6)
     if (wannier_chi0_chi.and.ifxc.eq.1) then
       call timer_start(7)
@@ -151,8 +158,9 @@ call papi_timer_stop(pt_chi)
 
 call mpi_grid_barrier(dims=(/dim_k,dim_b/))
 
-deallocate(krnl)
+deallocate(fxckrnl)
 deallocate(ixcft)
+deallocate(chi0w0)
 if (wannier_chi0_chi) then
   deallocate(vcwan)
 endif
