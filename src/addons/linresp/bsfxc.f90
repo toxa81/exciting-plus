@@ -17,7 +17,7 @@ allocate(krnl(ngvecme,ngvecme))
 allocate(eps(ngvecme,ngvecme))
 allocate(chi(ngvecme,ngvecme))
 
-do iter=1,20
+do iter=1,50
 ! restore the full kernel
   krnl=fxckrnl
   do ig=1,ngvecme
@@ -49,7 +49,7 @@ do iter=1,20
    do ig1=1,ngvecme
     do ig2=1,ngvecme
       fxckrnl(ig1,ig2)=fxckrnl(ig1,ig2)/(chi0m(iig0q,iig0q)*vhgq(iig0q,iq))
-      !if (ig1.ne.ig2) fxckrnl(ig1,ig2)=zzero
+      if (ig1.ne.ig2) fxckrnl(ig1,ig2)=zzero
     enddo
   enddo
   tdiff=0.d0
@@ -62,8 +62,10 @@ do iter=1,20
       endif
     enddo
   enddo
-  write(*,*)"bs iter",iter,"diff=",tdiff
+  if (tdiff.lt.1d-8) goto 10
 enddo
+write(*,'("Warning(bsfx): total difference : ",G18.10)')tdiff
+10 continue
 deallocate(krnl,eps,chi)
 return
 end subroutine
