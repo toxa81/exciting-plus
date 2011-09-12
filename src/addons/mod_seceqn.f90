@@ -511,4 +511,29 @@ deallocate(ipiv,c,djl,ylmgp,zd,zb)
 return
 end subroutine
 
+subroutine gensdmatfd(nmatp,evecfd,sdmat)
+use modmain
+implicit none
+! arguments
+integer, intent(in) :: nmatp
+complex(8), intent(in) :: evecfd(nspinor*nmatmax,nstsv)
+complex(8), intent(out) :: sdmat(nspinor,nspinor,nstsv)
+! local variables
+integer ispn,jspn,ist,j,k
+complex(8) zt1,zt2
+sdmat(:,:,:)=0.d0
+do j=1,nstsv
+  do ispn=1,nspinor
+    do jspn=1,nspinor
+      do k=1,nmatp
+        zt1=evecfd(k+nmatmax*(ispn-1),j)
+        zt2=evecfd(k+nmatmax*(jspn-1),j)
+        sdmat(ispn,jspn,j)=sdmat(ispn,jspn,j)+zt1*dconjg(zt2)
+      end do
+    end do
+  end do
+end do
+return
+end subroutine
+
 end module
