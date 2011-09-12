@@ -521,16 +521,16 @@ complex(8), intent(out) :: sdmat(nspinor,nspinor,nstsv)
 ! local variables
 integer ispn,jspn,ist,j,k
 complex(8) zt1,zt2
-sdmat(:,:,:)=0.d0
+real(8) t1,t2
+sdmat(:,:,:)=zzero
 do j=1,nstsv
   do ispn=1,nspinor
-    do jspn=1,nspinor
-      do k=1,nmatp
-        zt1=evecfd(k+nmatmax*(ispn-1),j)
-        zt2=evecfd(k+nmatmax*(jspn-1),j)
-        sdmat(ispn,jspn,j)=sdmat(ispn,jspn,j)+zt1*dconjg(zt2)
-      end do
+    t1=0.d0
+    do k=1,nmatp
+      zt1=evecfd(k+nmatmax*(ispn-1),j)
+      t1=t1+abs(zt1)
     end do
+    if (t1.gt.1d-8) sdmat(ispn,ispn,j)=1.d0
   end do
 end do
 return
