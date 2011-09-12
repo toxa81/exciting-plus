@@ -1,6 +1,7 @@
 subroutine dosrlm
 use modmain
 use mod_wannier
+use mod_seceqn
 implicit none
 ! local variables
 integer lmax,lmmax,l,m,lm,nsk(3)
@@ -16,6 +17,9 @@ real(8), allocatable :: pdos(:,:,:,:)
 real(8), allocatable :: doswan(:,:)
 complex(8), allocatable :: evecfv(:,:,:)
 complex(8), allocatable :: evecsv(:,:)
+complex(8), allocatable :: evecfd(:,:)
+complex(8), allocatable :: apwalm(:,:,:,:)
+complex(8), allocatable :: wfsvmt(:,:,:,:,:) 
 complex(8), allocatable :: sdmat(:,:,:,:)
 integer iasloc,natmtotloc
 
@@ -41,23 +45,42 @@ call genufrp
 lmax=min(3,lmaxapw)
 lmmax=(lmax+1)**2
 allocate(bndchr(lmmax,natmtot,nspinor,nstsv,nkpt))
-allocate(evecfv(nmatmax,nstfv,nspnfv))
-allocate(evecsv(nstsv,nstsv))
 allocate(sdmat(nspinor,nspinor,nstsv,nkpt))
-
+allocate(wfsvmt(lmmax,nufrmax,natmtot,nspinor,nstsv))
+if (tsveqn) then
+  allocate(evecfv(nmatmax,nstfv,nspnfv))
+  allocate(evecsv(nstsv,nstsv))
+  allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
+else
+  allocate(evecfd(nspinor*nmatmax,nstsv))
+  allocate(apwalm(ngkmax,lmmaxapw,apwordmax,natmtot))
+endif
 evalsv=0.d0
 bndchr=0.0
-sdmat=dcmplx(0.d0,0.d0)
+sdmat=zzero
 if (mpi_grid_side(dims=(/dim_k/))) then
   do ikloc=1,nkptloc
     ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-    call getevecfv(vkl(1,ik),vgkl(1,1,1,ikloc),evecfv)
-    call getevecsv(vkl(1,ik),evecsv)
     call getevalsv(vkl(1,ik),evalsv(1,ik))
+    if (tsveqn) then
+      call getevecfv(vkl(1,ik),vgkl(1,1,1,ikloc),evecfv)
+      call getevecsv(vkl(1,ik),evecsv)
+      call match(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),&
+        sfacgk(1,1,1,ikloc),apwalm)
+      call genwfsvmt(lmax,lmmax,ngk(1,ik),evecfv(:,:,1),evecsv,apwalm,wfsvmt)
+      if (wannier) call genwann(ikloc,evecfv,evecsv)
+      call gensdmat(evecsv,sdmat(:,:,:,ik))
+    else
+      call getevecfd(vkl(1,ik),vgkl(1,1,1,ikloc),evecfd) 
+      call genapwalm(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),&
+        sfacgk(1,1,1,ikloc),apwalm)
+      call genwfsvc(lmax,lmmax,ngk(1,ik),nstsv,apwalm,evecfd,wfsvmt)
+      if (wannier) call wan_gencsv(lmmax,vkc(1,ik),evalsv(1,ik),&
+        wfsvmt,wann_c(1,1,ikloc))
+      call gensdmatfd(nmat(1,ik),evecfd,sdmat(:,:,:,ik))
+    endif
 ! compute the band character
-    call bandchar(.true.,ikloc,lmax,lmmax,evecfv,evecsv,bndchr(1,1,1,1,ik))
-    call gensdmat(evecsv,sdmat(:,:,:,ik))
-    if (wannier) call genwann(ikloc,evecfv,evecsv)
+    call bandchar(.true.,lmax,lmmax,wfsvmt,bndchr(1,1,1,1,ik))
   end do
 endif
 do ik=1,nkpt
@@ -241,7 +264,12 @@ if (mpi_grid_root()) then
   deallocate(tdos,idos)
 endif
 deallocate(f,w,pdos,doswan)
-deallocate(bndchr,evecfv,evecsv)
+if (tsveqn) then
+  deallocate(evecfv,evecsv)
+else
+  deallocate(evecfd)
+endif
+deallocate(bndchr,apwalm,wfsvmt)
 return
 end subroutine
 !EOC
