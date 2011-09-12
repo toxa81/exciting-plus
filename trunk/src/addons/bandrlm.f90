@@ -33,7 +33,12 @@ integer lmax,lmmax,lm,i,j,n
 integer ik,ikloc,ispn,is,ia,ias,iv,ist,ig
 real(8) emin,emax
 ! allocatable arrays
-real(8), allocatable :: evalfv(:,:,:)
+real(8), allocatable :: evalfv(:,:)
+complex(8), allocatable :: evecfv(:,:,:)
+complex(8), allocatable :: evecsv(:,:)
+complex(8), allocatable :: evecfd(:,:)
+complex(8), allocatable :: apwalm(:,:,:,:)
+complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 real(8), allocatable :: sic_wan_e0k(:,:)
 ! low precision for band character array saves memory
 real(4), allocatable :: bc(:,:,:,:,:)
@@ -45,10 +50,12 @@ if (.not.mpi_grid_in()) return
 lmax=min(3,lmaxapw)
 lmmax=(lmax+1)**2
 allocate(bc(lmmax,natmtot,nspinor,nstsv,nkpt))
-allocate(evalfv(nstfv,nspnfv,nkptloc))
-allocate(evecfvloc(nmatmax,nstfv,nspnfv,nkptloc))
-allocate(evecsvloc(nstsv,nstsv,nkptloc))
-allocate(evecfdloc(nspinor*nmatmax,nstsv,nkptloc)) 
+allocate(evalfv(nstfv,nspnfv))
+allocate(evecfv(nmatmax,nstfv,nspnfv))
+allocate(evecsv(nstsv,nstsv))
+allocate(evecfd(nspinor*nmatmax,nstsv)) 
+allocate(wfsvmt(lmmax,nufrmax,natmtot,nspinor,nstsv))
+allocate(apwalm(ngkmax,lmmaxapw,apwordmax,natmtot))
 ! read density and potentials from file
 call readstate
 ! read Fermi energy from file
@@ -75,7 +82,6 @@ if (texactrho) then
 else
   call genbeffmt
 endif
-call genbeff
 ! generate effective magntic field integrals for full diagonalization
 call genbeff
 if (sic) then
@@ -91,10 +97,10 @@ do ikloc=1,nkptloc
   ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
   write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ik,nkpt
   if (tsveqn) then
-    call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
-      evecsvloc(1,1,ikloc))
+    call seceqn(ikloc,evalfv,evecfv,evecsv)
+    call evecsvfd(evecfv,evecsv,evecfd)
   else
-    call seceqnfd(ikloc,evecfdloc(1,1,ikloc))
+    call seceqnfd(ikloc,evecfd)
   endif
   if (wannier) then
     if (ldisentangle) call disentangle(evalsv(1,ik),wann_c(1,1,ikloc),&
@@ -102,13 +108,15 @@ do ikloc=1,nkptloc
     call genwann_h(.true.,evalsv(1,ik),wann_c(1,1,ikloc),&
       wann_h(1,1,ik),wann_e(1,ik))
   endif
-  if (sic) then
-    call diagzhe(sic_wantran%nwan,sic_wan_h0k(1,1,ikloc),sic_wan_e0k(1,ik))
-  endif
-  call bandchar(.false.,ikloc,lmax,lmmax,evecfvloc(1,1,1,ikloc),&
-    evecsvloc(1,1,ikloc),bc(1,1,1,1,ik))
+  call genapwalm(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),&
+    sfacgk(1,1,1,ikloc),apwalm)
+  call genwfsvc(lmax,lmmax,ngk(1,ik),nstsv,apwalm,evecfd,wfsvmt)
+  !if (sic) then
+  !  call diagzhe(sic_wantran%nwan,sic_wan_h0k(1,1,ikloc),sic_wan_e0k(1,ik))
+  !endif
+  call bandchar(.false.,lmax,lmmax,wfsvmt,bc(1,1,1,1,ik))
 enddo
-deallocate(evalfv,evecfvloc,evecsvloc)
+deallocate(evalfv,evecfv,evecsv,evecfd,wfsvmt,apwalm)
 call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.)
 if (wannier) call mpi_grid_reduce(wann_e(1,1),nwantot*nkpt,dims=(/dim_k/),&
   side=.true.)
