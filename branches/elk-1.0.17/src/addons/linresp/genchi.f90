@@ -121,14 +121,15 @@ do iwloc=1,nwloc
       call timer_start(7)
       call solve_chi_wan(iq,lr_w(iw),vcwan,chi0wanloc(1,1,iwloc),f_response(1,iw,ifxc))
       !!! WSTHORNTON
-      if (lwf_channel_analysis) then
-        write(c1,'(I5)')iw
-        fname=trim(qdir2)//"/chi_iw_"//adjustl(c1)
-        fname=trim(fname)//".dat"
-        open(160+iw,file=fname,status="REPLACE",form="FORMATTED")
-        call chiwan_analysis(160+iw,chi0wanloc(1,1,iwloc),vcwan,iq,iw,lr_w(iw)*ha2ev,0.5d-2)
-        close(160)
-      endif
+      !if (lwf_channel_analysis) then
+!      if (.false.) then
+!        write(c1,'(I5)')iw
+!        fname=trim(qdir2)//"/chi_iw_"//adjustl(c1)
+!        fname=trim(fname)//".dat"
+!        open(160+iw,file=fname,status="REPLACE",form="FORMATTED")
+!        call chiwan_analysis(160+iw,chi0wanloc(1,1,iwloc),vcwan,iq,iw,lr_w(iw)*ha2ev,0.5d-2)
+!        close(160)
+!      endif
 
       call timer_stop(7)
     endif !wannier_chi0_chi.and.ifxc.eq.1
