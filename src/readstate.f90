@@ -55,13 +55,13 @@ if (iostat.ne.0) then
   stop
 end if
 read(50) version_
-if ((version(1).ne.version_(1)).or.(version(2).ne.version_(2)) &
- .or.(version(3).ne.version_(3))) then
-  write(*,*)
-  write(*,'("Warning(readstate): different versions")')
-  write(*,'(" current   : ",I3.3,".",I3.3,".",I3.3)') version
-  write(*,'(" STATE.OUT : ",I3.3,".",I3.3,".",I3.3)') version_
-end if
+!if ((version(1).ne.version_(1)).or.(version(2).ne.version_(2)) &
+! .or.(version(3).ne.version_(3))) then
+!  write(*,*)
+!  write(*,'("Warning(readstate): different versions")')
+!  write(*,'(" current   : ",I3.3,".",I3.3,".",I3.3)') version
+!  write(*,'(" STATE.OUT : ",I3.3,".",I3.3,".",I3.3)') version_
+!end if
 read(50) spinpol_
 read(50) nspecies_
 if (nspecies.ne.nspecies_) then
