@@ -2,6 +2,7 @@ subroutine sic_genpot(n,wanlm,wvlm,wanprop)
 use modmain
 use modxcifc
 use mod_sic
+use mod_hdf5
 implicit none
 ! arguments
 integer, intent(in) :: n
@@ -12,6 +13,7 @@ real(8), intent(out) :: wanprop(nwanprop)
 integer jr,ir,l,lm,ispn,lm1,lm2,lm3,lmmaxwanloc,lmloc
 real(8) t1,x(3),x2
 complex(8) zt1
+character*100 path
 real(8), allocatable :: rhotp(:,:,:)
 real(8), allocatable :: rholm(:,:,:)
 real(8), allocatable :: totrholm(:,:)
@@ -135,6 +137,18 @@ do lmloc=1,lmmaxwanloc
 !$OMP END PARALLEL DO
 enddo
 call mpi_grid_reduce(vhalm(1,1),lmmaxwan*s_nr_min,all=.true.)
+! write charge density
+if (sic_write_rholm.and.mpi_grid_root()) then
+  write(path,'("/wannier_functions/",I4.4)')n
+  call hdf5_write("sic.hdf5",path,"rholm",totrholm(1,1),&
+    (/lmmaxwan,s_nr_min/))
+endif
+! write Hartree potential 
+if (sic_write_vhlm.and.mpi_grid_root()) then
+  write(path,'("/wannier_functions/",I4.4)')n
+  call hdf5_write("sic.hdf5",path,"vhlm",vhalm(1,1),&
+    (/lmmaxwan,s_nr_min/))
+endif
 ! compute XC potential
 if (spinpol) then
   call xcifc(xctype,n=s_ntp*s_nr_min,rhoup=rhotp(1,1,1),rhodn=rhotp(1,1,2),&
@@ -167,6 +181,12 @@ do ispn=1,nspinor
   if (sicvc) vxtp(:,:,ispn)=vxtp(:,:,ispn)+vctp(:,:,ispn)
   call sic_rbsht(s_nr_min,vxtp(1,1,ispn),vxclm(1,1,ispn))
 enddo
+! write XC potential
+if (sic_write_vxclm.and.mpi_grid_root()) then
+  write(path,'("/wannier_functions/",I4.4)')n
+  call hdf5_write("sic.hdf5",path,"vxclm",vxclm(1,1,1),&
+    (/lmmaxwan,s_nr_min,nspinor/))
+endif
 ! compute vha=<V_h|rho>
 wanprop(wp_vha)=0.d0
 do ir=1,s_nr_min
@@ -180,7 +200,7 @@ do ir=1,s_nr_min
     ddot(lmmaxwan,totrholm(1,ir),1,exclm(1,ir),1)*s_rw(ir)
 enddo
 ! compute vxc=<W_n|V_xc|W_n>; in the collinear case this is 
-!  \sum_{\sigma} <V_xc^{\sigma}|rho${\sigma}>
+!  \sum_{\sigma} <V_xc^{\sigma}|rho^{\sigma}>
 wanprop(wp_vxc)=0.d0
 do ispn=1,nspinor
   do ir=1,s_nr_min
@@ -194,9 +214,12 @@ wanprop(wp_vsic)=wanprop(wp_vha)+wanprop(wp_vxc)
 do ispn=1,nspinor
   vxclm(:,:,ispn)=vxclm(:,:,ispn)+vhalm(:,:)
 enddo
-!if (.true.) then
-!  call sic_write_pot(n,vxclm)
-!endif
+! write total SIC potential
+if (sic_write_vlm.and.mpi_grid_root()) then
+  write(path,'("/wannier_functions/",I4.4)')n
+  call hdf5_write("sic.hdf5",path,"vlm",vxclm(1,1,1),&
+    (/lmmaxwan,s_nr_min,nspinor/))
+endif
 deallocate(rhotp,rholm,totrholm)
 deallocate(vhalm,extp,ectp,exclm,vxtp,vctp)
 ! multiply Wannier function with potential and change sign
@@ -238,32 +261,4 @@ enddo
 deallocate(f1,f2,f3,vxclm)
 call timer_stop(t_sic_wvprod)
 end subroutine   
-
-subroutine sic_write_pot(n,vxclm)
-use modmain
-use mod_sic
-use mod_hdf5
-implicit none
-integer, intent(in) :: n
-real(8), intent(in) :: vxclm(lmmaxwan,s_nr_min,nspinor)
-!
-character*100 fname
-!
-write(fname,'("vlm__",I4.4,".hdf5")')n
-call hdf5_create_file(trim(fname))  
-call hdf5_write(trim(fname),"/","lmmaxwan",lmmaxwan)
-call hdf5_write(trim(fname),"/","s_nr_min",s_nr_min)
-call hdf5_write(trim(fname),"/","nspinor",nspinor)
-call hdf5_write(trim(fname),"/","s_nr",s_nr)
-call hdf5_write(trim(fname),"/","vlm",vxclm(1,1,1),&
-  (/lmmaxwan,s_nr_min,nspinor/))
-call hdf5_write(trim(fname),"/","s_r",s_r(1),(/s_nr/))
-return
-end subroutine
-
-
-
-
-
-
 
