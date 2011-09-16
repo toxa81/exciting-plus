@@ -100,7 +100,7 @@ if (allocated(vvlp1d)) deallocate(vvlp1d)
 allocate(vvlp1d(3,nvp1d))
 vvlp1d(:,1)=0.d0
 vvlp1d(:,2)=1.d0
-npp1d=200
+npp1d=40
 vclp2d(:,:)=0.d0
 vclp2d(1,2)=1.d0
 vclp2d(2,3)=1.d0
