@@ -4,6 +4,7 @@ use mod_nrkp
 use mod_sic
 use mod_wannier
 use mod_madness
+use mod_hdf5
 implicit none
 integer n,j,ik,ispn,ikloc,ig
 integer ias,lm
@@ -12,6 +13,7 @@ real(8), allocatable :: laplsv(:)
 character*20 c1,c2,c3
 character, parameter :: orbc(4)=(/'s','p','d','f'/)
 character*2, parameter :: spinc(2)=(/'up','dn'/)
+logical texist
 !
 sic=.true.
 ! initialise universal variables
@@ -35,7 +37,23 @@ call elk_m_init
 #ifdef _MAD_
 call madness_init_box
 #endif
-
+! at this point we want to create new hdf5 file for sic-related data
+! but first, read the matix elements from the old file (this is to compute RMS)
+if (allocated(sic_vme_old)) deallocate(sic_vme_old)
+allocate(sic_vme_old(sic_wantran%nwt))
+sic_vme_old=zzero
+inquire(file="sic.hdf5",exist=texist)
+if (texist) then
+  call hdf5_read("sic.hdf5","/","nwt",j)
+  if (j.eq.sic_wantran%nwt) then
+    call hdf5_read("sic.hdf5","/","vme",sic_vme_old(1),(/sic_wantran%nwt/))
+  endif
+endif
+call sic_create_hdf5
+sic_write_rholm=.true.
+sic_write_vlm=.true.
+sic_write_vhlm=.true.
+sic_write_vxclm=.true.
 if (wproc) then
   open(151,file="SIC.OUT",form="FORMATTED",status="REPLACE")
 endif
@@ -68,12 +86,12 @@ if (wproc) then
   write(151,'("maximum angular momentum               : ",I6)')lmaxwan
   write(151,'("cutoff radius for SIC matrix elements  : ",F12.6)')sic_me_cutoff
   write(151,'("number of Wannier transitions          : ",I6)')sic_wantran%nwt
-  write(151,*)
-  write(151,'("LDA energies of Wannier functions")')
-  do j=1,sic_wantran%nwan
-    n=sic_wantran%iwan(j)
-    write(151,'("  n : ",I4,"    sic_wan_e0 : ",F12.6)')n,sic_wan_e0(n)
-  enddo
+  !write(151,*)
+  !write(151,'("LDA energies of Wannier functions")')
+  !do j=1,sic_wantran%nwan
+  !  n=sic_wantran%iwan(j)
+  !  write(151,'("  n : ",I4,"    sic_wan_e0 : ",F12.6)')n,sic_wan_e0(n)
+  !enddo
   call flushifc(151)
 endif
 !if (wproc) then
