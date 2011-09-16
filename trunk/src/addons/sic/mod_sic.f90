@@ -140,6 +140,24 @@ data tsic_wv/.false./
 integer sic_debug_level
 data sic_debug_level/0/
 
+complex(8), allocatable :: sic_vme_old(:)
+! write total SIC potential
+logical sic_write_vlm
+data sic_write_vlm/.false./
+! write Hartree potential
+logical sic_write_vhlm
+data sic_write_vhlm/.false./
+! write XC potential
+logical sic_write_vxclm
+data sic_write_vxclm/.false./
+! write total charge density
+logical sic_write_rholm
+data sic_write_rholm/.false./
+
+
+
+
+
 integer, parameter :: nwanprop=16
 integer, parameter :: wp_normlm=1
 integer, parameter :: wp_normtp=2
