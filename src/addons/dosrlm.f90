@@ -7,6 +7,7 @@ implicit none
 integer lmax,lmmax,l,m,lm,nsk(3)
 integer ik,ispn,is,ia,ias,ist,iw,i,ikloc,x0,n
 real(8) t1
+complex(8) zt1
 ! allocatable arrays
 real(4), allocatable :: bndchr(:,:,:,:,:)
 real(8), allocatable :: f(:,:)
@@ -71,7 +72,7 @@ if (mpi_grid_side(dims=(/dim_k/))) then
       if (wannier) call genwann(ikloc,evecfv,evecsv)
       call gensdmat(evecsv,sdmat(:,:,:,ik))
     else
-      call getevecfd(vkl(1,ik),vgkl(1,1,1,ikloc),evecfd) 
+      call getevecfd(vkl(1,ik),vgkl(1,1,1,ikloc),evecfd)
       call genapwalm(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),&
         sfacgk(1,1,1,ikloc),apwalm)
       call genwfsvc(lmax,lmmax,ngk(1,ik),nstsv,apwalm,evecfd,wfsvmt)
