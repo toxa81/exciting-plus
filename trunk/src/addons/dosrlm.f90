@@ -7,7 +7,6 @@ implicit none
 integer lmax,lmmax,l,m,lm,nsk(3)
 integer ik,ispn,is,ia,ias,ist,iw,i,ikloc,x0,n
 real(8) t1
-complex(8) zt1
 ! allocatable arrays
 real(4), allocatable :: bndchr(:,:,:,:,:)
 real(8), allocatable :: f(:,:)
