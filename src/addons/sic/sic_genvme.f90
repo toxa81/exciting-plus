@@ -9,7 +9,6 @@ integer i,j,n,i1,j1,n1,vl(3)
 logical texist
 real(8) t1,t2,t3,pos1(3),pos2(3)
 complex(8) me1,me2
-complex(8), allocatable :: vme_old(:)
 !
 if (wproc) then
   write(fout,*)
@@ -60,22 +59,21 @@ enddo
 !  sic_vme(j)=dconjg(z1)
 !enddo
 ! read old matrix elements
-allocate(vme_old(sic_wantran%nwt))
-vme_old=zzero
-inquire(file="sic.hdf5",exist=texist)
-if (texist) then
-  call hdf5_read("sic.hdf5","/","nwt",i)
-  if (i.eq.sic_wantran%nwt) then
-    call hdf5_read("sic.hdf5","/","vme",vme_old(1),(/sic_wantran%nwt/))
-  endif
-endif
+!allocate(vme_old(sic_wantran%nwt))
+!vme_old=zzero
+!inquire(file="sic.hdf5",exist=texist)
+!if (texist) then
+!  call hdf5_read("sic.hdf5","/","nwt",i)
+!  if (i.eq.sic_wantran%nwt) then
+!    call hdf5_read("sic.hdf5","/","vme",vme_old(1),(/sic_wantran%nwt/))
+!  endif
+!endif
 ! compute RMS difference
 t3=0.d0
 do i=1,sic_wantran%nwt
-  t3=t3+abs(sic_vme(i)-vme_old(i))**2
+  t3=t3+abs(sic_vme(i)-sic_vme_old(i))**2
 enddo
 t3=sqrt(t3/sic_wantran%nwt)
-deallocate(vme_old)
 call timer_stop(t_sic_me)
 if (wproc) then
   write(fout,*)
