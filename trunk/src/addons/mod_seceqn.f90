@@ -80,8 +80,8 @@ do ias=1,natmtot
       enddo !lm2
 ! kinetic surface contribution
       do io2=1,apword(l1,is)
-        zt1=zone*(0.5d0*rmt(is)**2)*apwfr(nrmt(is),1,io1,l1,ias)*&
-          apwdfr(io2,l1,ias)
+        zt1=zone*(0.5d0*rmt(is)**2)*apwfr(nrmt(is),1,io2,l1,ias)*&
+          apwdfr(io1,l1,ias)
         call zaxpy(ngp,zt1,apwalm(1,io2,lm1,ias),1,zv,1)
       enddo !io2
       naa=naa+1
