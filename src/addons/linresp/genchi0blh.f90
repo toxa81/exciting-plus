@@ -11,6 +11,7 @@ complex(8), intent(out) :: chi0w(ngvecme,ngvecme)
 ! local variables
 logical l1
 integer i,ist1,ist2,offs,ik,jk,ig
+real(8) t1,t2
 complex(8), allocatable :: wt(:)
 logical, external :: bndint
 ! 
@@ -29,9 +30,10 @@ do i=1,nmegqblhloc(1,ikloc)
       chi0_exclude_bands(2)).and.bndint(ist2,evalsvnr(ist2,jk),&
       chi0_exclude_bands(1),chi0_exclude_bands(2))) l1=.false.
   if (l1) then
-    if (abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-6) then
-      wt(i)=(occsvnr(ist1,ik)-occsvnr(ist2,jk))/(evalsvnr(ist1,ik) - &
-        evalsvnr(ist2,jk)+w)
+    t1=occsvnr(ist1,ik)-occsvnr(ist2,jk)
+    if (abs(t1).gt.1d-6) then
+      t2=sign(scissor,t1)
+      wt(i)=t1/(evalsvnr(ist1,ik)-evalsvnr(ist2,jk)-t2+w)
     endif
   endif
 enddo !i
