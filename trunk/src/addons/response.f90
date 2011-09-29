@@ -7,7 +7,6 @@ use mod_linresp
 use mod_wannier
 implicit none
 integer*8, allocatable :: hw_values(:)
-integer, allocatable :: waninc(:) 
 integer i,j,iq
 integer nvqloc,iqloc
 character*100 qnm
@@ -99,27 +98,6 @@ if (exist) then
 else
 ! generate wave-functions for entire BZ
   call genwfnr(151,lpmat,lmaxvr)
-endif
-if (wannier_megq) then
-  allocate(waninc(nwantot))
-  if (nwann_include.eq.0) then
-    waninc=1
-  else
-    waninc=0
-    do i=1,nwann_include
-      waninc(iwann_include(i))=1
-    enddo
-  endif
-  call genwantran(megqwantran,megqwan_mindist,megqwan_maxdist,waninc=waninc)
-  deallocate(waninc)
-  !call printwantran(megqwantran)
-  if (wproc1) then
-    write(151,*)
-    write(151,'("Number of Wannier transitions : ",I6)')megqwantran%nwt
-    write(151,'("Translation limits : ",6I6)')megqwantran%tlim(:,1), &
-      megqwantran%tlim(:,2),megqwantran%tlim(:,3)
-    call flushifc(151)
-  endif
 endif
 ! setup energy mesh
 lr_dw=(lr_w1-lr_w0)/(lr_nw-1)
