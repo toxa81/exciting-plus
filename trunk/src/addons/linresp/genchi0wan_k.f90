@@ -9,6 +9,7 @@ complex(8), intent(in) :: w
 complex(8), intent(out) :: chi0wan_k(megqwantran%nwt,megqwantran%nwt)
 integer ik,jk,i1,i,ist1,ist2
 complex(8), allocatable :: wt(:)
+real(8) t1,t2
 ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
 jk=idxkq(1,ik)
 allocate(wt(nmegqblhwanmax))
@@ -18,8 +19,9 @@ do i1=1,nmegqblhwan(ikloc)
   i=imegqblhwan(i1,ikloc)
   ist1=bmegqblh(1,i,ikloc)
   ist2=bmegqblh(2,i,ikloc)
-  wt(i1)=(occsvnr(ist1,ik)-occsvnr(ist2,jk))/(evalsvnr(ist1,ik) - &
-      evalsvnr(ist2,jk)+w)
+  t1=occsvnr(ist1,ik)-occsvnr(ist2,jk)
+  t2=sign(scissor,t1)
+  wt(i1)=t1/(evalsvnr(ist1,ik)-evalsvnr(ist2,jk)-t2+w)
 enddo
 do i1=1,megqwantran%nwt
   wann_cc2(:,i1)=dconjg(wann_cc(:,i1,ikloc))*wt(:)
