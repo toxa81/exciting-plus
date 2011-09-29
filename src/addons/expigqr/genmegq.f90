@@ -21,7 +21,7 @@ real(8) t1,t2,t3,t4,t5,dn1
 integer lmaxexp,lmmaxexp
 integer np
 character*100 :: qnm,qdir,fout
-
+integer, allocatable :: waninc(:)
 call papi_timer_start(pt_megq)
 
 ! maximum l for exponent expansion
@@ -42,6 +42,30 @@ if (wproc) then
   write(150,'("Calculation of matrix elements:")')
   write(150,'("  <n,k|e^{-i(G+q)x}|n'',k+q>")')
 endif
+
+if (wannier_megq) then
+  call deletewantran(megqwantran)
+  allocate(waninc(nwantot))
+  if (nwann_include.eq.0) then
+    waninc=1
+  else
+    waninc=0
+    do i=1,nwann_include
+      waninc(iwann_include(i))=1
+    enddo
+  endif
+  call genwantran(megqwantran,megqwan_mindist,megqwan_maxdist,waninc=waninc)
+  deallocate(waninc)
+  !call printwantran(megqwantran)
+  if (wproc) then
+    write(150,*)
+    write(150,'("Number of Wannier transitions : ",I6)')megqwantran%nwt
+    write(150,'("Translation limits : ",6I6)')megqwantran%tlim(:,1), &
+      megqwantran%tlim(:,2),megqwantran%tlim(:,3)
+    call flushifc(151)
+  endif
+endif
+
 call timer_start(1,reset=.true.)
 ! initialize G+q vector arays
 call init_gq(iq,lmaxexp,lmmaxexp,tg0q)
