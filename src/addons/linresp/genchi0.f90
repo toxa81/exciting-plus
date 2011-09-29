@@ -77,7 +77,7 @@ if (wannier_chi0_chi) then
   endif
 endif
 ! filter matrix elements
-if (wannier_chi0_chi.and..false.) then
+if (wannier_chi0_chi) then
   allocate(megqwan_tmp(megqwantran%nwt,ngvecme))
   megqwan_tmp=zzero
   allocate(iwt_tmp(5,megqwantran%nwt))
