@@ -12,12 +12,14 @@ real(8) tdiff
 complex(8), allocatable :: krnl(:,:)
 complex(8), allocatable :: eps(:,:)
 complex(8), allocatable :: chi(:,:)
+complex(8), allocatable :: fxckrnl1(:,:)
 
 allocate(krnl(ngvecme,ngvecme))
 allocate(eps(ngvecme,ngvecme))
 allocate(chi(ngvecme,ngvecme))
+allocate(fxckrnl1(ngvecme,ngvecme))
 
-do iter=1,50
+do iter=1,200
 ! restore the full kernel
   krnl=fxckrnl
   do ig=1,ngvecme
@@ -36,36 +38,48 @@ do iter=1,50
   call zgemm('N','N',ngvecme,ngvecme,ngvecme,zone,eps,ngvecme,chi0m,&
     ngvecme,zzero,chi,ngvecme)
 ! compute screend Coulomb potential vscr=vbare+vbare*chi*vbare
-  fxckrnl=zzero
+  fxckrnl1=zzero
   do ig=1,ngvecme
-    fxckrnl(ig,ig)=vhgq(ig,iq)
+    fxckrnl1(ig,ig)=vhgq(ig,iq)
   enddo
   do ig1=1,ngvecme
     do ig2=1,ngvecme
-      fxckrnl(ig1,ig2)=fxckrnl(ig1,ig2)+vhgq(ig1,iq)*chi(ig1,ig2)*vhgq(ig2,iq)
+      fxckrnl1(ig1,ig2)=fxckrnl1(ig1,ig2)+vhgq(ig1,iq)*chi(ig1,ig2)*vhgq(ig2,iq)
     enddo
   enddo
+
+
+  krnl=zzero
+  do ig=1,ngvecme
+    krnl(ig,ig)=krnl(ig,ig)+vhgq(ig,iq)
+  enddo
+  call zgemm('N','N',ngvecme,ngvecme,ngvecme,zone,chi0m,ngvecme,krnl,&
+    ngvecme,zzero,eps,ngvecme)
+! invert epsilon matrix
+  call invzge(eps,ngvecme)
+! compute chi=epsilon^-1 * w
+  call zgemm('N','N',ngvecme,ngvecme,ngvecme,zone,fxckrnl1,ngvecme,eps,&
+    ngvecme,zzero,krnl,ngvecme)
+    fxckrnl1=krnl
+
 ! scale kernel by eps0
-   do ig1=1,ngvecme
-    do ig2=1,ngvecme
-      fxckrnl(ig1,ig2)=fxckrnl(ig1,ig2)/(chi0m(iig0q,iig0q)*vhgq(iig0q,iq))
-      if (ig1.ne.ig2) fxckrnl(ig1,ig2)=zzero
-    enddo
-  enddo
+   !do ig1=1,ngvecme
+   ! do ig2=1,ngvecme
+   !   fxckrnl1(ig1,ig2)=fxckrnl1(ig1,ig2)/(chi0m(iig0q,iig0q)*vhgq(iig0q,iq))
+   !   !if (ig1.ne.ig2) fxckrnl(ig1,ig2)=zzero
+   ! enddo
+  !enddo
   tdiff=0.d0
   do ig1=1,ngvecme
     do ig2=1,ngvecme
-      if (ig1.eq.ig2) then
-        tdiff=tdiff+abs(fxckrnl(ig1,ig1)-krnl(ig1,ig1)+vhgq(ig1,iq))
-      else
-        tdiff=tdiff+abs(fxckrnl(ig1,ig2)-krnl(ig1,ig2))
-      endif
+      tdiff=tdiff+abs(fxckrnl(ig1,ig2)-fxckrnl1(ig1,ig2))
     enddo
   enddo
+  fxckrnl=0.75d0*fxckrnl+0.25d0*fxckrnl1
   if (tdiff.lt.1d-8) goto 10
 enddo
 write(*,'("Warning(bsfx): total difference : ",G18.10)')tdiff
 10 continue
-deallocate(krnl,eps,chi)
+deallocate(krnl,eps,chi,fxckrnl1)
 return
 end subroutine
