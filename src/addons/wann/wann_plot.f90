@@ -7,10 +7,7 @@ use modxcifc
 implicit none
 real(8) orig(3)
 real(4), allocatable :: func(:)
-!complex(4), allocatable :: wf(:,:,:)
-!complex(4), allocatable :: wfval(:,:)
-!complex(4), allocatable :: wfp(:)
-integer i,nrtot
+integer i,nrtot,nrloc,irloc
 integer i1,i2,i3,ir,n,j,ispn
 real(8), allocatable :: vr(:,:)
 real(8), allocatable :: veff(:)
@@ -86,14 +83,17 @@ allocate(zfft(ngrtot))
 zfft(:)=veffir(:)
 call zfftifc(3,ngrid,-1,zfft)
 
+nrloc=mpi_grid_map(nrtot,dim1)
+
 do j=1,nwfplot
   n=j+firstwf-1
   call elk_load_wann_unk(n)
   func=0.0 
-  do ir=1,nrtot
-    if (mod(ir,nrxyz(2)*nrxyz(3)).eq.0.and.mpi_grid_root()) then
-      write(*,*)'r-point : ',ir,' out of ',nrtot
-    endif
+  do irloc=1,nrloc
+    ir=mpi_grid_map(nrtot,dim1,loc=irloc)
+    !if (mod(ir,nrxyz(2)*nrxyz(3)).eq.0.and.mpi_grid_root()) then
+    !  write(*,*)'r-point : ',ir,' out of ',nrtot
+    !endif
     call s_get_wanval(vr(:,ir),zval)
     dens=0.d0
     do ispn=1,nspinor
@@ -103,6 +103,7 @@ do j=1,nwfplot
     func(ir)=sngl(dens(1)) !sngl(abs(zval(1)*(v1(1)+v2(1)))) !sngl(dens(1))
     !call rfval(vr(1,ir),lmaxvr,lmmaxvr,veffmt,zfft,t1)
   enddo !ir
+  call mpi_grid_reduce(func(1),nrtot,dims=(/dim1/))
 ! write to file
   if (mpi_grid_root()) then
     if (task.eq.862) then
