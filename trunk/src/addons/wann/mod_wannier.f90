@@ -369,18 +369,15 @@ integer, intent(in) :: lmmax
 real(8), intent(in) :: vpc(3)
 real(8), intent(in) :: eval(nstsv)
 complex(8), intent(in) :: wfsvmt(lmmax,nufrmax,natmtot,nspinor,nstsv)
-complex(8), intent(out) :: wanc(nwantot,nstsv)
+complex(8), intent(inout) :: wanc(nwantot,nstsv)
 integer, optional, intent(out) :: ierr
 !
 integer n,j,ias,lm,ispn,itype,ilo,ierr_
 logical tbndint 
 real(8) d1
-complex(8), allocatable :: prjlo(:,:)
 logical, external :: bndint
-real(8), external :: orbwt
 !
-allocate(prjlo(nwantot,nstsv))
-prjlo=zzero
+wanc=zzero
 do n=1,nwantot
   !if (.not.wannier_lc) then
     ias=wan_info(1,n)
@@ -392,9 +389,9 @@ do n=1,nwantot
       tbndint=bndint(j,eval(j),wann_eint(1,itype),wann_eint(2,itype))
       if (tbndint) then
         call wan_genprjlo(ilo,ias,lm,ispn,lmmax,wfsvmt(1,1,1,1,j),&
-          prjlo(n,j))
+          wanc(n,j))
         if (wannier_soft_eint) then
-          prjlo(n,j)=prjlo(n,j)*orbwt(eval(j),wannier_soft_eint_e1(itype), &
+          wanc(n,j)=wanc(n,j)*smoothstep(eval(j),wannier_soft_eint_e1(itype), &
             wannier_soft_eint_e2(itype),wannier_soft_eint_w1(itype),&
             wannier_soft_eint_w2(itype))
         endif
@@ -429,9 +426,9 @@ enddo !n
 do j=1,nstsv
   d1=0.d0
   do n=1,nwantot
-    d1=d1+abs(prjlo(n,j))**2
+    d1=d1+abs(wanc(n,j))**2
   enddo
-  if (d1.lt.wannier_min_prjao) prjlo(:,j)=zzero
+  if (d1.lt.wannier_min_prjao) wanc(:,j)=zzero
 enddo
 !if (.false.) then
 !  write(*,'("Total contribution of projected orbitals : ")')
@@ -443,10 +440,8 @@ enddo
 !    write(*,'("  band : ",I4,"  wt : ",F12.6)')j,d1
 !  enddo
 !endif
-call wan_ort_k(prjlo,ierr_)
-wanc=prjlo
+call wan_ort_k(wanc,ierr_)
 if (present(ierr)) ierr=ierr_
-deallocate(prjlo)
 return
 end subroutine
 
@@ -532,5 +527,19 @@ endif
 deallocate(s,wanc_ort)
 return
 end subroutine
+
+! use two Fermi functions to make a smooth energy interval [e1,e2] with
+!  the finite width w1,w2
+real(8) function smoothstep(e,e1,e2,w1,w2)
+implicit none
+real(8), intent(in) :: e
+real(8), intent(in) :: e1
+real(8), intent(in) :: e2
+real(8), intent(in) :: w1
+real(8), intent(in) :: w2
+smoothstep=1.d0/(exp((e-e2)/w2)+1.d0)+1.d0/(exp((-e+e1)/w1)+1.d0)-1.d0
+if (smoothstep.lt.1d-16) smoothstep=0.d0 
+return
+end function
 
 end module

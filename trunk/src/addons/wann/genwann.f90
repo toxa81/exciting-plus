@@ -48,7 +48,7 @@ call match(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),sfacgk(1,1,1,ikloc),apwal
 ! generate second-varioational wave-functions
 call genwfsvmt(lmaxvr,lmmaxvr,ngk(1,ik),evecfv,evecsv,apwalm,wfsvmt)
 ! calculate WF expansion coefficients
-call genwann_c(ik,vkc(:,ik),evalsv(1,ik),wfsvmt,wann_c(1,1,ikloc),&
+call wan_gencsv(lmmaxvr,vkc(:,ik),evalsv(1,ik),wfsvmt,wann_c(1,1,ikloc),&
   wann_err_k(ikloc))
 deallocate(wfsvmt,apwalm)
 return
