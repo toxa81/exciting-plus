@@ -347,8 +347,8 @@ do ikloc=1,nkptnrloc
     call genwfsvmt(lmax,lmmax,ngknr(ikloc),evecfvnrloc(1,1,1,ikloc),&
       evecsvnrloc(1,1,ikloc),apwalm,wfsvmtnrloc(1,1,1,1,1,ikloc))
     if (wannier) then
-      call genwann_c(ik,vkcnr(:,ik),evalsvnr(1,ik),wfsvmtnrloc(1,1,1,1,1,ikloc),&
-        wanncnrloc(1,1,ikloc),ierr)   
+      call wan_gencsv(lmmax,vkcnr(1,ik),evalsvnr(1,ik),&
+        wfsvmtnrloc(1,1,1,1,1,ikloc),wanncnrloc(1,1,ikloc),ierr) 
       if (ldisentangle) then
 ! disentangle bands
         call disentangle(evalsvnr(1,ik),wanncnrloc(1,1,ikloc),&
@@ -366,7 +366,7 @@ do ikloc=1,nkptnrloc
         pmatnrloc(1,1,1,ikloc))
     endif
   else
- ! get apw coeffs 
+! get apw coeffs 
     call genapwalm(ngknr(ikloc),gknr(1,ikloc),tpgknr(1,1,ikloc),&
       sfacgknr(1,1,ikloc),apwalm)
     call genwfsvc(lmax,lmmax,ngknr(ikloc),nstsv,apwalm,&
