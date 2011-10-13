@@ -93,7 +93,7 @@ do is=1,nspecies
   x1=spr(nrmt(is)-1,is)
   x2=spr(nrmt(is),is)
   mt_rw(nrmt(is),is)=-((x1-x2)*(x1**2+2*x1*x2+3*x2**2))/12.d0
-  if (sum(mt_rw(1:nrmt(is),is))-((fourpi/3)*rmt(is)**3).gt.1d-10) then
+  if (abs(sum(mt_rw(1:nrmt(is),is))-(rmt(is)**3)/3).gt.1d-10) then
     write(*,'("Error(init3): wrong weight for is : ",I4)')is
     call pstop
   endif
