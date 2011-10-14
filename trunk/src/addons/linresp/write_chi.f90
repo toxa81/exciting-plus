@@ -128,6 +128,7 @@ if (wannier_chi0_chi) then
     write(160,'(12G14.6)')func(1:10,ie)
   enddo
   deallocate(func)
+  close(160)
 endif
 return
 end
