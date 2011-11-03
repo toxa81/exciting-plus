@@ -141,6 +141,7 @@ integer, parameter :: dim3=3
 !----------------!
 !      timer     !
 !----------------!
+integer, parameter :: t_runtime=1
 integer, parameter :: t_iter_tot=2
 integer, parameter :: t_init=10
 
