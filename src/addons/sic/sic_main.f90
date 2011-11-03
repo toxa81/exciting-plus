@@ -50,6 +50,7 @@ if (texist) then
   endif
 endif
 call sic_create_hdf5
+call mpi_grid_barrier
 sic_write_rholm=.true.
 sic_write_vlm=.true.
 sic_write_vhlm=.true.
@@ -141,6 +142,7 @@ call sic_wan_blochsum
 call mpi_grid_barrier
 ! write to HDF5 file
 call sic_write_data
+call mpi_grid_barrier
 if (wproc) then
   call timestamp(151,"Done.")
   close(151)
