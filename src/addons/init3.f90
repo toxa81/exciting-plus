@@ -2,6 +2,7 @@ subroutine init3
 use modmain
 use mod_wannier
 use mod_sic
+use mod_rs
 implicit none
 integer ia,is,l,m,ir,i1,i2,i3,i
 integer itp
@@ -118,6 +119,7 @@ if (.not.tsveqn.and.spinpol) then
 endif
 if (wannier) call wann_init
 if (sic) call sic_init
+call rs_init
 ! init xml_info variables
 if (.not.allocated(xml_info%magmom)) allocate(xml_info%magmom(natmtot))
 if (wannier) then
