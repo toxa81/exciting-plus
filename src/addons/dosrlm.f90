@@ -91,7 +91,14 @@ do ik=1,nkpt
 enddo
 call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.,&
   all=.true.)
-  
+! apply scissor correction if required
+if (scissor.ne.0.d0) then
+  do ik=1,nkpt
+    do ist=1,nstsv
+      if (evalsv(ist,ik).gt.efermi) evalsv(ist,ik)=evalsv(ist,ik)+scissor
+    enddo
+  enddo
+end if
 ! generate energy grid
 wdos(1)=minval(evalsv(:,:))-0.1
 wdos(2)=maxval(evalsv(:,:))+0.1
