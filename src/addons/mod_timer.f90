@@ -57,8 +57,8 @@ subroutine timer_reset(n)
 implicit none
 integer, intent(in) :: n
 if (n.eq.0) then  
-  timer_value=0.d0
-  timer_count=0
+  timer_value(2:,:)=0.d0
+  timer_count(2:)=0
 else
   timer_value(n,:)=0.d0
   timer_count(n)=0
