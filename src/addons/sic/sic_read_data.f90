@@ -41,7 +41,7 @@ if (treadk) then
     write(*,'("Error(sic_read_data): wrong nkpt")')
     write(*,'("  sic.hdf5 : ",I6)')nkpt_
     write(*,'("  current  : ",I6)')nkpt
-    call pstop
+    goto 10
   endif
   do n=1,nwantot
     j=sic_wantran%idxiwan(n)
@@ -57,6 +57,7 @@ if (treadk) then
     endif
   enddo 
 endif
+10 continue
 tsic_wv=.true.
 return
 end
