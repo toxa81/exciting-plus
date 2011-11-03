@@ -378,7 +378,7 @@ do ikloc=1,nkptnrloc
     endif
   endif
   if (wannier.and.ierr.ne.0) then
-    write(*,'("Warning(genwfnr): Wannier functions are wrong at k-point : ",I4)')ik
+    write(*,'("Warning(genwfnr): Wannier functions are wrong at k-point (ik, vkl) : ",I4,3G18.10)')ik,vklnr(:,ik)
   endif
 enddo !ikloc
 deallocate(apwalm)
@@ -420,6 +420,13 @@ call mpi_grid_reduce(evalsvnr(1,1),nstsv*nkptnr,dims=(/dim_k/),all=.true.)
 if (allocated(occsvnr)) deallocate(occsvnr)
 allocate(occsvnr(nstsv,nkptnr))
 call occupy2(nkptnr,wkptnr,evalsvnr,occsvnr)
+if (wproc.and.fout.gt.0) then
+  write(fout,*)
+  write(fout,'("band gap : ",F12.6)')bandgap
+  write(fout,'("Ef       : ",F12.6)')efermi
+  call timestamp(fout)
+  if (fout.ne.6) call flushifc(fout)
+endif
 if (mpi_grid_root()) then
   open(180,file='EIGVALNR.OUT',form='formatted',status='replace')
   write(180,'(I6," : nkptnr")') nkptnr
