@@ -119,6 +119,7 @@ do iwloc=1,nwloc
       enddo
       if (fxctype.eq.3.and.ifxc.eq.2) then
         call bsfxc(iq,chi0w0,fxckrnl)
+        !call bsfxc(iq,chi0loc(1,1,iwloc),fxckrnl)
       endif
     endif !lrtype.eq.0 
     call timer_start(6)

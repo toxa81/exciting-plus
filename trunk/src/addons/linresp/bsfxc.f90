@@ -49,26 +49,27 @@ do iter=1,200
   enddo
 
 
-  krnl=zzero
-  do ig=1,ngvecme
-    krnl(ig,ig)=krnl(ig,ig)+vhgq(ig,iq)
-  enddo
-  call zgemm('N','N',ngvecme,ngvecme,ngvecme,zone,chi0m,ngvecme,krnl,&
-    ngvecme,zzero,eps,ngvecme)
-! invert epsilon matrix
-  call invzge(eps,ngvecme)
-! compute chi=epsilon^-1 * w
-  call zgemm('N','N',ngvecme,ngvecme,ngvecme,zone,fxckrnl1,ngvecme,eps,&
-    ngvecme,zzero,krnl,ngvecme)
-    fxckrnl1=krnl
+!  krnl=zzero
+!  do ig=1,ngvecme
+!    krnl(ig,ig)=krnl(ig,ig)+vhgq(ig,iq)
+!  enddo
+!  call zgemm('N','N',ngvecme,ngvecme,ngvecme,zone,chi0m,ngvecme,krnl,&
+!    ngvecme,zzero,eps,ngvecme)
+!! invert epsilon matrix
+!  call invzge(eps,ngvecme)
+!! compute f= w * epsilon^-1
+!  call zgemm('N','N',ngvecme,ngvecme,ngvecme,zone,fxckrnl1,ngvecme,eps,&
+!    ngvecme,zzero,krnl,ngvecme)
+!  fxckrnl1=krnl
 
 ! scale kernel by eps0
-   !do ig1=1,ngvecme
-   ! do ig2=1,ngvecme
-   !   fxckrnl1(ig1,ig2)=fxckrnl1(ig1,ig2)/(chi0m(iig0q,iig0q)*vhgq(iig0q,iq))
-   !   !if (ig1.ne.ig2) fxckrnl(ig1,ig2)=zzero
-   ! enddo
-  !enddo
+  do ig1=1,ngvecme
+    do ig2=1,ngvecme
+      fxckrnl1(ig1,ig2)=fxckrnl1(ig1,ig2)/(chi0m(iig0q,iig0q)*vhgq(iig0q,iq))
+      if (ig1.ne.ig2) fxckrnl(ig1,ig2)=zzero
+    enddo
+  enddo
+
   tdiff=0.d0
   do ig1=1,ngvecme
     do ig2=1,ngvecme
