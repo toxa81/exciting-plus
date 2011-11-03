@@ -26,7 +26,7 @@ implicit none
 integer ik,jk,isym
 integer ist,jst,iw,i,j,l
 integer recl,iostat,ikloc
-real(8) eji,wplas,x,t1,t2
+real(8) eji,wplas,x,t1,t2,er,ei
 real(8) v1(3),v2(3),v3(3)
 complex(8) zv(3),eta,zt1
 character(256) fname
@@ -36,9 +36,9 @@ real(8), allocatable :: w(:)
 real(8), allocatable :: delta(:,:,:)
 complex(8), allocatable :: pmat(:,:,:,:)
 complex(8), allocatable :: sigma(:)
+complex(8), allocatable :: epsil(:)
 ! external functions
-real(8) sdelta
-external sdelta
+real(8), external :: sdelta
 ! initialise universal variables
 call init0
 call init1
@@ -60,6 +60,7 @@ allocate(w(nwdos))
 if (usegdft) allocate(delta(nstsv,nstsv,nkpt))
 allocate(pmat(3,nstsv,nstsv,nkptnrloc))
 allocate(sigma(nwdos))
+allocate(epsil(nwdos))
 ! compute generalised DFT correction
 if (usegdft) then
   call readstate
@@ -185,6 +186,14 @@ do l=1,noptcomp
       write(60,'(2G18.10)') w(iw),aimag(sigma(iw))
     end do
     close(60)
+! compute dielectric function    
+    t1=0.d0
+    if (i.eq.j) t1=1.d0
+    do iw=1,nwdos
+      er=t1-fourpi*aimag(sigma(iw)/(w(iw)+eta))
+      ei=fourpi*dble(sigma(iw)/(w(iw)+eta))
+      epsil(iw)=dcmplx(er,ei)
+    end do
 ! write the dielectric function to file
     write(fname,'("EPSILON_",2I1,".OUT")') i,j
     open(60,file=trim(fname),action='WRITE',form='FORMATTED')
@@ -198,6 +207,13 @@ do l=1,noptcomp
     do iw=1,nwdos
       t2=fourpi*dble(sigma(iw)/(w(iw)+eta))
       write(60,'(2G18.10)') w(iw),t2
+    end do
+    close(60)
+! write loss function to file
+    write(fname,'("LOSS_",2I1,".OUT")') i,j
+    open(60,file=trim(fname),action='WRITE',form='FORMATTED')
+    do iw=1,nwdos
+      write(60,'(2G18.10)') w(iw),-dimag(1.d0/epsil(iw))
     end do
     close(60)
 ! write sigma to test file
@@ -219,7 +235,7 @@ if (mpi_grid_root()) then
   end do
   write(*,*)
 end if
-deallocate(lspl,w,sigma,pmat)
+deallocate(lspl,w,sigma,epsil,pmat)
 if (usegdft) deallocate(delta)
 return
 end subroutine
