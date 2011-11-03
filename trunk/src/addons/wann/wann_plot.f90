@@ -131,19 +131,19 @@ do j=1,nwfplot
       write(fname,'("wf_",I3.3,".dx")')n
       open(70,file=trim(fname),status="REPLACE",form="FORMATTED")
       if (task.eq.862) then
-        write(70,'("object 1 class gridpositions counts",2I4)')nrxyz(1),nrxyz(2)
+        write(70,'("object 1 class gridpositions counts",2I8)')nrxyz(1),nrxyz(2)
         write(70,'("origin ",2G18.10)')(/0.d0, 0.d0/)
         write(70,'("delta ",2G18.10)')(/x(1),0.d0/)/(nrxyz(1)-1)
         write(70,'("delta ",2G18.10)')(/x(2)*cos(alph),x(2)*sin(alph)/)/(nrxyz(2)-1)
-        write(70,'("object 2 class gridconnections counts",2I4)')nrxyz(1),nrxyz(2)
+        write(70,'("object 2 class gridconnections counts",2I8)')nrxyz(1),nrxyz(2)
       endif
       if (task.eq.863) then
-        write(70,'("object 1 class gridpositions counts",3I4)')nrxyz(1),nrxyz(2),nrxyz(3)
+        write(70,'("object 1 class gridpositions counts",3I8)')nrxyz(1),nrxyz(2),nrxyz(3)
         write(70,'("origin ",3G18.10)')orig(:)
         do i=1,3
           write(70,'("delta ",3G18.10)')bound3d(:,i)/(nrxyz(i)-1)
         enddo
-        write(70,'("object 2 class gridconnections counts",3I4)')nrxyz(1),nrxyz(2),nrxyz(3)
+        write(70,'("object 2 class gridconnections counts",3I8)')nrxyz(1),nrxyz(2),nrxyz(3)
       endif
       write(70,'("object 3 class array type float rank 1 shape 1 items ",&
         &I8," lsb ieee data 4")')nrtot
