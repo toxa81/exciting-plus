@@ -7,9 +7,11 @@
 program main
 use modmain
 use mod_hdf5
+use mod_timer
 implicit none
 ! local variables
 integer itask
+call timer_start(t_runtime,.true.)
 #ifdef _MAD_
 call madness_init
 #else
@@ -147,6 +149,8 @@ call papi_finalize
 call hdf5_finalize
 call mpi_grid_finalize
 call mpi_world_finalize
+call timer_stop(t_runtime)
+if (iproc.eq.0) write(*,'("Total execution time : ",F12.4," seconds")')timer_get_value(t_runtime)
 stop
 end program
 
