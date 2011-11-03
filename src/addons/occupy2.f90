@@ -35,28 +35,42 @@ if ((autoswidth).and.(iscl.gt.1)) call findswidth
 e0=minval(evalsv_(:,:))
 e1=maxval(evalsv_(:,:))
 t1=1.d0/swidth
-! determine the Fermi energy using the bisection method
-do it=1,maxit
-  efermi=0.5d0*(e0+e1)
-  chg=0.d0
+! estimate band gap
+call getbandgap(nkpt_,evalsv_,bandgap,efermi)
+if (bandgap.gt.0.d0) then
   do ik=1,nkpt_
     do ist=1,nstsv
-      x=(efermi-evalsv_(ist,ik))*t1
-      occsv_(ist,ik)=occmax*stheta(stype,x)
-      chg=chg+wkpt_(ik)*occsv_(ist,ik)
+      if (evalsv_(ist,ik).lt.efermi) then
+        occsv_(ist,ik)=occmax
+      else
+        occsv_(ist,ik)=0.d0
+      endif
+    enddo
+  enddo
+else
+! determine the Fermi energy using the bisection method
+  do it=1,maxit
+    efermi=0.5d0*(e0+e1)
+    chg=0.d0
+    do ik=1,nkpt_
+      do ist=1,nstsv
+        x=(efermi-evalsv_(ist,ik))*t1
+        occsv_(ist,ik)=occmax*stheta(stype,x)
+        chg=chg+wkpt_(ik)*occsv_(ist,ik)
+      end do
     end do
+    if (chg.lt.chgval) then
+      e0=efermi
+    else
+      e1=efermi
+    end if
+    if ((e1-e0).lt.epsocc) goto 10
   end do
-  if (chg.lt.chgval) then
-    e0=efermi
-  else
-    e1=efermi
-  end if
-  if ((e1-e0).lt.epsocc) goto 10
-end do
-write(*,*)
-write(*,'("Error(occupy2): could not find Fermi energy")')
-write(*,*)
-call pstop
+  write(*,*)
+  write(*,'("Error(occupy2): could not find Fermi energy")')
+  write(*,*)
+  call pstop
+endif
 10 continue
 return
 end subroutine
