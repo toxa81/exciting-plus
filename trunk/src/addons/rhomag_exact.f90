@@ -54,9 +54,9 @@ do ias=1,natmtot
   enddo !lm3
 enddo !ias
 deallocate(fr)
-do ispn=1,nspinor
-  call zfftifc(3,ngrid,1,rhomagit(1,ispn))
-enddo
+!do ispn=1,nspinor
+!  call zfftifc(3,ngrid,1,rhomagit(1,ispn))
+!enddo
 if (spinpol) then
   rhoir(:)=rhoir(:)+dreal(rhomagit(:,1)+rhomagit(:,2))
   magir(:,1)=magir(:,1)+dreal(rhomagit(:,1)-rhomagit(:,2))
