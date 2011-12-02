@@ -24,6 +24,7 @@ real(8), allocatable :: wo(:)
 integer, allocatable :: istocc(:)
 complex(8), allocatable :: evecfd_(:,:)
 complex(8), allocatable ::zfft(:)
+real(8), allocatable :: rhotmp(:,:)
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 allocate(wo(nstsv))
 allocate(istocc(nstsv))
@@ -129,7 +130,12 @@ deallocate(wfsvmt)
 deallocate(zdens)
 call timer_stop(t_rho_mag_mt)
 call timer_start(t_rho_mag_it)
+!$OMP PARALLEL DEFAULT(SHARED) &
+!$OMP PRIVATE(zfft,rhotmp,jst,ispn,ig1,ir)
 allocate(zfft(ngrtot))
+allocate(rhotmp(ngrtot,nspinor))
+rhotmp=0.d0
+!$OMP DO
 do jst=1,nstocc
   do ispn=1,nspinor
     zfft=zzero
@@ -138,11 +144,18 @@ do jst=1,nstocc
     enddo
     call zfftifc(3,ngrid,1,zfft) 
     do ir=1,ngrtot
-      rhomagit(ir,ispn)=rhomagit(ir,ispn)+(abs(zfft(ir))**2)*wo(jst)/omega
+      rhotmp(ir,ispn)=rhotmp(ir,ispn)+(abs(zfft(ir))**2)*wo(jst)/omega
     enddo
   enddo
 enddo
+!$OMP END DO
 deallocate(zfft)
+!$OMP CRITICAL
+rhomagit=rhomagit+rhotmp
+!$OMP END CRITICAL
+deallocate(rhotmp)
+!$OMP END PARALLEL
+
 !allocate(wfsvit_(nstocc,ngkmax,nspinor))
 !do jst=1,nstocc
 !  wfsvit_(jst,:,:)=wfsvit(:,:,jst)
