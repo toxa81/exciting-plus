@@ -7,7 +7,7 @@ integer, intent(in) :: ikloc
 ! local variables
 integer ist,j,ia
 integer is,ias,ik,ispn,jst,i1
-integer ivg3(3),ifg3
+integer ivg3(3),ifg3,ir
 integer ig1,ig2,io1,io2,l1,l2,j1,j2,lm1,lm2,lm3,l3
 integer nstocc
 real(8) t1
@@ -23,7 +23,7 @@ complex(8), allocatable :: zdens(:,:,:,:,:,:)
 real(8), allocatable :: wo(:)
 integer, allocatable :: istocc(:)
 complex(8), allocatable :: evecfd_(:,:)
-
+complex(8), allocatable ::zfft(:)
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 allocate(wo(nstsv))
 allocate(istocc(nstsv))
@@ -129,24 +129,38 @@ deallocate(wfsvmt)
 deallocate(zdens)
 call timer_stop(t_rho_mag_mt)
 call timer_start(t_rho_mag_it)
-allocate(wfsvit_(nstocc,ngkmax,nspinor))
+allocate(zfft(ngrtot))
 do jst=1,nstocc
-  wfsvit_(jst,:,:)=wfsvit(:,:,jst)
-enddo
-do ig1=1,ngk(1,ik)
-  do ig2=1,ngk(1,ik)
-    ivg3(:)=ivg(:,igkig(ig2,1,ikloc))-ivg(:,igkig(ig1,1,ikloc))
-    ifg3=igfft(ivgig(ivg3(1),ivg3(2),ivg3(3)))
-    do ispn=1,nspinor
-      do jst=1,nstocc
-        rhomagit(ifg3,ispn)=rhomagit(ifg3,ispn)+&
-          dconjg(wfsvit_(jst,ig1,ispn))*wfsvit_(jst,ig2,ispn)*wo(jst)/omega
-      enddo
+  do ispn=1,nspinor
+    zfft=zzero
+    do ig1=1,ngk(1,ik) 
+      zfft(igfft(igkig(ig1,1,ikloc)))=wfsvit(ig1,ispn,jst)
+    enddo
+    call zfftifc(3,ngrid,1,zfft) 
+    do ir=1,ngrtot
+      rhomagit(ir,ispn)=rhomagit(ir,ispn)+(abs(zfft(ir))**2)*wo(jst)/omega
     enddo
   enddo
 enddo
+deallocate(zfft)
+!allocate(wfsvit_(nstocc,ngkmax,nspinor))
+!do jst=1,nstocc
+!  wfsvit_(jst,:,:)=wfsvit(:,:,jst)
+!enddo
+!do ig1=1,ngk(1,ik)
+!  do ig2=1,ngk(1,ik)
+!    ivg3(:)=ivg(:,igkig(ig2,1,ikloc))-ivg(:,igkig(ig1,1,ikloc))
+!    ifg3=igfft(ivgig(ivg3(1),ivg3(2),ivg3(3)))
+!    do ispn=1,nspinor
+!      do jst=1,nstocc
+!        rhomagit(ifg3,ispn)=rhomagit(ifg3,ispn)+&
+!          dconjg(wfsvit_(jst,ig1,ispn))*wfsvit_(jst,ig2,ispn)*wo(jst)/omega
+!      enddo
+!    enddo
+!  enddo
+!enddo
 call timer_stop(t_rho_mag_it)
-deallocate(wfsvit,wfsvit_)
+deallocate(wfsvit)
 deallocate(wo,istocc)
 return
 end subroutine
