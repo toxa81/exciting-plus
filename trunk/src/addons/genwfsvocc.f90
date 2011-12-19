@@ -22,6 +22,7 @@ call genwffvmt(lmax,lmmax,ngp,evecfv,apwalm,wffvmt)
 nrow=lmmax*nufrmax*natmtot
 wfsvmt=zzero
 wfsvit=zzero
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(jst,ist,ispn)
 do jst=1,nstocc
   ist=istocc(jst)
   do ispn=1,nspinor
@@ -31,6 +32,7 @@ do jst=1,nstocc
       evecsv((ispn-1)*nstfv+1,ist),1,zzero,wfsvit(1,ispn,jst),1)
   enddo
 enddo
+!$OMP END PARALLEL DO
 deallocate(wffvmt)
 return
 end subroutine
