@@ -8,18 +8,18 @@ CPP_OPTS = -D_MPI_
 F90_OPTS = -O2 -Wall -cpp $(CPP_OPTS) -I/Users/anton/local/include
 # debug
 #F90_OPTS = -O0 -Wall -g -cpp -fbounds-check -fdump-core -fbacktrace $(CPP_OPTS) -I/Users/anton/local/include
-F90_LINK_OPTS=$(F90_OPTS)
+F90_LINK_OPTS=
 
 LAPACK_LIB = $(HOME)/local/lib/liblapack.a $(HOME)/local/lib/libblas.a
 
 # === compile with HDF5 support ===
-CPP_OPTS := $(CPP_OPTS) -D_HDF5_
-HDF5_LIB = $(HOME)/local/lib/libhdf5hl_fortran.a $(HOME)/local/lib/libhdf5_hl.a \
-  $(HOME)/local/lib/libhdf5_fortran.a $(HOME)/local/lib/libhdf5.a -lz -lm 
+#CPP_OPTS := $(CPP_OPTS) -D_HDF5_
+#HDF5_LIB = $(HOME)/local/lib/libhdf5hl_fortran.a $(HOME)/local/lib/libhdf5_hl.a \
+#  $(HOME)/local/lib/libhdf5_fortran.a $(HOME)/local/lib/libhdf5.a -lz -lm 
 
 # ==- compile with libXC support ===
-CPP_OPTS := $(CPP_OPTS) -D_LIBXC_
-XC_LIB = ../libxc.a
+#CPP_OPTS := $(CPP_OPTS) -D_LIBXC_
+#XC_LIB = ../libxc.a
 
 # ==- compile with NFFT support ===
 #CPP_OPTS := $(CPP_OPTS) -D_NFFT_
