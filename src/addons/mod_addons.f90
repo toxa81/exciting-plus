@@ -143,48 +143,49 @@ integer, parameter :: dim3=3
 !----------------!
 integer, parameter :: t_runtime=1
 integer, parameter :: t_iter_tot=2
-integer, parameter :: t_init=10
+integer, parameter :: t_init=3
 
-integer, parameter :: t_seceqn=18
+integer, parameter :: t_seceqn=4
 
-integer, parameter :: t_seceqnfv=19
-integer, parameter :: t_seceqnfv_setup=20
-integer, parameter :: t_seceqnfv_setup_h=21
-integer, parameter :: t_seceqnfv_setup_h_mt=22
-integer, parameter :: t_seceqnfv_setup_h_it=23
-integer, parameter :: t_seceqnfv_setup_o=24
-integer, parameter :: t_seceqnfv_setup_o_mt=25
-integer, parameter :: t_seceqnfv_setup_o_it=26
-integer, parameter :: t_seceqnfv_diag=27
+integer, parameter :: t_seceqnfv=5
+integer, parameter :: t_seceqnfv_setup=6
+integer, parameter :: t_seceqnfv_setup_h=7
+integer, parameter :: t_seceqnfv_setup_h_mt=8
+integer, parameter :: t_seceqnfv_setup_h_it=9
+integer, parameter :: t_seceqnfv_setup_o=10
+integer, parameter :: t_seceqnfv_setup_o_mt=11
+integer, parameter :: t_seceqnfv_setup_o_it=12
+integer, parameter :: t_seceqnfv_diag=13
 
-integer, parameter :: t_seceqnsv=30
-integer, parameter :: t_seceqnsv_setup=31
-integer, parameter :: t_seceqnsv_diag=32
+integer, parameter :: t_seceqnsv=14
+integer, parameter :: t_seceqnsv_setup=15
+integer, parameter :: t_seceqnsv_diag=16
 
-integer, parameter :: t_sic_hunif=35
-integer, parameter :: t_sic_genfvprj=36
-integer, parameter :: t_sic_wan=37
-integer, parameter :: t_sic_wan_gen=38
-integer, parameter :: t_sic_wan_ovl=39
-integer, parameter :: t_sic_wan_pot=34
-integer, parameter :: t_sic_wan_rms=46
-integer, parameter :: t_sic_me=47
-integer, parameter :: t_sic_wvprod=48
+integer, parameter :: t_sic_hunif=17
+integer, parameter :: t_sic_genfvprj=18
+integer, parameter :: t_sic_wan=19
+integer, parameter :: t_sic_wan_gen=20
+integer, parameter :: t_sic_wan_ovl=21
+integer, parameter :: t_sic_wan_pot=22
+integer, parameter :: t_sic_wan_rms=23
+integer, parameter :: t_sic_me=24
+integer, parameter :: t_sic_wvprod=25
 
-integer, parameter :: t_apw_rad=40
-integer, parameter :: t_rho_mag_sum=41
-integer, parameter :: t_rho_mag_sym=42
-integer, parameter :: t_rho_mag_tot=43
-integer, parameter :: t_pot=44
-integer, parameter :: t_dmat=45
+integer, parameter :: t_apw_rad=26
+integer, parameter :: t_rho_mag_sum=27
+integer, parameter :: t_rho_mag_sym=28
+integer, parameter :: t_rho_mag_tot=29
+integer, parameter :: t_rho_wf=30
+integer, parameter :: t_pot=31
+integer, parameter :: t_dmat=32
 
-integer, parameter :: t_seceqnsv_setup_mt=50
-integer, parameter :: t_seceqnsv_setup_it=51
-integer, parameter :: t_rho_mag_mt=52
-integer, parameter :: t_rho_mag_it=53
-integer, parameter :: t_rho_mag_conv=55
+integer, parameter :: t_seceqnsv_setup_mt=33
+integer, parameter :: t_seceqnsv_setup_it=34
+integer, parameter :: t_rho_mag_mt=35
+integer, parameter :: t_rho_mag_it=36
+integer, parameter :: t_rho_mag_conv=37
 
-integer, parameter :: t_rhoinit=56
+integer, parameter :: t_rhoinit=38
 
 !--------------!
 !      PAPI    !
