@@ -72,7 +72,7 @@ extras:
 	cd addons/madness; make
 
 elk:	$(OBJ_modules) $(OBJ)
-	$(F90) $(F90_OPTS) -o $(EXE) $(OBJ) $(LIBS)
+	$(F90) $(F90_LINK_OPTS) -o $(EXE) $(OBJ) $(LIBS)
 
 lib:
 	ar r libelk.a $(OBJ)
