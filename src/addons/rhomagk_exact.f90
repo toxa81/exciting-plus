@@ -26,6 +26,7 @@ complex(8), allocatable :: evecfd_(:,:)
 complex(8), allocatable ::zfft(:)
 real(8), allocatable :: rhotmp(:,:)
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+call timer_start(t_rho_wf)
 allocate(wo(nstsv))
 allocate(istocc(nstsv))
 nstocc=0
@@ -60,6 +61,7 @@ else
   deallocate(evecfd_)
 endif
 deallocate(apwalm)
+call timer_stop(t_rho_wf)
 call timer_start(t_rho_mag_mt)
 allocate(zdens(lmmaxapw,lmmaxapw,nufrmax,nufrmax,natmtot,nspinor))
 zdens=zzero
