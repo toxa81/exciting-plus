@@ -377,6 +377,8 @@ do iscl=1,maxscl
       timer_get_value(t_rho_mag_mt),&
       timer_get_value(t_rho_mag_it)
     if (texactrho) then
+      write(60,'("      wave-function setup                   : ",F12.2)')&
+        timer_get_value(t_rho_wf)
       write(60,'("      convert to r-mesh                     : ",F12.2)')&
         timer_get_value(t_rho_mag_conv)
     endif
