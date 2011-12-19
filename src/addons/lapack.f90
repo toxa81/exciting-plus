@@ -219,6 +219,115 @@ mtrx=evec
 deallocate(work,rwork,evec)
 end subroutine
 
+!#ifdef _MAGMA_
+!subroutine diagzheg(n,nv,ld,etol,a,b,eval,evec)
+!implicit none
+!integer, intent(in) :: n
+!integer, intent(in) :: nv
+!integer, intent(in) :: ld
+!real(8), intent(in) :: etol
+!complex(8), intent(inout) :: a(n,n)
+!complex(8), intent(inout) :: b(n,n)
+!real(8), intent(out) :: eval(nv)
+!complex(8), intent(out) :: evec(ld,nv)
+!!
+!integer m,info,i,nb,lwork
+!real(8) vl,vu
+!integer, allocatable :: iwork(:)
+!integer, allocatable :: ifail(:)
+!real(8), allocatable :: w(:)
+!real(8), allocatable :: rwork(:)
+!complex(8), allocatable :: work(:)
+!integer, external :: ilaenv 
+!!
+!allocate(iwork(5*n))
+!allocate(ifail(n))
+!allocate(w(n))
+!allocate(rwork(7*n))
+!allocate(work(1))
+!call magmaf_zhegvx(1,'V','I','U',n,a,n,b,n,vl,vu,1,nv,etol,m,w,evec,ld, &
+!  work,-1,rwork,iwork,ifail,info)
+!lwork=int(dreal(work(1)))+1
+!deallocate(work)
+!allocate(work(lwork))
+!call magmaf_zhegvx(1,'V','I','U',n,a,n,b,n,vl,vu,1,nv,etol,m,w,evec,ld, &
+!  work,lwork,rwork,iwork,ifail,info)
+!eval(1:nv)=w(1:nv)
+!if (info.ne.0) then
+!  write(*,*)
+!  write(*,'("Error(diagzheg): diagonalisation failed")')
+!  write(*,'("  magmaf_zhegvx returned info = ",I8)') info
+!  if (info.gt.n) then
+!    i=info-n
+!    write(*,'(" The leading minor of the overlap matrix of order ",I8)') i
+!    write(*,'("  is not positive definite")')
+!    write(*,'(" Order of overlap matrix : ",I8)') n
+!    write(*,*)
+!  end if
+!  call pstop
+!end if
+!deallocate(iwork,ifail,w,rwork,work)
+!return
+!end subroutine
+!#endif
+
+
+#ifdef _MAGMA_
+subroutine diagzheg(n,nv,ld,etol,a,b,eval,evec)
+implicit none
+integer, intent(in) :: n
+integer, intent(in) :: nv
+integer, intent(in) :: ld
+real(8), intent(in) :: etol
+complex(8), intent(inout) :: a(n,n)
+complex(8), intent(inout) :: b(n,n)
+real(8), intent(out) :: eval(nv)
+complex(8), intent(out) :: evec(ld,nv)
+!
+integer m,info,i,nb,lwork,lrwork,liwork
+real(8) vl,vu
+integer, allocatable :: iwork(:)
+integer, allocatable :: isuppz(:)
+real(8), allocatable :: w(:)
+real(8), allocatable :: rwork(:)
+complex(8), allocatable :: work(:)
+integer, external :: ilaenv 
+!
+allocate(isuppz(2*n))
+allocate(w(n))
+allocate(rwork(1))
+allocate(work(1))
+allocate(iwork(1))
+call magmaf_zhegvr(1,'V','I','U',n,a,n,b,n,vl,vu,1,nv,etol,m,w,evec,ld, &
+  isuppz,work,-1,rwork,-1,iwork,-1,info)
+lwork=int(dreal(work(1)))+1
+lrwork=int(rwork(1))+1
+liwork=iwork(1)
+deallocate(rwork,iwork,work)
+allocate(work(lwork))
+allocate(rwork(lrwork))
+allocate(iwork(liwork))
+call magmaf_zhegvr(1,'V','I','U',n,a,n,b,n,vl,vu,1,nv,etol,m,w,evec,ld, &
+  isuppz,work,lwork,rwork,lrwork,iwork,liwork,info)
+eval(1:nv)=w(1:nv)
+if (info.ne.0) then
+  write(*,*)
+  write(*,'("Error(diagzheg): diagonalisation failed")')
+  write(*,'("  magmaf_zhegvx returned info = ",I8)') info
+  if (info.gt.n) then
+    i=info-n
+    write(*,'(" The leading minor of the overlap matrix of order ",I8)') i
+    write(*,'("  is not positive definite")')
+    write(*,'(" Order of overlap matrix : ",I8)') n
+    write(*,*)
+  end if
+  call pstop
+end if
+deallocate(iwork,isuppz,w,rwork,work)
+return
+end subroutine
+
+#else
 
 subroutine diagzheg(n,nv,ld,etol,a,b,eval,evec)
 implicit none
@@ -266,5 +375,7 @@ end if
 deallocate(iwork,ifail,w,rwork,work)
 return
 end subroutine
+
+#endif
 
 
