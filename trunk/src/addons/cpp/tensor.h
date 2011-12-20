@@ -291,4 +291,96 @@ template <typename T> class tensor<T,4> : public tensor_base<T,4>
         } 
 };
 
+// 5d specialization
+template <typename T> class tensor<T,5> : public tensor_base<T,5> 
+{
+    public:
+    
+        tensor() 
+        {
+        }
+  
+        tensor(T *data_, const int n0, const int n1, const int n2, const int n3, const int n4) 
+        {
+            init(data_, t_index(0, n0 - 1), t_index(0, n1 - 1), t_index(0, n2 - 1), t_index(0, n3 - 1), t_index(0, n4 - 1));
+        }
+    
+        tensor(T *data_, const t_index& j0, const t_index& j1, const t_index& j2, const t_index& j3, const t_index& j4) 
+        {
+            init(data_, j0, j1, j2, j3, j4);
+        }
+    
+        void init(T *data_, const t_index& j0, const t_index& j1, const t_index& j2, const t_index& j3, const t_index& j4) 
+        {
+            std::vector<t_index> vidx;
+            vidx.push_back(j0);
+            vidx.push_back(j1);
+            vidx.push_back(j2);
+            vidx.push_back(j3);
+            vidx.push_back(j4);
+            this->tensor_init(vidx);
+            this->data = data_;
+        }
+    
+        inline T& operator()(const int i0, const int i1, const int i2, const int i3, const int i4) 
+        {
+            assert(i0 >= this->index[0].start && i0 <= this->index[0].end);
+            assert(i1 >= this->index[1].start && i1 <= this->index[1].end);
+            assert(i2 >= this->index[2].start && i2 <= this->index[2].end);
+            assert(i3 >= this->index[3].start && i3 <= this->index[3].end);            
+            assert(i4 >= this->index[4].start && i4 <= this->index[4].end);            
+      
+            int i = this->offset[0] + i0 + this->offset[1] * i1 + this->offset[2] * i2 + this->offset[3] * i3 + this->offset[4] * i4;
+            return this->data[i];
+        } 
+};
+
+// 6d specialization
+template <typename T> class tensor<T,6> : public tensor_base<T,6> 
+{
+    public:
+    
+        tensor() 
+        {
+        }
+  
+        tensor(T *data_, const int n0, const int n1, const int n2, const int n3, const int n4, const int n5) 
+        {
+            init(data_, t_index(0, n0 - 1), t_index(0, n1 - 1), t_index(0, n2 - 1), t_index(0, n3 - 1), t_index(0, n4 - 1), t_index(0, n5 - 1));
+        }
+    
+        tensor(T *data_, const t_index& j0, const t_index& j1, const t_index& j2, const t_index& j3, const t_index& j4, const t_index& j5) 
+        {
+            init(data_, j0, j1, j2, j3, j4, j5);
+        }
+    
+        void init(T *data_, const t_index& j0, const t_index& j1, const t_index& j2, const t_index& j3, const t_index& j4, const t_index& j5) 
+        {
+            std::vector<t_index> vidx;
+            vidx.push_back(j0);
+            vidx.push_back(j1);
+            vidx.push_back(j2);
+            vidx.push_back(j3);
+            vidx.push_back(j4);
+            vidx.push_back(j5);
+            this->tensor_init(vidx);
+            this->data = data_;
+        }
+    
+        inline T& operator()(const int i0, const int i1, const int i2, const int i3, const int i4, const int i5) 
+        {
+            assert(i0 >= this->index[0].start && i0 <= this->index[0].end);
+            assert(i1 >= this->index[1].start && i1 <= this->index[1].end);
+            assert(i2 >= this->index[2].start && i2 <= this->index[2].end);
+            assert(i3 >= this->index[3].start && i3 <= this->index[3].end);            
+            assert(i4 >= this->index[4].start && i4 <= this->index[4].end);            
+            assert(i5 >= this->index[5].start && i5 <= this->index[5].end);            
+      
+            int i = this->offset[0] + i0 + this->offset[1] * i1 + this->offset[2] * i2 + this->offset[3] * i3 + this->offset[4] * i4 + this->offset[5] * i5;
+            return this->data[i];
+        } 
+};
+
+
+
 #endif // __TENSOR_H__

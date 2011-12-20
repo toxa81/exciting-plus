@@ -34,7 +34,7 @@ class radial_l_channel_descriptor
         }
     
         int l;
-        std::vector<radial_solution_descriptor> rsd;
+        std::vector<radial_solution_descriptor> radial_solution_descriptors;
 };
 
 class Species 

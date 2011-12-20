@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <complex>
 #include <stdarg.h>
+#include <stdint.h>
 #include "tensor.h"
 #include "lapw.h"
 
@@ -18,6 +19,7 @@ int ngkmax;
 int ngvec;
 int ngrtot;
 int nlomax;
+int nrmtmax;
 
 Geometry geometry;
 
@@ -35,6 +37,7 @@ extern "C" void FORTFUNC(lapw_load_global)(
     int *lmaxvr_,
     int *lmaxapw_,
     int *apwordmax_,
+    int *nrmtmax_,
     int *ngkmax_,
     int *ngvec_,
     int *ngrtot_,
@@ -53,6 +56,7 @@ extern "C" void FORTFUNC(lapw_load_global)(
     lmaxapw = *lmaxapw_;
     lmmaxapw = pow(lmaxapw + 1, 2);
     apwordmax = *apwordmax_;
+    nrmtmax = *nrmtmax_;
     ngkmax = *ngkmax_;
     ngvec = *ngvec_;
     ngrtot = *ngrtot_;
@@ -85,12 +89,31 @@ extern "C" void FORTFUNC(lapw_load_global)(
 };
 
 extern "C" void FORTFUNC(lapw_load_species)(
-    int *is,
+    int *is_,
     int *nlorb,
-    int *lorbl)
+    int *lorbl,
+    int *apword,
+    double* rmt,
+    int *nrmt)
 {
+    int is = *is_ - 1;
+    
+    geometry.species[is].rmt = *rmt;
+    geometry.species[is].nrmt = *nrmt;
+    
     for (int i = 0; i < *nlorb; i++) 
-        geometry.species[*is-1].lo_descriptors.push_back(radial_l_channel_descriptor(lorbl[i]));
+        geometry.species[is].lo_descriptors.push_back(radial_l_channel_descriptor(lorbl[i]));
+    
+    for (int l = 0; l <= lmaxapw; l++) 
+    {
+        radial_l_channel_descriptor lch(l);
+        for (int io = 0; io < apword[l]; io++)
+        {
+            radial_solution_descriptor rs;
+            lch.radial_solution_descriptors.push_back(rs);
+        }
+        geometry.species[is].apw_descriptors.push_back(lch);
+    }
 }
 
 extern "C" void FORTFUNC(lapw_init)()
@@ -110,85 +133,185 @@ extern "C" void FORTFUNC(lapw_init)()
     }
 }
 
+// \sum_{L3} <L1|L3|L2> * v[L3]
+inline std::complex<double> L3_sum_gntyry(int l1, int m1, int l2, int m2, std::complex<double> *gnt, double *v)
+{
+    std::complex<double> zsum(0,0);
+    int m3 = abs(m1 - m2); // only +/- m3 coefficients are non-zero
+    int l3 = (l1 + l2 + m3) % 2 + m3; // starting condition for l3: mod(l+l1+l3,2)==0 and l3>=m3 
+    while (l3 <= std::min(lmaxvr, l1 + l2)) 
+    {
+        int lm3 = l3 * l3 + l3;
+        if (m3) 
+        {
+            zsum += gnt[lm3 - m3] * v[lm3 - m3];
+            zsum += gnt[lm3 + m3] * v[lm3 + m3];
+        }
+        else 
+            zsum += gnt[lm3] * v[lm3];
+                            
+        l3 += 2;
+    }
+    return zsum;
+}
+
+extern "C" void FORTFUNC(zgemm)(
+    const char *transa, 
+    const char *transb, 
+    int32_t *m, 
+    int32_t *n, 
+    int32_t *k, 
+    std::complex<double> *alpha, 
+    std::complex<double> *a, 
+    int32_t *lda, 
+    std::complex<double> *b, 
+    int32_t *ldb, 
+    std::complex<double> *beta, 
+    std::complex<double> *c, 
+    int32_t *ldc, 
+    int32_t transalen,
+    int32_t transblen);
+
 extern "C" void FORTFUNC(setup_fv_hmlt_v1)(
-    int *ngp,
+    int *ngp_,
     int *ldh,
     int *ncolh,
     int *igpig_,
     double *vgpc_,
     std::complex<double> *veffig_,
     std::complex<double> *cfunig_,
+    std::complex<double> *apwalm_,
+    double *apwfr_,
+    double *apwdfr_,
+    double *haa_,
+    double *hloa_,
     double *hlolo_,
     std::complex<double> *h_) 
 {
+    int ngp = *ngp_;
     tensor<double,2> vgpc(vgpc_, 3, ngkmax);
     tensor<int,1> igpig(igpig_, ngkmax);
     tensor<std::complex<double>,1> veffig(veffig_, ngvec);
     tensor<std::complex<double>,1> cfunig(cfunig_, ngrtot);
     tensor<std::complex<double>,2> h(h_, *ldh, *ncolh);
+    tensor<std::complex<double>,4> apwalm(apwalm_, ngkmax, apwordmax, lmmaxapw, natmtot);
+    tensor<double,5> apwfr(apwfr_, nrmtmax, 2, apwordmax, lmaxapw + 1, natmtot);
+    tensor<double,3> apwdfr(apwdfr_, apwordmax, lmaxapw + 1, natmtot);
+    tensor<double,6> haa(haa_, lmmaxvr, apwordmax, lmaxapw + 1, apwordmax, lmaxapw + 1, natmtot);
+    tensor<double,5> hloa(hloa_, lmmaxvr, nlomax, apwordmax, lmaxapw + 1, natmtot);
     tensor<double,4> hlolo(hlolo_, lmmaxvr, nlomax, nlomax, natmtot);
-
+    
+    int maxcolumns = lmmaxapw*apwordmax*natmtot;
+    std::vector< std::complex<double> > zv1(ngp);
+    std::vector< std::complex<double> > zm1(ngp * maxcolumns);
+    std::vector< std::complex<double> > zm2(ngp * maxcolumns);
+    
+    int n = 0;
     for (unsigned int ias = 0; ias < geometry.atoms.size(); ias++)
     {
-        for (unsigned int j = 0; j < geometry.atoms[ias].idxlo.size(); j++) 
+        Atom *atom = &geometry.atoms[ias];
+        Species *species = atom->species;
+        
+        for (int l2 = 0; l2 <= lmaxapw; l2++) 
         {
-            int l = geometry.atoms[ias].idxlo[j].l;
-            int m = geometry.atoms[ias].idxlo[j].m;
-            int lm = geometry.atoms[ias].idxlo[j].lm;
-            int ilo = geometry.atoms[ias].idxlo[j].ilo;
-            for (unsigned int i = 0; i <= j; i++)
+            for (unsigned int io2 = 0; io2 < species->apw_descriptors[l2].radial_solution_descriptors.size(); io2++)
             {
-                int l1 = geometry.atoms[ias].idxlo[i].l;
-                int m1 = geometry.atoms[ias].idxlo[i].m;
-                int lm1 = geometry.atoms[ias].idxlo[i].lm;
-                int ilo1 = geometry.atoms[ias].idxlo[i].ilo;
-                std::complex<double> zsum(0,0);
-                
-                int m3 = abs(m1 - m); // only +/- m3 coefficients are non-zero
-                int l3 = (l + l1 + m3) % 2 + m3; // starting condition for l3: mod(l+l1+l3,2)==0 and m3<=l3 
-                while (l3 <= std::min(lmaxvr, l + l1)) 
+                for (int m2 = -l2, lm2 = l2 * l2; m2 <= l2; m2++, lm2++)
                 {
-                    if (m3 == 0) 
+                    memset(&zv1[0], 0, ngp * sizeof(std::complex<double>));
+                    for (int l1 = 0; l1 <= lmaxapw; l1++) // sum over L1,\nu1, L3 
                     {
-                        int lm3 = l3 * l3 + l3;
-                        zsum += gntyry(lm3, lm1, lm) * hlolo(lm3, ilo1, ilo, ias);
-                    } 
-                    else 
-                    {
-                        int lm3 = l3 * l3 + l3 - m3;
-                        zsum += gntyry(lm3, lm1, lm) * hlolo(lm3, ilo1, ilo, ias);
-                        lm3 += 2*m3;
-                        zsum += gntyry(lm3, lm1, lm) * hlolo(lm3, ilo1, ilo, ias);
+                        for (unsigned int io1 = 0; io1 < species->apw_descriptors[l1].radial_solution_descriptors.size(); io1++)
+                        {
+                            for (int m1 = -l1, lm1 = l1 * l1; m1 <= l1; m1++, lm1++)
+                            {
+                                std::complex<double> zsum = L3_sum_gntyry(l1, m1, l2, m2,
+                                    &gntyry(0, lm1, lm2), &haa(0, io1, l1, io2, l2, ias));
+                                if (abs(zsum) > 1e-14) {
+                                //zaxpy(ngp,&conj(zsum),&apwalm(0,io1,lm1,ias),1,zv,1) 
+                                for (int ig = 0; ig < ngp; ig++) 
+                                    zv1[ig] += zsum * conj(apwalm(ig, io1, lm1, ias));
+                                }
+
+                            }
+                        }
                     }
-                    l3 += 2;
+                    for (unsigned int io1 = 0; io1 < species->apw_descriptors[l2].radial_solution_descriptors.size(); io1++)
+                    {
+                        double t1 = 0.5 * apwfr(species->nrmt - 1, 0, io1, l2, ias) * apwdfr(io2, l2, ias) * pow(species->rmt, 2);
+                        for (int ig = 0; ig < ngp; ig++) 
+                            zv1[ig] += t1 * conj(apwalm(ig, io1, lm2, ias));
+                    }
+                    memcpy(&zm1[n * ngp], &zv1[0], ngp * sizeof(std::complex<double>));
+                    memcpy(&zm2[n * ngp], &apwalm(0, io2, lm2, ias), ngp * sizeof(std::complex<double>));
+                    n++;
                 }
-                h(i + *ngp + geometry.atoms[ias].local_orbital_offset,
-                  j + *ngp + geometry.atoms[ias].local_orbital_offset) += zsum;
-
-
             }
         }
     }
+    std::complex<double> zone(1,0);
+    std::complex<double> zzero(0,0);
+    //FORTFUNC(zgemm)("N", "T", &ngp, &ngp, &n, &zone, &zm1[0], &ngp, &zm2[0], &ngp, &zzero, h_, ldh, (int32_t)1, (int32_t)1);
 
- 
-            
-    
-    /*
-    int ig1, ig2, iv[3];
-    for (int j = 0; j < *ngp; j++) // loop over columns
+    for (unsigned int ias = 0; ias < geometry.atoms.size(); ias++)
     {
-        ig1 = igpig(j) - 1;
+        Atom *atom = &geometry.atoms[ias];
+        Species *species = atom->species;
+
+        for (unsigned int j = 0; j < atom->idxlo.size(); j++) // loop over columns (local-orbital block) 
+        {
+            int l = atom->idxlo[j].l;
+            int m = atom->idxlo[j].m;
+            int lm = atom->idxlo[j].lm;
+            int ilo = atom->idxlo[j].ilo;
+            
+            for (int l1 = 0; l1 <= lmaxapw; l1++) 
+            {
+                for (unsigned int io1 = 0; io1 < species->apw_descriptors[l1].radial_solution_descriptors.size(); io1++)
+                {
+                    for (int m1 = -l1, lm1 = l1 * l1; m1 <= l1; m1++, lm1++)
+                    {
+                        std::complex<double> zsum = L3_sum_gntyry(l1, m1, l, m,
+                            &gntyry(0, lm1, lm), &hloa(0, ilo, io1, l1, ias));
+
+                        if (abs(zsum)>1e-14){
+                        for (int ig = 0; ig < ngp; ig++)
+                            h(ig, j + ngp + atom->local_orbital_offset) += conj(apwalm(ig, io1, lm1, ias)) * zsum;
+                       }
+                    }
+                }            
+            }
+
+            for (unsigned int i = 0; i <= j; i++)
+            {
+                int l1 = atom->idxlo[i].l;
+                int m1 = atom->idxlo[i].m;
+                int lm1 = atom->idxlo[i].lm;
+                int ilo1 = atom->idxlo[i].ilo;
+
+                std::complex<double> zsum = L3_sum_gntyry(l1, m1, l, m, 
+                    &gntyry(0, lm1, lm), &hlolo(0, ilo1, ilo, ias));
+
+                h(i + ngp + atom->local_orbital_offset,
+                  j + ngp + atom->local_orbital_offset) += zsum;
+            }
+        }
+    }
+    
+    int iv[3];
+    for (int j = 0; j < ngp; j++) // loop over columns
+    {
+        int ig2 = igpig(j) - 1;
+        double v2[3];
+        for (int k = 0; k < 3; k++) v2[k] = vgpc(k, j);
         for (int i = 0; i <= j; i++) // for each column loop over rows
         {
-            ig2 = igpig(i) - 1;
-            for (int k = 0; k < 3; k++) iv[k] = ivg(k, ig2) - ivg(k, ig1);
+            for (int k = 0; k < 3; k++) iv[k] = ivg(k, igpig(i) - 1) - ivg(k, ig2);
             int ig = ivgig(iv[0], iv[1], iv[2]);
-            double t1 = 0.5 * (vgpc(0, i) * vgpc(0, j) + 
-                               vgpc(1, i) * vgpc(1, j) + 
-                               vgpc(2, i) * vgpc(2, j));
+            double t1 = 0.5 * (vgpc(0, i) * v2[0] + vgpc(1, i) * v2[1] + 
+                               vgpc(2, i) * v2[2]);
             h(i, j) += veffig(ig) + t1 * cfunig(ig);
         }
-    }*/
-  
+    }
 }
 
