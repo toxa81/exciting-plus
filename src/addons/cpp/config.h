@@ -5,6 +5,6 @@
 
 #define FORTFUNC(x) x##_
 
-const int gemm_worker = gemm_worker_blas;
+const int gemm_worker = blas_worker;
 
 #endif // __CONFIG_H__

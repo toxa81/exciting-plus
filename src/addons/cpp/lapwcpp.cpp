@@ -258,8 +258,8 @@ extern "C" void FORTFUNC(setup_fv_hmlt_v1)(
     }
     std::complex<double> zone(1,0);
     std::complex<double> zzero(0,0);
-    zgemm_interface<gemm_worker>(0, 2, &ngp, &ngp, &n, &zone, &zm1[0], &ngp, &zm2[0], &ngp, &zzero, h_, ldh);
-    zgemm_interface<gemm_worker>(0 ,2, &ngp, &ngp, &n, &zone, &zm2[0], &ngp, &zm2[0], &ngp, &zzero, o_, ldh);
+    zgemm<gemm_worker>(0, 2, &ngp, &ngp, &n, &zone, &zm1[0], &ngp, &zm2[0], &ngp, &zzero, h_, ldh);
+    zgemm<gemm_worker>(0 ,2, &ngp, &ngp, &n, &zone, &zm2[0], &ngp, &zm2[0], &ngp, &zzero, o_, ldh);
 
     for (unsigned int ias = 0; ias < geometry.atoms.size(); ias++)
     {
