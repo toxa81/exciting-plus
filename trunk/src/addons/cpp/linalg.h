@@ -37,7 +37,7 @@ extern "C" void zgemm_cublas(
     std::complex<double> *c, 
     int32_t *ldc);
     
-template<int N> void zgemm_interface(
+template<int N> void zgemm(
     int transa, 
     int transb, 
     int32_t *m, 
@@ -52,17 +52,17 @@ template<int N> void zgemm_interface(
     std::complex<double> *c, 
     int32_t *ldc) {
     
-    if (N == gemm_worker_blas)
+    if (N == blas_worker)
     {
         const char *trans[] = {"N", "T", "C"};
         FORTFUNC(zgemm)(trans[transa], trans[transb], m, n, k, alpha, 
             a, lda, b, ldb, beta, c, ldc, (int32_t)1, (int32_t)1);
     }
     
-    if (N == gemm_worker_cublas)
+    if (N == cublas_worker)
     {    
         zgemm_cublas(transa, transb, m, n, k, alpha, a, lda, b, ldb, 
-        beta, c, ldc);
+            beta, c, ldc);
     }
 }
 
