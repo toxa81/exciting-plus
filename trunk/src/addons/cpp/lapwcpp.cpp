@@ -5,8 +5,8 @@
 #include <stdint.h>
 #include "tensor.h"
 #include "lapw.h"
-
-#define FORTFUNC(x) x##_
+#include "linalg.h"
+#include "config.h"
 
 int natmtot;
 int nspecies;
@@ -22,17 +22,6 @@ int nlomax;
 int nrmtmax;
 
 Geometry geometry;
-
-/*class gntyry_lm3 
-{
-    public:
-        gntyry_lm3(int lm3, std::complex<double> val) : lm3(lm3), val(val)
-        {
-        }
-        
-        int lm3;
-        std::complex<double> val;
-};*/
 
 tensor<int,1> ias2is;
 tensor<int,1> ias2ia;
@@ -179,23 +168,6 @@ inline std::complex<double> L3_sum_gntyry(int l1, int m1, int l2, int m2, std::c
     return zsum;
 }
 
-extern "C" void FORTFUNC(zgemm)(
-    const char *transa, 
-    const char *transb, 
-    int32_t *m, 
-    int32_t *n, 
-    int32_t *k, 
-    std::complex<double> *alpha, 
-    std::complex<double> *a, 
-    int32_t *lda, 
-    std::complex<double> *b, 
-    int32_t *ldb, 
-    std::complex<double> *beta, 
-    std::complex<double> *c, 
-    int32_t *ldc, 
-    int32_t transalen,
-    int32_t transblen);
-
 extern "C" void FORTFUNC(setup_fv_hmlt_v1)(
     int *ngp_,
     int *ldh,
@@ -286,8 +258,8 @@ extern "C" void FORTFUNC(setup_fv_hmlt_v1)(
     }
     std::complex<double> zone(1,0);
     std::complex<double> zzero(0,0);
-    FORTFUNC(zgemm)("N", "C", &ngp, &ngp, &n, &zone, &zm1[0], &ngp, &zm2[0], &ngp, &zzero, h_, ldh, (int32_t)1, (int32_t)1);
-    FORTFUNC(zgemm)("N", "C", &ngp, &ngp, &n, &zone, &zm2[0], &ngp, &zm2[0], &ngp, &zzero, o_, ldh, (int32_t)1, (int32_t)1);
+    zgemm_interface<gemm_worker>(0, 2, &ngp, &ngp, &n, &zone, &zm1[0], &ngp, &zm2[0], &ngp, &zzero, h_, ldh);
+    zgemm_interface<gemm_worker>(0 ,2, &ngp, &ngp, &n, &zone, &zm2[0], &ngp, &zm2[0], &ngp, &zzero, o_, ldh);
 
     for (unsigned int ias = 0; ias < geometry.atoms.size(); ias++)
     {
