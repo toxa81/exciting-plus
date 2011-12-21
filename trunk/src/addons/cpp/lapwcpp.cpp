@@ -23,7 +23,7 @@ int nrmtmax;
 
 Geometry geometry;
 
-class gntyry_lm3 
+/*class gntyry_lm3 
 {
     public:
         gntyry_lm3(int lm3, std::complex<double> val) : lm3(lm3), val(val)
@@ -32,7 +32,7 @@ class gntyry_lm3
         
         int lm3;
         std::complex<double> val;
-};
+};*/
 
 tensor<int,1> ias2is;
 tensor<int,1> ias2ia;
@@ -41,7 +41,7 @@ tensor<int,2> ivg;
 tensor<int,3> ivgig;
 tensor<int,2> idxlm(t_index(0, 50), t_index(-50, 50));
 tensor<std::complex<double>,3> gntyry;
-tensor<std::vector<gntyry_lm3>,2> *gntyry_compact;
+tensor<std::vector<int>,2> *gntyry_compact;
 
 extern "C" void FORTFUNC(lapw_load_global)(
     int *natmtot_,
@@ -81,12 +81,12 @@ extern "C" void FORTFUNC(lapw_load_global)(
                                   t_index(intgv(2, 0), intgv(2, 1)));
     ivg = tensor<int,2>(ivg_, 3, ngrtot);
     gntyry = tensor<std::complex<double>,3>(gntyry_, lmmaxvr, lmmaxapw, lmmaxapw);
-    gntyry_compact = new tensor<std::vector<gntyry_lm3>,2>(lmmaxapw,lmmaxapw);
+    gntyry_compact = new tensor<std::vector<int>,2>(lmmaxapw,lmmaxapw);
     for (int lm1 = 0; lm1 < lmmaxapw; lm1++)
         for (int lm2 = 0; lm2 < lmmaxapw; lm2++)
             for (int lm3 = 0; lm3 < lmmaxvr; lm3++) 
                 if (abs(gntyry(lm3, lm1, lm2)) > 1e-14)
-                    (*gntyry_compact)(lm1, lm2).push_back(gntyry_lm3(lm3, gntyry(lm3, lm1, lm2)));
+                    (*gntyry_compact)(lm1, lm2).push_back(lm3);
     
     for (int i = 0; i < natmtot; i++) 
     {
@@ -256,15 +256,15 @@ extern "C" void FORTFUNC(setup_fv_hmlt_v1)(
                         {
                             for (int m1 = -l1, lm1 = l1 * l1; m1 <= l1; m1++, lm1++)
                             {
-                                std::complex<double> zsum = L3_sum_gntyry(l1, m1, l2, m2,
+                                /*std::complex<double> zsum = L3_sum_gntyry(l1, m1, l2, m2,
                                     &gntyry(0, lm1, lm2), &haa(0, io1, l1, io2, l2, ias));
-                                
-                                /*std::complex<double> zsum(0,0);
+                                */
+                                std::complex<double> zsum(0,0);
                                 for (unsigned int k = 0; k < (*gntyry_compact)(lm1, lm2).size(); k++)
                                 {
-                                    int lm3 = (*gntyry_compact)(lm1, lm2)[k].lm3;
-                                    zsum += (*gntyry_compact)(lm1, lm2)[k].val * haa(lm3, io1, l1, io2, l2, ias);
-                                }*/
+                                    int lm3 = (*gntyry_compact)(lm1, lm2)[k];
+                                    zsum += gntyry(lm3, lm1, lm2) * haa(lm3, io1, l1, io2, l2, ias);
+                                }
                                 if (abs(zsum) > 1e-14) 
                                     for (int ig = 0; ig < ngp; ig++) 
                                         zv1[ig] += zsum * conj(apwalm(ig, io1, lm1, ias));
@@ -308,15 +308,15 @@ extern "C" void FORTFUNC(setup_fv_hmlt_v1)(
                 {
                     for (int m1 = -l1, lm1 = l1 * l1; m1 <= l1; m1++, lm1++)
                     {
-                        std::complex<double> zsum = L3_sum_gntyry(l1, m1, l, m,
-                            &gntyry(0, lm1, lm), &hloa(0, ilo, io1, l1, ias));
+                        /*std::complex<double> zsum = L3_sum_gntyry(l1, m1, l, m,
+                            &gntyry(0, lm1, lm), &hloa(0, ilo, io1, l1, ias));*/
                         
-                        /*std::complex<double> zsum(0,0);
+                        std::complex<double> zsum(0,0);
                         for (unsigned int k = 0; k < (*gntyry_compact)(lm1, lm).size(); k++)
                         {
-                            int lm3 = (*gntyry_compact)(lm1, lm)[k].lm3;
-                            zsum += (*gntyry_compact)(lm1, lm)[k].val * hloa(lm3, ilo, io1, l1, ias);
-                        }*/
+                            int lm3 = (*gntyry_compact)(lm1, lm)[k];
+                            zsum += gntyry(lm3, lm1, lm) * hloa(lm3, ilo, io1, l1, ias);
+                        }
                         if (abs(zsum) > 1e-14)
                             for (int ig = 0; ig < ngp; ig++)
                                 h(ig, j + ngp + atom->local_orbital_offset) += conj(apwalm(ig, io1, lm1, ias)) * zsum;
@@ -336,14 +336,14 @@ extern "C" void FORTFUNC(setup_fv_hmlt_v1)(
                 int m1 = atom->idxlo[i].m;
                 int lm1 = atom->idxlo[i].lm;
                 int ilo1 = atom->idxlo[i].ilo;
-                //std::complex<double> zsum(0,0);
-                /*for (unsigned int k = 0; k < (*gntyry_compact)(lm1, lm).size(); k++)
+                std::complex<double> zsum(0,0);
+                for (unsigned int k = 0; k < (*gntyry_compact)(lm1, lm).size(); k++)
                 {
-                    int lm3 = (*gntyry_compact)(lm1, lm)[k].lm3;
-                    zsum += (*gntyry_compact)(lm1, lm)[k].val * hlolo(lm3, ilo1, ilo, ias);
-                }*/
-                std::complex<double> zsum = L3_sum_gntyry(l1, m1, l, m, 
-                    &gntyry(0, lm1, lm), &hlolo(0, ilo1, ilo, ias));
+                    int lm3 = (*gntyry_compact)(lm1, lm)[k];
+                    zsum += gntyry(lm3, lm1, lm) * hlolo(lm3, ilo1, ilo, ias);
+                }
+                /*std::complex<double> zsum = L3_sum_gntyry(l1, m1, l, m, 
+                    &gntyry(0, lm1, lm), &hlolo(0, ilo1, ilo, ias));*/
 
                 h(i + ngp + atom->local_orbital_offset,
                   j + ngp + atom->local_orbital_offset) += zsum;
