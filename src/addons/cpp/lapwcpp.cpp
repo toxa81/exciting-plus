@@ -20,6 +20,10 @@ int ngvec;
 int ngrtot;
 int nlomax;
 int nrmtmax;
+int nstfv;
+int nstsv;
+int nmatmax;
+double evaltol;
 
 Geometry geometry;
 
@@ -28,9 +32,11 @@ tensor<int,1> ias2ia;
 tensor<int,2> intgv;
 tensor<int,2> ivg;
 tensor<int,3> ivgig;
-tensor<int,2> idxlm(t_index(0, 50), t_index(-50, 50));
+//tensor<int,2> idxlm(t_index(0, 50), t_index(-50, 50));
 tensor<std::complex<double>,3> gntyry;
 std::vector< std::vector<int> > gntyry_compact;
+
+std::vector<lmoa> apwidx;
 
 extern "C" void FORTFUNC(lapw_load_global)(
     int *natmtot_,
@@ -48,7 +54,11 @@ extern "C" void FORTFUNC(lapw_load_global)(
     int *intgv_,
     int *ivg_,
     int *ivgig_,
-    std::complex<double> *gntyry_)
+    std::complex<double> *gntyry_,
+    int *nstfv_,
+    int *nstsv_,
+    int *nmatmax_,
+    double *evaltol_)
 {
     natmtot = *natmtot_;
     nspecies = *nspecies_;
@@ -62,6 +72,10 @@ extern "C" void FORTFUNC(lapw_load_global)(
     ngvec = *ngvec_;
     ngrtot = *ngrtot_;
     nlomax = *nlomax_;
+    nstfv = *nstfv_;
+    nstsv = *nstsv_;
+    nmatmax = *nmatmax_;
+    evaltol = *evaltol_;
     ias2is = tensor<int,1>(ias2is_, natmtot);
     ias2ia = tensor<int,1>(ias2ia_, natmtot);
     intgv = tensor<int,2>(intgv_, 3, 2);
@@ -125,9 +139,9 @@ extern "C" void FORTFUNC(lapw_load_species)(
 
 extern "C" void FORTFUNC(lapw_init)()
 {
-    for (int l = 0, lm = 0; l <= 50; l++) 
+    /*for (int l = 0, lm = 0; l <= 50; l++) 
         for (int m = -l; m <= l; m++) idxlm(l, m) = lm++;
-        
+    */    
     for (unsigned int ias = 0, offset = 0; ias < geometry.atoms.size(); ias++)
     {
         geometry.atoms[ias].local_orbital_offset = offset;
@@ -137,6 +151,17 @@ extern "C" void FORTFUNC(lapw_init)()
             for (int m = -l; m <= l; m++, offset++) 
                 geometry.atoms[ias].idxlo.push_back(local_orbital_index(l, m, idxlm(l, m), ilo));
         }
+    }
+    
+    for (unsigned int ias = 0; ias < geometry.atoms.size(); ias++)
+    {
+        Atom *atom = &geometry.atoms[ias];
+        Species *species = atom->species;
+        
+        for (int l = 0; l <= lmaxapw; l++) 
+            for (unsigned int io = 0; io < species->apw_descriptors[l].radial_solution_descriptors.size(); io++)
+                for (int m = -l; m <= l; m++)
+                    apwidx.push_back(lmoa(l, m, io, ias));
     }
 }
 
@@ -177,42 +202,24 @@ inline void L3_sum_gntyry(int lm1, int lm2, double *v, std::complex<double>& zsu
     }
 }
 
-extern "C" void FORTFUNC(setup_fv_hmlt_v1)(
-    int *ngp_,
-    int *ldh_,
-    int *ncolh,
-    int *igpig_,
-    double *vgpc_,
-    std::complex<double> *veffig_,
-    std::complex<double> *cfunig_,
-    std::complex<double> *apwalm_,
-    double *apwfr_,
-    double *apwdfr_,
-    double *haa_,
-    double *hloa_,
-    double *hlolo_,
-    double *oalo_,
-    double *ololo_,
-    std::complex<double> *h_,
-    std::complex<double> *o_) 
+void lapw_seceqnfv_setup(
+    int ngp,
+    int ldh,
+    tensor<int,1>& igpig,
+    tensor<double,2>& vgpc,
+    tensor<std::complex<double>,1>& veffig,
+    tensor<std::complex<double>,1>& cfunig,
+    tensor<std::complex<double>,4>& apwalm,
+    tensor<double,5>& apwfr,
+    tensor<double,3>& apwdfr,
+    tensor<double,6>& haa,
+    tensor<double,5>& hloa,
+    tensor<double,4>& hlolo,
+    tensor<double,3>& oalo,
+    tensor<double,3>& ololo,
+    tensor<std::complex<double>,2>& h,
+    tensor<std::complex<double>,2>& o)
 {
-    int ngp = *ngp_;
-    int ldh = *ldh_;
-    tensor<double,2> vgpc(vgpc_, 3, ngkmax);
-    tensor<int,1> igpig(igpig_, ngkmax);
-    tensor<std::complex<double>,1> veffig(veffig_, ngvec);
-    tensor<std::complex<double>,1> cfunig(cfunig_, ngrtot);
-    tensor<std::complex<double>,2> h(h_, ldh, *ncolh);
-    tensor<std::complex<double>,2> o(o_, ldh, *ncolh);
-    tensor<std::complex<double>,4> apwalm(apwalm_, ngkmax, apwordmax, lmmaxapw, natmtot);
-    tensor<double,5> apwfr(apwfr_, nrmtmax, 2, apwordmax, lmaxapw + 1, natmtot);
-    tensor<double,3> apwdfr(apwdfr_, apwordmax, lmaxapw + 1, natmtot);
-    tensor<double,6> haa(haa_, lmmaxvr, apwordmax, lmaxapw + 1, apwordmax, lmaxapw + 1, natmtot);
-    tensor<double,5> hloa(hloa_, lmmaxvr, nlomax, apwordmax, lmaxapw + 1, natmtot);
-    tensor<double,4> hlolo(hlolo_, lmmaxvr, nlomax, nlomax, natmtot);
-    tensor<double,3> oalo(oalo_, apwordmax, nlomax, natmtot);
-    tensor<double,3> ololo(ololo_, nlomax, nlomax, natmtot);
-
     int maxcolumns = lmmaxapw*apwordmax*natmtot;
     std::vector< std::complex<double> > zv1(ngp);
     std::vector< std::complex<double> > zm1(ngp * maxcolumns);
@@ -270,8 +277,8 @@ extern "C" void FORTFUNC(setup_fv_hmlt_v1)(
     }
     std::complex<double> zone(1,0);
     std::complex<double> zzero(0,0);
-    zgemm<gemm_worker>(0, 2, ngp, ngp, n, zone, &zm1[0], ngp, &zm2[0], ngp, zzero, h_, ldh);
-    zgemm<gemm_worker>(0 ,2, ngp, ngp, n, zone, &zm2[0], ngp, &zm2[0], ngp, zzero, o_, ldh);
+    zgemm<gemm_worker>(0, 2, ngp, ngp, n, zone, &zm1[0], ngp, &zm2[0], ngp, zzero, &h(0,0), ldh);
+    zgemm<gemm_worker>(0 ,2, ngp, ngp, n, zone, &zm2[0], ngp, &zm2[0], ngp, zzero, &o(0,0), ldh);
 
     for (unsigned int ias = 0; ias < geometry.atoms.size(); ias++)
     {
@@ -361,5 +368,93 @@ extern "C" void FORTFUNC(setup_fv_hmlt_v1)(
     }
     
 }
+
+
+
+extern "C" void FORTFUNC(lapw_seceqnfv)(
+    int32_t *ngp_,
+    int32_t *ldh_,
+    int32_t *ncolh,
+    int32_t *igpig_,
+    double *vgpc_,
+    std::complex<double> *veffig_,
+    std::complex<double> *cfunig_,
+    std::complex<double> *apwalm_,
+    double *apwfr_,
+    double *apwdfr_,
+    double *haa_,
+    double *hloa_,
+    double *hlolo_,
+    double *oalo_,
+    double *ololo_,
+    std::complex<double> *h_,
+    std::complex<double> *o_,
+    double *evalfv_,
+    std::complex<double> *z_) 
+{
+    int ngp = *ngp_;
+    int ldh = *ldh_;
+    tensor<double,2> vgpc(vgpc_, 3, ngkmax);
+    tensor<int,1> igpig(igpig_, ngkmax);
+    tensor<std::complex<double>,1> veffig(veffig_, ngvec);
+    tensor<std::complex<double>,1> cfunig(cfunig_, ngrtot);
+    tensor<std::complex<double>,2> h(h_, ldh, *ncolh);
+    tensor<std::complex<double>,2> o(o_, ldh, *ncolh);
+    tensor<std::complex<double>,2> z(z_, nmatmax, nstfv);
+    tensor<std::complex<double>,4> apwalm(apwalm_, ngkmax, apwordmax, lmmaxapw, natmtot);
+    tensor<double,5> apwfr(apwfr_, nrmtmax, 2, apwordmax, lmaxapw + 1, natmtot);
+    tensor<double,3> apwdfr(apwdfr_, apwordmax, lmaxapw + 1, natmtot);
+    tensor<double,6> haa(haa_, lmmaxvr, apwordmax, lmaxapw + 1, apwordmax, lmaxapw + 1, natmtot);
+    tensor<double,5> hloa(hloa_, lmmaxvr, nlomax, apwordmax, lmaxapw + 1, natmtot);
+    tensor<double,4> hlolo(hlolo_, lmmaxvr, nlomax, nlomax, natmtot);
+    tensor<double,3> oalo(oalo_, apwordmax, nlomax, natmtot);
+    tensor<double,3> ololo(ololo_, nlomax, nlomax, natmtot);
+
+    lapw_seceqnfv_setup(ngp, ldh, igpig, vgpc, veffig, cfunig, apwalm, apwfr,
+        apwdfr, haa, hloa, hlolo, oalo, ololo, h, o);
+
+    tensor<std::complex<double>,2> h1; //= h;
+    tensor<std::complex<double>,2> o1; //= o;
+
+    if (check_evecfv) 
+    {
+        h1 = h;
+        o1 = o;
+    }
+
+    zhegv<lapack_worker>(ldh, nstfv, evaltol, &h(0, 0), &o(0, 0), evalfv_, 
+        &z(0, 0), nmatmax);
+
+    if (check_evecfv) 
+    {
+        std::complex<double> zone(1, 0);
+        std::complex<double> zzero(0, 0);
+    
+        // use o and h as temporary arrays
+        for (int i = 0; i < nstfv; i++)
+            for (int j = 0; j < ldh; j++)
+                o(j, i) = -evalfv_[i] * z(j, i);
+    
+        zhemm<blas_worker>(0, 0, ldh, nstfv, zone, &h1(0, 0), ldh, &z(0, 0), 
+            nmatmax, zzero, &h(0, 0), ldh);
+        zhemm<blas_worker>(0, 0, ldh, nstfv, zone, &o1(0, 0), ldh, &o(0, 0),
+            ldh, zone, &h(0, 0), ldh); 
+    
+        double L2norm = 0.0;
+        for (int i = 0; i < nstfv; i++)
+            for (int j = 0; j < ldh; j++) L2norm += abs(h(j, i) * conj(h(j, i)));
+        
+        std::cout << "check evecfv :" << std::endl
+                  << "  number of bands = " << nstfv << std::endl
+                  << "  total L2 diff = " << sqrt(L2norm) << std::endl;
+    }
+}
+
+
+
+
+
+
+
 
 

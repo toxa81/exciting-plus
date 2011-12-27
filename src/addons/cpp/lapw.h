@@ -5,6 +5,11 @@
 #include <string>
 #include <map>
 
+inline int idxlm(int l, int m)
+{
+    return l * l + l + m;
+}
+
 struct atomic_level 
 {
     int n;
@@ -75,6 +80,22 @@ class local_orbital_index
         int lm;
         int ilo;
 };
+
+class lmoa 
+{
+    public:
+        lmoa(int l, int m, int o, int a) : l(l), m(m), order(o), atom(a)
+        {
+            lm = idxlm(l, m);
+        }
+        
+        int l;
+        int m;
+        int lm;
+        int order;
+        int atom;
+};
+
 
 class Atom 
 {

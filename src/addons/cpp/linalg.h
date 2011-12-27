@@ -68,6 +68,46 @@ template<int N> void zgemm(
     }
 }
 
+extern "C" void FORTFUNC(zhemm)(
+    const char *side,
+    const char *uplo,
+    int32_t *m,
+    int32_t *n,
+    std::complex<double> *alpha,
+    std::complex<double> *a,
+    int32_t *lda,
+    std::complex<double> *b,
+    int32_t *ldb,
+    std::complex<double> *beta,
+    std::complex<double> *c,
+    int32_t *ldc,
+    int32_t sidelen,
+    int32_t uplolen);
+    
+template <int N> void zhemm(
+    int side,
+    int uplo,
+    int32_t m,
+    int32_t n,
+    std::complex<double> alpha,
+    std::complex<double> *a,
+    int32_t lda,
+    std::complex<double> *b,
+    int32_t ldb,
+    std::complex<double> beta,
+    std::complex<double> *c,
+    int32_t ldc)
+{
+    if (N == blas_worker) 
+    {
+        const char *sidestr[] = {"L", "R"};
+        const char *uplostr[] = {"U", "L"};
+        FORTFUNC(zhemm)(sidestr[side], uplostr[uplo], &m, &n, &alpha, a, &lda, 
+            b, &ldb, &beta, c, &ldc, (int32_t)1, (int32_t)1);
+    }
+}    
+    
+
 extern "C" void FORTFUNC(zhegvx)(
     int32_t *itype,
     const char *jobz,
@@ -150,6 +190,41 @@ template<int N> void zhegv(
         delete w;
         delete rwork;
         delete work;
+    }
+}
+
+extern "C" void FORTFUNC(zgemv)(
+    const char *transa,
+    int32_t *m,
+    int32_t *n,
+    std::complex<double> *alpha,
+    std::complex<double> *a,
+    int32_t *lda,
+    std::complex<double> *x,
+    int32_t *incx,
+    std::complex<double> *beta,
+    std::complex<double> *y,
+    int32_t *incy,
+    int32_t translen);
+
+template<int N> void zgemv(
+    int transa,
+    int32_t m,
+    int32_t n,
+    std::complex<double> alpha,
+    std::complex<double> *a,
+    int32_t lda,
+    std::complex<double> *x,
+    int32_t incx,
+    std::complex<double> beta,
+    std::complex<double> *y,
+    int32_t incy)
+{
+    if (N == blas_worker) 
+    {
+        const char *trans[] = {"N", "T", "C"};
+        FORTFUNC(zgemv)(trans[transa], &m, &n, &alpha, a, &lda, x, &incx, 
+            &beta, y, &incy, (int32_t)1);
     }
 }
 
