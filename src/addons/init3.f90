@@ -144,5 +144,12 @@ if (debug_level.ge.4) then
 endif
 !if (mpi_grid_root()) call srclog
 !if (mpi_grid_root()) call print_info 
+!call lapw_load_global(natmtot,nspecies,lmaxvr,lmaxapw,apwordmax,nrmtmax,&
+!    ngkmax,ngvec,ngrtot,nlomax,ias2is,ias2ia,intgv,ivg,ivgig,gntyry,nstfv,&
+!    nstsv,nmatmax,evaltol)
+!do is=1,nspecies
+!  call lapw_load_species(is,nlorb(is),lorbl(1,is),apword(0,is),rmt(is),nrmt(is))
+!enddo
+!call lapw_init
 return
 end
