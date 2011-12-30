@@ -292,25 +292,22 @@ if (ttop.and.tbot) then
   enu=(etop+ebot)/2.d0
   return
 endif
-write(*,*)"enu=",enu
-call rs_solve(rs_nx,l,0,zn,enu,x,vx,u,nn)
-do i=1,rs_nx
-  write(400,*)x(i),u(i)/x(i)
-enddo
-write(*,*)"etop=",etop
-call rs_solve(rs_nx,l,0,zn,etop,x,vx,u,nn)
-do i=1,rs_nx
-  write(401,*)x(i),u(i)/x(i)
-enddo
-write(*,*)"ebot=",ebot
-call rs_solve(rs_nx,l,0,zn,ebot,x,vx,u,nn)
-do i=1,rs_nx
-  write(402,*)x(i),u(i)/x(i)
-enddo
-
-
-
-stop "rs_linen"
+!write(*,*)"enu=",enu
+!call rs_solve(rs_nx,l,0,zn,enu,x,vx,u,nn)
+!do i=1,rs_nx
+!  write(400,*)x(i),u(i)/x(i)
+!enddo
+!write(*,*)"etop=",etop
+!call rs_solve(rs_nx,l,0,zn,etop,x,vx,u,nn)
+!do i=1,rs_nx
+!  write(401,*)x(i),u(i)/x(i)
+!enddo
+!write(*,*)"ebot=",ebot
+!call rs_solve(rs_nx,l,0,zn,ebot,x,vx,u,nn)
+!do i=1,rs_nx
+!  write(402,*)x(i),u(i)/x(i)
+!enddo
+!stop "rs_linen"
 deallocate(u)
 return
 end subroutine
@@ -461,7 +458,7 @@ do ic=1,natmcls
       do io2=1,apword(l,is)
         call rs_h0(l,x,vx,u(:,io1,l),u(:,io2,l),t1)
         haa(1,io1,l,io2,l,ias)=t1/y00
-        write(*,*)"my haa",haa(1,io1,l,io2,l,ias)
+        !write(*,*)"my haa",haa(1,io1,l,io2,l,ias)
       enddo
     enddo
   enddo
@@ -471,7 +468,7 @@ do ic=1,natmcls
     do io2=1,apword(l,is)
       call rs_h0(l,x,vx,flo(:,ilo),u(:,io2,l),t1)
       hloa(1,ilo,io2,l,ias)=t1/y00
-      write(*,*)"my hloa",hloa(1,ilo,io2,l,ias)
+      !write(*,*)"my hloa",hloa(1,ilo,io2,l,ias)
       t1=0.d0
       do ir=1,rs_nx
         t1=t1+u(ir,io2,l)*flo(ir,ilo)*rs_wt(ir)*rmt(is)
@@ -487,7 +484,7 @@ do ic=1,natmcls
       if (l1.eq.l2) then
         call rs_h0(l1,x,vx,flo(:,ilo1),flo(:,ilo2),t1)
         hlolo(1,ilo1,ilo2,ias)=t1/y00
-        write(*,*)"my hlolo",hlolo(1,ilo1,ilo2,ias)
+        !write(*,*)"my hlolo",hlolo(1,ilo1,ilo2,ias)
         t1=0.d0
         do ir=1,rs_nx
           t1=t1+flo(ir,ilo1)*flo(ir,ilo2)*rs_wt(ir)*rmt(is)
@@ -603,21 +600,20 @@ end do
 !  write(200,*)
 !enddo
 
-do l=0,lmaxapw
-  do ir=1,nrmt(1)
-    write(200,*)spr(ir,1),apwfr(ir,1,1,l,1)
-  enddo
-  write(200,*)
-enddo
+!do l=0,lmaxapw
+!  do ir=1,nrmt(1)
+!    write(200,*)spr(ir,1),apwfr(ir,1,1,l,1)
+!  enddo
+!  write(200,*)
+!enddo
 !stop "genufr"
 
-do ilo=1,nlorb(1)
-  do ir=1,nrmt(1)
-    write(210,*)spr(ir,1),lofr(ir,1,ilo,1)
-  enddo
-  write(210,*)
-enddo
-
+!do ilo=1,nlorb(1)
+!  do ir=1,nrmt(1)
+!    write(210,*)spr(ir,1),lofr(ir,1,ilo,1)
+!  enddo
+!  write(210,*)
+!enddo
 
 return
 end subroutine
