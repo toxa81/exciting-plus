@@ -13,6 +13,7 @@ use modldapu
 use mod_wannier
 use mod_sic
 use mod_seceqn
+use mod_rs
 ! !DESCRIPTION:
 !   Computes the self-consistent Kohn-Sham ground-state. General information is
 !   written to the file {\tt INFO.OUT}. First- and second-variational
@@ -167,6 +168,7 @@ do iscl=1,maxscl
     tlast=.true.
   end if
   if (wproc) call flushifc(60)
+  !call genufr
 ! generate the core wavefunctions and densities
   call gencore
 ! find the new linearisation energies
@@ -348,7 +350,7 @@ do iscl=1,maxscl
       timer_get_value(t_apw_rad)
     write(60,'("  total for secular equation                : ",F12.2)')&
       timer_get_value(t_seceqn)
-    write(60,'("    firt-variational                        : ",F12.2)')&
+    write(60,'("    first-variational                       : ",F12.2)')&
       timer_get_value(t_seceqnfv)
     write(60,'("      setup                                 : ",F12.2)')&
       timer_get_value(t_seceqnfv_setup)
