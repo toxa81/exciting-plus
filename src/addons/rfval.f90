@@ -32,7 +32,7 @@ rmin=0.1d0
 if (tmt) then
   if (mpi_grid_root()) then
 ! we will replace the value of the function near the center of the MT sphere
-!  with exponent matched my value and first derivative
+!  with exponent matched by value and first derivative
     l2=.false.
     if (r0.lt.rmin) then
       l2=.true.
