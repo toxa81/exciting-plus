@@ -68,7 +68,7 @@ class Species
         std::vector<radial_l_channel_descriptor> apw_descriptors;
 };
 
-class local_orbital_index 
+/*class local_orbital_index 
 {
     public:
         local_orbital_index(int l, int m, int lm, int ilo) : l(l), m(m), lm(lm), ilo(ilo)
@@ -79,12 +79,12 @@ class local_orbital_index
         int m;
         int lm;
         int ilo;
-};
+};*/
 
-class lmoa 
+class lmo
 {
     public:
-        lmoa(int l, int m, int o, int a) : l(l), m(m), order(o), atom(a)
+        lmo(int l, int m, int o) : l(l), m(m), order(o)
         {
             lm = idxlm(l, m);
         }
@@ -93,7 +93,6 @@ class lmoa
         int m;
         int lm;
         int order;
-        int atom;
 };
 
 
@@ -115,8 +114,10 @@ class Atom
         double bfcmt[3];
         int symclass;
         Species *species;
-        int local_orbital_offset;
-        std::vector<local_orbital_index> idxlo;
+        int lo_offset;
+        int apw_offset;
+        std::vector<lmo> lo_lmo;
+        std::vector<lmo> apw_lmo;
 };
 
 class Geometry 
