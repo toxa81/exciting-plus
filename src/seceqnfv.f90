@@ -47,14 +47,17 @@ integer, allocatable :: iwork(:)
 integer, allocatable :: ifail(:)
 real(8), allocatable :: w(:)
 real(8), allocatable :: rwork(:)
-complex(8), allocatable :: h(:)
-complex(8), allocatable :: o(:)
+complex(8), allocatable :: h(:),h1(:)
+complex(8), allocatable :: o(:),o1(:)
 complex(8), allocatable :: work(:)
 complex(8) zt1
 complex(4) ct1
 character*100 fname
 logical, parameter :: packed=.false.
 integer, external :: ilaenv
+!call lapw_seceqnfv(ngp,nmatp,nmatp,igpig,vgpc,veffig,cfunig,apwalm,apwfr,&
+!    apwdfr,haa,hloa,hlolo,oalo,ololo,h1,o1,evalfv,evecfv)
+!return
 if (packed) then
   np=(nmatp*(nmatp+1))/2
 else
@@ -67,8 +70,11 @@ call timesec(ts0)
 call timer_start(t_seceqnfv)
 call timer_start(t_seceqnfv_setup)
 allocate(h(np),o(np))
+!allocate(h1(np),o1(np))
 h(:)=zzero
 o(:)=zzero
+!h1(:)=zzero
+!o1(:)=zzero
 if (packed) then
 ! Hamiltonian
   do is=1,nspecies
@@ -91,6 +97,10 @@ if (packed) then
 else
   call sethml(ngp,nmatp,vgpc,igpig,apwalm,h)
   call setovl(ngp,nmatp,igpig,apwalm,o)
+  !call lapw_seceqnfv(ngp,nmatp,nmatp,igpig,vgpc,veffig,cfunig,apwalm,apwfr,&
+  !  apwdfr,haa,hloa,hlolo,oalo,ololo,h1,o1,evalfv,evecfv)
+  !write(*,*)sum(abs(h-h1))
+  !write(*,*)sum(abs(o-o1))
 endif
 call timesec(ts1)
 call timer_stop(t_seceqnfv_setup)
@@ -137,6 +147,7 @@ call mpi_grid_bcast(evalfv(1),nstfv,dims=(/dim2/))
 timefv=timefv+ts1-ts0
 call timer_stop(t_seceqnfv)
 deallocate(h,o)
+!deallocate(h1,o1)
 return
 end subroutine
 !EOC
