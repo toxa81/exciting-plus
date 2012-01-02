@@ -81,7 +81,7 @@ class Species
         int ilo;
 };*/
 
-class lmo
+/*class lmo
 {
     public:
         lmo(int l, int m, int o) : l(l), m(m), order(o)
@@ -93,8 +93,28 @@ class lmo
         int m;
         int lm;
         int order;
-};
+};*/
 
+// muffin-tin combined indices
+class mtci
+{
+    public:
+        mtci(int l, int m, int order, int idxrf) : l(l), m(m), order(order), idxrf(idxrf), idxlo(-1)
+        {
+            lm = idxlm(l, m);
+        }
+        mtci(int l, int m, int order, int idxrf, int idxlo) : l(l), m(m), order(order), idxrf(idxrf), idxlo(idxlo)
+        {
+            lm = idxlm(l, m);
+        }
+        
+        int l;
+        int m;
+        int lm;
+        int order;
+        int idxrf;
+        int idxlo;
+};
 
 class Atom 
 {
@@ -114,10 +134,10 @@ class Atom
         double bfcmt[3];
         int symclass;
         Species *species;
-        int lo_offset;
-        int apw_offset;
-        std::vector<lmo> lo_lmo;
-        std::vector<lmo> apw_lmo;
+        std::vector<mtci> ci_apw;
+        std::vector<mtci> ci_lo;
+        unsigned int offset_apw;
+        unsigned int offset_lo;
 };
 
 class Geometry 
