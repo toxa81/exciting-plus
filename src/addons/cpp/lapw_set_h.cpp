@@ -66,16 +66,13 @@ void lapw_set_h(int ngp,
     for (unsigned int ias = 0; ias < geometry.atoms.size(); ias++)
     {
         Atom *atom = &geometry.atoms[ias];
-        Species *species = atom->species;
 
         for (unsigned int j2 = 0; j2 < atom->ci_lo.size(); j2++) // loop over columns (local-orbital block) 
         {
-            int l2 = atom->ci_lo[j2].l;
             int lm2 = atom->ci_lo[j2].lm;
-            int ilo2 = atom->ci_lo[j2].idxlo;
             int idxrf2 = atom->ci_lo[j2].idxrf;
             
-            // apw-lo block of the Hamiltonian
+            // apw-lo block
             for (unsigned int j1 = 0; j1 < atom->ci_apw.size(); j1++) // loop over rows
             {
                 int lm1 = atom->ci_apw[j1].lm;
@@ -89,11 +86,10 @@ void lapw_set_h(int ngp,
                         h(ig, ngp + atom->offset_lo + j2) += zsum * capwalm(ig, atom->offset_apw + j1);
             }
 
-            // lo-lo block of the Hamiltonian 
+            // lo-lo block 
             for (unsigned int j1 = 0; j1 <= j2; j1++)
             {
                 int lm1 = atom->ci_lo[j1].lm;
-                int ilo1 = atom->ci_lo[j1].idxlo;
                 int idxrf1 = atom->ci_lo[j1].idxrf;
                 
                 std::complex<double> zsum(0, 0);
