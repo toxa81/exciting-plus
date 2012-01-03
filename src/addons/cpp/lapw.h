@@ -4,6 +4,35 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <complex>
+#include "tensor.h"
+#include "config.h"
+#include "linalg.h"
+
+/*
+    forward declarations
+*/
+void compact_apwalm(int ngp, 
+                    std::complex<double> *apwalm_, 
+                    tensor<std::complex<double>,2>& capwalm);
+
+void lapw_set_h(int ngp,
+                int ldh,
+                tensor<int,1>& igpig,
+                tensor<double,2>& vgpc,
+                tensor<std::complex<double>,1>& veffig,
+                tensor<std::complex<double>,2>& capwalm,
+                tensor<double,5>& apwfr,
+                tensor<double,3>& apwdfr,
+                tensor<double,4>& hmltrad,
+                tensor<std::complex<double>,2>& h);
+
+void lapw_set_o(int ngp,
+                int ldo,
+                tensor<int,1>& igpig,
+                tensor<std::complex<double>,2>& capwalm,
+                tensor<double,3>& ovlprad,
+                tensor<std::complex<double>,2>& o);
 
 inline int idxlm(int l, int m)
 {
@@ -68,33 +97,6 @@ class Species
         std::vector<radial_l_channel_descriptor> apw_descriptors;
 };
 
-/*class local_orbital_index 
-{
-    public:
-        local_orbital_index(int l, int m, int lm, int ilo) : l(l), m(m), lm(lm), ilo(ilo)
-        {
-        }
-        
-        int l;
-        int m;
-        int lm;
-        int ilo;
-};*/
-
-/*class lmo
-{
-    public:
-        lmo(int l, int m, int o) : l(l), m(m), order(o)
-        {
-            lm = idxlm(l, m);
-        }
-        
-        int l;
-        int m;
-        int lm;
-        int order;
-};*/
-
 // muffin-tin combined indices
 class mtci
 {
@@ -136,6 +138,7 @@ class Atom
         Species *species;
         std::vector<mtci> ci_apw;
         std::vector<mtci> ci_lo;
+        tensor<int,2> ci_apw_by_lmo;
         unsigned int offset_apw;
         unsigned int offset_lo;
 };
@@ -155,5 +158,41 @@ class Geometry
         std::vector<Atom> atoms;
 };
 
+class Parameters
+{
+    public:
+        int ngkmax;
+        int apwordmax;
+        int lmmaxapw;
+        int natmtot;
+        int nspecies;
+        int lmaxvr;
+        int lmmaxvr;
+        int lmaxapw;
+        int ngvec;
+        int ngrtot;
+        int nlomax;
+        int nrmtmax;
+        int nstfv;
+        int nstsv;
+        int nmatmax;
+        int nrfmtmax;
+        double evaltol;
+        
+        std::vector< std::complex<double> > cfunig;
+        tensor<int,2> intgv;
+        tensor<int,2> ivg;
+        tensor<int,3> ivgig;
+        tensor<std::complex<double>,3> gntyry;
+        tensor<std::vector<int>,2> L3_gntyry;
+        
+        int wfmt_size_apw;
+        int wfmt_size_lo;
+        int wfmt_size;
+
+};
+
+extern Geometry geometry;
+extern Parameters p;
 
 #endif // __LAPW_H__
