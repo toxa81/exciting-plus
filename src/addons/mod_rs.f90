@@ -44,8 +44,11 @@ n2=500
 
 rs_nx=(n2*2+1)+depth*n2
 
+if (allocated(rs_x)) deallocate(rs_x)
 allocate(rs_x(rs_nx))
+if (allocated(rs_w)) deallocate(rs_w)
 allocate(rs_w(rs_nx))
+if (allocated(rs_wt)) deallocate(rs_wt)
 allocate(rs_wt(rs_nx))
 rs_x(1)=x0
 k=1
