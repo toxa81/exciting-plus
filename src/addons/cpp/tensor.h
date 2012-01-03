@@ -45,7 +45,7 @@ template <typename T, int D> class tensor_base
     
         ~tensor_base() 
         {
-            if (allocated) delete data;
+            if (allocated) delete[] data;
         }
     
         void copy(const tensor_base<T,D>& src) 
