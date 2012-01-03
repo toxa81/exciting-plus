@@ -42,7 +42,6 @@ void lapw_set_o(int ngp,
     for (int j2 = 0; j2 < ngp; j2++) // loop over columns
     {
         int ig2 = igpig(j2) - 1;
-        double v2[3];
         for (int j1 = 0; j1 <= j2; j1++) // for each column loop over rows
         {
             for (int k = 0; k < 3; k++) iv[k] = p.ivg(k, igpig(j1) - 1) - p.ivg(k, ig2);
