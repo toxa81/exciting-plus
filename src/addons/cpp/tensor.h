@@ -86,23 +86,16 @@ template <typename T, int D> class tensor_base
             std::swap(this->allocated, rhs.allocated);
             return *this;
         }
-        
-        /*tensor_base<T,D>& operator=(T rhs) 
-        {
-            for (int i = 0; i < size_; i++) data[i] = rhs;
-            return *this;
-        }*/
-        
-        /*void set(const T& val)
-        {
-            if (allocated) 
-                for (int i = 0; i < size_; i++) data[i] = val;
-        }*/
     
         int size() 
         {
             return size_;
         }
+        
+        inline int size(int i)
+        {
+            return index[i].size;
+        } 
     
     protected:
   

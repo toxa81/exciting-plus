@@ -3,7 +3,7 @@ include ../../../make.inc
 .SUFFIXES: .cpp
 
 OBJ = compact_apwalm.o lapw.o lapw_init.o lapw_load_global.o lapw_load_species.o \
-      lapw_seceqn.o lapw_set_h.o lapw_set_o.o
+      lapw_seceqn.o lapw_set_h.o lapw_set_o.o lapw_fvmt.o
       
 .cpp.o:
 	$(CXX) $(CPP_OPTS) -Wall -O0 -g -c -o $(*D)/$(*F).o $<

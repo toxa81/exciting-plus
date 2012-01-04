@@ -24,6 +24,7 @@ extern "C" void FORTFUNC(lapw_init)()
                 for (int m = -l, lm = l * l; m <= l; m++, lm++)
                 {
                     atom->ci_apw.push_back(mtci(l, m, order[l], idxrf));
+                    atom->ci.push_back(mtci(l, m, order[l], idxrf));
                     atom->ci_apw_by_lmo(lm, io) = atom->ci_apw.size() - 1; 
                 }
                 order[l]++;
@@ -35,9 +36,11 @@ extern "C" void FORTFUNC(lapw_init)()
         for (unsigned int ilo = 0; ilo < species->lo_descriptors.size(); ilo++)
         {
             int l = species->lo_descriptors[ilo].l;
-            for (int m = -l; m <= l; m++) 
+            for (int m = -l; m <= l; m++)
+            { 
                 atom->ci_lo.push_back(mtci(l, m, order[l], idxrf, ilo));
-
+                atom->ci.push_back(mtci(l, m, order[l], idxrf, ilo));
+            }
             order[l]++;
             idxrf++;
         }

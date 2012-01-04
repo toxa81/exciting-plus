@@ -28,6 +28,7 @@ void lapw_set_h(int ngp,
         Atom *atom = &geometry.atoms[ias];
         Species *species = atom->species;
 
+        // precompute apw block
         for (unsigned int j2 = 0; j2 < atom->ci_apw.size(); j2++)
         {
             int l2 = atom->ci_apw[j2].l;
@@ -58,14 +59,6 @@ void lapw_set_h(int ngp,
             }
             memcpy(&zm(0, atom->offset_apw + j2), &zv[0], ngp * sizeof(std::complex<double>));
         }
-    }
-    std::complex<double> zone(1, 0);
-    std::complex<double> zzero(0, 0);
-    zgemm<gemm_worker>(0, 2, ngp, ngp, p.wfmt_size_apw, zone, &zm(0, 0), ngp, &capwalm(0, 0), ngp, zzero, &h(0, 0), ldh);
-
-    for (unsigned int ias = 0; ias < geometry.atoms.size(); ias++)
-    {
-        Atom *atom = &geometry.atoms[ias];
 
         for (unsigned int j2 = 0; j2 < atom->ci_lo.size(); j2++) // loop over columns (local-orbital block) 
         {
@@ -98,8 +91,9 @@ void lapw_set_h(int ngp,
                 h(ngp + atom->offset_lo + j1, ngp + atom->offset_lo + j2) += zsum;
             }
         }
-    }
-    
+    } //ias
+    zgemm<gemm_worker>(0, 2, ngp, ngp, p.wfmt_size_apw, zone, &zm(0, 0), ngp, &capwalm(0, 0), ngp, zzero, &h(0, 0), ldh);
+
     int iv[3];
     for (int j2 = 0; j2 < ngp; j2++) // loop over columns
     {
