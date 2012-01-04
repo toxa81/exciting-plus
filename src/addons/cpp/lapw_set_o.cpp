@@ -7,8 +7,6 @@ void lapw_set_o(int ngp,
                 tensor<double,3>& ovlprad,
                 tensor<std::complex<double>,2>& o)
 {
-    std::complex<double> zone(1, 0);
-    std::complex<double> zzero(0, 0);
     zgemm<gemm_worker>(0 ,2, ngp, ngp, p.wfmt_size_apw, zone, &capwalm(0, 0), ngp, &capwalm(0, 0), ngp, zzero, &o(0, 0), ldo);
 
     for (unsigned int ias = 0; ias < geometry.atoms.size(); ias++)
