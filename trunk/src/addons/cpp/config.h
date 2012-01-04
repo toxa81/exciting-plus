@@ -7,4 +7,6 @@
 
 const int gemm_worker = blas_worker;
 
+const bool check_evecfv = false; 
+
 #endif // __CONFIG_H__

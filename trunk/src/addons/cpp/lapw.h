@@ -34,6 +34,10 @@ void lapw_set_o(int ngp,
                 tensor<double,3>& ovlprad,
                 tensor<std::complex<double>,2>& o);
 
+void lapw_fvmt(tensor<std::complex<double>,2>& capwalm,
+               tensor<std::complex<double>,2>& zfv,
+               tensor<std::complex<double>,2>& fvmt);
+
 inline int idxlm(int l, int m)
 {
     return l * l + l + m;
@@ -138,6 +142,7 @@ class Atom
         Species *species;
         std::vector<mtci> ci_apw;
         std::vector<mtci> ci_lo;
+        std::vector<mtci> ci;
         tensor<int,2> ci_apw_by_lmo;
         unsigned int offset_apw;
         unsigned int offset_lo;
@@ -194,5 +199,7 @@ class Parameters
 
 extern Geometry geometry;
 extern Parameters p;
+extern std::complex<double> zone;
+extern std::complex<double> zzero;
 
 #endif // __LAPW_H__
