@@ -8,11 +8,12 @@ void compact_apwalm(int ngp,
     for (unsigned int ias = 0; ias < geometry.atoms.size(); ias++)
     {
         Atom *atom = &geometry.atoms[ias];
+        Species *species = atom->species;
 
-        for (unsigned int j = 0; j < atom->ci_apw.size(); j++)
+        for (unsigned int j = 0; j < species->size_ci_apw; j++)
         {
-            int io = atom->ci_apw[j].order;
-            int lm = atom->ci_apw[j].lm;
+            int io = species->ci[j].order;
+            int lm = species->ci[j].lm;
             for (int ig = 0; ig < ngp; ig++)
                 capwalm(ig, atom->offset_apw + j) = conj(apwalm(ig, io, lm, ias));
         }

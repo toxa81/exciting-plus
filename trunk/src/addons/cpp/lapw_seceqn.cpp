@@ -11,7 +11,7 @@ extern "C" void FORTFUNC(lapw_seceqn)(int32_t *ngp_,
                                       double *apwdfr_,
                                       double *hmltrad_,
                                       double *ovlprad_,
-                                      double *rfmtp_,
+                                      double *ovlprfmt_,
                                       std::complex<double> *h_,
                                       std::complex<double> *o_,
                                       double *evalfv_,
@@ -29,7 +29,7 @@ extern "C" void FORTFUNC(lapw_seceqn)(int32_t *ngp_,
     tensor<double,3> apwdfr(apwdfr_, p.apwordmax, p.lmaxapw + 1, p.natmtot);
     tensor<double,4> hmltrad(hmltrad_, p.lmmaxvr, p.nrfmtmax, p.nrfmtmax, p.natmtot);
     tensor<double,3> ovlprad(ovlprad_, p.apwordmax + p.nlomax, p.nlomax, p.natmtot);
-    tensor<double,3> rfmtp(rfmtp_, p.nrfmtmax, p.nrfmtmax, p.natmtot);
+    tensor<double,4> ovlprfmt(ovlprfmt_, p.lmaxapw + 1, p.ordrfmtmax, p.ordrfmtmax, p.natmtot);
 
     tensor<std::complex<double>,2> capwalm(ngp, p.wfmt_size_apw);
     compact_apwalm(ngp, apwalm_, capwalm);
