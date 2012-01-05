@@ -20,6 +20,7 @@ extern "C" void FORTFUNC(lapw_load_global)(int *natmtot_,
                                            int *nstsv_,
                                            int *nmatmax_,
                                            int *nrfmtmax_,
+                                           int *ordrfmtmax_,
                                            double *evaltol_)
 {
     p.natmtot = *natmtot_;
@@ -38,6 +39,7 @@ extern "C" void FORTFUNC(lapw_load_global)(int *natmtot_,
     p.nstsv = *nstsv_;
     p.nmatmax = *nmatmax_;
     p.nrfmtmax = *nrfmtmax_;
+    p.ordrfmtmax = *ordrfmtmax_;
     p.evaltol = *evaltol_;
     p.intgv = tensor<int,2>(intgv_, 3, 2);
     p.ivgig = tensor<int,3>(ivgig_, t_index(p.intgv(0, 0), p.intgv(0, 1)), 

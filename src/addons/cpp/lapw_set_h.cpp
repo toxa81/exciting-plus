@@ -29,19 +29,17 @@ void lapw_set_h(int ngp,
         Species *species = atom->species;
 
         // precompute apw block
-        for (unsigned int j2 = 0; j2 < atom->ci_apw.size(); j2++)
+        for (unsigned int j2 = 0; j2 < species->size_ci_apw; j2++)
         {
-            int l2 = atom->ci_apw[j2].l;
-            int io2 = atom->ci_apw[j2].order;
-            int lm2 = atom->ci_apw[j2].lm;
-            int idxrf2 = atom->ci_apw[j2].idxrf;
-
             memset(&zv[0], 0, ngp * sizeof(std::complex<double>));
             
-            for (unsigned int j1 = 0; j1 < atom->ci_apw.size(); j1++)
+            int lm2 = species->ci[j2].lm;
+            int idxrf2 = species->ci[j2].idxrf;
+            
+            for (unsigned int j1 = 0; j1 < species->size_ci_apw; j1++)
             {
-                int lm1 = atom->ci_apw[j1].lm;
-                int idxrf1 = atom->ci_apw[j1].idxrf;
+                int lm1 = species->ci[j1].lm;
+                int idxrf1 = species->ci[j1].idxrf;
                 
                 std::complex<double> zsum(0, 0);
                 L3_sum_gntyry(lm1, lm2, &hmltrad(0, idxrf1, idxrf2, ias), zsum);
@@ -51,25 +49,28 @@ void lapw_set_h(int ngp,
                         zv[ig] += zsum * capwalm(ig, atom->offset_apw + j1); 
             }
             
+            int l2 = species->ci[j2].l;
+            int io2 = species->ci[j2].order;
+            
             for (unsigned int io1 = 0; io1 < species->apw_descriptors[l2].radial_solution_descriptors.size(); io1++)
             {
                 double t1 = 0.5 * pow(species->rmt, 2) * apwfr(species->nrmt - 1, 0, io1, l2, ias) * apwdfr(io2, l2, ias); 
                 for (int ig = 0; ig < ngp; ig++) 
-                    zv[ig] += t1 * capwalm(ig, atom->offset_apw + atom->ci_apw_by_lmo(lm2, io1));
+                    zv[ig] += t1 * capwalm(ig, atom->offset_apw + species->ci_by_lmo(lm2, io1));
             }
             memcpy(&zm(0, atom->offset_apw + j2), &zv[0], ngp * sizeof(std::complex<double>));
         }
 
-        for (unsigned int j2 = 0; j2 < atom->ci_lo.size(); j2++) // loop over columns (local-orbital block) 
+        for (unsigned int j2 = 0; j2 < species->size_ci_lo; j2++) // loop over columns (local-orbital block) 
         {
-            int lm2 = atom->ci_lo[j2].lm;
-            int idxrf2 = atom->ci_lo[j2].idxrf;
+            int lm2 = species->ci_lo[j2].lm;
+            int idxrf2 = species->ci_lo[j2].idxrf;
             
             // apw-lo block
-            for (unsigned int j1 = 0; j1 < atom->ci_apw.size(); j1++) // loop over rows
+            for (unsigned int j1 = 0; j1 < species->size_ci_apw; j1++) // loop over rows
             {
-                int lm1 = atom->ci_apw[j1].lm;
-                int idxrf1 = atom->ci_apw[j1].idxrf;
+                int lm1 = species->ci[j1].lm;
+                int idxrf1 = species->ci[j1].idxrf;
                 
                 std::complex<double> zsum(0, 0);
                 L3_sum_gntyry(lm1, lm2, &hmltrad(0, idxrf1, idxrf2, ias), zsum);
@@ -82,8 +83,8 @@ void lapw_set_h(int ngp,
             // lo-lo block 
             for (unsigned int j1 = 0; j1 <= j2; j1++)
             {
-                int lm1 = atom->ci_lo[j1].lm;
-                int idxrf1 = atom->ci_lo[j1].idxrf;
+                int lm1 = species->ci_lo[j1].lm;
+                int idxrf1 = species->ci_lo[j1].idxrf;
                 
                 std::complex<double> zsum(0, 0);
                 L3_sum_gntyry(lm1, lm2, &hmltrad(0, idxrf1, idxrf2, ias), zsum);

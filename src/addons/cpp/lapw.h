@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include <complex>
+#include <algorithm>
 #include "tensor.h"
 #include "config.h"
 #include "linalg.h"
@@ -75,32 +76,6 @@ class radial_l_channel_descriptor
         std::vector<radial_solution_descriptor> radial_solution_descriptors;
 };
 
-class Species 
-{
-    public:
-
-        Species() 
-        {
-        }
-    
-        Species(const std::string& symbol) : symbol(symbol) 
-        {
-        };
-        
-        std::string name;
-        std::string symbol;
-        int number;
-        double mass;
-        double rmin;
-        double rmax;
-        double rmt;
-        int nrmt;
-  
-        std::vector<atomic_level> core;
-        std::vector<radial_l_channel_descriptor> lo_descriptors;
-        std::vector<radial_l_channel_descriptor> apw_descriptors;
-};
-
 // muffin-tin combined indices
 class mtci
 {
@@ -122,6 +97,40 @@ class mtci
         int idxlo;
 };
 
+class Species 
+{
+    public:
+
+        Species() : size_ci_lo(0), size_ci_apw(0), nrfmt(0)
+        {
+        }
+    
+        Species(const std::string& symbol) : symbol(symbol) 
+        {
+        };
+        
+        std::string name;
+        std::string symbol;
+        int number;
+        double mass;
+        double rmin;
+        double rmax;
+        double rmt;
+        int nrmt;
+  
+        std::vector<atomic_level> core;
+        std::vector<radial_l_channel_descriptor> lo_descriptors;
+        std::vector<radial_l_channel_descriptor> apw_descriptors;
+        std::vector<mtci> ci;
+        mtci *ci_lo;
+        unsigned int size_ci_lo;
+        unsigned int size_ci_apw;
+        tensor<int,2> ci_by_lmo;
+        std::vector<int> rfmt_order;
+        unsigned int nrfmt;
+};
+
+
 class Atom 
 {
     public:
@@ -140,12 +149,9 @@ class Atom
         double bfcmt[3];
         int symclass;
         Species *species;
-        std::vector<mtci> ci_apw;
-        std::vector<mtci> ci_lo;
-        std::vector<mtci> ci;
-        tensor<int,2> ci_apw_by_lmo;
         unsigned int offset_apw;
         unsigned int offset_lo;
+        unsigned int offset_wfmt;
 };
 
 class Geometry 
@@ -182,6 +188,7 @@ class Parameters
         int nstsv;
         int nmatmax;
         int nrfmtmax;
+        int ordrfmtmax;
         double evaltol;
         
         std::vector< std::complex<double> > cfunig;
@@ -191,9 +198,9 @@ class Parameters
         tensor<std::complex<double>,3> gntyry;
         tensor<std::vector<int>,2> L3_gntyry;
         
-        int wfmt_size_apw;
-        int wfmt_size_lo;
-        int wfmt_size;
+        unsigned int wfmt_size_apw;
+        unsigned int wfmt_size_lo;
+        unsigned int wfmt_size;
 
 };
 
