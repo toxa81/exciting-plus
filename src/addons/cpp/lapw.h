@@ -32,12 +32,17 @@ void lapw_set_o(int ngp,
                 int ldo,
                 tensor<int,1>& igpig,
                 tensor<std::complex<double>,2>& capwalm,
-                tensor<double,3>& ovlprad,
+                tensor<double,4>& ovlprad,
                 tensor<std::complex<double>,2>& o);
 
 void lapw_fvmt(tensor<std::complex<double>,2>& capwalm,
                tensor<std::complex<double>,2>& zfv,
                tensor<std::complex<double>,2>& fvmt);
+
+void lapw_test_fvmt(tensor<double,4>& ovlprad,
+                    tensor<std::complex<double>,2>& fvmt,
+                    int ngp,
+                    tensor<int,1>& igpig);
 
 inline int idxlm(int l, int m)
 {
@@ -190,8 +195,11 @@ class Parameters
         int nrfmtmax;
         int ordrfmtmax;
         double evaltol;
+        int ngrid[3];
         
+        std::vector<int> igfft;
         std::vector< std::complex<double> > cfunig;
+        std::vector<double> cfunir;
         tensor<int,2> intgv;
         tensor<int,2> ivg;
         tensor<int,3> ivgig;

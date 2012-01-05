@@ -11,7 +11,6 @@ extern "C" void FORTFUNC(lapw_seceqn)(int32_t *ngp_,
                                       double *apwdfr_,
                                       double *hmltrad_,
                                       double *ovlprad_,
-                                      double *ovlprfmt_,
                                       std::complex<double> *h_,
                                       std::complex<double> *o_,
                                       double *evalfv_,
@@ -28,8 +27,7 @@ extern "C" void FORTFUNC(lapw_seceqn)(int32_t *ngp_,
     tensor<double,5> apwfr(apwfr_, p.nrmtmax, 2, p.apwordmax, p.lmaxapw + 1, p.natmtot);
     tensor<double,3> apwdfr(apwdfr_, p.apwordmax, p.lmaxapw + 1, p.natmtot);
     tensor<double,4> hmltrad(hmltrad_, p.lmmaxvr, p.nrfmtmax, p.nrfmtmax, p.natmtot);
-    tensor<double,3> ovlprad(ovlprad_, p.apwordmax + p.nlomax, p.nlomax, p.natmtot);
-    tensor<double,4> ovlprfmt(ovlprfmt_, p.lmaxapw + 1, p.ordrfmtmax, p.ordrfmtmax, p.natmtot);
+    tensor<double,4> ovlprad(ovlprad_, p.lmaxapw + 1, p.ordrfmtmax, p.ordrfmtmax, p.natmtot);
 
     tensor<std::complex<double>,2> capwalm(ngp, p.wfmt_size_apw);
     compact_apwalm(ngp, apwalm_, capwalm);
@@ -37,7 +35,7 @@ extern "C" void FORTFUNC(lapw_seceqn)(int32_t *ngp_,
     lapw_set_h(ngp, ldh, igpig, vgpc, veffig, capwalm, apwfr, apwdfr, hmltrad, h);
     lapw_set_o(ngp, ldh, igpig, capwalm, ovlprad, o);
 
-    return;
+    //return;
        
     tensor<std::complex<double>,2> h1;
     tensor<std::complex<double>,2> o1;
@@ -75,7 +73,7 @@ extern "C" void FORTFUNC(lapw_seceqn)(int32_t *ngp_,
     tensor<std::complex<double>,2> fvmt(p.wfmt_size + ngp, p.nstfv);
     lapw_fvmt(capwalm, z, fvmt);
 
-    //lapw_test_fvmt(rfmtp, fvmt);
+    lapw_test_fvmt(ovlprad, fvmt, ngp, igpig);
     
     exit(0);
 }

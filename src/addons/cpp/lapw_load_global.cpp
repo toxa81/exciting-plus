@@ -14,6 +14,9 @@ extern "C" void FORTFUNC(lapw_load_global)(int *natmtot_,
                                            int *intgv_,
                                            int *ivg_,
                                            int *ivgig_,
+                                           int *ngrid_,
+                                           int *igfft_,
+                                           double *cfunir_,
                                            std::complex<double> *cfunig_,
                                            std::complex<double> *gntyry_,
                                            int *nstfv_,
@@ -46,10 +49,19 @@ extern "C" void FORTFUNC(lapw_load_global)(int *natmtot_,
                                     t_index(p.intgv(1, 0), p.intgv(1, 1)),
                                     t_index(p.intgv(2, 0), p.intgv(2, 1)));
     p.ivg = tensor<int,2>(ivg_, 3, p.ngrtot);
+    p.igfft.resize(p.ngrtot);
+    p.cfunir.resize(p.ngrtot);
     p.cfunig.resize(p.ngrtot);
-    for (int ig = 0; ig < p.ngrtot; ig++)
-        p.cfunig[ig] = cfunig_[ig];
-        
+    for (int i = 0; i < p.ngrtot; i++)
+    {
+        p.cfunig[i] = cfunig_[i];
+        p.cfunir[i] = cfunir_[i];
+        p.igfft[i] = igfft_[i] - 1;
+    }
+    p.ngrid[0] = ngrid_[0];
+    p.ngrid[1] = ngrid_[1];
+    p.ngrid[2] = ngrid_[2];
+     
     p.gntyry = tensor<std::complex<double>,3>(gntyry_, p.lmmaxvr, p.lmmaxapw, p.lmmaxapw);
     p.L3_gntyry = tensor<std::vector<int>,2>(p.lmmaxapw, p.lmmaxapw);
     
