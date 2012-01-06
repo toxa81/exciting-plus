@@ -137,26 +137,24 @@ extern "C" void FORTFUNC(zhegvx)(
     int32_t rangelen,
     int32_t uplolen);
 
-extern "C" int32_t FORTFUNC(ilaenv)(
-    int32_t *ispec,
-    const char *name,
-    const char *opts,
-    int32_t *n1,
-    int32_t *n2,
-    int32_t *n3,
-    int32_t *n4,
-    int32_t namelen,
-    int32_t optslen);
+extern "C" int32_t FORTFUNC(ilaenv)(int32_t *ispec,
+                                    const char *name,
+                                    const char *opts,
+                                    int32_t *n1,
+                                    int32_t *n2,
+                                    int32_t *n3,
+                                    int32_t *n4,
+                                    int32_t namelen,
+                                    int32_t optslen);
 
-template<int N> void zhegv(
-  int32_t n,
-  int32_t nv,
-  double abstol,
-  std::complex<double> *a,
-  std::complex<double> *b,
-  double *eval,
-  std::complex<double> *evec,
-  int ld)
+template<int N> void zhegv(int32_t n,
+                           int32_t nv,
+                           double abstol,
+                           std::complex<double> *a,
+                           std::complex<double> *b,
+                           double *eval,
+                           std::complex<double> *evec,
+                           int ld)
 {
     if (N == lapack_worker) 
     {
@@ -179,17 +177,56 @@ template<int N> void zhegv(
             &info, (int32_t)1, (int32_t)1, (int32_t)1);
         if (info)
         {
-           std::cout << "lapack diagonalisation failed" << std::endl;
+           std::cout << "lapack diagonalization failed" << std::endl;
            std::cout << "info = " << info << std::endl;
            std::cout << "matrix size = " << n << std::endl;
            exit(0);
         }
         memcpy(eval, w, nv * sizeof(double));
-        delete iwork;
-        delete ifail;
-        delete w;
-        delete rwork;
-        delete work;
+        delete[] iwork;
+        delete[] ifail;
+        delete[] w;
+        delete[] rwork;
+        delete[] work;
+    }
+}
+
+extern "C" void FORTFUNC(zheev)(const char *jobz, 
+                                const char *uplo, 
+                                int32_t *n, 
+                                std::complex<double> *a,
+                                int32_t *lda,
+                                double *w,
+                                double *work,
+                                int32_t *lwork,
+                                double *rwork,
+                                int32_t *info,
+                                int32_t jobzlen,
+                                int32_t uplolen);
+
+template<int N> void zheev(int32_t n, 
+                           std::complex<double> *a, 
+                           double *eval)
+{
+    if (N == lapack_worker)
+    {
+        int ispec = 1;
+        int n1 = -1;
+        int nb = FORTFUNC(ilaenv)(&ispec, "ZHETRD", "U",  &n, &n1, &n1, &n1, (int32_t)6, (int32_t)1);
+        int lwork = (nb + 1) * n;
+        double *work = new double[lwork * 2];
+        double *rwork = new double[3 * n + 2];
+        int info;
+        FORTFUNC(zheev)("V", "U", &n, a, &n, eval, work, &lwork, rwork, &info, (int32_t)1, (int32_t)1);
+        if (info)
+        {
+           std::cout << "lapack diagonalization failed" << std::endl;
+           std::cout << "info = " << info << std::endl;
+           std::cout << "matrix size = " << n << std::endl;
+           exit(0);
+        }
+        delete[] work;
+        delete[] rwork;
     }
 }
 

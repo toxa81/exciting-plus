@@ -187,7 +187,7 @@ template <typename T> class tensor<T,2> : public tensor_base<T,2>
             else 
             {
                 this->data = new T[this->size_];
-                memset(this->data, 0, this->size_ * sizeof(T));
+                //memset(this->data, 0, this->size_ * sizeof(T));
                 this->allocated = true;
             }
         }
