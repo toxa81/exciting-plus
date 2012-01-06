@@ -1,7 +1,5 @@
 #include "lapw.h"
 
-extern "C" void FORTFUNC(zfftifc)(int *dim, int *ngrid, int *dir, std::complex<double> *data);
-
 const int use_fft = 2;
 
 void lapw_test_fvmt(tensor<double,4>& ovlprad, 

@@ -24,7 +24,9 @@ extern "C" void FORTFUNC(lapw_load_global)(int *natmtot_,
                                            int *nmatmax_,
                                            int *nrfmtmax_,
                                            int *ordrfmtmax_,
-                                           double *evaltol_)
+                                           double *evaltol_,
+                                           int *spinpol_,
+                                           int *ndmag_)
 {
     p.natmtot = *natmtot_;
     p.nspecies = *nspecies_;
@@ -61,7 +63,10 @@ extern "C" void FORTFUNC(lapw_load_global)(int *natmtot_,
     p.ngrid[0] = ngrid_[0];
     p.ngrid[1] = ngrid_[1];
     p.ngrid[2] = ngrid_[2];
-     
+    
+    p.spinpol = (*spinpol_ != 0);
+    p.ndmag = *ndmag_;
+    
     p.gntyry = tensor<std::complex<double>,3>(gntyry_, p.lmmaxvr, p.lmmaxapw, p.lmmaxapw);
     p.L3_gntyry = tensor<std::vector<int>,2>(p.lmmaxapw, p.lmmaxapw);
     
@@ -81,6 +86,9 @@ extern "C" void FORTFUNC(lapw_load_global)(int *natmtot_,
     
     for (int i = 0; i < p.natmtot; i++)
         geometry.atoms.push_back(Atom(&geometry.species[ias2is_[i] - 1]));
+   
+    std::cout << "spinpol : " << p.spinpol << std::endl
+              << "ndmag : " << p.ndmag << std::endl;
 };
 
 

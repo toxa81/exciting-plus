@@ -1,14 +1,5 @@
 #include "lapw.h"
 
-inline void L3_sum_gntyry(int lm1, int lm2, double *v, std::complex<double>& zsum)
-{
-    for (unsigned int k = 0; k < p.L3_gntyry(lm1, lm2).size(); k++)
-    {
-        int lm3 = p.L3_gntyry(lm1, lm2)[k];
-        zsum += p.gntyry(lm3, lm1, lm2) * v[lm3];
-    }
-}
-
 void lapw_set_h(int ngp,
                 int ldh,
                 tensor<int,1>& igpig,
@@ -42,7 +33,7 @@ void lapw_set_h(int ngp,
                 int idxrf1 = species->ci[j1].idxrf;
                 
                 std::complex<double> zsum(0, 0);
-                L3_sum_gntyry(lm1, lm2, &hmltrad(0, idxrf1, idxrf2, ias), zsum);
+                p.L3_sum_gntyry(lm1, lm2, &hmltrad(0, idxrf1, idxrf2, ias), zsum);
 
                 if (abs(zsum) > 1e-14) 
                     for (int ig = 0; ig < ngp; ig++) 
@@ -73,7 +64,7 @@ void lapw_set_h(int ngp,
                 int idxrf1 = species->ci[j1].idxrf;
                 
                 std::complex<double> zsum(0, 0);
-                L3_sum_gntyry(lm1, lm2, &hmltrad(0, idxrf1, idxrf2, ias), zsum);
+                p.L3_sum_gntyry(lm1, lm2, &hmltrad(0, idxrf1, idxrf2, ias), zsum);
                         
                 if (abs(zsum) > 1e-14)
                     for (int ig = 0; ig < ngp; ig++)
@@ -87,7 +78,7 @@ void lapw_set_h(int ngp,
                 int idxrf1 = species->ci_lo[j1].idxrf;
                 
                 std::complex<double> zsum(0, 0);
-                L3_sum_gntyry(lm1, lm2, &hmltrad(0, idxrf1, idxrf2, ias), zsum);
+                p.L3_sum_gntyry(lm1, lm2, &hmltrad(0, idxrf1, idxrf2, ias), zsum);
     
                 h(ngp + atom->offset_lo + j1, ngp + atom->offset_lo + j2) += zsum;
             }

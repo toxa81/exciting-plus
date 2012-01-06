@@ -11,8 +11,18 @@
 #include "linalg.h"
 
 /*
+    inline functions
+*/
+
+inline int idxlm(int l, int m)
+{
+    return l * l + l + m;
+}
+
+/*
     forward declarations
 */
+
 void compact_apwalm(int ngp, 
                     std::complex<double> *apwalm_, 
                     tensor<std::complex<double>,2>& capwalm);
@@ -44,10 +54,17 @@ void lapw_test_fvmt(tensor<double,4>& ovlprad,
                     int ngp,
                     tensor<int,1>& igpig);
 
-inline int idxlm(int l, int m)
-{
-    return l * l + l + m;
-}
+void lapw_set_sv(int ngp, 
+                 tensor<int,1>& igpig, 
+                 double *beffrad_, 
+                 double *beffir_, 
+                 tensor<std::complex<double>,2>& wfmt, 
+                 double *evalfv_);
+
+extern "C" void FORTFUNC(zfftifc)(int *dim, 
+                                  int *ngrid, 
+                                  int *dir, 
+                                  std::complex<double> *data);
 
 struct atomic_level 
 {
@@ -197,6 +214,9 @@ class Parameters
         double evaltol;
         int ngrid[3];
         
+        bool spinpol;
+        int ndmag;
+        
         std::vector<int> igfft;
         std::vector< std::complex<double> > cfunig;
         std::vector<double> cfunir;
@@ -210,11 +230,22 @@ class Parameters
         unsigned int wfmt_size_lo;
         unsigned int wfmt_size;
 
+        inline void L3_sum_gntyry(int lm1, int lm2, double *v, std::complex<double>& zsum)
+        {
+            for (unsigned int k = 0; k < L3_gntyry(lm1, lm2).size(); k++)
+            {
+                int lm3 = L3_gntyry(lm1, lm2)[k];
+                zsum += gntyry(lm3, lm1, lm2) * v[lm3];
+            }
+        }
 };
 
 extern Geometry geometry;
+
 extern Parameters p;
+
 extern std::complex<double> zone;
+
 extern std::complex<double> zzero;
 
 #endif // __LAPW_H__
