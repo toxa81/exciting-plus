@@ -1,6 +1,6 @@
 #include "lapw.h"
 
-const int use_fft = 2;
+const int use_fft = 1;
 
 void lapw_test_fvmt(tensor<double,4>& ovlprad, 
                     tensor<std::complex<double>,2>& fvmt,
@@ -34,13 +34,13 @@ void lapw_test_fvmt(tensor<double,4>& ovlprad,
             
             int dim = 3;
             int dir = 1;
-            FORTFUNC(zfftifc)(&dim, &p.ngrid[0], &dir, &zfft[0]);
+            FORTRAN(zfftifc)(&dim, &p.ngrid[0], &dir, &zfft[0]);
             
             for (int ir = 0; ir < p.ngrtot; ir++)
                 zfft[ir] *= p.cfunir[ir];
             
             dir = -1;
-            FORTFUNC(zfftifc)(&dim, &p.ngrid[0], &dir, &zfft[0]);
+            FORTRAN(zfftifc)(&dim, &p.ngrid[0], &dir, &zfft[0]);
             
             for (int ig = 0; ig < ngp; ig++) 
                 v1[ig] = zfft[p.igfft[igpig(ig) - 1]];
@@ -54,7 +54,7 @@ void lapw_test_fvmt(tensor<double,4>& ovlprad,
             
             int dim = 3;
             int dir = 1;
-            FORTFUNC(zfftifc)(&dim, &p.ngrid[0], &dir, &v1[0]);
+            FORTRAN(zfftifc)(&dim, &p.ngrid[0], &dir, &v1[0]);
         }
        
         for (int j2 = 0; j2 < p.nstfv; j2++)
@@ -103,7 +103,7 @@ void lapw_test_fvmt(tensor<double,4>& ovlprad,
             
                int dim = 3;
                int dir = 1;
-               FORTFUNC(zfftifc)(&dim, &p.ngrid[0], &dir, &v2[0]);
+               FORTRAN(zfftifc)(&dim, &p.ngrid[0], &dir, &v2[0]);
 
                for (int ir = 0; ir < p.ngrtot; ir++)
                    zsum += conj(v1[ir]) * v2[ir] * p.cfunir[ir] / double(p.ngrtot);

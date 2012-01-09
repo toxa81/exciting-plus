@@ -6,6 +6,7 @@
 #include <map>
 #include <complex>
 #include <algorithm>
+#include <iomanip>
 #include "tensor.h"
 #include "config.h"
 #include "linalg.h"
@@ -18,53 +19,6 @@ inline int idxlm(int l, int m)
 {
     return l * l + l + m;
 }
-
-/*
-    forward declarations
-*/
-
-void compact_apwalm(int ngp, 
-                    std::complex<double> *apwalm_, 
-                    tensor<std::complex<double>,2>& capwalm);
-
-void lapw_set_h(int ngp,
-                int ldh,
-                tensor<int,1>& igpig,
-                tensor<double,2>& vgpc,
-                tensor<std::complex<double>,1>& veffig,
-                tensor<std::complex<double>,2>& capwalm,
-                tensor<double,5>& apwfr,
-                tensor<double,3>& apwdfr,
-                tensor<double,4>& hmltrad,
-                tensor<std::complex<double>,2>& h);
-
-void lapw_set_o(int ngp,
-                int ldo,
-                tensor<int,1>& igpig,
-                tensor<std::complex<double>,2>& capwalm,
-                tensor<double,4>& ovlprad,
-                tensor<std::complex<double>,2>& o);
-
-void lapw_fvmt(tensor<std::complex<double>,2>& capwalm,
-               tensor<std::complex<double>,2>& zfv,
-               tensor<std::complex<double>,2>& fvmt);
-
-void lapw_test_fvmt(tensor<double,4>& ovlprad,
-                    tensor<std::complex<double>,2>& fvmt,
-                    int ngp,
-                    tensor<int,1>& igpig);
-
-void lapw_set_sv(int ngp, 
-                 tensor<int,1>& igpig, 
-                 double *beffrad_, 
-                 double *beffir_, 
-                 tensor<std::complex<double>,2>& wfmt, 
-                 double *evalfv_);
-
-extern "C" void FORTFUNC(zfftifc)(int *dim, 
-                                  int *ngrid, 
-                                  int *dir, 
-                                  std::complex<double> *data);
 
 struct atomic_level 
 {
@@ -152,7 +106,6 @@ class Species
         unsigned int nrfmt;
 };
 
-
 class Atom 
 {
     public:
@@ -176,6 +129,24 @@ class Atom
         unsigned int offset_wfmt;
 };
 
+class kpoint
+{
+    public:
+
+        kpoint(unsigned int ngk) : ngk(ngk)
+        {
+            vgkc = tensor<double,2>(3, ngk);
+            idxg.resize(ngk);
+            idxgfft.resize(ngk);
+        }
+        
+        unsigned int ngk;
+    
+        tensor<double,2> vgkc;
+        std::vector<int> idxg;
+        std::vector<int> idxgfft;
+};
+
 class Geometry 
 {
     public:
@@ -194,29 +165,27 @@ class Geometry
 class Parameters
 {
     public:
-        int ngkmax;
-        int apwordmax;
-        int lmmaxapw;
-        int natmtot;
-        int nspecies;
-        int lmaxvr;
-        int lmmaxvr;
-        int lmaxapw;
-        int ngvec;
-        int ngrtot;
-        int nlomax;
-        int nrmtmax;
-        int nstfv;
-        int nstsv;
-        int nmatmax;
-        int nrfmtmax;
-        int ordrfmtmax;
+        unsigned int ngkmax;
+        unsigned int apwordmax;
+        unsigned int lmmaxapw;
+        unsigned int natmtot;
+        unsigned int nspecies;
+        unsigned int lmaxvr;
+        unsigned int lmmaxvr;
+        unsigned int lmaxapw;
+        unsigned int ngvec;
+        unsigned int ngrtot;
+        unsigned int nlomax;
+        unsigned int nrmtmax;
+        unsigned int nstfv;
+        unsigned int nstsv;
+        unsigned int nmatmax;
+        unsigned int nrfmtmax;
+        unsigned int ordrfmtmax;
         double evaltol;
         int ngrid[3];
-        
         bool spinpol;
-        int ndmag;
-        
+        unsigned int ndmag;
         std::vector<int> igfft;
         std::vector< std::complex<double> > cfunig;
         std::vector<double> cfunir;
@@ -225,10 +194,17 @@ class Parameters
         tensor<int,3> ivgig;
         tensor<std::complex<double>,3> gntyry;
         tensor<std::vector<int>,2> L3_gntyry;
-        
+        std::vector<kpoint> kpoints;
         unsigned int wfmt_size_apw;
         unsigned int wfmt_size_lo;
         unsigned int wfmt_size;
+        tensor<double,4> hmltrad;
+        tensor<double,4> ovlprad;
+        tensor<double,5> beffrad;
+        tensor<double,5> apwfr;
+        tensor<double,3> apwdfr;
+        tensor<double,1> beffir;
+        tensor<complex16,1> veffig;
 
         inline void L3_sum_gntyry(int lm1, int lm2, double *v, std::complex<double>& zsum)
         {
@@ -247,5 +223,51 @@ extern Parameters p;
 extern std::complex<double> zone;
 
 extern std::complex<double> zzero;
+
+/*
+    forward declarations
+*/
+
+void compact_apwalm(int ngp_, complex16 *apwalm_, tensor<complex16,2>& capwalm);
+
+void lapw_set_h(kpoint& kp, tensor<complex16,2>& capwalm, tensor<complex16,2>& h);
+
+void lapw_set_o(kpoint& kp, tensor<complex16,2>& capwalm, tensor<complex16,2>& o);
+
+extern "C" void FORTRAN(lapw_seceqn_fv)(int32_t *ngp_,
+                                         int32_t *ldh_,
+                                         int32_t *ncolh,
+                                         int32_t *igpig_,
+                                         double *vgpc_,
+                                         std::complex<double> *veffig_,
+                                         std::complex<double> *apwalm_,
+                                         double *apwfr_,
+                                         double *apwdfr_,
+                                         double *hmltrad_,
+                                         double *ovlprad_,
+                                         double *evalfv_,
+                                         std::complex<double> *z_); 
+
+void lapw_fvmt(tensor<std::complex<double>,2>& capwalm,
+               tensor<std::complex<double>,2>& zfv,
+               tensor<std::complex<double>,2>& fvmt);
+
+void lapw_test_fvmt(tensor<double,4>& ovlprad,
+                    tensor<std::complex<double>,2>& fvmt,
+                    int ngp,
+                    tensor<int,1>& igpig);
+
+void lapw_set_sv(int ngp, 
+                 tensor<int,1>& igpig, 
+                 double *beffrad_, 
+                 double *beffir_, 
+                 tensor<std::complex<double>,2>& wfmt, 
+                 double *evalfv_,
+                 tensor<std::complex<double>,2>& hsv);
+
+extern "C" void FORTRAN(zfftifc)(int *dim, 
+                                  int *ngrid, 
+                                  int *dir, 
+                                  std::complex<double> *data);
 
 #endif // __LAPW_H__

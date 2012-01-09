@@ -1,6 +1,6 @@
 #include "lapw.h"
 
-extern "C" void FORTFUNC(lapw_init)()
+extern "C" void FORTRAN(lapw_init)()
 {
     for (unsigned int is = 0; is < geometry.species.size(); is++)
     {
@@ -60,5 +60,23 @@ extern "C" void FORTFUNC(lapw_init)()
     }
 
     assert(p.wfmt_size == (p.wfmt_size_apw + p.wfmt_size_lo));
+    
+/*    for (unsigned int is = 0; is < geometry.species.size(); is++)
+    {
+        std::cout << "species : " << is << std::endl 
+                  << "  size_ci : " << geometry.species[is].ci.size() << std::endl
+                  << "  size_ci_apw : " << geometry.species[is].size_ci_apw << std::endl 
+                  << "  size_ci_lo : " << geometry.species[is].size_ci_lo << std::endl;
+    }
+    
+    for (unsigned ias = 0; ias < geometry.atoms.size(); ias++)
+    {
+        Atom *atom = &geometry.atoms[ias];
+        std::cout << "atom : " << ias << std::endl
+                  << "  offset_wfmt : " << atom->offset_wfmt << std::endl
+                  << "  offset_apw : " << atom->offset_apw << std::endl
+                  << "  offset_lo : " << atom->offset_lo << std::endl;
+    }
+*/    
 }
 

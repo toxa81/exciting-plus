@@ -95,6 +95,19 @@ template <typename T, int D> class tensor_base
         inline int size(int i)
         {
             return index[i].size;
+        }
+        
+        unsigned int hash()
+        {
+            unsigned int h = 1315423911;
+            unsigned char *c = (unsigned char*)data;
+            
+            for (unsigned int i = 0; i < size_ * sizeof(T); i++)
+            {
+              h ^= ((h << 5) + c[i] + (h >> 2));
+            }
+                           
+            return h;
         } 
     
     protected:
