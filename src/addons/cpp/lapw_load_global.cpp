@@ -1,6 +1,6 @@
 #include "lapw.h"
 
-extern "C" void FORTFUNC(lapw_load_global)(int *natmtot_,
+extern "C" void FORTRAN(lapw_load_global)(int *natmtot_,
                                            int *nspecies_,
                                            int *lmaxvr_,
                                            int *lmaxapw_,
@@ -87,8 +87,8 @@ extern "C" void FORTFUNC(lapw_load_global)(int *natmtot_,
     for (int i = 0; i < p.natmtot; i++)
         geometry.atoms.push_back(Atom(&geometry.species[ias2is_[i] - 1]));
    
-    std::cout << "spinpol : " << p.spinpol << std::endl
-              << "ndmag : " << p.ndmag << std::endl;
+//    std::cout << "spinpol : " << p.spinpol << std::endl
+//              << "ndmag : " << p.ndmag << std::endl;
 };
 
 

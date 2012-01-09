@@ -1,6 +1,6 @@
 #include "lapw.h"
 
-extern "C" void FORTFUNC(lapw_load_species)(int *is_,
+extern "C" void FORTRAN(lapw_load_species)(int *is_,
                                             int *nlorb,
                                             int *lorbl,
                                             int *apword,

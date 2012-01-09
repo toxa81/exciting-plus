@@ -5,12 +5,13 @@ void lapw_set_sv(int ngp,
                  double *beffrad_, 
                  double *beffir_, 
                  tensor<std::complex<double>,2>& wfmt, 
-                 double *evalfv_)
+                 double *evalfv_,
+                 tensor<std::complex<double>,2>& evecsv)
 {
     tensor<double,5> beffrad(beffrad_, p.lmmaxvr, p.nrfmtmax, p.nrfmtmax, p.natmtot, p.ndmag);
     tensor<double,1> beffir(beffir_, p.ngrtot);
 
-    tensor<std::complex<double>,2> evecsv(p.nstsv, p.nstsv);
+    //tensor<std::complex<double>,2> evecsv(p.nstsv, p.nstsv);
     memset(&evecsv(0, 0), 0, p.nstsv * p.nstsv * sizeof(std::complex<double>));
 
     if (p.spinpol)
@@ -38,7 +39,7 @@ void lapw_set_sv(int ngp,
             for (int i = 0; i < p.nstfv; i++)
                 for (int j2 = 0; j2 < sz; j2++)
                     for (int j1 = 0; j1 < sz; j1++)
-                        wfb(geometry.atoms[ias].offset_wfmt + j2, i) += conj(zm(j1,j2)) * wfmt(geometry.atoms[ias].offset_wfmt + j1, i);
+                        wfb(geometry.atoms[ias].offset_wfmt + j2, i) += zm(j1,j2) * wfmt(geometry.atoms[ias].offset_wfmt + j1, i);
         }
         
         std::vector< std::complex<double> > zfft(p.ngrtot);
@@ -50,13 +51,13 @@ void lapw_set_sv(int ngp,
                                         
             int dim = 3;
             int dir = 1;
-            FORTFUNC(zfftifc)(&dim, &p.ngrid[0], &dir, &zfft[0]);
+            FORTRAN(zfftifc)(&dim, &p.ngrid[0], &dir, &zfft[0]);
                        
             for (int ir = 0; ir < p.ngrtot; ir++)
               zfft[ir] *= (beffir(ir) * p.cfunir[ir]);
                                                                
             dir = -1;
-            FORTFUNC(zfftifc)(&dim, &p.ngrid[0], &dir, &zfft[0]);
+            FORTRAN(zfftifc)(&dim, &p.ngrid[0], &dir, &zfft[0]);
             
             for (int ig = 0; ig < ngp; ig++) 
                 wfb(p.wfmt_size + ig, i) = zfft[p.igfft[igpig(ig) - 1]];
@@ -73,14 +74,14 @@ void lapw_set_sv(int ngp,
                 if (i1 <= i2) 
                 {
                     for (unsigned int k = 0; k < p.wfmt_size + ngp; k++)
-                        evecsv(i1, i2) += conj(wfb(k, j1)) * wfmt(k, j2);
+                        evecsv(i1, i2) += wfb(k, j2) * conj(wfmt(k, j1));
                 }
                 
                 i1 += p.nstfv;
                 i2 += p.nstfv;
                 if (i1 <= i2) 
                 {
-                    for (unsigned int k = 0; k < p.wfmt_size + ngp; k++)
+                    for (unsigned int k = p.wfmt_size; k < p.wfmt_size + ngp; k++)
                         evecsv(i1, i2) -= conj(wfb(k, j1)) * wfmt(k, j2);
                 }
             }
@@ -96,13 +97,13 @@ void lapw_set_sv(int ngp,
             }
         }
         
-        std::vector<double> evalsv(p.nstsv);
+        /*std::vector<double> evalsv(p.nstsv);
         zheev<lapack_worker>(p.nstsv, &evecsv(0, 0), &evalsv[0]);
         
         for (int i = 0; i < p.nstsv; i++)
         {
             std::cout << "i = " << i <<" " << evalsv[i] << std::endl;
-        } 
+        } */
     }
 }
 

@@ -16,9 +16,10 @@ void lapw_fvmt(tensor<std::complex<double>,2>& capwalm,
                     geometry.atoms[ias].species->size_ci_apw * sizeof(std::complex<double>));
         
         for (int ias = 0; ias < p.natmtot; ias++)
-            memcpy(&fvmt(geometry.atoms[ias].offset_wfmt + geometry.atoms[ias].species->size_ci_apw, j), 
-                   &zfv(ngp + geometry.atoms[ias].offset_lo, j), 
-                   geometry.atoms[ias].species->size_ci_lo * sizeof(std::complex<double>));
+            if (geometry.atoms[ias].species->size_ci_lo > 0)
+                memcpy(&fvmt(geometry.atoms[ias].offset_wfmt + geometry.atoms[ias].species->size_ci_apw, j), 
+                       &zfv(ngp + geometry.atoms[ias].offset_lo, j), 
+                       geometry.atoms[ias].species->size_ci_lo * sizeof(std::complex<double>));
 
         memcpy(&fvmt(p.wfmt_size, j), &zfv(0, j), ngp * sizeof(std::complex<double>));
     }

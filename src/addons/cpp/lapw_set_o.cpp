@@ -1,13 +1,11 @@
 #include "lapw.h"
 
-void lapw_set_o(int ngp,
-                int ldo,
-                tensor<int,1>& igpig,
-                tensor<std::complex<double>,2>& capwalm,
-                tensor<double,4>& ovlprad,
-                tensor<std::complex<double>,2>& o)
+void lapw_set_o(kpoint& kp, tensor<complex16,2>& capwalm, tensor<complex16,2>& o)
 {
-    zgemm<gemm_worker>(0 ,2, ngp, ngp, p.wfmt_size_apw, zone, &capwalm(0, 0), ngp, &capwalm(0, 0), ngp, zzero, &o(0, 0), ldo);
+    memset(&o(0, 0), 0, o.size() * sizeof(complex16));
+
+    zgemm<gemm_worker>(0 ,2, kp.ngk, kp.ngk, p.wfmt_size_apw, zone, &capwalm(0, 0), capwalm.size(0), 
+        &capwalm(0, 0), capwalm.size(0), zzero, &o(0, 0), o.size(0));
 
     for (unsigned int ias = 0; ias < geometry.atoms.size(); ias++)
     {
@@ -22,8 +20,8 @@ void lapw_set_o(int ngp,
             
             // apw-lo block 
             for (unsigned int io1 = 0; io1 < species->apw_descriptors[l2].radial_solution_descriptors.size(); io1++)
-                for (int ig = 0; ig < ngp; ig++)
-                    o(ig, ngp + atom->offset_lo + j2) += ovlprad(l2, io1, order2, ias) * capwalm(ig, atom->offset_apw + species->ci_by_lmo(lm2, io1)); 
+                for (int ig = 0; ig < kp.ngk; ig++)
+                    o(ig, kp.ngk + atom->offset_lo + j2) += p.ovlprad(l2, io1, order2, ias) * capwalm(ig, atom->offset_apw + species->ci_by_lmo(lm2, io1)); 
 
             // lo-lo block
             for (unsigned int j1 = 0; j1 <= j2; j1++)
@@ -31,18 +29,18 @@ void lapw_set_o(int ngp,
                 int lm1 = species->ci_lo[j1].lm;
                 int order1 = species->ci_lo[j1].order;
                 if (lm1 == lm2) 
-                    o(ngp + atom->offset_lo + j1, ngp + atom->offset_lo + j2) += ovlprad(l2, order1, order2, ias);
+                    o(kp.ngk + atom->offset_lo + j1, kp.ngk + atom->offset_lo + j2) += p.ovlprad(l2, order1, order2, ias);
             }
         }
     }
     
     int iv[3];
-    for (int j2 = 0; j2 < ngp; j2++) // loop over columns
+    for (int j2 = 0; j2 < kp.ngk; j2++) // loop over columns
     {
-        int ig2 = igpig(j2) - 1;
+        int ig2 = kp.idxg[j2];
         for (int j1 = 0; j1 <= j2; j1++) // for each column loop over rows
         {
-            for (int k = 0; k < 3; k++) iv[k] = p.ivg(k, igpig(j1) - 1) - p.ivg(k, ig2);
+            for (int k = 0; k < 3; k++) iv[k] = p.ivg(k, kp.idxg[j1]) - p.ivg(k, ig2);
             int ig = p.ivgig(iv[0], iv[1], iv[2]);
             o(j1, j2) += p.cfunig[ig];
         }
