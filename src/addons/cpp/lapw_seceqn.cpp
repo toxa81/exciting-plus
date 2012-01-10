@@ -1,94 +1,68 @@
 #include "lapw.h"
 
-extern "C" void FORTRAN(lapw_seceqn)(int32_t *ngp_,
-                                      int32_t *ldh_,
-                                      int32_t *ncolh,
-                                      int32_t *igpig_,
-                                      double *vgpc_,
-                                      std::complex<double> *veffig_,
-                                      std::complex<double> *apwalm_,
-                                      double *apwfr_,
-                                      double *apwdfr_,
-                                      double *hmltrad_,
-                                      double *ovlprad_,
-                                      double *beffrad_,
-                                      double *beffir_,
-                                      double *evalfv_,
-                                      std::complex<double> *z_,
-                                      std::complex<double> *hsv_) 
+extern "C" void FORTRAN(lapw_seceqn)(int32_t *ikloc_, complex16 *apwalm_, complex16 *evecfv_, 
+                                     double *evalfv_, complex16 *evecsv_, double *evalsv_)
 {
-    int ngp = *ngp_;
-    int ldh = *ldh_;
-    tensor<double,2> vgpc(vgpc_, 3, p.ngkmax);
-    tensor<int,1> igpig(igpig_, p.ngkmax);
+    int ikloc = *ikloc_ - 1;
+    int ngk = p.kpoints[ikloc].ngk;
+    int msize = ngk + p.size_wfmt_lo;
     
-    /*tensor<std::complex<double>,1> veffig(veffig_, p.ngvec);
-    tensor<std::complex<double>,2> h(ldh, *ncolh);
-    memset(&h(0, 0), 0, ldh * ldh * sizeof(std::complex<double>));
-    tensor<std::complex<double>,2> o(ldh, *ncolh);
-    memset(&o(0, 0), 0, ldh * ldh * sizeof(std::complex<double>));
-    */
-    tensor<std::complex<double>,2> z(z_, p.nmatmax, p.nstfv);
-    /*tensor<double,5> apwfr(apwfr_, p.nrmtmax, 2, p.apwordmax, p.lmaxapw + 1, p.natmtot);
-    tensor<double,3> apwdfr(apwdfr_, p.apwordmax, p.lmaxapw + 1, p.natmtot);
-    tensor<double,4> hmltrad(hmltrad_, p.lmmaxvr, p.nrfmtmax, p.nrfmtmax, p.natmtot);
-    */
-    tensor<double,4> ovlprad(ovlprad_, p.lmaxapw + 1, p.ordrfmtmax, p.ordrfmtmax, p.natmtot);
-    tensor<std::complex<double>,2> hsv(hsv_, p.nstsv, p.nstsv);
-    memset(&hsv(0, 0), 0, p.nstsv * p.nstsv * sizeof(std::complex<double>));
+    tensor<complex16,2> h(msize, msize);
+    tensor<complex16,2> o(msize, msize);
+    tensor<complex16,2> evecfv(evecfv_, p.nmatmax, p.nstfv);
+    tensor<complex16,2> evecsv(evecsv_, p.nstsv, p.nstsv); 
     
-    tensor<std::complex<double>,2> capwalm(ngp, p.wfmt_size_apw);
-    compact_apwalm(ngp, apwalm_, capwalm);
-/*
-    lapw_set_h(ngp, ldh, igpig, vgpc, veffig, capwalm, apwfr, apwdfr, hmltrad, h);
-    lapw_set_o(ngp, ldh, igpig, capwalm, ovlprad, o);
+    lapw_wave_functions wf(&p.kpoints[ikloc]);
+    wf.pack_apwalm(apwalm_);
 
-    //return;
+    lapw_set_h(p.kpoints[ikloc], wf.apwalm, h);
+    lapw_set_o(p.kpoints[ikloc], wf.apwalm, o);
        
-    tensor<std::complex<double>,2> h1;
-    tensor<std::complex<double>,2> o1;
-
+    tensor<complex16,2> h1;
+    tensor<complex16,2> o1;
+    
     if (check_evecfv) 
     {
         h1 = h;
         o1 = o;
     }
 
-    zhegv<lapack_worker>(ldh, p.nstfv, p.evaltol, &h(0, 0), &o(0, 0), evalfv_, 
-        &z(0, 0), p.nmatmax);
+    zhegv<lapack_worker>(msize, p.nstfv, p.evaltol, &h(0, 0), &o(0, 0), evalfv_, &evecfv(0, 0), 
+        evecfv.size(0));
 
     if (check_evecfv) 
     {
         // use o and h as temporary arrays
         for (int i = 0; i < p.nstfv; i++)
-            for (int j = 0; j < ldh; j++)
-                o(j, i) = -evalfv_[i] * z(j, i);
+            for (int j = 0; j < msize; j++)
+                o(j, i) = -evalfv_[i] * evecfv(j, i);
     
-        zhemm<blas_worker>(0, 0, ldh, p.nstfv, zone, &h1(0, 0), ldh, &z(0, 0), 
-            p.nmatmax, zzero, &h(0, 0), ldh);
-        zhemm<blas_worker>(0, 0, ldh, p.nstfv, zone, &o1(0, 0), ldh, &o(0, 0),
-            ldh, zone, &h(0, 0), ldh); 
+        zhemm<blas_worker>(0, 0, msize, p.nstfv, zone, &h1(0, 0), h1.size(0), &evecfv(0, 0), 
+            evecfv.size(0), zzero, &h(0, 0), h.size(0));
+        zhemm<blas_worker>(0, 0, msize, p.nstfv, zone, &o1(0, 0), o1.size(0), &o(0, 0),
+            o.size(0), zone, &h(0, 0), h.size(0)); 
     
-        double L2norm = 0.0;
         for (int i = 0; i < p.nstfv; i++)
-            for (int j = 0; j < ldh; j++) L2norm += abs(h(j, i) * conj(h(j, i)));
-        
-        std::cout << "check evecfv :" << std::endl
-                  << "  number of bands = " << p.nstfv << std::endl
-                  << "  total L2 diff = " << sqrt(L2norm) << std::endl;
-    }*/
+        {
+            double L2norm = 0.0;
+            for (int j = 0; j < msize; j++) L2norm += abs(h(j, i) * conj(h(j, i)));
+            L2norm = sqrt(L2norm);
+            if (L2norm > 1e-14)
+                std::cout << "eigen-vector : " << i << " |H*z_i - E_i*O*z_i| = " << L2norm <<std::endl;
+        }
+    }
 
-    FORTRAN(lapw_seceqn_fv)(ngp_, ldh_, ncolh, igpig_, vgpc_, veffig_, 
-        apwalm_, apwfr_, apwdfr_, hmltrad_, ovlprad_, evalfv_, z_); 
+    wf.generate_scalar(evecfv);
+    for (int i = 0; i < 3; i++)
+        wf.test_scalar(i);
 
-    tensor<std::complex<double>,2> fvmt(p.wfmt_size + ngp, p.nstfv);
-    lapw_fvmt(capwalm, z, fvmt);
-
-    lapw_test_fvmt(ovlprad, fvmt, ngp, igpig);
-    
-    lapw_set_sv(ngp, igpig, beffrad_, beffir_, fvmt, evalfv_, hsv);
-    
-    //exit(0);
+    lapw_set_sv(wf, evalfv_, evecsv);
+  
+    if (p.ndmag == 1)
+    {
+        zheev<lapack_worker>(p.nstfv, &evecsv(0, 0), evecsv.size(0), evalsv_);
+        zheev<lapack_worker>(p.nstfv, &evecsv(p.nstfv, p.nstfv), evecsv.size(0), &evalsv_[p.nstfv]);
+    } 
 }
 
 

@@ -20,6 +20,57 @@ inline int idxlm(int l, int m)
     return l * l + l + m;
 }
 
+/*
+    forward class declarations
+*/
+struct atomic_level;
+struct radial_solution_descriptor;
+class radial_l_channel_descriptor;
+class mtci;
+class Species;
+class Atom;
+class kpoint;
+class Geometry;
+class Parameters;
+class lapw_wave_functions;
+
+/*
+    function declarations
+*/
+//void compact_apwalm(int ngp_, complex16 *apwalm_, tensor<complex16,2>& capwalm);
+
+void lapw_set_h(kpoint& kp, tensor<complex16,2>& apwalm, tensor<complex16,2>& h);
+
+void lapw_set_o(kpoint& kp, tensor<complex16,2>& apwalm, tensor<complex16,2>& o);
+
+extern "C" void FORTRAN(lapw_seceqn_fv)(int32_t *ngp_,
+                                         int32_t *ldh_,
+                                         int32_t *ncolh,
+                                         int32_t *igpig_,
+                                         double *vgpc_,
+                                         std::complex<double> *veffig_,
+                                         std::complex<double> *apwalm_,
+                                         double *apwfr_,
+                                         double *apwdfr_,
+                                         double *hmltrad_,
+                                         double *ovlprad_,
+                                         double *evalfv_,
+                                         std::complex<double> *z_); 
+
+//void lapw_scalar_wf(tensor<complex16,2>& capwalm, tensor<complex16,2>& evecfv, tensor<complex16,2>& scalar_wf);
+
+//void lapw_test_fvmt(tensor<double,4>& ovlprad,
+//                    tensor<std::complex<double>,2>& fvmt,
+//                    int ngp,
+//                    tensor<int,1>& igpig);
+
+void lapw_set_sv(lapw_wave_functions& wf, double *evalfv_, tensor<complex16,2>& h);
+
+void lapw_fft(int32_t direction, complex16 *data);
+
+/*
+    actual class definitions
+*/
 struct atomic_level 
 {
     int n;
@@ -195,9 +246,9 @@ class Parameters
         tensor<std::complex<double>,3> gntyry;
         tensor<std::vector<int>,2> L3_gntyry;
         std::vector<kpoint> kpoints;
-        unsigned int wfmt_size_apw;
-        unsigned int wfmt_size_lo;
-        unsigned int wfmt_size;
+        unsigned int size_wfmt_apw;
+        unsigned int size_wfmt_lo;
+        unsigned int size_wfmt;
         tensor<double,4> hmltrad;
         tensor<double,4> ovlprad;
         tensor<double,5> beffrad;
@@ -216,58 +267,32 @@ class Parameters
         }
 };
 
-extern Geometry geometry;
+class lapw_wave_functions
+{
+    public:
 
-extern Parameters p;
+        lapw_wave_functions(kpoint *kp) : kp(kp)
+        {
+        }
+                
+        void pack_apwalm(complex16 *apwalm_);
+        
+        void generate_scalar(tensor<complex16,2>& evecfv); 
+        
+        void test_scalar(int use_fft);
 
-extern std::complex<double> zone;
+        kpoint *kp;
+        tensor<complex16,2> apwalm;
+        tensor<complex16,2> scalar_wf;
 
-extern std::complex<double> zzero;
+};
 
 /*
-    forward declarations
+    global variables
 */
-
-void compact_apwalm(int ngp_, complex16 *apwalm_, tensor<complex16,2>& capwalm);
-
-void lapw_set_h(kpoint& kp, tensor<complex16,2>& capwalm, tensor<complex16,2>& h);
-
-void lapw_set_o(kpoint& kp, tensor<complex16,2>& capwalm, tensor<complex16,2>& o);
-
-extern "C" void FORTRAN(lapw_seceqn_fv)(int32_t *ngp_,
-                                         int32_t *ldh_,
-                                         int32_t *ncolh,
-                                         int32_t *igpig_,
-                                         double *vgpc_,
-                                         std::complex<double> *veffig_,
-                                         std::complex<double> *apwalm_,
-                                         double *apwfr_,
-                                         double *apwdfr_,
-                                         double *hmltrad_,
-                                         double *ovlprad_,
-                                         double *evalfv_,
-                                         std::complex<double> *z_); 
-
-void lapw_fvmt(tensor<std::complex<double>,2>& capwalm,
-               tensor<std::complex<double>,2>& zfv,
-               tensor<std::complex<double>,2>& fvmt);
-
-void lapw_test_fvmt(tensor<double,4>& ovlprad,
-                    tensor<std::complex<double>,2>& fvmt,
-                    int ngp,
-                    tensor<int,1>& igpig);
-
-void lapw_set_sv(int ngp, 
-                 tensor<int,1>& igpig, 
-                 double *beffrad_, 
-                 double *beffir_, 
-                 tensor<std::complex<double>,2>& wfmt, 
-                 double *evalfv_,
-                 tensor<std::complex<double>,2>& hsv);
-
-extern "C" void FORTRAN(zfftifc)(int *dim, 
-                                  int *ngrid, 
-                                  int *dir, 
-                                  std::complex<double> *data);
+extern Geometry geometry;
+extern Parameters p;
+extern std::complex<double> zone;
+extern std::complex<double> zzero;
 
 #endif // __LAPW_H__

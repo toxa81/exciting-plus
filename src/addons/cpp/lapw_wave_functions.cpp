@@ -77,7 +77,7 @@ void lapw_wave_functions::test_scalar(int use_fft)
         {
             memset(&zfft[0], 0, p.ngrtot * sizeof(complex16));
             for (int ig = 0; ig < ngk; ig++) 
-                zfft[p.igfft[kp->idxg[ig]]] = scalar_wf(p.size_wfmt + ig, j1);
+                zfft[kp->idxgfft[ig]] = scalar_wf(p.size_wfmt + ig, j1);
                 
             lapw_fft(1, &zfft[0]);
             
@@ -87,14 +87,14 @@ void lapw_wave_functions::test_scalar(int use_fft)
             lapw_fft(-1, &zfft[0]);
             
             for (int ig = 0; ig < ngk; ig++) 
-                v1[ig] = zfft[p.igfft[kp->idxg[ig]]];
+                v1[ig] = zfft[kp->idxgfft[ig]];
         }
         
         if (use_fft == 2)
         {
             memset(&v1[0], 0, p.ngrtot * sizeof(complex16));
             for (int ig = 0; ig < ngk; ig++) 
-                v1[p.igfft[kp->idxg[ig]]] = scalar_wf(p.size_wfmt + ig, j1);
+                v1[kp->idxgfft[ig]] = scalar_wf(p.size_wfmt + ig, j1);
             
             lapw_fft(1, &v1[0]);
         }
@@ -127,7 +127,8 @@ void lapw_wave_functions::test_scalar(int use_fft)
                     for (int ig2 = 0; ig2 < ngk; ig2++)
                     {
                         for (int k = 0; k < 3; k++) iv[k] = p.ivg(k, kp->idxg[ig1]) - p.ivg(k, kp->idxg[ig2]);
-                        zsum += conj(scalar_wf(p.size_wfmt + ig1, j1)) * scalar_wf(p.size_wfmt + ig2, j2) * p.cfunig[p.ivgig(iv[0], iv[1], iv[2])];
+                        int ig3 = p.ivgig(iv[0], iv[1], iv[2]);
+                        zsum += conj(scalar_wf(p.size_wfmt + ig1, j1)) * scalar_wf(p.size_wfmt + ig2, j2) * p.cfunig[ig3];
                     }
                }
            }
@@ -141,7 +142,7 @@ void lapw_wave_functions::test_scalar(int use_fft)
            {
                memset(&v2[0], 0, p.ngrtot * sizeof(complex16));
                for (int ig = 0; ig < ngk; ig++) 
-                   v2[p.igfft[kp->idxg[ig]]] = scalar_wf(p.size_wfmt + ig, j2);
+                   v2[kp->idxgfft[ig]] = scalar_wf(p.size_wfmt + ig, j2);
             
                lapw_fft(1, &v2[0]);
 
