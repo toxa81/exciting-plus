@@ -5,7 +5,7 @@ void lapw_set_h(kpoint& kp, tensor<complex16,2>& capwalm, tensor<complex16,2>& h
     memset(&h(0, 0), 0, h.size() * sizeof(complex16));
 
     std::vector<complex16> zv(kp.ngk);
-    tensor<complex16,2> zm(kp.ngk, p.wfmt_size_apw);
+    tensor<complex16,2> zm(kp.ngk, p.size_wfmt_apw);
 
     for (unsigned int ias = 0; ias < geometry.atoms.size(); ias++)
     {
@@ -29,7 +29,7 @@ void lapw_set_h(kpoint& kp, tensor<complex16,2>& capwalm, tensor<complex16,2>& h
                 p.L3_sum_gntyry(lm1, lm2, &p.hmltrad(0, idxrf1, idxrf2, ias), zsum);
 
                 if (abs(zsum) > 1e-14) 
-                    for (int ig = 0; ig < kp.ngk; ig++) 
+                    for (unsigned int ig = 0; ig < kp.ngk; ig++) 
                         zv[ig] += zsum * capwalm(ig, atom->offset_apw + j1); 
             }
             
@@ -39,7 +39,7 @@ void lapw_set_h(kpoint& kp, tensor<complex16,2>& capwalm, tensor<complex16,2>& h
             for (unsigned int io1 = 0; io1 < species->apw_descriptors[l2].radial_solution_descriptors.size(); io1++)
             {
                 double t1 = 0.5 * pow(species->rmt, 2) * p.apwfr(species->nrmt - 1, 0, io1, l2, ias) * p.apwdfr(io2, l2, ias); 
-                for (int ig = 0; ig < kp.ngk; ig++) 
+                for (unsigned int ig = 0; ig < kp.ngk; ig++) 
                     zv[ig] += t1 * capwalm(ig, atom->offset_apw + species->ci_by_lmo(lm2, io1));
             }
             memcpy(&zm(0, atom->offset_apw + j2), &zv[0], kp.ngk * sizeof(complex16));
@@ -60,7 +60,7 @@ void lapw_set_h(kpoint& kp, tensor<complex16,2>& capwalm, tensor<complex16,2>& h
                 p.L3_sum_gntyry(lm1, lm2, &p.hmltrad(0, idxrf1, idxrf2, ias), zsum);
                         
                 if (abs(zsum) > 1e-14)
-                    for (int ig = 0; ig < kp.ngk; ig++)
+                    for (unsigned int ig = 0; ig < kp.ngk; ig++)
                         h(ig, kp.ngk + atom->offset_lo + j2) += zsum * capwalm(ig, atom->offset_apw + j1);
             }
 
@@ -77,16 +77,16 @@ void lapw_set_h(kpoint& kp, tensor<complex16,2>& capwalm, tensor<complex16,2>& h
             }
         }
     } // ias
-    zgemm<gemm_worker>(0, 2, kp.ngk, kp.ngk, p.wfmt_size_apw, zone, &zm(0, 0), zm.size(0), 
+    zgemm<gemm_worker>(0, 2, kp.ngk, kp.ngk, p.size_wfmt_apw, zone, &zm(0, 0), zm.size(0), 
         &capwalm(0, 0), capwalm.size(0), zzero, &h(0, 0), h.size(0));
 
     int iv[3];
-    for (int j2 = 0; j2 < kp.ngk; j2++) // loop over columns
+    for (unsigned int j2 = 0; j2 < kp.ngk; j2++) // loop over columns
     {
         int ig2 = kp.idxg[j2];
         double v2[3];
         for (int k = 0; k < 3; k++) v2[k] = kp.vgkc(k, j2);
-        for (int j1 = 0; j1 <= j2; j1++) // for each column loop over rows
+        for (unsigned int j1 = 0; j1 <= j2; j1++) // for each column loop over rows
         {
             for (int k = 0; k < 3; k++) iv[k] = p.ivg(k, kp.idxg[j1]) - p.ivg(k, ig2);
             int ig = p.ivgig(iv[0], iv[1], iv[2]);

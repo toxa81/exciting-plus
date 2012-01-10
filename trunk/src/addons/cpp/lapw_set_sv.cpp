@@ -1,70 +1,78 @@
 #include "lapw.h"
 
-void lapw_set_sv(int ngp, 
-                 tensor<int,1>& igpig, 
-                 double *beffrad_, 
-                 double *beffir_, 
-                 tensor<std::complex<double>,2>& wfmt, 
-                 double *evalfv_,
-                 tensor<std::complex<double>,2>& evecsv)
+void lapw_set_sv(lapw_wave_functions& wf, double *evalfv_, tensor<complex16,2>& h)
 {
-    tensor<double,5> beffrad(beffrad_, p.lmmaxvr, p.nrfmtmax, p.nrfmtmax, p.natmtot, p.ndmag);
-    tensor<double,1> beffir(beffir_, p.ngrtot);
+    int ngk = wf.kp->ngk;
 
-    //tensor<std::complex<double>,2> evecsv(p.nstsv, p.nstsv);
-    memset(&evecsv(0, 0), 0, p.nstsv * p.nstsv * sizeof(std::complex<double>));
+    memset(&h(0, 0), 0, h.size() * sizeof(complex16));
 
-    if (p.spinpol)
+    if (p.ndmag > 0)
     {
-        tensor<std::complex<double>,2> wfb(p.wfmt_size + ngp, p.nstfv);
-        memset(&wfb(0, 0), 0, (p.wfmt_size + ngp) * p.nstfv * sizeof(std::complex<double>));
+        tensor<complex16,2> wfb(p.size_wfmt + ngk, p.nstfv);
+        memset(&wfb(0, 0), 0, wfb.size() * sizeof(complex16));
         
         for (int ias = 0; ias < p.natmtot; ias++)
         {
             int sz = geometry.atoms[ias].species->ci.size();
-            tensor<std::complex<double>,2> zm(sz, sz);
-            memset(&zm(0, 0), 0, sz * sz * sizeof(std::complex<double>));
+            tensor<complex16,2> zm(sz, sz);
+            memset(&zm(0, 0), 0, zm.size() * sizeof(complex16));
             for (int j2 = 0; j2 < sz; j2++)
             {
                 int lm2 = geometry.atoms[ias].species->ci[j2].lm;
                 int idxrf2 = geometry.atoms[ias].species->ci[j2].idxrf;
-                for (int j1 = 0; j1 < sz; j1++)
+                for (int j1 = 0; j1 <= j2; j1++)
                 {
                     int lm1 = geometry.atoms[ias].species->ci[j1].lm;
                     int idxrf1 = geometry.atoms[ias].species->ci[j1].idxrf;
-                    p.L3_sum_gntyry(lm1, lm2, &beffrad(0, idxrf1, idxrf2, ias, 0), zm(j1, j2));
+                    p.L3_sum_gntyry(lm1, lm2, &p.beffrad(0, idxrf1, idxrf2, ias, 0), zm(j1, j2));
+                    // conjugate to call zhemm with upper triangular part
+                    zm(j1, j2) = conj(zm(j1, j2));
                 }
             }
+            /* Warning!!! 
+               This is the canonical code (zm should not be conjugated and computed for both upper an lower parts).
+               
+               zhemm call should be checked very carefully
 
             for (int i = 0; i < p.nstfv; i++)
                 for (int j2 = 0; j2 < sz; j2++)
                     for (int j1 = 0; j1 < sz; j1++)
-                        wfb(geometry.atoms[ias].offset_wfmt + j2, i) += zm(j1,j2) * wfmt(geometry.atoms[ias].offset_wfmt + j1, i);
+                        wfb(geometry.atoms[ias].offset_wfmt + j2, i) += zm(j1,j2) * wf.scalar_wf(geometry.atoms[ias].offset_wfmt + j1, i);
+            */
+ 
+            zhemm<blas_worker>(0, 0, sz, p.nstfv, zone, &zm(0, 0), sz, &wf.scalar_wf(geometry.atoms[ias].offset_wfmt, 0), 
+                wf.scalar_wf.size(0), zzero, &wfb(geometry.atoms[ias].offset_wfmt, 0), wfb.size(0));
+            
         }
         
-        std::vector< std::complex<double> > zfft(p.ngrtot);
+        std::vector<complex16> zfft(p.ngrtot);
         for (int i = 0; i < p.nstfv; i++)
         {
-            memset(&zfft[0], 0, p.ngrtot * sizeof(std::complex<double>));
-            for (int ig = 0; ig < ngp; ig++) 
-                zfft[p.igfft[igpig(ig) - 1]] = wfmt(p.wfmt_size + ig, i);
+            memset(&zfft[0], 0, p.ngrtot * sizeof(complex16));
+            for (int ig = 0; ig < ngk; ig++) 
+                zfft[wf.kp->idxgfft[ig]] = wf.scalar_wf(p.size_wfmt + ig, i);
                                         
-            int dim = 3;
-            int dir = 1;
-            FORTRAN(zfftifc)(&dim, &p.ngrid[0], &dir, &zfft[0]);
+            lapw_fft(1, &zfft[0]);
                        
             for (int ir = 0; ir < p.ngrtot; ir++)
-              zfft[ir] *= (beffir(ir) * p.cfunir[ir]);
+              zfft[ir] *= (p.beffir(ir) * p.cfunir[ir]);
                                                                
-            dir = -1;
-            FORTRAN(zfftifc)(&dim, &p.ngrid[0], &dir, &zfft[0]);
+            lapw_fft(-1, &zfft[0]);
             
-            for (int ig = 0; ig < ngp; ig++) 
-                wfb(p.wfmt_size + ig, i) = zfft[p.igfft[igpig(ig) - 1]];
-
+            for (int ig = 0; ig < ngk; ig++) 
+                wfb(p.size_wfmt + ig, i) = zfft[wf.kp->idxgfft[ig]];
         }
 
-        for (int j1 = 0; j1 < p.nstfv; j1++)
+        // compute <wf_i | (b * wf_j)>
+        zgemm<blas_worker>(2, 0, p.nstfv, p.nstfv, wf.scalar_wf.size(0), zone, &wf.scalar_wf(0, 0),
+            wf.scalar_wf.size(0), &wfb(0, 0), wfb.size(0), zzero, &h(0, 0), h.size(0));
+
+        // copy to dn-dn block and change sign
+        for (int i = 0; i < p.nstfv; i++)
+            for (int j = 0; j < p.nstfv; j++) 
+                h(j + p.nstfv, i + p.nstfv) = -h(j, i);
+
+        /*for (int j1 = 0; j1 < p.nstfv; j1++)
         {
             for (int j2 = 0; j2 < p.nstfv; j2++)
             {
@@ -73,37 +81,29 @@ void lapw_set_sv(int ngp,
                 
                 if (i1 <= i2) 
                 {
-                    for (unsigned int k = 0; k < p.wfmt_size + ngp; k++)
-                        evecsv(i1, i2) += wfb(k, j2) * conj(wfmt(k, j1));
+                    for (unsigned int k = 0; k < p.size_wfmt + ngk; k++)
+                        h(i1, i2) += wfb(k, j2) * conj(wf.scalar_wf(k, j1));
                 }
                 
                 i1 += p.nstfv;
                 i2 += p.nstfv;
                 if (i1 <= i2) 
                 {
-                    for (unsigned int k = p.wfmt_size; k < p.wfmt_size + ngp; k++)
-                        evecsv(i1, i2) -= conj(wfb(k, j1)) * wfmt(k, j2);
+                    for (unsigned int k = 0; k < p.size_wfmt + ngk; k++)
+                        h(i1, i2) -= wfb(k, j2) * conj(wf.scalar_wf(k, j1));
                 }
             }
-        }
+        }*/
 
         int i = 0;
         for (int ispn = 0; ispn < 2; ispn++)
         {
             for (int ist = 0; ist < p.nstfv; ist++)
             {
-                evecsv(i, i) += evalfv_[ist];
+                h(i, i) += evalfv_[ist];
                 i++;
             }
         }
-        
-        /*std::vector<double> evalsv(p.nstsv);
-        zheev<lapack_worker>(p.nstsv, &evecsv(0, 0), &evalsv[0]);
-        
-        for (int i = 0; i < p.nstsv; i++)
-        {
-            std::cout << "i = " << i <<" " << evalsv[i] << std::endl;
-        } */
     }
 }
 
