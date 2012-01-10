@@ -54,7 +54,7 @@ extern "C" void FORTRAN(lapw_load_global)(int *natmtot_,
     p.igfft.resize(p.ngrtot);
     p.cfunir.resize(p.ngrtot);
     p.cfunig.resize(p.ngrtot);
-    for (int i = 0; i < p.ngrtot; i++)
+    for (unsigned int i = 0; i < p.ngrtot; i++)
     {
         p.cfunig[i] = cfunig_[i];
         p.cfunir[i] = cfunir_[i];
@@ -70,9 +70,9 @@ extern "C" void FORTRAN(lapw_load_global)(int *natmtot_,
     p.gntyry = tensor<std::complex<double>,3>(gntyry_, p.lmmaxvr, p.lmmaxapw, p.lmmaxapw);
     p.L3_gntyry = tensor<std::vector<int>,2>(p.lmmaxapw, p.lmmaxapw);
     
-    for (int lm1 = 0; lm1 < p.lmmaxapw; lm1++)
-        for (int lm2 = 0; lm2 < p.lmmaxapw; lm2++)
-            for (int lm3 = 0; lm3 < p.lmmaxvr; lm3++) 
+    for (unsigned int lm1 = 0; lm1 < p.lmmaxapw; lm1++)
+        for (unsigned int lm2 = 0; lm2 < p.lmmaxapw; lm2++)
+            for (unsigned int lm3 = 0; lm3 < p.lmmaxvr; lm3++) 
                 if (abs(p.gntyry(lm3, lm1, lm2)) > 1e-14)
                     p.L3_gntyry(lm1, lm2).push_back(lm3);
     
@@ -81,10 +81,10 @@ extern "C" void FORTRAN(lapw_load_global)(int *natmtot_,
             for (int k = p.intgv(2, 0); k <= p.intgv(2, 1); k++)
                 p.ivgig(i, j, k) -= 1;
     
-    for (int i = 0; i < p.nspecies; i++)
+    for (unsigned int i = 0; i < p.nspecies; i++)
         geometry.species.push_back(Species());
     
-    for (int i = 0; i < p.natmtot; i++)
+    for (unsigned int i = 0; i < p.natmtot; i++)
         geometry.atoms.push_back(Atom(&geometry.species[ias2is_[i] - 1]));
    
 //    std::cout << "spinpol : " << p.spinpol << std::endl
