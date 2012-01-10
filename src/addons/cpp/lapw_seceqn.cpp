@@ -3,9 +3,9 @@
 extern "C" void FORTRAN(lapw_seceqn)(int32_t *ikloc_, complex16 *apwalm_, complex16 *evecfv_, 
                                      double *evalfv_, complex16 *evecsv_, double *evalsv_)
 {
-    int ikloc = *ikloc_ - 1;
-    int ngk = p.kpoints[ikloc].ngk;
-    int msize = ngk + p.size_wfmt_lo;
+    unsigned int ikloc = *ikloc_ - 1;
+    unsigned int ngk = p.kpoints[ikloc].ngk;
+    unsigned int msize = ngk + p.size_wfmt_lo;
     
     tensor<complex16,2> h(msize, msize);
     tensor<complex16,2> o(msize, msize);
@@ -33,8 +33,8 @@ extern "C" void FORTRAN(lapw_seceqn)(int32_t *ikloc_, complex16 *apwalm_, comple
     if (check_evecfv) 
     {
         // use o and h as temporary arrays
-        for (int i = 0; i < p.nstfv; i++)
-            for (int j = 0; j < msize; j++)
+        for (unsigned int i = 0; i < p.nstfv; i++)
+            for (unsigned int j = 0; j < msize; j++)
                 o(j, i) = -evalfv_[i] * evecfv(j, i);
     
         zhemm<blas_worker>(0, 0, msize, p.nstfv, zone, &h1(0, 0), h1.size(0), &evecfv(0, 0), 
@@ -42,10 +42,10 @@ extern "C" void FORTRAN(lapw_seceqn)(int32_t *ikloc_, complex16 *apwalm_, comple
         zhemm<blas_worker>(0, 0, msize, p.nstfv, zone, &o1(0, 0), o1.size(0), &o(0, 0),
             o.size(0), zone, &h(0, 0), h.size(0)); 
     
-        for (int i = 0; i < p.nstfv; i++)
+        for (unsigned int i = 0; i < p.nstfv; i++)
         {
             double L2norm = 0.0;
-            for (int j = 0; j < msize; j++) L2norm += abs(h(j, i) * conj(h(j, i)));
+            for (unsigned int j = 0; j < msize; j++) L2norm += abs(h(j, i) * conj(h(j, i)));
             L2norm = sqrt(L2norm);
             if (L2norm > 1e-14)
                 std::cout << "eigen-vector : " << i << " |H*z_i - E_i*O*z_i| = " << L2norm <<std::endl;

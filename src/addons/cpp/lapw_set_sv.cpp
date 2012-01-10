@@ -2,7 +2,7 @@
 
 void lapw_set_sv(lapw_wave_functions& wf, double *evalfv_, tensor<complex16,2>& h)
 {
-    int ngk = wf.kp->ngk;
+    unsigned int ngk = wf.kp->ngk;
 
     memset(&h(0, 0), 0, h.size() * sizeof(complex16));
 
@@ -11,7 +11,7 @@ void lapw_set_sv(lapw_wave_functions& wf, double *evalfv_, tensor<complex16,2>& 
         tensor<complex16,2> wfb(p.size_wfmt + ngk, p.nstfv);
         memset(&wfb(0, 0), 0, wfb.size() * sizeof(complex16));
         
-        for (int ias = 0; ias < p.natmtot; ias++)
+        for (unsigned int ias = 0; ias < p.natmtot; ias++)
         {
             int sz = geometry.atoms[ias].species->ci.size();
             tensor<complex16,2> zm(sz, sz);
@@ -46,20 +46,20 @@ void lapw_set_sv(lapw_wave_functions& wf, double *evalfv_, tensor<complex16,2>& 
         }
         
         std::vector<complex16> zfft(p.ngrtot);
-        for (int i = 0; i < p.nstfv; i++)
+        for (unsigned int i = 0; i < p.nstfv; i++)
         {
             memset(&zfft[0], 0, p.ngrtot * sizeof(complex16));
-            for (int ig = 0; ig < ngk; ig++) 
+            for (unsigned int ig = 0; ig < ngk; ig++) 
                 zfft[wf.kp->idxgfft[ig]] = wf.scalar_wf(p.size_wfmt + ig, i);
                                         
             lapw_fft(1, &zfft[0]);
                        
-            for (int ir = 0; ir < p.ngrtot; ir++)
+            for (unsigned int ir = 0; ir < p.ngrtot; ir++)
               zfft[ir] *= (p.beffir(ir) * p.cfunir[ir]);
                                                                
             lapw_fft(-1, &zfft[0]);
             
-            for (int ig = 0; ig < ngk; ig++) 
+            for (unsigned int ig = 0; ig < ngk; ig++) 
                 wfb(p.size_wfmt + ig, i) = zfft[wf.kp->idxgfft[ig]];
         }
 
@@ -68,37 +68,14 @@ void lapw_set_sv(lapw_wave_functions& wf, double *evalfv_, tensor<complex16,2>& 
             wf.scalar_wf.size(0), &wfb(0, 0), wfb.size(0), zzero, &h(0, 0), h.size(0));
 
         // copy to dn-dn block and change sign
-        for (int i = 0; i < p.nstfv; i++)
-            for (int j = 0; j < p.nstfv; j++) 
+        for (unsigned int i = 0; i < p.nstfv; i++)
+            for (unsigned int j = 0; j < p.nstfv; j++) 
                 h(j + p.nstfv, i + p.nstfv) = -h(j, i);
 
-        /*for (int j1 = 0; j1 < p.nstfv; j1++)
+        unsigned int i = 0;
+        for (unsigned int ispn = 0; ispn < 2; ispn++)
         {
-            for (int j2 = 0; j2 < p.nstfv; j2++)
-            {
-                int i1 = j1;
-                int i2 = j2;
-                
-                if (i1 <= i2) 
-                {
-                    for (unsigned int k = 0; k < p.size_wfmt + ngk; k++)
-                        h(i1, i2) += wfb(k, j2) * conj(wf.scalar_wf(k, j1));
-                }
-                
-                i1 += p.nstfv;
-                i2 += p.nstfv;
-                if (i1 <= i2) 
-                {
-                    for (unsigned int k = 0; k < p.size_wfmt + ngk; k++)
-                        h(i1, i2) -= wfb(k, j2) * conj(wf.scalar_wf(k, j1));
-                }
-            }
-        }*/
-
-        int i = 0;
-        for (int ispn = 0; ispn < 2; ispn++)
-        {
-            for (int ist = 0; ist < p.nstfv; ist++)
+            for (unsigned int ist = 0; ist < p.nstfv; ist++)
             {
                 h(i, i) += evalfv_[ist];
                 i++;

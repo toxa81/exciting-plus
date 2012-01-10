@@ -15,7 +15,7 @@ extern "C" void FORTRAN(lapw_load_species)(int *is_,
     for (int i = 0; i < *nlorb; i++) 
         geometry.species[is].lo_descriptors.push_back(radial_l_channel_descriptor(lorbl[i]));
     
-    for (int l = 0; l <= p.lmaxapw; l++) 
+    for (unsigned int l = 0; l <= p.lmaxapw; l++) 
     {
         radial_l_channel_descriptor lch(l);
         for (int io = 0; io < apword[l]; io++)
