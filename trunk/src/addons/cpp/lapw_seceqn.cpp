@@ -60,6 +60,17 @@ extern "C" void FORTRAN(lapw_seceqn)(int32_t *ikloc_, complex16 *apwalm_, comple
             wf.test_scalar(i);
     }
 
+    if (p.ndmag == 0)
+    {
+        memset(&evecsv(0, 0), 0, evecsv.size() * sizeof(complex16));
+        for (unsigned int i = 0; i < p.nstfv; i++)
+        {
+            evecsv(i, i) = zone;
+            evalsv_[i] = evalfv_[i];
+        }
+        return;
+    }
+
     lapw_set_sv(wf, evalfv_, evecsv);
   
     if (p.ndmag == 1)

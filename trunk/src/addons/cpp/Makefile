@@ -8,7 +8,7 @@ OBJ = lapw.o lapw_init.o lapw_load_global.o lapw_load_species.o \
       lapw_seceqn_fv_old.o
       
 .cpp.o:
-	$(CXX) $(CPP_OPTS) -Wall -O0 -g -c -o $(*D)/$(*F).o $<
+	$(CXX) $(CPP_OPTS) -Wall -O3 -c -o $(*D)/$(*F).o $<
 all: $(OBJ)
 	ar -r libapw.a $(OBJ)
 

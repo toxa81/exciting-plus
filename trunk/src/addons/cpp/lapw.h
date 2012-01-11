@@ -12,15 +12,6 @@
 #include "linalg.h"
 
 /*
-    inline functions
-*/
-
-inline int idxlm(int l, int m)
-{
-    return l * l + l + m;
-}
-
-/*
     forward class declarations
 */
 struct atomic_level;
@@ -44,6 +35,8 @@ void lapw_set_o(kpoint& kp, tensor<complex16,2>& apwalm, tensor<complex16,2>& o)
 void lapw_set_sv(lapw_wave_functions& wf, double *evalfv_, tensor<complex16,2>& h);
 
 void lapw_fft(int32_t direction, complex16 *data);
+
+inline int idxlm(int l, int m);
 
 /*
     actual class definitions
@@ -276,5 +269,20 @@ extern Parameters p;
 extern complex16 zone;
 extern complex16 zzero;
 extern complex16 zi;
+
+/*
+    inline functions
+*/
+inline int idxlm(int l, int m)
+{
+    return l * l + l + m;
+}
+
+inline int idxG12(kpoint *kp, int ig1, int ig2)
+{
+    int iv[3];
+    for (int i = 0; i < 3; i++) iv[i] = p.ivg(i, kp->idxg[ig1]) - p.ivg(i, kp->idxg[ig2]);
+    return p.ivgig(iv[0], iv[1], iv[2]);
+}
 
 #endif // __LAPW_H__
