@@ -66,9 +66,6 @@ rgkmax=7.d0
 gmaxvr=12.d0
 lmaxapw=8
 lmaxvr=7
-lmaxmat=5
-lmaxinr=7
-fracinr=0.d0
 npsden=9
 xctype(1)=3
 xctype(2)=0
@@ -344,24 +341,6 @@ case('lmaxvr')
     write(*,*)
     stop
   end if
-case('lmaxmat')
-  read(50,*,err=20) lmaxmat
-  if (lmaxmat.lt.0) then
-    write(*,*)
-    write(*,'("Error(readinput): lmaxmat < 0 : ",I8)') lmaxmat
-    write(*,*)
-    stop
-  end if
-case('lmaxinr')
-  read(50,*,err=20) lmaxinr
-  if (lmaxinr.lt.0) then
-    write(*,*)
-    write(*,'("Error(readinput): lmaxinr < 0 : ",I8)') lmaxinr
-    write(*,*)
-    stop
-  end if
-case('fracinr')
-  read(50,*,err=20) fracinr
 case('npsden')
   read(50,*,err=20) npsden
   if (npsden.lt.2) then
