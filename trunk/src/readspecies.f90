@@ -219,10 +219,10 @@ do is=1,nspecies
       write(*,*)
       stop
     end if
-    if (lorbl(ilo,is).gt.lmaxmat) then
+    if (lorbl(ilo,is).gt.lmaxapw) then
       write(*,*)
       write(*,'("Error(readspecies): lorbl > lmaxmat : ",2I8)') lorbl(ilo,is), &
-       lmaxmat
+       lmaxapw
       write(*,'(" for species ",I4)') is
       write(*,'(" and local-orbital ",I4)') ilo
       write(*,*)
