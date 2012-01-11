@@ -32,12 +32,7 @@ call potxc
 do is=1,nspecies
   do ia=1,natoms(is)
     ias=idxas(ia,is)
-    do ir=1,nrmtinr(is)
-      veffmt(1:lmmaxinr,ir,ias)=vclmt(1:lmmaxinr,ir,ias) &
-       +vxcmt(1:lmmaxinr,ir,ias)
-      veffmt(lmmaxinr:lmmaxvr,ir,ias)=0.d0
-    end do
-    do ir=nrmtinr(is)+1,nrmt(is)
+    do ir=1,nrmt(is)
       veffmt(:,ir,ias)=vclmt(:,ir,ias)+vxcmt(:,ir,ias)
     end do
   end do
