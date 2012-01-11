@@ -14,6 +14,7 @@ use mod_wannier
 use mod_sic
 use mod_seceqn
 use mod_rs
+use mod_libapw
 ! !DESCRIPTION:
 !   Computes the self-consistent Kohn-Sham ground-state. General information is
 !   written to the file {\tt INFO.OUT}. First- and second-variational
@@ -74,17 +75,17 @@ if (wproc) then
   open(62,file='FERMIDOS'//trim(filext),action='WRITE',form='FORMATTED')
 ! open MOMENT.OUT if required
   if (spinpol) open(63,file='MOMENT'//trim(filext),action='WRITE', &
-   form='FORMATTED')
+   &form='FORMATTED')
 ! open FORCEMAX.OUT if required
   if (tforce) open(64,file='FORCEMAX'//trim(filext),action='WRITE', &
-   form='FORMATTED')
+   &form='FORMATTED')
 ! open RMSDVEFF.OUT
   open(65,file='RMSDVEFF'//trim(filext),action='WRITE',form='FORMATTED')
 ! open DTOTENERGY.OUT
   open(66,file='DTOTENERGY'//trim(filext),action='WRITE',form='FORMATTED')
 ! open TENSMOM.OUT
   if (tmomlu) open(67,file='TENSMOM'//trim(filext),action='WRITE', &
-   form='FORMATTED')
+   &form='FORMATTED')
 ! write out general information to INFO.OUT
   call writeinfo(60)
   write(60,*)
@@ -198,6 +199,9 @@ do iscl=1,maxscl
     call genbeffmt
   endif
   evalsv=0.d0
+#ifdef _LIBAPW_
+ call libapw_seceqn_init
+#endif
 ! begin parallel loop over k-points
   do ikloc=1,nkptloc
 ! solve the secular equation
