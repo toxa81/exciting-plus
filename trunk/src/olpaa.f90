@@ -17,7 +17,7 @@ complex(8), intent(inout) :: o(*)
 ! local variables
 integer ias,l,m,lm,io
 ias=idxas(ia,is)
-do l=0,lmaxmat
+do l=0,lmaxapw
   do m=-l,l
     lm=idxlm(l,m)
     do io=1,apword(l,is)
