@@ -45,7 +45,7 @@ complex(8) zt1,zsum
 ! automatic arrays
 complex(8) zv(ngp)
 ias=idxas(ia,is)
-do l1=0,lmaxapw !lmaxmat
+do l1=0,lmaxapw
   do m1=-l1,l1
     lm1=idxlm(l1,m1)
     do io1=1,apword(l1,is)
