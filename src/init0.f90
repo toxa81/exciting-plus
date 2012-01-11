@@ -43,17 +43,9 @@ call timesec(ts0)
 !------------------------------------!
 lmmaxvr=(lmaxvr+1)**2
 lmmaxapw=(lmaxapw+1)**2
-lmmaxmat=(lmaxmat+1)**2
-lmmaxinr=(lmaxinr+1)**2
 if (lmaxvr.gt.lmaxapw) then
   write(*,*)
   write(*,'("Error(init0): lmaxvr > lmaxapw : ",2I8)') lmaxvr,lmaxapw
-  write(*,*)
-  stop
-end if
-if (lmaxmat.gt.lmaxapw) then
-  write(*,*)
-  write(*,'("Error(init0): lmaxmat > lmaxapw : ",2I8)') lmaxmat,lmaxapw
   write(*,*)
   stop
 end if
