@@ -10,6 +10,7 @@ subroutine seceqnfv(ik,nmatp,ngp,igpig,vgpc,apwalm,evalfv,evecfv)
 ! !USES:
 use modmain
 use mod_seceqn
+use mod_libapw
 ! !INPUT/OUTPUT PARAMETERS:
 !   nmatp  : order of overlap and Hamiltonian matrices (in,integer)
 !   ngp    : number of G+k-vectors for augmented plane waves (in,integer)
@@ -39,9 +40,9 @@ complex(8), intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
 real(8), intent(out) :: evalfv(nstfv)
 complex(8), intent(out) :: evecfv(nmatmax,nstfv)
 ! local variables
-integer is,ia,i,m,np,info,nb,lwork
+integer is,ia,i,m,np,info,nb,lwork,ir
 real(8) v(1),vl,vu
-real(8) ts0,ts1
+real(8) ts0,ts1,cb
 ! allocatable arrays
 integer, allocatable :: iwork(:)
 integer, allocatable :: ifail(:)
@@ -55,9 +56,6 @@ complex(4) ct1
 character*100 fname
 logical, parameter :: packed=.false.
 integer, external :: ilaenv
-!call lapw_seceqnfv(ngp,nmatp,nmatp,igpig,vgpc,veffig,cfunig,apwalm,apwfr,&
-!    apwdfr,haa,hloa,hlolo,oalo,ololo,h1,o1,evalfv,evecfv)
-!return
 if (packed) then
   np=(nmatp*(nmatp+1))/2
 else
@@ -70,11 +68,13 @@ call timesec(ts0)
 call timer_start(t_seceqnfv)
 call timer_start(t_seceqnfv_setup)
 allocate(h(np),o(np))
-!allocate(h1(np),o1(np))
 h(:)=zzero
 o(:)=zzero
+!#ifdef _LIBAPW_
+!allocate(h1(np),o1(np))
 !h1(:)=zzero
 !o1(:)=zzero
+!#endif
 if (packed) then
 ! Hamiltonian
   do is=1,nspecies
@@ -97,10 +97,13 @@ if (packed) then
 else
   call sethml(ngp,nmatp,vgpc,igpig,apwalm,h)
   call setovl(ngp,nmatp,igpig,apwalm,o)
-  !call lapw_seceqnfv(ngp,nmatp,nmatp,igpig,vgpc,veffig,cfunig,apwalm,apwfr,&
-  !  apwdfr,haa,hloa,hlolo,oalo,ololo,h1,o1,evalfv,evecfv)
-  !write(*,*)sum(abs(h-h1))
-  !write(*,*)sum(abs(o-o1))
+!#ifdef _LIBAPW_
+!  call lapw_seceqn_fv_old(ik,apwalm,h1,o1,evalfv,evecfv)
+!  write(*,*)"diff h=",sum(abs(h-h1))
+!  write(*,*)"diff o=",sum(abs(o-o1))
+!  !h=h1
+!  !o=o1
+!#endif
 endif
 call timesec(ts1)
 call timer_stop(t_seceqnfv_setup)
@@ -147,7 +150,9 @@ call mpi_grid_bcast(evalfv(1),nstfv,dims=(/dim2/))
 timefv=timefv+ts1-ts0
 call timer_stop(t_seceqnfv)
 deallocate(h,o)
+!#ifdef _LIBAPW_
 !deallocate(h1,o1)
+!#endif
 return
 end subroutine
 !EOC
