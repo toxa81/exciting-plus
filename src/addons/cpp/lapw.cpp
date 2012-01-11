@@ -2,5 +2,6 @@
 
 Geometry geometry;
 Parameters p;
-std::complex<double> zone(1,0);
-std::complex<double> zzero(0,0);
+complex16 zone(1,0);
+complex16 zzero(0,0);
+complex16 zi(0,1);
