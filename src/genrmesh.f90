@@ -46,18 +46,6 @@ do is=1,nspecies
   end do
   spr(:,is)=spr(:,is)*rmt(is)/spr(nrmt(is),is)
 end do
-! find the inner part of the muffin-tin (where rho is calculated with lmaxinr)
-do is=1,nspecies
-  t1=fracinr*rmt(is)
-  nrmtinr(is)=nrmt(is)
-  do ir=1,nrmt(is)
-    if (spr(ir,is).gt.t1) then
-      nrmtinr(is)=ir
-      goto 10
-    end if
-  end do
-10 continue
-end do
 ! set up the coarse radial meshes
 do is=1,nspecies
   irc=0
