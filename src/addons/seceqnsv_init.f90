@@ -6,6 +6,7 @@ real(8), allocatable :: bmt(:,:,:,:)
 real(8) cb,t1
 integer i,ias,ia,is,ic,l1,l2,l3,m1,m2,m3,lm3,lm1,lm2,io1,io2
 integer ir,j1,j2
+real(8) r2(nrmtmax),fr(nrmtmax),gr(nrmtmax),cf(4,nrmtmax)
 !
 if (.not.spinpol) return
 
@@ -36,12 +37,12 @@ do ias=1,natmtot
           do io2=1,nufr(l2,is)
             j2=j2+1
             do i=1,ndmag
-              t1=0.d0
               do ir=1,nrmt(is)
-                t1=t1+ufr(ir,l1,io1,ic)*ufr(ir,l2,io2,ic)*&
-                  bmt(lm3,ir,ias,i)*mt_rw(ir,is)
+                fr(ir)=ufr(ir,l1,io1,ic)*ufr(ir,l2,io2,ic)*&
+                  bmt(lm3,ir,ias,i)*(spr(ir,is)**2)
               enddo
-              sv_ubu(lm3,j1,j2,ias,i)=t1
+              call fderiv(-1,nrmt(is),spr(:,is),fr,gr,cf)
+              sv_ubu(lm3,j1,j2,ias,i)=gr(nrmt(is))
             enddo
           enddo
         enddo
