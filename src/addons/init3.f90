@@ -3,6 +3,7 @@ use modmain
 use mod_wannier
 use mod_sic
 use mod_rs
+use mod_libapw
 implicit none
 integer ia,is,l,m,ir,i1,i2,i3,i
 integer itp
@@ -143,13 +144,7 @@ if (debug_level.ge.4) then
   call dbg_close_file
 endif
 !if (mpi_grid_root()) call srclog
-!if (mpi_grid_root()) call print_info 
-!call lapw_load_global(natmtot,nspecies,lmaxvr,lmaxapw,apwordmax,nrmtmax,&
-!    ngkmax,ngvec,ngrtot,nlomax,ias2is,ias2ia,intgv,ivg,ivgig,gntyry,nstfv,&
-!    nstsv,nmatmax,evaltol)
-!do is=1,nspecies
-!  call lapw_load_species(is,nlorb(is),lorbl(1,is),apword(0,is),rmt(is),nrmt(is))
-!enddo
-!call lapw_init
+!if (mpi_grid_root()) call print_info
+call libapw_init
 return
 end
