@@ -54,7 +54,7 @@ complex(8), allocatable :: epm(:,:,:)
 complex(8) zfmtinp,zdotc
 external zfmtinp,zdotc
 n=3*natmtot
-lmax=min(lmaxmat,lmaxvr)
+lmax=lmaxvr
 lmmax=(lmax+1)**2
 ! allocate local arrays
 allocate(igpig(ngkmax))
