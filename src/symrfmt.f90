@@ -32,24 +32,14 @@ real(8), intent(in) :: rot(3,3)
 real(8), intent(in) :: rfmt(lmmaxvr,nrmtmax)
 real(8), intent(out) :: srfmt(lmmaxvr,nrmtmax)
 ! local variables
-integer ir,irc,nri,nro,iro,ld
-nri=0
-irc=0
+integer ir,nrc,nri,nro,iro,ld
+nrc=0
 do ir=1,nrmt(is),lrstp
-  irc=irc+1
-  if (ir.le.nrmtinr(is)) then
-    srfmt(lmmaxinr+1:,ir)=0.d0
-    nri=irc
-  end if
+  nrc=nrc+1
 end do
-! first point in the outer point of the muffin-tin
-iro=lrstp*nri+1
-! number of points in the outer part
-nro=irc-nri
 ! rotate the function
 ld=lmmaxvr*lrstp
-call rotrflm(rot,lmaxinr,nri,ld,rfmt,srfmt)
-call rotrflm(rot,lmaxvr,nro,ld,rfmt(:,iro),srfmt(:,iro))
+call rotrflm(rot,lmaxvr,nrc,ld,rfmt,srfmt)
 return
 end subroutine
 !EOC
