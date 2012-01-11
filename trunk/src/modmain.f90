@@ -142,18 +142,6 @@ integer lmmaxapw
 integer lmaxvr
 ! (lmaxvr+1)^2
 integer lmmaxvr
-! maximum angular momentum used when evaluating the Hamiltonian matrix elements
-integer lmaxmat
-! (lmaxmat+1)^2
-integer lmmaxmat
-! fraction of muffin-tin radius which constitutes the inner part
-real(8) fracinr
-! maximum angular momentum in the inner part of the muffin-int
-integer lmaxinr
-! (lmaxinr+1)^2
-integer lmmaxinr
-! number of radial points to the inner part of the muffin-tin
-integer nrmtinr(maxspecies)
 ! index to (l,m) pairs
 integer, allocatable :: idxlm(:,:)
 
