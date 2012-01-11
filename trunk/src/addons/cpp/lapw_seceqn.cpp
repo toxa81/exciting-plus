@@ -53,8 +53,12 @@ extern "C" void FORTRAN(lapw_seceqn)(int32_t *ikloc_, complex16 *apwalm_, comple
     }
 
     wf.generate_scalar(evecfv);
-    for (int i = 0; i < 3; i++)
-        wf.test_scalar(i);
+    
+    if (check_scalar_wf)
+    {
+        for (int i = 0; i < 3; i++)
+            wf.test_scalar(i);
+    }
 
     lapw_set_sv(wf, evalfv_, evecsv);
   
@@ -62,6 +66,10 @@ extern "C" void FORTRAN(lapw_seceqn)(int32_t *ikloc_, complex16 *apwalm_, comple
     {
         zheev<lapack_worker>(p.nstfv, &evecsv(0, 0), evecsv.size(0), evalsv_);
         zheev<lapack_worker>(p.nstfv, &evecsv(p.nstfv, p.nstfv), evecsv.size(0), &evalsv_[p.nstfv]);
+    } 
+    if (p.ndmag == 3)
+    {
+        zheev<lapack_worker>(p.nstsv, &evecsv(0, 0), evecsv.size(0), evalsv_);
     } 
 }
 

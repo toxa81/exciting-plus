@@ -3,22 +3,23 @@
 extern "C" void FORTRAN(lapw_seceqn_fv_old)(int32_t *ikloc_, complex16 *apwalm_, complex16 *h_,
                                             complex16 *o_, double *evalfv_, complex16 *z_) 
 {
-    int ikloc = *ikloc_ - 1;
-    int ngp = p.kpoints[ikloc].ngk;
-    int ldh = ngp + p.wfmt_size_lo;
-    tensor<std::complex<double>,2> h(h_, ldh, ldh);
-    tensor<std::complex<double>,2> o(o_, ldh, ldh);
+    unsigned int ikloc = *ikloc_ - 1;
+    unsigned int ngk = p.kpoints[ikloc].ngk;
+    unsigned int msize = ngk + p.size_wfmt_lo;
+    
+    tensor<std::complex<double>,2> h(h_, msize, msize);
+    tensor<std::complex<double>,2> o(o_, msize, msize);
     tensor<std::complex<double>,2> z(z_, p.nmatmax, p.nstfv);
     
-    tensor<std::complex<double>,2> capwalm(ngp, p.wfmt_size_apw);
-    compact_apwalm(ngp, apwalm_, capwalm);
+    lapw_wave_functions wf(&p.kpoints[ikloc]);
+    wf.pack_apwalm(apwalm_);
 
-    lapw_set_h(p.kpoints[ikloc], capwalm, h);
-    lapw_set_o(p.kpoints[ikloc], capwalm, o);
-
+    lapw_set_h(p.kpoints[ikloc], wf.apwalm, h);
+    lapw_set_o(p.kpoints[ikloc], wf.apwalm, o);
+         
     return;
        
-    tensor<std::complex<double>,2> h1;
+    /*tensor<std::complex<double>,2> h1;
     tensor<std::complex<double>,2> o1;
     
     std::cout << "h hash = " << h.hash() << std::endl;
@@ -56,7 +57,7 @@ extern "C" void FORTRAN(lapw_seceqn_fv_old)(int32_t *ikloc_, complex16 *apwalm_,
 
     tensor<std::complex<double>,2> fvmt(p.wfmt_size + ngp, p.nstfv);
     lapw_fvmt(capwalm, z, fvmt);
-
+*/
     //lapw_test_fvmt(ovlprad, fvmt, ngp, igpig);
     
     //lapw_set_sv(ngp, igpig, beffrad_, beffir_, fvmt, evalfv_);

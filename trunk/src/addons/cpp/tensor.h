@@ -200,7 +200,6 @@ template <typename T> class tensor<T,2> : public tensor_base<T,2>
             else 
             {
                 this->data = new T[this->size_];
-                //memset(this->data, 0, this->size_ * sizeof(T));
                 this->allocated = true;
             }
         }
@@ -224,11 +223,21 @@ template <typename T> class tensor<T,3> : public tensor_base<T,3>
         {
         }
   
+        tensor(const int n0, const int n1, const int n2) 
+        {
+            init(0, t_index(0, n0 - 1), t_index(0, n1 - 1), t_index(0, n2 - 1));
+        }
+        
         tensor(T *data_, const int n0, const int n1, const int n2) 
         {
             init(data_, t_index(0, n0 - 1), t_index(0, n1 - 1), t_index(0, n2 - 1));
         }
     
+        tensor(const t_index& j0, const t_index& j1, const t_index& j2) 
+        {
+            init(0, j0, j1, j2);
+        }
+        
         tensor(T *data_, const t_index& j0, const t_index& j1, const t_index& j2) 
         {
             init(data_, j0, j1, j2);
@@ -241,7 +250,14 @@ template <typename T> class tensor<T,3> : public tensor_base<T,3>
             vidx.push_back(j1);
             vidx.push_back(j2);
             this->tensor_init(vidx);
-            this->data = data_;
+            
+            if (data_) 
+                this->data = data_;
+            else 
+            {
+                this->data = new T[this->size_];
+                this->allocated = true;
+            }
         }
     
         inline T& operator()(const int i0, const int i1, const int i2) 

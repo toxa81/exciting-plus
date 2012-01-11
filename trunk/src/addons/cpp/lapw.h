@@ -37,32 +37,9 @@ class lapw_wave_functions;
 /*
     function declarations
 */
-//void compact_apwalm(int ngp_, complex16 *apwalm_, tensor<complex16,2>& capwalm);
-
 void lapw_set_h(kpoint& kp, tensor<complex16,2>& apwalm, tensor<complex16,2>& h);
 
 void lapw_set_o(kpoint& kp, tensor<complex16,2>& apwalm, tensor<complex16,2>& o);
-
-extern "C" void FORTRAN(lapw_seceqn_fv)(int32_t *ngp_,
-                                         int32_t *ldh_,
-                                         int32_t *ncolh,
-                                         int32_t *igpig_,
-                                         double *vgpc_,
-                                         std::complex<double> *veffig_,
-                                         std::complex<double> *apwalm_,
-                                         double *apwfr_,
-                                         double *apwdfr_,
-                                         double *hmltrad_,
-                                         double *ovlprad_,
-                                         double *evalfv_,
-                                         std::complex<double> *z_); 
-
-//void lapw_scalar_wf(tensor<complex16,2>& capwalm, tensor<complex16,2>& evecfv, tensor<complex16,2>& scalar_wf);
-
-//void lapw_test_fvmt(tensor<double,4>& ovlprad,
-//                    tensor<std::complex<double>,2>& fvmt,
-//                    int ngp,
-//                    tensor<int,1>& igpig);
 
 void lapw_set_sv(lapw_wave_functions& wf, double *evalfv_, tensor<complex16,2>& h);
 
@@ -245,6 +222,7 @@ class Parameters
         tensor<int,3> ivgig;
         tensor<std::complex<double>,3> gntyry;
         tensor<std::vector<int>,2> L3_gntyry;
+        tensor<std::vector<complex16>,2> L3_gntyry_data;
         std::vector<kpoint> kpoints;
         unsigned int size_wfmt_apw;
         unsigned int size_wfmt_lo;
@@ -254,7 +232,7 @@ class Parameters
         tensor<double,5> beffrad;
         tensor<double,5> apwfr;
         tensor<double,3> apwdfr;
-        tensor<double,1> beffir;
+        tensor<double,2> beffir;
         tensor<complex16,1> veffig;
 
         inline void L3_sum_gntyry(int lm1, int lm2, double *v, std::complex<double>& zsum)
@@ -263,7 +241,10 @@ class Parameters
             {
                 int lm3 = L3_gntyry(lm1, lm2)[k];
                 zsum += gntyry(lm3, lm1, lm2) * v[lm3];
+                //zsum += L3_gntyry_data(lm1, lm2)[k] * v[lm3];
             }
+            //for (unsigned int lm3 = 0; lm3 < p.lmmaxvr; lm3++)
+            //    zsum += gntyry(lm3, lm1, lm2) * v[lm3];
         }
 };
 
@@ -292,7 +273,8 @@ class lapw_wave_functions
 */
 extern Geometry geometry;
 extern Parameters p;
-extern std::complex<double> zone;
-extern std::complex<double> zzero;
+extern complex16 zone;
+extern complex16 zzero;
+extern complex16 zi;
 
 #endif // __LAPW_H__

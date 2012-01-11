@@ -7,8 +7,8 @@
 
 const int gemm_worker = blas_worker;
 
-const bool check_evecfv = true;
+const bool check_evecfv = false;
 
-const bool check_scalar_wf = true;
+const bool check_scalar_wf = false;
 
 #endif // __CONFIG_H__

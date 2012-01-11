@@ -69,12 +69,16 @@ extern "C" void FORTRAN(lapw_load_global)(int *natmtot_,
     
     p.gntyry = tensor<std::complex<double>,3>(gntyry_, p.lmmaxvr, p.lmmaxapw, p.lmmaxapw);
     p.L3_gntyry = tensor<std::vector<int>,2>(p.lmmaxapw, p.lmmaxapw);
+    p.L3_gntyry_data = tensor<std::vector<complex16>,2>(p.lmmaxapw, p.lmmaxapw);
     
     for (unsigned int lm1 = 0; lm1 < p.lmmaxapw; lm1++)
         for (unsigned int lm2 = 0; lm2 < p.lmmaxapw; lm2++)
             for (unsigned int lm3 = 0; lm3 < p.lmmaxvr; lm3++) 
                 if (abs(p.gntyry(lm3, lm1, lm2)) > 1e-14)
+                {
                     p.L3_gntyry(lm1, lm2).push_back(lm3);
+                    p.L3_gntyry_data(lm1, lm2).push_back(p.gntyry(lm3, lm1, lm2));
+                }
     
     for (int i = p.intgv(0, 0); i <= p.intgv(0, 1); i++)
         for (int j = p.intgv(1, 0); j <= p.intgv(1, 1); j++)
