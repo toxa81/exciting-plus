@@ -73,7 +73,7 @@ evecsv(:,:)=0.d0
 !-------------------------!
 !     muffin-tin part     !
 !-------------------------!
-lmax=min(lmaxmat,lmaxvr)
+lmax=lmaxvr
 allocate(wfmt1(lmmaxvr,nrcmtmax,nstfv))
 allocate(wfmt2(lmmaxvr,nrcmtmax))
 allocate(wfmt3(lmmaxvr,nrcmtmax))
