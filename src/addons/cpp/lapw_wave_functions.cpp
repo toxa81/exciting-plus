@@ -23,6 +23,8 @@ void lapw_wave_functions::pack_apwalm(complex16 *apwalm_)
 
 void lapw_wave_functions::generate_scalar(tensor<complex16,2>& evecfv)
 {
+    timer t("lapw_wave_functions::generate_scalar");
+    
     int ngk = kp->ngk;
     scalar_wf = tensor<complex16,2>(p.size_wfmt + ngk, p.nstfv);
 

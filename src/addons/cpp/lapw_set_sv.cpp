@@ -2,6 +2,8 @@
 
 void b_dot_wf(lapw_wave_functions& wf, tensor<complex16,3>& hwf)
 {
+    timer t("b_dot_wf");
+    
     unsigned int ngk = wf.kp->ngk;
     
     size_t szmax = 0;
@@ -41,11 +43,19 @@ void b_dot_wf(lapw_wave_functions& wf, tensor<complex16,3>& hwf)
         if (p.ndmag == 3)
         {
             for (int j2 = 0; j2 < sz; j2++)
+            {
                 for (int j1 = 0; j1 <= j2; j1++)
-                    zm(j1, j2, 1) -= zi * zm(j1, j2, 2); 
+                    zm(j1, j2, 0) = zm(j1, j2, 1) - zi * zm(j1, j2, 2);
+                
+                for (int j1 = j2 + 1; j1 < sz; j1++)
+                    zm(j1, j2, 0) = conj(zm(j2, j1, 1)) - zi * conj(zm(j2, j1, 2));
+            }
               
-            zhemm<blas_worker>(0, 0, sz, p.nstfv, zone, &zm(0, 0, 1), zm.size(0), 
+            zgemm<blas_worker>(0, 0, sz, p.nstfv, sz, zone, &zm(0, 0, 0), zm.size(0), 
                 &wf.scalar_wf(offset, 0), wf.scalar_wf.size(0), zone, &hwf(offset, 0, 2), hwf.size(0));
+            
+            //zhemm<blas_worker>(0, 0, sz, p.nstfv, zone, &zm(0, 0, 1), zm.size(0), 
+            //    &wf.scalar_wf(offset, 0), wf.scalar_wf.size(0), zone, &hwf(offset, 0, 2), hwf.size(0));
            
             //zhemm<blas_worker>(0, 0, sz, p.nstfv, zone, &zm(0, 0, 2), zm.size, 
             //    &wf.scalar_wf(offset, 0), wf.scalar_wf.size(0), -zi, &hwf(offset, 0, 2), hwf.size(0));
@@ -68,7 +78,7 @@ void b_dot_wf(lapw_wave_functions& wf, tensor<complex16,3>& hwf)
         lapw_fft(-1, &zfft[0]);
         
         for (unsigned int ig = 0; ig < ngk; ig++) 
-            hwf(p.size_wfmt + ig, i, 0) = zfft[wf.kp->idxgfft[ig]];
+            hwf(p.size_wfmt + ig, i, 0) += zfft[wf.kp->idxgfft[ig]];
 
         if (p.ndmag == 3)
         {
@@ -78,7 +88,7 @@ void b_dot_wf(lapw_wave_functions& wf, tensor<complex16,3>& hwf)
             lapw_fft(-1, &zfft[0]);
             
             for (unsigned int ig = 0; ig < ngk; ig++) 
-                hwf(p.size_wfmt + ig, i, 2) = zfft[wf.kp->idxgfft[ig]];
+                hwf(p.size_wfmt + ig, i, 2) += zfft[wf.kp->idxgfft[ig]];
         }
     }
 
@@ -90,6 +100,8 @@ void b_dot_wf(lapw_wave_functions& wf, tensor<complex16,3>& hwf)
 
 void lapw_set_sv(lapw_wave_functions& wf, double *evalfv_, tensor<complex16,2>& h)
 {
+    timer t("lapw_set_sv");
+    
     unsigned int ngk = wf.kp->ngk;
 
     memset(&h(0, 0), 0, h.size() * sizeof(complex16));

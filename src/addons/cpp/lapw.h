@@ -10,6 +10,7 @@
 #include "tensor.h"
 #include "config.h"
 #include "linalg.h"
+#include "timer.h"
 
 /*
     forward class declarations
@@ -278,11 +279,13 @@ inline int idxlm(int l, int m)
     return l * l + l + m;
 }
 
-inline int idxG12(kpoint *kp, int ig1, int ig2)
+inline int idxG12(const kpoint& kp, int ig1, int ig2)
 {
-    int iv[3];
-    for (int i = 0; i < 3; i++) iv[i] = p.ivg(i, kp->idxg[ig1]) - p.ivg(i, kp->idxg[ig2]);
-    return p.ivgig(iv[0], iv[1], iv[2]);
+    //int iv[3];
+    //for (int i = 0; i < 3; i++) iv[i] = p.ivg(i, kp->idxg[ig1]) - p.ivg(i, kp->idxg[ig2]);
+    return p.ivgig(p.ivg(0, kp.idxg[ig1]) - p.ivg(0, kp.idxg[ig2]), 
+                   p.ivg(1, kp.idxg[ig1]) - p.ivg(1, kp.idxg[ig2]),
+                   p.ivg(2, kp.idxg[ig1]) - p.ivg(2, kp.idxg[ig2]));
 }
 
 #endif // __LAPW_H__
