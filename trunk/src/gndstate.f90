@@ -531,6 +531,9 @@ if (tsveqn) then
 else
   deallocate(evecfdloc)
 endif
+#ifdef _LIBAPW_
+call lapw_timers
+#endif
 return
 end subroutine
 !EOC
