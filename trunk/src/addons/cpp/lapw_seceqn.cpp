@@ -3,6 +3,8 @@
 extern "C" void FORTRAN(lapw_seceqn)(int32_t *ikloc_, complex16 *apwalm_, complex16 *evecfv_, 
                                      double *evalfv_, complex16 *evecsv_, double *evalsv_)
 {
+    timer t("lapw_seceqn");
+    
     unsigned int ikloc = *ikloc_ - 1;
     unsigned int ngk = p.kpoints[ikloc].ngk;
     unsigned int msize = ngk + p.size_wfmt_lo;

@@ -85,14 +85,15 @@ extern "C" void FORTRAN(lapw_load_global)(int *natmtot_,
             for (int k = p.intgv(2, 0); k <= p.intgv(2, 1); k++)
                 p.ivgig(i, j, k) -= 1;
     
+    geometry.species.clear();
     for (unsigned int i = 0; i < p.nspecies; i++)
         geometry.species.push_back(Species());
     
+    geometry.atoms.clear();
     for (unsigned int i = 0; i < p.natmtot; i++)
         geometry.atoms.push_back(Atom(&geometry.species[ias2is_[i] - 1]));
-   
-//    std::cout << "spinpol : " << p.spinpol << std::endl
-//              << "ndmag : " << p.ndmag << std::endl;
-};
+
+    p.kpoints.clear();
+}
 
 

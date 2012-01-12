@@ -2,6 +2,8 @@
 
 void lapw_set_h(kpoint& kp, tensor<complex16,2>& capwalm, tensor<complex16,2>& h)
 {
+    timer t("lapw_set_h");
+    
     memset(&h(0, 0), 0, h.size() * sizeof(complex16));
 
     std::vector<complex16> zv(kp.ngk);
@@ -80,16 +82,17 @@ void lapw_set_h(kpoint& kp, tensor<complex16,2>& capwalm, tensor<complex16,2>& h
     zgemm<gemm_worker>(0, 2, kp.ngk, kp.ngk, p.size_wfmt_apw, zone, &zm(0, 0), zm.size(0), 
         &capwalm(0, 0), capwalm.size(0), zzero, &h(0, 0), h.size(0));
 
-    int iv[3];
+    //int iv[3];
     for (unsigned int j2 = 0; j2 < kp.ngk; j2++) // loop over columns
     {
-        int ig2 = kp.idxg[j2];
+        //int ig2 = kp.idxg[j2];
         double v2[3];
         for (int k = 0; k < 3; k++) v2[k] = kp.vgkc(k, j2);
         for (unsigned int j1 = 0; j1 <= j2; j1++) // for each column loop over rows
         {
-            for (int k = 0; k < 3; k++) iv[k] = p.ivg(k, kp.idxg[j1]) - p.ivg(k, ig2);
-            int ig = p.ivgig(iv[0], iv[1], iv[2]);
+            //for (int k = 0; k < 3; k++) iv[k] = p.ivg(k, kp.idxg[j1]) - p.ivg(k, ig2);
+            //int ig = p.ivgig(iv[0], iv[1], iv[2]);
+            int ig = idxG12(kp, j1, j2);
             double t1 = 0.5 * (kp.vgkc(0, j1) * v2[0] + kp.vgkc(1, j1) * v2[1] + kp.vgkc(2, j1) * v2[2]);
             h(j1, j2) += p.veffig(ig) + t1 * p.cfunig[ig];
         }
