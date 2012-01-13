@@ -1,5 +1,4 @@
 #include "lapw.h"
-#include <omp.h>
 
 void lapw_set_h(kpoint& kp, tensor<complex16,2>& capwalm, tensor<complex16,2>& h)
 {
@@ -11,9 +10,6 @@ void lapw_set_h(kpoint& kp, tensor<complex16,2>& capwalm, tensor<complex16,2>& h
 
 #pragma omp parallel default(shared)
 {
-    if (omp_get_thread_num() == 0)
-        std::cout << "number of threads = " << omp_get_num_threads() << std::endl;
-    
     std::vector<complex16> zv(kp.ngk);
 #pragma omp for
     for (unsigned int ias = 0; ias < geometry.atoms.size(); ias++)
