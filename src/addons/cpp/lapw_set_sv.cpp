@@ -61,6 +61,8 @@ void b_dot_wf(lapw_wave_functions& wf, tensor<complex16,3>& hwf)
             //    &wf.scalar_wf(offset, 0), wf.scalar_wf.size(0), -zi, &hwf(offset, 0, 2), hwf.size(0));
         }
     }
+
+    timer *t1 = new timer("b_dot_wf_it");
 #pragma omp parallel default(shared)
 {        
     std::vector<complex16> wfr(p.ngrtot);
@@ -94,6 +96,8 @@ void b_dot_wf(lapw_wave_functions& wf, tensor<complex16,3>& hwf)
         }
     }
 }
+    delete t1;
+
     // copy -B_z|wf>
     for (unsigned int i = 0; i < p.nstfv; i++)
         for (unsigned int j = 0; j < p.size_wfmt + ngk; j++)
