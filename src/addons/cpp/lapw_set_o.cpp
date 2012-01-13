@@ -9,7 +9,6 @@ void lapw_set_o(kpoint& kp, tensor<complex16,2>& capwalm, tensor<complex16,2>& o
     zgemm<gemm_worker>(0 ,2, kp.ngk, kp.ngk, p.size_wfmt_apw, zone, &capwalm(0, 0), capwalm.size(0), 
         &capwalm(0, 0), capwalm.size(0), zzero, &o(0, 0), o.size(0));
 
-//#pragma omp parallel for default(shared)
     for (unsigned int ias = 0; ias < geometry.atoms.size(); ias++)
     {
         Atom *atom = &geometry.atoms[ias];
@@ -38,7 +37,6 @@ void lapw_set_o(kpoint& kp, tensor<complex16,2>& capwalm, tensor<complex16,2>& o
     }
     
     //int iv[3];
-//#pragma omp parallel for default(shared)
     for (unsigned int j2 = 0; j2 < kp.ngk; j2++) // loop over columns
     {
         //int ig2 = kp.idxg[j2];
