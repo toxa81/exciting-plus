@@ -1,7 +1,8 @@
 #include "lapw.h"
 
 extern "C" void FORTRAN(lapw_seceqn)(int32_t *ikloc_, complex16 *apwalm_, complex16 *evecfv_, 
-                                     double *evalfv_, complex16 *evecsv_, double *evalsv_)
+                                     double *evalfv_, complex16 *evecsv_, double *evalsv_, 
+                                     double *occsv_, double *densmt_, double *densir_)
 {
     timer t("lapw_seceqn");
     
@@ -70,20 +71,26 @@ extern "C" void FORTRAN(lapw_seceqn)(int32_t *ikloc_, complex16 *apwalm_, comple
             evecsv(i, i) = zone;
             evalsv_[i] = evalfv_[i];
         }
-        return;
+    } 
+    else
+    {
+        lapw_set_sv(wf, evalfv_, evecsv);
+        if (p.ndmag == 1)
+        {
+            zheev<lapack_worker>(p.nstfv, &evecsv(0, 0), evecsv.size(0), evalsv_);
+            zheev<lapack_worker>(p.nstfv, &evecsv(p.nstfv, p.nstfv), evecsv.size(0), &evalsv_[p.nstfv]);
+        } 
+        if (p.ndmag == 3)
+        {
+            zheev<lapack_worker>(p.nstsv, &evecsv(0, 0), evecsv.size(0), evalsv_);
+        } 
     }
-
-    lapw_set_sv(wf, evalfv_, evecsv);
-  
-    if (p.ndmag == 1)
-    {
-        zheev<lapack_worker>(p.nstfv, &evecsv(0, 0), evecsv.size(0), evalsv_);
-        zheev<lapack_worker>(p.nstfv, &evecsv(p.nstfv, p.nstfv), evecsv.size(0), &evalsv_[p.nstfv]);
-    } 
-    if (p.ndmag == 3)
-    {
-        zheev<lapack_worker>(p.nstsv, &evecsv(0, 0), evecsv.size(0), evalsv_);
-    } 
+    
+    wf.generate_spinor(evecsv);
+    
+    tensor<double,6> densmt(densmt_, p.nrfmtmax, p.nrfmtmax, p.lmmaxvr, p.natmtot, p.nspinor, p.nspinor); 
+    tensor<double,3> densir(densir_, p.ngrtot, p.nspinor, p.nspinor); 
+    lapw_density(wf, densmt, densir, occsv_);
 }
 
 

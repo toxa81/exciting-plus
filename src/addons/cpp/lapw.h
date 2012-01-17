@@ -37,6 +37,8 @@ void lapw_set_sv(lapw_wave_functions& wf, double *evalfv_, tensor<complex16,2>& 
 
 void lapw_fft(int32_t direction, complex16 *data);
 
+void lapw_density(lapw_wave_functions& wf, tensor<double,6>& densmt, tensor<double,3>& densir, double *occsv_);
+
 inline int idxlm(int l, int m);
 
 /*
@@ -167,6 +169,7 @@ class kpoint
         tensor<double,2> vgkc;
         std::vector<int> idxg;
         std::vector<int> idxgfft;
+        double weight;
 };
 
 class Geometry 
@@ -182,6 +185,7 @@ class Geometry
         std::vector<Species> species;
         std::map<std::string,Species*> species_by_symbol;
         std::vector<Atom> atoms;
+        double omega;
 };
 
 class Parameters
@@ -208,6 +212,7 @@ class Parameters
         int ngrid[3];
         bool spinpol;
         unsigned int ndmag;
+        unsigned int nspinor;
         std::vector<int> igfft;
         std::vector< std::complex<double> > cfunig;
         std::vector<double> cfunir;
@@ -254,11 +259,14 @@ class lapw_wave_functions
         
         void generate_scalar(tensor<complex16,2>& evecfv); 
         
+        void generate_spinor(tensor<complex16,2>& evecsv);
+        
         void test_scalar(int use_fft);
 
         kpoint *kp;
         tensor<complex16,2> apwalm;
         tensor<complex16,2> scalar_wf;
+        tensor<complex16,3> spinor_wf;
 
 };
 
@@ -270,6 +278,7 @@ extern Parameters p;
 extern complex16 zone;
 extern complex16 zzero;
 extern complex16 zi;
+extern double y00;
 
 /*
     inline functions

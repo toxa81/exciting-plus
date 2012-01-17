@@ -322,11 +322,21 @@ template <typename T> class tensor<T,5> : public tensor_base<T,5>
         {
         }
   
+        tensor(const int n0, const int n1, const int n2, const int n3, const int n4) 
+        {
+            init(0, t_index(0, n0 - 1), t_index(0, n1 - 1), t_index(0, n2 - 1), t_index(0, n3 - 1), t_index(0, n4 - 1));
+        }
+        
         tensor(T *data_, const int n0, const int n1, const int n2, const int n3, const int n4) 
         {
             init(data_, t_index(0, n0 - 1), t_index(0, n1 - 1), t_index(0, n2 - 1), t_index(0, n3 - 1), t_index(0, n4 - 1));
         }
     
+        tensor(const t_index& j0, const t_index& j1, const t_index& j2, const t_index& j3, const t_index& j4) 
+        {
+            init(0, j0, j1, j2, j3, j4);
+        }
+        
         tensor(T *data_, const t_index& j0, const t_index& j1, const t_index& j2, const t_index& j3, const t_index& j4) 
         {
             init(data_, j0, j1, j2, j3, j4);
@@ -341,7 +351,14 @@ template <typename T> class tensor<T,5> : public tensor_base<T,5>
             vidx.push_back(j3);
             vidx.push_back(j4);
             this->tensor_init(vidx);
-            this->data = data_;
+            
+            if (data_) 
+                this->data = data_;
+            else 
+            {
+                this->data = new T[this->size_];
+                this->allocated = true;
+            }
         }
     
         inline T& operator()(const int i0, const int i1, const int i2, const int i3, const int i4) 
@@ -366,11 +383,21 @@ template <typename T> class tensor<T,6> : public tensor_base<T,6>
         {
         }
   
+        tensor(const int n0, const int n1, const int n2, const int n3, const int n4, const int n5) 
+        {
+            init(0, t_index(0, n0 - 1), t_index(0, n1 - 1), t_index(0, n2 - 1), t_index(0, n3 - 1), t_index(0, n4 - 1), t_index(0, n5 - 1));
+        }
+        
         tensor(T *data_, const int n0, const int n1, const int n2, const int n3, const int n4, const int n5) 
         {
             init(data_, t_index(0, n0 - 1), t_index(0, n1 - 1), t_index(0, n2 - 1), t_index(0, n3 - 1), t_index(0, n4 - 1), t_index(0, n5 - 1));
         }
     
+        tensor(const t_index& j0, const t_index& j1, const t_index& j2, const t_index& j3, const t_index& j4, const t_index& j5) 
+        {
+            init(0, j0, j1, j2, j3, j4, j5);
+        }
+        
         tensor(T *data_, const t_index& j0, const t_index& j1, const t_index& j2, const t_index& j3, const t_index& j4, const t_index& j5) 
         {
             init(data_, j0, j1, j2, j3, j4, j5);
@@ -386,7 +413,14 @@ template <typename T> class tensor<T,6> : public tensor_base<T,6>
             vidx.push_back(j4);
             vidx.push_back(j5);
             this->tensor_init(vidx);
-            this->data = data_;
+            
+            if (data_) 
+                this->data = data_;
+            else 
+            {
+                this->data = new T[this->size_];
+                this->allocated = true;
+            }
         }
     
         inline T& operator()(const int i0, const int i1, const int i2, const int i3, const int i4, const int i5) 

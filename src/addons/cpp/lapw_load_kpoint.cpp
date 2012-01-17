@@ -1,6 +1,6 @@
 #include "lapw.h"
 
-extern "C" void FORTRAN(lapw_load_kpoint)(int32_t *ngp_, int32_t *igpig_, double *vgpc_)
+extern "C" void FORTRAN(lapw_load_kpoint)(int32_t *ngp_, int32_t *igpig_, double *vgpc_, double *weight_)
 {
     int ngp = *ngp_;
     tensor<double,2> vgpc(vgpc_, 3, p.ngkmax);
@@ -15,4 +15,6 @@ extern "C" void FORTRAN(lapw_load_kpoint)(int32_t *ngp_, int32_t *igpig_, double
         p.kpoints.back().idxg[ig] = igpig(ig) - 1;
         p.kpoints.back().idxgfft[ig] = p.igfft[igpig(ig) - 1];
     }
+    p.kpoints.back().weight = *weight_;
+
 }

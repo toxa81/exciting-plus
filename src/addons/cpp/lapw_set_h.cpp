@@ -62,7 +62,7 @@ void lapw_set_h(kpoint& kp, tensor<complex16,2>& capwalm, tensor<complex16,2>& h
                 int idxrf1 = species->ci[j1].idxrf;
                 
                 complex16 zsum(0, 0);
-                p.L3_sum_gntyry(lm1, lm2, &p.hmltrad(0, idxrf1, idxrf2, ias), zsum);
+                p.L3_sum_gntyry(lm1, lm2, &p.hmltrad(0, idxrf2, idxrf1, ias), zsum);
                         
                 if (abs(zsum) > 1e-14)
                     for (unsigned int ig = 0; ig < kp.ngk; ig++)
