@@ -129,32 +129,45 @@ void lapw_density(lapw_wave_functions& wf, tensor<double,6>& densmt, tensor<doub
 }    
     delete t1;
     
-    t1 = new timer("lapw_density:densir");    
-    tensor<complex16,2> zfft(p.ngrtot, p.nspinor);
-    for (unsigned int i = 0; i < idxocc.size(); i++)
+    t1 = new timer("lapw_density:densir"); 
+    #pragma omp parallel default(shared)
     {
-        memset(&zfft(0, 0), 0, zfft.size() * sizeof(complex16));
-        for (unsigned int ispn = 0; ispn < p.nspinor; ispn++)
+        tensor<complex16,2> zfft(p.ngrtot, p.nspinor);
+        tensor<double,3> densir_tmp(p.ngrtot, p.nspinor, p.nspinor);
+        memset(&densir_tmp(0, 0, 0), 0, densir_tmp.size() * sizeof(double));
+        #pragma omp for
+        for (unsigned int i = 0; i < idxocc.size(); i++)
         {
-            for (unsigned int ig = 0; ig < wf.kp->ngk; ig++)
-                zfft(wf.kp->idxgfft[ig], ispn) = wf.spinor_wf(p.size_wfmt + ig, ispn, idxocc[i]);
-            lapw_fft(1, &zfft(0, ispn));
-        }
-        
-        for (unsigned int ir = 0; ir < p.ngrtot; ir++)
-            densir(ir, 0, 0) += real(zfft(ir, 0) * conj(zfft(ir, 0))) * occsv[i] / geometry.omega;
-        
-        if (p.ndmag > 0)
-            for (unsigned int ir = 0; ir < p.ngrtot; ir++)
-                densir(ir, 1, 1) += real(zfft(ir, 1) * conj(zfft(ir, 1))) * occsv[i] / geometry.omega;
-        
-        if (p.ndmag == 3)
-        {
-            for (unsigned int ir = 0; ir < p.ngrtot; ir++)
-                densir(ir, 0, 1) += 2.0 * real(zfft(ir, 0) * conj(zfft(ir, 1))) * occsv[i] / geometry.omega;
+            memset(&zfft(0, 0), 0, zfft.size() * sizeof(complex16));
+            for (unsigned int ispn = 0; ispn < p.nspinor; ispn++)
+            {
+                for (unsigned int ig = 0; ig < wf.kp->ngk; ig++)
+                    zfft(wf.kp->idxgfft[ig], ispn) = wf.spinor_wf(p.size_wfmt + ig, ispn, idxocc[i]);
+                lapw_fft(1, &zfft(0, ispn));
+            }
             
             for (unsigned int ir = 0; ir < p.ngrtot; ir++)
-                densir(ir, 1, 0) -= 2.0 * imag(zfft(ir, 0) * conj(zfft(ir, 1))) * occsv[i] / geometry.omega;
+                densir_tmp(ir, 0, 0) += real(zfft(ir, 0) * conj(zfft(ir, 0))) * occsv[i] / geometry.omega;
+            
+            if (p.ndmag > 0)
+                for (unsigned int ir = 0; ir < p.ngrtot; ir++)
+                    densir_tmp(ir, 1, 1) += real(zfft(ir, 1) * conj(zfft(ir, 1))) * occsv[i] / geometry.omega;
+            
+            if (p.ndmag == 3)
+            {
+                for (unsigned int ir = 0; ir < p.ngrtot; ir++)
+                    densir_tmp(ir, 0, 1) += 2.0 * real(zfft(ir, 0) * conj(zfft(ir, 1))) * occsv[i] / geometry.omega;
+                
+                for (unsigned int ir = 0; ir < p.ngrtot; ir++)
+                    densir_tmp(ir, 1, 0) -= 2.0 * imag(zfft(ir, 0) * conj(zfft(ir, 1))) * occsv[i] / geometry.omega;
+            }
+        }
+        #pragma omp critical
+        {
+            for (unsigned int ispn1 = 0; ispn1 < p.nspinor; ispn1++)
+                for (unsigned int ispn2 = 0; ispn2 < p.nspinor; ispn2++)
+                    for (unsigned int ir = 0; ir < p.ngrtot; ir++)
+                        densir(ir, ispn1, ispn2) += densir_tmp(ir, ispn1, ispn2);
         }
     }
     delete t1;
