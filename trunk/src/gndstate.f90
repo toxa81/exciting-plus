@@ -169,7 +169,6 @@ do iscl=1,maxscl
     tlast=.true.
   end if
   if (wproc) call flushifc(60)
-  !call genufr
 ! generate the core wavefunctions and densities
   call gencore
 ! find the new linearisation energies
@@ -182,6 +181,9 @@ do iscl=1,maxscl
   call genlofr
 ! compute the overlap radial integrals
   call olprad
+#ifdef _LIBAPW_
+  call libapw_seceqn_init
+#else
 ! compute the Hamiltonian radial integrals
   call hmlrad
 ! get radial-muffint tin functions
@@ -190,24 +192,22 @@ do iscl=1,maxscl
   call genufrp
 ! generate effective magntic field integrals for full diagonalization
   call genbeff
-! Fourier transform effective potential to G-space
-  call genveffig  
 ! generate muffin-tin effective magnetic fields and s.o. coupling functions
   if (texactrho) then
     call seceqnsv_init
   else
     call genbeffmt
   endif
-  evalsv=0.d0
-#ifdef _LIBAPW_
- call libapw_seceqn_init
 #endif
+! Fourier transform effective potential to G-space
+  call genveffig  
+  evalsv=0.d0
 ! begin parallel loop over k-points
   do ikloc=1,nkptloc
 ! solve the secular equation
     if (tsveqn) then
       call seceqn(ikloc,evalfv(1,1,ikloc),evecfvloc(1,1,1,ikloc),&
-        evecsvloc(1,1,ikloc))
+        &evecsvloc(1,1,ikloc))
     else
       call seceqnfd(ikloc,evecfdloc(1,1,ikloc))
     endif
@@ -227,12 +227,16 @@ do iscl=1,maxscl
   endif
   call mpi_grid_bcast(swidth)
   call mpi_grid_bcast(occsv(1,1),nstsv*nkpt)
-  if (wannier) call wann_ene_occ  
+  if (wannier) call wann_ene_occ
+#ifdef _LIBAPW_
+  call libapw_rhomag
+#else  
   if (texactrho.or..not.tsveqn) then
     call rhomag_exact
   else
     call rhomag
   endif
+#endif
 ! LDA+U
   if (ldapu.ne.0) then
 ! generate the LDA+U density matrix
@@ -349,54 +353,54 @@ do iscl=1,maxscl
     write(60,'("Time (CPU seconds) : ",F12.2)') timetot
     write(60,*)
     write(60,'("iteration time (seconds)                    : ",F12.2)')&
-      timer_get_value(t_iter_tot)
+      &timer_get_value(t_iter_tot)
     write(60,'("  radial APW setup                          : ",F12.2)')&
-      timer_get_value(t_apw_rad)
+      &timer_get_value(t_apw_rad)
     write(60,'("  total for secular equation                : ",F12.2)')&
-      timer_get_value(t_seceqn)
+      &timer_get_value(t_seceqn)
     write(60,'("    first-variational                       : ",F12.2)')&
-      timer_get_value(t_seceqnfv)
+      &timer_get_value(t_seceqnfv)
     write(60,'("      setup                                 : ",F12.2)')&
-      timer_get_value(t_seceqnfv_setup)
+      &timer_get_value(t_seceqnfv_setup)
     write(60,'("        setup H (total, MT, IT)             : ",3F12.2)')&
-      timer_get_value(t_seceqnfv_setup_h),&
-      timer_get_value(t_seceqnfv_setup_h_mt),&
-      timer_get_value(t_seceqnfv_setup_h_it)
+      &timer_get_value(t_seceqnfv_setup_h),&
+      &timer_get_value(t_seceqnfv_setup_h_mt),&
+      &timer_get_value(t_seceqnfv_setup_h_it)
     write(60,'("        setup O (total, MT, IT)             : ",3F12.2)')&
-      timer_get_value(t_seceqnfv_setup_o),&
-      timer_get_value(t_seceqnfv_setup_o_mt),&
-      timer_get_value(t_seceqnfv_setup_o_it)
+      &timer_get_value(t_seceqnfv_setup_o),&
+      &timer_get_value(t_seceqnfv_setup_o_mt),&
+      &timer_get_value(t_seceqnfv_setup_o_it)
     write(60,'("      diagonalization                       : ",F12.2)')&
-      timer_get_value(t_seceqnfv_diag)
+      &timer_get_value(t_seceqnfv_diag)
     write(60,'("    second-variational                      : ",F12.2)')&
-      timer_get_value(t_seceqnsv)
+      &timer_get_value(t_seceqnsv)
     write(60,'("      setup (total, MT, IT)                 : ",3F12.2)')&
-      timer_get_value(t_seceqnsv_setup),&
-      timer_get_value(t_seceqnsv_setup_mt),&
-      timer_get_value(t_seceqnsv_setup_it)
+      &timer_get_value(t_seceqnsv_setup),&
+      &timer_get_value(t_seceqnsv_setup_mt),&
+      &timer_get_value(t_seceqnsv_setup_it)
     write(60,'("      diagonalization                       : ",F12.2)')&
-      timer_get_value(t_seceqnsv_diag)
+      &timer_get_value(t_seceqnsv_diag)
     write(60,'("  total for charge and magnetization        : ",F12.2)')&
-      timer_get_value(t_rho_mag_tot)
+      &timer_get_value(t_rho_mag_tot)
     write(60,'("    k-point summation (total, MT, IT)       : ",3F12.2)')&
-      timer_get_value(t_rho_mag_sum),&
-      timer_get_value(t_rho_mag_mt),&
-      timer_get_value(t_rho_mag_it)
+      &timer_get_value(t_rho_mag_sum),&
+      &timer_get_value(t_rho_mag_mt),&
+      &timer_get_value(t_rho_mag_it)
     if (texactrho) then
       write(60,'("      wave-function setup                   : ",F12.2)')&
-        timer_get_value(t_rho_wf)
+        &timer_get_value(t_rho_wf)
       write(60,'("      convert to r-mesh                     : ",F12.2)')&
-        timer_get_value(t_rho_mag_conv)
+        &timer_get_value(t_rho_mag_conv)
     endif
     write(60,'("    symmetrization                          : ",F12.2)')&
-      timer_get_value(t_rho_mag_sym)
+      &timer_get_value(t_rho_mag_sym)
     write(60,'("  total for potential                       : ",F12.2)')&
-      timer_get_value(t_pot)
+      &timer_get_value(t_pot)
     write(60,'("  density matrix setup                      : ",F12.2)')&
-      timer_get_value(t_dmat)
+      &timer_get_value(t_dmat)
     if (sic) then
       write(60,'("  sic_genfvprj                              : ",F12.2)')&
-        timer_get_value(t_sic_genfvprj)
+        &timer_get_value(t_sic_genfvprj)
     endif
   endif !wproc
 ! end the self-consistent loop
@@ -454,7 +458,7 @@ end if
 if ((.not.tstop).and.((task.eq.2).or.(task.eq.3))) then
   write(60,*)
   write(60,'("Maximum force magnitude (target) : ",G18.10," (",G18.10,")")') &
-   forcemax,epsforce
+   &forcemax,epsforce
   call flushifc(60)
 ! check force convergence
   if (forcemax.le.epsforce) then
