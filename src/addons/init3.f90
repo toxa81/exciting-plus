@@ -5,7 +5,7 @@ use mod_sic
 use mod_rs
 use mod_libapw
 implicit none
-integer ia,is,l,m,ir,i1,i2,i3,i
+integer ia,is,l,m,ir,i1,i2,i3,i,ik
 integer itp
 real(8) vl(3),x1,x2,x3,tp(2),a
 !
@@ -131,7 +131,7 @@ if (debug_level.ge.4.and..not.tdbgout_init) then
   fdbgout=999
   write(fdbgname,'("iproc_",I7.7,"__debug.txt")')iproc
   open(fdbgout,file=trim(adjustl(fdbgname)),form="FORMATTED",&
-    status="REPLACE")
+    &status="REPLACE")
   close(fdbgout)
   tdbgout_init=.true.
 endif
@@ -146,5 +146,23 @@ endif
 !if (mpi_grid_root()) call srclog
 !if (mpi_grid_root()) call print_info
 call libapw_init
+occsv=0.d0
+do ik=1,nkpt
+  if (ndmag.eq.0.or.ndmag.eq.3) then
+    m=int(chgval/occmax)
+    do i=1,m
+      occsv(i,ik)=occmax
+    enddo
+    occsv(m+1,ik)=chgval-m*occmax 
+  else
+    m=int(0.5d0*chgval)
+    do i=1,m
+      occsv(i,ik)=1.d0
+      occsv(i+nstfv,ik)=1.d0
+    enddo
+    occsv(m+1,ik)=0.5*chgval-m
+    occsv(m+1+nstfv,ik)=0.5*chgval-m
+  endif
+enddo
 return
 end
