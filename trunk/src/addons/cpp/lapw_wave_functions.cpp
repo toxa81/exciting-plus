@@ -51,6 +51,18 @@ void lapw_wave_functions::generate_scalar(tensor<complex16,2>& evecfv)
     }
 }
 
+void lapw_wave_functions::generate_spinor(tensor<complex16,2>& evecsv)
+{
+    timer t("lapw_wave_functions::generate_spinor");
+    
+    int ngk = kp->ngk;
+    spinor_wf = tensor<complex16,3>(p.size_wfmt + ngk, p.nspinor, p.nstsv);
+
+    for (unsigned int ispn = 0; ispn < p.nspinor; ispn++)
+        zgemm<blas_worker>(0, 0, spinor_wf.size(0), p.nstsv, p.nstfv, zone, &scalar_wf(0, 0), scalar_wf.size(0),
+            &evecsv(ispn * p.nstfv, 0), evecsv.size(0), zzero, &spinor_wf(0, ispn, 0), spinor_wf.size(0) * spinor_wf.size(1));
+}
+
 void lapw_wave_functions::test_scalar(int use_fft)
 {
     unsigned int ngk = kp->ngk;

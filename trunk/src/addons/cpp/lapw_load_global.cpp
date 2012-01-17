@@ -26,7 +26,8 @@ extern "C" void FORTRAN(lapw_load_global)(int *natmtot_,
                                            int *ordrfmtmax_,
                                            double *evaltol_,
                                            int *spinpol_,
-                                           int *ndmag_)
+                                           int *ndmag_,
+                                           double *omega_)
 {
     p.natmtot = *natmtot_;
     p.nspecies = *nspecies_;
@@ -66,6 +67,7 @@ extern "C" void FORTRAN(lapw_load_global)(int *natmtot_,
     
     p.spinpol = (*spinpol_ != 0);
     p.ndmag = *ndmag_;
+    p.nspinor = (p.spinpol) ? 2 : 1;
     
     p.gntyry = tensor<std::complex<double>,3>(gntyry_, p.lmmaxvr, p.lmmaxapw, p.lmmaxapw);
     p.L3_gntyry = tensor<std::vector<int>,2>(p.lmmaxapw, p.lmmaxapw);
@@ -85,6 +87,7 @@ extern "C" void FORTRAN(lapw_load_global)(int *natmtot_,
             for (int k = p.intgv(2, 0); k <= p.intgv(2, 1); k++)
                 p.ivgig(i, j, k) -= 1;
     
+    geometry.omega = *omega_;
     geometry.species.clear();
     for (unsigned int i = 0; i < p.nspecies; i++)
         geometry.species.push_back(Species());
