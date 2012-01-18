@@ -10,6 +10,9 @@ extern "C" void FORTRAN(lapw_init)()
         {
             for (unsigned int io = 0; io < geometry.species[is].apw_descriptors[l].radial_solution_descriptors.size(); io++)
             {
+                geometry.species[is].ci_by_idxrf.push_back(geometry.species[is].ci.size());
+                geometry.species[is].l_by_idxrf.push_back(l);
+                
                 for (int m = -l; m <= (int)l; m++)
                     geometry.species[is].ci.push_back(mtci(l, m, geometry.species[is].rfmt_order[l], geometry.species[is].nrfmt));
                 
@@ -22,6 +25,10 @@ extern "C" void FORTRAN(lapw_init)()
         for (unsigned int ilo = 0; ilo < geometry.species[is].lo_descriptors.size(); ilo++)
         {
             int l = geometry.species[is].lo_descriptors[ilo].l;
+            
+            geometry.species[is].ci_by_idxrf.push_back(geometry.species[is].ci.size());
+            geometry.species[is].l_by_idxrf.push_back(l);
+
             for (int m = -l; m <= l; m++)
                 geometry.species[is].ci.push_back(mtci(l, m, geometry.species[is].rfmt_order[l], geometry.species[is].nrfmt, ilo));
             
@@ -58,6 +65,11 @@ extern "C" void FORTRAN(lapw_init)()
         p.size_wfmt_lo += species->size_ci_lo;
         p.size_wfmt += species->ci.size();
     }
+    
+    p.l_by_lm.resize(p.lmmaxapw);
+    for (unsigned int l = 0; l <= p.lmaxapw; l++)
+        for (int m = -l; m <= (int)l; m++)
+            p.l_by_lm[idxlm(l, m)] = l;
 
     assert(p.size_wfmt == (p.size_wfmt_apw + p.size_wfmt_lo));
     

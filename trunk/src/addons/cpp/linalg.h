@@ -6,6 +6,7 @@
 #include <iostream>
 #include <complex>
 #include <vector>
+#include <cstdlib>
 #include "config.h"
 
 typedef std::complex<double> complex16;
@@ -126,6 +127,11 @@ template<int N> void zheev(int32_t n, complex16 *a, int32_t lda, double *eval)
         }
     }
 }
+
+extern "C" void FORTRAN(zcopy)(int32_t *n, complex16 *zx, int32_t *incx, complex16 *zy, int32_t *incy);
+
+void zcopy(int32_t n, complex16 *zx, int32_t incx, complex16 *zy, int32_t incy);
+
 /*
 extern "C" void FORTRAN(zgemv)(const char *transa,
                                 int32_t *m,

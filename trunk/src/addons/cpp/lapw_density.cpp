@@ -1,59 +1,46 @@
 #include "lapw.h"
 
-void sum_uu(tensor<complex16,5>& zdens, tensor<complex16,2>& gtmp, int lm3, int ias, tensor<double,6>& densmt)
-{
-    int sz = geometry.atoms[ias].species->ci.size();
-
-    for (int j2 = 0; j2 < sz; j2++)
-    {
-        int lm2 = geometry.atoms[ias].species->ci[j2].lm;
-        int idxrf2 = geometry.atoms[ias].species->ci[j2].idxrf;
-        
-        for (int j1 = 0; j1 < sz; j1++)
-        {
-            int lm1 = geometry.atoms[ias].species->ci[j1].lm;
-            int idxrf1 = geometry.atoms[ias].species->ci[j1].idxrf;
-
-            densmt(idxrf1, idxrf2, lm3, ias, 0, 0) += real(zdens(j1, j2, 0, 0, ias) * gtmp(lm1, lm2));
-        }
-    }
-}
-
-void sum_dd(tensor<complex16,5>& zdens, tensor<complex16,2>& gtmp, int lm3, int ias, tensor<double,6>& densmt)
+template <int N> void sum_zdens(int ias, int lm3, tensor<complex16,5>& zdens, tensor<complex16,2>& gtmp, 
+                                tensor<double,6>& densmt)
 {
     int sz = geometry.atoms[ias].species->ci.size();
     
-    for (int j2 = 0; j2 < sz; j2++)
-    {
-        int lm2 = geometry.atoms[ias].species->ci[j2].lm;
-        int idxrf2 = geometry.atoms[ias].species->ci[j2].idxrf;
-        
-        for (int j1 = 0; j1 < sz; j1++)
-        {
-            int lm1 = geometry.atoms[ias].species->ci[j1].lm;
-            int idxrf1 = geometry.atoms[ias].species->ci[j1].idxrf;
-
-            densmt(idxrf1, idxrf2, lm3, ias, 1, 1) += real(zdens(j1, j2, 1, 1, ias) * gtmp(lm1, lm2));
-        }
-    }
-}
-
-void sum_ud_du(tensor<complex16,5>& zdens, tensor<complex16,2>& gtmp, int lm3, int ias, tensor<double,6>& densmt)
-{
-    int sz = geometry.atoms[ias].species->ci.size();
+    int l3 = p.l_by_lm[lm3];
     
     for (int j2 = 0; j2 < sz; j2++)
     {
+        int l2 = geometry.atoms[ias].species->ci[j2].l;
         int lm2 = geometry.atoms[ias].species->ci[j2].lm;
         int idxrf2 = geometry.atoms[ias].species->ci[j2].idxrf;
-        
-        for (int j1 = 0; j1 < sz; j1++)
-        {
-            int lm1 = geometry.atoms[ias].species->ci[j1].lm;
-            int idxrf1 = geometry.atoms[ias].species->ci[j1].idxrf;
 
-            densmt(idxrf1, idxrf2, lm3, ias, 0, 1) += 2.0 * real(zdens(j1, j2, 0, 1, ias) * gtmp(lm1, lm2));
-            densmt(idxrf1, idxrf2, lm3, ias, 1, 0) -= 2.0 * imag(zdens(j1, j2, 0, 1, ias) * gtmp(lm1, lm2));
+        int j1 = 0;
+        
+        for (unsigned int idxrf1 = 0; idxrf1 < geometry.atoms[ias].species->nrfmt; idxrf1++)
+        {
+            int l1 = geometry.atoms[ias].species->l_by_idxrf[idxrf1];
+            
+            if ((l1 + l2 + l3) % 2 == 0)
+            {
+                for (int lm1 = l1 * l1; lm1 < (l1 + 1) * (l1 + 1); lm1++, j1++) 
+                {
+                
+                    if (N == 0) 
+                        densmt(idxrf1, idxrf2, lm3, ias, 0, 0) += real(zdens(j1, j2, 0, 0, ias) * gtmp(lm1, lm2));
+                
+                    if (N == 1) 
+                        densmt(idxrf1, idxrf2, lm3, ias, 1, 1) += real(zdens(j1, j2, 1, 1, ias) * gtmp(lm1, lm2));
+                
+                    if (N == 2) 
+                    { 
+                        densmt(idxrf1, idxrf2, lm3, ias, 0, 1) += 2.0 * real(zdens(j1, j2, 0, 1, ias) * gtmp(lm1, lm2));
+                        densmt(idxrf1, idxrf2, lm3, ias, 1, 0) -= 2.0 * imag(zdens(j1, j2, 0, 1, ias) * gtmp(lm1, lm2));
+                    }
+                }
+            } 
+            else
+            {
+                j1 += (2 * l1 + 1);
+            }
         }
     }
 }
@@ -111,19 +98,17 @@ void lapw_density(lapw_wave_functions& wf, tensor<double,6>& densmt, tensor<doub
 #pragma omp for
     for (unsigned int lm3 = 0; lm3 < p.lmmaxvr; lm3++)
     {
-        for (unsigned int lm2 = 0; lm2 < p.lmmaxapw; lm2++)
-            for (unsigned int lm1 = 0; lm1 < p.lmmaxapw; lm1++)
-                gtmp(lm1, lm2) = p.gntyry(lm3, lm1, lm2);
+        zcopy(gtmp.size(), &p.gntyry(lm3, 0, 0), p.lmmaxvr, &gtmp(0, 0), 1);
 
         for (unsigned int ias = 0; ias < p.natmtot; ias++)
         {
-            sum_uu(zdens, gtmp, lm3, ias, densmt);
+            sum_zdens<0>(ias, lm3, zdens, gtmp, densmt);
             
             if (p.ndmag > 0)
-                sum_dd(zdens, gtmp, lm3, ias, densmt);
+                sum_zdens<1>(ias, lm3, zdens, gtmp, densmt);
             
             if (p.ndmag == 3)
-                sum_ud_du(zdens, gtmp, lm3, ias, densmt);
+                sum_zdens<2>(ias, lm3, zdens, gtmp, densmt);
         }
     }
 }    
