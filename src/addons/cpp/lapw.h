@@ -126,6 +126,8 @@ class Species
         unsigned int size_ci_lo;
         unsigned int size_ci_apw;
         tensor<int,2> ci_by_lmo;
+        std::vector<int> ci_by_idxrf;
+        std::vector<int> l_by_idxrf;
         std::vector<int> rfmt_order;
         unsigned int nrfmt;
 };
@@ -233,6 +235,7 @@ class Parameters
         tensor<double,3> apwdfr;
         tensor<double,2> beffir;
         tensor<complex16,1> veffig;
+        std::vector<int> l_by_lm;
 
         inline void L3_sum_gntyry(int lm1, int lm2, double *v, std::complex<double>& zsum)
         {
