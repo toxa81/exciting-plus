@@ -135,13 +135,16 @@ do ias=1,natmtot
       else
         hmltrad(1,i1,i2,ias)=0.d0
       endif
-      do lm=2,lmmaxvr
-        do ir=1,nr
-          fr(ir)=rfmt(ir,i1,ic)*rfmt(ir,i2,ic)*r2(ir)*veffmt(lm,ir,ias)
+      if (i1.ge.i2) then
+        do lm=2,lmmaxvr
+          do ir=1,nr
+            fr(ir)=rfmt(ir,i1,ic)*rfmt(ir,i2,ic)*r2(ir)*veffmt(lm,ir,ias)
+          enddo
+          call fderiv(-1,nr,spr(:,is),fr,gr,cf)
+          hmltrad(lm,i1,i2,ias)=gr(nr)
+          hmltrad(lm,i2,i1,ias)=gr(nr)
         enddo
-        call fderiv(-1,nr,spr(:,is),fr,gr,cf)
-        hmltrad(lm,i1,i2,ias)=gr(nr)
-      enddo
+      endif
     enddo
   enddo 
 ! overlap integrals
@@ -187,13 +190,16 @@ do ias=1,natmtot
     do i=1,ndmag
       do i1=1,nrfmt(is)
         do i2=1,nrfmt(is)
-          do lm=1,lmmaxvr
-            do ir=1,nr
-              fr(ir)=rfmt(ir,i1,ic)*rfmt(ir,i2,ic)*r2(ir)*bmt(lm,ir,i)
-            enddo
-            call fderiv(-1,nr,spr(:,is),fr,gr,cf)
-            beffrad(lm,i1,i2,ias,i)=gr(nr)
-          enddo !lm
+          if (i1.ge.i2) then
+            do lm=1,lmmaxvr
+              do ir=1,nr
+                fr(ir)=rfmt(ir,i1,ic)*rfmt(ir,i2,ic)*r2(ir)*bmt(lm,ir,i)
+              enddo
+              call fderiv(-1,nr,spr(:,is),fr,gr,cf)
+              beffrad(lm,i1,i2,ias,i)=gr(nr)
+              beffrad(lm,i2,i1,ias,i)=gr(nr)
+            enddo !lm
+          endif
         enddo
       enddo
     enddo !i
@@ -232,6 +238,9 @@ n=nrfmtmax*nrfmtmax*lmmaxvr*natmtot*nspinor*nspinor
 call mpi_grid_reduce(densmt(1,1,1,1,1,1),n,dims=(/dim_k/))
 call mpi_grid_reduce(densir(1,1,1),ngrtot*nspinor*nspinor,dims=(/dim_k/))
 
+do j1=1,nrfmtmax
+  densmt(j1,j1,:,:,:,:)=0.5*densmt(j1,j1,:,:,:,:)
+enddo
 allocate(fr(nrmtmax,nspinor,nspinor))
 do ias=1,natmtot
   ic=ias2ic(ias)
@@ -242,8 +251,8 @@ do ias=1,natmtot
       do ispn2=1,nspinor
         if ((ndmag.eq.1.and.(ispn1.eq.ispn2)).or.ndmag.ne.1) then
           do j1=1,nrfmtmax
-            do j2=1,nrfmtmax
-              fr(:,ispn1,ispn2)=fr(:,ispn1,ispn2)+densmt(j1,j2,lm3,ias,ispn1,ispn2)*&
+            do j2=1,j1
+              fr(:,ispn1,ispn2)=fr(:,ispn1,ispn2)+2*densmt(j1,j2,lm3,ias,ispn1,ispn2)*&
                 &rfmt(:,j1,ic)*rfmt(:,j2,ic)
             enddo
           enddo
