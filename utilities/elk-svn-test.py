@@ -2,19 +2,20 @@ import os
 import shutil
 import subprocess
 
-first_revision = 1620
-last_revision = 1621
+first_revision = 1625
+last_revision = 1630
 
 make_inc="""
 MAKE = make
 F90 = mpif90
 CXX = mpicxx
 CC = mpicc
-CPP_OPTS = -D_MPI_
+CPP_OPTS = -D_MPI_ -D_LIBAPW_
   
-F90_OPTS = -O3 -Wall -cpp $(CPP_OPTS) -I/Users/anton/local/include 
-F90_LINK_OPTS=-lstdc++ -fopenmp
+F90_OPTS = -O3 -Wall -cpp $(CPP_OPTS) -fopenmp -I/Users/anton/local/include 
+F90_LINK_OPTS=-fopenmp -lstdc++
 
+#LAPACK_LIB = -llapack -lblas
 LAPACK_LIB = $(HOME)/local/lib/liblapack.a $(HOME)/local/lib/libblas.a
 
 LIBAPW = ./addons/cpp/libapw.a
@@ -29,6 +30,9 @@ tasks
 
 nempty
   20
+  
+maxscl
+  100
 
 avec
   1.0  1.0 -1.0
@@ -147,14 +151,35 @@ def run_elk_default_nm(results):
     execute()
     get_results(results, "default_nm")
 
+def run_elk_exactrho_nm(results):
+    prepare_input(False, True)
+    execute()
+    get_results(results, "exactrho_nm")
+
+def run_elk_default_mag(results):
+    prepare_input(True, False)
+    execute()
+    get_results(results, "default_mag")
+
+def run_elk_exactrho_mag(results):
+    prepare_input(True, True)
+    execute()
+    get_results(results, "exactrho_mag")
+
 def run_tests(rout):
     results = {}
     run_elk_default_nm(results)
+    #run_elk_exactrho_nm(results)
+    run_elk_default_mag(results)
+    #run_elk_exactrho_mag(results)
     rout.write("    default_nm : " + results["default_nm"] + "\n") 
+    #rout.write("    exactrho_nm : " + results["exactrho_nm"] + "\n") 
+    rout.write("    default_mag : " + results["default_mag"] + "\n") 
+    #rout.write("    exactrho_mag : " + results["exactrho_mag"] + "\n") 
 
 def all_clean():
     #shutil.rmtree("trunk-tmp", 1) 
-    shutil.rmtree("run-tmp", 1)       
+    #shutil.rmtree("run-tmp", 1)       
     try:
         os.remove("elk_results.txt")
     except:
@@ -162,8 +187,8 @@ def all_clean():
         
 
 all_clean()
-rout = open("elk_results.txt","w")
 for r in range(first_revision, last_revision + 1):
+    rout = open("elk_results.txt","a+")
     rout.write("revision : " + str(r) + "\n")
     checkout(r)
     if (make()):
@@ -171,7 +196,7 @@ for r in range(first_revision, last_revision + 1):
     else:
         rout.write("    compilation error\n")
     rout.write("\n")
-rout.close()
+    rout.close()
     
     
 
