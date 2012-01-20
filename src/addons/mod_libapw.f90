@@ -250,8 +250,8 @@ do ias=1,natmtot
     do ispn1=1,nspinor
       do ispn2=1,nspinor
         if ((ndmag.eq.1.and.(ispn1.eq.ispn2)).or.ndmag.ne.1) then
-          do j1=1,nrfmtmax
-            do j2=1,j1
+          do j2=1,nrfmtmax
+            do j1=1,j2
               fr(:,ispn1,ispn2)=fr(:,ispn1,ispn2)+2*densmt(j1,j2,lm3,ias,ispn1,ispn2)*&
                 &rfmt(:,j1,ic)*rfmt(:,j2,ic)
             enddo
