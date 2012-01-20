@@ -169,6 +169,8 @@ do iscl=1,maxscl
     tlast=.true.
   end if
   if (wproc) call flushifc(60)
+! Fourier transform effective potential to G-space
+  call genveffig  
 ! generate the core wavefunctions and densities
   call gencore
 ! find the new linearisation energies
@@ -199,8 +201,6 @@ do iscl=1,maxscl
     call genbeffmt
   endif
 #endif
-! Fourier transform effective potential to G-space
-  call genveffig  
   evalsv=0.d0
 ! begin parallel loop over k-points
   do ikloc=1,nkptloc

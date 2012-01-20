@@ -15,7 +15,8 @@ template <int N> void sum_zdens(int ias, int lm3, tensor<complex16,5>& zdens, te
 
         int j1 = 0;
         
-        for (unsigned int idxrf1 = 0; idxrf1 < geometry.atoms[ias].species->nrfmt; idxrf1++)
+        for (unsigned int idxrf1 = 0; idxrf1 <=idxrf2 /*geometry.atoms[ias].species->nrfmt*/; idxrf1++)
+        //for (unsigned int idxrf1 = 0; idxrf1 < geometry.atoms[ias].species->nrfmt; idxrf1++)
         {
             int l1 = geometry.atoms[ias].species->l_by_idxrf[idxrf1];
             
