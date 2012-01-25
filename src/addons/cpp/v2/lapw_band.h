@@ -161,6 +161,8 @@ void lapw_set_o(lapw_eigen_states& eigen_states, mdarray<complex16,2>& o)
 template <implementation impl, diagonalization mode> 
 void lapw_band(lapw_eigen_states& eigen_states)
 {
+    timer t("lapw_band");
+
     unsigned int msize = eigen_states.kp->ngk + p.size_wfmt_lo;
     
     if (mode == full) msize *= p.nspinor;
@@ -180,10 +182,12 @@ void lapw_band(lapw_eigen_states& eigen_states)
         eigen_states.evecfv.set_dimensions(msize, p.nstfv);
         eigen_states.evecfv.allocate();
         eigen_states.evalfv.resize(p.nstfv);
-        
+       
+        timer *t1 = new timer("lapw_band:zhegv<impl>");
         zhegv<impl>(msize, p.nstfv, p.evaltol, &h(0, 0), &o(0, 0), &eigen_states.evalfv[0], 
             &eigen_states.evecfv(0, 0), eigen_states.evecfv.size(0));
-       
+        delete t1;
+
         eigen_states.generate_scalar_wf();
         
         eigen_states.evecsv.set_dimensions(p.nstsv, p.nstsv);
@@ -202,6 +206,7 @@ void lapw_band(lapw_eigen_states& eigen_states)
         else
         {
             lapw_set_sv(eigen_states);
+            t1 = new timer("lapw_band:zheev<cpu>"); 
             if (p.ndmag == 1)
             {
                 zheev<cpu>(p.nstfv, &eigen_states.evecsv(0, 0), eigen_states.evecsv.size(0), 
@@ -214,6 +219,7 @@ void lapw_band(lapw_eigen_states& eigen_states)
                 zheev<cpu>(p.nstsv, &eigen_states.evecsv(0, 0), eigen_states.evecsv.size(0), 
                     &eigen_states.evalsv[0]);
             } 
+            delete t1;
         }
 
         eigen_states.generate_spinor_wf(mode);
