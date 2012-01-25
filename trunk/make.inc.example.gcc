@@ -1,0 +1,56 @@
+# 'make' command
+MAKE = make
+
+# Fortran90 compiler
+F90 = mpif90
+
+# C++ compiler
+CXX = mpicxx
+
+# C compiler
+CC = mpicc
+
+# preprocessor directives
+CPP_OPTS = -D_MPI_
+
+# Fortran90 compiler options:
+#production
+F90_OPTS = -O3 -Wall -cpp $(CPP_OPTS) -I/Users/anton/local/include 
+# debug
+#F90_OPTS = -O0 -Wall -g -cpp -fbounds-check -fdump-core -fbacktrace -ffpe-trap=invalid,zero -fopenmp $(CPP_OPTS) -I/Users/anton/local/include
+
+# C++ compiler options
+CXX_OPTS = -O3 -Wall $(CPP_OPTS)
+
+# Fortran linker options
+F90_LINK_OPTS = -fopenmp
+
+# lapack and blas 
+LAPACK_LIB = $(HOME)/local/lib/liblapack.a $(HOME)/local/lib/libblas.a
+
+# === compile with HDF5 support ===
+CPP_OPTS := $(CPP_OPTS) -D_HDF5_
+HDF5_LIB = $(HOME)/local/lib/libhdf5hl_fortran.a $(HOME)/local/lib/libhdf5_hl.a \
+  $(HOME)/local/lib/libhdf5_fortran.a $(HOME)/local/lib/libhdf5.a -lz -lm 
+
+# ==- compile with libXC support ===
+CPP_OPTS := $(CPP_OPTS) -D_LIBXC_
+XC_LIB = $(HOME)/local/lib/libxc.a
+#XC_LIB = ../libxc.a
+
+# ==- compile with NFFT support ===
+#CPP_OPTS := $(CPP_OPTS) -D_NFFT_
+#NFFT_INC = -I$(HOME)/local/include
+#NFFT_LIB = $(HOME)/local/lib/libnfft3.a $(HOME)/local/lib/libfftw3.a
+
+# === compile with Madness API ===
+#CPP_OPTS := $(CPP_OPTS) -D_MAD_
+#MADNESS_INC = -I$(HOME)/local/opt/madness/include
+#MADNESS_LIB = -L$(HOME)/local/opt/madness/lib/ -lMADmra -lMADlinalg -lMADtensor -lMADmisc -lMADmuparser -lMADtinyxml -lMADworld -lmpi_cxx -lstdc++
+
+# === compile with libapw support ===
+CPP_OPTS := $(CPP_OPTS) -D_LIBAPW_ -DNDEBUG 
+LIBAPW = ./addons/cpp/v2/libapw.a -lstdc++
+
+# === collect all libraries under one name ===
+LIBS = $(LAPACK_LIB) $(HDF5_LIB) $(XC_LIB) $(NFFT_LIB) $(MADNESS_LIB) $(LIBAPW)
