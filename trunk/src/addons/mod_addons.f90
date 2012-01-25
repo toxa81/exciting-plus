@@ -187,6 +187,9 @@ integer, parameter :: t_rho_mag_conv=37
 
 integer, parameter :: t_rhoinit=38
 
+integer, parameter :: t_pot_xc=39
+integer, parameter :: t_pot_ha=40
+
 !--------------!
 !      PAPI    !
 !--------------!
