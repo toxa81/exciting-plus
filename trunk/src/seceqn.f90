@@ -40,8 +40,7 @@ allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
 #ifdef _LIBAPW_
 call match(ngk(1,ik),gkc(:,1,ikloc),tpgkc(:,:,1,ikloc), &
    &sfacgk(:,:,1,ikloc),apwalm(:,:,:,:,1))
-call lapw_seceqn(ikloc,apwalm,evecfv,evalfv,evecsv,evalsv(1,ik),&
-  &occsv(1,ik),densmt,densir)
+call lapw_execute(ikloc,apwalm,evalsv(1,ik),occsv(1,ik),densmt,densir,3)
 deallocate(apwalm)
 call timer_stop(t_seceqn)
 return
