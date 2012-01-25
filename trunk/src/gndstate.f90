@@ -171,6 +171,7 @@ do iscl=1,maxscl
   if (wproc) call flushifc(60)
 ! Fourier transform effective potential to G-space
   call genveffig  
+  call timer_start(t_apw_rad)
 ! generate the core wavefunctions and densities
   call gencore
 ! find the new linearisation energies
@@ -199,8 +200,9 @@ do iscl=1,maxscl
     call seceqnsv_init
   else
     call genbeffmt
-  endif
+  endif 
 #endif
+  call timer_stop(t_apw_rad)
   evalsv=0.d0
 ! begin parallel loop over k-points
   do ikloc=1,nkptloc
@@ -394,8 +396,10 @@ do iscl=1,maxscl
     endif
     write(60,'("    symmetrization                          : ",F12.2)')&
       &timer_get_value(t_rho_mag_sym)
-    write(60,'("  total for potential                       : ",F12.2)')&
-      &timer_get_value(t_pot)
+    write(60,'("  potential (total, XC, Ha)                 : ",3F12.2)')&
+      &timer_get_value(t_pot),&
+      &timer_get_value(t_pot_xc),&
+      &timer_get_value(t_pot_ha)
     write(60,'("  density matrix setup                      : ",F12.2)')&
       &timer_get_value(t_dmat)
     if (sic) then
