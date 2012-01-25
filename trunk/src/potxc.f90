@@ -40,6 +40,7 @@ real(8), allocatable :: vc(:),vcup(:),vcdn(:)
 real(8), allocatable :: dxdg2(:),dxdgu2(:),dxdgd2(:),dxdgud(:)
 real(8), allocatable :: dcdg2(:),dcdgu2(:),dcdgd2(:),dcdgud(:)
 real(8), allocatable :: mag(:,:),bxc(:,:)
+call timer_start(t_pot_xc)
 n=lmmaxvr*nrmtmax
 allocate(rho(n),ex(n),ec(n),vxc(n))
 if (spinpol) then
@@ -300,6 +301,7 @@ else
     deallocate(dxdg2,dcdg2)
   end if
 end if
+call timer_stop(t_pot_xc)
 return
 end subroutine
 !EOC
