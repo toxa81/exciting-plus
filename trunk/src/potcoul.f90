@@ -29,6 +29,7 @@ complex(8), allocatable :: zrhomt(:,:,:)
 complex(8), allocatable :: zrhoir(:)
 complex(8), allocatable :: zvclmt(:,:,:)
 complex(8), allocatable :: zvclir(:)
+call timer_start(t_pot_ha)
 allocate(jlgr(0:lmaxvr+npsden+1,ngvec,nspecies))
 allocate(zrhomt(lmmaxvr,nrmtmax,natmtot))
 allocate(zrhoir(ngrtot))
@@ -65,6 +66,7 @@ vclir(:)=dble(zvclir(:))
 ! apply constant electric field if required
 if (efieldpol) call potefield
 deallocate(jlgr,zrhomt,zrhoir,zvclmt,zvclir)
+call timer_stop(t_pot_ha)
 return
 end subroutine
 !EOC
