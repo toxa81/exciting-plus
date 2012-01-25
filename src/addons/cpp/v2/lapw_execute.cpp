@@ -12,8 +12,23 @@ extern "C" void FORTRAN(lapw_execute)(int32_t *ikloc_, complex16 *apwalm_, doubl
     lapw_eigen_states eigen_states(&p.kpoints[ikloc]);
     eigen_states.pack_apwalm(apwalm_);
     
-    if (flags & 1) lapw_band<lapw_impl,second_variational>(eigen_states);
+    if (flags & 1) 
+    {
+        lapw_band<lapw_impl,second_variational>(eigen_states);
+        
+        memcpy(evalsv_, &eigen_states.evalsv[0], p.nstsv * sizeof(double));
+    }
     
+    if (flags & 2)
+    {
+        mdarray<double,6> densmt(densmt_, p.nrfmtmax, p.nrfmtmax, p.lmmaxvr, p.natmtot, p.nspinor, p.nspinor); 
+        mdarray<double,3> densir(densir_, p.ngrtot, p.nspinor, p.nspinor);
+        eigen_states.occsv.resize(p.nstsv);
+        memcpy(&eigen_states.occsv[0], occsv_, p.nstsv * sizeof(double));
+         
+        lapw_density(eigen_states, densmt, densir);
+    }
+     
     /*tensor<complex16,2> h(msize, msize);
     tensor<complex16,2> o(msize, msize);
     
