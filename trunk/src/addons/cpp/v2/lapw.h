@@ -36,7 +36,7 @@ void lapw_set_sv(lapw_eigen_states& eigen_data);
 
 void lapw_fft(int32_t direction, complex16 *data);
 
-//void lapw_density(lapw_wave_functions& wf, tensor<double,6>& densmt, tensor<double,3>& densir, double *occsv_);
+void lapw_density(lapw_eigen_states& eigen_states, mdarray<double,6>& densmt, mdarray<double,3>& densir);
 
 inline int idxlm(int l, int m);
 
@@ -273,6 +273,7 @@ class lapw_eigen_states
         mdarray<complex16,3> spinor_wf;
         std::vector<double> evalfv;
         std::vector<double> evalsv;
+        std::vector<double> occsv;
 };
 
 /*

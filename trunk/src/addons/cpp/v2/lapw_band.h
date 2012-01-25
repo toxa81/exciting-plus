@@ -215,15 +215,9 @@ void lapw_band(lapw_eigen_states& eigen_states)
                     &eigen_states.evalsv[0]);
             } 
         }
-        
-        eigen_states.generate_spinor_wf(mode);
-        
-        eigen_states.test_spinor_wf(0);
-        eigen_states.test_spinor_wf(1);
-        eigen_states.test_spinor_wf(2);
-    }
 
-    
+        eigen_states.generate_spinor_wf(mode);
+    }
 }
 
 #endif // _LAPW_GEV_H_

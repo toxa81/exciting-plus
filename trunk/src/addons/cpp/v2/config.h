@@ -2,6 +2,7 @@
 #define __CONFIG_H__
 
 #include "constants.h"
+#include "typedefs.h"
 
 #define FORTRAN(x) x##_
 
