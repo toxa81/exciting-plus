@@ -2,8 +2,6 @@
 #-------------------------------------------------------------------------------
 # defaults
 #-------------------------------------------------------------------------------
-MAKE = make
-AR = ar
 
 include ../make.inc
 
@@ -69,9 +67,11 @@ gensrc:
 	python ../ftemplate.py <./addons/mod_hdf5.tpl >./addons/mod_hdf5.f90
 
 extras:
-	cd addons/nfft; make
-	cd addons/madness; make
-	cd addons/cpp; make
+	cd addons/nfft; $(MAKE)
+	cd addons/madness; $(MAKE)
+ifneq (,$(findstring D_LIBAPW_,$(CPP_OPTS)))
+	cd addons/cpp/v2; $(MAKE)
+endif
 
 elk:	$(OBJ_modules) $(OBJ)
 	$(F90) $(F90_LINK_OPTS) -o $(EXE) $(OBJ) $(LIBS)
