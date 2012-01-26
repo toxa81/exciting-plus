@@ -171,18 +171,22 @@ do iscl=1,maxscl
   if (wproc) call flushifc(60)
 ! Fourier transform effective potential to G-space
   call genveffig  
-  call timer_start(t_apw_rad)
 ! generate the core wavefunctions and densities
   call gencore
 ! find the new linearisation energies
+  call timer_start(t_lin_en)
   call linengy
+  call timer_stop(t_lin_en)
 ! write out the linearisation energies
   if (wproc) call writelinen
 ! generate the APW radial functions
+  call timer_start(t_apw_rad)
   call genapwfr
 ! generate the local-orbital radial functions
   call genlofr
+  call timer_stop(t_apw_rad)
 ! compute the overlap radial integrals
+  call timer_start(t_hbo_rad)
   call olprad
 #ifdef _LIBAPW_
   call libapw_seceqn_init
@@ -202,7 +206,7 @@ do iscl=1,maxscl
     call genbeffmt
   endif 
 #endif
-  call timer_stop(t_apw_rad)
+  call timer_stop(t_hbo_rad)
   evalsv=0.d0
 ! begin parallel loop over k-points
   do ikloc=1,nkptloc
@@ -356,8 +360,10 @@ do iscl=1,maxscl
     write(60,*)
     write(60,'("iteration time (seconds)                    : ",F12.2)')&
       &timer_get_value(t_iter_tot)
-    write(60,'("  radial APW setup                          : ",F12.2)')&
-      &timer_get_value(t_apw_rad)
+    write(60,'("  radial setup (linen, APW, radint)         : ",3F12.2)')&
+      &timer_get_value(t_lin_en),&
+      &timer_get_value(t_apw_rad),&
+      &timer_get_value(t_hbo_rad)
     write(60,'("  total for secular equation                : ",F12.2)')&
       &timer_get_value(t_seceqn)
     write(60,'("    first-variational                       : ",F12.2)')&
