@@ -241,6 +241,7 @@ call mpi_grid_reduce(densir(1,1,1),ngrtot*nspinor*nspinor,dims=(/dim_k/))
 do j1=1,nrfmtmax
   densmt(j1,j1,:,:,:,:)=0.5*densmt(j1,j1,:,:,:,:)
 enddo
+call timer_start(t_rho_mag_conv)
 allocate(fr(nrmtmax,nspinor,nspinor))
 do ias=1,natmtot
   ic=ias2ic(ias)
@@ -282,6 +283,7 @@ if (spinpol) then
 else
   rhoir(:)=densir(:,1,1)
 endif
+call timer_stop(t_rho_mag_conv)
 call timer_start(t_rho_mag_sym)
 ! symmetrise the density
 call symrf(1,rhomt,rhoir)
