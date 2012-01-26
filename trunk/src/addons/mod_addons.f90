@@ -189,6 +189,9 @@ integer, parameter :: t_rhoinit=38
 
 integer, parameter :: t_pot_xc=39
 integer, parameter :: t_pot_ha=40
+integer, parameter :: t_hbo_rad=41
+integer, parameter :: t_lin_en=42
+
 
 !--------------!
 !      PAPI    !
