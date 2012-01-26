@@ -103,7 +103,6 @@ void lapw_set_sv(lapw_eigen_states& eigen_states)
 {
     timer t("lapw_set_sv");
     
-    unsigned int ngk = eigen_states.kp->ngk;
     unsigned int wf_size = eigen_states.scalar_wf.size(0);
 
     int nhwf;
