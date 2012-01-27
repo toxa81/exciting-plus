@@ -55,6 +55,36 @@ void lapw_set_h(lapw_eigen_states& eigen_states, mdarray<complex16,2>& h)
                 }
                 memcpy(&zm(0, atom->offset_apw + j2), &zv[0], ngk * sizeof(complex16));
             }
+        } // ias
+    }
+
+    if (impl == cpu)
+    {
+        zgemm<cpu>(0, 2, ngk, ngk, p.size_wfmt_apw, zone, &zm(0, 0), zm.size(0), 
+            &eigen_states.apwalm(0, 0), eigen_states.apwalm.size(0), zzero, &h(0, 0), h.size(0));
+    }
+    if (impl == gpu)
+    {
+        eigen_states.apwalm.allocate_on_device();
+        eigen_states.apwalm.copy_to_device();
+        zm.allocate_on_device();
+        zm.copy_to_device();
+        h.allocate_on_device();
+        h.zero_on_device();
+        zgemm<gpu>(0, 2, ngk, ngk, p.size_wfmt_apw, zone, zm.get_ptr_device(), zm.size(0),
+                   eigen_states.apwalm.get_ptr_device(), eigen_states.apwalm.size(0), zzero, h.get_ptr_device(), h.size(0));
+        h.copy_to_host();
+        h.deallocate_on_device();
+        zm.deallocate_on_device();
+    }
+ 
+    #pragma omp parallel default(shared)
+    {
+    #pragma omp for
+        for (unsigned int ias = 0; ias < geometry.atoms.size(); ias++)
+        {
+            Atom *atom = &geometry.atoms[ias];
+            Species *species = atom->species;
     
             for (unsigned int j2 = 0; j2 < species->size_ci_lo; j2++) // loop over columns (local-orbital block) 
             {
@@ -91,13 +121,7 @@ void lapw_set_h(lapw_eigen_states& eigen_states, mdarray<complex16,2>& h)
             }
         } // ias
     }
-    
-    if (impl == cpu)
-    {
-        zgemm<cpu>(0, 2, ngk, ngk, p.size_wfmt_apw, zone, &zm(0, 0), zm.size(0), 
-            &eigen_states.apwalm(0, 0), eigen_states.apwalm.size(0), zzero, &h(0, 0), h.size(0));
-    }
-    
+   
     for (unsigned int j2 = 0; j2 < ngk; j2++) // loop over columns
     {
         double v2[3];
@@ -124,6 +148,16 @@ void lapw_set_o(lapw_eigen_states& eigen_states, mdarray<complex16,2>& o)
     {
         zgemm<cpu>(0 ,2, ngk, ngk, p.size_wfmt_apw, zone, &eigen_states.apwalm(0, 0), eigen_states.apwalm.size(0), 
             &eigen_states.apwalm(0, 0), eigen_states.apwalm.size(0), zzero, &o(0, 0), o.size(0));
+    }
+    if (impl == gpu)
+    {
+        o.allocate_on_device();
+        o.zero_on_device();
+        zgemm<gpu>(0 ,2, ngk, ngk, p.size_wfmt_apw, zone, eigen_states.apwalm.get_ptr_device(), eigen_states.apwalm.size(0),
+                   eigen_states.apwalm.get_ptr_device(), eigen_states.apwalm.size(0), zzero, o.get_ptr_device(), o.size(0));
+        o.copy_to_host();
+        o.deallocate_on_device();
+        eigen_states.apwalm.deallocate_on_device();
     }
     
     for (unsigned int ias = 0; ias < geometry.atoms.size(); ias++)

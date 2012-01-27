@@ -73,6 +73,10 @@ void zhegv(int32_t n, int32_t nv, double abstol, complex16 *a, complex16 *b,
         }
         memcpy(eval, &w[0], nv * sizeof(double));
     }
+    if (impl == gpu)
+    {
+        gpu_zhegvx(n, nv, abstol, a, b, eval, z, ldz);
+    }
 }
 
 template<implementation impl> 
