@@ -13,10 +13,10 @@ ifneq (,$(findstring D_GPU_,$(CPP_OPTS)))
 endif
 	
 .cpp.o:
-	$(CXX) $(CPP_OPTS) -Wall -O3 -c -o $(*D)/$(*F).o $<
+	$(CXX) $(CXX_OPTS) -c $<
 
 .cu.o:
-	$(NVCC) -c $<
+	$(NVCC) -DADD_ -I/project/s299/magma/magma-1.1_my-xk6-gcc-4.6.2-libsci/include -c $<
 
 all: $(OBJ)
 	ar -r libapw.a $(OBJ)
