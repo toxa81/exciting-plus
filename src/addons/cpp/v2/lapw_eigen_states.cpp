@@ -22,11 +22,41 @@ void lapw_eigen_states::pack_apwalm(complex16 *apwalm_)
     }
 }
 
+inline void move_apw_blocks(complex16 *wf)
+{
+    for (unsigned int ias = p.natmtot - 1; ias > 0; ias--)
+    {
+        unsigned int final_block_offset = geometry.atoms[ias].offset_wfmt;
+        unsigned int initial_block_offset = geometry.atoms[ias].offset_apw;
+        unsigned int block_size = geometry.atoms[ias].species->size_ci_apw;
+
+        memmove(&wf[final_block_offset], &wf[initial_block_offset], block_size * sizeof(complex16));
+    }
+}
+
+inline void copy_lo_blocks(complex16 *wf, complex16 *evec)
+{
+    for (unsigned int ias = 0; ias < p.natmtot; ias++)
+    {
+        unsigned int final_block_offset = geometry.atoms[ias].offset_wfmt + geometry.atoms[ias].species->size_ci_apw;
+        unsigned int initial_block_offset = geometry.atoms[ias].offset_lo;
+        unsigned int block_size = geometry.atoms[ias].species->size_ci_lo;
+        
+        if (block_size > 0)
+            memcpy(&wf[final_block_offset], &evec[initial_block_offset], block_size * sizeof(complex16));
+    }
+}
+
+inline void copy_pw_block(unsigned int ngk, complex16 *wf, complex16 *evec)
+{
+    memcpy(wf, evec, ngk * sizeof(complex16));
+}
+
 void lapw_eigen_states::generate_scalar_wf()
 {
     timer t("lapw_eigen_states::generate_scalar_wf");
     
-    int ngk = kp->ngk;
+    unsigned int ngk = kp->ngk;
     
     scalar_wf.set_dimensions(p.size_wfmt + ngk, p.nstfv);
     scalar_wf.allocate();
@@ -36,21 +66,11 @@ void lapw_eigen_states::generate_scalar_wf()
     
     for (unsigned int j = 0; j < p.nstfv; j++)
     {
-        // move apw blocks to proper positions
-        for (unsigned int ias = p.natmtot - 1; ias > 0; ias--)
-            memmove(&scalar_wf(geometry.atoms[ias].offset_wfmt, j), 
-                    &scalar_wf(geometry.atoms[ias].offset_apw, j), 
-                    geometry.atoms[ias].species->size_ci_apw * sizeof(complex16));
-        
-        // copy lo bock from the eigen-vector
-        for (unsigned int ias = 0; ias < p.natmtot; ias++)
-            if (geometry.atoms[ias].species->size_ci_lo > 0)
-                memcpy(&scalar_wf(geometry.atoms[ias].offset_wfmt + geometry.atoms[ias].species->size_ci_apw, j), 
-                       &evecfv(ngk + geometry.atoms[ias].offset_lo, j), 
-                       geometry.atoms[ias].species->size_ci_lo * sizeof(complex16));
-        
-        // copy plane-wave block
-        memcpy(&scalar_wf(p.size_wfmt, j), &evecfv(0, j), ngk * sizeof(complex16));
+        move_apw_blocks(&scalar_wf(0, j));
+
+        copy_lo_blocks(&scalar_wf(0, j), &evecfv(ngk, j));
+
+        copy_pw_block(ngk, &scalar_wf(p.size_wfmt, j), &evecfv(0, j));
     }
 }
 
@@ -59,12 +79,35 @@ void lapw_eigen_states::generate_spinor_wf(diagonalization mode)
     timer t("lapw_eigen_states::generate_spinor");
     
     int ngk = kp->ngk;
+    int msize = ngk + p.size_wfmt_lo;
     spinor_wf.set_dimensions(p.size_wfmt + ngk, p.nspinor, p.nstsv);
     spinor_wf.allocate();
 
-    for (unsigned int ispn = 0; ispn < p.nspinor; ispn++)
-        zgemm<cpu>(0, 0, spinor_wf.size(0), p.nstsv, p.nstfv, zone, &scalar_wf(0, 0), scalar_wf.size(0),
-            &evecsv(ispn * p.nstfv, 0), evecsv.size(0), zzero, &spinor_wf(0, ispn, 0), spinor_wf.size(0) * spinor_wf.size(1));
+    if (mode == second_variational)
+    {
+        for (unsigned int ispn = 0; ispn < p.nspinor; ispn++)
+            zgemm<cpu>(0, 0, spinor_wf.size(0), p.nstsv, p.nstfv, zone, &scalar_wf(0, 0), scalar_wf.size(0),
+                       &evecsv(ispn * p.nstfv, 0), evecsv.size(0), zzero, &spinor_wf(0, ispn, 0), 
+                       spinor_wf.size(0) * spinor_wf.size(1));
+    }
+
+    if (mode == full)
+    {
+        for (unsigned int ispn = 0; ispn < p.nspinor; ispn ++)
+        {
+            zgemm<cpu>(2, 0, p.size_wfmt_apw, p.nstsv, ngk, zone, &apwalm(0, 0), ngk, &evecfd(ispn * msize, 0), 
+                       evecfd.size(0), zzero, &spinor_wf(0, ispn, 0), spinor_wf.size(0) * spinor_wf.size(1));
+    
+            for (unsigned int j = 0; j < p.nstsv; j++)
+            {
+                move_apw_blocks(&spinor_wf(0, ispn, j));
+                
+                copy_lo_blocks(&spinor_wf(0, ispn, j), &evecfd(ispn * msize + ngk, j));
+
+                copy_pw_block(ngk, &spinor_wf(p.size_wfmt, ispn, j), &evecfd(ispn * msize, j));
+            }
+        }
+    }
 }
 
 void lapw_eigen_states::test_scalar_wf(int use_fft)
