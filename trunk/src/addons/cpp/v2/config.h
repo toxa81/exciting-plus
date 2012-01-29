@@ -6,14 +6,14 @@
 
 #define FORTRAN(x) x##_
 
-//const int gemm_worker = blas_worker;
-
 const bool check_evecfv = false;
 
 const bool check_scalar_wf = false;
 
-//const bool use_gpu = (gemm_worker == cublas_worker) || (lapack_worker == magma_worker);
+const bool check_spinor_wf = false;
 
 const implementation lapw_impl = cpu;
+
+const diagonalization lapw_diag = second_variational; 
 
 #endif // __CONFIG_H__

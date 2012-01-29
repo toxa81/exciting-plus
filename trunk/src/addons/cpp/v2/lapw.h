@@ -233,10 +233,20 @@ class Parameters
         tensor<double,5> apwfr;
         tensor<double,3> apwdfr;
         tensor<double,2> beffir;
+        mdarray<complex16,2> beffig;
         tensor<complex16,1> veffig;
         std::vector<int> l_by_lm;
 
         inline void L3_sum_gntyry(int lm1, int lm2, double *v, std::complex<double>& zsum)
+        {
+            for (unsigned int k = 0; k < L3_gntyry(lm1, lm2).size(); k++)
+            {
+                int lm3 = L3_gntyry(lm1, lm2)[k];
+                zsum += gntyry(lm3, lm1, lm2) * v[lm3];
+            }
+        }
+        
+        inline void L3_sum_gntyry(int lm1, int lm2, complex16 *v, complex16& zsum)
         {
             for (unsigned int k = 0; k < L3_gntyry(lm1, lm2).size(); k++)
             {

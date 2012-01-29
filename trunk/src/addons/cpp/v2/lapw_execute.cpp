@@ -14,7 +14,7 @@ extern "C" void FORTRAN(lapw_execute)(int32_t *ikloc_, complex16 *apwalm_, doubl
     
     if (flags & 1) 
     {
-        lapw_band<lapw_impl,second_variational>(eigen_states);
+        lapw_band<lapw_impl,lapw_diag>(eigen_states);
         
         memcpy(evalsv_, &eigen_states.evalsv[0], p.nstsv * sizeof(double));
     }
