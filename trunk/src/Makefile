@@ -63,14 +63,14 @@ serial: gensrc elk lib
 gensrc:
 #	python ../gensrclog.py
 #	mv srclog.f90 ./addons
-	python ../ftemplate.py <./addons/mod_mpi_grid.tpl >./addons/mod_mpi_grid.f90
-	python ../ftemplate.py <./addons/mod_hdf5.tpl >./addons/mod_hdf5.f90
+#	python ../ftemplate.py <./addons/mod_mpi_grid.tpl >./addons/mod_mpi_grid.f90
+#	python ../ftemplate.py <./addons/mod_hdf5.tpl >./addons/mod_hdf5.f90
 
 extras:
 	cd addons/nfft; $(MAKE)
 	cd addons/madness; $(MAKE)
 ifneq (,$(findstring D_LIBAPW_,$(CPP_OPTS)))
-	cd addons/cpp/v2; $(MAKE)
+	cd addons/cpp; $(MAKE)
 endif
 
 elk:	$(OBJ_modules) $(OBJ)
