@@ -2,7 +2,6 @@
 #define __LINALG_H__
 
 #include <stdint.h>
-//#include <string.h>
 #include <iostream>
 #include <complex>
 #include "config.h"

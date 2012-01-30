@@ -2,7 +2,7 @@
 #define _MDARRAY_BASE_GPU_H_
 
 #include <iostream>
-#include "linalg_gpu.h"
+#include "gpu_interface.h"
 
 template <typename T, int ND> class mdarray_base_impl : public mdarray_base<T,ND> 
 {
