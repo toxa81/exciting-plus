@@ -9,7 +9,7 @@ OBJ = lapw.o lapw_init.o lapw_load_global.o lapw_load_species.o lapw_set_sv.o \
       timer.o lapw_timers.o lapw_execute.o lapw_density.o linalg_cpu.o
       
 ifneq (,$(findstring D_GPU_,$(CPP_OPTS)))
-	OBJ := $(OBJ) linalg_gpu.o
+	OBJ := $(OBJ) gpu_interface.o
 endif
 	
 .cpp.o:
