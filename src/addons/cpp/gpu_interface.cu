@@ -6,7 +6,6 @@
 #include <magma_lapack.h>
 #include <magma.h>
 
-#include "gpu_interface.h"
 #include "typedefs.h"
 
 cudaDeviceProp& cuda_devprop()
@@ -126,8 +125,8 @@ extern "C" void gpu_mem_zero(void *ptr, int size)
 }
 
 extern "C" void gpu_zgemm(int transa, int transb, int32_t m, int32_t n, int32_t k, 
-                           complex16 alpha, complex16 *a, int32_t lda, complex16 *b, 
-                           int32_t ldb, complex16 beta, complex16 *c, int32_t ldc)
+                          complex16 alpha, complex16 *a, int32_t lda, complex16 *b, 
+                          int32_t ldb, complex16 beta, complex16 *c, int32_t ldc)
 {
     assert(sizeof(cuDoubleComplex) == sizeof(complex16));
     

@@ -22,4 +22,4 @@ all: $(OBJ)
 	ar -r libapw.a $(OBJ)
 
 clean:
-	rm *.o
+	rm *.o *.a
