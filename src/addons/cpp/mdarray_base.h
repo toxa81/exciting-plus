@@ -1,6 +1,7 @@
 #ifndef _MDARRAY_BASE_H_
 #define _MDARRAY_BASE_H_
 
+#include <iostream>
 #include <vector>
 #include <stdexcept>
 #include <cstring>
@@ -67,7 +68,8 @@ template <typename T, int ND> class mdarray_base
             //copy_members(src);
             //allocate();
             //memcpy(mdarray_ptr, src.mdarray_ptr, size() * sizeof(T));
-            throw std::logic_error("block copy constructor");
+            std::cout << "mdarray_base() copy constructor is forbidden" << std::endl;
+            exit(0);
         }
         
         ~mdarray_base()

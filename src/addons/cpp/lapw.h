@@ -10,7 +10,6 @@
 #include "typedefs.h"
 #include "config.h"
 #include "mdarray.h"
-#include "tensor.h"
 #include "linalg.h"
 #include "timer.h"
 
@@ -124,7 +123,7 @@ class Species
         mtci *ci_lo;
         unsigned int size_ci_lo;
         unsigned int size_ci_apw;
-        tensor<int,2> ci_by_lmo;
+        mdarray<int,2> ci_by_lmo;
         std::vector<int> ci_by_idxrf;
         std::vector<int> l_by_idxrf;
         std::vector<int> rfmt_order;
@@ -160,14 +159,15 @@ class kpoint
 
         kpoint(unsigned int ngk) : ngk(ngk)
         {
-            vgkc = tensor<double,2>(3, ngk);
+            //vgkc.set_dimensions(3, ngk);
+            //vgkc.allocate();
             idxg.resize(ngk);
             idxgfft.resize(ngk);
         }
         
         unsigned int ngk;
     
-        tensor<double,2> vgkc;
+        mdarray<double,2> vgkc;
         std::vector<int> idxg;
         std::vector<int> idxgfft;
         double weight;
@@ -183,8 +183,7 @@ class Geometry
         std::vector< std::vector<double> > bvec;
         double bvec_m[9];
         double binv_m[9];
-        std::vector<Species> species;
-        std::map<std::string,Species*> species_by_symbol;
+        std::vector<Species*> species;
         std::vector<Atom> atoms;
         double omega;
 };
@@ -217,24 +216,24 @@ class Parameters
         std::vector<int> igfft;
         std::vector< std::complex<double> > cfunig;
         std::vector<double> cfunir;
-        tensor<int,2> intgv;
-        tensor<int,2> ivg;
-        tensor<int,3> ivgig;
-        tensor<std::complex<double>,3> gntyry;
-        tensor<std::vector<int>,2> L3_gntyry;
-        tensor<std::vector<complex16>,2> L3_gntyry_data;
-        std::vector<kpoint> kpoints;
+        mdarray<int,2> intgv;
+        mdarray<int,2> ivg;
+        mdarray<int,3> ivgig;
+        mdarray<std::complex<double>,3> gntyry;
+        mdarray<std::vector<int>,2> L3_gntyry;
+        mdarray<std::vector<complex16>,2> L3_gntyry_data;
+        std::vector<kpoint*> kpoints;
         unsigned int size_wfmt_apw;
         unsigned int size_wfmt_lo;
         unsigned int size_wfmt;
-        tensor<double,4> hmltrad;
-        tensor<double,4> ovlprad;
-        tensor<double,5> beffrad;
-        tensor<double,5> apwfr;
-        tensor<double,3> apwdfr;
-        tensor<double,2> beffir;
+        mdarray<double,4> hmltrad;
+        mdarray<double,4> ovlprad;
+        mdarray<double,5> beffrad;
+        mdarray<double,5> apwfr;
+        mdarray<double,3> apwdfr;
+        mdarray<double,2> beffir;
         mdarray<complex16,2> beffig;
-        tensor<complex16,1> veffig;
+        mdarray<complex16,1> veffig;
         std::vector<int> l_by_lm;
 
         inline void L3_sum_gntyry(int lm1, int lm2, double *v, std::complex<double>& zsum)

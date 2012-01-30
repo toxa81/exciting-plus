@@ -1,7 +1,6 @@
 #ifndef _MDARRAY_H_
 #define _MDARRAY_H_
 
-#include "constants.h"
 #include "mdarray_base.h"
 #ifdef _GPU_
 #include "mdarray_base_gpu.h"
