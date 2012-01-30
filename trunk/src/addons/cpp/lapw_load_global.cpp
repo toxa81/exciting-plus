@@ -47,11 +47,21 @@ extern "C" void FORTRAN(lapw_load_global)(int *natmtot_,
     p.nrfmtmax = *nrfmtmax_;
     p.ordrfmtmax = *ordrfmtmax_;
     p.evaltol = *evaltol_;
-    p.intgv = tensor<int,2>(intgv_, 3, 2);
-    p.ivgig = tensor<int,3>(ivgig_, t_index(p.intgv(0, 0), p.intgv(0, 1)), 
-                                    t_index(p.intgv(1, 0), p.intgv(1, 1)),
-                                    t_index(p.intgv(2, 0), p.intgv(2, 1)));
-    p.ivg = tensor<int,2>(ivg_, 3, p.ngrtot);
+    
+    p.intgv.set_dimensions(3, 2);
+    p.intgv.set_ptr(intgv_);
+    
+    p.ivgig.set_dimensions(dimension(p.intgv(0, 0), p.intgv(0, 1)),
+                           dimension(p.intgv(1, 0), p.intgv(1, 1)),
+                           dimension(p.intgv(2, 0), p.intgv(2, 1)));
+    p.ivgig.allocate();  
+    mdarray<int,3> ivgig_tmp(ivgig_, dimension(p.intgv(0, 0), p.intgv(0, 1)),
+                                     dimension(p.intgv(1, 0), p.intgv(1, 1)),
+                                     dimension(p.intgv(2, 0), p.intgv(2, 1)));
+    
+    p.ivg.set_dimensions(3, p.ngrtot);
+    p.ivg.set_ptr(ivg_);
+    
     p.igfft.resize(p.ngrtot);
     p.cfunir.resize(p.ngrtot);
     p.cfunig.resize(p.ngrtot);
@@ -69,9 +79,14 @@ extern "C" void FORTRAN(lapw_load_global)(int *natmtot_,
     p.ndmag = *ndmag_;
     p.nspinor = (p.spinpol) ? 2 : 1;
     
-    p.gntyry = tensor<std::complex<double>,3>(gntyry_, p.lmmaxvr, p.lmmaxapw, p.lmmaxapw);
-    p.L3_gntyry = tensor<std::vector<int>,2>(p.lmmaxapw, p.lmmaxapw);
-    p.L3_gntyry_data = tensor<std::vector<complex16>,2>(p.lmmaxapw, p.lmmaxapw);
+    p.gntyry.set_dimensions(p.lmmaxvr, p.lmmaxapw, p.lmmaxapw);
+    p.gntyry.set_ptr(gntyry_);
+    
+    p.L3_gntyry.set_dimensions(p.lmmaxapw, p.lmmaxapw);
+    p.L3_gntyry.allocate();
+    
+    p.L3_gntyry_data.set_dimensions(p.lmmaxapw, p.lmmaxapw);
+    p.L3_gntyry_data.allocate();
     
     for (unsigned int lm1 = 0; lm1 < p.lmmaxapw; lm1++)
         for (unsigned int lm2 = 0; lm2 < p.lmmaxapw; lm2++)
@@ -85,17 +100,22 @@ extern "C" void FORTRAN(lapw_load_global)(int *natmtot_,
     for (int i = p.intgv(0, 0); i <= p.intgv(0, 1); i++)
         for (int j = p.intgv(1, 0); j <= p.intgv(1, 1); j++)
             for (int k = p.intgv(2, 0); k <= p.intgv(2, 1); k++)
-                p.ivgig(i, j, k) -= 1;
+                p.ivgig(i, j, k) = ivgig_tmp(i, j, k) - 1;
     
     geometry.omega = *omega_;
+    
+    for (unsigned int i = 0; i < geometry.species.size(); i++)
+        delete geometry.species[i];
     geometry.species.clear();
     for (unsigned int i = 0; i < p.nspecies; i++)
-        geometry.species.push_back(Species());
+        geometry.species.push_back(new Species());
     
     geometry.atoms.clear();
     for (unsigned int i = 0; i < p.natmtot; i++)
-        geometry.atoms.push_back(Atom(&geometry.species[ias2is_[i] - 1]));
+        geometry.atoms.push_back(Atom(geometry.species[ias2is_[i] - 1]));
 
+    for (unsigned int i = 0; i < p.kpoints.size(); i++)
+        delete p.kpoints[i];
     p.kpoints.clear();
 }
 

@@ -51,7 +51,7 @@ void lapw_density(lapw_eigen_states& eigen_states, mdarray<double,6>& densmt, md
     
     size_t szmax = 0;
     for (unsigned int is = 0; is < geometry.species.size(); is++)
-      szmax = std::max(geometry.species[is].ci.size(), szmax);
+      szmax = std::max(geometry.species[is]->ci.size(), szmax);
 
     std::vector<int> idxocc;
     std::vector<double> woccsv;

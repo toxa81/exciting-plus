@@ -4,48 +4,49 @@ extern "C" void FORTRAN(lapw_init)()
 {
     for (unsigned int is = 0; is < geometry.species.size(); is++)
     {
-        geometry.species[is].rfmt_order.resize(p.lmaxapw + 1, 0);
+        geometry.species[is]->rfmt_order.resize(p.lmaxapw + 1, 0);
         
         for (unsigned int l = 0; l <= p.lmaxapw; l++)
         {
-            for (unsigned int io = 0; io < geometry.species[is].apw_descriptors[l].radial_solution_descriptors.size(); io++)
+            for (unsigned int io = 0; io < geometry.species[is]->apw_descriptors[l].radial_solution_descriptors.size(); io++)
             {
-                geometry.species[is].ci_by_idxrf.push_back(geometry.species[is].ci.size());
-                geometry.species[is].l_by_idxrf.push_back(l);
+                geometry.species[is]->ci_by_idxrf.push_back(geometry.species[is]->ci.size());
+                geometry.species[is]->l_by_idxrf.push_back(l);
                 
                 for (int m = -l; m <= (int)l; m++)
-                    geometry.species[is].ci.push_back(mtci(l, m, geometry.species[is].rfmt_order[l], geometry.species[is].nrfmt));
+                    geometry.species[is]->ci.push_back(mtci(l, m, geometry.species[is]->rfmt_order[l], geometry.species[is]->nrfmt));
                 
-                geometry.species[is].rfmt_order[l]++;
-                geometry.species[is].nrfmt++;
+                geometry.species[is]->rfmt_order[l]++;
+                geometry.species[is]->nrfmt++;
             }
         }
-        geometry.species[is].size_ci_apw = geometry.species[is].ci.size();
+        geometry.species[is]->size_ci_apw = geometry.species[is]->ci.size();
         
-        for (unsigned int ilo = 0; ilo < geometry.species[is].lo_descriptors.size(); ilo++)
+        for (unsigned int ilo = 0; ilo < geometry.species[is]->lo_descriptors.size(); ilo++)
         {
-            int l = geometry.species[is].lo_descriptors[ilo].l;
+            int l = geometry.species[is]->lo_descriptors[ilo].l;
             
-            geometry.species[is].ci_by_idxrf.push_back(geometry.species[is].ci.size());
-            geometry.species[is].l_by_idxrf.push_back(l);
+            geometry.species[is]->ci_by_idxrf.push_back(geometry.species[is]->ci.size());
+            geometry.species[is]->l_by_idxrf.push_back(l);
 
             for (int m = -l; m <= l; m++)
-                geometry.species[is].ci.push_back(mtci(l, m, geometry.species[is].rfmt_order[l], geometry.species[is].nrfmt, ilo));
+                geometry.species[is]->ci.push_back(mtci(l, m, geometry.species[is]->rfmt_order[l], geometry.species[is]->nrfmt, ilo));
             
-            geometry.species[is].rfmt_order[l]++;
-            geometry.species[is].nrfmt++;
+            geometry.species[is]->rfmt_order[l]++;
+            geometry.species[is]->nrfmt++;
         }
-        geometry.species[is].size_ci_lo = geometry.species[is].ci.size() - geometry.species[is].size_ci_apw;
-        geometry.species[is].ci_lo = &geometry.species[is].ci[geometry.species[is].size_ci_apw];
+        geometry.species[is]->size_ci_lo = geometry.species[is]->ci.size() - geometry.species[is]->size_ci_apw;
+        geometry.species[is]->ci_lo = &geometry.species[is]->ci[geometry.species[is]->size_ci_apw];
 
         int maxorder = 0;
         for (unsigned int l = 0; l <= p.lmaxapw; l++)
-            maxorder = std::max(maxorder, geometry.species[is].rfmt_order[l]);
+            maxorder = std::max(maxorder, geometry.species[is]->rfmt_order[l]);
+        
+        geometry.species[is]->ci_by_lmo.set_dimensions(p.lmmaxapw, maxorder);
+        geometry.species[is]->ci_by_lmo.allocate();
 
-        geometry.species[is].ci_by_lmo = tensor<int,2>(p.lmmaxapw, maxorder);
-
-        for (unsigned int i = 0; i < geometry.species[is].ci.size(); i++)
-            geometry.species[is].ci_by_lmo(geometry.species[is].ci[i].lm, geometry.species[is].ci[i].order) = i;
+        for (unsigned int i = 0; i < geometry.species[is]->ci.size(); i++)
+            geometry.species[is]->ci_by_lmo(geometry.species[is]->ci[i].lm, geometry.species[is]->ci[i].order) = i;
     }
 
     p.size_wfmt_apw = 0;

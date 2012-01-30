@@ -8,7 +8,7 @@ void b_dot_wf(lapw_eigen_states& eigen_states, mdarray<complex16,3>& hwf)
     
     size_t szmax = 0;
     for (unsigned int is = 0; is < geometry.species.size(); is++)
-      szmax = std::max(geometry.species[is].ci.size(), szmax);
+      szmax = std::max(geometry.species[is]->ci.size(), szmax);
     
     mdarray<complex16,3> zm(NULL, szmax, szmax, p.ndmag);
     zm.allocate();

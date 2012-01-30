@@ -166,7 +166,7 @@ void lapw_eigen_states::test_scalar_wf(int use_fft)
             for (unsigned int ias = 0; ias < p.natmtot; ias++)
             {
                 int offset_wfmt = geometry.atoms[ias].offset_wfmt;
-                tensor<int,2> *ci_by_lmo = &geometry.atoms[ias].species->ci_by_lmo;
+                mdarray<int,2> *ci_by_lmo = &geometry.atoms[ias].species->ci_by_lmo;
 
                 for (unsigned int l = 0; l <= p.lmaxapw; l++)
                 {
@@ -276,7 +276,7 @@ void lapw_eigen_states::test_spinor_wf(int use_fft)
                 for (unsigned int ias = 0; ias < p.natmtot; ias++)
                 {
                     int offset_wfmt = geometry.atoms[ias].offset_wfmt;
-                    tensor<int,2> *ci_by_lmo = &geometry.atoms[ias].species->ci_by_lmo;
+                    mdarray<int,2> *ci_by_lmo = &geometry.atoms[ias].species->ci_by_lmo;
 
                     for (unsigned int l = 0; l <= p.lmaxapw; l++)
                     {
