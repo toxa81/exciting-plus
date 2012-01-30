@@ -22,7 +22,7 @@ void zgemm(int transa, int transb, int32_t m, int32_t n, int32_t k, complex16 al
     
     if (impl == gpu)
     {    
-        zgemm_cublas(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+        gpu_zgemm(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
     }
 }
 

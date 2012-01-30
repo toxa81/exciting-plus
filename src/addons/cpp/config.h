@@ -12,7 +12,7 @@ const bool check_scalar_wf = false;
 
 const bool check_spinor_wf = false;
 
-const implementation lapw_impl = cpu;
+const implementation lapw_impl = gpu;
 
 const diagonalization lapw_diag = second_variational; 
 
