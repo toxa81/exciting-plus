@@ -5,6 +5,8 @@ void lapw_eigen_states::pack_apwalm(complex16 *apwalm_)
     unsigned int ngk = kp->ngk;
     apwalm.set_dimensions(ngk, p.size_wfmt_apw);
     apwalm.allocate();
+    //apwalm1.set_dimensions(ngk, p.size_apwalm);
+    //apwalm1.allocate();
     mdarray<complex16,4> apwalm_tmp(apwalm_, p.ngkmax, p.apwordmax, p.lmmaxapw, p.natmtot);
     
     for (unsigned int ias = 0; ias < geometry.atoms.size(); ias++)
@@ -20,6 +22,22 @@ void lapw_eigen_states::pack_apwalm(complex16 *apwalm_)
                 apwalm(ig, atom->offset_apw + j) = conj(apwalm_tmp(ig, io, lm, ias));
         }
     }
+
+    /*int offset = 0;
+    for (unsigned int ic = 0; ic < p.natmcls; ic++)
+    {
+        int ias = p.ic2ias[ic];
+        Atom *atom = &geometry.atoms[ias];
+        Species *species = atom->species;
+
+        for (unsigned int j = 0; j < species->size_ci_apw; j++, offset++)
+        {
+            int io = species->ci[j].order;
+            int lm = species->ci[j].lm;
+            for (unsigned int ig = 0; ig < ngk; ig++)
+                apwalm1(ig, offset) = conj(apwalm_tmp(ig, io, lm, ias));
+        }
+    }*/
 }
 
 inline void move_apw_blocks(complex16 *wf)

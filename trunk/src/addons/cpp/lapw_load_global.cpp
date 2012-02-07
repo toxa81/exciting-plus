@@ -1,33 +1,36 @@
 #include "lapw.h"
 
 extern "C" void FORTRAN(lapw_load_global)(int *natmtot_,
-                                           int *nspecies_,
-                                           int *lmaxvr_,
-                                           int *lmaxapw_,
-                                           int *apwordmax_,
-                                           int *nrmtmax_,
-                                           int *ngkmax_,
-                                           int *ngvec_,
-                                           int *ngrtot_,
-                                           int *nlomax_,
-                                           int *ias2is_,
-                                           int *intgv_,
-                                           int *ivg_,
-                                           int *ivgig_,
-                                           int *ngrid_,
-                                           int *igfft_,
-                                           double *cfunir_,
-                                           std::complex<double> *cfunig_,
-                                           std::complex<double> *gntyry_,
-                                           int *nstfv_,
-                                           int *nstsv_,
-                                           int *nmatmax_,
-                                           int *nrfmtmax_,
-                                           int *ordrfmtmax_,
-                                           double *evaltol_,
-                                           int *spinpol_,
-                                           int *ndmag_,
-                                           double *omega_)
+                                          int *nspecies_,
+                                          int *lmaxvr_,
+                                          int *lmaxapw_,
+                                          int *apwordmax_,
+                                          int *nrmtmax_,
+                                          int *ngkmax_,
+                                          int *ngvec_,
+                                          int *ngrtot_,
+                                          int *nlomax_,
+                                          int *ias2is_,
+                                          int *intgv_,
+                                          int *ivg_,
+                                          int *ivgig_,
+                                          int *ngrid_,
+                                          int *igfft_,
+                                          double *cfunir_,
+                                          std::complex<double> *cfunig_,
+                                          std::complex<double> *gntyry_,
+                                          int *nstfv_,
+                                          int *nstsv_,
+                                          int *nmatmax_,
+                                          int *nrfmtmax_,
+                                          int *ordrfmtmax_,
+                                          double *evaltol_,
+                                          int *spinpol_,
+                                          int *ndmag_,
+                                          double *omega_,
+                                          int *natmcls_,
+                                          int *ic2ias_,
+                                          int *natoms_in_class_)
 {
     p.natmtot = *natmtot_;
     p.nspecies = *nspecies_;
@@ -78,6 +81,15 @@ extern "C" void FORTRAN(lapw_load_global)(int *natmtot_,
     p.spinpol = (*spinpol_ != 0);
     p.ndmag = *ndmag_;
     p.nspinor = (p.spinpol) ? 2 : 1;
+
+    p.natmcls = *natmcls_;
+    p.ic2ias.resize(p.natmcls);
+    p.natoms_in_class.resize(p.natmcls);
+    for (unsigned int ic = 0; ic < p.ic2ias.size(); ic++)
+    {
+        p.ic2ias[ic] = ic2ias_[ic] - 1;
+        p.natoms_in_class[ic] = natoms_in_class_[ic];
+    }
     
     p.gntyry.set_dimensions(p.lmmaxvr, p.lmmaxapw, p.lmmaxapw);
     p.gntyry.set_ptr(gntyry_);

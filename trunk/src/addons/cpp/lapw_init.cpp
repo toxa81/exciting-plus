@@ -67,6 +67,14 @@ extern "C" void FORTRAN(lapw_init)()
         p.size_wfmt += species->ci.size();
     }
     
+    /*p.size_apwalm = 0;
+    for (unsigned int ic = 0; ic < p.natmcls; ic++)
+    {
+        int ias = p.ic2ias[ic];
+        Species *species = geometry.atoms[ias].species;
+        p.size_apwalm += species->size_ci_apw;
+    }*/
+    
     p.l_by_lm.resize(p.lmmaxapw);
     for (unsigned int l = 0; l <= p.lmaxapw; l++)
         for (int m = -l; m <= (int)l; m++)

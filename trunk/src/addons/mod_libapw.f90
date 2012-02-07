@@ -70,7 +70,7 @@ allocate(lrf(nrfmtmax,natmcls))
 call lapw_load_global(natmtot,nspecies,lmaxvr,lmaxapw,apwordmax,nrmtmax,&
   &ngkmax,ngvec,ngrtot,nlomax,ias2is,intgv,ivg,ivgig,ngrid,igfft,cfunir, &
   &cfunig,gntyry,nstfv,nstsv,nmatmax,nrfmtmax,ordrfmtmax,evaltol,spinpol,&
-  &ndmag,omega)
+  &ndmag,omega,natmcls,ic2ias,natoms_in_class)
 do is=1,nspecies
   call lapw_load_species(is,nlorb(is),lorbl(1,is),apword(0,is),rmt(is),nrmt(is))
 enddo

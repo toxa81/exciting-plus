@@ -32,7 +32,7 @@ void b_dot_wf(lapw_eigen_states& eigen_states, mdarray<complex16,3>& hwf)
                     int lm1 = geometry.atoms[ias].species->ci[j1].lm;
                     int idxrf1 = geometry.atoms[ias].species->ci[j1].idxrf;
                 
-                    p.L3_sum_gntyry(lm1, lm2, &p.beffrad(0, idxrf1, idxrf2, ias, i), zm(j1, j2, i));
+                    L3_sum_gntyry(lm1, lm2, &p.beffrad(0, idxrf1, idxrf2, ias, i), zm(j1, j2, i));
                 }
             }
         }

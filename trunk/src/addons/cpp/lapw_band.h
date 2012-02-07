@@ -38,28 +38,28 @@ void hmt_dot_apw(lapw_eigen_states& eigen_states, mdarray<complex16,2>& hapw)
                     
                     if (sblock == nm)
                     {
-                        p.L3_sum_gntyry(lm1, lm2, &p.hmltrad(0, idxrf1, idxrf2, ias), zsum);
+                        L3_sum_gntyry(lm1, lm2, &p.hmltrad(0, idxrf1, idxrf2, ias), zsum);
                     }
 
                     if (sblock == uu)
                     {
                         for (unsigned int lm3 = 0; lm3 < p.lmmaxvr; lm3++) 
                             v1[lm3] = p.hmltrad(lm3, idxrf1, idxrf2, ias) + p.beffrad(lm3, idxrf1, idxrf2, ias, 0);
-                        p.L3_sum_gntyry(lm1, lm2, &v1[0], zsum);
+                        L3_sum_gntyry(lm1, lm2, &v1[0], zsum);
                     }
                     
                     if (sblock == dd)
                     {
                         for (unsigned int lm3 = 0; lm3 < p.lmmaxvr; lm3++) 
                             v1[lm3] = p.hmltrad(lm3, idxrf1, idxrf2, ias) - p.beffrad(lm3, idxrf1, idxrf2, ias, 0);
-                        p.L3_sum_gntyry(lm1, lm2, &v1[0], zsum);
+                        L3_sum_gntyry(lm1, lm2, &v1[0], zsum);
                     }
                     
                     if (sblock == ud)
                     {
                         for (unsigned int lm3 = 0; lm3 < p.lmmaxvr; lm3++) 
                             v2[lm3] = complex16(p.beffrad(lm3, idxrf1, idxrf2, ias, 1), -p.beffrad(lm3, idxrf1, idxrf2, ias, 2));
-                        p.L3_sum_gntyry(lm1, lm2, &v2[0], zsum);
+                        L3_sum_gntyry(lm1, lm2, &v2[0], zsum);
                     }
         
                     if (abs(zsum) > 1e-14) 
@@ -147,28 +147,28 @@ void lapw_set_h(lapw_eigen_states& eigen_states, mdarray<complex16,2>& h)
                     
                     if (sblock == nm)
                     {
-                        p.L3_sum_gntyry(lm1, lm2, &p.hmltrad(0, idxrf2, idxrf1, ias), zsum);
+                        L3_sum_gntyry(lm1, lm2, &p.hmltrad(0, idxrf2, idxrf1, ias), zsum);
                     }
 
                     if (sblock == uu)
                     {
                         for (unsigned int lm3 = 0; lm3 < p.lmmaxvr; lm3++) 
                             v1[lm3] = p.hmltrad(lm3, idxrf2, idxrf1, ias) + p.beffrad(lm3, idxrf1, idxrf2, ias, 0);
-                        p.L3_sum_gntyry(lm1, lm2, &v1[0], zsum);
+                        L3_sum_gntyry(lm1, lm2, &v1[0], zsum);
                     }
                     
                     if (sblock == dd)
                     {
                         for (unsigned int lm3 = 0; lm3 < p.lmmaxvr; lm3++) 
                             v1[lm3] = p.hmltrad(lm3, idxrf2, idxrf1, ias) - p.beffrad(lm3, idxrf1, idxrf2, ias, 0);
-                        p.L3_sum_gntyry(lm1, lm2, &v1[0], zsum);
+                        L3_sum_gntyry(lm1, lm2, &v1[0], zsum);
                     }
                     
                     if (sblock == ud)
                     {
                         for (unsigned int lm3 = 0; lm3 < p.lmmaxvr; lm3++) 
                             v2[lm3] = complex16(p.beffrad(lm3, idxrf1, idxrf2, ias, 1), -p.beffrad(lm3, idxrf1, idxrf2, ias, 2));
-                        p.L3_sum_gntyry(lm1, lm2, &v2[0], zsum);
+                        L3_sum_gntyry(lm1, lm2, &v2[0], zsum);
                     }
         
                     if (abs(zsum) > 1e-14)
@@ -190,28 +190,28 @@ void lapw_set_h(lapw_eigen_states& eigen_states, mdarray<complex16,2>& h)
 
                     if (sblock == nm)
                     {
-                        p.L3_sum_gntyry(lm1, lm2, &p.hmltrad(0, idxrf1, idxrf2, ias), zsum);
+                        L3_sum_gntyry(lm1, lm2, &p.hmltrad(0, idxrf1, idxrf2, ias), zsum);
                     }
 
                     if (sblock == uu)
                     {
                         for (unsigned int lm3 = 0; lm3 < p.lmmaxvr; lm3++) 
                             v1[lm3] = p.hmltrad(lm3, idxrf1, idxrf2, ias) + p.beffrad(lm3, idxrf1, idxrf2, ias, 0);
-                        p.L3_sum_gntyry(lm1, lm2, &v1[0], zsum);
+                        L3_sum_gntyry(lm1, lm2, &v1[0], zsum);
                     }
                     
                     if (sblock == dd)
                     {
                         for (unsigned int lm3 = 0; lm3 < p.lmmaxvr; lm3++) 
                             v1[lm3] = p.hmltrad(lm3, idxrf1, idxrf2, ias) - p.beffrad(lm3, idxrf1, idxrf2, ias, 0);
-                        p.L3_sum_gntyry(lm1, lm2, &v1[0], zsum);
+                        L3_sum_gntyry(lm1, lm2, &v1[0], zsum);
                     }
                     
                     if (sblock == ud)
                     {
                         for (unsigned int lm3 = 0; lm3 < p.lmmaxvr; lm3++) 
                             v2[lm3] = complex16(p.beffrad(lm3, idxrf1, idxrf2, ias, 1), -p.beffrad(lm3, idxrf1, idxrf2, ias, 2));
-                        p.L3_sum_gntyry(lm1, lm2, &v2[0], zsum);
+                        L3_sum_gntyry(lm1, lm2, &v2[0], zsum);
                     }
 
                     h(ngk + atom->offset_lo + j1, ngk + atom->offset_lo + j2) += zsum;
@@ -234,7 +234,7 @@ void lapw_set_h(lapw_eigen_states& eigen_states, mdarray<complex16,2>& h)
                         
                         for (unsigned int lm3 = 0; lm3 < p.lmmaxvr; lm3++) 
                             v2[lm3] = complex16(p.beffrad(lm3, idxrf1, idxrf2, ias, 1), -p.beffrad(lm3, idxrf1, idxrf2, ias, 2));
-                        p.L3_sum_gntyry(lm1, lm2, &v2[0], zsum);
+                        L3_sum_gntyry(lm1, lm2, &v2[0], zsum);
                         
                         if (abs(zsum) > 1e-14)
                             for (unsigned int ig = 0; ig < ngk; ig++)
@@ -283,14 +283,14 @@ void lapw_set_o(lapw_eigen_states& eigen_states, mdarray<complex16,2>& o)
     
     if (impl == cpu)
     {
-        zgemm<cpu>(0 ,2, ngk, ngk, p.size_wfmt_apw, zone, &eigen_states.apwalm(0, 0), eigen_states.apwalm.size(0), 
+        zgemm<cpu>(0, 2, ngk, ngk, p.size_wfmt_apw, zone, &eigen_states.apwalm(0, 0), eigen_states.apwalm.size(0), 
             &eigen_states.apwalm(0, 0), eigen_states.apwalm.size(0), zzero, &o(0, 0), o.size(0));
     }
     if (impl == gpu)
     {
         o.allocate_on_device();
         o.zero_on_device();
-        zgemm<gpu>(0 ,2, ngk, ngk, p.size_wfmt_apw, zone, eigen_states.apwalm.get_ptr_device(), eigen_states.apwalm.size(0),
+        zgemm<gpu>(0, 2, ngk, ngk, p.size_wfmt_apw, zone, eigen_states.apwalm.get_ptr_device(), eigen_states.apwalm.size(0),
                    eigen_states.apwalm.get_ptr_device(), eigen_states.apwalm.size(0), zzero, o.get_ptr_device(), o.size(0));
         o.copy_to_host();
         o.deallocate_on_device();
