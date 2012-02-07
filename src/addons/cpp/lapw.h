@@ -140,7 +140,6 @@ class Atom
 
         Atom(Species *species) : species(species)
         {
-            
         }
         
         double posl[3];
@@ -159,8 +158,6 @@ class kpoint
 
         kpoint(unsigned int ngk) : ngk(ngk)
         {
-            //vgkc.set_dimensions(3, ngk);
-            //vgkc.allocate();
             idxg.resize(ngk);
             idxgfft.resize(ngk);
         }
@@ -224,6 +221,7 @@ class Parameters
         mdarray<std::vector<complex16>,2> L3_gntyry_data;
         std::vector<kpoint*> kpoints;
         unsigned int size_wfmt_apw;
+        unsigned int size_apwalm; 
         unsigned int size_wfmt_lo;
         unsigned int size_wfmt;
         mdarray<double,4> hmltrad;
@@ -235,24 +233,28 @@ class Parameters
         mdarray<complex16,2> beffig;
         mdarray<complex16,1> veffig;
         std::vector<int> l_by_lm;
-
-        inline void L3_sum_gntyry(int lm1, int lm2, double *v, std::complex<double>& zsum)
-        {
-            for (unsigned int k = 0; k < L3_gntyry(lm1, lm2).size(); k++)
-            {
-                int lm3 = L3_gntyry(lm1, lm2)[k];
-                zsum += gntyry(lm3, lm1, lm2) * v[lm3];
-            }
-        }
         
-        inline void L3_sum_gntyry(int lm1, int lm2, complex16 *v, complex16& zsum)
-        {
-            for (unsigned int k = 0; k < L3_gntyry(lm1, lm2).size(); k++)
-            {
-                int lm3 = L3_gntyry(lm1, lm2)[k];
-                zsum += gntyry(lm3, lm1, lm2) * v[lm3];
-            }
-        }
+        unsigned int natmcls;
+        std::vector<int> ic2ias;
+        std::vector<int> natoms_in_class;
+
+        //inline void L3_sum_gntyry(int lm1, int lm2, double *v, std::complex<double>& zsum)
+        //{
+        //    for (unsigned int k = 0; k < L3_gntyry(lm1, lm2).size(); k++)
+        //    {
+        //        int lm3 = L3_gntyry(lm1, lm2)[k];
+        //        zsum += gntyry(lm3, lm1, lm2) * v[lm3];
+        //    }
+        //}
+        //
+        //inline void L3_sum_gntyry(int lm1, int lm2, complex16 *v, complex16& zsum)
+        //{
+        //    for (unsigned int k = 0; k < L3_gntyry(lm1, lm2).size(); k++)
+        //    {
+        //        int lm3 = L3_gntyry(lm1, lm2)[k];
+        //        zsum += gntyry(lm3, lm1, lm2) * v[lm3];
+        //    }
+        //}
 };
 
 class lapw_eigen_states
@@ -275,6 +277,7 @@ class lapw_eigen_states
         
         kpoint *kp;
         mdarray<complex16,2> apwalm;
+        //mdarray<complex16,2> apwalm1;
         mdarray<complex16,2> evecfv;
         mdarray<complex16,2> evecsv;
         mdarray<complex16,2> evecfd;
@@ -316,5 +319,16 @@ inline int idxG12(const kpoint *kp, int ig1, int ig2)
                    p.ivg(1, kp->idxg[ig1]) - p.ivg(1, kp->idxg[ig2]),
                    p.ivg(2, kp->idxg[ig1]) - p.ivg(2, kp->idxg[ig2]));
 }
+
+template <typename T>
+inline void L3_sum_gntyry(int lm1, int lm2, T *v, std::complex<double>& zsum)
+{
+    for (unsigned int k = 0; k < p.L3_gntyry(lm1, lm2).size(); k++)
+    {
+        int lm3 = p.L3_gntyry(lm1, lm2)[k];
+        zsum += p.gntyry(lm3, lm1, lm2) * v[lm3];
+    }
+}
+        
 
 #endif // __LAPW_H__

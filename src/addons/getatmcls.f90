@@ -28,6 +28,11 @@ do i=1,natmcls
     endif
   enddo
 enddo
+allocate(natoms_in_class(natmcls))
+natoms_in_class=0
+do ias=1,natmtot
+  natoms_in_class(ias2ic(ias))=natoms_in_class(ias2ic(ias))+1
+enddo
 if (iproc.eq.0) then
   open(200,file="CLASS.OUT",form="FORMATTED",status="REPLACE")
   do ias=1,natmtot
@@ -35,7 +40,7 @@ if (iproc.eq.0) then
   enddo
   write(200,*)
   do ic=1,natmcls
-    write(200,'("ic : ",I4,"   ias : ",I4)')ic,ic2ias(ic)  
+    write(200,'("ic : ",I4,"   ias : ",I4," natoms : ",I4)')ic,ic2ias(ic),natoms_in_class(ic)  
   enddo
   close(200)
 endif
