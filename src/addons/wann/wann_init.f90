@@ -42,13 +42,13 @@ do i=1,wann_natom
       call pstop
     endif
     itype=wann_iorb(3,j,iwgrp)
-    wan_info(1,n)=iatom
-    wan_info(2,n)=lm
-    wan_info(3,n)=ispn
-    wan_info(4,n)=itype
-    wan_info(5,n)=iwgrp
-    wan_info(6,n)=i
-    wan_info(7,n)=j
+    wan_info(wi_atom,n)=iatom
+    wan_info(wi_lm,n)=lm
+    wan_info(wi_spin,n)=ispn
+    wan_info(wi_type,n)=itype
+    wan_info(wi_group,n)=iwgrp
+    wan_info(wi_idxa,n)=i
+    wan_info(wi_idxo,n)=j
   enddo
 enddo !i
 
