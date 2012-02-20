@@ -86,6 +86,13 @@ integer, allocatable :: wann_err_k(:)
 
 integer, allocatable :: wannier_prjlo(:,:)
 
+integer, parameter :: wi_atom = 1
+integer, parameter :: wi_lm = 2
+integer, parameter :: wi_spin = 3
+integer, parameter :: wi_type = 4
+integer, parameter :: wi_group = 5
+integer, parameter :: wi_idxa = 6
+integer, parameter :: wi_idxo = 7
 
 
 type wannier_transitions
