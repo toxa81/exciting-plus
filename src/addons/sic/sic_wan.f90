@@ -13,6 +13,7 @@ real(8) t1,t2,vrc(3),pos1(3),pos2(3),x(3),dens(1),e1(1),e2(1),v1(1),v2(1)
 real(8) sic_epot_h,sic_epot_xc
 complex(8) z1,wanval(nspinor)
 real(8), allocatable :: wanprop(:,:)
+real(8), allocatable :: f1tp(:),f2lm(:) 
 complex(8), allocatable :: ovlp(:)
 complex(8), allocatable :: om(:,:)
 complex(8), allocatable :: wantp(:,:,:)
@@ -23,6 +24,8 @@ character*100 fname
 !
 allocate(wantp(s_ntp,s_nr,nspinor))
 allocate(wanprop(nwanprop,sic_wantran%nwan))
+allocate(f1tp(s_nr),f2lm(s_nr))
+! check spherical and radial grids by integrating sphere volume
 if (wproc) then
   write(fout,*)
   write(fout,'(80("="))')
@@ -77,6 +80,7 @@ endif
 !  enddo
 !!endif
 
+
 call timer_start(t_sic_wan,reset=.true.)
 call timer_reset(t_sic_wan_gen)
 call timer_reset(t_sic_wan_rms)
@@ -87,6 +91,7 @@ s_wvlm=zzero
 wanprop=0.d0
 !nrloc=mpi_grid_map(s_nr,dim2)
 nrloc=mpi_grid_map(s_nr,dim_k)
+! loop over Wannier functions
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
 ! generate WF on a spherical mesh
@@ -106,22 +111,21 @@ do j=1,sic_wantran%nwan
 ! convert to spherical harmonics
   call sic_genwanlm(fout,n,wantp,s_wlm(1,1,1,j))
 ! compute norm
-  t1=0.d0
-  z1=zzero
+  f1tp=0.d0
+  f2lm=0.d0
   do ispn=1,nspinor
     do ir=1,s_nr_min
       do itp=1,s_ntp
-        t1=t1+abs(wantp(itp,ir,ispn))**2*s_tpw(itp)*s_rw(ir)
+        f1tp(ir)=f1tp(ir)+abs(wantp(itp,ir,ispn))**2*s_tpw(itp)
       enddo
-      z1=z1+zdotc(lmmaxwan,s_wlm(1,ir,ispn,j),1,&
-        s_wlm(1,ir,ispn,j),1)*s_rw(ir)
+      f2lm(ir)=f2lm(ir)+abs(zdotc(lmmaxwan,s_wlm(1,ir,ispn,j),1,s_wlm(1,ir,ispn,j),1))
     enddo
   enddo
-  wanprop(wp_normtp,j)=t1
-  wanprop(wp_normlm,j)=dreal(z1)
+  wanprop(wp_normtp,j)=rintegrate(s_nr,s_r,f1tp)
+  wanprop(wp_normlm,j)=rintegrate(s_nr,s_r,f2lm)
   call timer_stop(t_sic_wan_gen)
 enddo !j
-deallocate(wantp)
+deallocate(wantp,f1tp,f2lm)
 
 call sic_localize(fout,wanprop)
 
@@ -175,7 +179,7 @@ do iloc=1,nwtloc
   pos2(:)=wanpos(:,n1)+vl(1)*avec(:,1)+vl(2)*avec(:,2)+vl(3)*avec(:,3)
   if ((iovlp.eq.1.and.sum(abs(pos1-pos2)).lt.1d-10).or.iovlp.eq.2) then
     ovlp(i)=ovlp(i)+s_spinor_dotp(pos1,pos2,s_wlm(1,1,1,j),&
-      s_wlm(1,1,1,j1))
+      &s_wlm(1,1,1,j1))
   endif
   z1=ovlp(i)
   if (n.eq.n1.and.all(vl.eq.0)) then
@@ -230,13 +234,13 @@ if (wproc) then
   do j=1,sic_wantran%nwan
     n=sic_wantran%iwan(j)
     write(151,'(I4," | ",7(F10.6,2X))')n,wanprop(wp_normlm,j),&
-      wanprop(wp_normtp,j),wanprop(wp_spread,j),wanprop(wp_normrho,j),&
-      wanprop(wp_spread_x,j),wanprop(wp_spread_y,j),wanprop(wp_spread_z,j)
+      &wanprop(wp_normtp,j),wanprop(wp_spread,j),wanprop(wp_normrho,j),&
+      &wanprop(wp_spread_x,j),wanprop(wp_spread_y,j),wanprop(wp_spread_z,j)
   enddo
   write(fout,'(80("-"))')
   write(fout,'("maximum deviation from norm : ",F12.6)')t1
   write(fout,'("total quadratic spread : ",F12.6," [a.u.]^2")')&
-    sum(wanprop(wp_spread,:))
+    &sum(wanprop(wp_spread,:))
   write(fout,*)
   write(fout,'("   n | ",5X,"V_n^{H}     V_n^{XC}          V_n     E_n^{XC}&
     &        Ex           Ec")')
@@ -244,8 +248,8 @@ if (wproc) then
   do j=1,sic_wantran%nwan
     n=sic_wantran%iwan(j)
     write(fout,'(I4," | ",6(F12.6,1X))')n,wanprop(wp_vha,j),&
-      wanprop(wp_vxc,j),wanprop(wp_vsic,j),wanprop(wp_exc,j),&
-      wanprop(wp_ex,j),wanprop(wp_ec,j)
+      &wanprop(wp_vxc,j),wanprop(wp_vsic,j),wanprop(wp_exc,j),&
+      &wanprop(wp_ex,j),wanprop(wp_ec,j)
   enddo
   write(fout,'(84("-"))')
   write(fout,'("SIC total energy contribution      : ",G18.10,&
@@ -282,6 +286,7 @@ if (wproc) then
   write(fout,'("  overlap           : ",F8.3," sec.")')timer_get_value(t_sic_wan_ovl)
   call flushifc(fout)
 endif
+
 return
 end
 
