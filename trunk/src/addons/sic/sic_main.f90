@@ -65,18 +65,18 @@ if (wproc) then
     n=sic_wantran%iwan(j)
     if (wannier_lc) then
       write(151,'("  j : ",I4,"    n : ",I4,"    !  at ",3G18.10)')j,&
-        sic_wantran%iwan(j),wanpos(:,n)
+        &sic_wantran%iwan(j),wanpos(:,n)
     else
-      ias=wan_info(1,n)
-      lm=wan_info(2,n)
-      ispn=wan_info(3,n)
+      ias=wan_info(wi_atom,n)
+      lm=wan_info(wi_lm,n)
+      ispn=wan_info(si_spin,n)
       write(c1,'(I6)')ias2ia(ias)
       write(c2,'(I1)')lm2m(lm)+lm2l(lm)+1
       c3=trim(spsymb(ias2is(ias)))//trim(adjustl(c1))//"-"//&
-        orbc(lm2l(lm)+1)//trim(adjustl(c2))
+        &orbc(lm2l(lm)+1)//trim(adjustl(c2))
       if (spinpol) c3=trim(adjustl(c3))//"-"//spinc(ispn)
       write(151,'("  j : ",I4,"    n : ",I4,"    ! ",A,"  at ",3G18.10)')j,&
-        sic_wantran%iwan(j),trim(c3),wanpos(:,n)
+        &sic_wantran%iwan(j),trim(c3),wanpos(:,n)
     endif
   enddo
   write(151,*)
