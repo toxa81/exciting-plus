@@ -136,8 +136,8 @@ do itask=1,ntasks
     call test_bloch_wf
   case(882)
     call writewf
-  case(883)
-    call test_potcoul
+  !case(883)
+  !  call test_potcoul
 #ifdef _MAD_
   case(890)
     call test_madness
