@@ -7,7 +7,7 @@ use mod_madness
 use mod_hdf5
 implicit none
 integer n,j,ik,ispn,ikloc,ig
-integer ias,lm
+integer ias,lm,iter
 real(8) ekin_,etot_
 real(8), allocatable :: laplsv(:) 
 character*20 c1,c2,c3
@@ -69,7 +69,7 @@ if (wproc) then
     else
       ias=wan_info(wi_atom,n)
       lm=wan_info(wi_lm,n)
-      ispn=wan_info(si_spin,n)
+      ispn=wan_info(wi_spin,n)
       write(c1,'(I6)')ias2ia(ias)
       write(c2,'(I1)')lm2m(lm)+lm2l(lm)+1
       c3=trim(spsymb(ias2is(ias)))//trim(adjustl(c1))//"-"//&
@@ -95,51 +95,35 @@ if (wproc) then
   !enddo
   call flushifc(151)
 endif
-!if (wproc) then
-!  write(151,*)
-!  write(151,'(80("="))')
-!  write(151,'("generating wave-functions for all k-points")')
-!  write(151,'(80("="))')
-!endif
-!! compute kinetic energy
-!allocate(laplsv(nstsv))
-!ekin_=0.d0
-!do ikloc=1,nkptnrloc
-!  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-!  call genlapl(ngknr(ikloc),igkignr(1,ikloc),vgkcnr(1,1,ikloc),&
-!    wfsvmtnrloc(1,1,1,1,1,ikloc),wfsvitnrloc(1,1,1,ikloc),laplsv)
-!  do j=1,nstsv
-!    ekin_=ekin_+0.5d0*laplsv(j)*occsvnr(j,ik)
-!  enddo
-!enddo
-!call mpi_grid_reduce(ekin_,dims=(/dim_k/))
-!ekin_=ekin_/nkptnr
-!if (wproc) then
-!  write(151,*)
-!  etot_=ekin_+engykncr+0.5d0*engyvcl+engyx+engyc+engymad-sic_energy_pot
-!  write(151,'("kinetic energy : ",G18.10)')ekin_+engykncr
-!  write(151,'("potential      : ",G18.10)')0.5d0*engyvcl+engyx+engyc
-!  write(151,'("madelung       : ",G18.10)')engymad
-!  write(151,'("sic correction : ",G18.10)')sic_energy_pot
-!  write(151,'("total energy   : ",G18.10)')etot_
-!  !open(152,file="SIC_ETOT.OUT",form="FORMATTED",status="REPLACE")
-!  !write(152,'(G18.10)')etot_
-!  !close(152)
-!endif
-!deallocate(laplsv)
 
-! run some tests
-!call sic_test_blochsum(1,"sic_blochsum_exact.out")
-!call sic_test_blochsum(2,"sic_blochsum_bt_from_exact.out")
-!call sic_readvwan
-!if (tsic_wv) call sic_test_blochsum(3,"sic_blochsum_bt_from_wanlm.out")
-!call bstop
-
-call sic_iterate(151)
+do iter=1,sic_niter_umtrx
+  if (iter.gt.1) then
+    call sic_update_umtrx
+  endif
+  call wancnr_transform(sic_wan_umtrx)
+  if (wproc) then
+    write(151,*)
+    write(151,'(80("="))')
+    write(151,'("SIC minimization")')
+    write(151,'(80("="))')
+    write(151,'("energies of Wannier functions")')
+    do j=1,sic_wantran%nwan
+      n=sic_wantran%iwan(j)
+      write(151,'("  n : ",I4,"    wann_ene : ",F12.6)')n,wann_ene(n)
+    enddo
+  endif
+! generate Wannier functions and corresponding potential
+  call sic_wan(151)
+! matrix elements
+  call sic_genvme(151)
+enddo
 
 call mpi_grid_barrier
+
 call sic_wan_blochsum
+
 call mpi_grid_barrier
+
 ! write to HDF5 file
 call sic_write_data
 call mpi_grid_barrier
