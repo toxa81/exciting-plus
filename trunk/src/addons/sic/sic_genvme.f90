@@ -8,7 +8,7 @@ integer, intent(in) :: fout
 integer i,j,n,i1,j1,n1,vl(3)
 logical texist
 real(8) t1,t2,t3,pos1(3),pos2(3)
-complex(8) me1,me2
+complex(8) me1,me2,zt1,zt2
 !
 if (wproc) then
   write(fout,*)
@@ -26,7 +26,7 @@ if (sic_me_cutoff.gt.1.d0) then
   if (wproc) then
     write(fout,*)
     write(fout,'("time for one matrix element : ",F8.3," sec.")')&
-      timer_get_value(t_sic_me)
+      &timer_get_value(t_sic_me)
     call flushifc(fout)
   endif
 endif
@@ -48,6 +48,23 @@ do i=1,sic_wantran%nwt
     me2=sic_vme(j)
   endif
 enddo
+! check if |VW> belongs to the subspace of |W>
+do j=1,sic_wantran%nwan
+  n=sic_wantran%iwan(j)
+  zt1=s_spinor_dotp((/0.d0,0.d0,0.d0/),(/0.d0,0.d0,0.d0/),s_wvlm(1,1,1,j),s_wvlm(1,1,1,j))
+  zt2=zzero
+  do i=1,sic_wantran%nwt
+    if (n.eq.sic_wantran%iwt(1,i)) then
+      !n1=sic_wantran%iwt(2,i)
+      zt2=zt2+abs(sic_vme(i))**2
+    endif
+  enddo
+  if (wproc) then
+    write(fout,'(" n : ",I4," reexpansion error : ", F12.6)')n,abs(zt1-zt2)
+  endif
+enddo
+
+
 ! symmetrize the potential matrix elements
 !do i=1,sic_wantran%nwt
 !  n=sic_wantran%iwt(1,i)
@@ -80,9 +97,9 @@ if (wproc) then
   write(fout,'("maximum deviation from ""localization criterion"" : ",G18.10)')t2
   write(fout,'("matrix elements with maximum difference : ",2I6)')i1,j1
   write(fout,'("  n : ",I4,"    n'' : ",I4,"    T : ",3I4,8X,2G18.10)')&
-    sic_wantran%iwt(:,i1),dreal(me1),dimag(me1)
+    &sic_wantran%iwt(:,i1),dreal(me1),dimag(me1)
   write(fout,'("  n : ",I4,"    n'' : ",I4,"    T : ",3I4,8X,2G18.10)')&
-    sic_wantran%iwt(:,j1),dreal(me2),dimag(me2)
+    &sic_wantran%iwt(:,j1),dreal(me2),dimag(me2)
   write(fout,*)
   write(fout,'("diagonal matrix elements (<(W*V)_n|W_n>) :")')
   do j=1,sic_wantran%nwan
