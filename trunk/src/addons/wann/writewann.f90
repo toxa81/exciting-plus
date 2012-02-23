@@ -3,8 +3,10 @@ use modmain
 use modldapu
 use mod_nrkp
 implicit none
-integer i,j,ik,ikloc
+integer i,j,ik,ikloc,n1,n2,j1,j2,nwan,ias
 logical lpmat
+complex(8), allocatable :: zm(:,:)
+real(8), allocatable :: dm(:,:),eval(:)
 call init0
 call init1
 
@@ -37,7 +39,7 @@ wann_e=0.d0
 do ikloc=1,nkptnrloc
   ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
   call genwann_h(.true.,evalsvnr(1,ik),wanncnrloc(1,1,ikloc),&
-    wann_h(1,1,ik),wann_e(1,ik))
+    &wann_h(1,1,ik),wann_e(1,ik))
 enddo
 
 !allocate(wann_ene_m(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
@@ -67,6 +69,8 @@ if (mpi_grid_root().and.task.eq.807) then
   write(200,'(I8)')nkptnr
   write(200,'("# number of Wannier functions")')
   write(200,'(I8)')nwantot
+  write(200,'("# number of atoms")')
+  write(200,'(I8)')natmtot  
 !  write(200,'("# occupancy matrix")')
 !  do i=1,wann_natom
 !    ias=wann_iprj(1,i)
@@ -112,6 +116,58 @@ if (mpi_grid_root().and.task.eq.807) then
   enddo
   close(200)
 endif
+
+if (mpi_grid_root()) then
+  do ias=1,natmtot
+    nwan=nwannias(ias)
+    if (nwan.ne.0) then
+      write(*,*)"ias : ",ias,"  nwan : ",nwan
+      allocate(zm(nwan,nwan))
+      allocate(dm(nwan,nwan))
+      allocate(eval(nwan))
+      j1=0
+      do n1=1,nwantot
+        if (wan_info(wi_atom,n1).eq.ias) then
+          j1=j1+1
+          j2=0
+          do n2=1,nwantot
+            if (wan_info(wi_atom,n2).eq.ias) then
+              j2=j2+1
+              zm(j1,j2)=wann_h(n1,n2,1)
+              dm(j1,j2)=dreal(zm(j1,j2))
+            endif
+          enddo
+        endif
+      enddo
+      write(*,*)"Hamiltonian at gamma point :"
+      do j1=1,nwan
+        write(*,'(255F12.6)')(dreal(zm(j1,j2)),j2=1,nwan)
+      enddo
+      write(*,*)
+      do j1=1,nwan
+        write(*,'(255F12.6)')(dimag(zm(j1,j2)),j2=1,nwan)
+      enddo
+      write(*,*)"eigen-vectors : "
+      call diagdsy(nwan,dm,eval)
+      do j1=1,nwan
+        write(*,'(2X,7G18.10)')(dm(j1,j2),j2=1,nwan)
+      enddo
+      write(*,*)
+      write(*,'(2X,7G18.10)')(eval(j1),j1=1,nwan)
+      write(*,*)
+      write(*,*)"transpose of eigen-vectors : "
+      do j1=1,nwan
+        write(*,'(2X,7G18.10)')(dm(j2,j1),j2=1,nwan)
+      enddo
+      write(*,*)
+      deallocate(zm,dm,eval)
+    endif
+  enddo
+endif
+
+
+
+
 !deallocate(wann_ene_m,wann_occ_m)
 return
 end
