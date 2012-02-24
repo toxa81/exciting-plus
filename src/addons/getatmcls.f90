@@ -28,6 +28,7 @@ do i=1,natmcls
     endif
   enddo
 enddo
+if (allocated(natoms_in_class)) deallocate(natoms_in_class)
 allocate(natoms_in_class(natmcls))
 natoms_in_class=0
 do ias=1,natmtot
