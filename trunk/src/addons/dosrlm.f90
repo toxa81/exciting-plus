@@ -2,6 +2,7 @@ subroutine dosrlm
 use modmain
 use mod_wannier
 use mod_seceqn
+use mod_nrkp
 implicit none
 ! local variables
 integer lmax,lmmax,l,m,lm,nsk(3)
@@ -42,6 +43,8 @@ call getufr
 ! get product of radial functions
 call genufrp  
 
+wproc=mpi_grid_root()
+
 lmax=min(3,lmaxapw)
 lmmax=(lmax+1)**2
 allocate(bndchr(lmmax,natmtot,nspinor,nstsv,nkpt))
@@ -55,6 +58,9 @@ else
   allocate(evecfd(nspinor*nmatmax,nstsv))
   allocate(apwalm(ngkmax,lmmaxapw,apwordmax,natmtot))
 endif
+if (wannier) then
+  call genwfnr(-1,.false.,lmax) 
+endif
 evalsv=0.d0
 bndchr=0.0
 sdmat=zzero
@@ -66,17 +72,14 @@ if (mpi_grid_side(dims=(/dim_k/))) then
       call getevecfv(vkl(1,ik),vgkl(1,1,1,ikloc),evecfv)
       call getevecsv(vkl(1,ik),evecsv)
       call match(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),&
-        sfacgk(1,1,1,ikloc),apwalm)
+        &sfacgk(1,1,1,ikloc),apwalm)
       call genwfsvmt(lmax,lmmax,ngk(1,ik),evecfv(:,:,1),evecsv,apwalm,wfsvmt)
-      if (wannier) call genwann(ikloc,evecfv,evecsv)
       call gensdmat(evecsv,sdmat(:,:,:,ik))
     else
       call getevecfd(vkl(1,ik),vgkl(1,1,1,ikloc),evecfd)
       call genapwalm(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),&
-        sfacgk(1,1,1,ikloc),apwalm)
+        &sfacgk(1,1,1,ikloc),apwalm)
       call genwfsvc(lmax,lmmax,ngk(1,ik),nstsv,apwalm,evecfd,wfsvmt)
-      if (wannier) call wan_gencsv(lmmax,vkc(1,ik),evalsv(1,ik),&
-        wfsvmt,wann_c(1,1,ikloc))
       call gensdmatfd(nmat(1,ik),evecfd,sdmat(:,:,:,ik))
     endif
 ! compute the band character
@@ -85,12 +88,12 @@ if (mpi_grid_side(dims=(/dim_k/))) then
 endif
 do ik=1,nkpt
   call mpi_grid_reduce(bndchr(1,1,1,1,ik),lmmax*natmtot*nspinor*nstsv,&
-    dims=(/dim_k/),side=.true.,all=.true.)
+    &dims=(/dim_k/),side=.true.,all=.true.)
   call mpi_grid_reduce(sdmat(1,1,1,ik),nspinor*nspinor*nstsv,&
-    dims=(/dim_k/),side=.true.,all=.true.)
+    &dims=(/dim_k/),side=.true.,all=.true.)
 enddo
 call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.,&
-  all=.true.)
+  &all=.true.)
 ! apply scissor correction if required
 if (scissor.ne.0.d0) then
   do ik=1,nkpt
@@ -132,7 +135,7 @@ if (mpi_grid_root()) then
       end do
     end do !ik
     call brzint(nsmdos,ngridk,nsk,ikmap,nwdos,wdos,nstsv,nstsv,evalsv,f, &
-      tdos(1,ispn))
+      &tdos(1,ispn))
   end do !ispn
   tdos=tdos*occmax
 endif
@@ -151,7 +154,7 @@ do iasloc=1,natmtotloc
           end do
         end do
         call brzint(nsmdos,ngridk,nsk,ikmap,nwdos,wdos,nstsv,nstsv, &
-         evalsv,f,pdos(1,lm,ispn,ias))
+         &evalsv,f,pdos(1,lm,ispn,ias))
       end do !m
     end do !l
   end do !ispn
@@ -159,24 +162,22 @@ enddo !ias
 pdos=pdos*occmax
 do ias=1,natmtot
   call mpi_grid_reduce(pdos(1,1,1,ias),nwdos*lmmax*nspinor,dims=(/dim_k/),&
-    side=.true.)
+    &side=.true.)
 enddo
 allocate(doswan(nwdos,nwantot))
 doswan=0.d0
 if (wannier) then
   do n=1,nwantot
     f=0.d0
-    do ik=1,nkpt
-      ikloc=mpi_grid_map(nkpt,dim_k,x=x0,glob=ik)
-      if (mpi_grid_dim_pos(dim_k).eq.x0) then
-        do ist=1,nstsv
-          f(ist,ik)=abs(wann_c(n,ist,ikloc))**2
-        end do
-      endif
-    end do
-    call mpi_grid_reduce(f(1,1),nstsv*nkpt,dims=(/dim_k/))
-    call brzint(nsmdos,ngridk,nsk,ikmap,nwdos,wdos,nstsv,nstsv, &
-      evalsv,f,doswan(1,n)) 
+    do ikloc=1,nkptnrloc
+      ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+      do ist=1,nstsv
+        f(ist,ik)=abs(wanncnrloc(n,ist,ikloc))**2
+      enddo
+    enddo
+    call mpi_grid_reduce(f(1,1),nstsv*nkptnr,dims=(/dim_k/))
+    call brzint(nsmdos,ngridk,nsk,ikmapnr,nwdos,wdos,nstsv,nstsv, &
+      &evalsvnr,f,doswan(1,n))
   enddo
 endif 
 
