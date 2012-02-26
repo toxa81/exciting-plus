@@ -164,9 +164,11 @@ do ias=1,natmtot
   call mpi_grid_reduce(pdos(1,1,1,ias),nwdos*lmmax*nspinor,dims=(/dim_k/),&
     &side=.true.)
 enddo
-allocate(doswan(nwdos,nwantot))
-doswan=0.d0
+deallocate(f)
 if (wannier) then
+  allocate(doswan(nwdos,nwantot))
+  allocate(f(nstsv,nkptnr))
+  doswan=0.d0
   do n=1,nwantot
     f=0.d0
     do ikloc=1,nkptnrloc
@@ -271,7 +273,11 @@ endif
 if (mpi_grid_root()) then
   deallocate(tdos,idos)
 endif
-deallocate(f,w,pdos,doswan)
+deallocate(w,pdos)
+if (wannier) then
+  deallocate(doswan)
+  deallocate(f)
+endif
 if (tsveqn) then
   deallocate(evecfv,evecsv)
 else
