@@ -35,7 +35,8 @@ call genufrp
 call genwfnr(-1,.false.,lmaxapw)  
 call elk_m_init
 #ifdef _MAD_
-call madness_init_box
+!call madness_init_box
+!call madness_gen_hpot(1)
 #endif
 ! at this point we want to create new hdf5 file for sic-related data
 ! but first, read the matix elements from the old file (this is to compute RMS)

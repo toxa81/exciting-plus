@@ -82,10 +82,10 @@ do j=1,sic_wantran%nwan
           x0(:)=mt_spx(:,itp)*spr(ir,is)+atposc(:,ia,is)-wanpos(:,n)
           x(:)=x0(:)+sic_vtc(:,it)
           call ws_reduce(x,sic_wan_rwsmax)
-          vtcmt(:,itp,ir,ias)=x(:)-x0(:)
+          vtcmt(:,itp,ir,ias)=x(:)-x0(:)  !TODO: check + or - ; check t= argument
           if (twk.and.twvk) then
             call s_spinor_func_val(x,s_wlm(1,1,1,j),zt1,&
-              s_wvlm(1,1,1,j),zt2,rcutoff=s_rmax)
+              &s_wvlm(1,1,1,j),zt2,rcutoff=s_rmax)
             f1tp(itp,ir,ias,:)=zt1(:)
             f2tp(itp,ir,ias,:)=zt2(:)
           else
@@ -103,11 +103,11 @@ do j=1,sic_wantran%nwan
 !$OMP END PARALLEL DO
     enddo !ias
     call mpi_grid_reduce(vtcmt(1,1,1,1),3*mt_ntp*nrmtmax*natmtot,&
-      dims=(/dim_k/),all=.true.)
+      &dims=(/dim_k/),all=.true.)
     if (twk) call mpi_grid_reduce(f1tp(1,1,1,1),mt_ntp*nrmtmax*natmtot*nspinor,&
-      dims=(/dim_k/),all=.true.)
+      &dims=(/dim_k/),all=.true.)
     if (twvk) call mpi_grid_reduce(f2tp(1,1,1,1),mt_ntp*nrmtmax*natmtot*nspinor,&
-      dims=(/dim_k/),all=.true.)
+      &dims=(/dim_k/),all=.true.)
     call timer_stop(92)
 ! multiply by e^{-ikT} and add to Bloch-sum 
     call timer_start(93)
@@ -127,9 +127,9 @@ do j=1,sic_wantran%nwan
             endif
             do ispn=1,nspinor
               if (twk) f1ktp(itp,ir,ias,ispn,ikloc)=&
-                f1ktp(itp,ir,ias,ispn,ikloc)+f1tp(itp,ir,ias,ispn)*expikt
+                &f1ktp(itp,ir,ias,ispn,ikloc)+f1tp(itp,ir,ias,ispn)*expikt
               if (twvk) f2ktp(itp,ir,ias,ispn,ikloc)=&
-                f2ktp(itp,ir,ias,ispn,ikloc)+f2tp(itp,ir,ias,ispn)*expikt
+                &f2ktp(itp,ir,ias,ispn,ikloc)+f2tp(itp,ir,ias,ispn)*expikt
             enddo !ispn
           enddo !itp
         enddo !ir
@@ -151,7 +151,7 @@ do j=1,sic_wantran%nwan
       vtcir(:,ir)=x(:)-x0(:)
       if (twk.and.twvk) then
         call s_spinor_func_val(x,s_wlm(1,1,1,j),zt1,&
-          s_wvlm(1,1,1,j),zt2,rcutoff=s_rmax)
+          &s_wvlm(1,1,1,j),zt2,rcutoff=s_rmax)
         f1ir(ir,:)=zt1(:)
         f2ir(ir,:)=zt2(:)
       else
@@ -168,9 +168,9 @@ do j=1,sic_wantran%nwan
 !$OMP END PARALLEL DO
     call mpi_grid_reduce(vtcir(1,1),3*ngrtot,dims=(/dim_k/),all=.true.)
     if (twk) call mpi_grid_reduce(f1ir(1,1),ngrtot*nspinor,&
-      dims=(/dim_k/),all=.true.)
+      &dims=(/dim_k/),all=.true.)
     if (twvk) call mpi_grid_reduce(f2ir(1,1),ngrtot*nspinor,&
-      dims=(/dim_k/),all=.true.)
+      &dims=(/dim_k/),all=.true.)
     call timer_stop(92)
 ! multiply by e^{-ikT} and add to Bloch-sum 
     call timer_start(93)
@@ -196,25 +196,25 @@ do j=1,sic_wantran%nwan
     ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
     if (twk) then
       call mpi_grid_reduce(f1ktp(1,1,1,1,ikloc),&
-        mt_ntp*nrmtmax*natmtot*nspinor,dims=(/dim2/),all=.true.)
+        &mt_ntp*nrmtmax*natmtot*nspinor,dims=(/dim2/),all=.true.)
       call mpi_grid_reduce(f1kir(1,1,ikloc),ngrtot*nspinor,&
-        dims=(/dim2/),all=.true.)
+        &dims=(/dim2/),all=.true.)
     endif
     if (twvk) then
       call mpi_grid_reduce(f2ktp(1,1,1,1,ikloc),&
-        mt_ntp*nrmtmax*natmtot*nspinor,dims=(/dim2/),all=.true.)
+        &mt_ntp*nrmtmax*natmtot*nspinor,dims=(/dim2/),all=.true.)
       call mpi_grid_reduce(f2kir(1,1,ikloc),ngrtot*nspinor,&
-        dims=(/dim2/),all=.true.)    
+        &dims=(/dim2/),all=.true.)    
     endif
     do ispn=1,nspinor
 ! convert to lm expansion
       do ias=1,natmtot
         if (twk) call zgemm('T','N',nrmtmax,lmmaxapw,mt_ntp,zone,&
-          f1ktp(1,1,ias,ispn,ikloc),mt_ntp,mt_ylmb,mt_ntp,&
-          zzero,s_wkmt(1,1,ias,ispn,j,ikloc),nrmtmax)
+          &f1ktp(1,1,ias,ispn,ikloc),mt_ntp,mt_ylmb,mt_ntp,&
+          &zzero,s_wkmt(1,1,ias,ispn,j,ikloc),nrmtmax)
         if (twvk) call zgemm('T','N',nrmtmax,lmmaxapw,mt_ntp,zone,&
-          f2ktp(1,1,ias,ispn,ikloc),mt_ntp,mt_ylmb,mt_ntp,&
-          zzero,s_wvkmt(1,1,ias,ispn,j,ikloc),nrmtmax)
+          &f2ktp(1,1,ias,ispn,ikloc),mt_ntp,mt_ylmb,mt_ntp,&
+          &zzero,s_wvkmt(1,1,ias,ispn,j,ikloc),nrmtmax)
       enddo
 ! convert to plane-wave expansion
 ! we want to compute <G+k|w_{nk}> where |G+k> = Omega^{-1/2}*exp^{i(G+k)r}
@@ -227,7 +227,7 @@ do j=1,sic_wantran%nwan
       do ir=1,ngrtot
 ! remove exp^{-ikr} phase, multiply by step function and by sqrt(omega)
         z1=exp(-zi*dot_product(vkc(:,ik),vgrc(:,ir)))*sqrt(omega)
-        if (twk) f1kir(ir,ispn,ikloc)=f1kir(ir,ispn,ikloc)*cfunir(ir)*z1
+        if (twk) f1kir(ir,ispn,ikloc)=f1kir(ir,ispn,ikloc)*cfunir(ir)*z1 !TODO: check if cfunir is really necessary
         if (twvk) f2kir(ir,ispn,ikloc)=f2kir(ir,ispn,ikloc)*cfunir(ir)*z1
       enddo !ir
       if (twk) call zfftifc(3,ngrid,-1,f1kir(1,ispn,ikloc))

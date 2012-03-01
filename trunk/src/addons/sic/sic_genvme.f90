@@ -51,16 +51,18 @@ enddo
 ! check if |VW> belongs to the subspace of |W>
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
-  zt1=s_spinor_dotp((/0.d0,0.d0,0.d0/),(/0.d0,0.d0,0.d0/),s_wvlm(1,1,1,j),s_wvlm(1,1,1,j))
-  zt2=zzero
-  do i=1,sic_wantran%nwt
-    if (n.eq.sic_wantran%iwt(1,i)) then
-      !n1=sic_wantran%iwt(2,i)
-      zt2=zt2+abs(sic_vme(i))**2
+  if (sic_apply(n).eq.2) then
+    pos1=0.d0
+    zt1=s_spinor_dotp(pos1,pos1,s_wvlm(1,1,1,j),s_wvlm(1,1,1,j))
+    zt2=zzero
+    do i=1,sic_wantran%nwt
+      if (n.eq.sic_wantran%iwt(1,i)) then
+        zt2=zt2+abs(sic_vme(i))**2
+      endif
+    enddo
+    if (wproc) then
+      write(fout,'(" n : ",I4,"   |VW> expansion error : ", F12.6)')n,abs(zt1-zt2)
     endif
-  enddo
-  if (wproc) then
-    write(fout,'(" n : ",I4," reexpansion error : ", F12.6)')n,abs(zt1-zt2)
   endif
 enddo
 

@@ -43,44 +43,6 @@ if (wproc) then
   call flushifc(fout)
 endif
 
-!!if (sic_debug_level.ge.2) then
-!  do j=1,sic_wantran%nwan
-!    n=sic_wantran%iwan(j)
-!    call elk_load_wann_unk(n)
-!    write(fname,'("wannier_",I4.4,"_[010].dat")')n
-!    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
-!    do ir=1,s_nr
-!      x(:)=(/0.d0,1.d0,0.d0/)*s_r(ir)+wanpos(:,n)
-!      call s_get_wanval(x,wanval)
-!      z1=wanval(1)
-!      dens(1)=abs(z1)**2
-!      call xcifc(xctype,n=1,rho=dens,ex=e1,ec=e2,vx=v1,vc=v2)
-!      write(210,'(3G18.10)')s_r(ir),abs(z1)**2,(v1(1)+v2(1)) !dreal(z1),dimag(z1)
-!    enddo
-!    close(210)
-!!    write(fname,'("wannier_",I4.4,"_[001].dat")')n
-!!    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
-!!    do ir=1,s_nr
-!!      x(:)=(/0.d0,0.d0,1.d0/)*s_r(ir)
-!!      call s_get_wanval(.true.,n,x,wanval)
-!!      z1=wanval(1)
-!!      write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
-!!    enddo
-!!    close(210)
-!!    write(fname,'("wannier_",I4.4,"_[111].dat")')n
-!!    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
-!!    do ir=1,s_nr
-!!      x(:)=(/1.d0,1.d0,1.d0/)*s_r(ir)*200/sqrt(3.d0)/sic_wan_cutoff
-!!      write(*,*)x
-!!      call s_get_wanval(.true.,n,x,wanval)
-!!      z1=wanval(1)
-!!      write(210,'(3G18.10)')sqrt(sum(x**2)),dreal(z1),dimag(z1)
-!!    enddo
-!!    close(210)
-!  enddo
-!!endif
-
-
 call timer_start(t_sic_wan,reset=.true.)
 call timer_reset(t_sic_wan_gen)
 call timer_reset(t_sic_wan_rms)
@@ -89,7 +51,6 @@ call timer_reset(t_sic_wvprod)
 s_wlm=zzero
 s_wvlm=zzero
 wanprop=0.d0
-!nrloc=mpi_grid_map(s_nr,dim2)
 nrloc=mpi_grid_map(s_nr,dim_k)
 ! loop over Wannier functions
 do j=1,sic_wantran%nwan
@@ -107,7 +68,7 @@ do j=1,sic_wantran%nwan
     enddo
   enddo
 !$OMP END PARALLEL DO
-  call mpi_grid_reduce(wantp(1,1,1),s_ntp*s_nr*nspinor,all=.true.)
+  call mpi_grid_reduce(wantp(1,1,1),s_ntp*s_nr*nspinor,dims=(/dim_k/),all=.true.)
 ! convert to spherical harmonics
   call sic_genwanlm(fout,n,wantp,s_wlm(1,1,1,j))
 ! compute norm
@@ -127,40 +88,12 @@ do j=1,sic_wantran%nwan
 enddo !j
 deallocate(wantp,f1tp,f2lm)
 
-call sic_localize(fout,wanprop)
+#ifdef _MAD_
+!call madness_gen_hpot
+!call madness_gen_xc
+#endif
 
-!if (sic_debug_level.ge.2) then
-!  do j=1,sic_wantran%nwan
-!    n=sic_wantran%iwan(j)
-!    write(fname,'("wannier_",I4.4,"_bt_[100].dat")')n
-!    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
-!    do ir=1,s_nr
-!      x(:)=(/1.d0,0.d0,0.d0/)*s_r(ir)
-!      z1=s_func_val(x,s_wlm(1,1,1,j))
-!      write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
-!    enddo
-!    close(210)
-!    write(fname,'("wannier_",I4.4,"_bt_[001].dat")')n
-!    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
-!    do ir=1,s_nr
-!      x(:)=(/0.d0,0.d0,1.d0/)*s_r(ir)
-!      z1=s_func_val(x,s_wlm(1,1,1,j))
-!      write(210,'(3G18.10)')s_r(ir),dreal(z1),dimag(z1)
-!    enddo
-!    close(210)
-!  enddo
-!endif
-!do j=1,sic_wantran%nwan
-!    write(fname,'("wannier_",I4.4,"_expanded_[010].dat")')n
-!    open(210,file=trim(adjustl(fname)),form="formatted",status="replace")
-!    do ir=1,s_nr
-!      x(:)=(/0.d0,1.d0,0.d0/)*s_r(ir)
-!      call s_spinor_func_val(x,s_wlm(1,1,1,1),wanval)
-!      z1=wanval(1)
-!      write(210,'(2G18.10)')s_r(ir),abs(z1)**2 !dreal(z1),dimag(z1)
-!    enddo
-!    close(210)
-!enddo 
+call sic_localize(fout,wanprop)
 
 ! compute overlap integrals 
 allocate(ovlp(sic_wantran%nwt))

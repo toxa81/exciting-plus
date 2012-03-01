@@ -353,15 +353,20 @@ complex(8), allocatable :: f2lm_(:,:)
 complex(8) zprod
 integer ir,itp,ispn
 real(8) x1(3),x2(3)
+complex(8), allocatable :: zf(:)
 complex(8), external :: zdotc
 !
 zprod=zzero
-if (sum(abs(pos1-pos2)).lt.1d-10) then 
-  do ispn=1,nspinor
-    do ir=1,s_nr_min
-      zprod=zprod+zdotc(lmmaxwan,f1lm(1,ir,ispn),1,f2lm(1,ir,ispn),1)*s_rw(ir)
+if (sum(abs(pos1-pos2)).lt.1d-10) then
+  allocate(zf(s_nr_min))
+  zf=zzero
+  do ir=1,s_nr_min
+    do ispn=1,nspinor
+      zf(ir)=zf(ir)+zdotc(lmmaxwan,f1lm(1,ir,ispn),1,f2lm(1,ir,ispn),1)
     enddo
   enddo
+  zprod=zintegrate(s_nr_min,s_r,zf)
+  deallocate(zf)
 else
   allocate(f1tp_(s_ntp,s_nr))
   allocate(f2tp_(s_ntp,s_nr,nspinor))
@@ -379,7 +384,7 @@ else
   do ispn=1,nspinor
 ! convert to spherical coordinates
     call zgemm('T','N',s_ntp,s_nr,lmmaxwan,zone,s_ylmf,lmmaxwan,&
-      f1lm(1,1,ispn),lmmaxwan,zzero,f1tp_,s_ntp)
+      &f1lm(1,1,ispn),lmmaxwan,zzero,f1tp_,s_ntp)
     do ir=1,s_nr_min
       do itp=1,s_ntp
         zprod=zprod+dconjg(f1tp_(itp,ir))*f2tp_(itp,ir,ispn)*s_tpw(itp)*s_rw(ir)
@@ -413,6 +418,7 @@ complex(8), optional, intent(out) :: zfrac(2)
 !
 integer is,ias,ir,itp
 complex(8) zsumir,zsummt,zt1
+complex(8), allocatable :: zf(:)
 complex(8), external :: zdotc
 ! interstitial contribution
 zsumir=zzero
@@ -424,10 +430,12 @@ else
   enddo
   zsumir=zsumir*omega/dble(ngrtot)
 endif
+allocate(zf(nrmtmax))
 ! muffin-tin contribution
 zsummt=zzero
 do ias=1,natmtot
   is=ias2is(ias)
+  zf=zzero
   do ir=1,nrmt(is)
     if (tsh) then
       zt1=zdotc(ld,zfmt1(1,ir,ias),1,zfmt2(1,ir,ias),1)
@@ -437,9 +445,12 @@ do ias=1,natmtot
         zt1=zt1+mt_tpw(itp)*dconjg(zfmt1(itp,ir,ias))*zfmt2(itp,ir,ias)
       enddo
     endif
-    zsummt=zsummt+zt1*mt_rw(ir,is)
+    zf(ir)=zt1
+    !zsummt=zsummt+zt1*mt_rw(ir,is)
   enddo
+  zsummt=zsummt+zintegrate(nrmt(is),spr(1,is),zf)
 enddo !ias
+deallocate(zf)
 s_zfinp=zsumir+zsummt
 if (present(zfrac)) then
   zfrac(1)=zsummt
@@ -466,17 +477,17 @@ tdiff=0.d0
 if (nrloc.gt.0) then
 ! convert to spherical harmonics
   call zgemm('T','N',lmmaxwan,nrloc,s_ntp,zone,s_ylmb,s_ntp,&
-    zftp(1,roffs+1),s_ntp,zzero,zflm(1,roffs+1),lmmaxwan)
+    &zftp(1,roffs+1),s_ntp,zzero,zflm(1,roffs+1),lmmaxwan)
   allocate(zftp1(s_ntp,nrloc))
   do iter=1,sic_bsht_niter
 ! convert back to spherical coordinates
     call zgemm('T','N',s_ntp,nrloc,lmmaxwan,zone,s_ylmf,lmmaxwan,zflm(1,1+roffs),&
-      lmmaxwan,zzero,zftp1,s_ntp)
+      &lmmaxwan,zzero,zftp1,s_ntp)
     zftp1(:,1:nrloc)=zftp(:,roffs+1:roffs+nrloc)-zftp1(:,1:nrloc)
     tdiff(iter)=sum(abs(zftp1))
 ! add difference to spherical harmonic expanson
     call zgemm('T','N',lmmaxwan,nrloc,s_ntp,zone,s_ylmb,s_ntp,&
-      zftp1,s_ntp,zone,zflm(1,roffs+1),lmmaxwan)
+      &zftp1,s_ntp,zone,zflm(1,roffs+1),lmmaxwan)
   enddo
   deallocate(zftp1)
 endif
@@ -486,7 +497,7 @@ endif
 call mpi_grid_reduce(zflm(1,1),lmmaxwan*nr,dims=(/dim_k/),all=.true.)
 if (mpi_grid_root().and.sic_bsht_niter.gt.1) then
   if (tdiff(sic_bsht_niter).gt.tdiff(sic_bsht_niter-1).and.&
-      tdiff(sic_bsht_niter).gt.1d-6) then
+      &tdiff(sic_bsht_niter).gt.1d-6) then
     write(*,'("Warning(sic_zbsht): difference of functions at each iteration")')
     write(*,'(255F12.6)')tdiff
   endif
@@ -513,17 +524,17 @@ tdiff=0.d0
 if (nrloc.gt.0) then
 ! convert to spherical harmonics
   call dgemm('T','N',lmmaxwan,nrloc,s_ntp,1.d0,s_rlmb,s_ntp,&
-    ftp(1,roffs+1),s_ntp,0.d0,flm(1,roffs+1),lmmaxwan)
+    &ftp(1,roffs+1),s_ntp,0.d0,flm(1,roffs+1),lmmaxwan)
   allocate(ftp1(s_ntp,nrloc))
   do iter=1,sic_bsht_niter
 ! convert back to spherical coordinates
     call dgemm('T','N',s_ntp,nrloc,lmmaxwan,1.d0,s_rlmf,lmmaxwan,flm(1,1+roffs),&
-      lmmaxwan,0.d0,ftp1,s_ntp)
+      &lmmaxwan,0.d0,ftp1,s_ntp)
     ftp1(:,1:nrloc)=ftp(:,roffs+1:roffs+nrloc)-ftp1(:,1:nrloc)
     tdiff(iter)=sum(abs(ftp1))
 ! add spherical harmonic expanson of the difference to the total expansion
     call dgemm('T','N',lmmaxwan,nrloc,s_ntp,1.d0,s_rlmb,s_ntp,&
-      ftp1,s_ntp,1.d0,flm(1,roffs+1),lmmaxwan)
+      &ftp1,s_ntp,1.d0,flm(1,roffs+1),lmmaxwan)
   enddo
   deallocate(ftp1)
 endif
@@ -533,7 +544,7 @@ endif
 call mpi_grid_reduce(flm(1,1),lmmaxwan*nr,dims=(/dim_k/),all=.true.)
 if (mpi_grid_root().and.sic_bsht_niter.gt.1) then
   if (tdiff(sic_bsht_niter).gt.tdiff(sic_bsht_niter-1).and.&
-      tdiff(sic_bsht_niter).gt.1d-6) then
+      &tdiff(sic_bsht_niter).gt.1d-6) then
     write(*,'("Warning(sic_rbsht): difference of functions at each iteration")')
     write(*,'(255F12.6)')tdiff
   endif
@@ -565,7 +576,7 @@ if (.not.tsic_wv) return
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 ! project to first-variational states
 if (tsveqn)  then
-!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(wfmt1,wfmt2,ias,j,ispn)
+!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(wfmt1,wfmt2,ias,j,ispn,lm)
   allocate(wfmt1(lmmaxapw,nrmtmax,natmtot))
   allocate(wfmt2(lmmaxapw,nrmtmax,natmtot))
 !$OMP DO
@@ -574,7 +585,7 @@ if (tsveqn)  then
 ! generate first-variational wave function
     do ias=1,natmtot
       call wavefmt(1,lmaxapw,ias2is(ias),ias2ia(ias),ngk(1,ik),apwalm,&
-        evecfv(1,ist),lmmaxapw,wfmt1(1,1,ias))
+        &evecfv(1,ist),lmmaxapw,wfmt1(1,1,ias))
     enddo
     do j=1,sic_wantran%nwan
       do ispn=1,nspinor
@@ -585,7 +596,7 @@ if (tsveqn)  then
           enddo
         enddo
         sic_wb(j,ist,ispn,ikloc)=s_zfinp(.true.,.true.,lmmaxapw,ngk(1,ik),&
-          wfmt2,wfmt1,s_wkit(1,ispn,j,ikloc),evecfv(1,ist))
+          &wfmt2,wfmt1,s_wkit(1,ispn,j,ikloc),evecfv(1,ist))
 ! rearrange indexes
         do ias=1,natmtot
           do lm=1,lmmaxapw
@@ -593,7 +604,7 @@ if (tsveqn)  then
           enddo
         enddo
         sic_wvb(j,ist,ispn,ikloc)=s_zfinp(.true.,.true.,lmmaxapw,ngk(1,ik),&
-          wfmt2,wfmt1,s_wvkit(1,ispn,j,ikloc),evecfv(1,ist))
+          &wfmt2,wfmt1,s_wvkit(1,ispn,j,ikloc),evecfv(1,ist))
       enddo
     enddo
   enddo !ist
@@ -627,9 +638,9 @@ else
         do ist=1,nstsv
           do ig=1,ngk(1,ik)
             sic_wb(j,ist,1,ikloc)=sic_wb(j,ist,1,ikloc)+&
-              dconjg(s_wkit(ig,ispn,j,ikloc))*wfsvit(ig,ispn,ist)
+              &dconjg(s_wkit(ig,ispn,j,ikloc))*wfsvit(ig,ispn,ist)
             sic_wvb(j,ist,1,ikloc)=sic_wvb(j,ist,1,ikloc)+&
-              dconjg(s_wvkit(ig,ispn,j,ikloc))*wfsvit(ig,ispn,ist)
+              &dconjg(s_wvkit(ig,ispn,j,ikloc))*wfsvit(ig,ispn,ist)
           enddo !ig
         enddo !ist
       enddo !ispn
@@ -655,9 +666,9 @@ else
               z2=zzero
               do ir=1,nrmt(is)
                 z1=z1+dconjg(s_wkmt(ir,lm,ias,ispn,j,ikloc))*&
-                  apwfr(ir,1,io,l,ias)*mt_rw(ir,is)
+                  &apwfr(ir,1,io,l,ias)*mt_rw(ir,is)
                 z2=z2+dconjg(s_wvkmt(ir,lm,ias,ispn,j,ikloc))*&
-                  apwfr(ir,1,io,l,ias)*mt_rw(ir,is)
+                  &apwfr(ir,1,io,l,ias)*mt_rw(ir,is)
               enddo !ir
               do ig=1,ngk(1,ik)
                 zv1(ig)=zv1(ig)+z1*apwalm(ig,io,lm,ias)
@@ -675,9 +686,9 @@ else
               z2=zzero
               do ir=1,nrmt(is)
                 z1=z1+dconjg(s_wkmt(ir,lm,ias,ispn,j,ikloc))*&
-                  lofr(ir,1,ilo,ias)*mt_rw(ir,is)
+                  &lofr(ir,1,ilo,ias)*mt_rw(ir,is)
                 z2=z2+dconjg(s_wvkmt(ir,lm,ias,ispn,j,ikloc))*&
-                  lofr(ir,1,ilo,ias)*mt_rw(ir,is)
+                  &lofr(ir,1,ilo,ias)*mt_rw(ir,is)
               enddo
               sic_wb(j,i,ispn,ikloc)=z1
               sic_wvb(j,i,ispn,ikloc)=z2
@@ -695,7 +706,7 @@ return
 end subroutine
 
 !
-! integrate function usign spline fit
+! integrate function using spline fit
 !  
 real(8) function rintegrate(nr,r,f,m,g)
 implicit none
@@ -716,10 +727,38 @@ do i=1,nr
   f0(i)=f(i)*(r(i)**m0)
 enddo
 call fderiv(-1,nr,r,f0,g0,cf)
-rintegrate=g(nr)
+rintegrate=g0(nr)
 if (present(g)) g(:)=g0(:)
 deallocate(f0,g0,cf)
 return
 end function
+
+complex(8) function zintegrate(nr,r,f,m,g)
+implicit none
+integer, intent(in) :: nr
+real(8), intent(in) :: r(nr)
+complex(8), intent(in) :: f(nr)
+integer, optional, intent(in) :: m
+complex(8), optional, intent(out) :: g(nr)
+!
+real(8), allocatable :: f0r(:),f0i(:),g0r(:),g0i(:),cf(:,:)
+integer i,m0
+!
+! r^{m} weight
+m0=2
+if (present(m)) m0=m
+allocate(f0r(nr),f0i(nr),g0r(nr),g0i(nr),cf(4,nr))
+do i=1,nr
+  f0r(i)=dreal(f(i))*(r(i)**m0)
+  f0i(i)=dimag(f(i))*(r(i)**m0)
+enddo
+call fderiv(-1,nr,r,f0r,g0r,cf)
+call fderiv(-1,nr,r,f0i,g0i,cf)
+zintegrate=dcmplx(g0r(nr),g0i(nr))
+if (present(g)) g(:)=dcmplx(g0r(:),g0i(:))
+deallocate(f0r,f0i,g0r,g0i,cf)
+return
+end function
+
 
 end module

@@ -29,7 +29,7 @@ do j=1,sic_wantran%nwan
           l=lm2l(lm)
           do io=1,nufr(l,is)
             s_wkmt(:,lm,ias,ispn,j,ikloc)=s_wkmt(:,lm,ias,ispn,j,ikloc)+&
-              m_wann_unkmt(lm,io,ias,ispn,jk)*ufr(:,l,io,ic)
+              &m_wann_unkmt(lm,io,ias,ispn,jk)*ufr(:,l,io,ic)
           enddo !io
         enddo !lm
       enddo !ias
