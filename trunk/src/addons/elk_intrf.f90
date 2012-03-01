@@ -73,10 +73,10 @@ real(8), intent(out) :: ec(1)
 
 if (spinpol) then
   call xcifc(xctype,n=1,rhoup=dens(:,1),rhodn=dens(:,2),ex=ex(:),&
-    ec=ec(:),vxup=vx(:,1),vxdn=vx(:,2),vcup=vc(:,1),vcdn=vc(:,2))
+    &ec=ec(:),vxup=vx(:,1),vxdn=vx(:,2),vcup=vc(:,1),vcdn=vc(:,2))
 else
   call xcifc(xctype,n=1,rho=dens(:,1),ex=ex(:),ec=ec(:),vx=vx(:,1),&
-    vc=vc(:,1))
+    &vc=vc(:,1))
 endif
 return
 end subroutine
@@ -241,83 +241,47 @@ end subroutine
 !end
 !
 !
-!subroutine elk_wan_rho(r_cutoff,vrc,wrho)
-!use modmain
-!use mod_nrkp
-!use mod_wannier
-!use mod_madness
-!implicit none
-!real(8), intent(in) :: r_cutoff
-!real(8), intent(in) :: vrc(3)
-!real(8), intent(out) :: wrho
-!!
-!integer is,ia,ias,ir0,io,l,j,i,lm,ig,ispn
-!integer ntr(3),ik
-!real(8) vrc0(3),vtc(3),vr0(3),r0,tp(2),t1
-!real(8) ur(0:lmaxvr,nufrmax)
-!complex(8) wanval(nspinor),zt1,zt2,zt3,ylm(lmmaxvr)
-!real(8) ya(nprad),c(nprad)
-!real(8), external :: polynom
-!logical, external :: vrinmt
-!complex(8) expigr(m_ngvec)
-!complex(8) zm1(lmmaxvr,nufrmax,nspinor),zm2(nspinor)
-!!
-!wrho=0.d0
-!vrc0(:)=vrc(:)-m_wanpos(:)
-!r0=sqrt(sum(vrc0(:)**2))
-!if (r0.gt.r_cutoff) return
+subroutine elk_wan_rho(x,rcutoff,wrho)
+use modmain
+use mod_nrkp
+use mod_wannier
+use mod_madness
+use mod_sic
+implicit none
+real(8), intent(inout) :: x(3)
+real(8), intent(in) :: rcutoff
+real(8), intent(out) :: wrho
+complex(8) wanval(nspinor)
+integer ispn
 !
-!wanval=zzero
-!if (vrinmt(vrc0,is,ia,ntr,vr0,ir0,r0)) then
-!  ias=idxas(ia,is)
-!  call sphcrd(vr0,t1,tp)
-!  call genylm(lmaxvr,tp,ylm)
-!  vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
-!  ur=0.d0
-!  do l=0,lmaxvr
-!    do io=1,nufr(l,is)
-!      do j=1,nprad
-!        i=ir0+j-1
-!        ya(j)=ufr(i,l,io,ias2ic(ias))
-!      end do
-!      ur(l,io)=polynom(0,nprad,spr(ir0,is),ya,c,r0)
-!    enddo !io
-!  enddo !l
-!  zm1=zzero
-!  do ik=1,nkptnr
-!    zt1=exp(zi*dot_product(vkcnr(:,ik),vtc(:)))
-!    do ispn=1,nspinor
-!      zm1(:,:,ispn)=zm1(:,:,ispn)+zt1*m_wann_unkmt(:,:,ias,ispn,ik)
-!    enddo
-!  enddo
-!  do ispn=1,nspinor
-!    do lm=1,lmmaxvr
-!      l=lm2l(lm)
-!      do io=1,nufr(l,is)
-!        wanval(ispn)=wanval(ispn)+zm1(lm,io,ispn)*ur(l,io)*ylm(lm)
-!      enddo !io
-!    enddo !lm
-!  enddo !ispn
-!else
-!  do ig=1,m_ngvec
-!    expigr(ig)=exp(zi*dot_product(vrc(:),vgc(:,ig)))  
-!  enddo
-!  do ik=1,nkptnr
-!    zt1=exp(zi*dot_product(vrc(:),vkcnr(:,ik)))/sqrt(omega)
-!    zm2=zzero
-!    do ig=1,m_ngknr(ik)
-!      zt2=expigr(m_igkignr(ig,ik))
-!      do ispn=1,nspinor
-!        zm2(ispn)=zm2(ispn)+zt2*m_wann_unkit(ig,ispn,ik)
-!      enddo
-!    enddo
-!    do ispn=1,nspinor
-!      wanval(ispn)=wanval(ispn)+zt1*zm2(ispn)
-!    enddo
-!  enddo
-!endif
-!do ispn=1,nspinor
-!  wrho=wrho+abs(wanval(ispn)/nkptnr)**2
-!enddo
-!return
-!end
+wrho=0.d0
+call s_get_wanval(x,wanval,rcutoff=rcutoff)
+do ispn=1,nspinor
+  wrho=wrho+abs(wanval(ispn))**2
+enddo
+return
+end subroutine
+
+subroutine sic_wan_rho(j,x,rcutoff,wrho)
+use modmain
+use mod_nrkp
+use mod_wannier
+use mod_madness
+use mod_sic
+implicit none
+integer, intent(in) :: j
+real(8), intent(inout) :: x(3)
+real(8), intent(in) :: rcutoff
+real(8), intent(out) :: wrho
+complex(8) wanval(nspinor)
+integer ispn
+!
+wrho=0.d0
+call s_spinor_func_val(x,s_wlm(1,1,1,j),wanval,rcutoff=rcutoff)
+do ispn=1,nspinor
+  wrho=wrho+abs(wanval(ispn))**2
+enddo
+return
+end subroutine
+
+
