@@ -138,10 +138,10 @@ do itask=1,ntasks
     call writewf
   !case(883)
   !  call test_potcoul
-#ifdef _MAD_
-  case(890)
-    call test_madness
-#endif
+!#ifdef _MAD_
+!  case(890)
+!    call test_madness
+!#endif
   case default
     write(*,*)
     write(*,'("Error(main): task not defined : ",I8)') task
