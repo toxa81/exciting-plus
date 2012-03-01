@@ -13,6 +13,7 @@ integer i,j,ik,vtrl(3),n1,n2,j1,j2,ispn1,ispn2,istfv1,istfv2,ist1,ist2
 real(8) vtrc(3),en
 complex(8) expikt
 complex(8), allocatable :: vk(:,:),zm1(:,:)
+!complex(8), allocatable :: wfmt1(:,:),wfmt2(:,:)
 character*500 msg,fname
 logical, parameter :: tcheckherm=.false.
 !
@@ -30,10 +31,10 @@ enddo
 ! compute H_{nn'}^{0}(k); remember that on input hunif=H0
 allocate(zm1(sic_wantran%nwan,nstsv))
 call zgemm('N','N',sic_wantran%nwan,nstsv,nstsv,zone,sic_wb(1,1,1,ikloc),&
-  sic_wantran%nwan,hunif,nstsv,zzero,zm1,sic_wantran%nwan)
+  &sic_wantran%nwan,hunif,nstsv,zzero,zm1,sic_wantran%nwan)
 call zgemm('N','C',sic_wantran%nwan,sic_wantran%nwan,nstsv,zone,zm1,&
-  sic_wantran%nwan,sic_wb(1,1,1,ikloc),sic_wantran%nwan,zzero,&
-  sic_wan_h0k(1,1,ikloc),sic_wantran%nwan)
+  &sic_wantran%nwan,sic_wb(1,1,1,ikloc),sic_wantran%nwan,zzero,&
+  &sic_wan_h0k(1,1,ikloc),sic_wantran%nwan)
 deallocate(zm1)
 ! compute V_{nn'}(k)
 allocate(vk(sic_wantran%nwan,sic_wantran%nwan))
@@ -67,29 +68,29 @@ do istfv1=1,nstfv
       do ispn2=1,nspinor
         ist2=istfv2+(ispn2-1)*nstfv
         do j1=1,sic_wantran%nwan
-          n1=sic_wantran%iwan(j1)
-          en=dreal(sic_vme(sic_wantran%iwtidx(n1,n1,0,0,0)))!+sic_wan_e0(n1)
+          !n1=sic_wantran%iwan(j1)
+          !en=dreal(sic_vme(sic_wantran%iwtidx(n1,n1,0,0,0)))!+sic_wan_e0(n1)
           do j2=1,sic_wantran%nwan
 ! 2-nd term : -\sum_{\alpha,\alpha'} P_{\alpha} H^{LDA} P_{\alpha'}     
-            !hunif(ist1,ist2)=hunif(ist1,ist2)-sic_wan_h0k(j1,j2,ikloc)*&
-            !  dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*sic_wb(j2,istfv2,ispn2,ikloc)
+            hunif(ist1,ist2)=hunif(ist1,ist2)-sic_wan_h0k(j1,j2,ikloc)*&
+              dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*sic_wb(j2,istfv2,ispn2,ikloc)
 ! 5-th term, first part: 
 !  -\sum_{\alpha,\alpha'} ( P_{\alpha}V_{\alpha}P_{\alpha'} +
 !                           P_{\alpha'}V_{\alpha}P_{\alpha} )
-            hunif(ist1,ist2)=hunif(ist1,ist2)-&
-              vk(j1,j2)*dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*&
-              sic_wb(j2,istfv2,ispn2,ikloc)-dconjg(vk(j1,j2))*&
-              dconjg(sic_wb(j2,istfv1,ispn1,ikloc))*sic_wb(j1,istfv2,ispn2,ikloc)
+            !hunif(ist1,ist2)=hunif(ist1,ist2)-&
+            !  vk(j1,j2)*dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*&
+            !  sic_wb(j2,istfv2,ispn2,ikloc)-dconjg(vk(j1,j2))*&
+            !  dconjg(sic_wb(j2,istfv1,ispn1,ikloc))*sic_wb(j1,istfv2,ispn2,ikloc)
           enddo !j2
 ! 3-rd term : \sum_{alpha} P_{\alpha} H^{LDA} P_{\alpha}
 ! 4-th term : \sum_{alpha} P_{\alpha} V_{\alpha} P_{\alpha}
           hunif(ist1,ist2)=hunif(ist1,ist2)+&
             dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*&
-            sic_wb(j1,istfv2,ispn2,ikloc)*en
+            sic_wb(j1,istfv2,ispn2,ikloc)*(sic_wan_h0k(j1,j1,ikloc)+vk(j1,j1))
 ! 5-th term, second part: \sum_{\alpha} P_{\alpha}V_{\alpha}+V_{\alpha}P_{\alpha}
-          hunif(ist1,ist2)=hunif(ist1,ist2)+&
-            dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*sic_wvb(j1,istfv2,ispn2,ikloc)+&
-            dconjg(sic_wvb(j1,istfv1,ispn1,ikloc))*sic_wb(j1,istfv2,ispn2,ikloc)
+          !hunif(ist1,ist2)=hunif(ist1,ist2)+&
+          !  dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*sic_wvb(j1,istfv2,ispn2,ikloc)+&
+          !  dconjg(sic_wvb(j1,istfv1,ispn1,ikloc))*sic_wb(j1,istfv2,ispn2,ikloc)
         enddo !j1
       enddo !ispn2
     enddo ! istfv2

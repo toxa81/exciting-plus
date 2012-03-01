@@ -4,7 +4,7 @@ use mod_sic
 implicit none
 integer, intent(in) :: fout
 integer, intent(in) :: n
-complex(8), intent(inout) :: wantp(s_ntp,s_nr,nspinor)
+complex(8), intent(in) :: wantp(s_ntp,s_nr,nspinor)
 complex(8), intent(inout) :: wanlm(lmmaxwan,s_nr,nspinor)
 ! local variables
 integer ispn,lm,ir,l,m

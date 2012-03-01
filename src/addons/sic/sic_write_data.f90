@@ -18,9 +18,9 @@ if (wproc) then
     if (j.gt.0) then
       write(path,'("/wannier_functions/",I4.4)')n
       call hdf5_write("sic.hdf5",path,"wlm",s_wlm(1,1,1,j),&
-        (/lmmaxwan,s_nr,nspinor/))
+        &(/lmmaxwan,s_nr,nspinor/))
       call hdf5_write("sic.hdf5",path,"wvlm",s_wvlm(1,1,1,j),&
-        (/lmmaxwan,s_nr,nspinor/))
+        &(/lmmaxwan,s_nr,nspinor/))
     endif
   enddo
 endif
@@ -34,9 +34,9 @@ if (mpi_grid_side(dims=(/dim_k/))) then
             ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
             write(path,'("/wannier_functions/",I4.4,"/kpoints/",I4.4)')n,ik
             call hdf5_write("sic.hdf5",path,"wkmt",s_wkmt(1,1,1,1,j,ikloc),&
-              (/nrmtmax,lmmaxapw,natmtot,nspinor/))
+              &(/nrmtmax,lmmaxapw,natmtot,nspinor/))
             call hdf5_write("sic.hdf5",path,"wkit",s_wkit(1,1,j,ikloc),&
-              (/ngkmax,nspinor/))
+              &(/ngkmax,nspinor/))
           enddo
         endif
       enddo 
