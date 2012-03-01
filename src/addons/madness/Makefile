@@ -1,4 +1,12 @@
 include ../../../make.inc
 
-all:
-	$(CXX) $(CPP_OPTS) -O2 -c madness_intrf.cc -o madness_intrf.o $(MADNESS_INC)
+OBJ = madness_intrf.o
+
+.cpp.o:
+	$(CXX) $(CXX_OPTS) $(MADNESS_INC) -std=c++0x -c $<
+
+all: $(OBJ)
+	ar -r libmad.a $(OBJ)
+
+clean:
+	rm *.o *.a
