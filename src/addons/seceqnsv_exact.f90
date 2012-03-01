@@ -135,7 +135,7 @@ do ig3=1,ngk(1,ik)
 enddo
 deallocate(zfft)
 call zgemm('T','N',ngk(1,ik),nstfv,ngk(1,ik),zone,zm2,ngk(1,ik),&
-  evecfv,nmatmax,zzero,wfbfit,ngk(1,ik))
+  &evecfv,nmatmax,zzero,wfbfit,ngk(1,ik))
 deallocate(zm2)
 call timer_stop(t_seceqnsv_setup_it)
 evecsv=zzero
@@ -145,14 +145,14 @@ do ist=1,nstfv
     j=jst
     if (i.le.j) then
       evecsv(i,j)=evecsv(i,j)+zdotc(lmmaxapw*nufrmax*natmtot,&
-        wfmt(1,1,1,ist),1,wfbfmt(1,1,1,jst,1),1)+zdotc(ngk(1,ik),evecfv(1,ist),1,wfbfit(1,jst),1)
+        &wfmt(1,1,1,ist),1,wfbfmt(1,1,1,jst,1),1)+zdotc(ngk(1,ik),evecfv(1,ist),1,wfbfit(1,jst),1)
     endif
     if (spinpol) then
       i=ist+nstfv
       j=jst+nstfv
       if (i.le.j) then
         evecsv(i,j)=evecsv(i,j)+zdotc(lmmaxapw*nufrmax*natmtot,&
-          wfmt(1,1,1,ist),1,wfbfmt(1,1,1,jst,2),1)-zdotc(ngk(1,ik),evecfv(1,ist),1,wfbfit(1,jst),1)
+          &wfmt(1,1,1,ist),1,wfbfmt(1,1,1,jst,2),1)-zdotc(ngk(1,ik),evecfv(1,ist),1,wfbfit(1,jst),1)
       endif
     endif
   enddo
