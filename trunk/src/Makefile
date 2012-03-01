@@ -39,7 +39,7 @@ SRC_modules = ./addons/mod_mpi_grid.f90 \
               
 OBJ_modules = $(SRC_modules:.f90=.o)
 SRC = $(shell find . -name \*.f90)
-OBJ_extras = addons/nfft/nfft_intrf.o addons/madness/madness_intrf.o 
+OBJ_extras = addons/nfft/nfft_intrf.o 
 OBJ = $(SRC:.f90=.o) $(OBJ_extras) 
 
 EXE = elk
@@ -68,7 +68,9 @@ gensrc:
 
 extras:
 	cd addons/nfft; $(MAKE)
+ifneq (,$(findstring D_MAD_,$(CPP_OPTS)))
 	cd addons/madness; $(MAKE)
+endif
 ifneq (,$(findstring D_LIBAPW_,$(CPP_OPTS)))
 	cd addons/cpp; $(MAKE)
 endif
