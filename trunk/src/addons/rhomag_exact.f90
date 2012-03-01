@@ -39,7 +39,7 @@ do ias=1,natmtot
             j2=j2+1
             do ispn=1,nspinor
               fr(:,ispn)=fr(:,ispn)+rhomagmt(j1,j2,lm3,ias,ispn)*ufr(:,l1,io1,ic)*&
-                ufr(:,l2,io2,ic)
+                &ufr(:,l2,io2,ic)
             enddo
           enddo
         enddo !l2
