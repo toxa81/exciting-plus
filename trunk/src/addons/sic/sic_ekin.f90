@@ -20,8 +20,8 @@ do ikloc=1,nkptloc
     j2=sic_wantran%idxiwan(n2)
     vtrl(:)=sic_wantran%iwt(3:5,i)
     vtrc(:)=vtrl(1)*avec(:,1)+vtrl(2)*avec(:,2)+vtrl(3)*avec(:,3)
-    expikt=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
-    vk(j1,j2)=vk(j1,j2)+expikt*sic_vme(i)
+    expikt=exp(-zi*dot_product(vkc(:,ik),vtrc(:)))
+    vk(j1,j2)=vk(j1,j2)+expikt*dconjg(sic_vme(i))
   enddo
   do ist=1,nstsv
     do j=1,sic_wantran%nwan

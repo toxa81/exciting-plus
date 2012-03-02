@@ -364,8 +364,8 @@ if (sum(abs(pos1-pos2)).lt.1d-10) then
     enddo
   enddo
 else
-  allocate(f1tp_(s_ntp,s_nr))
-  allocate(f2tp_(s_ntp,s_nr,nspinor))
+  allocate(f1tp_(s_ntp,s_nr_min))
+  allocate(f2tp_(s_ntp,s_nr_min,nspinor))
   f2tp_=zzero
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(itp,x1,x2)
   do ir=1,s_nr_min
