@@ -349,28 +349,23 @@ complex(8), intent(in) :: f2lm(lmmaxwan,s_nr,nspinor)
 ! local variables
 complex(8), allocatable :: f1tp_(:,:)
 complex(8), allocatable :: f2tp_(:,:,:)
-complex(8), allocatable :: f2lm_(:,:)
 complex(8) zprod
 integer ir,itp,ispn
 real(8) x1(3),x2(3)
 complex(8), allocatable :: zf(:)
 complex(8), external :: zdotc
 !
-zprod=zzero
+allocate(zf(s_nr_min))
+zf=zzero
 if (sum(abs(pos1-pos2)).lt.1d-10) then
-  allocate(zf(s_nr_min))
-  zf=zzero
   do ir=1,s_nr_min
     do ispn=1,nspinor
       zf(ir)=zf(ir)+zdotc(lmmaxwan,f1lm(1,ir,ispn),1,f2lm(1,ir,ispn),1)
     enddo
   enddo
-  zprod=zintegrate(s_nr_min,s_r,zf)
-  deallocate(zf)
 else
   allocate(f1tp_(s_ntp,s_nr))
   allocate(f2tp_(s_ntp,s_nr,nspinor))
-  !allocate(f2lm_(lmmaxwan,s_nr))
   f2tp_=zzero
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(itp,x1,x2)
   do ir=1,s_nr_min
@@ -387,19 +382,14 @@ else
       &f1lm(1,1,ispn),lmmaxwan,zzero,f1tp_,s_ntp)
     do ir=1,s_nr_min
       do itp=1,s_ntp
-        zprod=zprod+dconjg(f1tp_(itp,ir))*f2tp_(itp,ir,ispn)*s_tpw(itp)*s_rw(ir)
+        zf(ir)=zf(ir)+dconjg(f1tp_(itp,ir))*f2tp_(itp,ir,ispn)*s_tpw(itp)
       enddo
     enddo
   enddo
-! convert f2 to spherical harmonics
-!  call zgemm('T','N',lmmaxwan,s_nr,s_ntp,zone,s_ylmb,s_ntp,f2tp_,&
-!    s_ntp,zzero,f2lm_,lmmaxwan)
-!  do ir=1,s_nr
-!    zprod=zprod+zdotc(lmmaxwan,f1lm(1,ir),1,f2lm_(1,ir),1)*s_rw(ir)
-!  enddo
   deallocate(f1tp_,f2tp_)
 endif
-s_spinor_dotp=zprod
+s_spinor_dotp=zintegrate(s_nr_min,s_r,zf)
+deallocate(zf)
 return
 end function
 
