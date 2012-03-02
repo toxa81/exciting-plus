@@ -61,7 +61,7 @@ do j=1,sic_wantran%nwan
       endif
     enddo
     if (wproc) then
-      write(fout,'(" n : ",I4,"   |VW> expansion error : ", F12.6)')n,abs(zt1-zt2)
+      write(fout,'(" n : ",I4,"   <WV|VW> product, |VW> expansion error : ", 2F12.6)')n,dreal(zt1),abs(zt1-zt2)
     endif
   endif
 enddo

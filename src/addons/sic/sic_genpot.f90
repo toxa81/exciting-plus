@@ -107,6 +107,7 @@ deallocate(fx)
 ! 3) compute Hartree potential
 !
 allocate(vhalm(lmmaxwan,s_nr_min))
+vhalm=0.d0
 do lmloc=1,lmmaxwanloc
   lm=mpi_grid_map(lmmaxwan,dim_k,loc=lmloc)
   l=lm2l(lm)
