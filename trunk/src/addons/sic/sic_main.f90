@@ -42,16 +42,18 @@ call elk_m_init
 ! but first, read the matix elements from the old file (this is to compute RMS)
 if (allocated(sic_vme_old)) deallocate(sic_vme_old)
 allocate(sic_vme_old(sic_wantran%nwt))
-sic_vme_old=zzero
-inquire(file="sic.hdf5",exist=texist)
-if (texist) then
-  call hdf5_read("sic.hdf5","/","nwt",j)
-  if (j.eq.sic_wantran%nwt) then
-    call hdf5_read("sic.hdf5","/","vme",sic_vme_old(1),(/sic_wantran%nwt/))
+if (mpi_grid_root()) then
+  sic_vme_old=zzero
+  inquire(file="sic.hdf5",exist=texist)
+  if (texist) then
+    call hdf5_read("sic.hdf5","/","nwt",j)
+    if (j.eq.sic_wantran%nwt) then
+      call hdf5_read("sic.hdf5","/","vme",sic_vme_old(1),(/sic_wantran%nwt/))
+    endif
   endif
+  call sic_create_hdf5
 endif
-call sic_create_hdf5
-call mpi_grid_barrier
+call mpi_grid_bcast(sic_vme_old(1),sic_wantran%nwt)
 sic_write_rholm=.true.
 sic_write_vlm=.true.
 sic_write_vhlm=.true.
