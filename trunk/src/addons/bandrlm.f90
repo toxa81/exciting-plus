@@ -104,27 +104,27 @@ do ikloc=1,nkptloc
   endif
   if (wannier) then
     if (ldisentangle) call disentangle(evalsv(1,ik),wann_c(1,1,ikloc),&
-      evecsvloc(1,1,ikloc))
+      &evecsvloc(1,1,ikloc))
     call genwann_h(.true.,evalsv(1,ik),wann_c(1,1,ikloc),&
-      wann_h(1,1,ik),wann_e(1,ik))
+      &wann_h(1,1,ik),wann_e(1,ik))
   endif
   call genapwalm(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),&
-    sfacgk(1,1,1,ikloc),apwalm)
+    &sfacgk(1,1,1,ikloc),apwalm)
   call genwfsvc(lmax,lmmax,ngk(1,ik),nstsv,apwalm,evecfd,wfsvmt)
-  !if (sic) then
-  !  call diagzhe(sic_wantran%nwan,sic_wan_h0k(1,1,ikloc),sic_wan_e0k(1,ik))
-  !endif
+  if (sic) then
+    call diagzhe(sic_wantran%nwan,sic_wan_h0k(1,1,ikloc),sic_wan_e0k(1,ik))
+  endif
   call bandchar(.false.,lmax,lmmax,wfsvmt,bc(1,1,1,1,ik))
 enddo
 deallocate(evalfv,evecfv,evecsv,evecfd,wfsvmt,apwalm)
 call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.)
 if (wannier) call mpi_grid_reduce(wann_e(1,1),nwantot*nkpt,dims=(/dim_k/),&
-  side=.true.)
+  &side=.true.)
 if (sic) call mpi_grid_reduce(sic_wan_e0k(1,1),sic_wantran%nwan*nkpt,&
-  dims=(/dim_k/),side=.true.)
+  &dims=(/dim_k/),side=.true.)
 do ik=1,nkpt
   call mpi_grid_reduce(bc(1,1,1,1,ik),lmmax*natmtot*nspinor*nstsv,&
-    dims=(/dim_k/),side=.true.)
+    &dims=(/dim_k/),side=.true.)
 enddo
 emin=minval(evalsv)
 emax=maxval(evalsv)
@@ -200,7 +200,7 @@ if (mpi_grid_root()) then
     write(50,*)dpp1d(ik)
     write(50,*)(evalsv(ist,ik),ist=1,nstsv)
     write(50,*)((((bc(lm,ias,ispn,ist,ik),lm=1,lmmax), &
-               ias=1,natmtot),ispn=1,nspinor),ist=1,nstsv)
+               &ias=1,natmtot),ispn=1,nspinor),ist=1,nstsv)
   enddo
   write(50,*)wannier
   if (wannier) then
