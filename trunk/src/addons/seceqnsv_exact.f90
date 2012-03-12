@@ -118,25 +118,28 @@ enddo !ias
 deallocate(zm1)
 call timer_stop(t_seceqnsv_setup_mt)
 call timer_start(t_seceqnsv_setup_it)
-allocate(zfft(ngrtot))
-allocate(zm2(ngk(1,ik),ngk(1,ik)))
 allocate(wfbfit(ngk(1,ik),nstfv))
-cb=gfacte/(4.d0*solsc)
-do ir=1,ngrtot
-  zfft(ir)=zone*(bxcir(ir,1)+cb*bfieldc(3))*cfunir(ir)
-enddo
-call zfftifc(3,ngrid,-1,zfft)
-do ig3=1,ngk(1,ik)
-  do ig2=1,ngk(1,ik)
-    ivg1(:)=ivg(:,igkig(ig3,1,ikloc))-ivg(:,igkig(ig2,1,ikloc))
-    ifg1=igfft(ivgig(ivg1(1),ivg1(2),ivg1(3)))
-    zm2(ig2,ig3)=zfft(ifg1)
+wfbfit=zzero
+if (spinpol) then
+  allocate(zfft(ngrtot))
+  allocate(zm2(ngk(1,ik),ngk(1,ik)))
+  cb=gfacte/(4.d0*solsc)
+  do ir=1,ngrtot
+    zfft(ir)=zone*(bxcir(ir,1)+cb*bfieldc(3))*cfunir(ir)
   enddo
-enddo
-deallocate(zfft)
-call zgemm('T','N',ngk(1,ik),nstfv,ngk(1,ik),zone,zm2,ngk(1,ik),&
-  &evecfv,nmatmax,zzero,wfbfit,ngk(1,ik))
-deallocate(zm2)
+  call zfftifc(3,ngrid,-1,zfft)
+  do ig3=1,ngk(1,ik)
+    do ig2=1,ngk(1,ik)
+      ivg1(:)=ivg(:,igkig(ig3,1,ikloc))-ivg(:,igkig(ig2,1,ikloc))
+      ifg1=igfft(ivgig(ivg1(1),ivg1(2),ivg1(3)))
+      zm2(ig2,ig3)=zfft(ifg1)
+    enddo
+  enddo
+  deallocate(zfft)
+  call zgemm('T','N',ngk(1,ik),nstfv,ngk(1,ik),zone,zm2,ngk(1,ik),&
+    &evecfv,nmatmax,zzero,wfbfit,ngk(1,ik))
+  deallocate(zm2)
+endif
 call timer_stop(t_seceqnsv_setup_it)
 evecsv=zzero
 do ist=1,nstfv
