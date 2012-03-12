@@ -436,7 +436,6 @@ do ias=1,natmtot
       enddo
     endif
     zf(ir)=zt1
-    !zsummt=zsummt+zt1*mt_rw(ir,is)
   enddo
   zsummt=zsummt+zintegrate(nrmt(is),spr(1,is),zf)
 enddo !ias
@@ -540,6 +539,46 @@ if (mpi_grid_root().and.sic_bsht_niter.gt.1) then
   endif
 endif
 deallocate(tdiff)
+return
+end subroutine
+
+subroutine sic_genvk(ikloc,vk)
+use modmain
+implicit none
+integer, intent(in) :: ikloc
+complex(8), intent(out) :: vk(nwantot,nwantot)
+!
+integer j1,j2,n1,n2,ispn,ias,lm,ik
+complex(8), allocatable :: wk(:,:,:,:,:),wvk(:,:,:,:,:)
+!
+ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+vk=zzero
+allocate(wk(lmmaxapw,nrmtmax,natmtot,nspinor,sic_wantran%nwan))
+allocate(wvk(lmmaxapw,nrmtmax,natmtot,nspinor,sic_wantran%nwan))
+do j1=1,sic_wantran%nwan
+  n1=sic_wantran%iwan(j1)
+  do ispn=1,nspinor
+    do ias=1,natmtot
+      do lm=1,lmmaxapw
+        wk(lm,:,ias,ispn,j1)=s_wkmt(:,lm,ias,ispn,j1,ikloc)
+        wvk(lm,:,ias,ispn,j1)=s_wvkmt(:,lm,ias,ispn,j1,ikloc)
+      enddo
+    enddo
+  enddo
+enddo
+do j1=1,sic_wantran%nwan
+  n1=sic_wantran%iwan(j1)
+  do j2=1,sic_wantran%nwan
+    n2=sic_wantran%iwan(j2)
+    do ispn=1,nspinor
+      vk(n1,n2)=vk(n1,n2)+s_zfinp(.true.,.true.,lmmaxapw,ngk(1,ik),&
+        &wk(1,1,1,ispn,j1),wvk(1,1,1,ispn,j2),s_wkit(1,ispn,j1,ikloc),&
+        &s_wvkit(1,ispn,j2,ikloc))
+    enddo
+  enddo
+enddo
+deallocate(wk)
+deallocate(wvk)
 return
 end subroutine
 

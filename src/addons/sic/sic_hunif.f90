@@ -12,7 +12,7 @@ complex(8), intent(inout) :: hunif(nstsv,nstsv)
 integer i,j,ik,vtrl(3),n1,n2,j1,j2,ispn1,ispn2,istfv1,istfv2,ist1,ist2
 real(8) vtrc(3),en
 complex(8) expikt
-complex(8), allocatable :: vk(:,:),zm1(:,:)
+complex(8), allocatable :: vk(:,:),zm1(:,:),vk1(:,:)
 !complex(8), allocatable :: wfmt1(:,:),wfmt2(:,:)
 character*500 msg,fname
 logical, parameter :: tcheckherm=.false.
@@ -46,9 +46,21 @@ do i=1,sic_wantran%nwt
   j2=sic_wantran%idxiwan(n2)
   vtrl(:)=sic_wantran%iwt(3:5,i)
   vtrc(:)=vtrl(1)*avec(:,1)+vtrl(2)*avec(:,2)+vtrl(3)*avec(:,3)
-  expikt=exp(-zi*dot_product(vkc(:,ik),vtrc(:)))
-  vk(j1,j2)=vk(j1,j2)+expikt*dconjg(sic_vme(i))
+  expikt=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
+  vk(j1,j2)=vk(j1,j2)+expikt*sic_vme(i)
 enddo
+!allocate(vk1(nwantot,nwantot))
+!call sic_genvk(ikloc,vk1)
+!do j1=1,sic_wantran%nwan
+!  n1=sic_wantran%iwan(j1)
+!  do j2=1,sic_wantran%nwan
+!    n2=sic_wantran%iwan(j2)
+!    write(*,*)"n1,n2=",n1,n2,"v1,v2=",vk(j1,j2),vk1(n1,n2)
+!  enddo
+!enddo
+!deallocate(vk1)
+!stop "sic_hunif"
+
 
 !if (mpi_grid_root((/dim2/))) then
 !  write(fname,'("hlda_n",I2.2,"_k",I4.4".txt")')nproc,ik
@@ -60,7 +72,6 @@ enddo
 !endif
 
 ! setup unified Hamiltonian
-! 1-st term: LDA Hamiltonian itself
 do istfv1=1,nstfv
   do ispn1=1,nspinor
     ist1=istfv1+(ispn1-1)*nstfv
@@ -68,29 +79,26 @@ do istfv1=1,nstfv
       do ispn2=1,nspinor
         ist2=istfv2+(ispn2-1)*nstfv
         do j1=1,sic_wantran%nwan
-          !n1=sic_wantran%iwan(j1)
-          !en=dreal(sic_vme(sic_wantran%iwtidx(n1,n1,0,0,0)))!+sic_wan_e0(n1)
+          
           do j2=1,sic_wantran%nwan
-! 2-nd term : -\sum_{\alpha,\alpha'} P_{\alpha} H^{LDA} P_{\alpha'}     
+            
             hunif(ist1,ist2)=hunif(ist1,ist2)-sic_wan_h0k(j1,j2,ikloc)*&
-              dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*sic_wb(j2,istfv2,ispn2,ikloc)
-! 5-th term, first part: 
-!  -\sum_{\alpha,\alpha'} ( P_{\alpha}V_{\alpha}P_{\alpha'} +
-!                           P_{\alpha'}V_{\alpha}P_{\alpha} )
-            !hunif(ist1,ist2)=hunif(ist1,ist2)-&
-            !  vk(j1,j2)*dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*&
-            !  sic_wb(j2,istfv2,ispn2,ikloc)-dconjg(vk(j1,j2))*&
-            !  dconjg(sic_wb(j2,istfv1,ispn1,ikloc))*sic_wb(j1,istfv2,ispn2,ikloc)
+              &dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*sic_wb(j2,istfv2,ispn2,ikloc)
+           
+            hunif(ist1,ist2)=hunif(ist1,ist2)-&
+              dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*vk(j1,j2)*sic_wb(j2,istfv2,ispn2,ikloc)-&
+              dconjg(sic_wb(j2,istfv1,ispn1,ikloc))*dconjg(vk(j1,j2))*sic_wb(j1,istfv2,ispn2,ikloc)
+          
           enddo !j2
-! 3-rd term : \sum_{alpha} P_{\alpha} H^{LDA} P_{\alpha}
-! 4-th term : \sum_{alpha} P_{\alpha} V_{\alpha} P_{\alpha}
+          
           hunif(ist1,ist2)=hunif(ist1,ist2)+&
-            dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*&
-            sic_wb(j1,istfv2,ispn2,ikloc)*(sic_wan_h0k(j1,j1,ikloc)+vk(j1,j1))
-! 5-th term, second part: \sum_{\alpha} P_{\alpha}V_{\alpha}+V_{\alpha}P_{\alpha}
-          !hunif(ist1,ist2)=hunif(ist1,ist2)+&
-          !  dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*sic_wvb(j1,istfv2,ispn2,ikloc)+&
-          !  dconjg(sic_wvb(j1,istfv1,ispn1,ikloc))*sic_wb(j1,istfv2,ispn2,ikloc)
+            &dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*sic_wvb(j1,istfv2,ispn2,ikloc)+&
+            &dconjg(sic_wvb(j1,istfv1,ispn1,ikloc))*sic_wb(j1,istfv2,ispn2,ikloc)
+          
+          hunif(ist1,ist2)=hunif(ist1,ist2)+&
+            &dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*&
+            &sic_wb(j1,istfv2,ispn2,ikloc)*(sic_wan_h0k(j1,j1,ikloc)+vk(j1,j1))
+        
         enddo !j1
       enddo !ispn2
     enddo ! istfv2
@@ -107,7 +115,7 @@ if (tcheckherm) then
   if (i.gt.0) then
     write(msg,'("matrix hunif is not Hermitian at k-point ",I4,&
       &" : i, j, m(i,j), m(j,i)=",I5,",",I5,", (",2G18.10,"), (",2G18.10,")")')&
-      ik,i,j,dreal(hunif(i,j)),dimag(hunif(i,j)),dreal(hunif(j,i)),dimag(hunif(j,i))
+      &ik,i,j,dreal(hunif(i,j)),dimag(hunif(i,j)),dreal(hunif(j,i)),dimag(hunif(j,i))
     call mpi_grid_msg("sic_hunif",msg)
   endif
 endif
