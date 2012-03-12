@@ -20,7 +20,7 @@ call timer_start(t_seceqnfv_setup)
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 ! find the matching coefficients
 call match(ngk(1,ik),gkc(:,1,ikloc),tpgkc(:,:,1,ikloc),&
-  sfacgk(:,:,1,ikloc),apwalm)
+  &sfacgk(:,:,1,ikloc),apwalm)
 allocate(h(nmat(1,ik),nmat(1,ik),nspinor))
 allocate(o(nmat(1,ik),nmat(1,ik),nspinor))
 h=zzero
@@ -32,11 +32,11 @@ endif
 if (spinpol) then
   do ispn=1,nspinor
     call sethml(ngk(1,ik),nmat(1,ik),vgkc(1,1,1,ikloc),igkig(1,1,ikloc),&
-      apwalm,h(1,1,ispn),ispn,ispn)
+      &apwalm,h(1,1,ispn),ispn,ispn)
   enddo
 else
   call sethml(ngk(1,ik),nmat(1,ik),vgkc(1,1,1,ikloc),igkig(1,1,ikloc),&
-    apwalm,h)
+    &apwalm,h)
 endif
 if (sic.and..not.tsicsv) then
   call sic_genbprj(ikloc,apwalm=apwalm)
@@ -51,7 +51,7 @@ if (mpi_grid_root((/dim2/))) then
     i=(ispn-1)*nstfv+1
     j=(ispn-1)*nmatmax+1
     call diagzheg(nmat(1,ik),nstfv,nspinor*nmatmax,evaltol,&
-      h(1,1,ispn),o(1,1,ispn),evalsv(i,ik),evecfd(j,i))
+      &h(1,1,ispn),o(1,1,ispn),evalsv(i,ik),evecfd(j,i))
   enddo
 endif
 call timer_stop(t_seceqnfv_diag)
