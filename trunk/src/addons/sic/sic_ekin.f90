@@ -20,15 +20,24 @@ do ikloc=1,nkptloc
     j2=sic_wantran%idxiwan(n2)
     vtrl(:)=sic_wantran%iwt(3:5,i)
     vtrc(:)=vtrl(1)*avec(:,1)+vtrl(2)*avec(:,2)+vtrl(3)*avec(:,3)
-    expikt=exp(-zi*dot_product(vkc(:,ik),vtrc(:)))
-    vk(j1,j2)=vk(j1,j2)+expikt*dconjg(sic_vme(i))
+    expikt=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
+    vk(j1,j2)=vk(j1,j2)+expikt*sic_vme(i)
   enddo
   do ist=1,nstsv
     do j=1,sic_wantran%nwan
       n=sic_wantran%iwan(j)
-      !i=sic_wantran%iwtidx(n,n,0,0,0)
       sic_energy_kin=sic_energy_kin-wkpt(ik)*occsv(ist,ik)*&
         &dreal(dconjg(wann_c(n,ist,ikloc))*wann_c(n,ist,ikloc)*vk(j,j))
+    enddo
+    do j1=1,sic_wantran%nwan
+      n1=sic_wantran%iwan(j1)
+      do j2=1,sic_wantran%nwan
+        n2=sic_wantran%iwan(j2)
+        if (n1.ne.n2) then
+          sic_energy_kin=sic_energy_kin-wkpt(ik)*occsv(ist,ik)*&
+            &dreal(wann_c(n1,ist,ikloc)*dconjg(wann_c(n2,ist,ikloc))*sic_wan_h0k(j1,j2,ikloc))
+        endif
+      enddo
     enddo
   enddo !ist
 enddo !ikloc
