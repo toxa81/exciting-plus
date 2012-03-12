@@ -133,7 +133,7 @@ end if
 if (wproc) call flushifc(60)
 if (sic) then
   call sic_read_data(.true.)
-  !call sic_genblochsum(.false.,.true.)
+  call sic_genblochsum(.false.,.true.)
 endif
 ! set stop flag
 tstop=.false.
