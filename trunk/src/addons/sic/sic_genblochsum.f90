@@ -227,7 +227,7 @@ do j=1,sic_wantran%nwan
       do ir=1,ngrtot
 ! remove exp^{-ikr} phase, multiply by step function and by sqrt(omega)
         z1=exp(-zi*dot_product(vkc(:,ik),vgrc(:,ir)))*sqrt(omega)
-        if (twk) f1kir(ir,ispn,ikloc)=f1kir(ir,ispn,ikloc)*cfunir(ir)*z1 !TODO: check if cfunir is really necessary
+        if (twk) f1kir(ir,ispn,ikloc)=f1kir(ir,ispn,ikloc)*cfunir(ir)*z1
         if (twvk) f2kir(ir,ispn,ikloc)=f2kir(ir,ispn,ikloc)*cfunir(ir)*z1
       enddo !ir
       if (twk) call zfftifc(3,ngrid,-1,f1kir(1,ispn,ikloc))
