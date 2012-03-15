@@ -598,6 +598,7 @@ complex(8) z1,z2
 complex(8), allocatable :: wfmt1(:,:,:)
 complex(8), allocatable :: wfmt2(:,:,:)
 complex(8), allocatable :: zv1(:),zv2(:)
+complex(8), allocatable :: zf1(:),zf2(:)
 !
 sic_wb(:,:,:,ikloc)=zzero
 sic_wvb(:,:,:,ikloc)=zzero
@@ -675,6 +676,8 @@ else
       enddo !ispn
     enddo !j  
   else
+    allocate(zf1(nrmtmax))
+    allocate(zf2(nrmtmax))
 ! project to (L)APW basis
     allocate(zv1(ngk(1,ik)))
     allocate(zv2(ngk(1,ik)))
@@ -691,14 +694,12 @@ else
           do lm=1,lmmaxapw
             l=lm2l(lm)
             do io=1,apword(l,is)
-              z1=zzero
-              z2=zzero
               do ir=1,nrmt(is)
-                z1=z1+dconjg(s_wkmt(ir,lm,ias,ispn,j,ikloc))*&
-                  &apwfr(ir,1,io,l,ias)*mt_rw(ir,is)
-                z2=z2+dconjg(s_wvkmt(ir,lm,ias,ispn,j,ikloc))*&
-                  &apwfr(ir,1,io,l,ias)*mt_rw(ir,is)
+                zf1(ir)=dconjg(s_wkmt(ir,lm,ias,ispn,j,ikloc))*apwfr(ir,1,io,l,ias)
+                zf2(ir)=dconjg(s_wvkmt(ir,lm,ias,ispn,j,ikloc))*apwfr(ir,1,io,l,ias)
               enddo !ir
+              z1=zintegrate(nrmt(is),spr(1,is),zf1)
+              z2=zintegrate(nrmt(is),spr(1,is),zf2)
               do ig=1,ngk(1,ik)
                 zv1(ig)=zv1(ig)+z1*apwalm(ig,io,lm,ias)
                 zv2(ig)=zv2(ig)+z2*apwalm(ig,io,lm,ias)
@@ -711,16 +712,12 @@ else
             do m=-l,l
               lm=idxlm(l,m)
               i=ngk(1,ik)+idxlo(lm,ilo,ias)
-              z1=zzero
-              z2=zzero
               do ir=1,nrmt(is)
-                z1=z1+dconjg(s_wkmt(ir,lm,ias,ispn,j,ikloc))*&
-                  &lofr(ir,1,ilo,ias)*mt_rw(ir,is)
-                z2=z2+dconjg(s_wvkmt(ir,lm,ias,ispn,j,ikloc))*&
-                  &lofr(ir,1,ilo,ias)*mt_rw(ir,is)
+                zf1(ir)=dconjg(s_wkmt(ir,lm,ias,ispn,j,ikloc))*lofr(ir,1,ilo,ias)
+                zf2(ir)=dconjg(s_wvkmt(ir,lm,ias,ispn,j,ikloc))*lofr(ir,1,ilo,ias)
               enddo
-              sic_wb(j,i,ispn,ikloc)=z1
-              sic_wvb(j,i,ispn,ikloc)=z2
+              sic_wb(j,i,ispn,ikloc)=zintegrate(nrmt(is),spr(1,is),zf1)
+              sic_wvb(j,i,ispn,ikloc)=zintegrate(nrmt(is),spr(1,is),zf2)
             enddo !m
           enddo !ilo
         enddo !ias
@@ -729,6 +726,7 @@ else
       enddo !ispn
     enddo !j
     deallocate(zv1,zv2)
+    deallocate(zf1,zf2)
   endif
 endif
 return
