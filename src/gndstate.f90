@@ -411,6 +411,8 @@ do iscl=1,maxscl
     if (sic) then
       write(60,'("  sic_genfvprj                              : ",F12.2)')&
         &timer_get_value(t_sic_genfvprj)
+      write(60,'("  sic_hunif                                 : ",F12.2)')&
+        &timer_get_value(t_sic_hunif)
     endif
   endif !wproc
 ! end the self-consistent loop
