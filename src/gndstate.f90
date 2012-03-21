@@ -128,6 +128,15 @@ else
   if (wproc) then
     write(60,'("Density and potential initialised from atomic data")')
     write(60,'(" done in : ",F10.2," sec.")')timer_get_value(t_rhoinit)
+    write(60,*)
+    do is=1,nspecies
+      write(60,'("Species : ",I4," (",A,")")') is,trim(spsymb(is))
+      do ist=1,spnst(is)
+        write(60,'("  n : ",I1,"   l : ",I1,"   k : ",I1,"   energy : ",G18.10)')&
+          &spn(ist,is),spl(ist,is),spk(ist,is),speval(ist,is)
+      enddo
+      write(60,*)
+    enddo
   endif
 end if
 if (wproc) call flushifc(60)
