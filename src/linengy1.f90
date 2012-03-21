@@ -23,9 +23,6 @@ logical fnd
 integer is,ia,ja,ias,jas,ic,ir
 integer l,ilo,io,jo
 real(8) t1
-! automatic arrays
-!logical done(natmmax)
-!real(8) vr(nrmtmax)
 real(8), allocatable :: vr(:)
 e0min=100.d0
 allocate(vr(spnrmax))
@@ -72,27 +69,6 @@ do ic=1,natmcls
     endif
   enddo
 enddo
-!! copy to equivalent atoms
-!      do ja=1,natoms(is)
-!        if ((.not.done(ja)).and.(eqatoms(ia,ja,is))) then
-!          jas=idxas(ja,is)
-!          do l=0,lmaxapw
-!            do io=1,apword(l,is)
-!              apwe(io,l,jas)=apwe(io,l,ias)
-!            end do
-!          end do
-!          do ilo=1,nlorb(is)
-!            do io=1,lorbord(ilo,is)
-!              lorbe(io,ilo,jas)=lorbe(io,ilo,ias)
-!            end do
-!          end do
-!          done(ja)=.true.
-!        end if
-!      end do
-!    end if
-!! end loops over atoms and species
-!  end do
-!end do
 deallocate(vr)
 return
 end subroutine
@@ -148,10 +124,10 @@ do i=1,nx
 enddo
 ! approximate v1 with cubic spline
 call spline(nx,x,1,v1,cv1)
-enu=0.5d0*(zn/n)**2
-denu=0.25d0
+enu=v(nx)-1.d0
+denu=0.5d0
 !
-do iter=1,1000
+do iter=1,2000
   call integrate_srrseq_rk4(sol,zn,l,nx,x,v,v1,cv1,enu,y,yp,nn)
   sp=s
   if ((nn.gt.(n-l-1))) then
@@ -163,9 +139,11 @@ do iter=1,1000
   if (s.ne.sp) then
     denu=denu*0.5d0
   endif
-  if (abs(denu).lt.1d-16) exit
+  if (abs(denu).lt.1d-16) goto 10
   enu=enu+denu
 enddo
+write(*,'("Warning(bound_state): energy is not found")')
+10 continue
 ! find the turning point
 do i=1,nx
   if (v(i).gt.enu) exit
