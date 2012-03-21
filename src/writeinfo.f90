@@ -41,9 +41,9 @@ end if
 call date_and_time(date=dat,time=tim)
 write(fnum,*)
 write(fnum,'("Date (YYYY-MM-DD) : ",A4,"-",A2,"-",A2)') dat(1:4),dat(5:6), &
- dat(7:8)
+ &dat(7:8)
 write(fnum,'("Time (hh:mm:ss)   : ",A2,":",A2,":",A2)') tim(1:2),tim(3:4), &
- tim(5:6)
+ &tim(5:6)
 write(fnum,*)
 write(fnum,'("All units are atomic (Hartree, Bohr, etc.)")')
 select case(task)
@@ -116,11 +116,13 @@ do is=1,nspecies
   write(fnum,'(" electronic charge : ",G18.10)') spze(is)
   write(fnum,'(" atomic mass : ",G18.10)') spmass(is)
   write(fnum,'(" muffin-tin radius : ",G18.10)') rmt(is)
+  write(fnum,'(" effective infinity radius : ",G18.10)') sprmax(is)
   write(fnum,'(" number of radial points in muffin-tin : ",I6)') nrmt(is)
+  write(fnum,'(" number of radial points to effective infinity : ",I6)') spnr(is)
   write(fnum,'(" atomic positions (lattice), magnetic fields (Cartesian) :")')
   do ia=1,natoms(is)
     write(fnum,'(I4," : ",3F12.8,"  ",3F12.8)') ia,atposl(:,ia,is), &
-     bfcmt(:,ia,is)
+     &bfcmt(:,ia,is)
   end do
 end do
 write(fnum,*)
@@ -151,7 +153,7 @@ if (spinsprl) then
   write(fnum,'("  q-vector (lattice)   : ",3G18.10)') vqlss
   write(fnum,'("  q-vector (Cartesian) : ",3G18.10)') vqcss
   write(fnum,'("  q-vector length      : ",G18.10)') sqrt(vqcss(1)**2 &
-   +vqcss(2)**2+vqcss(3)**2)
+   &+vqcss(2)**2+vqcss(3)**2)
 end if
 if (fixspin.ne.0) then
   write(fnum,'(" fixed spin moment (FSM) calculation, type : ",I4)') fixspin
@@ -196,7 +198,7 @@ else if (reducek.eq.2) then
 else
   write(*,*)
   write(*,'("Error(writeinfo): undefined k-point reduction type : ",I8)') &
-   reducek
+   &reducek
   write(*,*)
   stop
 end if
@@ -205,7 +207,7 @@ write(fnum,*)
 write(fnum,'("Muffin-tin radius times maximum |G+k| : ",G18.10)') rgkmax
 if ((isgkmax.ge.1).and.(isgkmax.le.nspecies)) then
   write(fnum,'(" using radius of species ",I4," (",A,")")') isgkmax, &
-   trim(spsymb(isgkmax))
+   &trim(spsymb(isgkmax))
 else if (isgkmax.eq.-1) then
   write(fnum,'(" using average radius")')
 else
@@ -240,7 +242,7 @@ write(fnum,*)
 write(fnum,'("Total number of local-orbitals : ",I4)') nlotot
 write(fnum,*)
 if ((task.eq.5).or.(task.eq.6)) &
- write(fnum,'("Hartree-Fock calculation using Kohn-Sham states")')
+ &write(fnum,'("Hartree-Fock calculation using Kohn-Sham states")')
 if (xctype(1).lt.0) then
   write(fnum,'("Optimised effective potential (OEP) and exact exchange (EXX)")')
   write(fnum,'(" Phys. Rev. B 53, 7024 (1996)")')
@@ -277,28 +279,28 @@ if (ldapu.ne.0) then
          &", J = ",F12.8)') is,trim(spsymb(is)),llu(is),ujlu(1,is),ujlu(2,is)
       else if (inptypelu.eq.2) then
         write(fnum,'(" species : ",I4," (",A,")",", l = ",I2)') is, &
-         trim(spsymb(is)),llu(is)
+         &trim(spsymb(is)),llu(is)
         write(fnum,'(" Slater integrals are provided as input")')
         do k=0,2*l,2
           write(fnum,'(" F^(",I1,") = ",F12.8)') k,flu(k,is)
         end do
       else if (inptypelu.eq.3) then
         write(fnum,'(" species : ",I4," (",A,")",", l = ",I2)') is, &
-         trim(spsymb(is)),llu(is)
+         &trim(spsymb(is)),llu(is)
         write(fnum,'(" Racah parameters are provided as input")')
         do k=0,l
           write(fnum,'(" E^(",I1,") = ",F12.8)') k,elu(k,is)
         end do
       else if (inptypelu.eq.4) then
         write(fnum,'(" species : ",I4," (",A,")",", l = ",I2)') is, &
-         trim(spsymb(is)),llu(is)
+         &trim(spsymb(is)),llu(is)
         write(fnum,'(" Slater integrals are calculated by means of &
          &Yukawa potential")')
         write(fnum,'(" Yukawa potential screening length (a.u^-1) : ",F12.8)') &
-         lambdalu(is)
+         &lambdalu(is)
       else if(inptypelu.eq.5) then
         write(fnum,'(" species : ",I4," (",A,")",", l = ",I2)') is, &
-         trim(spsymb(is)),llu(is)
+         &trim(spsymb(is)),llu(is)
         write(fnum,'(" Slater integrals are calculated by means of &
          &Yukawa potential")')
         write(fnum,'(" Yukawa potential screening length corresponds to &
