@@ -32,6 +32,7 @@ SRC_modules = ./addons/mod_mpi_grid.f90 \
               ./modrdm.f90 \
               ./modphonon.f90 \
               ./modtest.f90 \
+              ./addons/mod_util.f90 \
               ./addons/sic/mod_sic.f90 \
               ./addons/mod_ws.f90 \
               ./addons/mod_rs.f90 \
