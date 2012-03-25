@@ -3,6 +3,7 @@ use modmain
 use modxcifc
 use mod_sic
 use mod_hdf5
+use mod_util
 implicit none
 ! arguments
 integer, intent(in) :: n
