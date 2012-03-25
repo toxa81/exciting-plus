@@ -1,6 +1,7 @@
 subroutine sic_genwanlm(fout,n,wantp,wanlm)
 use modmain
 use mod_sic
+use mod_util
 implicit none
 integer, intent(in) :: fout
 integer, intent(in) :: n
