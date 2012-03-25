@@ -4,6 +4,7 @@ use mod_sic
 use mod_nrkp
 use mod_wannier
 use modxcifc
+use mod_util
 implicit none
 ! arguments
 integer, intent(in) :: fout
