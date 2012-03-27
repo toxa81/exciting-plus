@@ -3,7 +3,7 @@ use modmain
 use modldapu
 use mod_nrkp
 implicit none
-integer i,j,ik,ikloc,n1,n2,j1,j2,nwan,ias
+integer i,j,ik,ikloc,n1,n2,j1,j2,nwan,ias,n,is,ia
 logical lpmat
 complex(8), allocatable :: zm(:,:)
 real(8), allocatable :: dm(:,:),eval(:)
@@ -70,7 +70,27 @@ if (mpi_grid_root().and.task.eq.807) then
   write(200,'("# number of Wannier functions")')
   write(200,'(I8)')nwantot
   write(200,'("# number of atoms")')
-  write(200,'(I8)')natmtot  
+  write(200,'(I8)')natmtot 
+  write(200,'("# number of species")')
+  write(200,'(I8)')nspecies  
+  write(200,'("# wf -> atom mapping")')
+  do n=1,nwantot
+    write(200,'(2I8)')n,wan_info(wi_atom,n)
+  enddo
+  write(200,'("# atom -> species mapping")')
+  do ias=1,natmtot
+    is=ias2is(ias)
+    write(200,'(2I8)')ias,is
+  enddo
+  do ias=1,natmtot
+    ia=ias2ia(ias)
+    is=ias2is(ias)
+    write(200,'("# atom : ",I8)')ias
+    write(200,'("# Cartesian coordinates")')
+    write(200,'(3G18.10)')atposc(:,ia,is)
+    write(200,'("# lattice coordinates")')
+    write(200,'(3G18.10)')atposl(:,ia,is)
+  enddo
 !  write(200,'("# occupancy matrix")')
 !  do i=1,wann_natom
 !    ias=wann_iprj(1,i)
