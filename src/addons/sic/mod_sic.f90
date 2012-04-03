@@ -104,7 +104,6 @@ integer sic_ntr
 integer, allocatable :: sic_vtl(:,:)
 ! translation vectors in Cartesian coordinates
 real(8), allocatable :: sic_vtc(:,:)
-real(8), allocatable :: sic_vtw(:)
 ! unitary matrix for the localization criterion
 complex(8), allocatable :: sic_wan_umtrx(:,:,:)
 real(8) sic_umtrx_eps
@@ -115,9 +114,6 @@ integer sic_niter_umtrx
 data sic_niter_umtrx/1/
 integer sic_niter_u0
 data sic_niter_u0/1/
-
-!logical tsicsv
-!data tsicsv/.false./
 
 ! bottom enery for the SIC states
 real(8) sic_bottom_energy
