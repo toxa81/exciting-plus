@@ -313,7 +313,7 @@ subroutine evecsvfd(evecfv,evecsv,evecfd,nbnd,ibnd)
 use modmain
 implicit none
 complex(8), intent(in) :: evecfv(nmatmax,nstfv)
-complex(8), intent(in) :: evecsv(nstfv,nstsv)
+complex(8), intent(in) :: evecsv(nstsv,nstsv)
 complex(8), intent(out) :: evecfd(nspinor*nmatmax,*)
 integer, optional, intent(in) :: nbnd
 integer, optional, intent(in) :: ibnd(*) 
