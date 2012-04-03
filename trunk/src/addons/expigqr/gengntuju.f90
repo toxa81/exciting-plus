@@ -2,6 +2,7 @@ subroutine gengntuju(iq,lmaxexp)
 use modmain
 use mod_addons_q
 use mod_expigqr
+use mod_util
 implicit none
 ! arguments
 integer, intent(in) :: iq
@@ -84,12 +85,9 @@ do igloc=1,ngvecmeloc
           do io1=1,nufr(l1,is)
             do io2=1,nufr(l2,is)
               do ir=1,nrmt(is)
-                fr(ir)=ufr(ir,l1,io1,ic)*ufr(ir,l2,io2,ic)*jl(ir,l3)*&
-                       (spr(ir,is)**2)
+                fr(ir)=ufr(ir,l1,io1,ic)*ufr(ir,l2,io2,ic)*jl(ir,l3)
               enddo !ir
-              !call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
-              !uju(l3,l1,l2,io1,io2)=gr(nrmt(is))
-              uju(l3,l1,l2,io1,io2)=rfinteg(nrmt(is),spr(1,is),fr)
+              uju(l3,l1,l2,io1,io2)=rintegrate(nrmt(is),spr(1,is),fr)
             enddo !io2
           enddo !io1
         enddo !l2
