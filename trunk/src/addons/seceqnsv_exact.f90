@@ -171,7 +171,10 @@ do ispn=1,nspinor
 end do
 call timer_stop(t_seceqnsv_setup)
 if (mpi_grid_root((/dim2/))) then
-  if (sic) call sic_hunif(ikloc,evecsv)
+  if (sic) then
+    call sic_genbprj(ikloc,evecfv=evecfv,apwalm=apwalm)
+    call sic_hunif(ikloc,evecsv)
+  endif
   call timer_start(t_seceqnsv_diag)
 ! diagonalise second-variational Hamiltonian
   allocate(rwork(3*nstsv))
