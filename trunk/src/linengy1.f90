@@ -128,6 +128,7 @@ enddo
 call spline(nx,x,1,ve,cve)
 denu=0.01d0
 !
+s=1
 do iter=1,1000
   call srrse_integrate(.false.,.true.,sol,zn,l,nx,x,v,ve,cve,mp,cmp,enu,p,q,q1,nn)
   sp=s
@@ -148,18 +149,23 @@ enddo
 write(*,'("Warning(srrse_bound_state): energy is not found")')
 10 continue
 ! find the turning point
+j1=nx
 do i=1,nx
-  if (v(i).gt.enu) exit
+  if (v(i).gt.enu) then
+    j1=i
+    exit
+  endif
 enddo
 ! find the minimum value of the function starting from the turning point
 t1=1d100
-do j=i,nx
+i=0
+do j=j1,nx
   if (abs(p(j)).lt.t1) then
     t1=abs(p(j))
-    j1=j
+    i=j
   endif
 enddo
-p(j1:)=0.d0
+if (i.ne.0) p(i:)=0.d0
 rhor2(:)=p(:)*p(:)
 t1=rintegrate(nx,x,rhor2,m=0)
 p(:)=p(:)/sqrt(t1)
