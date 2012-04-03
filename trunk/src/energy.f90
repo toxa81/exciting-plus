@@ -175,11 +175,15 @@ do is=1,nspecies
   end do
 end do
 ! valence eigenvalues
-do ik=1,nkpt
-  do ist=1,nstsv
-    evalsum=evalsum+wkpt(ik)*occsv(ist,ik)*evalsv(ist,ik)
+if (sic) then
+  evalsum=evalsum+sic_evalsum
+else
+  do ik=1,nkpt
+    do ist=1,nstsv
+      evalsum=evalsum+wkpt(ik)*occsv(ist,ik)*evalsv(ist,ik)
+    end do
   end do
-end do
+endif
 !------------------------!
 !     kinetic energy     !
 !------------------------!
@@ -235,7 +239,8 @@ engytot=engykn+0.5d0*engyvcl+engymad+engyx+engyc+engyts
 if (ldapu.ne.0) engytot=engytot+engylu
 if (sic) then
   engytot0=engytot
-  engytot=engytot-sic_energy_pot+sic_energy_kin
+  !engytot=engytot-sic_energy_pot+sic_energy_kin
+  engytot=engytot-sic_energy_pot
 endif
 ! write total energy to test file
 call writetest(0,'total energy',tol=1.d-6,rv=engytot)
