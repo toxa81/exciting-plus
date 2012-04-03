@@ -10,18 +10,20 @@ logical, intent(in) :: treadk
 integer n,ispn,nwt,j,ik,ikloc,nkpt_
 character*20 c1,c2
 character*100 path
-logical exist
+logical file_exists,read_vme
 !
-inquire(file="sic.hdf5",exist=exist)
-if (.not.exist) return
+inquire(file="sic.hdf5",exist=file_exists)
+tsic_wv=.false.
+if (.not.file_exists) return
 call hdf5_read("sic.hdf5","/","nwt",nwt)
+read_vme=.true.
 if (nwt.ne.sic_wantran%nwt) then
-  write(*,'("Error(sic_read_data): wrong number of Wannier transitions")')
+  write(*,'("Warning(sic_read_data): wrong number of Wannier transitions")')
   write(*,'("  sic.hdf5 : ",I6)')nwt
   write(*,'("  current  : ",I6)')sic_wantran%nwt
-  call pstop
+  read_vme=.false.
 endif
-call hdf5_read("sic.hdf5","/","vme",sic_vme(1),(/sic_wantran%nwt/))
+if (read_vme) call hdf5_read("sic.hdf5","/","vme",sic_vme(1),(/sic_wantran%nwt/))
 call hdf5_read("sic.hdf5","/","sic_energy_tot",sic_energy_tot)
 call hdf5_read("sic.hdf5","/","sic_energy_pot",sic_energy_pot)
 call hdf5_read("sic.hdf5","/","sic_energy_kin",sic_energy_kin)
