@@ -182,18 +182,10 @@ do iscl=1,maxscl
   call genveffig  
 ! generate the core wavefunctions and densities
   call gencore
-! find the new linearisation energies
-  call timer_start(t_lin_en)
-  call linengy
-  call timer_stop(t_lin_en)
+! generate radial functions
+  call genradf
 ! write out the linearisation energies
   if (wproc) call writelinen
-! generate the APW radial functions
-  call timer_start(t_apw_rad)
-  call genapwfr
-! generate the local-orbital radial functions
-  call genlofr
-  call timer_stop(t_apw_rad)
 ! compute the overlap radial integrals
   call timer_start(t_hbo_rad)
   call olprad
@@ -202,10 +194,6 @@ do iscl=1,maxscl
 #else
 ! compute the Hamiltonian radial integrals
   call hmlrad
-! get radial-muffint tin functions
-  call getufr
-! get product of radial functions
-  call genufrp
 ! generate effective magntic field integrals for full diagonalization
   call genbeff
 ! generate muffin-tin effective magnetic fields and s.o. coupling functions
@@ -216,7 +204,8 @@ do iscl=1,maxscl
   endif 
 #endif
   call timer_stop(t_hbo_rad)
-  evalsv=0.d0
+  evalsv(:,:)=0.d0
+  if (sic) sic_evalsum=0.d0
 ! begin parallel loop over k-points
   do ikloc=1,nkptloc
 ! solve the secular equation
@@ -228,6 +217,7 @@ do iscl=1,maxscl
     endif
   end do  
   call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),all=.true.)
+  if (sic) call mpi_grid_reduce(sic_evalsum,dims=(/dim_k/))
   if (wproc) then
 ! find the occupation numbers and Fermi energy
     call occupy
@@ -266,7 +256,6 @@ do iscl=1,maxscl
       call flushifc(67)
     end if
   end if
-  if (sic) call sic_ekin
 ! compute the effective potential
   call poteff
 ! pack interstitial and muffin-tin effective potential and field into one array
