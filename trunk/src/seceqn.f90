@@ -62,7 +62,6 @@ do ispn=1,nspnfv
      &vgkc(:,:,ispn,ikloc),apwalm(:,:,:,:,ispn),evalfv(:,ispn),evecfv(:,:,ispn))
   end if
 end do
-if (sic) call sic_genbprj(ikloc,evecfv=evecfv(:,:,1),apwalm=apwalm)
 if (spinsprl) then
 ! solve the spin-spiral second-variational secular equation
   call seceqnss(ikloc,apwalm,evalfv,evecfv,evecsv)
@@ -81,10 +80,10 @@ if (scissor.ne.0.d0) then
   end do
 end if
 if (wannier) then
-  call genwann(ikloc,evecfv,evecsv)
+  call wan_gencsv_aux(ikloc,evecfv=evecfv,evecsv=evecsv)
   if (wann_add_poco) then
     call wann_seceqn(ikloc,evecsv)
-    call genwann(ikloc,evecfv,evecsv)
+    call wan_gencsv_aux(ikloc,evecfv=evecfv,evecsv=evecsv)
   endif
 endif
 deallocate(apwalm)
