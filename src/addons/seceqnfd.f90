@@ -38,7 +38,7 @@ else
   call sethml(ngk(1,ik),nmat(1,ik),vgkc(1,1,1,ikloc),igkig(1,1,ikloc),&
     &apwalm,h)
 endif
-if (sic.and..not.tsicsv) then
+if (sic) then
   call sic_genbprj(ikloc,apwalm=apwalm)
   call sic_hunif_fd(ikloc,nmat(1,ik),h,o)
 endif
@@ -58,9 +58,6 @@ call timer_stop(t_seceqnfv_diag)
 deallocate(o,h)
 call timer_start(t_seceqnfv)
 call timer_stop(t_seceqn)
-if (sic.and.tsicsv) then
-  call sic_hunif_sv(ikloc,evecfd)
-endif
 if (wannier) then
   call wan_gencsv_aux(ikloc,evecfd=evecfd)
 endif
