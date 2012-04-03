@@ -9,9 +9,9 @@ implicit none
 integer, intent(in) :: ikloc
 complex(8), intent(inout) :: hunif(nstsv,nstsv)
 ! local variables
-integer i,j,ik,vtrl(3),n1,n2,j1,j2,ispn1,ispn2,istfv1,istfv2,ist1,ist2
+integer i,j,ik,vtrl(3),n1,n2,j1,j2,ispn1,ispn2,istfv1,istfv2,ist1,ist2,ispn
 real(8) vtrc(3),en
-complex(8) expikt
+complex(8) expikt,zt1
 complex(8), allocatable :: vk(:,:),zm1(:,:),vk1(:,:)
 !complex(8), allocatable :: wfmt1(:,:),wfmt2(:,:)
 character*500 msg,fname
@@ -49,18 +49,18 @@ do i=1,sic_wantran%nwt
   expikt=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
   vk(j1,j2)=vk(j1,j2)+expikt*sic_vme(i)
 enddo
-!allocate(vk1(nwantot,nwantot))
-!call sic_genvk(ikloc,vk1)
+
 !do j1=1,sic_wantran%nwan
-!  n1=sic_wantran%iwan(j1)
 !  do j2=1,sic_wantran%nwan
-!    n2=sic_wantran%iwan(j2)
-!    write(*,*)"n1,n2=",n1,n2,"v1,v2=",vk(j1,j2),vk1(n1,n2)
+!    zt1=zzero
+!    do ispn=1,nspinor
+!      do ist1=1,nstfv
+!        zt1=zt1+dconjg(sic_wb(j1,ist1,ispn,ikloc))*sic_wb(j2,ist1,ispn,ikloc)
+!      enddo
+!    enddo
+!    write(*,*)"j1,j2=",j1,j2,"  prod=",zt1
 !  enddo
 !enddo
-!deallocate(vk1)
-!stop "sic_hunif"
-
 
 !if (mpi_grid_root((/dim2/))) then
 !  write(fname,'("hlda_n",I2.2,"_k",I4.4".txt")')nproc,ik
@@ -79,15 +79,14 @@ do istfv1=1,nstfv
       do ispn2=1,nspinor
         ist2=istfv2+(ispn2-1)*nstfv
         do j1=1,sic_wantran%nwan
-          
           do j2=1,sic_wantran%nwan
             
             hunif(ist1,ist2)=hunif(ist1,ist2)-sic_wan_h0k(j1,j2,ikloc)*&
               &dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*sic_wb(j2,istfv2,ispn2,ikloc)
            
             hunif(ist1,ist2)=hunif(ist1,ist2)-&
-              dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*vk(j1,j2)*sic_wb(j2,istfv2,ispn2,ikloc)-&
-              dconjg(sic_wb(j2,istfv1,ispn1,ikloc))*dconjg(vk(j1,j2))*sic_wb(j1,istfv2,ispn2,ikloc)
+              &dconjg(sic_wb(j1,istfv1,ispn1,ikloc))*vk(j1,j2)*sic_wb(j2,istfv2,ispn2,ikloc)-&
+              &dconjg(sic_wb(j2,istfv1,ispn1,ikloc))*dconjg(vk(j1,j2))*sic_wb(j1,istfv2,ispn2,ikloc)
           
           enddo !j2
           
