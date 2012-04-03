@@ -48,7 +48,7 @@ real(8), intent(out) :: f0(nr)
 integer, parameter :: maxit=2000
 integer kpa,it,nn,ir,irm,nnd,nndp
 ! energy convergence tolerance
-real(8), parameter :: eps=1.d-11
+real(8), parameter :: eps=1.d-13
 real(8) t1,de
 ! automatic arrays
 real(8) g1(nr),f1(nr),fr(nr),gr(nr),cf(4,nr)
@@ -97,12 +97,13 @@ do it=1,maxit
       if (nnd*nndp.le.0) then
         de=de*0.5d0
       else
-        de=de*1.1d0
+        de=de*1.2d0
       end if
     end if
   end if
   nndp=nnd
-  if (de.lt.eps*(abs(eval)+1.d0)) goto 20
+  !if (de.lt.eps*(abs(eval)+1.d0)) goto 20
+  if (de.lt.eps) goto 20
 end do
 write(*,*)
 write(*,'("Error(rdirac): maximum iterations exceeded")')
