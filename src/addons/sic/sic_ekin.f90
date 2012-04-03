@@ -23,23 +23,29 @@ do ikloc=1,nkptloc
     expikt=exp(zi*dot_product(vkc(:,ik),vtrc(:)))
     vk(j1,j2)=vk(j1,j2)+expikt*sic_vme(i)
   enddo
-  do ist=1,nstsv
-    do j=1,sic_wantran%nwan
-      n=sic_wantran%iwan(j)
-      sic_energy_kin=sic_energy_kin-wkpt(ik)*occsv(ist,ik)*&
-        &dreal(dconjg(wann_c(n,ist,ikloc))*wann_c(n,ist,ikloc)*vk(j,j))
-    enddo
-    do j1=1,sic_wantran%nwan
-      n1=sic_wantran%iwan(j1)
-      do j2=1,sic_wantran%nwan
-        n2=sic_wantran%iwan(j2)
-        if (n1.ne.n2) then
-          sic_energy_kin=sic_energy_kin-wkpt(ik)*occsv(ist,ik)*&
-            &dreal(wann_c(n1,ist,ikloc)*dconjg(wann_c(n2,ist,ikloc))*sic_wan_h0k(j1,j2,ikloc))
-        endif
-      enddo
-    enddo
-  enddo !ist
+  do j=1,sic_wantran%nwan
+    n=sic_wantran%iwan(j)
+    if (sic_apply(n).eq.2) then
+      sic_energy_kin=sic_energy_kin-wkpt(ik)*dreal(vk(j,j))
+    endif
+  enddo
+  !do ist=1,nstsv
+  !  do j=1,sic_wantran%nwan
+  !    n=sic_wantran%iwan(j)
+  !    sic_energy_kin=sic_energy_kin-wkpt(ik)*occsv(ist,ik)*&
+  !      &dreal(dconjg(wann_c(n,ist,ikloc))*wann_c(n,ist,ikloc)*vk(j,j))
+  !  enddo
+  !  !do j1=1,sic_wantran%nwan
+  !  !  n1=sic_wantran%iwan(j1)
+  !  !  do j2=1,sic_wantran%nwan
+  !  !    n2=sic_wantran%iwan(j2)
+  !  !    if (n1.ne.n2) then
+  !  !      sic_energy_kin=sic_energy_kin-wkpt(ik)*occsv(ist,ik)*&
+  !  !        &dreal(wann_c(n1,ist,ikloc)*dconjg(wann_c(n2,ist,ikloc))*sic_wan_h0k(j1,j2,ikloc))
+  !  !    endif
+  !  !  enddo
+  !  !enddo
+  !enddo !ist
 enddo !ikloc
 deallocate(vk)
 call mpi_grid_reduce(sic_energy_kin,dims=(/dim_k/))
