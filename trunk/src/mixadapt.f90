@@ -57,7 +57,7 @@ if (n.le.0) return
 if (iscl.le.1) then
   mu(:)=nu(:)
   f(:)=0.d0
-  beta(:)=0.5d0 !beta0
+  beta(:)=min(beta0*1d10,0.5)
   d=1.d0
   return
 end if
