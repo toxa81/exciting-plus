@@ -247,7 +247,7 @@ endif
 twantran%tlim(:,:)=tlim(:,:)
 ! generate {m,n,t} -> global index mapping
 allocate(twantran%iwtidx(nwantot,nwantot,tlim(1,1):tlim(2,1),&
-  tlim(1,2):tlim(2,2),tlim(1,3):tlim(2,3)))
+  &tlim(1,2):tlim(2,2),tlim(1,3):tlim(2,3)))
 twantran%iwtidx=-1
 do i=1,nwt
   m=iwt(1,i)
@@ -343,7 +343,8 @@ complex(8), optional, intent(in) :: evecfv(nmatmax,nstfv)
 complex(8), optional, intent(in) :: evecsv(nstsv,nstsv)
 complex(8), optional, intent(in) :: evecfd(nspinor*nmatmax,nstsv)
 !
-integer ik,lmax,lmmax
+integer ik,lmax,lmmax,n,j
+real(8) t1
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: evec(:,:)
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
@@ -353,7 +354,7 @@ lmmax=(lmax+1)**2
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 allocate(apwalm(ngkmax,lmmaxapw,apwordmax,natmtot))
 call genapwalm(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),&
-  sfacgk(1,1,1,ikloc),apwalm)
+  &sfacgk(1,1,1,ikloc),apwalm)
 allocate(wfsvmt(lmmax,nufrmax,natmtot,nspinor,nstsv))
 if (present(evecfv).and.present(evecsv)) then
   allocate(evec(nspinor*nmatmax,nstsv))
@@ -363,8 +364,22 @@ if (present(evecfv).and.present(evecsv)) then
 else
   call genwfsvc(lmax,lmmax,ngk(1,ik),nstsv,apwalm,evecfd,wfsvmt)
 endif
+
 call wan_gencsv(lmmax,vkc(1,ik),evalsv(1,ik),wfsvmt,wann_c(1,1,ikloc),&
-  wann_err_k(ikloc))
+  &wann_err_k(ikloc))
+
+if (.false.) then
+  write(*,'("WF expansion coefficients for k-point : ",I2)')ik
+  do j=1,nstsv
+    t1=0.d0
+    do n=1,nwantot
+      t1=t1+abs(wann_c(n,j,ikloc))
+    enddo
+    if (t1.gt.1d-10) then
+      write(*,'(" j : ",I4,"  wann_c : ",255F8.4)')j,(abs(wann_c(n,j,ikloc)),n=1,nwantot)
+    endif
+  enddo
+endif
 deallocate(apwalm,wfsvmt)
 return
 end subroutine
@@ -386,7 +401,7 @@ logical, external :: bndint
 !
 wanc=zzero
 do n=1,nwantot
-  !if (.not.wannier_lc) then
+  if (.not.wannier_lc) then
     ias=wan_info(1,n)
     lm=wan_info(2,n)
     ispn=wan_info(3,n)
@@ -404,7 +419,8 @@ do n=1,nwantot
         endif
       endif
     enddo
-  !else
+  else
+    stop "(wan_gencsv) linear combination of WFs has to be uncommented and tested"
   !  do i=1,wanlc_norb(n)
   !    d1=wanlc_iorb_alpha(i,n)
   !    iw=wanlc_iorb(1,i,n)
@@ -427,7 +443,7 @@ do n=1,nwantot
   !      endif !bndint
   !    enddo
   !  enddo !i
-  !endif
+  endif
 enddo !n
 ! remove small contribution
 do j=1,nstsv
@@ -532,6 +548,26 @@ if (ierr.eq.0) then
   wanc=wanc_ort
 endif
 deallocate(s,wanc_ort)
+return
+end subroutine
+
+subroutine wan_gen_h(esv,wanc,h)
+use modmain
+implicit none
+real(8), intent(in) :: esv(nstsv)
+complex(8), intent(in) :: wanc(nwantot,nstsv)
+complex(8), intent(out) :: h(nwantot,nwantot)
+!
+integer j,n1,n2
+!
+h(:,:)=zzero
+do n1=1,nwantot
+  do n2=1,nwantot
+    do j=1,nstsv
+      h(n1,n2)=h(n1,n2)+dconjg(wanc(n1,j))*wanc(n2,j)*esv(j)
+    enddo
+  enddo
+enddo
 return
 end subroutine
 
