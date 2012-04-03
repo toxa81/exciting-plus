@@ -4,8 +4,9 @@ use mod_wannier
 use mod_sic
 use mod_ws
 implicit none
-integer i,n,j,i1,i2,i3
-real(8) a,wsv(3,3),vl(3)
+integer i,n,j,i1,i2,i3,ivl(3),isym,ninner
+real(8) a,wsv(3,3),vl(3),vc(3),vc1(3),vl1(3),vl2(3),sl(3,3)
+integer, allocatable :: f1(:),f2(:)
 !
 if (.not.wannier) then
   write(*,*)
@@ -15,6 +16,8 @@ if (.not.wannier) then
 endif
 tevecsv=.true.
 lmmaxwan=(lmaxwan+1)**2
+
+sic_bottom_energy=-20.3d0
 
 if (allocated(sic_apply)) deallocate(sic_apply)
 allocate(sic_apply(nwantot))
@@ -39,7 +42,7 @@ call ws_init(wsv)
 sic_wan_rwsmin=1.d100
 sic_wan_rwsmax=0.d0
 do i=1,26
-  sic_wan_rwsmin=min(sic_wan_rwsmin,sqrt(sum(ws_pts(:,i)**2/4.d0)))
+  sic_wan_rwsmin=min(sic_wan_rwsmin,sqrt(sum(ws_nnpts(:,i)**2/4.d0)))
 enddo
 do i=1,ws_nvertex
   sic_wan_rwsmax=max(sic_wan_rwsmax,sqrt(sum(ws_vertex(:,i)**2)))
@@ -66,10 +69,12 @@ i=0
 do i1=0,ngridk(1)-1
   do i2=0,ngridk(2)-1
     do i3=0,ngridk(3)-1
+      ivl(:)=(/i1,i2,i3/)
+      vl(:)=dble(ivl(:))
+      call r3mv(avec,vl,vc)
       i=i+1
-      sic_vtl(:,i)=(/i1,i2,i3/)
-      vl(:)=dble(sic_vtl(:,i))
-      call r3mv(avec,vl,sic_vtc(1,i))
+      sic_vtl(:,i)=ivl(:)
+      sic_vtc(:,i)=vc(:)
     enddo
   enddo
 enddo
@@ -89,13 +94,8 @@ if (tsveqn) then
   allocate(sic_wb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
   allocate(sic_wvb(sic_wantran%nwan,nstfv,nspinor,nkptloc))
 else
-  if (tsicsv) then
-    allocate(sic_wb(sic_wantran%nwan,nstsv,1,nkptloc))
-    allocate(sic_wvb(sic_wantran%nwan,nstsv,1,nkptloc))  
-  else
-    allocate(sic_wb(sic_wantran%nwan,nmatmax,nspinor,nkptloc))
-    allocate(sic_wvb(sic_wantran%nwan,nmatmax,nspinor,nkptloc))
-  endif
+  allocate(sic_wb(sic_wantran%nwan,nmatmax,nspinor,nkptloc))
+  allocate(sic_wvb(sic_wantran%nwan,nmatmax,nspinor,nkptloc))
 endif
 sic_wb=zzero
 sic_wvb=zzero
@@ -123,7 +123,7 @@ allocate(s_wvkmt(nrmtmax,lmmaxapw,natmtot,nspinor,sic_wantran%nwan,nkptloc))
 if (allocated(s_wvkit)) deallocate(s_wvkit)
 allocate(s_wvkit(ngkmax,nspinor,sic_wantran%nwan,nkptloc))
 if (mpi_grid_root()) then
-! size of sperical arrays
+! size of spherical arrays
   a=2*16.d0*lmmaxwan*s_nr*nspinor*sic_wantran%nwan/1024/1024
 ! size of Bloch sums
   a=a+2*16.d0*lmmaxapw*nrmtmax*natmtot*nspinor*sic_wantran%nwan*nkptloc/1024/1024
