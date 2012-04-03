@@ -17,7 +17,6 @@ complex(8) zv1(lmmaxapw,nufrmax)
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 complex(8), allocatable :: wfsvit(:,:,:)
-complex(8), allocatable :: wfsvit_(:,:,:)
 complex(8), allocatable :: gntmp(:,:)
 complex(8), allocatable :: zdens(:,:,:,:,:,:)
 real(8), allocatable :: wo(:)
@@ -25,6 +24,7 @@ integer, allocatable :: istocc(:)
 complex(8), allocatable :: evecfd_(:,:)
 complex(8), allocatable ::zfft(:)
 real(8), allocatable :: rhotmp(:,:)
+!
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 call timer_start(t_rho_wf)
 allocate(wo(nstsv))
@@ -46,13 +46,13 @@ if (tsveqn) then
   allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot))
 ! find the matching coefficients
   call match(ngk(1,ik),gkc(:,1,ikloc),tpgkc(:,:,1,ikloc),&
-    sfacgk(:,:,1,ikloc),apwalm)
+    &sfacgk(:,:,1,ikloc),apwalm)
   call genwfsvocc(lmaxapw,lmmaxapw,ngk(1,ik),nstocc,istocc,&
-    evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),apwalm,wfsvmt,wfsvit)
+    &evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),apwalm,wfsvmt,wfsvit)
 else
   allocate(apwalm(ngkmax,lmmaxapw,apwordmax,natmtot))
   call genapwalm(ngk(1,ik),gkc(:,1,ikloc),tpgkc(:,:,1,ikloc),&
-    sfacgk(:,:,1,ikloc),apwalm)
+    &sfacgk(:,:,1,ikloc),apwalm)
   allocate(evecfd_(nspinor*nmatmax,nstocc))
   do j=1,nstocc
     evecfd_(:,j)=evecfdloc(:,istocc(j),ikloc)
@@ -78,7 +78,7 @@ do ias=1,natmtot
               do lm2=l2**2+1,(l2+1)**2
                 do lm1=l1**2+1,(l1+1)**2
                   zdens(lm1,lm2,io1,io2,ias,ispn)=zdens(lm1,lm2,io1,io2,ias,ispn)+&
-                    dconjg(zv1(lm1,io1))*zv1(lm2,io2)*wo(jst)
+                    &dconjg(zv1(lm1,io1))*zv1(lm2,io2)*wo(jst)
                 enddo
               enddo
             enddo
@@ -157,23 +157,6 @@ rhomagit=rhomagit+rhotmp
 !$OMP END CRITICAL
 deallocate(rhotmp)
 !$OMP END PARALLEL
-
-!allocate(wfsvit_(nstocc,ngkmax,nspinor))
-!do jst=1,nstocc
-!  wfsvit_(jst,:,:)=wfsvit(:,:,jst)
-!enddo
-!do ig1=1,ngk(1,ik)
-!  do ig2=1,ngk(1,ik)
-!    ivg3(:)=ivg(:,igkig(ig2,1,ikloc))-ivg(:,igkig(ig1,1,ikloc))
-!    ifg3=igfft(ivgig(ivg3(1),ivg3(2),ivg3(3)))
-!    do ispn=1,nspinor
-!      do jst=1,nstocc
-!        rhomagit(ifg3,ispn)=rhomagit(ifg3,ispn)+&
-!          dconjg(wfsvit_(jst,ig1,ispn))*wfsvit_(jst,ig2,ispn)*wo(jst)/omega
-!      enddo
-!    enddo
-!  enddo
-!enddo
 call timer_stop(t_rho_mag_it)
 deallocate(wfsvit)
 deallocate(wo,istocc)

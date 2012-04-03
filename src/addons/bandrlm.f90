@@ -40,6 +40,7 @@ complex(8), allocatable :: evecfd(:,:)
 complex(8), allocatable :: apwalm(:,:,:,:)
 complex(8), allocatable :: wfsvmt(:,:,:,:,:)
 real(8), allocatable :: sic_wan_e0k(:,:)
+real(8), allocatable :: sic_wan_e1k(:,:)
 ! low precision for band character array saves memory
 real(4), allocatable :: bc(:,:,:,:,:)
 ! initialise universal variables
@@ -60,22 +61,14 @@ allocate(apwalm(ngkmax,lmmaxapw,apwordmax,natmtot))
 call readstate
 ! read Fermi energy from file
 call readfermi
-! find the new linearisation energies
-call linengy
-! generate the APW radial functions
-call genapwfr
-! generate the local-orbital radial functions
-call genlofr
+! generate radial functions
+call genradf
 ! compute the overlap radial integrals
 call olprad
 ! compute the Hamiltonian radial integrals
 call hmlrad
 ! generate V_eff(G)
 call genveffig
-! get radial-muffint tin functions
-call getufr
-! get product of radial functions
-call genufrp
 ! generate muffin-tin effective magnetic fields and s.o. coupling functions
 if (texactrho) then
   call seceqnsv_init
@@ -88,7 +81,9 @@ if (sic) then
   call sic_read_data(.false.)
   call sic_genblochsum(.true.,.true.)
   allocate(sic_wan_e0k(sic_wantran%nwan,nkpt))
+  allocate(sic_wan_e1k(sic_wantran%nwan,nkpt))
   sic_wan_e0k=0.d0
+  sic_wan_e1k=0.d0
 endif
 ! begin parallel loop over k-points
 bc=0.d0
@@ -112,6 +107,9 @@ do ikloc=1,nkptloc
     &sfacgk(1,1,1,ikloc),apwalm)
   call genwfsvc(lmax,lmmax,ngk(1,ik),nstsv,apwalm,evecfd,wfsvmt)
   if (sic) then
+    do j=1,sic_wantran%nwan
+      sic_wan_e1k(j,ik)=dreal(sic_wan_h0k(j,j,ikloc))
+    enddo
     call diagzhe(sic_wantran%nwan,sic_wan_h0k(1,1,ikloc),sic_wan_e0k(1,ik))
   endif
   call bandchar(.false.,lmax,lmmax,wfsvmt,bc(1,1,1,1,ik))
@@ -120,8 +118,12 @@ deallocate(evalfv,evecfv,evecsv,evecfd,wfsvmt,apwalm)
 call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.)
 if (wannier) call mpi_grid_reduce(wann_e(1,1),nwantot*nkpt,dims=(/dim_k/),&
   &side=.true.)
-if (sic) call mpi_grid_reduce(sic_wan_e0k(1,1),sic_wantran%nwan*nkpt,&
-  &dims=(/dim_k/),side=.true.)
+if (sic) then
+  call mpi_grid_reduce(sic_wan_e0k(1,1),sic_wantran%nwan*nkpt,&
+    &dims=(/dim_k/),side=.true.)
+  call mpi_grid_reduce(sic_wan_e1k(1,1),sic_wantran%nwan*nkpt,&
+    &dims=(/dim_k/),side=.true.)
+endif
 do ik=1,nkpt
   call mpi_grid_reduce(bc(1,1,1,1,ik),lmmax*natmtot*nspinor*nstsv,&
     &dims=(/dim_k/),side=.true.)
@@ -179,6 +181,14 @@ if (mpi_grid_root()) then
     do ist=1,sic_wantran%nwan
       do ik=1,nkpt
         write(50,'(2G18.10)') dpp1d(ik),(sic_wan_e0k(ist,ik)-efermi)*ha2ev
+      end do
+      write(50,*)
+    end do
+    close(50)  
+    open(50,file='sic_wann_h0_diag.dat',action='WRITE',form='FORMATTED')
+    do ist=1,sic_wantran%nwan
+      do ik=1,nkpt
+        write(50,'(2G18.10)') dpp1d(ik),(sic_wan_e1k(ist,ik)-efermi)*ha2ev
       end do
       write(50,*)
     end do
@@ -246,7 +256,7 @@ if (mpi_grid_root()) then
   write(*,*)
 endif
 deallocate(bc)
-if (sic) deallocate(sic_wan_e0k)
+if (sic) deallocate(sic_wan_e0k,sic_wan_e1k)
 return
 end subroutine
 !EOC
