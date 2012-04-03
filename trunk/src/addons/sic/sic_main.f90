@@ -23,14 +23,8 @@ if (.not.mpi_grid_in()) return
 wproc=mpi_grid_root()
 ! read the density and potentials from file
 call readstate
-! find the new linearisation energies
-call linengy
-! generate the APW radial functions
-call genapwfr
-! generate the local-orbital radial functions
-call genlofr
-call getufr
-call genufrp
+! generate radial functions
+call genradf
 ! generate wave-functions for all k-points in BZ
 call genwfnr(-1,.false.,lmaxapw)  
 call elk_m_init
