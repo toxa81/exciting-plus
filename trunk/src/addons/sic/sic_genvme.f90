@@ -6,8 +6,7 @@ implicit none
 integer, intent(in) :: fout
 !
 integer i,j,n,i1,j1,n1,vl(3)
-logical texist
-real(8) t1,t2,t3,pos1(3),pos2(3)
+real(8) t1,t2,pos1(3),pos2(3)
 complex(8) me1,me2,zt1,zt2
 !
 if (wproc) then
@@ -34,6 +33,8 @@ call timer_start(t_sic_me,reset=.true.)
 call sic_genvme_dotp(.false.)
 ! check localization criterion 
 t2=-1.d0
+me1=zzero
+me2=zzero
 do i=1,sic_wantran%nwt
   n=sic_wantran%iwt(1,i)
   n1=sic_wantran%iwt(2,i)
@@ -65,8 +66,6 @@ do j=1,sic_wantran%nwan
     endif
   endif
 enddo
-
-
 ! symmetrize the potential matrix elements
 !do i=1,sic_wantran%nwt
 !  n=sic_wantran%iwt(1,i)
@@ -77,22 +76,6 @@ enddo
 !  sic_vme(i)=z1
 !  sic_vme(j)=dconjg(z1)
 !enddo
-! read old matrix elements
-!allocate(vme_old(sic_wantran%nwt))
-!vme_old=zzero
-!inquire(file="sic.hdf5",exist=texist)
-!if (texist) then
-!  call hdf5_read("sic.hdf5","/","nwt",i)
-!  if (i.eq.sic_wantran%nwt) then
-!    call hdf5_read("sic.hdf5","/","vme",vme_old(1),(/sic_wantran%nwt/))
-!  endif
-!endif
-! compute RMS difference
-t3=0.d0
-do i=1,sic_wantran%nwt
-  t3=t3+abs(sic_vme(i)-sic_vme_old(i))**2
-enddo
-t3=sqrt(t3/sic_wantran%nwt)
 call timer_stop(t_sic_me)
 if (wproc) then
   write(fout,*)
@@ -110,13 +93,11 @@ if (wproc) then
     write(fout,'("  n : ",I4,8X,2G18.10)')n,dreal(sic_vme(i)),dimag(sic_vme(i))
   enddo  
   write(fout,*)
-  write(fout,'("matrix elements RMS difference :",G18.10)')t3
-  write(fout,*)
   write(fout,'("done in : ",F8.3," sec.")')timer_get_value(t_sic_me)
   write(fout,*)
   call flushifc(fout)
 endif
-xml_info%sic_vme_rms=t3
+xml_info%sic_vme_rms=0.d0
 xml_info%sic_vme_err=t2
 return
 end

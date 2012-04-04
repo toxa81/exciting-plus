@@ -351,7 +351,6 @@ complex(8), intent(in) :: f2lm(lmmaxwan,s_nr,nspinor)
 ! local variables
 complex(8), allocatable :: f1tp_(:,:)
 complex(8), allocatable :: f2tp_(:,:,:)
-complex(8) zprod
 integer ir,itp,ispn
 real(8) x1(3),x2(3)
 complex(8), allocatable :: zf(:)
@@ -586,7 +585,7 @@ return
 end subroutine
 
 
-subroutine sic_genbprj(ikloc,evecfv,apwalm,wfsvmt,wfsvit)
+subroutine sic_genbprj(ikloc,evecfv,apwalm)
 use modmain
 use mod_util
 implicit none
@@ -594,10 +593,8 @@ implicit none
 integer, intent(in) :: ikloc
 complex(8), optional, intent(in) :: evecfv(nmatmax,nstfv)
 complex(8), optional, intent(in) :: apwalm(ngkmax,apwordmax,lmmaxapw,natmtot)
-complex(8), optional, intent(in) :: wfsvmt(lmmaxapw,nufrmax,natmtot,nspinor,nstsv)
-complex(8), optional, intent(in) :: wfsvit(ngkmax,nspinor,nstsv)
 ! local variables
-integer ik,i,j,ispn,l,m,lm,io,ilo,ias,is,ic,ist,ir,ig
+integer ik,i,j,ispn,l,m,lm,io,ilo,ias,is,ist,ir,ig
 complex(8) z1,z2
 complex(8), allocatable :: wfmt1(:,:,:)
 complex(8), allocatable :: wfmt2(:,:,:)
@@ -708,10 +705,10 @@ implicit none
 ! arguments
 integer, intent(in) :: ikloc
 ! local variables
-integer j,ia,n
-integer is,ias,ik,ispn,i1
-integer ivg3(3),ifg3,ir
-integer ig1,ig2,io1,io2,l1,l2,j1,j2,lm1,lm2,lm3,l3
+integer j,n
+integer is,ias,ik,ispn
+integer ir
+integer ig1,io1,io2,l1,l2,j1,j2,lm1,lm2,lm3,l3
 integer nstocc
 real(8) t1
 complex(8) zt1,zt2(nspinor)

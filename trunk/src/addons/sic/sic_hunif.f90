@@ -9,10 +9,10 @@ implicit none
 integer, intent(in) :: ikloc
 complex(8), intent(inout) :: hunif(nstsv,nstsv)
 ! local variables
-integer i,j,ik,vtrl(3),n1,n2,j1,j2,ispn1,ispn2,istfv1,istfv2,ist1,ist2,ispn
-real(8) vtrc(3),en
+integer i,j,ik,vtrl(3),n1,n2,j1,j2,ispn1,ispn2,istfv1,istfv2,ist1,ist2
+real(8) vtrc(3)
 complex(8) expikt,zt1
-complex(8), allocatable :: vk(:,:),zm1(:,:),vk1(:,:)
+complex(8), allocatable :: vk(:,:),zm1(:,:)
 !complex(8), allocatable :: wfmt1(:,:),wfmt2(:,:)
 character*500 msg,fname
 logical, parameter :: tcheckherm=.false.

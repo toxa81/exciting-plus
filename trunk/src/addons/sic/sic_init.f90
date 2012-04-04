@@ -4,9 +4,8 @@ use mod_wannier
 use mod_sic
 use mod_ws
 implicit none
-integer i,n,j,i1,i2,i3,ivl(3),isym,ninner
-real(8) a,wsv(3,3),vl(3),vc(3),vc1(3),vl1(3),vl2(3),sl(3,3)
-integer, allocatable :: f1(:),f2(:)
+integer i,n,j,i1,i2,i3,ivl(3)
+real(8) a,wsv(3,3),vl(3),vc(3)
 !
 if (.not.wannier) then
   write(*,*)

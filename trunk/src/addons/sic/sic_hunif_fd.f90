@@ -10,7 +10,7 @@ complex(8), intent(inout) :: hunif(nmatp,nmatp,nspinor)
 complex(8), intent(inout) :: om(nmatp,nmatp)
 ! local variables
 integer i,ik,vtrl(3),n1,n2,i1,i2,j1,j2,ispn
-real(8) vtrc(3),vn
+real(8) vtrc(3)
 complex(8) expikt,zt1
 complex(8), allocatable :: vk(:,:)
 character*500 msg,fname
