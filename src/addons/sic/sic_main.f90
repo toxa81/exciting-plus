@@ -6,14 +6,11 @@ use mod_wannier
 use mod_madness
 use mod_hdf5
 implicit none
-integer n,j,ik,ispn,ikloc,ig
+integer n,j,ispn
 integer ias,lm,iter
-real(8) ekin_,etot_
-real(8), allocatable :: laplsv(:) 
 character*20 c1,c2,c3
 character, parameter :: orbc(4)=(/'s','p','d','f'/)
 character*2, parameter :: spinc(2)=(/'up','dn'/)
-logical texist
 !
 sic=.true.
 ! initialise universal variables

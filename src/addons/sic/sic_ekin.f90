@@ -2,7 +2,7 @@ subroutine sic_ekin
 use modmain
 use mod_sic
 implicit none
-integer ikloc,ik,j,n,i,ist,n1,n2,j1,j2,vtrl(3)
+integer ikloc,ik,j,n,i,n1,n2,j1,j2,vtrl(3)
 real(8) vtrc(3)
 complex(8), allocatable :: vk(:,:)
 complex(8) expikt

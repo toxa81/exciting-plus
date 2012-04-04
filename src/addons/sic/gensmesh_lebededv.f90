@@ -2,7 +2,7 @@ subroutine gensmesh_lebedev
 use modmain
 use mod_sic
 implicit none
-integer itp,lm
+integer itp
 real(8) a
 
 s_ntp=sic_smesh_n

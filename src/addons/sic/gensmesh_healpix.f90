@@ -2,9 +2,7 @@ subroutine gensmesh_healpix
 use modmain
 use mod_sic
 implicit none
-integer nside,itp,lm,lm1
-real(8) a
-complex(8), allocatable :: clm(:)
+integer nside,itp,lm
 nside=12
 
 s_ntp=12*nside**2

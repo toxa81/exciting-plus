@@ -12,9 +12,8 @@ complex(8), intent(out) :: wvlm(lmmaxwan,s_nr,nspinor)
 real(8), intent(out) :: wanprop(nwanprop)
 ! local variables
 integer jr,ir,l,lm,ispn,lm1,lm2,lm3,lmmaxwanloc,lmloc
-real(8) t1,x(3),x2,t2
+real(8) t1
 complex(8) zt1
-character*100 path
 real(8), allocatable :: rhotp(:,:,:)
 real(8), allocatable :: rholm(:,:,:)
 real(8), allocatable :: totrholm(:,:)

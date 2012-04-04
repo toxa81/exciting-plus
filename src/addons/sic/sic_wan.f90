@@ -10,7 +10,7 @@ implicit none
 integer, intent(in) :: fout
 ! local variables
 integer n,ispn,vl(3),n1,i,j,j1,itp,ir,nwtloc,iloc,nrloc,irloc
-real(8) t1,t2,vrc(3),pos1(3),pos2(3),x(3),dens(1),e1(1),e2(1),v1(1),v2(1)
+real(8) t1,t2,vrc(3),pos1(3),pos2(3)
 real(8) sic_epot_h,sic_epot_xc
 complex(8) z1,wanval(nspinor)
 real(8), allocatable :: wanprop(:,:)
@@ -21,7 +21,6 @@ complex(8), allocatable :: wantp(:,:,:)
 integer, parameter :: iovlp=1 
 integer, parameter :: irms=0
 complex(8), external :: zdotc
-character*100 fname
 !
 allocate(wantp(s_ntp,s_nr,nspinor))
 allocate(wanprop(nwanprop,sic_wantran%nwan))
