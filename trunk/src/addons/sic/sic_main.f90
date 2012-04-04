@@ -29,6 +29,7 @@ call elk_m_init
 !call madness_init_box
 !call madness_gen_hpot(1)
 #endif
+call sic_create_hdf5
 sic_write_rholm=.true.
 sic_write_vlm=.true.
 sic_write_vhlm=.true.

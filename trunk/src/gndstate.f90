@@ -28,7 +28,7 @@ use mod_libapw
 implicit none
 ! local variables
 logical exist
-integer ik,is,ia,ias,ist,idm,i,ikloc
+integer ik,is,ia,ias,ist,i,ikloc
 integer n,nwork
 real(8) dv,etp,de,timetot
 ! allocatable arrays
@@ -217,6 +217,7 @@ do iscl=1,maxscl
   end do  
   call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),all=.true.)
   if (sic) call mpi_grid_reduce(sic_evalsum,dims=(/dim_k/))
+  if (sic) call sic_write_eval
   if (wproc) then
 ! find the occupation numbers and Fermi energy
     call occupy
@@ -449,8 +450,6 @@ if (mpi_grid_side(dims=(/dim_k/))) then
 endif
 ! write SIC related functions
 if (sic) then
-  if (mpi_grid_root()) call sic_create_hdf5 
-  call mpi_grid_barrier
   call sic_write_blochsum
 endif
 call mpi_grid_bcast(tstop)
