@@ -141,7 +141,7 @@ data tsic_wv/.false./
 integer sic_debug_level
 data sic_debug_level/0/
 
-complex(8), allocatable :: sic_vme_old(:)
+!complex(8), allocatable :: sic_vme_old(:)
 ! write total SIC potential
 logical sic_write_vlm
 data sic_write_vlm/.false./
