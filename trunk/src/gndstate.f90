@@ -13,7 +13,6 @@ use modldapu
 use mod_wannier
 use mod_sic
 use mod_seceqn
-use mod_rs
 use mod_libapw
 ! !DESCRIPTION:
 !   Computes the self-consistent Kohn-Sham ground-state. General information is
@@ -447,6 +446,12 @@ if (mpi_grid_side(dims=(/dim_k/))) then
     end if
     call mpi_grid_barrier(dims=(/dim_k/))
   end do
+endif
+! write SIC related functions
+if (sic) then
+  if (mpi_grid_root()) call sic_create_hdf5 
+  call mpi_grid_barrier
+  call sic_write_blochsum
 endif
 call mpi_grid_bcast(tstop)
 !-----------------------!
