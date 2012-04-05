@@ -710,7 +710,7 @@ integer is,ias,ik,ispn
 integer ir
 integer ig1,io1,io2,l1,l2,j1,j2,lm1,lm2,lm3,l3
 integer nstocc
-real(8) t1
+real(8) t1,emin
 complex(8) zt1,zt2(nspinor)
 complex(8) zv1(lmmaxapw,nufrmax)
 ! allocatable arrays
@@ -728,10 +728,16 @@ complex(8), allocatable :: wfsvit(:,:,:)
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 call timer_start(t_rho_wf)
 ! check bottom energy
+emin=1d10
 do j=1,sic_wantran%nwan
-  if (dreal(sic_wan_h0k(j,j,ikloc)).le.sic_bottom_energy) then
-    write(*,'("Error(sic_rhomagk_exact): energy of SIC states is below ",F12.6," Ha")')sic_bottom_energy
-    stop
+  n=sic_wantran%iwan(j)
+  if (sic_apply(n).ge.2) then !dreal(sic_wan_h0k(j,j,ikloc)).le.sic_bottom_energy) then
+    emin=min(emin,dreal(sic_wan_h0k(j,j,ikloc)))
+    !write(*,'("Error(sic_rhomagk_exact): energy of SIC states is below ",F12.6," Ha")')sic_bottom_energy
+    !do j1=1,sic_wantran%nwan
+    !  write(*,'(" j : ",I4,"  energy : ",F12.6)')j1,dreal(sic_wan_h0k(j1,j1,ikloc))
+    !enddo
+    !stop
   endif
 enddo
 ! generate wave functions; use last nwantot slots to store Bloch sums of Wannier functions 
@@ -768,7 +774,7 @@ allocate(istocc(nstsv))
 nstocc=0
 do j=1,nstsv
   t1=wkpt(ik)*occsv(j,ik)
-  if (abs(t1).gt.epsocc.and.evalsv(j,ik).lt.sic_bottom_energy) then
+  if (abs(t1).gt.epsocc.and.evalsv(j,ik).lt.emin) then
     nstocc=nstocc+1
     wo(nstocc)=t1
     istocc(nstocc)=j
@@ -777,7 +783,7 @@ do j=1,nstsv
 enddo
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
-  if (sic_apply(n).eq.2) then
+  if (sic_apply(n).ge.2) then
     t1=wkpt(ik)*occmax
     nstocc=nstocc+1
     wo(nstocc)=t1
@@ -883,5 +889,12 @@ call timer_stop(t_rho_mag_it)
 deallocate(wo,istocc,wfsvmt,wfsvit)
 return
 end subroutine
+
+!subroutine sic_set_hunif(ikloc,nmat,ld,h,o)
+!use modmain
+!implicit none
+!
+!return
+!end subroutine
 
 end module

@@ -16,7 +16,7 @@ endif
 tevecsv=.true.
 lmmaxwan=(lmaxwan+1)**2
 
-sic_bottom_energy=-20.3d0
+sic_bottom_energy=-0.4d0
 
 if (allocated(sic_apply)) deallocate(sic_apply)
 allocate(sic_apply(nwantot))
@@ -28,7 +28,9 @@ if (allocated(sicw)) then
     sic_apply(n)=sicw(j,i)
   enddo
 else
-  sic_apply=2
+  write(*,'("Please, specify the SIC states via the sic_apply input token.")')
+  call pstop
+  !sic_apply=2
 endif
 call deletewantran(sic_wantran)
 ! get Wannier transitions
