@@ -52,7 +52,7 @@ enddo
 ! check if |VW> belongs to the subspace of |W>
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
-  if (sic_apply(n).eq.2) then
+  if (sic_apply(n).eq.3) then
     pos1=0.d0
     zt1=s_spinor_dotp(pos1,pos1,s_wvlm(1,1,1,j),s_wvlm(1,1,1,j))
     zt2=zzero
