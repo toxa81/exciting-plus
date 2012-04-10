@@ -216,7 +216,6 @@ do iscl=1,maxscl
     endif
   end do  
   call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),all=.true.)
-  if (sic) call mpi_grid_reduce(sic_evalsum,dims=(/dim_k/))
   if (sic) call sic_write_eval
   if (wproc) then
 ! find the occupation numbers and Fermi energy
@@ -242,6 +241,7 @@ do iscl=1,maxscl
     call rhomag
   endif
 #endif
+  if (sic) call mpi_grid_reduce(sic_evalsum,dims=(/dim_k/))
 ! LDA+U
   if (ldapu.ne.0) then
 ! generate the LDA+U density matrix
