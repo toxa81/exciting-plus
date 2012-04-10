@@ -117,12 +117,16 @@ sic_wan_h0k=zzero
 
 if (allocated(s_wkmt)) deallocate(s_wkmt)
 allocate(s_wkmt(nrmtmax,lmmaxapw,natmtot,nspinor,sic_wantran%nwan,nkptloc))
+s_wkmt=zzero
 if (allocated(s_wkit)) deallocate(s_wkit)
 allocate(s_wkit(ngkmax,nspinor,sic_wantran%nwan,nkptloc))
+s_wkit=zzero
 if (allocated(s_wvkmt)) deallocate(s_wvkmt)
 allocate(s_wvkmt(nrmtmax,lmmaxapw,natmtot,nspinor,sic_wantran%nwan,nkptloc))
+s_wvkmt=zzero
 if (allocated(s_wvkit)) deallocate(s_wvkit)
 allocate(s_wvkit(ngkmax,nspinor,sic_wantran%nwan,nkptloc))
+s_wvkit=zzero
 if (mpi_grid_root()) then
 ! size of spherical arrays
   a=2*16.d0*lmmaxwan*s_nr*nspinor*sic_wantran%nwan/1024/1024
