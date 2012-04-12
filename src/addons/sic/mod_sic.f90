@@ -772,15 +772,15 @@ enddo
 allocate(wo(nstsv))
 allocate(istocc(nstsv))
 nstocc=0
-do j=1,nstsv
-  t1=wkpt(ik)*occsv(j,ik)
-  if (abs(t1).gt.epsocc.and.evalsv(j,ik).lt.emin) then
-    nstocc=nstocc+1
-    wo(nstocc)=t1
-    istocc(nstocc)=j
-    sic_evalsum=sic_evalsum+t1*evalsv(j,ik)
-  endif
-enddo
+!do j=1,nstsv
+!  t1=wkpt(ik)*occsv(j,ik)
+!  if (abs(t1).gt.epsocc.and.evalsv(j,ik).lt.emin) then
+!    nstocc=nstocc+1
+!    wo(nstocc)=t1
+!    istocc(nstocc)=j
+!    sic_evalsum=sic_evalsum+t1*evalsv(j,ik)
+!  endif
+!enddo
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
   if (sic_apply(n).ge.2) then

@@ -106,6 +106,12 @@ do itask=1,ntasks
     call writetensmom
   case(500)
     call testcheck
+  case(700)
+    call sic_gndstate 
+  case(701)
+    call sic_main
+  case(702)
+    call sic_test_vme
   case(800)
     call response
   case(801)
@@ -118,10 +124,6 @@ do itask=1,ntasks
     call writebz
   case(807,808)
     call writewann
-  case(809)
-    call sic_main 
-  case(810)
-    call sic_gndstate
   case(822)
     call bandrlm  
   case(811)
