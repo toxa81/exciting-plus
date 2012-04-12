@@ -5,7 +5,7 @@ implicit none
 integer, allocatable :: d(:)
 integer i1,i2,nd,i
 select case(task)
-  case(0,1,20,21,805,822,809,810)
+  case(0,1,20,21,805,822,700,701,702)
     nd=2
     allocate(d(nd)); d(:)=1
     if (nproc.le.nkpt) then
