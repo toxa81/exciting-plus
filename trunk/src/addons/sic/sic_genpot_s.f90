@@ -12,7 +12,7 @@ complex(8), intent(out) :: wvlm(lmmaxwan,s_nr,nspinor)
 real(8), intent(out) :: wanprop(nwanprop)
 ! local variables
 integer jr,ir,l,lm,ispn,lm1,lm2,lm3,lmmaxwanloc,lmloc,itp
-real(8) t1
+real(8) t1,t2
 complex(8) zt1
 real(8), allocatable :: rhotp(:,:,:)
 real(8), allocatable :: rholm(:,:,:)
@@ -58,17 +58,18 @@ do ispn=1,nspinor
       t1=t1+rhotp(itp,ir,ispn)*s_tpw(itp)
     enddo
     do itp=1,s_ntp
-      rhotp(itp,ir,ispn)=t1/dble(s_ntp)
+      rhotp(itp,ir,ispn)=t1/fourpi
     enddo
   enddo
   call sic_rbsht(s_nr_min,rhotp(1,1,ispn),rholm_s(1,1,ispn))
 enddo
 deallocate(wantp)
-
 allocate(totrholm(s_nr_min,lmmaxwan))
 totrholm=zzero
-do lm=1,lmmaxwan
-  totrholm(:,lm)=totrholm(:,lm)+rholm_s(lm,:,ispn)
+do ispn=1,nspinor
+  do lm=1,lmmaxwan
+    totrholm(:,lm)=totrholm(:,lm)+rholm_s(lm,:,ispn)
+  enddo
 enddo
 deallocate(rholm_s)
 
