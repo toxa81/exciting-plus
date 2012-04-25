@@ -1,26 +1,26 @@
 #include "lapw.h"
 
-extern "C" void FORTRAN(lapw_load_species)(int *is_, int *nlorb, int *lorbl, int *apword,
-                                           double* rmt, int *nrmt)
+extern "C" void FORTRAN(lapw_load_species)(int *nlorb, int *lorbl, int *apword, double* rmt, int *nrmt, int *llu)
 {
-    int is = *is_ - 1;
+    Species *sp = new Species();
     
-    geometry.species[is]->rmt = *rmt;
-    geometry.species[is]->nrmt = *nrmt;
+    sp->rmt = *rmt;
+    sp->nrmt = *nrmt;
+    sp->lu = *llu;
     
     for (int i = 0; i < *nlorb; i++) 
-        geometry.species[is]->lo_descriptors.push_back(radial_l_channel_descriptor(lorbl[i]));
+        sp->lo_descriptors.push_back(radial_l_descriptor(lorbl[i]));
     
-    for (unsigned int l = 0; l <= p.lmaxapw; l++) 
+    for (unsigned int l = 0; l <= lapw_global.lmaxapw; l++) 
     {
-        radial_l_channel_descriptor lch(l);
+        radial_l_descriptor lch(l);
         for (int io = 0; io < apword[l]; io++)
-        {
-            radial_solution_descriptor rs;
-            lch.radial_solution_descriptors.push_back(rs);
-        }
-        geometry.species[is]->apw_descriptors.push_back(lch);
+            lch.radial_solution_descriptors.push_back(radial_solution_descriptor());
+        
+        sp->apw_descriptors.push_back(lch);
     }
+    
+    lapw_global.species.push_back(sp);
 }
 
 
