@@ -201,6 +201,12 @@ struct lapw_global_variables
     /// (lmaxvr+1)^2
     unsigned int lmmaxvr;
     
+    unsigned int lmaxlu;
+    
+    unsigned int lmmaxlu;
+    
+    bool ldapu;
+    
     /// number of G-vectors
     unsigned int ngvec;
     
@@ -230,6 +236,8 @@ struct lapw_global_variables
     
     /// spin-polarized calculation (T/F)
     bool spinpol;
+    
+    bool spinorb;
     
     /// number of dimensions (0,1 or 3) of the magnetization field
     unsigned int ndmag;
@@ -394,7 +402,8 @@ struct lapw_runtime_variables
 
     /// collection of bloch states for a local fraction of k-points
     std::vector<bloch_states_k*> bloch_states;
-
+    
+    mdarray<complex16,5> dmatu;
 };
 
 /*class lapw_eigen_states

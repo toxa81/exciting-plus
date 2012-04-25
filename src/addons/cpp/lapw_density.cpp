@@ -1,5 +1,7 @@
 #include "lapw.h"
 
+void lapw_gen_dmatu(const bloch_states_k* const ks, mdarray<complex16,5>& zdens);
+
 template <int N> void sum_zdens(int ias, int lm3, mdarray<complex16,5>& zdens, mdarray<complex16,2>& gtmp, 
                                 mdarray<double,6>& densmt)
 {
@@ -93,7 +95,7 @@ void lapw_density(bloch_states_k *ks, mdarray<double,6>& densmt, mdarray<double,
                         &wf2(0, 0, ispn2), wf2.size(0), zzero, &zdens(0, 0, ispn1, ispn2, ias), zdens.size(0));
     }
     delete t1;
-    
+
     t1 = new timer("lapw_density:densmt");
     #pragma omp parallel default(shared)
     {
@@ -162,4 +164,13 @@ void lapw_density(bloch_states_k *ks, mdarray<double,6>& densmt, mdarray<double,
         }
     }
     delete t1;
-}
+    
+    if (lapw_global.ldapu)
+    {
+        t1 = new timer("lapw_density:dmatu");
+        
+        lapw_gen_dmatu(ks, zdens);
+        
+        delete t1;
+    }
+ }
