@@ -20,11 +20,13 @@ extern "C" void FORTRAN(lapw_load_global)(int *lmaxvr_,
                                           int *ordrfmtmax_,
                                           double *evaltol_,
                                           int *spinpol_,
+                                          int *spinorb_,
                                           int *ndmag_,
                                           double *omega_,
                                           int *natmcls_,
                                           int *ic2ias_,
-                                          int *natoms_in_class_)
+                                          int *natoms_in_class_,
+                                          int *ldapu_)
 {
     lapw_global.lmaxvr = *lmaxvr_;
     lapw_global.lmmaxvr = pow(lapw_global.lmaxvr + 1, 2);
@@ -39,6 +41,9 @@ extern "C" void FORTRAN(lapw_load_global)(int *lmaxvr_,
     lapw_global.nrfmtmax = *nrfmtmax_;
     lapw_global.ordrfmtmax = *ordrfmtmax_;
     lapw_global.evaltol = *evaltol_;
+    
+    lapw_global.lmaxlu = 3;
+    lapw_global.lmmaxlu = pow(lapw_global.lmaxlu + 1, 2);
     
     lapw_global.intgv.set_dimensions(3, 2);
     lapw_global.intgv.set_ptr(intgv_);
@@ -76,6 +81,9 @@ extern "C" void FORTRAN(lapw_load_global)(int *lmaxvr_,
     lapw_global.ndmag = *ndmag_;
     lapw_global.nspinor = (lapw_global.spinpol) ? 2 : 1;
     lapw_global.nstsv = lapw_global.nstfv * lapw_global.nspinor;
+    
+    lapw_global.spinorb = (*spinorb_ != 0);
+    lapw_global.ldapu = (*ldapu_ != 0);
 
     lapw_global.natmcls = *natmcls_;
     lapw_global.ic2ias.resize(lapw_global.natmcls);
@@ -118,6 +126,8 @@ extern "C" void FORTRAN(lapw_load_global)(int *lmaxvr_,
     for (unsigned int i = 0; i < lapw_runtime.bloch_states.size(); i++)
         delete lapw_runtime.bloch_states[i];
     lapw_runtime.bloch_states.clear();
+    
+    std::cout << "LDA+U : " << lapw_global.ldapu << std::endl;
 }
 
 

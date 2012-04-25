@@ -41,4 +41,11 @@ extern "C" void FORTRAN(lapw_seceqn_init)(double *hmltrad_, double *ovlprad_, do
             }
         }
     }
+    
+    if (lapw_global.ldapu)
+    {
+        lapw_runtime.dmatu.set_dimensions(lapw_global.lmmaxlu, lapw_global.lmmaxlu, lapw_global.nspinor, lapw_global.nspinor, lapw_global.atoms.size());
+        lapw_runtime.dmatu.allocate();
+        lapw_runtime.dmatu.zero();
+    }
 }
