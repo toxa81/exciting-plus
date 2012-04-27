@@ -1,0 +1,2397 @@
++----------------------------+
+| Elk version 1.0.17 started |
++----------------------------+
+
+Date (YYYY-MM-DD) : 2012-04-27
+Time (hh:mm:ss)   : 15:51:14
+
+All units are atomic (Hartree, Bohr, etc.)
+
++-------------------------------------------------+
+| Ground-state run starting from atomic densities |
++-------------------------------------------------+
+
+Lattice vectors :
+   7.895278900       3.947639450       3.947639450    
+   3.947639450       7.895278900       3.947639450    
+   3.947639450       3.947639450       7.895278900    
+
+Reciprocal lattice vectors :
+   1.193723247     -0.3979077488     -0.3979077488    
+ -0.3979077488       1.193723247     -0.3979077488    
+ -0.3979077488     -0.3979077488       1.193723247    
+
+Unit cell volume      :    246.0777983    
+Brillouin zone volume :    1.008015413    
+
+Automatic determination of muffin-tin radii
+ parameters :   0.2500000000      0.9500000000    
+
+Species :    1 (Ni)
+ parameters loaded from : Ni.in
+ name : nickel
+ nuclear charge    :   -28.00000000    
+ electronic charge :    28.00000000    
+ atomic mass :    106991.5230    
+ muffin-tin radius :    2.024200000    
+ effective infinity radius :    32.31810000    
+ number of radial points in muffin-tin :    749
+ number of radial points to effective infinity :    883
+ atomic positions (lattice), magnetic fields (Cartesian) :
+   1 :   0.00000000  0.00000000  0.00000000    0.00000000  0.00000000  1.10000000
+   2 :   0.50000000  0.50000000  0.50000000    0.00000000  0.00000000 -1.10000000
+
+Species :    2 (O)
+ parameters loaded from : O.in
+ name : oxygen
+ nuclear charge    :   -8.000000000    
+ electronic charge :    8.000000000    
+ atomic mass :    29165.12202    
+ muffin-tin radius :    1.726000000    
+ effective infinity radius :    23.49150000    
+ number of radial points in muffin-tin :    449
+ number of radial points to effective infinity :    529
+ atomic positions (lattice), magnetic fields (Cartesian) :
+   1 :   0.25000000  0.25000000  0.25000000    0.00000000  0.00000000  0.00000000
+   2 :   0.75000000  0.75000000  0.75000000    0.00000000  0.00000000  0.00000000
+
+Total number of atoms per unit cell :    4
+
+Spin treatment :
+ spin-polarised
+ global magnetic field (Cartesian) :    0.000000000       0.000000000       0.000000000    
+ collinear magnetisation in z-direction
+
+Number of Bravais lattice symmetries :   12
+Number of crystal symmetries         :   24
+
+k-point grid :      2     2     2
+k-point offset :    0.000000000       0.000000000       0.000000000    
+k-point set is reduced with full crystal symmetry group
+Total number of k-points :        4
+
+Muffin-tin radius times maximum |G+k| :    7.000000000    
+ using average radius
+Maximum |G+k| for APW functions       :    3.733134233    
+Maximum (1/2)|G+k|^2                  :    6.968145600    
+Maximum |G| for potential and density :    12.00000000    
+Polynomial order for pseudocharge density :    9
+Radial integration step length :    4
+
+G-vector grid sizes       :     40    40    40
+Total number of G-vectors :     7247
+Total number of points    :    64000
+FFT grid density          :       260.08 [1/a.u.^3]
+
+Maximum angular momentum used for
+ APW functions                      :    8
+ potential and density              :    7
+
+Total nuclear charge    :   -72.00000000    
+Total core charge       :    28.00000000    
+Total valence charge    :    44.00000000    
+Total excess charge     :    0.000000000    
+Total electronic charge :    72.00000000    
+
+Effective Wigner radius, r_s :   0.9344378946    
+
+Number of empty states         :    6
+Total number of valence states :   56
+
+Total number of local-orbitals :   58
+
+Exchange-correlation functional :      3     0     0
+ Perdew-Wang/Ceperley-Alder, Phys. Rev. B 45, 13244 (1992)
+
+Smearing type :    0
+ Gaussian
+Smearing width :   0.1000000000E-01
+Effective electronic temperature (K) :    3157.746479    
+
+Mixing type :    1
+ Adaptive linear mixing
+
+initialization time :       0.23 sec.
+
+Density and potential initialised from atomic data
+ done in :       3.03 sec.
+
+Species :    1 (Ni)
+  n : 1   l : 0   k : 1   energy :   -301.0896631    
+  n : 2   l : 0   k : 1   energy :   -35.99433927    
+  n : 2   l : 1   k : 1   energy :   -31.43871297    
+  n : 2   l : 1   k : 2   energy :   -30.79773787    
+  n : 3   l : 0   k : 1   energy :   -4.058918521    
+  n : 3   l : 1   k : 1   energy :   -2.672056777    
+  n : 3   l : 1   k : 2   energy :   -2.590449409    
+  n : 3   l : 2   k : 2   energy :  -0.3405109175    
+  n : 3   l : 2   k : 3   energy :  -0.3316771820    
+  n : 4   l : 0   k : 1   energy :  -0.2152731530    
+
+Species :    2 (O)
+  n : 1   l : 0   k : 1   energy :   -18.77293061    
+  n : 2   l : 0   k : 1   energy :  -0.8727382105    
+  n : 2   l : 1   k : 1   energy :  -0.3387244403    
+  n : 2   l : 1   k : 2   energy :  -0.3373705009    
+
+
++------------------------------+
+| Self-consistent loop started |
++------------------------------+
+
++-------------------------+
+| Iteration number :    1 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.149556760560    
+ sum of eigenvalues          :     -1827.19016827    
+ electron kinetic            :      3225.56401136    
+   core kinetic              :      2873.24819996    
+   valence kinetic           :      352.315811406    
+ Coulomb                     :     -6288.06728987    
+ Coulomb potential           :     -4868.37822480    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6791.17292336    
+ Hartree                     :      961.397349277    
+ Madelung                    :     -3853.87817746    
+ xc potential                :     -184.326994489    
+ xc effective B-field        :    -0.453425521802E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -133.264214756    
+ correlation                 :     -6.06815741008    
+ total energy                :     -3201.83565067    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    206.8335554    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.6992479952E-01
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.3894282521E-02
+ valence                     :    44.00000000    
+ interstitial                :    3.696093347    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.16765100    
+   atom    2                 :    26.16765100    
+  species :    2 (O)
+   atom    1                 :    7.984302323    
+   atom    2                 :    7.984302323    
+ total in muffin-tins        :    68.30390665    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.5624450939E-16
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :  -0.9003509202    
+   atom    2                 :   0.9003509202    
+  species :    2 (O)
+   atom    1                 :   0.1207854173E-30
+   atom    2                 :   0.1207854173E-30
+ total in muffin-tins        :   0.2220446049E-15
+ total moment                :   0.2782891143E-15
+
+Time (CPU seconds) :         0.95
+
+iteration time (seconds)                    :         9.02
+  radial setup (linen, APW, radint)         :         0.16        0.01        0.85
+  total for secular equation                :         7.11
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.43        0.35        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :    2 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.345869499088    
+ sum of eigenvalues          :     -1812.31784986    
+ electron kinetic            :      3219.75582066    
+   core kinetic              :      2879.32912401    
+   valence kinetic           :      340.426696646    
+ Coulomb                     :     -6274.98070192    
+ Coulomb potential           :     -4849.59317669    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6783.78479558    
+ Hartree                     :      967.095809445    
+ Madelung                    :     -3850.18411358    
+ xc potential                :     -182.470328498    
+ xc effective B-field        :    -0.975513842401E-02
+ external B-field            :      0.00000000000    
+ exchange                    :     -131.880363714    
+ correlation                 :     -6.01631992812    
+ total energy                :     -3193.12156490    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    71.42059507    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :    0.000000000    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4486588805E-02
+ valence                     :    44.00000000    
+ interstitial                :    5.473774539    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    27.22008000    
+   atom    2                 :    27.22008000    
+  species :    2 (O)
+   atom    1                 :    6.043032729    
+   atom    2                 :    6.043032729    
+ total in muffin-tins        :    66.52622546    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.3321289941E-16
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :  -0.2041670499    
+   atom    2                 :   0.2041670499    
+  species :    2 (O)
+   atom    1                 :  -0.9088936449E-31
+   atom    2                 :  -0.9088936449E-31
+ total in muffin-tins        :   0.8326672685E-16
+ total moment                :   0.1164796263E-15
+
+Wrote STATE.OUT
+
+RMS change in effective potential (target) :   0.3519726731     (  0.1000000000E-05)
+Absolute change in total energy (target)   :    8.714085763     (  0.1000000000E-03)
+
+Time (CPU seconds) :         1.38
+
+iteration time (seconds)                    :         9.93
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.86
+  total for secular equation                :         8.01
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.43        0.35        0.07
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :    3 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.338822103963    
+ sum of eigenvalues          :     -1811.90062084    
+ electron kinetic            :      3224.19810393    
+   core kinetic              :      2879.53014918    
+   valence kinetic           :      344.667954750    
+ Coulomb                     :     -6273.22742787    
+ Coulomb potential           :     -4853.87507624    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.99634793    
+ Hartree                     :      961.060635846    
+ Madelung                    :     -3846.28988975    
+ xc potential                :     -182.206799548    
+ xc effective B-field        :    -0.164895920851E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -131.689761481    
+ correlation                 :     -6.01207034229    
+ total energy                :     -3186.73115577    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    65.78621660    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :    0.000000000    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4543311119E-02
+ valence                     :    44.00000000    
+ interstitial                :    5.430970715    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    27.04287941    
+   atom    2                 :    27.04287941    
+  species :    2 (O)
+   atom    1                 :    6.241635233    
+   atom    2                 :    6.241635233    
+ total in muffin-tins        :    66.56902929    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1140412954E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :  -0.3577526704    
+   atom    2                 :   0.3577526704    
+  species :    2 (O)
+   atom    1                 :  -0.3638524942E-30
+   atom    2                 :  -0.3638524942E-30
+ total in muffin-tins        :  -0.7277049884E-30
+ total moment                :   0.1140412954E-15
+
+RMS change in effective potential (target) :   0.2929173551     (  0.1000000000E-05)
+Absolute change in total energy (target)   :    6.390409135     (  0.1000000000E-03)
+
+Time (CPU seconds) :         1.81
+
+iteration time (seconds)                    :         9.73
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.85
+  total for secular equation                :         7.85
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.43        0.35        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :    4 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.332556455387    
+ sum of eigenvalues          :     -1811.79401456    
+ electron kinetic            :      3233.53425684    
+   core kinetic              :      2880.39732738    
+   valence kinetic           :      353.136929459    
+ Coulomb                     :     -6269.74784687    
+ Coulomb potential           :     -4863.57339030    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6759.33887187    
+ Hartree                     :      947.882740784    
+ Madelung                    :     -3837.96115172    
+ xc potential                :     -181.732771106    
+ xc effective B-field        :    -0.218543117158E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -131.344388861    
+ correlation                 :     -6.00575906677    
+ total energy                :     -3173.56373796    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    79.03259875    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.1674141139    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4606943308E-02
+ valence                     :    44.00000000    
+ interstitial                :    5.262262878    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.59231201    
+   atom    2                 :    26.59231201    
+  species :    2 (O)
+   atom    1                 :    6.776556548    
+   atom    2                 :    6.776556548    
+ total in muffin-tins        :    66.73773712    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.7311754712E-16
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :  -0.5090463338    
+   atom    2                 :   0.5090463338    
+  species :    2 (O)
+   atom    1                 :   0.4190507387E-31
+   atom    2                 :   0.4190507387E-31
+ total in muffin-tins        :   0.8381014774E-31
+ total moment                :   0.7311754712E-16
+
+Wrote STATE.OUT
+
+RMS change in effective potential (target) :   0.1786149061     (  0.1000000000E-05)
+Absolute change in total energy (target)   :    13.16741781     (  0.1000000000E-03)
+
+Time (CPU seconds) :         2.24
+
+iteration time (seconds)                    :         9.79
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.85
+  total for secular equation                :         7.87
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.43        0.35        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :    5 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.314822366853    
+ sum of eigenvalues          :     -1813.14558250    
+ electron kinetic            :      3237.83602926    
+   core kinetic              :      2881.08222288    
+   valence kinetic           :      356.753806377    
+ Coulomb                     :     -6269.86379563    
+ Coulomb potential           :     -4869.15550734    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6753.98865235    
+ Hartree                     :      942.416572505    
+ Madelung                    :     -3835.28604196    
+ xc potential                :     -181.790479962    
+ xc effective B-field        :    -0.354172456799E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -131.402770933    
+ correlation                 :     -6.00881799387    
+ total energy                :     -3169.43935530    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    35.20401828    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.5809236338    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4562482236E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.982382530    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29271494    
+   atom    2                 :    26.29271494    
+  species :    2 (O)
+   atom    1                 :    7.216093794    
+   atom    2                 :    7.216093794    
+ total in muffin-tins        :    67.01761747    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1068744588E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :  -0.8250973070    
+   atom    2                 :   0.8250973070    
+  species :    2 (O)
+   atom    1                 :   0.1994127125E-30
+   atom    2                 :   0.1994127125E-30
+ total in muffin-tins        :   0.1110223025E-15
+ total moment                :   0.2178967613E-15
+
+RMS change in effective potential (target) :   0.1147842508     (  0.1000000000E-05)
+Absolute change in total energy (target)   :    4.124382658     (  0.1000000000E-03)
+
+Time (CPU seconds) :         2.67
+
+iteration time (seconds)                    :         9.73
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.85
+  total for secular equation                :         7.86
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.43        0.35        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :    6 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.296040956027    
+ sum of eigenvalues          :     -1815.11303585    
+ electron kinetic            :      3237.38757159    
+   core kinetic              :      2881.56149550    
+   valence kinetic           :      355.826076092    
+ Coulomb                     :     -6272.89208467    
+ Coulomb potential           :     -4870.29894553    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6758.90179223    
+ Hartree                     :      944.301423347    
+ Madelung                    :     -3837.74261190    
+ xc potential                :     -182.157567080    
+ xc effective B-field        :    -0.439698726083E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -131.685053619    
+ correlation                 :     -6.01647326002    
+ total energy                :     -3173.20603996    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    26.30767449    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.6740482137    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4465738151E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.765565841    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.22309890    
+   atom    2                 :    26.22309890    
+  species :    2 (O)
+   atom    1                 :    7.394118183    
+   atom    2                 :    7.394118183    
+ total in muffin-tins        :    67.23443416    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1077500121E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :  -0.9950953653    
+   atom    2                 :   0.9950953653    
+  species :    2 (O)
+   atom    1                 :   0.7893124871E-31
+   atom    2                 :   0.7893124871E-31
+ total in muffin-tins        :   0.1578624974E-30
+ total moment                :   0.1077500121E-15
+
+Wrote STATE.OUT
+
+RMS change in effective potential (target) :   0.7877186814E-01 (  0.1000000000E-05)
+Absolute change in total energy (target)   :    3.766684657     (  0.1000000000E-03)
+
+Time (CPU seconds) :         3.10
+
+iteration time (seconds)                    :        10.04
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.85
+  total for secular equation                :         8.11
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.44        0.36        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :    7 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.277344345858    
+ sum of eigenvalues          :     -1817.13675881    
+ electron kinetic            :      3234.82490680    
+   core kinetic              :      2881.49046517    
+   valence kinetic           :      353.334441627    
+ Coulomb                     :     -6276.99383161    
+ Coulomb potential           :     -4869.30325992    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6768.10097173    
+ Hartree                     :      949.398855904    
+ Madelung                    :     -3842.34220165    
+ xc potential                :     -182.611601875    
+ xc effective B-field        :    -0.467402982062E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.020020279    
+ correlation                 :     -6.02558831593    
+ total energy                :     -3180.21453341    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    25.13850311    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.6738759977    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4346155132E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.617814808    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.26739439    
+   atom    2                 :    26.26739439    
+  species :    2 (O)
+   atom    1                 :    7.423698204    
+   atom    2                 :    7.423698204    
+ total in muffin-tins        :    67.38218519    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1424563714E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.011582878    
+   atom    2                 :    1.011582878    
+  species :    2 (O)
+   atom    1                 :   0.1511489274E-30
+   atom    2                 :   0.1511489274E-30
+ total in muffin-tins        :   0.2220446049E-15
+ total moment                :   0.3645009763E-15
+
+RMS change in effective potential (target) :   0.3549860805E-01 (  0.1000000000E-05)
+Absolute change in total energy (target)   :    7.008493451     (  0.1000000000E-03)
+
+Time (CPU seconds) :         3.53
+
+iteration time (seconds)                    :        10.08
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.86
+  total for secular equation                :         8.20
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.43        0.35        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :    8 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.265503254334    
+ sum of eigenvalues          :     -1818.38625868    
+ electron kinetic            :      3233.16955583    
+   core kinetic              :      2881.22374704    
+   valence kinetic           :      351.945808789    
+ Coulomb                     :     -6279.45233759    
+ Coulomb potential           :     -4868.61826681    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6773.70297679    
+ Hartree                     :      952.542354993    
+ Madelung                    :     -3845.14320418    
+ xc potential                :     -182.888162059    
+ xc effective B-field        :    -0.493537056504E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.223722832    
+ correlation                 :     -6.03116775278    
+ total energy                :     -3184.53767234    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    22.66929347    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.6887432249    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4273933502E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.529926745    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29635754    
+   atom    2                 :    26.29635754    
+  species :    2 (O)
+   atom    1                 :    7.438679088    
+   atom    2                 :    7.438679088    
+ total in muffin-tins        :    67.47007326    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1029465743E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.017237692    
+   atom    2                 :    1.017237692    
+  species :    2 (O)
+   atom    1                 :   0.1613876718E-30
+   atom    2                 :   0.1613876718E-30
+ total in muffin-tins        :   0.3227753437E-30
+ total moment                :   0.1029465743E-15
+
+Wrote STATE.OUT
+
+RMS change in effective potential (target) :   0.9665119393E-02 (  0.1000000000E-05)
+Absolute change in total energy (target)   :    4.323138936     (  0.1000000000E-03)
+
+Time (CPU seconds) :         3.96
+
+iteration time (seconds)                    :        10.06
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.87
+  total for secular equation                :         8.13
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.43        0.35        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :    9 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.260848324893    
+ sum of eigenvalues          :     -1818.84543982    
+ electron kinetic            :      3232.66567881    
+   core kinetic              :      2881.07544638    
+   valence kinetic           :      351.590232429    
+ Coulomb                     :     -6280.22189620    
+ Coulomb potential           :     -4868.47679569    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.38356513    
+ Hartree                     :      953.453384717    
+ Madelung                    :     -3845.98349835    
+ xc potential                :     -182.981552250    
+ xc effective B-field        :    -0.527544479536E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.293845707    
+ correlation                 :     -6.03305620868    
+ total energy                :     -3185.88311930    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    18.98559891    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.7253531551    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4248664050E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.493506178    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29918852    
+   atom    2                 :    26.29918852    
+  species :    2 (O)
+   atom    1                 :    7.454058394    
+   atom    2                 :    7.454058394    
+ total in muffin-tins        :    67.50649382    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1162758878E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.034427705    
+   atom    2                 :    1.034427705    
+  species :    2 (O)
+   atom    1                 :   0.1557835399E-30
+   atom    2                 :   0.1557835399E-30
+ total in muffin-tins        :   0.2220446049E-15
+ total moment                :   0.3383204927E-15
+
+RMS change in effective potential (target) :   0.2278259661E-02 (  0.1000000000E-05)
+Absolute change in total energy (target)   :    1.345446957     (  0.1000000000E-03)
+
+Time (CPU seconds) :         4.39
+
+iteration time (seconds)                    :        10.08
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.87
+  total for secular equation                :         8.19
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.43        0.35        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   10 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.259414491795    
+ sum of eigenvalues          :     -1818.97103031    
+ electron kinetic            :      3232.44822369    
+   core kinetic              :      2881.00678778    
+   valence kinetic           :      351.441435908    
+ Coulomb                     :     -6280.40106792    
+ Coulomb potential           :     -4868.35695524    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.86174902    
+ Hartree                     :      953.752396892    
+ Madelung                    :     -3846.22259030    
+ xc potential                :     -183.006087877    
+ xc effective B-field        :    -0.562026347992E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.313387609    
+ correlation                 :     -6.03346430658    
+ total energy                :     -3186.29969614    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    15.78316059    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.7603914928    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4240422595E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.484830452    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.30252700    
+   atom    2                 :    26.30252700    
+  species :    2 (O)
+   atom    1                 :    7.455057770    
+   atom    2                 :    7.455057770    
+ total in muffin-tins        :    67.51516955    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1320526632E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.050808613    
+   atom    2                 :    1.050808613    
+  species :    2 (O)
+   atom    1                 :   0.3219301551E-30
+   atom    2                 :   0.3219301551E-30
+ total in muffin-tins        :   0.2220446049E-15
+ total moment                :   0.3540972682E-15
+
+Wrote STATE.OUT
+
+RMS change in effective potential (target) :   0.1595326559E-02 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.4165768416     (  0.1000000000E-03)
+
+Time (CPU seconds) :         4.82
+
+iteration time (seconds)                    :        10.30
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.85
+  total for secular equation                :         8.38
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.43        0.35        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   11 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.259214327377    
+ sum of eigenvalues          :     -1818.99217006    
+ electron kinetic            :      3232.45272304    
+   core kinetic              :      2880.99644763    
+   valence kinetic           :      351.456275411    
+ Coulomb                     :     -6280.34141988    
+ Coulomb potential           :     -4868.38258882    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.71681938    
+ Hartree                     :      953.667115279    
+ Madelung                    :     -3846.15012547    
+ xc potential                :     -183.002615937    
+ xc effective B-field        :    -0.596841530436E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.312493189    
+ correlation                 :     -6.03331198280    
+ total energy                :     -3186.23450202    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    12.88162483    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.8015588143    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4239669479E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.483023461    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29990016    
+   atom    2                 :    26.29990016    
+  species :    2 (O)
+   atom    1                 :    7.458588109    
+   atom    2                 :    7.458588109    
+ total in muffin-tins        :    67.51697654    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.6983353693E-16
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.068333800    
+   atom    2                 :    1.068333800    
+  species :    2 (O)
+   atom    1                 :   0.3810004201E-30
+   atom    2                 :   0.3810004201E-30
+ total in muffin-tins        :   0.7620008401E-30
+ total moment                :   0.6983353693E-16
+
+RMS change in effective potential (target) :   0.1251179907E-02 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.6519412441E-01 (  0.1000000000E-03)
+
+Time (CPU seconds) :         5.25
+
+iteration time (seconds)                    :        10.21
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.85
+  total for secular equation                :         8.34
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.43        0.35        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   12 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.259037563745    
+ sum of eigenvalues          :     -1819.01400910    
+ electron kinetic            :      3232.42736850    
+   core kinetic              :      2880.98727347    
+   valence kinetic           :      351.440095025    
+ Coulomb                     :     -6280.29497071    
+ Coulomb potential           :     -4868.37855865    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.62795120    
+ Hartree                     :      953.624696276    
+ Madelung                    :     -3846.10569139    
+ xc potential                :     -182.999967444    
+ xc effective B-field        :    -0.628493703534E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.312035214    
+ correlation                 :     -6.03317145830    
+ total energy                :     -3186.21280889    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    10.66320246    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.8393116997    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4238809415E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.482278408    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29900667    
+   atom    2                 :    26.29900667    
+  species :    2 (O)
+   atom    1                 :    7.459854130    
+   atom    2                 :    7.459854130    
+ total in muffin-tins        :    67.51772159    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1238775081E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.083852287    
+   atom    2                 :    1.083852287    
+  species :    2 (O)
+   atom    1                 :  -0.5134040525E-34
+   atom    2                 :  -0.5134040525E-34
+ total in muffin-tins        :  -0.1026808105E-33
+ total moment                :   0.1238775081E-15
+
+Wrote STATE.OUT
+
+RMS change in effective potential (target) :   0.1048761956E-02 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.2169312830E-01 (  0.1000000000E-03)
+
+Time (CPU seconds) :         5.70
+
+iteration time (seconds)                    :        10.04
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.85
+  total for secular equation                :         8.09
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.13
+  potential (total, XC, Ha)                 :         0.45        0.36        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   13 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.258883162446    
+ sum of eigenvalues          :     -1819.03685015    
+ electron kinetic            :      3232.38928886    
+   core kinetic              :      2880.97898543    
+   valence kinetic           :      351.410303434    
+ Coulomb                     :     -6280.27196707    
+ Coulomb potential           :     -4868.36159540    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.59890717    
+ Hartree                     :      953.618655888    
+ Madelung                    :     -3846.09116937    
+ xc potential                :     -182.999048668    
+ xc effective B-field        :    -0.654938697826E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.312578283    
+ correlation                 :     -6.03307171298    
+ total energy                :     -3186.22832820    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    9.036441637    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.8723904189    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4237638529E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.482017199    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29892856    
+   atom    2                 :    26.29892856    
+  species :    2 (O)
+   atom    1                 :    7.460062838    
+   atom    2                 :    7.460062838    
+ total in muffin-tins        :    67.51798280    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1214404342E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.096226557    
+   atom    2                 :    1.096226557    
+  species :    2 (O)
+   atom    1                 :  -0.1684822778E-30
+   atom    2                 :  -0.1684822778E-30
+ total in muffin-tins        :   0.2220446049E-15
+ total moment                :   0.3434850391E-15
+
+RMS change in effective potential (target) :   0.7760171199E-03 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.1551931473E-01 (  0.1000000000E-03)
+
+Time (CPU seconds) :         6.13
+
+iteration time (seconds)                    :        10.06
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.86
+  total for secular equation                :         8.17
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.43        0.35        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   14 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.258797172554    
+ sum of eigenvalues          :     -1819.05690512    
+ electron kinetic            :      3232.35333325    
+   core kinetic              :      2880.97131990    
+   valence kinetic           :      351.382013355    
+ Coulomb                     :     -6280.26916313    
+ Coulomb potential           :     -4868.34339258    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.61150211    
+ Hartree                     :      953.634054766    
+ Madelung                    :     -3846.09746684    
+ xc potential                :     -182.999281852    
+ xc effective B-field        :    -0.675633991294E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.313713884    
+ correlation                 :     -6.03300093123    
+ total energy                :     -3186.26254470    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    7.897123409    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.8994948255    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4236352468E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.482273428    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29913996    
+   atom    2                 :    26.29913996    
+  species :    2 (O)
+   atom    1                 :    7.459723328    
+   atom    2                 :    7.459723328    
+ total in muffin-tins        :    67.51772657    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.9741292515E-16
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.105810487    
+   atom    2                 :    1.105810487    
+  species :    2 (O)
+   atom    1                 :   0.6145773932E-31
+   atom    2                 :   0.6145773932E-31
+ total in muffin-tins        :   0.1229154786E-30
+ total moment                :   0.9741292515E-16
+
+Wrote STATE.OUT
+
+RMS change in effective potential (target) :   0.4522849197E-03 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.3421649278E-01 (  0.1000000000E-03)
+
+Time (CPU seconds) :         6.56
+
+iteration time (seconds)                    :        10.03
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.85
+  total for secular equation                :         8.11
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.44        0.36        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   15 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.258801427246    
+ sum of eigenvalues          :     -1819.07031807    
+ electron kinetic            :      3232.33329857    
+   core kinetic              :      2880.96563590    
+   valence kinetic           :      351.367662672    
+ Coulomb                     :     -6280.27306777    
+ Coulomb potential           :     -4868.33503893    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.62766504    
+ Hartree                     :      953.646313055    
+ Madelung                    :     -3846.10554831    
+ xc potential                :     -182.999482314    
+ xc effective B-field        :    -0.690951178326E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.314604435    
+ correlation                 :     -6.03294000054    
+ total energy                :     -3186.28731364    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    7.126818636    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.9205939800    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4235312080E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.482879086    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29908356    
+   atom    2                 :    26.29908356    
+  species :    2 (O)
+   atom    1                 :    7.459476900    
+   atom    2                 :    7.459476900    
+ total in muffin-tins        :    67.51712091    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1560667740E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.113077232    
+   atom    2                 :    1.113077232    
+  species :    2 (O)
+   atom    1                 :   0.3613300399E-31
+   atom    2                 :   0.3613300399E-31
+ total in muffin-tins        :   0.7226600797E-31
+ total moment                :   0.1560667740E-15
+
+RMS change in effective potential (target) :   0.2450634985E-03 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.2476894302E-01 (  0.1000000000E-03)
+
+Time (CPU seconds) :         6.99
+
+iteration time (seconds)                    :         9.99
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.85
+  total for secular equation                :         8.12
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.43        0.35        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   16 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.258847338887    
+ sum of eigenvalues          :     -1819.07809610    
+ electron kinetic            :      3232.32457319    
+   core kinetic              :      2880.96168580    
+   valence kinetic           :      351.362887395    
+ Coulomb                     :     -6280.27701342    
+ Coulomb potential           :     -4868.33305399    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.63754126    
+ Hartree                     :      953.652243635    
+ Madelung                    :     -3846.11048642    
+ xc potential                :     -182.999454402    
+ xc effective B-field        :    -0.701607595870E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.315124672    
+ correlation                 :     -6.03288939381    
+ total energy                :     -3186.30045429    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    6.622787770    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.9360488408    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4234594127E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.483535841    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29887091    
+   atom    2                 :    26.29887091    
+  species :    2 (O)
+   atom    1                 :    7.459361166    
+   atom    2                 :    7.459361166    
+ total in muffin-tins        :    67.51646416    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.9415420310E-16
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.118307882    
+   atom    2                 :    1.118307882    
+  species :    2 (O)
+   atom    1                 :   0.4252256452E-31
+   atom    2                 :   0.4252256452E-31
+ total in muffin-tins        :   0.2220446049E-15
+ total moment                :   0.3161988080E-15
+
+Wrote STATE.OUT
+
+RMS change in effective potential (target) :   0.1596421782E-03 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.1314064993E-01 (  0.1000000000E-03)
+
+Time (CPU seconds) :         7.42
+
+iteration time (seconds)                    :        10.31
+  radial setup (linen, APW, radint)         :         0.16        0.01        0.93
+  total for secular equation                :         8.31
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.43        0.35        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   17 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.258891580646    
+ sum of eigenvalues          :     -1819.08252771    
+ electron kinetic            :      3232.32016715    
+   core kinetic              :      2880.95857334    
+   valence kinetic           :      351.361593807    
+ Coulomb                     :     -6280.27985538    
+ Coulomb potential           :     -4868.33245720    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.64382198    
+ Hartree                     :      953.655682392    
+ Madelung                    :     -3846.11362678    
+ xc potential                :     -182.999384957    
+ xc effective B-field        :    -0.708526405691E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.315439138    
+ correlation                 :     -6.03285328290    
+ total energy                :     -3186.30798065    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    6.303873838    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.9466412806    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4234125063E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.484053945    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29869386    
+   atom    2                 :    26.29869386    
+  species :    2 (O)
+   atom    1                 :    7.459279164    
+   atom    2                 :    7.459279164    
+ total in muffin-tins        :    67.51594605    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1102447649E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.121823636    
+   atom    2                 :    1.121823636    
+  species :    2 (O)
+   atom    1                 :   0.5774111322E-31
+   atom    2                 :   0.5774111322E-31
+ total in muffin-tins        :   0.1154822264E-30
+ total moment                :   0.1102447649E-15
+
+RMS change in effective potential (target) :   0.1407865847E-03 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.7526358135E-02 (  0.1000000000E-03)
+
+Time (CPU seconds) :         7.85
+
+iteration time (seconds)                    :        10.01
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.86
+  total for secular equation                :         8.13
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.43        0.35        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   18 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.258924337953    
+ sum of eigenvalues          :     -1819.08473250    
+ electron kinetic            :      3232.31843739    
+   core kinetic              :      2880.95638983    
+   valence kinetic           :      351.362047563    
+ Coulomb                     :     -6280.28107150    
+ Coulomb potential           :     -4868.33261081    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.64610061    
+ Hartree                     :      953.656744901    
+ Madelung                    :     -3846.11476609    
+ xc potential                :     -182.999285271    
+ xc effective B-field        :    -0.712737812168E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.315598315    
+ correlation                 :     -6.03282932742    
+ total energy                :     -3186.31106175    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    6.109742806    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.9534961713    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4233849195E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.484392722    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29855217    
+   atom    2                 :    26.29855217    
+  species :    2 (O)
+   atom    1                 :    7.459251466    
+   atom    2                 :    7.459251466    
+ total in muffin-tins        :    67.51560728    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1557983100E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.124057778    
+   atom    2                 :    1.124057778    
+  species :    2 (O)
+   atom    1                 :  -0.1037071932E-30
+   atom    2                 :  -0.1037071932E-30
+ total in muffin-tins        :   0.6661338148E-15
+ total moment                :   0.8219321248E-15
+
+Wrote STATE.OUT
+
+RMS change in effective potential (target) :   0.1267372750E-03 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.3081097854E-02 (  0.1000000000E-03)
+
+Time (CPU seconds) :         8.27
+
+iteration time (seconds)                    :         9.93
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.85
+  total for secular equation                :         8.03
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.43        0.35        0.07
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   19 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.258941114120    
+ sum of eigenvalues          :     -1819.08581863    
+ electron kinetic            :      3232.31702395    
+   core kinetic              :      2880.95459012    
+   valence kinetic           :      351.362433835    
+ Coulomb                     :     -6280.28166039    
+ Coulomb potential           :     -4868.33207717    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.64781204    
+ Hartree                     :      953.657867435    
+ Madelung                    :     -3846.11562181    
+ xc potential                :     -182.999254066    
+ xc effective B-field        :    -0.715113299902E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.315711785    
+ correlation                 :     -6.03281599551    
+ total energy                :     -3186.31316422    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    5.996592329    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.9576473373    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4233681759E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.484578951    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29848784    
+   atom    2                 :    26.29848784    
+  species :    2 (O)
+   atom    1                 :    7.459222689    
+   atom    2                 :    7.459222689    
+ total in muffin-tins        :    67.51542105    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1077364986E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.125372019    
+   atom    2                 :    1.125372019    
+  species :    2 (O)
+   atom    1                 :  -0.2471825240E-31
+   atom    2                 :  -0.2471825240E-31
+ total in muffin-tins        :   0.4440892099E-15
+ total moment                :   0.5518257084E-15
+
+RMS change in effective potential (target) :   0.1102924174E-03 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.2102471191E-02 (  0.1000000000E-03)
+
+Time (CPU seconds) :         8.70
+
+iteration time (seconds)                    :         9.92
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.85
+  total for secular equation                :         8.05
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.43        0.35        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   20 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.258952419191    
+ sum of eigenvalues          :     -1819.08589624    
+ electron kinetic            :      3232.31703617    
+   core kinetic              :      2880.95358058    
+   valence kinetic           :      351.363455588    
+ Coulomb                     :     -6280.28106470    
+ Coulomb potential           :     -4868.33212506    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.64657277    
+ Hartree                     :      953.657223856    
+ Madelung                    :     -3846.11500217    
+ xc potential                :     -182.999168861    
+ xc effective B-field        :    -0.716384838678E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.315726045    
+ correlation                 :     -6.03280752332    
+ total energy                :     -3186.31256210    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    5.933815791    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.9600645507    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4233608022E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.484679126    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29842560    
+   atom    2                 :    26.29842560    
+  species :    2 (O)
+   atom    1                 :    7.459234840    
+   atom    2                 :    7.459234840    
+ total in muffin-tins        :    67.51532087    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1521067260E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.126118706    
+   atom    2                 :    1.126118706    
+  species :    2 (O)
+   atom    1                 :   0.2609983091E-30
+   atom    2                 :   0.2609983091E-30
+ total in muffin-tins        :   0.2220446049E-15
+ total moment                :   0.3741513310E-15
+
+Wrote STATE.OUT
+
+RMS change in effective potential (target) :   0.7947390452E-04 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.6021211257E-03 (  0.1000000000E-03)
+
+Time (CPU seconds) :         9.13
+
+iteration time (seconds)                    :         9.92
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.85
+  total for secular equation                :         8.01
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.43        0.35        0.07
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   21 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.258952448404    
+ sum of eigenvalues          :     -1819.08595860    
+ electron kinetic            :      3232.31565604    
+   core kinetic              :      2880.95232087    
+   valence kinetic           :      351.363335171    
+ Coulomb                     :     -6280.28111932    
+ Coulomb potential           :     -4868.33070454    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.64810252    
+ Hartree                     :      953.658698992    
+ Madelung                    :     -3846.11576705    
+ xc potential                :     -182.999212563    
+ xc effective B-field        :    -0.716975344816E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.315794653    
+ correlation                 :     -6.03280516302    
+ total energy                :     -3186.31406309    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    5.900512826    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.9613348988    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4233547610E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.484716659    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29844711    
+   atom    2                 :    26.29844711    
+  species :    2 (O)
+   atom    1                 :    7.459194560    
+   atom    2                 :    7.459194560    
+ total in muffin-tins        :    67.51528334    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.7014158173E-16
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.126475834    
+   atom    2                 :    1.126475834    
+  species :    2 (O)
+   atom    1                 :   0.1380421930E-30
+   atom    2                 :   0.1380421930E-30
+ total in muffin-tins        :   0.2220446049E-15
+ total moment                :   0.2921861867E-15
+
+RMS change in effective potential (target) :   0.6548325051E-04 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.1500995525E-02 (  0.1000000000E-03)
+
+Time (CPU seconds) :         9.81
+
+iteration time (seconds)                    :        10.86
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.86
+  total for secular equation                :         8.52
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.19
+  potential (total, XC, Ha)                 :         0.68        0.55        0.13
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   22 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.258957304870    
+ sum of eigenvalues          :     -1819.08534828    
+ electron kinetic            :      3232.31651566    
+   core kinetic              :      2880.95182156    
+   valence kinetic           :      351.364694097    
+ Coulomb                     :     -6280.27945759    
+ Coulomb potential           :     -4868.33104890    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.64443472    
+ Hartree                     :      953.656692912    
+ Madelung                    :     -3846.11393315    
+ xc potential                :     -182.999086577    
+ xc effective B-field        :    -0.717284622770E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.315722826    
+ correlation                 :     -6.03280145635    
+ total energy                :     -3186.31146622    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    5.884051387    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.9620634366    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4233559905E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.484736803    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29839224    
+   atom    2                 :    26.29839224    
+  species :    2 (O)
+   atom    1                 :    7.459239356    
+   atom    2                 :    7.459239356    
+ total in muffin-tins        :    67.51526320    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1040878663E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.126686101    
+   atom    2                 :    1.126686101    
+  species :    2 (O)
+   atom    1                 :   0.6409353888E-31
+   atom    2                 :   0.6409353888E-31
+ total in muffin-tins        :   0.2220446049E-15
+ total moment                :   0.3261324712E-15
+
+Wrote STATE.OUT
+
+RMS change in effective potential (target) :   0.2826441302E-04 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.2596869883E-02 (  0.1000000000E-03)
+
+Time (CPU seconds) :        10.26
+
+iteration time (seconds)                    :        12.04
+  radial setup (linen, APW, radint)         :         0.22        0.01        0.91
+  total for secular equation                :        10.01
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.45        0.38        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   23 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.258959269425    
+ sum of eigenvalues          :     -1819.08509468    
+ electron kinetic            :      3232.31650689    
+   core kinetic              :      2880.95155525    
+   valence kinetic           :      351.364951636    
+ Coulomb                     :     -6280.27896917    
+ Coulomb potential           :     -4868.33081174    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.64369503    
+ Hartree                     :      953.656441642    
+ Madelung                    :     -3846.11356330    
+ xc potential                :     -182.999049137    
+ xc effective B-field        :    -0.717406849589E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.315703823    
+ correlation                 :     -6.03279999718    
+ total energy                :     -3186.31096610    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    5.875356749    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.9624275114    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4233562585E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.484758459    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29839189    
+   atom    2                 :    26.29839189    
+  species :    2 (O)
+   atom    1                 :    7.459228879    
+   atom    2                 :    7.459228879    
+ total in muffin-tins        :    67.51524154    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1140888311E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.126772778    
+   atom    2                 :    1.126772778    
+  species :    2 (O)
+   atom    1                 :   0.1230461990E-30
+   atom    2                 :   0.1230461990E-30
+ total in muffin-tins        :   0.2220446049E-15
+ total moment                :   0.3361334360E-15
+
+RMS change in effective potential (target) :   0.1627619045E-04 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.5001201921E-03 (  0.1000000000E-03)
+
+Time (CPU seconds) :        10.71
+
+iteration time (seconds)                    :        10.32
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.88
+  total for secular equation                :         8.39
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.13
+  potential (total, XC, Ha)                 :         0.44        0.36        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   24 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.258958497468    
+ sum of eigenvalues          :     -1819.08502232    
+ electron kinetic            :      3232.31624518    
+   core kinetic              :      2880.95131808    
+   valence kinetic           :      351.364927094    
+ Coulomb                     :     -6280.27889583    
+ Coulomb potential           :     -4868.33046459    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.64389551    
+ Hartree                     :      953.656715460    
+ Madelung                    :     -3846.11366354    
+ xc potential                :     -182.999058078    
+ xc effective B-field        :    -0.717448343876E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.315713431    
+ correlation                 :     -6.03279994457    
+ total energy                :     -3186.31116403    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    5.871389932    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.9625991608    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4233556812E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.484760665    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29839902    
+   atom    2                 :    26.29839902    
+  species :    2 (O)
+   atom    1                 :    7.459220645    
+   atom    2                 :    7.459220645    
+ total in muffin-tins        :    67.51523934    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1059757155E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.126804727    
+   atom    2                 :    1.126804727    
+  species :    2 (O)
+   atom    1                 :  -0.1139801353E-30
+   atom    2                 :  -0.1139801353E-30
+ total in muffin-tins        :  -0.2279602706E-30
+ total moment                :   0.1059757155E-15
+
+Wrote STATE.OUT
+
+RMS change in effective potential (target) :   0.1099271998E-04 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.1979309836E-03 (  0.1000000000E-03)
+
+Time (CPU seconds) :        11.13
+
+iteration time (seconds)                    :        10.14
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.90
+  total for secular equation                :         8.21
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.43        0.35        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   25 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.258957032480    
+ sum of eigenvalues          :     -1819.08497913    
+ electron kinetic            :      3232.31596186    
+   core kinetic              :      2880.95107870    
+   valence kinetic           :      351.364883162    
+ Coulomb                     :     -6280.27890661    
+ Coulomb potential           :     -4868.33011666    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.64426500    
+ Hartree                     :      953.657074168    
+ Madelung                    :     -3846.11384828    
+ xc potential                :     -182.999078464    
+ xc effective B-field        :    -0.717458712240E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.315729231    
+ correlation                 :     -6.03280034114    
+ total energy                :     -3186.31147432    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    5.869678902    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.9626768494    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4233549361E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.484755973    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29840610    
+   atom    2                 :    26.29840610    
+  species :    2 (O)
+   atom    1                 :    7.459215911    
+   atom    2                 :    7.459215911    
+ total in muffin-tins        :    67.51524403    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1135830961E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.126814419    
+   atom    2                 :    1.126814419    
+  species :    2 (O)
+   atom    1                 :   0.4031704538E-31
+   atom    2                 :   0.4031704538E-31
+ total in muffin-tins        :   0.4440892099E-15
+ total moment                :   0.5576723060E-15
+
+RMS change in effective potential (target) :   0.7582324203E-05 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.3102927017E-03 (  0.1000000000E-03)
+
+Time (CPU seconds) :        11.64
+
+iteration time (seconds)                    :        11.01
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.85
+  total for secular equation                :         8.99
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.14
+  potential (total, XC, Ha)                 :         0.51        0.41        0.10
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   26 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.258956071458    
+ sum of eigenvalues          :     -1819.08490052    
+ electron kinetic            :      3232.31579633    
+   core kinetic              :      2880.95089443    
+   valence kinetic           :      351.364901895    
+ Coulomb                     :     -6280.27884668    
+ Coulomb potential           :     -4868.32986133    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.64440045    
+ Hartree                     :      953.657269557    
+ Madelung                    :     -3846.11391601    
+ xc potential                :     -182.999089484    
+ xc effective B-field        :    -0.717460280639E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.315737434    
+ correlation                 :     -6.03280062332    
+ total energy                :     -3186.31158841    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    5.868981366    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.9627114107    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4233545419E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.484752299    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29841012    
+   atom    2                 :    26.29841012    
+  species :    2 (O)
+   atom    1                 :    7.459213734    
+   atom    2                 :    7.459213734    
+ total in muffin-tins        :    67.51524770    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1432765080E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.126816642    
+   atom    2                 :    1.126816642    
+  species :    2 (O)
+   atom    1                 :   0.2532770295E-31
+   atom    2                 :   0.2532770295E-31
+ total in muffin-tins        :   0.2220446049E-15
+ total moment                :   0.3653211129E-15
+
+Wrote STATE.OUT
+
+RMS change in effective potential (target) :   0.4482194792E-05 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.1140821396E-03 (  0.1000000000E-03)
+
+Time (CPU seconds) :        12.22
+
+iteration time (seconds)                    :        11.24
+  radial setup (linen, APW, radint)         :         0.19        0.01        0.99
+  total for secular equation                :         8.91
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.15
+  potential (total, XC, Ha)                 :         0.57        0.44        0.13
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   27 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.258955628915    
+ sum of eigenvalues          :     -1819.08482385    
+ electron kinetic            :      3232.31573834    
+   core kinetic              :      2880.95078516    
+   valence kinetic           :      351.364953181    
+ Coulomb                     :     -6280.27874804    
+ Coulomb potential           :     -4868.32972432    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.64434019    
+ Hartree                     :      953.657307932    
+ Madelung                    :     -3846.11388588    
+ xc potential                :     -182.999091733    
+ xc effective B-field        :    -0.717461273258E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.315739146    
+ correlation                 :     -6.03280073393    
+ total energy                :     -3186.31154958    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    5.868680724    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.9627289774    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4233544240E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.484749888    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29841074    
+   atom    2                 :    26.29841074    
+  species :    2 (O)
+   atom    1                 :    7.459214316    
+   atom    2                 :    7.459214316    
+ total in muffin-tins        :    67.51525011    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1026942292E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.126818064    
+   atom    2                 :    1.126818064    
+  species :    2 (O)
+   atom    1                 :  -0.1165519779E-30
+   atom    2                 :  -0.1165519779E-30
+ total in muffin-tins        :   0.2220446049E-15
+ total moment                :   0.3247388341E-15
+
+RMS change in effective potential (target) :   0.2007183444E-05 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.3882400688E-04 (  0.1000000000E-03)
+
+Time (CPU seconds) :        12.66
+
+iteration time (seconds)                    :        11.60
+  radial setup (linen, APW, radint)         :         0.22        0.01        0.87
+  total for secular equation                :         9.59
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.12
+  potential (total, XC, Ha)                 :         0.45        0.37        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   28 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.258955441751    
+ sum of eigenvalues          :     -1819.08477947    
+ electron kinetic            :      3232.31572607    
+   core kinetic              :      2880.95073605    
+   valence kinetic           :      351.364990022    
+ Coulomb                     :     -6280.27869529    
+ Coulomb potential           :     -4868.32966691    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.64429209    
+ Hartree                     :      953.657312586    
+ Madelung                    :     -3846.11386183    
+ xc potential                :     -182.999092380    
+ xc effective B-field        :    -0.717462418399E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.315739710    
+ correlation                 :     -6.03280077917    
+ total energy                :     -3186.31150971    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    5.868530664    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.9627382986    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4233543610E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.484748508    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29841048    
+   atom    2                 :    26.29841048    
+  species :    2 (O)
+   atom    1                 :    7.459215268    
+   atom    2                 :    7.459215268    
+ total in muffin-tins        :    67.51525149    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1048238349E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.126819339    
+   atom    2                 :    1.126819339    
+  species :    2 (O)
+   atom    1                 :   0.7071878607E-31
+   atom    2                 :   0.7071878607E-31
+ total in muffin-tins        :   0.4440892099E-15
+ total moment                :   0.5489130447E-15
+
+Wrote STATE.OUT
+
+RMS change in effective potential (target) :   0.9425495024E-06 (  0.1000000000E-05)
+Absolute change in total energy (target)   :   0.3987591481E-04 (  0.1000000000E-03)
+
+Convergence targets achieved
+
+Time (CPU seconds) :        13.19
+
+iteration time (seconds)                    :        10.21
+  radial setup (linen, APW, radint)         :         0.17        0.01        0.85
+  total for secular equation                :         8.12
+    first-variational                       :         0.00
+      setup                                 :         0.00
+        setup H (total, MT, IT)             :         0.00        0.00        0.00
+        setup O (total, MT, IT)             :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+    second-variational                      :         0.00
+      setup (total, MT, IT)                 :         0.00        0.00        0.00
+      diagonalization                       :         0.00
+  total for charge and magnetization        :         0.00
+    k-point summation (total, MT, IT)       :         0.00        0.00        0.00
+    symmetrization                          :         0.13
+  potential (total, XC, Ha)                 :         0.53        0.44        0.08
+  density matrix setup                      :         0.00
+
++-------------------------+
+| Iteration number :   29 |
++-------------------------+
+
+Energies :
+ Fermi                       :     0.258955391517    
+ sum of eigenvalues          :     -1819.08475503    
+ electron kinetic            :      3232.31573454    
+   core kinetic              :      2880.95072110    
+   valence kinetic           :      351.365013437    
+ Coulomb                     :     -6280.27867850    
+ Coulomb potential           :     -4868.32965063    
+ nuclear-nuclear             :     -458.291715786    
+ electron-nuclear            :     -6775.64427480    
+ Hartree                     :      953.657312086    
+ Madelung                    :     -3846.11385319    
+ xc potential                :     -182.999092589    
+ xc effective B-field        :    -0.717463448612E-01
+ external B-field            :      0.00000000000    
+ exchange                    :     -132.315739954    
+ correlation                 :     -6.03280079088    
+ total energy                :     -3186.31148471    
+ (external B-field energy excluded from total)
+
+Density of states at Fermi energy :    5.868454303    
+ (states/Hartree/unit cell)
+Estimated band gap (eV) :   0.9627430703    
+
+Charges :
+ core                        :    28.00000000    
+ core leakage                :   0.4233543080E-02
+ valence                     :    44.00000000    
+ interstitial                :    4.484747972    
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :    26.29841009    
+   atom    2                 :    26.29841009    
+  species :    2 (O)
+   atom    1                 :    7.459215921    
+   atom    2                 :    7.459215921    
+ total in muffin-tins        :    67.51525203    
+ total charge                :    72.00000000    
+
+Moments :
+ interstitial                :   0.1008617948E-15
+ muffin-tins
+  species :    1 (Ni)
+   atom    1                 :   -1.126820330    
+   atom    2                 :    1.126820330    
+  species :    2 (O)
+   atom    1                 :   0.1351539017E-30
+   atom    2                 :   0.1351539017E-30
+ total in muffin-tins        :   0.2220446049E-15
+ total moment                :   0.3229063997E-15
+
++------------------------------+
+| Self-consistent loop stopped |
++------------------------------+
+
+Wrote STATE.OUT
+
+Timings (CPU seconds) :
+ initialisation                        :         0.23
+ Hamiltonian and overlap matrix set up :         0.00
+ first-variational secular equation    :         0.00
+ second-variational calculation        :         0.00
+ charge density calculation            :         0.00
+ potential calculation                 :        13.41
+ total                                 :        13.63
+
++-----------------------------+
+| Elk version 1.0.017 stopped |
++-----------------------------+
