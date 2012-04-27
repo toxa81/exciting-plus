@@ -1,0 +1,36 @@
+tasks
+  0
+
+spinpol
+ .true.
+
+scale
+  7.8952789
+
+avec
+ 1.0 0.5 0.5
+ 0.5 1.0 0.5
+ 0.5 0.5 1.0
+
+autormt
+ .true.
+ 
+atoms
+   2                                    : nspecies
+ 'Ni.in'                                : spfname
+   2                                    : natoms; atpos, bfcmt below
+    0.0    0.0    0.0    0.0  0.0  1.1
+    0.5    0.5    0.5    0.0  0.0 -1.1
+ 'O.in'                                 : spfname
+   2                                    : natoms; atpos, bfcmt below
+    0.25   0.25   0.25   0.0  0.0  0.0
+    0.75   0.75   0.75   0.0  0.0  0.0
+
+ngridk
+  2 2 2
+
+reducebf
+ 0.5
+   
+  
+  
