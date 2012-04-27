@@ -73,7 +73,7 @@ ifneq (,$(findstring D_MAD_,$(CPP_OPTS)))
 	cd addons/madness; $(MAKE)
 endif
 ifneq (,$(findstring D_LIBAPW_,$(CPP_OPTS)))
-	cd addons/cpp; $(MAKE)
+	cd addons/libapw/cpp; $(MAKE)
 endif
 
 elk:	$(OBJ_modules) $(OBJ)
