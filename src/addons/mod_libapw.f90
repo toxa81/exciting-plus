@@ -18,8 +18,9 @@ contains
 
 subroutine libapw_init 
 use modmain
+use modldapu
 implicit none
-integer is,l,io,ilo,ik,ikloc
+integer is,l,io,ilo,ik,ikloc,ias
 
 #ifdef _LIBAPW_
 if (allocated(nrfmt)) deallocate(nrfmt)
@@ -67,18 +68,21 @@ allocate(hrfmt(nrmtmax,nrfmtmax,natmcls))
 if (allocated(lrf)) deallocate(lrf)
 allocate(lrf(nrfmtmax,natmcls))
 
-call lapw_load_global(natmtot,nspecies,lmaxvr,lmaxapw,apwordmax,nrmtmax,&
-  &ngkmax,ngvec,ngrtot,nlomax,ias2is,intgv,ivg,ivgig,ngrid,igfft,cfunir, &
-  &cfunig,gntyry,nstfv,nstsv,nmatmax,nrfmtmax,ordrfmtmax,evaltol,spinpol,&
-  &ndmag,omega,natmcls,ic2ias,natoms_in_class)
+call lapw_load_global(lmaxvr,lmaxapw,apwordmax,nrmtmax,ngkmax,ngvec,&
+  &ngrtot,intgv,ivg,ivgig,ngrid,igfft,cfunir,cfunig,gntyry,nstfv,&
+  &nrfmtmax,ordrfmtmax,evaltol,spinpol,spinorb,ndmag,omega,natmcls,&
+  &ic2ias,natoms_in_class,ldapu)
 do is=1,nspecies
-  call lapw_load_species(is,nlorb(is),lorbl(1,is),apword(0,is),rmt(is),nrmt(is))
+  call lapw_load_species(nlorb(is),lorbl(1,is),apword(0,is),rmt(is),nrmt(is),llu(is))
 enddo
+do ias=1,natmtot
+  call lapw_load_atom(ias2is(ias))
+enddo
+call lapw_init
 do ikloc=1,nkptloc
   ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
   call lapw_load_kpoint(ngk(1,ik),igkig(1,1,ikloc),vgkc(1,1,1,ikloc),wkpt(ik))
 enddo
-call lapw_init
 #endif
 return
 end subroutine
@@ -86,6 +90,7 @@ end subroutine
 #ifdef _LIBAPW_
 subroutine libapw_seceqn_init
 use modmain
+use modldapu
 implicit none
 integer ir,is,ia,ic,ias,l1,l2,io1,io2,ilo1,ilo2,i1,i2,nr,i
 integer l1tmp(0:lmaxapw),l2tmp,lm
@@ -222,7 +227,7 @@ if (spinpol) then
     enddo
   endif
 endif
-call lapw_seceqn_init(hmltrad,ovlprad,beffrad,apwfr,apwdfr,beffir,veffig) 
+call lapw_seceqn_init(hmltrad,ovlprad,beffrad,apwfr,apwdfr,beffir,veffig,vmatlu) 
 densmt=0.d0
 densir=0.d0
 return
