@@ -1,8 +1,9 @@
+#include <cstdio>
 #include "lapw.h"
 
 extern "C" void FORTRAN(lapw_seceqn_init)(double *hmltrad_, double *ovlprad_, double *beffrad_,
                                           double *apwfr_, double *apwdfr_, double *beffir_,
-                                          complex16 *veffig_)
+                                          complex16 *veffig_, complex16* vmatu_)
                                      
 {
     lapw_runtime.hmltrad.set_dimensions(lapw_global.lmmaxvr, lapw_global.nrfmtmax, lapw_global.nrfmtmax, lapw_global.atoms.size());
@@ -47,5 +48,28 @@ extern "C" void FORTRAN(lapw_seceqn_init)(double *hmltrad_, double *ovlprad_, do
         lapw_runtime.dmatu.set_dimensions(lapw_global.lmmaxlu, lapw_global.lmmaxlu, lapw_global.nspinor, lapw_global.nspinor, lapw_global.atoms.size());
         lapw_runtime.dmatu.allocate();
         lapw_runtime.dmatu.zero();
+        
+        lapw_runtime.vmatu.set_ptr(vmatu_);
+        lapw_runtime.vmatu.set_dimensions(lapw_global.lmmaxlu, lapw_global.lmmaxlu, lapw_global.nspinor, lapw_global.nspinor, lapw_global.atoms.size());
     }
+
+    /*printf("Overlap integrals : \n");
+    for (int ias = 0; ias < lapw_global.atoms.size(); ias++)
+    {
+        printf("  atom : %i\n", ias);
+        
+        for (int l = 0; l <= lapw_global.lmaxapw; l++)
+        {
+            printf("     l : %i\n", l);
+            int ordmax = lapw_global.atoms[ias]->species->rfmt_order[l];
+            for (int io1 = 0; io1 < ordmax; io1++)
+            {
+                for (int io2 = 0; io2 < ordmax; io2++)
+                {
+                    printf("%12.6f", lapw_runtime.ovlprad(l, io1, io2, ias));
+                }
+                printf("\n");
+            }
+        }
+    }*/
 }

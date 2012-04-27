@@ -1,14 +1,18 @@
 #include "lapw.h"
 
-/*! \brief computes orbital occupation matrix used in the LDA+U method
-
-Density matrix has the following expression:
-\f[
-  n_{\ell,mm'}^{\sigma \sigma'} = \sum_{i {\bf k}}^{occ} \int_{0}^{R_{MT}} r^2 dr \Psi_{\ell m}^{i{\bf k}\sigma *}({\bf r}) \Psi_{\ell m'}^{i{\bf k}\sigma'}({\bf r})
-\f]
-
+/*! \file lapw_gen_dmatu.cpp 
+    \brief add k-contribution to the density matrix of the LDA+U method
 */
 
+/*! \ingroup functions
+    \brief adds k-contribution to the density (otherwise called orbital occuapncy) matrix used in the LDA+U method
+
+     Density matrix has the following expression:
+     \f[
+        n_{\ell,mm'}^{\sigma \sigma'} = \sum_{i {\bf k}}^{occ} \int_{0}^{R_{MT}} r^2 dr 
+          \Psi_{\ell m}^{i{\bf k}\sigma *}({\bf r}) \Psi_{\ell m'}^{i{\bf k}\sigma'}({\bf r})
+     \f]
+*/
 void lapw_gen_dmatu(const bloch_states_k* const ks, mdarray<complex16,5>& zdens)
 {
     for (int ias = 0; ias < lapw_global.atoms.size(); ias++)

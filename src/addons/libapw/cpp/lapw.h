@@ -3,6 +3,8 @@
 
 /*! \file lapw.h
     \brief Defines basic classes, variables and inline functions.
+    
+    \defgroup functions global functions
 */
 
 #include <vector>
@@ -404,7 +406,9 @@ struct lapw_runtime_variables
     std::vector<bloch_states_k*> bloch_states;
     
     mdarray<complex16,5> dmatu;
+    mdarray<complex16,5> vmatu;
 };
+extern lapw_runtime_variables lapw_runtime;
 
 /*class lapw_eigen_states
 {
@@ -518,7 +522,6 @@ extern complex16 zone;
 extern complex16 zzero;
 extern complex16 zi;
 extern double y00;
-extern lapw_runtime_variables lapw_runtime;
 
 /*
     inline functions
