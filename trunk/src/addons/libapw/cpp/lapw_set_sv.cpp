@@ -1,7 +1,7 @@
 #include "lapw.h"
 
 /// compute product of magnetic field with first-variational wave-functions
-void b_dot_wf(bloch_states_k *ks, mdarray<complex16,3>& hwf)
+void b_dot_wf(bloch_states_k* ks, mdarray<complex16,3>& hwf)
 {
     timer t("b_dot_wf");
     
@@ -94,8 +94,58 @@ void b_dot_wf(bloch_states_k *ks, mdarray<complex16,3>& hwf)
 
     // copy -B_z|wf>
     for (unsigned int i = 0; i < lapw_global.nstfv; i++)
-        for (unsigned int j = 0; j < lapw_global.size_wfmt + ks->ngk; j++)
+        for (unsigned int j = 0; j < ks->wave_function_size; j++)
             hwf(j, i, 1) = -hwf(j, i, 0);
+}
+
+template<spin_block sblock> 
+void apply_u_correction(bloch_states_k* ks, mdarray<complex16,3>& hwf)
+{
+    timer t("apply_u_correction");
+
+    for (int ias = 0; ias < lapw_global.atoms.size(); ias++)
+    {
+        int offset = lapw_global.atoms[ias]->offset_wfmt;
+        int l = lapw_global.atoms[ias]->species->lu;
+        
+        if (l >= 0)
+        {
+            mdarray<int,2> *ci_by_lmo = &lapw_global.atoms[ias]->species->ci_by_lmo;
+            int ordmax = lapw_global.atoms[ias]->species->rfmt_order[l];
+
+            for (int ist = 0; ist < lapw_global.nstfv; ist++)
+            {
+                for (int io2 = 0; io2 < ordmax; io2++)
+                {
+                    for (int m2 = -l; m2 <= l; m2++)
+                    {
+                        int lm2 = idxlm(l, m2);
+                        int idx2 = (*ci_by_lmo)(lm2, io2);
+
+                        for (int io1 = 0; io1 < ordmax; io1++)
+                        {
+                            for (int m1 = -l; m1 <= l; m1++)
+                            {
+                                int lm1 = idxlm(l, m1);
+                                int idx1 = (*ci_by_lmo)(lm1, io1);
+                                complex16 zt = lapw_runtime.ovlprad(l, io2, io1, ias) * ks->scalar_wave_functions(offset + idx1, ist);
+
+                                if (sblock == uu)
+                                    hwf(offset + idx2, ist, 0) += lapw_runtime.vmatu(lm2, lm1, 0, 0, ias) * zt;
+
+                                if (sblock == dd)
+                                    hwf(offset + idx2, ist, 1) += lapw_runtime.vmatu(lm2, lm1, 1, 1, ias) * zt; 
+
+                                if (sblock == ud)
+                                    hwf(offset + idx2, ist, 2) += lapw_runtime.vmatu(lm2, lm1, 0, 1, ias) * zt; 
+
+                            }
+                        }
+                    }
+                }
+            }
+        } // l >= 0
+    }
 }
 
 void lapw_set_sv(bloch_states_k *ks)
@@ -117,6 +167,13 @@ void lapw_set_sv(bloch_states_k *ks)
     // compute product of magnetic field and wave-function 
     if (lapw_global.ndmag > 0)
         b_dot_wf(ks, hwf);
+
+    if (lapw_global.ldapu)
+    {
+        apply_u_correction<uu>(ks, hwf);
+        if (lapw_global.ndmag != 0) apply_u_correction<dd>(ks, hwf);
+        if (lapw_global.ndmag == 3) apply_u_correction<ud>(ks, hwf);
+    }
     
     // compute <wf_i | (h * wf_j)> for up-up block
     zgemm<cpu>(2, 0, lapw_global.nstfv, lapw_global.nstfv, ks->wave_function_size, zone, &ks->scalar_wave_functions(0, 0), 

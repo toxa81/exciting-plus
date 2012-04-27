@@ -127,7 +127,7 @@ extern "C" void FORTRAN(lapw_load_global)(int *lmaxvr_,
         delete lapw_runtime.bloch_states[i];
     lapw_runtime.bloch_states.clear();
     
-    std::cout << "LDA+U : " << lapw_global.ldapu << std::endl;
+    //std::cout << "LDA+U : " << lapw_global.ldapu << std::endl;
 }
 
 
