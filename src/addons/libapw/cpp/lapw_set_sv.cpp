@@ -148,12 +148,48 @@ void apply_u_correction(bloch_states_k* ks, mdarray<complex16,3>& hwf)
     }
 }
 
+void apply_so_correction(bloch_states_k* ks, mdarray<complex16,3>& hwf)
+{
+    timer t("apply_so_correction");
+    
+    for (int ias = 0; ias < lapw_global.atoms.size(); ias++)
+    {
+        int offset = lapw_global.atoms[ias]->offset_wfmt;
+        int ic = lapw_global.atoms[ias]->idxclass;
+        Species *sp = lapw_global.atoms[ias]->species;
+        
+        for (int l = 0; l <= lapw_global.lmaxapw; l++)
+        {
+            for (int io1 = 0; io1 < sp->idxmap.getnrf(l); io1++)
+            {
+                for (int io2 = 0; io2 < sp->idxmap.getnrf(l); io2++)
+                {
+                    for (int m = -l; m <= l; m++)
+                    {
+                        int idx1 = sp->idxmap.getidxbf(l, m, io1);
+                        int idx2 = sp->idxmap.getidxbf(l, m, io2);
+                        int idx3;
+                        if (m != -l) idx3 = sp->idxmap.getidxbf(l, m - 1, io2);
+                        
+                        for (int ist = 0; ist < lapw_global.nstfv; ist++)
+                        {
+                            hwf(offset + idx1, ist, 0) += ks->scalar_wave_functions(offset + idx2, ist) * double(m) * lapw_runtime.socrad(l, io1, io2, ias);
+                            hwf(offset + idx1, ist, 1) -= ks->scalar_wave_functions(offset + idx2, ist) * double(m) * lapw_runtime.socrad(l, io1, io2, ias);
+                            if (m != -l) hwf(offset + idx1, ist, 2) += ks->scalar_wave_functions(offset + idx3, ist) * sqrt(double((l + m) * (l - m + 1))) * lapw_runtime.socrad(l, io1, io2, ias);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
 void lapw_set_sv(bloch_states_k *ks)
 {
     timer t("lapw_set_sv");
     
-    //unsigned int wf_size = eigen_states.scalar_wf.size(0);
-
     int nhwf;
     if (lapw_global.ndmag == 0) nhwf = 1; // have only one block, nonmagnetic
     if (lapw_global.ndmag == 1) nhwf = 2; // have up-up and dn-dn blocks, collinear
@@ -173,6 +209,11 @@ void lapw_set_sv(bloch_states_k *ks)
         apply_u_correction<uu>(ks, hwf);
         if (lapw_global.ndmag != 0) apply_u_correction<dd>(ks, hwf);
         if (lapw_global.ndmag == 3) apply_u_correction<ud>(ks, hwf);
+    }
+
+    if (lapw_global.spinorb)
+    {
+       apply_so_correction(ks, hwf);
     }
     
     // compute <wf_i | (h * wf_j)> for up-up block
