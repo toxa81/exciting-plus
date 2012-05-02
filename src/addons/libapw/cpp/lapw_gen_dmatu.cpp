@@ -15,7 +15,7 @@
 */
 void lapw_gen_dmatu(const bloch_states_k* const ks, mdarray<complex16,5>& zdens)
 {
-    for (int ias = 0; ias < lapw_global.atoms.size(); ias++)
+    for (unsigned int ias = 0; ias < lapw_global.atoms.size(); ias++)
     {
         int l = lapw_global.atoms[ias]->species->lu;
 
@@ -24,9 +24,9 @@ void lapw_gen_dmatu(const bloch_states_k* const ks, mdarray<complex16,5>& zdens)
             mdarray<int,2> *ci_by_lmo = &lapw_global.atoms[ias]->species->ci_by_lmo;
             int ordmax = lapw_global.atoms[ias]->species->rfmt_order[l];
 
-            for (int ispn2 = 0; ispn2 < lapw_global.nspinor; ispn2++)
+            for (unsigned int ispn2 = 0; ispn2 < lapw_global.nspinor; ispn2++)
             {
-                for (int ispn1 = 0; ispn1 < lapw_global.nspinor; ispn1++)
+                for (unsigned int ispn1 = 0; ispn1 < lapw_global.nspinor; ispn1++)
                 {
                     for (int io2 = 0; io2 < ordmax; io2++)
                     {

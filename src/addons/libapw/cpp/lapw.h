@@ -113,22 +113,6 @@ class mtci
         unsigned int idxlo;
 };
 
-/*struct mt_composite_index_descriptor
-{
-    unsigned int l;
-    int m;
-    unsigned int lm;
-
-    /// order of radial function for a givel l (u_l, \dot{u_l}... from the APW set, then local orbitals)
-    unsigned int ordrf;
-
-    /// index of radial function in the array of radial functions
-    unsigned int idxrf;
-
-    /// index of local orbital in the list of local orbitals for a given species
-    unsigned int idxlo;
-};*/
-
 class index_mapping
 {
     private:
@@ -556,13 +540,13 @@ class bloch_states_k
         void test_spinor_wave_functions(int use_fft);
         
         /// returns global index of G1-G2 vector, where G1 and G2 vectors are specified by their local indices
-        inline unsigned int idxG12(unsigned int ig1, unsigned int ig2)
+        /*inline unsigned int idxG12(unsigned int ig1, unsigned int ig2)
         {
             return lapw_global.ivgig(lapw_global.ivg(0, idxg[ig1]) - lapw_global.ivg(0, idxg[ig2]), 
                                      lapw_global.ivg(1, idxg[ig1]) - lapw_global.ivg(1, idxg[ig2]),
                                      lapw_global.ivg(2, idxg[ig1]) - lapw_global.ivg(2, idxg[ig2]));
 
-        }
+        }*/
 
         /// number of G+k vectors
         unsigned int ngk;
@@ -758,14 +742,14 @@ extern double y00;
     return l * l + l + m;
 }*/
 
-/*inline int idxG12(const kpoint& kp, int ig1, int ig2)
+inline unsigned int idxG12(unsigned int ig1, unsigned int ig2)
 {
-    return p.ivgig(p.ivg(0, kp.idxg[ig1]) - p.ivg(0, kp.idxg[ig2]), 
-                   p.ivg(1, kp.idxg[ig1]) - p.ivg(1, kp.idxg[ig2]),
-                   p.ivg(2, kp.idxg[ig1]) - p.ivg(2, kp.idxg[ig2]));
+    return lapw_global.ivgig(lapw_global.ivg(0, ig1) - lapw_global.ivg(0, ig2), 
+                             lapw_global.ivg(1, ig1) - lapw_global.ivg(1, ig2),
+                             lapw_global.ivg(2, ig1) - lapw_global.ivg(2, ig2));
 }
 
-inline int idxG12(const kpoint *kp, int ig1, int ig2)
+/*inline int idxG12(const kpoint *kp, int ig1, int ig2)
 {
     return p.ivgig(p.ivg(0, kp->idxg[ig1]) - p.ivg(0, kp->idxg[ig2]), 
                    p.ivg(1, kp->idxg[ig1]) - p.ivg(1, kp->idxg[ig2]),

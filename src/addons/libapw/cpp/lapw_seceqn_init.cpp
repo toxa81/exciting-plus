@@ -46,12 +46,12 @@ extern "C" void FORTRAN(lapw_seceqn_init)(double *hmltrad_, double *ovlprad_, do
         mdarray<double,2> socrfmt(socrfmt_, lapw_global.nrmtmax, lapw_global.atoms.size());
         
         std::vector<double> f(lapw_global.nrmtmax);
-        for (int ias = 0; ias < lapw_global.atoms.size(); ias++)
+        for (unsigned int ias = 0; ias < lapw_global.atoms.size(); ias++)
         {
             Species *sp = lapw_global.atoms[ias]->species;
             int ic = lapw_global.atoms[ias]->idxclass;
 
-            for (int l = 0; l <= lapw_global.lmaxapw; l++)
+            for (unsigned int l = 0; l <= lapw_global.lmaxapw; l++)
             {
                 int nrf = sp->idxmap.getnrf(l);
                 for (int io1 = 0; io1 < nrf; io1++)

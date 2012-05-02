@@ -187,13 +187,11 @@ void bloch_states_k::test_scalar_wave_functions(int use_fft)
             
             if (use_fft == 0) 
             {
-                int iv[3];
                 for (unsigned int ig1 = 0; ig1 < ngk; ig1++)
                 {
                     for (unsigned int ig2 = 0; ig2 < ngk; ig2++)
                     {
-                        for (int k = 0; k < 3; k++) iv[k] = lapw_global.ivg(k, idxg[ig1]) - lapw_global.ivg(k, idxg[ig2]); // TODO: call to idxG12
-                        int ig3 = lapw_global.ivgig(iv[0], iv[1], iv[2]);
+                        int ig3 = idxG12(idxg[ig1], idxg[ig2]);
                         zsum += conj(scalar_wave_functions(lapw_global.size_wfmt + ig1, j1)) * scalar_wave_functions(lapw_global.size_wfmt + ig2, j2) * lapw_global.cfunig[ig3];
                     }
                }
@@ -296,15 +294,13 @@ void bloch_states_k::test_spinor_wave_functions(int use_fft)
 
             if (use_fft == 0) 
             {
-                int iv[3];
                 for (unsigned int ispn = 0; ispn < lapw_global.nspinor; ispn++)
                 {
                     for (unsigned int ig1 = 0; ig1 < ngk; ig1++)
                     {
                         for (unsigned int ig2 = 0; ig2 < ngk; ig2++)
                         {
-                            for (int k = 0; k < 3; k++) iv[k] = lapw_global.ivg(k, idxg[ig1]) - lapw_global.ivg(k, idxg[ig2]);
-                            int ig3 = lapw_global.ivgig(iv[0], iv[1], iv[2]);
+                            int ig3 = idxG12(idxg[ig1], idxg[ig2]);
                             zsum += conj(spinor_wave_functions(lapw_global.size_wfmt + ig1, ispn, j1)) * spinor_wave_functions(lapw_global.size_wfmt + ig2, ispn, j2) * lapw_global.cfunig[ig3];
                         }
                     }    
