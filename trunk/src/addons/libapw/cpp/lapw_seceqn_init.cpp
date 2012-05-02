@@ -3,14 +3,72 @@
 
 extern "C" void FORTRAN(lapw_seceqn_init)(double *hmltrad_, double *ovlprad_, double *beffrad_,
                                           double *apwfr_, double *apwdfr_, double *beffir_,
-                                          complex16 *veffig_, complex16* vmatu_)
+                                          complex16 *veffig_, complex16* vmatu_, double *rfmt_, double *socrfmt_)
                                      
 {
     lapw_runtime.hmltrad.set_dimensions(lapw_global.lmmaxvr, lapw_global.nrfmtmax, lapw_global.nrfmtmax, lapw_global.atoms.size());
     lapw_runtime.hmltrad.set_ptr(hmltrad_);
     
+    lapw_runtime.rfmt.set_dimensions(lapw_global.nrmtmax, lapw_global.nrfmtmax, lapw_global.natmcls);
+    lapw_runtime.rfmt.set_ptr(rfmt_);
+
     lapw_runtime.ovlprad.set_dimensions(lapw_global.lmaxapw + 1, lapw_global.ordrfmtmax, lapw_global.ordrfmtmax, lapw_global.atoms.size());
     lapw_runtime.ovlprad.set_ptr(ovlprad_);
+    
+    /*lapw_runtime.ovlprad.allocate();
+
+    std::vector<double> f(lapw_global.nrmtmax);
+    for (int ias = 0; ias < lapw_global.atoms.size(); ias++)
+    {
+        Species *sp = lapw_global.atoms[ias]->species;
+        int ic = lapw_global.atoms[ias]->idxclass;
+
+        for (int l = 0; l <= lapw_global.lmaxapw; l++)
+        {
+            int nrf = sp->idxmap.getnrf(l);
+            for (int io1 = 0; io1 < nrf; io1++)
+            {
+                for (int io2 = 0; io2 < nrf; io2++)
+                {
+                    for (int ir = 0; ir < sp->nrmt; ir++)
+                        f[ir] = lapw_runtime.rfmt(ir, sp->idxmap.getidxrf(l, io1), ic) * lapw_runtime.rfmt(ir, sp->idxmap.getidxrf(l, io2), ic) * 
+                            pow(sp->radial_mesh(ir), 2);
+                    lapw_runtime.ovlprad(l, io1, io2, ias) = lapw_spline_integrate(sp->nrmt, &sp->radial_mesh(0), &f[0]); 
+                }
+            }
+        }
+    }*/
+    if (lapw_global.spinorb)
+    {
+        lapw_runtime.socrad.set_dimensions(lapw_global.lmaxapw + 1, lapw_global.ordrfmtmax, lapw_global.ordrfmtmax, lapw_global.atoms.size());
+        lapw_runtime.socrad.allocate();
+
+        mdarray<double,2> socrfmt(socrfmt_, lapw_global.nrmtmax, lapw_global.atoms.size());
+        
+        std::vector<double> f(lapw_global.nrmtmax);
+        for (int ias = 0; ias < lapw_global.atoms.size(); ias++)
+        {
+            Species *sp = lapw_global.atoms[ias]->species;
+            int ic = lapw_global.atoms[ias]->idxclass;
+
+            for (int l = 0; l <= lapw_global.lmaxapw; l++)
+            {
+                int nrf = sp->idxmap.getnrf(l);
+                for (int io1 = 0; io1 < nrf; io1++)
+                {
+                    for (int io2 = 0; io2 < nrf; io2++)
+                    {
+                        for (int ir = 0; ir < sp->nrmt; ir++)
+                            f[ir] = lapw_runtime.rfmt(ir, sp->idxmap.getidxrf(l, io1), ic) * socrfmt(ir, ias) * 
+                                lapw_runtime.rfmt(ir, sp->idxmap.getidxrf(l, io2), ic) * pow(sp->radial_mesh(ir), 2);
+                        lapw_runtime.socrad(l, io1, io2, ias) = lapw_spline_integrate(sp->nrmt, &sp->radial_mesh(0), &f[0]); 
+                    }
+                }
+            }
+        }
+    }
+    
+    
     
     lapw_runtime.apwfr.set_dimensions(lapw_global.nrmtmax, 2, lapw_global.apwordmax, lapw_global.lmaxapw + 1, lapw_global.atoms.size());
     lapw_runtime.apwfr.set_ptr(apwfr_);
@@ -52,7 +110,7 @@ extern "C" void FORTRAN(lapw_seceqn_init)(double *hmltrad_, double *ovlprad_, do
         lapw_runtime.vmatu.set_ptr(vmatu_);
         lapw_runtime.vmatu.set_dimensions(lapw_global.lmmaxlu, lapw_global.lmmaxlu, lapw_global.nspinor, lapw_global.nspinor, lapw_global.atoms.size());
     }
-
+    
     /*printf("Overlap integrals : \n");
     for (int ias = 0; ias < lapw_global.atoms.size(); ias++)
     {

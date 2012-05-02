@@ -1,12 +1,15 @@
 #include "lapw.h"
 
-extern "C" void FORTRAN(lapw_load_species)(int *nlorb, int *lorbl, int *apword, double* rmt, int *nrmt, int *llu)
+extern "C" void FORTRAN(lapw_load_species)(int *nlorb, int *lorbl, int *apword, double* rmt, int *nrmt, int *llu, double *spr)
 {
     Species *sp = new Species();
     
     sp->rmt = *rmt;
     sp->nrmt = *nrmt;
     sp->lu = *llu;
+    
+    sp->radial_mesh.set_dimensions(sp->nrmt);
+    sp->radial_mesh.set_ptr(spr);
     
     for (int i = 0; i < *nlorb; i++) 
         sp->lo_descriptors.push_back(radial_l_descriptor(lorbl[i]));
