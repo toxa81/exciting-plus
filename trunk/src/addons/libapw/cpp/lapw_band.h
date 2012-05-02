@@ -252,7 +252,7 @@ void lapw_set_h(bloch_states_k* const ks, mdarray<complex16,2>& h)
         for (int k = 0; k < 3; k++) v2[k] = ks->vgkc(k, j2);
         for (unsigned int j1 = 0; j1 <= j1_end; j1++) // for each column loop over rows
         {
-            unsigned int ig = ks->idxG12(j1, j2);
+            unsigned int ig = idxG12(ks->idxg[j1], ks->idxg[j2]);
             double t1 = 0.5 * (ks->vgkc(0, j1) * v2[0] + 
                                ks->vgkc(1, j1) * v2[1] + 
                                ks->vgkc(2, j1) * v2[2]);
@@ -321,7 +321,7 @@ void lapw_set_o(bloch_states_k* const ks, mdarray<complex16,2>& o)
     
     for (unsigned int j2 = 0; j2 < ks->ngk; j2++) // loop over columns
         for (unsigned int j1 = 0; j1 <= j2; j1++) // for each column loop over rows
-            o(j1, j2) += lapw_global.cfunig[ks->idxG12(j1, j2)];
+            o(j1, j2) += lapw_global.cfunig[idxG12(ks->idxg[j1], ks->idxg[j2])];
 }
 
 template <implementation impl, diagonalization mode> 

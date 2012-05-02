@@ -103,7 +103,7 @@ void apply_u_correction(bloch_states_k* ks, mdarray<complex16,3>& hwf)
 {
     timer t("apply_u_correction");
 
-    for (int ias = 0; ias < lapw_global.atoms.size(); ias++)
+    for (unsigned int ias = 0; ias < lapw_global.atoms.size(); ias++)
     {
         int offset = lapw_global.atoms[ias]->offset_wfmt;
         int l = lapw_global.atoms[ias]->species->lu;
@@ -113,7 +113,7 @@ void apply_u_correction(bloch_states_k* ks, mdarray<complex16,3>& hwf)
             mdarray<int,2> *ci_by_lmo = &lapw_global.atoms[ias]->species->ci_by_lmo;
             int ordmax = lapw_global.atoms[ias]->species->rfmt_order[l];
 
-            for (int ist = 0; ist < lapw_global.nstfv; ist++)
+            for (unsigned int ist = 0; ist < lapw_global.nstfv; ist++)
             {
                 for (int io2 = 0; io2 < ordmax; io2++)
                 {
@@ -152,30 +152,30 @@ void apply_so_correction(bloch_states_k* ks, mdarray<complex16,3>& hwf)
 {
     timer t("apply_so_correction");
     
-    for (int ias = 0; ias < lapw_global.atoms.size(); ias++)
+    for (unsigned int ias = 0; ias < lapw_global.atoms.size(); ias++)
     {
         int offset = lapw_global.atoms[ias]->offset_wfmt;
-        int ic = lapw_global.atoms[ias]->idxclass;
         Species *sp = lapw_global.atoms[ias]->species;
         
-        for (int l = 0; l <= lapw_global.lmaxapw; l++)
+        for (unsigned int l = 0; l <= lapw_global.lmaxapw; l++)
         {
-            for (int io1 = 0; io1 < sp->idxmap.getnrf(l); io1++)
+            int nrf = sp->idxmap.getnrf(l);
+            for (int io1 = 0; io1 < nrf; io1++)
             {
-                for (int io2 = 0; io2 < sp->idxmap.getnrf(l); io2++)
+                for (int io2 = 0; io2 < nrf; io2++)
                 {
-                    for (int m = -l; m <= l; m++)
+                    for (int m = -l; m <= (int)l; m++)
                     {
                         int idx1 = sp->idxmap.getidxbf(l, m, io1);
                         int idx2 = sp->idxmap.getidxbf(l, m, io2);
-                        int idx3;
-                        if (m != -l) idx3 = sp->idxmap.getidxbf(l, m - 1, io2);
+                        int idx3 = 0;
+                        if (m + l) idx3 = sp->idxmap.getidxbf(l, m - 1, io2);
                         
-                        for (int ist = 0; ist < lapw_global.nstfv; ist++)
+                        for (unsigned int ist = 0; ist < lapw_global.nstfv; ist++)
                         {
                             hwf(offset + idx1, ist, 0) += ks->scalar_wave_functions(offset + idx2, ist) * double(m) * lapw_runtime.socrad(l, io1, io2, ias);
                             hwf(offset + idx1, ist, 1) -= ks->scalar_wave_functions(offset + idx2, ist) * double(m) * lapw_runtime.socrad(l, io1, io2, ias);
-                            if (m != -l) hwf(offset + idx1, ist, 2) += ks->scalar_wave_functions(offset + idx3, ist) * sqrt(double((l + m) * (l - m + 1))) * lapw_runtime.socrad(l, io1, io2, ias);
+                            if (m + l) hwf(offset + idx1, ist, 2) += ks->scalar_wave_functions(offset + idx3, ist) * sqrt(double((l + m) * (l - m + 1))) * lapw_runtime.socrad(l, io1, io2, ias);
                         }
                     }
                 }
