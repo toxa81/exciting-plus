@@ -6,6 +6,8 @@
 
 extern "C" void FORTRAN(lapw_init)()
 {
+    lapw_global.max_mt_index_size = 0;
+
     for (unsigned int is = 0; is < lapw_global.species.size(); is++)
     {
         lapw_global.species[is]->rfmt_order.resize(lapw_global.lmaxapw + 1, 0);
@@ -59,6 +61,7 @@ extern "C" void FORTRAN(lapw_init)()
             
         lapw_global.species[is]->radial_index.init();
         lapw_global.species[is]->index.init(lapw_global.species[is]->radial_index);
+        lapw_global.max_mt_index_size = std::max(lapw_global.species[is]->index.size(), lapw_global.max_mt_index_size);
     }
 
     lapw_global.size_wfmt_apw = 0;

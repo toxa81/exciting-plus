@@ -241,7 +241,7 @@ class mt_index
         }
         
         /// composite lm index by l and m
-        inline int idxlm(int l, int m)
+        inline static int idxlm(int l, int m)
         {
             return l * l + l + m;
         }
@@ -546,6 +546,8 @@ struct lapw_global_variables
     
     /// list of atoms
     std::vector<Atom*> atoms;
+
+    int max_mt_index_size;
 
 };
 extern lapw_global_variables lapw_global;
