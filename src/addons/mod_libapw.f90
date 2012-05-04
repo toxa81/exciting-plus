@@ -13,6 +13,7 @@ real(8), allocatable :: densir(:,:,:)
 real(8), allocatable :: rfmt(:,:,:)
 real(8), allocatable :: hrfmt(:,:,:)
 integer, allocatable :: lrf(:,:)
+real(8), allocatable :: socrfmt(:,:) 
 
 contains
 
@@ -67,16 +68,18 @@ if (allocated(hrfmt)) deallocate(hrfmt)
 allocate(hrfmt(nrmtmax,nrfmtmax,natmcls))
 if (allocated(lrf)) deallocate(lrf)
 allocate(lrf(nrfmtmax,natmcls))
+if (allocated(socrfmt)) deallocate(socrfmt)
+allocate(socrfmt(nrmtmax,natmtot))
 
 call lapw_load_global(lmaxvr,lmaxapw,apwordmax,nrmtmax,ngkmax,ngvec,&
   &ngrtot,intgv,ivg,ivgig,ngrid,igfft,cfunir,cfunig,gntyry,nstfv,&
   &nrfmtmax,ordrfmtmax,evaltol,spinpol,spinorb,ndmag,omega,natmcls,&
   &ic2ias,natoms_in_class,ldapu)
 do is=1,nspecies
-  call lapw_load_species(nlorb(is),lorbl(1,is),apword(0,is),rmt(is),nrmt(is),llu(is))
+  call lapw_load_species(nlorb(is),lorbl(1,is),apword(0,is),rmt(is),nrmt(is),llu(is),spr(1,is))
 enddo
 do ias=1,natmtot
-  call lapw_load_atom(ias2is(ias))
+  call lapw_load_atom(ias2is(ias),ias2ic(ias))
 enddo
 call lapw_init
 do ikloc=1,nkptloc
@@ -94,11 +97,12 @@ use modldapu
 implicit none
 integer ir,is,ia,ic,ias,l1,l2,io1,io2,ilo1,ilo2,i1,i2,nr,i
 integer l1tmp(0:lmaxapw),l2tmp,lm
-real(8) cb,t1
+real(8) cb,cso,t1,rm
 real(8), allocatable :: bmt(:,:,:)
-real(8) r2(nrmtmax),fr(nrmtmax),gr(nrmtmax),cf(4,nrmtmax)
+real(8), allocatable :: r2(:),fr(:),gr(:),cf(:,:)
 !
 ! collect radial functions
+allocate(r2(nrmtmax),fr(nrmtmax),gr(nrmtmax),cf(4,nrmtmax))
 do ic=1,natmcls
   ias=ic2ias(ic)
   is=ias2is(ias)
@@ -227,9 +231,23 @@ if (spinpol) then
     enddo
   endif
 endif
-call lapw_seceqn_init(hmltrad,ovlprad,beffrad,apwfr,apwdfr,beffir,veffig,vmatlu) 
+if (spinorb) then
+  cso=1.d0/(4.d0*solsc**2)
+  do ias=1,natmtot
+    is=ias2is(ias)
+! radial derivative of the spherical part of the potential
+    fr(1:nrmt(is))=veffmt(1,1:nrmt(is),ias)*y00
+    call fderiv(1,nrmt(is),spr(:,is),fr,gr,cf)
+    do ir=1,nrmt(is)
+      rm=1.d0-2.d0*cso*fr(ir)
+      socrfmt(ir,ias)=cso*gr(ir)/(spr(ir,is)*rm**2)
+    enddo
+  enddo
+endif
+call lapw_seceqn_init(hmltrad,ovlprad,beffrad,apwfr,apwdfr,beffir,veffig,vmatlu,rfmt,socrfmt) 
 densmt=0.d0
 densir=0.d0
+deallocate(r2,fr,gr,cf)
 return
 end subroutine
 
