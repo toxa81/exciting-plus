@@ -145,7 +145,7 @@ void apply_u_correction(bloch_states_k* ks, mdarray<complex16,3>& hwf)
 
 void apply_so_correction(bloch_states_k* ks, mdarray<complex16,3>& hwf)
 {
-    timer t("apply_so_correction");
+    timer t("lapw_set_sv:apply_so_correction");
     
     for (int ias = 0; ias < (int)lapw_global.atoms.size(); ias++)
     {

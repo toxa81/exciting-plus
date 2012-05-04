@@ -23,10 +23,10 @@ void lapw_fft(int32_t direction, complex16 *data);
 double lapw_spline_integrate(int32_t n, double *x, double *f);
 
 /// composite lm index by l and m
-inline int idxlm(int l, int m)
+/*inline int idxlm(int l, int m)
 {
     return l * l + l + m;
-}
+}*/
 
 /// describes single atomic level
 struct atomic_level 
@@ -93,7 +93,7 @@ class radial_l_descriptor
     where functions \f$ f_{\ell \lambda}^{\alpha}(r) \f$ label both APW and local orbitals.
 */
 
-class mtci
+/*class mtci
 {
     public:
         mtci(unsigned int l, int m, unsigned int order, unsigned int idxrf) : l(l), m(m), order(order), idxrf(idxrf), idxlo(-1)
@@ -111,7 +111,7 @@ class mtci
         unsigned int order;
         unsigned int idxrf;
         unsigned int idxlo;
-};
+};*/
 
 struct mt_radial_function_descriptor
 {
@@ -345,7 +345,7 @@ class Species
 {
     public:
 
-        Species() : size_ci_lo(0), size_ci_apw(0), nrfmt(0)
+        Species() 
         {
         }
     
@@ -375,20 +375,18 @@ class Species
         std::vector<radial_l_descriptor> apw_descriptors;
 
         /// list of combined indices for the muffin-tin representation of wave-functions    
-        std::vector<mtci> ci;
+        //std::vector<mtci> ci;
 
         /// local-orbital part of combined indices
-        mtci *ci_lo;
-        unsigned int size_ci_lo;
-        unsigned int size_ci_apw;
-        mdarray<int,2> ci_by_lmo;
-        std::vector<int> ci_by_idxrf;
-        std::vector<int> l_by_idxrf;
-        std::vector<int> rfmt_order;
-        unsigned int nrfmt;
+        //mtci *ci_lo;
+        //unsigned int size_ci_lo;
+        //unsigned int size_ci_apw;
+        //mdarray<int,2> ci_by_lmo;
+        //std::vector<int> ci_by_idxrf;
+        //std::vector<int> l_by_idxrf;
+        //std::vector<int> rfmt_order;
+        //unsigned int nrfmt;
        
-        /// indices of spherical expansion
-        //mt_index_mapping idxmap;
         mt_radial_index radial_index;
         mt_index index;
         
@@ -672,6 +670,11 @@ inline void L3_sum_gntyry(int lm1, int lm2, T *v, std::complex<double>& zsum)
         zsum += lapw_global.gntyry(lm3, lm1, lm2) * v[lm3];
     }
 }
-        
+
+inline bool use_spin_block(int ispn1, int ispn2)
+{
+    return ((lapw_global.ndmag == 1 && ispn1 == ispn2) || (lapw_global.ndmag != 1));
+}
 
 #endif // __LAPW_H__
+
