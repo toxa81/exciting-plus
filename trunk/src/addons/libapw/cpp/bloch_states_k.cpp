@@ -18,15 +18,15 @@ void bloch_states_k::copy_apwalm(complex16 *apwalm_)
     
     mdarray<complex16,4> apwalm_tmp(apwalm_, lapw_global.ngkmax, lapw_global.apwordmax, lapw_global.lmmaxapw, lapw_global.atoms.size());
     
-    for (unsigned int ias = 0; ias < lapw_global.atoms.size(); ias++)
+    for (int ias = 0; ias < (int)lapw_global.atoms.size(); ias++)
     {
         Atom *atom = lapw_global.atoms[ias];
         Species *species = atom->species;
-
-        for (unsigned int j = 0; j < species->size_ci_apw; j++)
+        
+        for (int j = 0; j < species->index.apw_size(); j++)
         {
-            int io = species->ci[j].order;
-            int lm = species->ci[j].lm;
+            int io = species->index[j].order;
+            int lm = species->index[j].lm;
             for (unsigned int ig = 0; ig < ngk; ig++)
                 apwalm(ig, atom->offset_apw + j) = conj(apwalm_tmp(ig, io, lm, ias));
         }
@@ -39,7 +39,7 @@ inline void move_apw_blocks(complex16 *wf)
     {
         unsigned int final_block_offset = lapw_global.atoms[ias]->offset_wfmt;
         unsigned int initial_block_offset = lapw_global.atoms[ias]->offset_apw;
-        unsigned int block_size = lapw_global.atoms[ias]->species->size_ci_apw;
+        unsigned int block_size = lapw_global.atoms[ias]->species->index.apw_size();
 
         memmove(&wf[final_block_offset], &wf[initial_block_offset], block_size * sizeof(complex16));
     }
@@ -49,9 +49,9 @@ inline void copy_lo_blocks(complex16 *wf, complex16 *evec)
 {
     for (unsigned int ias = 0; ias < lapw_global.atoms.size(); ias++)
     {
-        unsigned int final_block_offset = lapw_global.atoms[ias]->offset_wfmt + lapw_global.atoms[ias]->species->size_ci_apw;
+        unsigned int final_block_offset = lapw_global.atoms[ias]->offset_wfmt + lapw_global.atoms[ias]->species->index.apw_size();
         unsigned int initial_block_offset = lapw_global.atoms[ias]->offset_lo;
-        unsigned int block_size = lapw_global.atoms[ias]->species->size_ci_lo;
+        unsigned int block_size = lapw_global.atoms[ias]->species->index.lo_size();
         
         if (block_size > 0)
             memcpy(&wf[final_block_offset], &evec[initial_block_offset], block_size * sizeof(complex16));
@@ -171,16 +171,16 @@ void bloch_states_k::test_scalar_wave_functions(int use_fft)
             for (unsigned int ias = 0; ias < lapw_global.atoms.size(); ias++)
             {
                 int offset_wfmt = lapw_global.atoms[ias]->offset_wfmt;
-                mdarray<int,2> *ci_by_lmo = &lapw_global.atoms[ias]->species->ci_by_lmo;
+                Species *sp = lapw_global.atoms[ias]->species;
 
                 for (unsigned int l = 0; l <= lapw_global.lmaxapw; l++)
                 {
-                    int ordmax = lapw_global.atoms[ias]->species->rfmt_order[l];
+                    int ordmax = sp->radial_index.nrf(l);
                     for (int io1 = 0; io1 < ordmax; io1++)
                         for (int io2 = 0; io2 < ordmax; io2++)
                             for (int m = -l; m <= (int)l; m++)
-                                zsum += conj(scalar_wave_functions(offset_wfmt + (*ci_by_lmo)(idxlm(l, m), io1), j1)) *
-                                             scalar_wave_functions(offset_wfmt + (*ci_by_lmo)(idxlm(l, m), io2), j2) * 
+                                zsum += conj(scalar_wave_functions(offset_wfmt + sp->index(l, m, io1), j1)) *
+                                             scalar_wave_functions(offset_wfmt + sp->index(l, m, io2), j2) * 
                                              lapw_runtime.ovlprad(l, io1, io2, ias);
                 }
             }
@@ -277,16 +277,16 @@ void bloch_states_k::test_spinor_wave_functions(int use_fft)
                 for (unsigned int ias = 0; ias < lapw_global.atoms.size(); ias++)
                 {
                     int offset_wfmt = lapw_global.atoms[ias]->offset_wfmt;
-                    mdarray<int,2> *ci_by_lmo = &lapw_global.atoms[ias]->species->ci_by_lmo;
+                    Species *sp = lapw_global.atoms[ias]->species;
 
                     for (unsigned int l = 0; l <= lapw_global.lmaxapw; l++)
                     {
-                        int ordmax = lapw_global.atoms[ias]->species->rfmt_order[l];
+                        int ordmax = sp->radial_index.nrf(l);
                         for (int io1 = 0; io1 < ordmax; io1++)
                             for (int io2 = 0; io2 < ordmax; io2++)
                                 for (int m = -l; m <= (int)l; m++)
-                                    zsum += conj(spinor_wave_functions(offset_wfmt + (*ci_by_lmo)(idxlm(l, m), io1), ispn, j1)) *
-                                                 spinor_wave_functions(offset_wfmt + (*ci_by_lmo)(idxlm(l, m), io2), ispn, j2) * 
+                                    zsum += conj(spinor_wave_functions(offset_wfmt + sp->index(l, m, io1), ispn, j1)) *
+                                                 spinor_wave_functions(offset_wfmt + sp->index(l, m, io2), ispn, j2) * 
                                                  lapw_runtime.ovlprad(l, io1, io2, ias);
                     }
                 }

@@ -8,9 +8,9 @@
 
 const bool check_evecfv = false;
 
-const bool check_scalar_wf = true;
+const bool check_scalar_wf = false;
 
-const bool check_spinor_wf = true;
+const bool check_spinor_wf = false;
 
 const implementation lapw_impl = cpu;
 
