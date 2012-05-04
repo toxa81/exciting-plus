@@ -53,14 +53,14 @@ extern "C" void FORTRAN(lapw_seceqn_init)(double *hmltrad_, double *ovlprad_, do
 
             for (unsigned int l = 0; l <= lapw_global.lmaxapw; l++)
             {
-                int nrf = sp->idxmap.getnrf(l);
+                int nrf = sp->radial_index.nrf(l);
                 for (int io1 = 0; io1 < nrf; io1++)
                 {
                     for (int io2 = 0; io2 < nrf; io2++)
                     {
                         for (int ir = 0; ir < sp->nrmt; ir++)
-                            f[ir] = lapw_runtime.rfmt(ir, sp->idxmap.getidxrf(l, io1), ic) * socrfmt(ir, ias) * 
-                                lapw_runtime.rfmt(ir, sp->idxmap.getidxrf(l, io2), ic) * pow(sp->radial_mesh(ir), 2);
+                            f[ir] = lapw_runtime.rfmt(ir, sp->radial_index(l, io1), ic) * socrfmt(ir, ias) * 
+                                lapw_runtime.rfmt(ir, sp->radial_index(l, io2), ic) * pow(sp->radial_mesh(ir), 2);
                         lapw_runtime.socrad(l, io1, io2, ias) = lapw_spline_integrate(sp->nrmt, &sp->radial_mesh(0), &f[0]); 
                     }
                 }

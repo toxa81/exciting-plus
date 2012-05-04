@@ -159,17 +159,17 @@ void apply_so_correction(bloch_states_k* ks, mdarray<complex16,3>& hwf)
         
         for (unsigned int l = 0; l <= lapw_global.lmaxapw; l++)
         {
-            int nrf = sp->idxmap.getnrf(l);
+            int nrf = sp->radial_index.nrf(l);
             for (int io1 = 0; io1 < nrf; io1++)
             {
                 for (int io2 = 0; io2 < nrf; io2++)
                 {
                     for (int m = -l; m <= (int)l; m++)
                     {
-                        int idx1 = sp->idxmap.getidxbf(l, m, io1);
-                        int idx2 = sp->idxmap.getidxbf(l, m, io2);
+                        int idx1 = sp->index(l, m, io1);
+                        int idx2 = sp->index(l, m, io2);
                         int idx3 = 0;
-                        if (m + l) idx3 = sp->idxmap.getidxbf(l, m - 1, io2);
+                        if (m + l) idx3 = sp->index(l, m - 1, io2);
                         
                         for (unsigned int ist = 0; ist < lapw_global.nstfv; ist++)
                         {
