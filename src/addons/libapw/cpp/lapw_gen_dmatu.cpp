@@ -28,7 +28,7 @@ void lapw_gen_dmatu(const bloch_states_k* const ks, mdarray<complex16,5>& zdens)
             {
                 for (int ispn1 = 0; ispn1 < lapw_global.nspinor; ispn1++)
                 {
-                    if ((lapw_global.ndmag == 1 && ispn1 == ispn2) || (lapw_global.ndmag != 1))
+                    if (use_spin_block(ispn1, ispn2))
                     {
                         for (int io2 = 0; io2 < nrf; io2++)
                         {

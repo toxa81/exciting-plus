@@ -291,9 +291,9 @@ void lapw_set_h(bloch_states_k* const ks, mdarray<complex16,2>& h)
    
         double v2[3];
         for (int k = 0; k < 3; k++) v2[k] = ks->vgkc(k, j2);
-        for (unsigned int j1 = 0; j1 <= j1_last; j1++) // for each column loop over rows
+        for (int j1 = 0; j1 <= j1_last; j1++) // for each column loop over rows
         {
-            unsigned int ig = idxG12(ks->idxg[j1], ks->idxg[j2]);
+            int ig = idxG12(ks->idxg[j1], ks->idxg[j2]);
             double t1 = 0.5 * (ks->vgkc(0, j1) * v2[0] + 
                                ks->vgkc(1, j1) * v2[1] + 
                                ks->vgkc(2, j1) * v2[2]);
@@ -347,7 +347,7 @@ void lapw_set_o(bloch_states_k* const ks, mdarray<complex16,2>& o)
             int order2 = species->index[lo_index_offset + j2].order;
             
             // apw-lo block 
-            for (int io1 = 0; io1 < species->apw_descriptors[l2].radial_solution_descriptors.size(); io1++)
+            for (int io1 = 0; io1 < (int)species->apw_descriptors[l2].radial_solution_descriptors.size(); io1++)
                 for (int ig = 0; ig < ks->ngk; ig++)
                     o(ig, ks->ngk + atom->offset_lo + j2) += lapw_runtime.ovlprad(l2, io1, order2, ias) * ks->apwalm(ig, atom->offset_apw + species->index(lm2, io1)); 
 
@@ -405,7 +405,7 @@ void lapw_band(bloch_states_k* const ks)
  
         if (lapw_global.ndmag == 0)
         {
-            for (unsigned int i = 0; i < lapw_global.nstfv; i++)
+            for (int i = 0; i < lapw_global.nstfv; i++)
             {
                 ks->evecsv(i, i) = zone;
                 ks->evalsv[i] = ks->evalfv[i];
@@ -482,7 +482,7 @@ void lapw_band(bloch_states_k* const ks)
             mdarray<complex16,2> o1(NULL, ks->lapw_basis_size * lapw_global.nspinor, ks->lapw_basis_size * lapw_global.nspinor);
             o1.allocate();
             o1.zero();
-            for (unsigned int i = 0; i < ks->lapw_basis_size; i++)
+            for (int i = 0; i < ks->lapw_basis_size; i++)
             {
                 memcpy(&o1(0, i), &o(0, i), ks->lapw_basis_size * sizeof(complex16));
                 memcpy(&o1(ks->lapw_basis_size, ks->lapw_basis_size + i), &o(0, i), ks->lapw_basis_size * sizeof(complex16));

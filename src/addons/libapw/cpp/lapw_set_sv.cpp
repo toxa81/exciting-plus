@@ -90,8 +90,8 @@ void apply_magnetic_field(bloch_states_k* ks, mdarray<complex16,3>& hwf)
     delete t1;
 
     // copy -B_z|wf> TODO: this implementation assumes that hwf was zero on input!!!
-    for (unsigned int i = 0; i < lapw_global.nstfv; i++)
-        for (unsigned int j = 0; j < ks->wave_function_size; j++)
+    for (int i = 0; i < lapw_global.nstfv; i++)
+        for (int j = 0; j < ks->wave_function_size; j++)
             hwf(j, i, 1) = -hwf(j, i, 0);
 }
 
@@ -100,7 +100,7 @@ void apply_u_correction(bloch_states_k* ks, mdarray<complex16,3>& hwf)
 {
     timer t("lapw_set_sv:apply_u_correction");
 
-    for (int ias = 0; ias < lapw_global.atoms.size(); ias++)
+    for (int ias = 0; ias < (int)lapw_global.atoms.size(); ias++)
     {
         int offset = lapw_global.atoms[ias]->offset_wfmt;
         int l = lapw_global.atoms[ias]->species->lu;
@@ -226,9 +226,8 @@ void lapw_set_sv(bloch_states_k *ks)
         zgemm<cpu>(2, 0, lapw_global.nstfv, lapw_global.nstfv, ks->wave_function_size, zone, &ks->scalar_wave_functions(0, 0), 
         ks->scalar_wave_functions.size(0), &hwf(0, 0, 2), hwf.size(0), zzero, &ks->evecsv(0, lapw_global.nstfv), ks->evecsv.size(0));
 
-    //unsigned int nspn = (lapw_global.ndmag == 0) ? 1 : 2;
-    for (unsigned int ispn = 0, i = 0; ispn < lapw_global.nspinor; ispn++)
-        for (unsigned int ist = 0; ist < lapw_global.nstfv; ist++, i++)
+    for (int ispn = 0, i = 0; ispn < lapw_global.nspinor; ispn++)
+        for (int ist = 0; ist < lapw_global.nstfv; ist++, i++)
             ks->evecsv(i, i) += ks->evalfv[ist];
 }
 
