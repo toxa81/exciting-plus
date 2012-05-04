@@ -53,7 +53,7 @@ void lapw_density(bloch_states_k *ks, mdarray<double,6>& densmt, mdarray<double,
     
     std::vector<int> idxocc;
     std::vector<double> woccsv;
-    for (unsigned int j = 0; j < lapw_global.nstsv; j++)
+    for (int j = 0; j < lapw_global.nstsv; j++)
     {
         double wo = ks->occsv[j] * ks->weight;
 
@@ -73,12 +73,12 @@ void lapw_density(bloch_states_k *ks, mdarray<double,6>& densmt, mdarray<double,
     wf2.allocate();
 
     timer *t1 = new timer("lapw_density:zdens");    
-    for (int ias = 0; ias < lapw_global.atoms.size(); ias++)
+    for (int ias = 0; ias < (int)lapw_global.atoms.size(); ias++)
     {
         int offset = lapw_global.atoms[ias]->offset_wfmt;
         int sz = lapw_global.atoms[ias]->species->index.size();
 
-        for (int i = 0; i < idxocc.size(); i++)
+        for (int i = 0; i < (int)idxocc.size(); i++)
             for (int ispn = 0; ispn < lapw_global.nspinor; ispn++)
             {
                 memcpy(&wf1(0, i, ispn), &ks->spinor_wave_functions(offset, ispn, idxocc[i]), sz * sizeof(complex16));
@@ -128,7 +128,7 @@ void lapw_density(bloch_states_k *ks, mdarray<double,6>& densmt, mdarray<double,
         densir_tmp.allocate();
         densir_tmp.zero();
         #pragma omp for
-        for (int i = 0; i < idxocc.size(); i++)
+        for (int i = 0; i < (int)idxocc.size(); i++)
         {
             zfft.zero();
             for (int ispn = 0; ispn < lapw_global.nspinor; ispn++)
@@ -160,7 +160,7 @@ void lapw_density(bloch_states_k *ks, mdarray<double,6>& densmt, mdarray<double,
                 for (int ispn2 = 0; ispn2 < lapw_global.nspinor; ispn2++)
                     if (use_spin_block(ispn1, ispn2))
                     {
-                        for (unsigned int ir = 0; ir < lapw_global.ngrtot; ir++)
+                        for (int ir = 0; ir < lapw_global.ngrtot; ir++)
                             densir(ir, ispn1, ispn2) += densir_tmp(ir, ispn1, ispn2);
                     }
         }
