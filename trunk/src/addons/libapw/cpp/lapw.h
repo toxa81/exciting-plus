@@ -351,14 +351,24 @@ class Atom
         {
         }
         
+        /// atom position in lattice coordinates
         double posl[3];
+        
+        /// atom position in Cartesian coordinates
         double posc[3];
+        
+        /// muffin-tin magnetic field in Cartesian coordinates
         double bfcmt[3];
-        int symclass;
+        
+        /// pointer to species class
         Species *species;
+        
+        /// offset of APW matching coefficients in the array apwalm 
         int offset_apw;
         int offset_lo;
         int offset_wfmt;
+        
+        /// index of symmetry class
         int idxclass;
 };
 
@@ -455,7 +465,6 @@ struct lapw_global_variables
     //mdarray<std::vector<complex16>,2> L3_gntyry_data;
     
     int size_wfmt_apw;
-    int size_apwalm; 
     int size_wfmt_lo;
     int size_wfmt;
     std::vector<int> l_by_lm;

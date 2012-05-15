@@ -23,7 +23,7 @@ void lapw_set_sv(bloch_states_k *ks);
 template <spin_block sblock> 
 void apply_hfvmt_to_apw(bloch_states_k* const ks, mdarray<complex16,2>& hapw)
 {
-    timer t("hmt_dot_apw");
+    timer t("apply_hfvmt_to_apw");
    
     #pragma omp parallel default(shared)
     {
