@@ -62,7 +62,7 @@ if (wannier_megq) then
     write(150,'("Number of Wannier transitions : ",I6)')megqwantran%nwt
     write(150,'("Translation limits : ",6I6)')megqwantran%tlim(:,1), &
       megqwantran%tlim(:,2),megqwantran%tlim(:,3)
-    call flushifc(151)
+    call flushifc(150)
   endif
 endif
 
