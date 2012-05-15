@@ -4,7 +4,6 @@
 
 r1768
 
-
 = Details =
 
 Add your content here.  Format your content with:
