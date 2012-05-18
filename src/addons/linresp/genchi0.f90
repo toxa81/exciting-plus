@@ -29,7 +29,7 @@ call getqdir(iq,vqm(:,iq),qdir)
 call getqname(vqm(:,iq),qnm)
 qnm=trim(qdir)//"/"//trim(qnm)
 wproc=.false.
-if (mpi_grid_root((/dim_k,dim_b/))) then
+if (mpi_grid_root((/dim_k/))) then
   wproc=.true.
   fout=trim(qnm)//"_CHI0.OUT"
   open(150,file=trim(fout),form="FORMATTED",status="REPLACE")
@@ -53,9 +53,9 @@ if (wproc) then
   endif
   write(150,*)  
   write(150,'("Included band interval (Ha)        : ",2F8.2)')&
-    chi0_include_bands(1),chi0_include_bands(2)
+    &chi0_include_bands(1),chi0_include_bands(2)
   write(150,'("Excluded band interval (Ha)        : ",2F8.2)')&
-    chi0_exclude_bands(1),chi0_exclude_bands(2) 
+    &chi0_exclude_bands(1),chi0_exclude_bands(2) 
   call flushifc(150)
 endif
   
@@ -72,7 +72,7 @@ if (wannier_chi0_chi) then
     megqwan=zzero
     call genmegqwan(iq)
     call mpi_grid_reduce(megqwan(1,1),megqwantran%nwt*ngvecme,&
-      dims=(/dim_k,dim_b/),all=.true.)
+      &dims=(/dim_k/),all=.true.)
     megqwan=megqwan/nkptnr
   endif
 endif
@@ -85,7 +85,7 @@ if (wannier_chi0_chi) then
   nwt=0
   do i=1,megqwantran%nwt
     if (abs(megqwan(i,iig0q)).ge.megqwan_cutoff(1).and.&
-        abs(megqwan(i,iig0q)).le.megqwan_cutoff(2)) then
+        &abs(megqwan(i,iig0q)).le.megqwan_cutoff(2)) then
       nwt=nwt+1
       iwt_tmp(:,nwt)=megqwantran%iwt(:,i)
       megqwan_tmp(nwt,:)=megqwan(i,:)
@@ -115,11 +115,11 @@ if (wannier_chi0_chi) then
     write(150,'("Wannier chi0 AFM : ",L1)')wannier_chi0_afm
     write(150,*)
     write(150,'("megqwan value cutoff (min,max) : ",2F12.6)')&
-      megqwan_cutoff
+      &megqwan_cutoff
     write(150,'("megqwan distance cutoff (min,max) : ",2F12.6)')&
-      megqwan_mindist,megqwan_maxdist
+      &megqwan_mindist,megqwan_maxdist
     write(150,'("Number of Wannier transitions after cutoff : ",I6)')&
-      megqwantran%nwt
+      &megqwantran%nwt
     write(150,*)
     write(150,'("<n|e^{-iqx}|n''T> where q-vector is not reduced")')    
     write(150,'(65("-"))')    
@@ -154,14 +154,14 @@ if (wannier_chi0_chi) then
         n1=megqwantran%iwt(1,n)
         n2=megqwantran%iwt(2,n)
         wann_cc(i1,n,ikloc)=wanncnrloc(n1,ist1,ikloc)*&
-          dconjg(wann_c_jk(n2,ist2,ikloc))
+          &dconjg(wann_c_jk(n2,ist2,ikloc))
       enddo
     enddo !i1
   enddo !ikloc
 endif !wannier_chi0_chi
 
 allocate(chi0(ngvecme,ngvecme))
-allocate(megqblh2(nmegqblhlocmax,ngvecme))
+allocate(megqblh2(nstsv*nstsv,ngvecme))
 
 ! distribute frequency points over 1-st dimension
 nwloc=mpi_grid_map(lr_nw,dim_k)
@@ -182,7 +182,7 @@ do iw=1,lr_nw
   call timer_start(2)
   chi0=zzero
   do ikloc=1,nkptnrloc
-    if (nmegqblhloc(1,ikloc).gt.0) then
+    if (nmegqblh(ikloc).gt.0) then
 ! for each k-point : sum over interband transitions
       call genchi0blh(ikloc,lr_w(iw),chi0)
     endif
@@ -190,8 +190,8 @@ do iw=1,lr_nw
 ! find the processor j which will get the full chi0 and chi0wan matrices
   jwloc=mpi_grid_map(lr_nw,dim_k,glob=iw,x=j)
 ! sum over k-points and band transitions
-  call mpi_grid_reduce(chi0(1,1),ngvecme*ngvecme,dims=(/dim_k,dim_b/),&
-    root=(/j,0/))
+  call mpi_grid_reduce(chi0(1,1),ngvecme*ngvecme,dims=(/dim_k/),&
+    &root=(/j/))
   chi0=chi0/nkptnr/omega
 ! processor j saves chi0 to local array  
 ! TODO: with new API this can be simplified
@@ -210,7 +210,7 @@ do iw=1,lr_nw
     enddo !ikloc
 ! sum chi0wan over all k-points
     call mpi_grid_reduce(chi0wan(1,1),megqwantran%nwt*megqwantran%nwt,&
-      dims=(/dim_k/),root=(/j/))
+      &dims=(/dim_k/),root=(/j/))
     chi0wan(:,:)=chi0wan(:,:)/nkptnr/omega
     if (wannier_chi0_afm) chi0wan(:,:)=chi0wan(:,:)*2.d0
 !!! WSTHORNTON
@@ -241,7 +241,7 @@ endif
 
 call papi_timer_stop(pt_chi0)
 
-call mpi_grid_barrier(dims=(/dim_k,dim_b/))
+call mpi_grid_barrier(dims=(/dim_k/))
 
 deallocate(chi0)
 deallocate(megqblh2)

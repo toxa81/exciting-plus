@@ -116,6 +116,8 @@ do itask=1,ntasks
     call response
   case(801)
     call crpa
+  case(802)
+    call gwmain
   case(804)
     call genscell
   case(805)

@@ -3,7 +3,7 @@ use mod_wannier
 implicit none
 
 ! dimension for interband transitions
-integer, parameter :: dim_b=3
+!integer, parameter :: dim_b=3
 
 ! number of G-vectors for matrix elements
 integer ngvecme
@@ -16,21 +16,21 @@ data expigqr22/1/
 
 ! total number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> in the Bloch basis
 ! for a given local k-point
-integer, allocatable :: nmegqblhtot(:)
+integer, allocatable :: nmegqblh(:)
 
 ! maximum total number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> 
 ! over all k-points
-integer nmegqblhtotmax
+!integer nmegqblhtotmax
 
 ! local number of interband transitions and offset (each processor along 
 ! dim_b does it's local fraction of nmegqblh(ikloc) transitions)
 !   1-st index: 1: local number of transitions
 !               2: offset to compute global index
-integer, allocatable :: nmegqblhloc(:,:)
+!integer, allocatable :: nmegqblh(:,:)
 
 ! maximum local number of matrix elements <nk|e^{-i(G+q)x}|n'k+q> 
 ! over all k-points
-integer nmegqblhlocmax
+!integer nmegqblhlocmax
 
 ! bands (n,n') for matrix elements <nk|e^{-i(G+q)x}|n'k+q>  
 !   1-st index :  1: n at k
@@ -44,6 +44,13 @@ integer, allocatable :: bmegqblh(:,:,:)
 !   2-nd index : G-vector
 !   3-rd index : k-point
 complex(8), allocatable :: megqblh(:,:,:)
+
+! adjoint matrix elements <n,k-q|e^{-i(G+q)x}|n'k> in the Bloch basis
+complex(8), allocatable :: amegqblh(:,:,:)
+! number of adjoint matrix elements 
+integer, allocatable :: namegqblh(:)
+! band indices of adjoint matrix elements
+integer, allocatable :: bamegqblh(:,:,:)
 
 ! interval of bands to take for matrix elements <nk|e^{-i(G+q)x}|n'k+q>
 real(8) megq_include_bands(2)
@@ -87,6 +94,7 @@ complex(8), allocatable :: gntuju(:,:,:)
 !  1-st index: index of k-point in BZ
 !  2-nd index: 1: index of k'=k+q-K
 !              2: index of K-vector which brings k+q to first BZ
+!              3: index of k'=k-q point
 integer, allocatable :: idxkq(:,:)
 
 type(wannier_transitions) :: megqwantran

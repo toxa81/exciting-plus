@@ -25,24 +25,21 @@ do ikloc=1,nkptnrloc
   enddo
   do i1=1,nmegqblhwan(ikloc)
     i=imegqblhwan(i1,ikloc)
-    ibloc=mpi_grid_map(nmegqblhtot(ikloc),dim_b,glob=i,x=xloc)
-    if (xloc.eq.mpi_grid_dim_pos(dim_b)) then
-      ist1=bmegqblh(1,i,ikloc)
-      ist2=bmegqblh(2,i,ikloc)
-      do n1=1,nwantot
-        do n2=1,nwantot
-          zm1(n1,n2)=dconjg(wanncnrloc(n1,ist1,ikloc))*wann_c_jk(n2,ist2,ikloc)
-        enddo
+    ist1=bmegqblh(1,i,ikloc)
+    ist2=bmegqblh(2,i,ikloc)
+    do n1=1,nwantot
+      do n2=1,nwantot
+        zm1(n1,n2)=dconjg(wanncnrloc(n1,ist1,ikloc))*wann_c_jk(n2,ist2,ikloc)
       enddo
-      do j=1,megqwantran%nwt
-        n1=megqwantran%iwt(1,j)
-        n2=megqwantran%iwt(2,j)
-        zt2=zm1(n1,n2)*expkqt(j)
-        do ig=1,ngvecme
-          megqwan(j,ig)=megqwan(j,ig)+zt2*megqblh(ibloc,ig,ikloc)
-        enddo !ig 
-      enddo !j
-    endif !xloc.eq.mpi_grid_dim_pos(dim_b)
+    enddo
+    do j=1,megqwantran%nwt
+      n1=megqwantran%iwt(1,j)
+      n2=megqwantran%iwt(2,j)
+      zt2=zm1(n1,n2)*expkqt(j)
+      do ig=1,ngvecme
+        megqwan(j,ig)=megqwan(j,ig)+zt2*megqblh(i,ig,ikloc)
+      enddo !ig 
+    enddo !j
   enddo !i1
 enddo !ikloc
 deallocate(zm1)

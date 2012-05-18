@@ -13,9 +13,6 @@ integer ig
 real(8) t1
 
 ngvecme=ngq(iq)
-!if (wproc) then
-!  write(*,'(" iq : ",I6,5X,"ngvecme : ",I6)')iq,ngvecme
-!endif
 if (allocated(tpgq)) deallocate(tpgq)
 allocate(tpgq(2,ngvecme))
 if (allocated(sfacgq)) deallocate(sfacgq)

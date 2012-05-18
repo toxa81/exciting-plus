@@ -8,7 +8,7 @@ use mod_linresp
 use mod_expigqr
 implicit none
 integer iq,i
-integer nvqloc,iqloc,ntrloc,it,itloc
+integer nvqloc,iqloc,it
 logical wproc1
 character*100 qnm,fu4
 integer nwloc,iwloc,iw
@@ -60,7 +60,7 @@ if (mpi_grid_root()) then
   write(151,'("Total number of q-vectors        : ",I6)')nvq
   write(151,'("Total number of processors       : ",I6)')nproc
   write(151,'("MPI grid size                    : ",8I6)')&
-    (mpi_grid_dim_size(i),i=1,mpi_grid_nd)
+    &(mpi_grid_dim_size(i),i=1,mpi_grid_nd)
   call flushifc(151)
 endif
 wproc=wproc1
@@ -103,8 +103,6 @@ enddo
 nwloc=mpi_grid_map(lr_nw,dim_k)
 ! distribute q-vectors along 2-nd dimention
 nvqloc=mpi_grid_map(nvq,dim_q)
-! distribute translations along 3-nd dimention
-ntrloc=mpi_grid_map(megqwantran%ntr,dim_b)
 
 if (mpi_grid_root()) then
   write(151,*)
@@ -112,10 +110,10 @@ if (mpi_grid_root()) then
   write(151,'("Number of Wannier translations : ",I6)')megqwantran%ntr
   write(*,*)
   write(*,'("[crpa] size of 4-index U matrix : ",I6," Mb")') &
-        int(16.d0*megqwantran%nwt*megqwantran%nwt*ntrloc*nwloc/1048576.d0)
+        &int(16.d0*megqwantran%nwt*megqwantran%nwt*megqwantran%ntr*nwloc/1048576.d0)
 endif
 call mpi_grid_barrier()
-allocate(u4(megqwantran%nwt,megqwantran%nwt,ntrloc,nwloc))
+allocate(u4(megqwantran%nwt,megqwantran%nwt,megqwantran%ntr,nwloc))
 u4=zzero
 if (screenu4) then
   megq_include_bands=chi0_include_bands
@@ -127,12 +125,11 @@ call papi_timer_start(pt_crpa_tot2)
 do iqloc=1,nvqloc
   iq=mpi_grid_map(nvq,dim_q,loc=iqloc)
   call genmegq(iq,.true.,.false.)
-  call genu4(iq,nwloc,ntrloc)
+  call genu4(iq,nwloc)
 enddo
 do iwloc=1,nwloc
-  do itloc=1,ntrloc
-    call mpi_grid_reduce(u4(1,1,itloc,iwloc),megqwantran%nwt*megqwantran%nwt,&
-      dims=(/dim_q/))
+  do it=1,megqwantran%ntr
+    call mpi_grid_reduce(u4(1,1,it,iwloc),megqwantran%nwt*megqwantran%nwt,dims=(/dim_q/))
   enddo
 enddo
 call papi_timer_stop(pt_crpa_tot2)
@@ -174,52 +171,42 @@ call mpi_grid_reduce(hw_values(0),1+papi_ncounters)
 if (wproc1) call papi_report(151,hw_values,"pt_vscrn")
 deallocate(hw_values)
 
-if (mpi_grid_side(dims=(/dim_k,dim_b/)).and.nwloc.gt.0) then
+if (mpi_grid_side(dims=(/dim_k/)).and.nwloc.gt.0) then
   write(fu4,'("u4_",I4.4,".hdf5")')mpi_grid_dim_pos(dim_k)
-  if (mpi_grid_root(dims=(/dim_b/))) then
-    call hdf5_create_file(trim(fu4))
-    call hdf5_create_group(trim(fu4),"/","iwloc")
-    call hdf5_create_group(trim(fu4),"/","parameters")
-    call hdf5_write(fu4,"/parameters","nwantot",nwantot)  
-    call hdf5_write(fu4,"/parameters","nw",lr_nw)
-    call hdf5_write(fu4,"/parameters","nwloc",nwloc)
-    call hdf5_write(fu4,"/parameters","x",mpi_grid_dim_pos(dim_k))
-    call hdf5_write(fu4,"/parameters","size",mpi_grid_dim_size(dim_k))
-    call hdf5_write(fu4,"/parameters","nwt",megqwantran%nwt)
-    call hdf5_write(fu4,"/parameters","iwt",megqwantran%iwt(1,1),&
-      (/5,megqwantran%nwt/))  
-    call hdf5_write(fu4,"/parameters","ngq",ngq(1))
-    call hdf5_write(fu4,"/parameters","ngridk",ngridk(1),(/3/))
-    call hdf5_write(fu4,"/parameters","ntr",megqwantran%ntr)
-    call hdf5_write(fu4,"/parameters","vtr",megqwantran%vtr(1,1),&
-      (/3,megqwantran%ntr/))
-  endif
+  call hdf5_create_file(trim(fu4))
+  call hdf5_create_group(trim(fu4),"/","iwloc")
+  call hdf5_create_group(trim(fu4),"/","parameters")
+  call hdf5_write(fu4,"/parameters","nwantot",nwantot)  
+  call hdf5_write(fu4,"/parameters","nw",lr_nw)
+  call hdf5_write(fu4,"/parameters","nwloc",nwloc)
+  call hdf5_write(fu4,"/parameters","x",mpi_grid_dim_pos(dim_k))
+  call hdf5_write(fu4,"/parameters","size",mpi_grid_dim_size(dim_k))
+  call hdf5_write(fu4,"/parameters","nwt",megqwantran%nwt)
+  call hdf5_write(fu4,"/parameters","iwt",megqwantran%iwt(1,1),&
+    &(/5,megqwantran%nwt/))  
+  call hdf5_write(fu4,"/parameters","ngq",ngq(1))
+  call hdf5_write(fu4,"/parameters","ngridk",ngridk(1),(/3/))
+  call hdf5_write(fu4,"/parameters","ntr",megqwantran%ntr)
+  call hdf5_write(fu4,"/parameters","vtr",megqwantran%vtr(1,1),&
+    &(/3,megqwantran%ntr/))
   do iwloc=1,nwloc
     iw=mpi_grid_map(lr_nw,dim_k,loc=iwloc)
     write(c1,'(I8.8)')iwloc
-    if (mpi_grid_root(dims=(/dim_b/))) then
-      call hdf5_create_group(trim(fu4),"/iwloc",c1)
-      do it=1,megqwantran%ntr
-        write(c2,'("t",I7.7)')it
-        call hdf5_create_group(trim(fu4),"/iwloc/"//c1,c2)
-      enddo
-      call hdf5_write(fu4,"/iwloc/"//c1,"iw",iw)
-      if (timgw) then
-        call hdf5_write(fu4,"/iwloc/"//c1,"w",dimag(lr_w(iw)))
-      else
-        call hdf5_write(fu4,"/iwloc/"//c1,"w",dreal(lr_w(iw)))
-      endif
+    call hdf5_create_group(trim(fu4),"/iwloc",c1)
+    do it=1,megqwantran%ntr
+      write(c2,'("t",I7.7)')it
+      call hdf5_create_group(trim(fu4),"/iwloc/"//c1,c2)
+    enddo
+    call hdf5_write(fu4,"/iwloc/"//c1,"iw",iw)
+    if (timgw) then
+      call hdf5_write(fu4,"/iwloc/"//c1,"w",dimag(lr_w(iw)))
+    else
+      call hdf5_write(fu4,"/iwloc/"//c1,"w",dreal(lr_w(iw)))
     endif
-    do i=0,mpi_grid_dim_size(dim_b)-1
-      if (i.eq.mpi_grid_dim_pos(dim_b)) then
-        do itloc=1,ntrloc
-          it=mpi_grid_map(megqwantran%ntr,dim_b,loc=itloc)
-          write(c2,'("t",I7.7)')it
-          call hdf5_write(fu4,"/iwloc/"//c1//"/"//c2,"u4",u4(1,1,itloc,iwloc),&
-            (/megqwantran%nwt,megqwantran%nwt/))
-        enddo
-      endif
-      call mpi_grid_barrier(dims=(/dim_b/))
+    do it=1,megqwantran%ntr
+      write(c2,'("t",I7.7)')it
+      call hdf5_write(fu4,"/iwloc/"//c1//"/"//c2,"u4",u4(1,1,it,iwloc),&
+        &(/megqwantran%nwt,megqwantran%nwt/))
     enddo
   enddo
 endif

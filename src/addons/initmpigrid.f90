@@ -14,23 +14,15 @@ select case(task)
       d(dim1)=nkpt
       d(dim2)=nproc/nkpt
     endif
-! linear response runs on 3D grid
-  case(800,801)
-    nd=3
+! response code also runs on a 2D grid but the total number of k-points is distributed 
+  case(800,801,802)
+    nd=2
     allocate(d(nd)); d(:)=1
-    i2=nvq
-    if (i2.eq.0) i2=nkptnr
     if (nproc.le.nkptnr) then
       d(dim1)=nproc
     else  
       d(dim1)=nkptnr
-      i1=nproc/nkptnr
-      if (i1.le.i2) then
-        d(dim2)=i1
-      else
-        d(dim2)=i2
-        d(dim3)=nproc/(nkptnr*i2)
-      endif
+      d(dim2)=nproc/nkptnr
     endif
   case default
     nd=1
