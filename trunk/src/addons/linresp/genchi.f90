@@ -16,7 +16,7 @@ character, parameter :: orb(4)=(/'s','p','d','f'/)
 complex(8), allocatable :: chi0w0(:,:)
 
 integer i,iw,j,ifxc
-integer nfxcloc,ifxcloc,nwloc,iwloc
+integer nwloc,iwloc
 integer ig
 character*100 qnm,qdir,fout
 real(8) fxca
@@ -27,7 +27,7 @@ call getqdir(iq,vqm(:,iq),qdir)
 call getqname(vqm(:,iq),qnm)
 qnm=trim(qdir)//"/"//trim(qnm)
 wproc=.false.
-if (mpi_grid_root((/dim_k,dim_b/))) then
+if (mpi_grid_root((/dim_k/))) then
   wproc=.true.
   fout=trim(qnm)//"_CHI.OUT"
   open(150,file=trim(fout),form="FORMATTED",status="REPLACE")
@@ -80,8 +80,6 @@ if (allocated(f_response)) deallocate(f_response)
 allocate(f_response(nf_response,lr_nw,nfxca))
 f_response=zzero
 
-! distribute nfxca between 2-nd dimension 
-nfxcloc=mpi_grid_map(nfxca,dim_b)
 ! distribute frequency points over 1-st dimension
 nwloc=mpi_grid_map(lr_nw,dim_k)
 
@@ -100,11 +98,8 @@ if (fxctype.eq.3) then
 endif
 do iwloc=1,nwloc
   iw=mpi_grid_map(lr_nw,dim_k,loc=iwloc)
-! broadcast chi0
-  call mpi_grid_bcast(chi0loc(1,1,iwloc),ngvecme*ngvecme,dims=(/dim_b/))
 ! loop over fxc
-  do ifxcloc=1,nfxcloc
-    ifxc=mpi_grid_map(nfxca,dim_b,loc=ifxcloc)
+  do ifxc=1,nfxca
     fxca=fxca0+(ifxc-1)*fxca1
 ! prepare fxc kernel
     fxckrnl=zzero
@@ -147,8 +142,8 @@ if (wproc) then
   call flushifc(150)
 endif
 
-call mpi_grid_reduce(f_response(1,1,1),nf_response*lr_nw*nfxca,dims=(/dim_k,dim_b/))
-if (mpi_grid_root(dims=(/dim_k,dim_b/))) then
+call mpi_grid_reduce(f_response(1,1,1),nf_response*lr_nw*nfxca,dims=(/dim_k/))
+if (mpi_grid_root(dims=(/dim_k/))) then
 ! write response functions to .dat file
   do ifxc=1,nfxca
     call write_chi(iq,vqm(1,iq),ifxc)
@@ -157,7 +152,7 @@ endif
 
 call papi_timer_stop(pt_chi)
 
-call mpi_grid_barrier(dims=(/dim_k,dim_b/))
+call mpi_grid_barrier(dims=(/dim_k/))
 
 deallocate(fxckrnl)
 deallocate(ixcft)

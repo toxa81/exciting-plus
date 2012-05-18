@@ -10,19 +10,18 @@ complex(8), intent(in) :: w
 complex(8), intent(out) :: chi0w(ngvecme,ngvecme)
 ! local variables
 logical l1
-integer i,ist1,ist2,offs,ik,jk,ig
+integer i,ist1,ist2,ik,jk,ig
 real(8) t1,t2
 complex(8), allocatable :: wt(:)
 logical, external :: bndint
 ! 
 ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
 jk=idxkq(1,ik)
-offs=nmegqblhloc(2,ikloc)
-allocate(wt(nmegqblhlocmax))
+allocate(wt(nmegqblh(ikloc)))
 wt(:)=zzero
-do i=1,nmegqblhloc(1,ikloc)
-  ist1=bmegqblh(1,i+offs,ikloc)
-  ist2=bmegqblh(2,i+offs,ikloc)
+do i=1,nmegqblh(ikloc)
+  ist1=bmegqblh(1,i,ikloc)
+  ist2=bmegqblh(2,i,ikloc)
 ! default : include all interband transitions         
   l1=.true.
 ! cRPA case : don't include bands in energy window [crpa_e1,crpa_e2]
@@ -39,13 +38,13 @@ do i=1,nmegqblhloc(1,ikloc)
 enddo !i
 call papi_timer_start(pt_megqblh2)
 do ig=1,ngvecme
-  megqblh2(:,ig)=dconjg(megqblh(:,ig,ikloc))*wt(:)
+  megqblh2(1:nmegqblh(ikloc),ig)=dconjg(megqblh(1:nmegqblh(ikloc),ig,ikloc))*wt(1:nmegqblh(ikloc))
 enddo
 call papi_timer_stop(pt_megqblh2)
 call papi_timer_start(pt_chi0_zgemm)
-call zgemm('T','N',ngvecme,ngvecme,nmegqblhloc(1,ikloc),zone,&
-  megqblh(1,1,ikloc),nmegqblhlocmax,megqblh2(1,1),nmegqblhlocmax,&
-  zone,chi0w(1,1),ngvecme)
+call zgemm('T','N',ngvecme,ngvecme,nmegqblh(ikloc),zone,&
+  &megqblh(1,1,ikloc),nstsv*nstsv,megqblh2(1,1),nstsv*nstsv,&
+  &zone,chi0w(1,1),ngvecme)
 call papi_timer_stop(pt_chi0_zgemm)
 deallocate(wt)
 return

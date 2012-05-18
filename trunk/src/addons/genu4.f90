@@ -1,4 +1,4 @@
-subroutine genu4(iq,nwloc,ntrloc)
+subroutine genu4(iq,nwloc)
 use modmain
 use mod_addons_q
 use mod_wannier
@@ -7,8 +7,7 @@ use mod_linresp
 implicit none
 integer, intent(in) :: iq
 integer, intent(in) :: nwloc
-integer, intent(in) :: ntrloc
-integer iwloc,iw,n,n1,i,ig,itloc,vtl(3),j,it
+integer iwloc,iw,n,n1,i,ig,vtl(3),j,it
 real(8) v2(3),vtc(3)
 complex(8), allocatable :: vscrn(:,:)
 complex(8), allocatable :: megqwan2(:,:)
@@ -58,21 +57,19 @@ do iwloc=1,nwloc
   iw=mpi_grid_map(lr_nw,dim_k,loc=iwloc)
 ! broadcast chi0
   if (screenu4) then
-    call mpi_grid_bcast(chi0loc(1,1,iwloc),ngvecme*ngvecme,dims=(/dim_b/))
     call genvscrn(iq,chi0loc(1,1,iwloc),krnl,vscrn,epsilon,chi)
   else
     vscrn=krnl
   endif
   call zgemm('T','N',megqwantran%nwt,ngvecme,ngvecme,zone,megqwan2,ngvecme,&
-    vscrn,ngvecme,zzero,zm1,megqwantran%nwt)
+    &vscrn,ngvecme,zzero,zm1,megqwantran%nwt)
   call zgemm('N','N',megqwantran%nwt,megqwantran%nwt,ngvecme,zone,zm1,&
-    megqwantran%nwt,megqwan3,ngvecme,zzero,zm2,megqwantran%nwt)
-  do itloc=1,ntrloc
-    it=mpi_grid_map(megqwantran%ntr,dim_b,loc=itloc)
+    &megqwantran%nwt,megqwan3,ngvecme,zzero,zm2,megqwantran%nwt)
+  do it=1,megqwantran%ntr
     v2=dble(megqwantran%vtr(:,it))
     call r3mv(avec,v2,vtc)
     zt1=exp(-zi*dot_product(vqc(:,iq),vtc))/omega/nkptnr
-    call zaxpy((megqwantran%nwt)**2,zt1,zm2(1,1),1,u4(1,1,itloc,iwloc),1)
+    call zaxpy((megqwantran%nwt)**2,zt1,zm2(1,1),1,u4(1,1,it,iwloc),1)
   enddo
 enddo
 deallocate(megqwan2)

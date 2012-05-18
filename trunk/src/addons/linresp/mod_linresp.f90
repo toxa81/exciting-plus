@@ -99,4 +99,6 @@ complex(8), allocatable :: u4(:,:,:,:)
 logical screenu4
 data screenu4/.true./
 
+complex(8), allocatable :: self_energy_c(:,:,:)
+
 end module

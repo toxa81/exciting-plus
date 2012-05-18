@@ -77,6 +77,6 @@ do i=0,mpi_grid_dim_size(dim_k)-1
     endif
   endif   
 enddo
-call mpi_grid_barrier((/dim_k,dim_b/))
+call mpi_grid_barrier((/dim_k/))
 return
 end

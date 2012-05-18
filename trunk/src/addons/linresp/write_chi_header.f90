@@ -16,7 +16,7 @@ write(fout,'("# Included band interval (Ha)        : ",2F8.2)')&
   chi0_include_bands(1),chi0_include_bands(2)
 write(fout,'("# Excluded band interval (Ha)        : ",2F8.2)')&
   chi0_exclude_bands(1),chi0_exclude_bands(2)
-write(fout,'("# Approximate number of transitions  : ",I8)')nmegqblhtotmax
+write(fout,'("# Approximate number of transitions  : ",I8)')nmegqblh(1)
 write(fout,'("#")')
 write(fout,'("# k-mesh division                    : ",3I4)') &
   ngridk(1),ngridk(2),ngridk(3)

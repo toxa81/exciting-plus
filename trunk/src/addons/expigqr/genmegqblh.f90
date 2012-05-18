@@ -1,5 +1,5 @@
 subroutine genmegqblh(iq,ikloc,ngknr1,ngknr2,igkignr1,igkignr2,wfsvmt1,wfsvmt2,&
-  wfsvit1,wfsvit2)
+  &wfsvit1,wfsvit2)
 use modmain
 use mod_addons_q
 use mod_nrkp
@@ -18,7 +18,7 @@ complex(8), intent(in) :: wfsvit2(ngkmax,nspinor,nstsv)
 
 integer wfsize
 integer ivg1(3)
-integer i,j,ik,jk,offs,igkq,n1,ispn1,ispn2,ist1,ist2,ic
+integer i,j,ik,jk,igkq,n1,ispn1,ispn2,ist1,ist2,ic
 integer ig,ig1,ig2,ias,ifg,ir
 logical l1
 complex(8), allocatable :: wftmp1(:,:)
@@ -38,17 +38,15 @@ ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
 jk=idxkq(1,ik)
 ! G_q vector 
 igkq=idxkq(2,ik)
-! offset in the global array with interband transitions
-offs=nmegqblhloc(2,ikloc)
 
 do ispn1=1,nspinor
   if (expigqr22.eq.1) ispn2=ispn1
-! index of local part of interband transitions
+! index of the interband transitions
   i=1
-! go through the local fraction of interband transitions    
-  do while (i.le.nmegqblhloc(1,ikloc))
-! left <bra| state (referred through local lindex+offset)
-    ist1=bmegqblh(1,i+offs,ikloc)
+! go through the interband transitions    
+  do while (i.le.nmegqblh(ikloc))
+! left <bra| state 
+    ist1=bmegqblh(1,i,ikloc)
     wftmp1=zzero
     l1=.true.
     if (spinpol) then
@@ -65,7 +63,7 @@ do ispn1=1,nspinor
           b2=zzero
           do j=1,ngntuju(ic,ig)
             b2(igntuju(2,j,ic,ig))=b2(igntuju(2,j,ic,ig))+&
-              b1(igntuju(1,j,ic,ig))*gntuju(j,ic,ig)
+              &b1(igntuju(1,j,ic,ig))*gntuju(j,ic,ig)
           enddo
           wftmp1((ias-1)*lmmaxvr*nufrmax+1:ias*lmmaxvr*nufrmax,ig)=b2(:)
         enddo !ias
@@ -99,9 +97,9 @@ do ispn1=1,nspinor
     call timer_start(5)
     n1=0
 ! collect right |ket> states into matrix wftmp2
-    do while ((i+n1).le.nmegqblhloc(1,ikloc))
-      if (bmegqblh(1,i+offs+n1,ikloc).ne.bmegqblh(1,i+offs,ikloc)) exit
-      ist2=bmegqblh(2,i+offs+n1,ikloc)
+    do while ((i+n1).le.nmegqblh(ikloc))
+      if (bmegqblh(1,i+n1,ikloc).ne.bmegqblh(1,i,ikloc)) exit
+      ist2=bmegqblh(2,i+n1,ikloc)
       n1=n1+1
       call memcopy(wfsvmt2(1,1,1,ispn2,ist2),wftmp2(1,n1),16*lmmaxvr*nufrmax*natmtot)
       call memcopy(wfsvit2(1,ispn2,ist2),wftmp2(lmmaxvr*nufrmax*natmtot+1,n1),16*ngknr2)
@@ -109,7 +107,7 @@ do ispn1=1,nspinor
 ! update several matrix elements by doing matrix*matrix operation
 !  me(ib,ig)=wftmp2(ig2,ib)^{T}*wftmp1(ig2,ig)
     call zgemm('T','N',n1,ngvecme,wfsize,zone,wftmp2,wfsize,wftmp1,wfsize,&
-      zone,megqblh(i,1,ikloc),nmegqblhlocmax)
+      &zone,megqblh(i,1,ikloc),nstsv*nstsv)
     i=i+n1
     call timer_stop(5)
   enddo !while
