@@ -89,7 +89,7 @@ do ikloc=1,nkptnrloc
         do iw=1,lr_nw
           self_energy_c(iw,n,ikloc)=self_energy_c(iw,n,ikloc)-dconjg(amegqblh(i,ig1,ikloc))*vhgq(ig1,iq)*&
             &ppa_r(ig1,ig2)*(occsvnr(j,jk)/(evalsvnr(j,jk)-dconjg(lr_w(iw))-ppa_w(ig1,ig2)) - &
-            &(occmax-occsvnr(j,jk))*(evalsvnr(j,jk)-lr_w(iw)+ppa_w(ig1,ig2)))*amegqblh(i,ig2,ikloc)
+            &(occmax-occsvnr(j,jk))/(evalsvnr(j,jk)-lr_w(iw)+ppa_w(ig1,ig2)))*amegqblh(i,ig2,ikloc)
         enddo
       enddo
     enddo
