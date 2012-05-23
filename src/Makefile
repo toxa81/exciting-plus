@@ -12,16 +12,16 @@ include ../make.inc
 # modules
 SRC_modules = ./addons/mod_mpi_grid.f90 \
               ./addons/mod_timer.f90 \
-              ./addons/mod_addons.f90 \
-              ./addons/mod_addons_q.f90 \
               ./addons/mod_papi.f90 \
               ./addons/mod_hdf5.f90 \
+              ./addons/mod_addons.f90 \
               ./modmain.f90 \
               ./addons/mod_seceqn.f90 \
               ./addons/wann/mod_wannier.f90 \
+              ./addons/mod_nrkp.f90 \
+              ./addons/mod_addons_q.f90 \
               ./addons/expigqr/mod_expigqr.f90 \
               ./addons/linresp/mod_linresp.f90 \
-              ./addons/mod_nrkp.f90 \
               ./addons/mod_madness.f90 \
               ./modqpt.f90 \
               ./libxc_funcs.f90 \
