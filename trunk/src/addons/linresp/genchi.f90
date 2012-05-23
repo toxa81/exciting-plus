@@ -66,16 +66,16 @@ if (wannier_chi0_chi) then
   vcwan=zzero
   do i=1,megqwantran%nwt
     do j=1,megqwantran%nwt
-      do ig=1,ngvecme
+      do ig=1,ngq(iq)
         vcwan(i,j)=vcwan(i,j)+dconjg(megqwan(i,ig))*megqwan(j,ig)*vhgq(ig,iq)
       enddo
     enddo
   enddo
 endif !wannier_chi0_chi
 
-allocate(fxckrnl(ngvecme,ngvecme))
+allocate(fxckrnl(ngq(iq),ngq(iq)))
 allocate(ixcft(ngvec))
-allocate(chi0w0(ngvecme,ngvecme))
+allocate(chi0w0(ngq(iq),ngq(iq)))
 if (allocated(f_response)) deallocate(f_response)
 allocate(f_response(nf_response,lr_nw,nfxca))
 f_response=zzero
@@ -94,7 +94,7 @@ call timer_reset(8)
 if (fxctype.eq.3) then
   chi0w0=zzero
   if (mpi_grid_root()) chi0w0=chi0loc(:,:,1)
-  call mpi_grid_bcast(chi0w0(1,1),ngvecme*ngvecme)
+  call mpi_grid_bcast(chi0w0(1,1),ngq(iq)*ngq(iq))
 endif
 do iwloc=1,nwloc
   iw=mpi_grid_map(lr_nw,dim_k,loc=iwloc)
@@ -104,7 +104,7 @@ do iwloc=1,nwloc
 ! prepare fxc kernel
     fxckrnl=zzero
     if (lrtype.eq.0) then
-      do ig=1,ngvecme
+      do ig=1,ngq(iq)
         if (fxctype.eq.1) then
           fxckrnl(ig,ig)=fxckrnl(ig,ig)-fxca/2.d0
         endif
@@ -146,7 +146,7 @@ call mpi_grid_reduce(f_response(1,1,1),nf_response*lr_nw*nfxca,dims=(/dim_k/))
 if (mpi_grid_root(dims=(/dim_k/))) then
 ! write response functions to .dat file
   do ifxc=1,nfxca
-    call write_chi(iq,vqm(1,iq),ifxc)
+    call write_response_f(iq,vqm(1,iq),ifxc)
   enddo
 endif
 

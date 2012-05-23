@@ -91,8 +91,9 @@ integer, parameter :: f_chi_wann             = 15
 integer, parameter :: f_epsilon_eff_wann     = 16
 integer, parameter :: f_sigma_wann           = 17
 integer, parameter :: f_loss_wann            = 18
+integer, parameter :: f_epsilon_inv_GqGq     = 19
 
-integer, parameter :: nf_response            = 18
+integer, parameter :: nf_response            = 19
 complex(8), allocatable :: f_response(:,:,:)
 
 complex(8), allocatable :: u4(:,:,:,:)
@@ -100,5 +101,58 @@ logical screenu4
 data screenu4/.true./
 
 complex(8), allocatable :: self_energy_c(:,:,:)
+
+contains
+
+subroutine genchi0blh(ikloc,ngq,w,chi0w)
+use modmain
+use mod_nrkp
+use mod_expigqr
+implicit none
+! arguments
+integer, intent(in) :: ikloc
+integer, intent(in) :: ngq
+complex(8), intent(in) :: w
+complex(8), intent(out) :: chi0w(ngq,ngq)
+! local variables
+logical l1
+integer i,ist1,ist2,ik,jk,ig
+real(8) t1,t2
+complex(8), allocatable :: wt(:)
+logical, external :: bndint
+! 
+ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+jk=idxkq(1,ik)
+allocate(wt(nmegqblh(ikloc)))
+wt(:)=zzero
+do i=1,nmegqblh(ikloc)
+  ist1=bmegqblh(1,i,ikloc)
+  ist2=bmegqblh(2,i,ikloc)
+! default : include all interband transitions         
+  l1=.true.
+! cRPA case : don't include bands in energy window [crpa_e1,crpa_e2]
+  if (bndint(ist1,evalsvnr(ist1,ik),chi0_exclude_bands(1),&
+      chi0_exclude_bands(2)).and.bndint(ist2,evalsvnr(ist2,jk),&
+      chi0_exclude_bands(1),chi0_exclude_bands(2))) l1=.false.
+  if (l1) then
+    t1=occsvnr(ist1,ik)-occsvnr(ist2,jk)
+    if (abs(t1).gt.1d-6) then
+      t2=sign(scissor,t1)
+      wt(i)=t1/(evalsvnr(ist1,ik)-evalsvnr(ist2,jk)-t2+w)
+    endif
+  endif
+enddo !i
+call papi_timer_start(pt_megqblh2)
+do ig=1,ngq
+  megqblh2(1:nmegqblh(ikloc),ig)=dconjg(megqblh(1:nmegqblh(ikloc),ig,ikloc))*wt(1:nmegqblh(ikloc))
+enddo
+call papi_timer_stop(pt_megqblh2)
+call papi_timer_start(pt_chi0_zgemm)
+call zgemm('T','N',ngq,ngq,nmegqblh(ikloc),zone,megqblh(1,1,ikloc),nstsv*nstsv,&
+  &megqblh2(1,1),nstsv*nstsv,zone,chi0w(1,1),ngq)
+call papi_timer_stop(pt_chi0_zgemm)
+deallocate(wt)
+return
+end subroutine
 
 end module
