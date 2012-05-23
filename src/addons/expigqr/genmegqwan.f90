@@ -14,7 +14,7 @@ real(8), allocatable :: vtrc(:,:)
 allocate(vtrc(3,megqwantran%nwt))
 do j=1,megqwantran%nwt
   vtrc(:,j)=avec(:,1)*megqwantran%iwt(3,j)+avec(:,2)*megqwantran%iwt(4,j)+&
-    avec(:,3)*megqwantran%iwt(5,j)
+    &avec(:,3)*megqwantran%iwt(5,j)
 enddo
 allocate(zm1(nwantot,nwantot))
 allocate(expkqt(megqwantran%nwt))
@@ -36,7 +36,7 @@ do ikloc=1,nkptnrloc
       n1=megqwantran%iwt(1,j)
       n2=megqwantran%iwt(2,j)
       zt2=zm1(n1,n2)*expkqt(j)
-      do ig=1,ngvecme
+      do ig=1,ngq(iq)
         megqwan(j,ig)=megqwan(j,ig)+zt2*megqblh(i,ig,ikloc)
       enddo !ig 
     enddo !j

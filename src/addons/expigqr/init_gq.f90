@@ -12,16 +12,16 @@ real(8) v1(3)
 integer ig
 real(8) t1
 
-ngvecme=ngq(iq)
 if (allocated(tpgq)) deallocate(tpgq)
-allocate(tpgq(2,ngvecme))
+allocate(tpgq(2,ngq(iq)))
 if (allocated(sfacgq)) deallocate(sfacgq)
-allocate(sfacgq(ngvecme,natmtot))
+allocate(sfacgq(ngq(iq),natmtot))
 if (allocated(ylmgq)) deallocate(ylmgq)
-allocate(ylmgq(lmmaxexp,ngvecme))
+allocate(ylmgq(lmmaxexp,ngq(iq)))
 ! check if we have enough G-shells to bring q-vector back to first BZ
+iig0q=-1
 if (tg0q) then
-  do ig=1,ngvecme
+  do ig=1,ngq(iq)
     if (igqig(ig,iq).eq.ig0q(iq)) then
       iig0q=ig
       goto 20
@@ -35,14 +35,14 @@ if (tg0q) then
   write(*,'(" |G0+q| : ",G18.10)')sqrt(v1(1)**2+v1(2)**2+v1(3)**2)
   write(*,'(" gqmax : ",G18.10)')gqmax
   write(*,'(" gqsh : ",I4)')gqsh
-  write(*,'(" ngvecme: ",I4)')ngvecme    
+  write(*,'(" ngq(iq): ",I4)')ngq(iq)    
   write(*,*)
   call pstop
   20 continue
 endif
 
 ! generate spherical harmonics for G+q vectors
-do ig=1,ngvecme
+do ig=1,ngq(iq)
 ! get spherical coordinates and length of G+q
   call sphcrd(vgqc(:,ig,iq),t1,tpgq(:,ig))
 ! generate spherical harmonics for G+q'
@@ -50,7 +50,7 @@ do ig=1,ngvecme
 enddo
 
 ! generate structure factor for G+q vectors
-call gensfacgp(ngvecme,vgqc(1,1,iq),ngvecme,sfacgq)
+call gensfacgp(ngq(iq),vgqc(1,1,iq),ngq(iq),sfacgq)
 
 return
 end

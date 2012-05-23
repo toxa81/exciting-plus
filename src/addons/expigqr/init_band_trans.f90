@@ -1,9 +1,12 @@
-subroutine init_band_trans
+subroutine init_band_trans(allibt)
 use modmain
 use mod_wannier
 use mod_expigqr
 use mod_nrkp
 implicit none
+!
+logical, intent(in) :: allibt
+!
 integer ikloc,i,ik,jk,ist1,ist2
 logical, external :: wann_diel
 !
@@ -21,7 +24,7 @@ if (wannier_megq) then
   allocate(imegqblhwan(nstsv*nstsv,nkptnrloc))
   imegqblhwan=0
 endif
-call getmeidx
+call getmeidx(allibt)
 if (wannier_megq) then
   nmegqblhwanmax=maxval(nmegqblhwan)
 endif
