@@ -29,11 +29,12 @@ endif
 call papi_timer_start(pt_crpa_tot1)
 wannier_megq=.true.
 if (screenu4) then
-  call init_qbz(tq0bz,8)
+  call init_q_mesh(8)
 else
-  call init_qbz(tq0bz,1)
+  call init_q_mesh(1)
 endif
-call init_q_gq
+call genvq
+call genvgq
 ! create q-directories
 if (mpi_grid_root()) then
   call system("mkdir -p q")
@@ -44,14 +45,7 @@ if (mpi_grid_root()) then
 endif
 ! read the density and potentials from file
 call readstate
-! find the new linearisation energies
-call linengy
-! generate the APW radial functions
-call genapwfr
-! generate the local-orbital radial functions
-call genlofr
-call getufr
-call genufrp
+call genradf
 wproc1=.false.
 if (mpi_grid_root()) then
   wproc1=.true.
@@ -81,24 +75,7 @@ endif
 call genwantran(megqwantran,megqwan_mindist,megqwan_maxdist,allwt=.true.)
 ! setup energy mesh
 if (.not.screenu4) lr_nw=1
-if (lr_nw.eq.1) then
-  lr_dw=0.d0
-else
-  if (timgw) then
-    lr_dw=(lr_iw1-lr_iw0)/(lr_nw-1)
-  else
-    lr_dw=(lr_w1-lr_w0)/(lr_nw-1)
-  endif
-endif
-if (allocated(lr_w)) deallocate(lr_w)
-allocate(lr_w(lr_nw))
-do i=1,lr_nw
-  if (timgw) then
-    lr_w(i)=zi*(lr_iw0+lr_dw*(i-1))/ha2ev
-  else
-    lr_w(i)=dcmplx(lr_w0+lr_dw*(i-1),lr_eta)/ha2ev
-  endif
-enddo
+call gen_w_mesh
 ! distribute frequency points over 1-st dimension
 nwloc=mpi_grid_map(lr_nw,dim_k)
 ! distribute q-vectors along 2-nd dimention
@@ -124,7 +101,7 @@ call papi_timer_start(pt_crpa_tot2)
 ! main loop over q-points
 do iqloc=1,nvqloc
   iq=mpi_grid_map(nvq,dim_q,loc=iqloc)
-  call genmegq(iq,.true.,.false.)
+  call genmegq(iq,.true.,.true.,.false.)
   call genu4(iq,nwloc)
 enddo
 do iwloc=1,nwloc

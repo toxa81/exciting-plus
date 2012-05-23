@@ -70,7 +70,7 @@ if (wproc1) then
   write(151,'("Total number of q-vectors        : ",I6)')nvq
   write(151,'("Total number of processors       : ",I6)')nproc
   write(151,'("MPI grid size                    : ",8I6)')&
-    (mpi_grid_dim_size(i),i=1,mpi_grid_nd)
+    &(mpi_grid_dim_size(i),i=1,mpi_grid_nd)
   write(151,'("Wannier functions                : ",L1)')wannier
   write(151,'("Response in Wannier basis        : ",L1)')wannier_chi0_chi
   call flushifc(151)
@@ -106,13 +106,14 @@ allocate(lr_w(lr_nw))
 do i=1,lr_nw
   lr_w(i)=dcmplx(lr_w0+lr_dw*(i-1),lr_eta)/ha2ev
 enddo
-call init_q_gq
+call genvq
+call genvgq
 megq_include_bands=chi0_include_bands
 ! distribute q-vectors along 3-rd dimention
 nvqloc=mpi_grid_map(nvq,dim_q)
 do iqloc=1,nvqloc
   iq=mpi_grid_map(nvq,dim_q,loc=iqloc)
-  call genmegq(iq,.true.,.true.)
+  call genmegq(iq,.true.,.true.,.false.)
   call genchi0(iq)
   call genchi(iq)
 enddo
