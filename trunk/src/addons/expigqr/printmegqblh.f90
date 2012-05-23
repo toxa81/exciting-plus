@@ -2,6 +2,7 @@ subroutine printmegqblh(iq)
 use modmain
 use mod_wannier
 use mod_expigqr
+use mod_addons_q
 implicit none
 integer, intent(in) :: iq
 integer i,ig,ikloc,ik,iboffs
@@ -18,12 +19,12 @@ if (iproc.eq.0) then
       do ist1=1,nstsv
         do i=1,nmegqblh(ikloc)
           if (bmegqblh(1,i,ikloc).eq.ist1.and.&
-              bmegqblh(2,i,ikloc).eq.ist2) then
+              &bmegqblh(2,i,ikloc).eq.ist2) then
             write(200,'("    ist1 : ",I4)')ist1
-            do ig=1,ngvecme
+            do ig=1,ngq(iq)
               write(200,'("      ig : ",I4,"   ",3G18.10)')&
-                ig,dreal(megqblh(i,ig,ikloc)),-dimag(megqblh(i,ig,ikloc)),&
-                abs(megqblh(i,ig,ikloc))**2
+                &ig,dreal(megqblh(i,ig,ikloc)),-dimag(megqblh(i,ig,ikloc)),&
+                &abs(megqblh(i,ig,ikloc))**2
             enddo
           endif
         enddo

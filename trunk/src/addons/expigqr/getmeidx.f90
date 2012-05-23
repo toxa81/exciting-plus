@@ -1,8 +1,10 @@
-subroutine getmeidx
+subroutine getmeidx(allibt)
 use modmain
 use mod_nrkp
 use mod_expigqr
 implicit none
+!
+logical, intent(in) :: allibt
 ! local variables
 integer i,ik,jk,ist1,ist2,ikloc,n,i1,i2,n1,n2
 logical laddibt,ldocc,laddme,lwanibt
@@ -44,13 +46,14 @@ do ikloc=1,nkptnrloc
       lwanibt=.false.
 ! include transition between bands ist1 and ist2 when:
 !  1) both bands ist1 and ist2 fall into energy interval and
-!     difference of band occupation numbers in not zero  
+!     difference of band occupation numbers in not zero or all
+!     interband transitions are required  
       le1=bndint(ist1,evalsvnr(ist1,ik),megq_include_bands(1),&
         megq_include_bands(2))
       le2=bndint(ist2,evalsvnr(ist2,jk),megq_include_bands(1),&
         megq_include_bands(2))
       ldocc=abs(occsvnr(ist1,ik)-occsvnr(ist2,jk)).gt.1d-6
-      laddibt=(le1.and.le2.and.ldocc)
+      laddibt=(le1.and.le2.and.ldocc).or.allibt
 !  2) this bands are necessary to compute matrix elements in Wannier basis
       if (wannier_megq) then
 ! if this bands contribute to at least one Wannier function

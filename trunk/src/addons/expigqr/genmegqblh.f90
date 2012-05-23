@@ -27,7 +27,7 @@ complex(8), allocatable :: wfir1(:)
 complex(8) b1(lmmaxvr*nufrmax),b2(lmmaxvr*nufrmax)
 
 wfsize=lmmaxvr*nufrmax*natmtot+ngknr2
-allocate(wftmp1(wfsize,ngvecme))
+allocate(wftmp1(wfsize,ngq(iq)))
 allocate(wftmp2(wfsize,nstsv))
 allocate(wfir1(ngrtot))
 call papi_timer_start(pt_megqblh)
@@ -55,7 +55,7 @@ do ispn1=1,nspinor
     if (l1) then
       call timer_start(3)
       call papi_timer_start(pt_megqblh_mt)
-      do ig=1,ngvecme
+      do ig=1,ngq(iq)
 ! precompute muffint-tin part of \psi_1^{*}(r)*e^{-i(G+q)r}
         do ias=1,natmtot
           b1=dconjg(wfsvmt1(:,ias,ispn1,ist1)*sfacgq(ig,ias))
@@ -83,7 +83,7 @@ do ispn1=1,nspinor
         wfir1(ir)=wfir1(ir)*cfunir(ir)
       enddo
       call zfftifc(3,ngrid,-1,wfir1)
-      do ig=1,ngvecme
+      do ig=1,ngq(iq)
         do ig2=1,ngknr2
 ! G1=G2-G-Gkq
           ivg1(:)=ivg(:,igkignr2(ig2))-ivg(:,igqig(ig,iq))-ivg(:,igkq)
@@ -106,7 +106,7 @@ do ispn1=1,nspinor
     enddo !while
 ! update several matrix elements by doing matrix*matrix operation
 !  me(ib,ig)=wftmp2(ig2,ib)^{T}*wftmp1(ig2,ig)
-    call zgemm('T','N',n1,ngvecme,wfsize,zone,wftmp2,wfsize,wftmp1,wfsize,&
+    call zgemm('T','N',n1,ngq(iq),wfsize,zone,wftmp2,wfsize,wftmp1,wfsize,&
       &zone,megqblh(i,1,ikloc),nstsv*nstsv)
     i=i+n1
     call timer_stop(5)
