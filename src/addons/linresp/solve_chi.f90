@@ -6,8 +6,8 @@ use mod_linresp
 implicit none
 integer, intent(in) :: iq
 complex(8), intent(in) :: w
-complex(8), intent(in) :: chi0m(ngvecme,ngvecme)
-complex(8), intent(inout) :: krnl(ngvecme,ngvecme)
+complex(8), intent(in) :: chi0m(ngq(iq),ngq(iq))
+complex(8), intent(inout) :: krnl(ngq(iq),ngq(iq))
 complex(8), intent(out) :: f_response_(nf_response)
 ! local variables
 complex(8), allocatable :: epsilon(:,:)
@@ -25,7 +25,7 @@ integer i,ig
 
 ! construct full kernel
 if (lrtype.eq.0) then
-  do ig=1,ngvecme
+  do ig=1,ngq(iq)
     krnl(ig,ig)=krnl(ig,ig)+vhgq(ig,iq)
   enddo
 endif
@@ -33,8 +33,8 @@ endif
 !if (lrtype.eq.1) then
 !  call genixc(ixcft)
 ! contruct Ixc_{G,G'}=Ixc(G-G')
-!  do i=1,ngvecme
-!    do j=1,ngvecme
+!  do i=1,ngq(iq)
+!    do j=1,ngq(iq)
 !      iv(:)=-ivg(:,gvecchi1+i-1)+ivg(:,gvecchi1+j-1)
 !      krnl_rpa(i,j)=ixcft(ivgig(iv(1),iv(2),iv(3)))
 !    enddo
@@ -48,35 +48,37 @@ if (lrtype.eq.1) then
   call pstop
 endif
 
-allocate(epsilon(ngvecme,ngvecme))
-allocate(mtrx1(ngvecme,ngvecme))
-allocate(zm1(ngvecme,ngvecme))
-allocate(zm2(ngvecme,ngvecme))
+allocate(epsilon(ngq(iq),ngq(iq)))
+allocate(mtrx1(ngq(iq),ngq(iq)))
+allocate(zm1(ngq(iq),ngq(iq)))
+allocate(zm2(ngq(iq),ngq(iq)))
 
 ! save chi0_GqGq
 f_response_(f_chi0)=chi0m(iig0q,iig0q)
 ! compute matrix 1-chi0*(v+fxc) 
 epsilon=zzero
-do i=1,ngvecme
+do i=1,ngq(iq)
   epsilon(i,i)=zone
 enddo
-call zgemm('N','N',ngvecme,ngvecme,ngvecme,dcmplx(-1.d0,0.d0), &
-  chi0m,ngvecme,krnl,ngvecme,zone,epsilon,ngvecme)
+call zgemm('N','N',ngq(iq),ngq(iq),ngq(iq),dcmplx(-1.d0,0.d0), &
+  &chi0m,ngq(iq),krnl,ngq(iq),zone,epsilon,ngq(iq))
 ! save epsilon_matrix_GqGq
 f_response_(f_epsilon_matrix_GqGq)=epsilon(iig0q,iig0q)
 ! save epsilon_scalar_GqGq
 f_response_(f_epsilon_scalar_GqGq)=1.d0-chi0m(iig0q,iig0q)*krnl(iig0q,iig0q)
 ! invert epsilon matrix
-call invzge(epsilon,ngvecme)
+call invzge(epsilon,ngq(iq))
 ! save 1/(epsilon^-1)_{GqGq}
 f_response_(f_inv_epsilon_inv_GqGq)=1.d0/epsilon(iig0q,iig0q)
+! save (epsilon^-1)_{GqGq}
+f_response_(f_epsilon_inv_GqGq)=epsilon(iig0q,iig0q)-zone
 ! save chi_scalar
 f_response_(f_chi_scalar)=chi0m(iig0q,iig0q)/f_response_(f_epsilon_scalar_GqGq)
 ! save chi_pseudo_scalar
 f_response_(f_chi_pseudo_scalar)=chi0m(iig0q,iig0q)/f_response_(f_epsilon_matrix_GqGq)
 ! compute chi=epsilon^-1 * chi0
-call zgemm('N','N',ngvecme,ngvecme,ngvecme,dcmplx(1.d0,0.d0), &
-  epsilon,ngvecme,chi0m,ngvecme,dcmplx(0.d0,0.d0),mtrx1,ngvecme)
+call zgemm('N','N',ngq(iq),ngq(iq),ngq(iq),dcmplx(1.d0,0.d0), &
+  &epsilon,ngq(iq),chi0m,ngq(iq),dcmplx(0.d0,0.d0),mtrx1,ngq(iq))
 ! save chi
 f_response_(f_chi)=mtrx1(iig0q,iig0q)
 ! save epsilon_eff
@@ -95,28 +97,28 @@ f_response_(f_loss_scalar)=1.d0/f_response_(f_epsilon_eff_scalar)
 !! compute screened Coulomb potential: vscr=vbare+vbare*chi*vbare
 !  krnl_scr=krnl
 !! compute zm2=chi*v
-!  call zgemm('N','N',ngvecme,ngvecme,ngvecme,dcmplx(1.d0,0.d0), &
-!    mtrx1,ngvecme,krnl,ngvecme,dcmplx(0.d0,0.d0),zm2,ngvecme)
+!  call zgemm('N','N',ngq(iq),ngq(iq),ngq(iq),dcmplx(1.d0,0.d0), &
+!    mtrx1,ngq(iq),krnl,ngq(iq),dcmplx(0.d0,0.d0),zm2,ngq(iq))
 !! compute krnl_scr=v*zm2
-!  call zgemm('N','N',ngvecme,ngvecme,ngvecme,dcmplx(1.d0,0.d0), &
-!    krnl,ngvecme,zm2,ngvecme,dcmplx(1.d0,0.d0),krnl_scr,ngvecme)
+!  call zgemm('N','N',ngq(iq),ngq(iq),ngq(iq),dcmplx(1.d0,0.d0), &
+!    krnl,ngq(iq),zm2,ngq(iq),dcmplx(1.d0,0.d0),krnl_scr,ngq(iq))
 !! compute screened Coulomb potential using "symmetrized" dielectric function
-!  do ig1=1,ngvecme
-!    do ig2=1,ngvecme
+!  do ig1=1,ngq(iq)
+!    do ig2=1,ngq(iq)
 !      epsilon(ig1,ig2)=-vcgq(ig1)*chi0m(ig1,ig2)*vcgq(ig2)
 !    enddo
 !    epsilon(ig1,ig1)=dcmplx(1.d0,0.d0)+epsilon(ig1,ig1)
 !  enddo
-!  call invzge(epsilon,ngvecme)
-!  do ig1=1,ngvecme
-!    do ig2=1,ngvecme
+!  call invzge(epsilon,ngq(iq))
+!  do ig1=1,ngq(iq)
+!    do ig2=1,ngq(iq)
 !      zm1(ig1,ig2)=vcgq(ig1)*epsilon(ig1,ig2)*vcgq(ig2)
 !    enddo
 !  enddo
 !! compute difference
 !  d1=0.d0
-!  do ig1=1,ngvecme
-!    do ig2=1,ngvecme
+!  do ig1=1,ngq(iq)
+!    do ig2=1,ngq(iq)
 !      d1=d1+abs(krnl_scr(ig1,ig2)-zm1(ig1,ig2))
 !    enddo
 !  enddo

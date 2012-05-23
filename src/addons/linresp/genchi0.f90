@@ -71,14 +71,14 @@ if (wannier_chi0_chi) then
   if (all(vqm(:,iq).eq.0)) then
     megqwan=zzero
     call genmegqwan(iq)
-    call mpi_grid_reduce(megqwan(1,1),megqwantran%nwt*ngvecme,&
+    call mpi_grid_reduce(megqwan(1,1),megqwantran%nwt*ngq(iq),&
       &dims=(/dim_k/),all=.true.)
     megqwan=megqwan/nkptnr
   endif
 endif
 ! filter matrix elements
 if (wannier_chi0_chi) then
-  allocate(megqwan_tmp(megqwantran%nwt,ngvecme))
+  allocate(megqwan_tmp(megqwantran%nwt,ngq(iq)))
   megqwan_tmp=zzero
   allocate(iwt_tmp(5,megqwantran%nwt))
   iwt_tmp=0
@@ -96,7 +96,7 @@ if (wannier_chi0_chi) then
   allocate(megqwantran%iwt(5,nwt))
   megqwantran%iwt(:,1:nwt)=iwt_tmp(:,1:nwt)
   deallocate(megqwan)
-  allocate(megqwan(nwt,ngvecme))
+  allocate(megqwan(nwt,ngq(iq)))
   megqwan(1:nwt,:)=megqwan_tmp(1:nwt,:)
   deallocate(iwt_tmp,megqwan_tmp)
 endif
@@ -160,13 +160,13 @@ if (wannier_chi0_chi) then
   enddo !ikloc
 endif !wannier_chi0_chi
 
-allocate(chi0(ngvecme,ngvecme))
-allocate(megqblh2(nstsv*nstsv,ngvecme))
+allocate(chi0(ngq(iq),ngq(iq)))
+allocate(megqblh2(nstsv*nstsv,ngq(iq)))
 
 ! distribute frequency points over 1-st dimension
 nwloc=mpi_grid_map(lr_nw,dim_k)
 if (allocated(chi0loc)) deallocate(chi0loc)
-allocate(chi0loc(ngvecme,ngvecme,nwloc))
+allocate(chi0loc(ngq(iq),ngq(iq),nwloc))
 if (wannier_chi0_chi) then
   if (allocated(chi0wanloc)) deallocate(chi0wanloc)
   allocate(chi0wanloc(megqwantran%nwt,megqwantran%nwt,nwloc))
@@ -184,13 +184,13 @@ do iw=1,lr_nw
   do ikloc=1,nkptnrloc
     if (nmegqblh(ikloc).gt.0) then
 ! for each k-point : sum over interband transitions
-      call genchi0blh(ikloc,lr_w(iw),chi0)
+      call genchi0blh(ikloc,ngq(iq),lr_w(iw),chi0)
     endif
   enddo
 ! find the processor j which will get the full chi0 and chi0wan matrices
   jwloc=mpi_grid_map(lr_nw,dim_k,glob=iw,x=j)
 ! sum over k-points and band transitions
-  call mpi_grid_reduce(chi0(1,1),ngvecme*ngvecme,dims=(/dim_k/),&
+  call mpi_grid_reduce(chi0(1,1),ngq(iq)*ngq(iq),dims=(/dim_k/),&
     &root=(/j/))
   chi0=chi0/nkptnr/omega
 ! processor j saves chi0 to local array  

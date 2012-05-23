@@ -1,4 +1,4 @@
-subroutine write_chi(iq,ivq0m,ifxc)
+subroutine write_response_f(iq,ivq0m,ifxc)
 use modmain
 use mod_addons_q
 use mod_expigqr
@@ -30,18 +30,18 @@ call getqname(ivq0m,qnm)
 qnm=trim(qdir)//"/"//trim(qnm)
 t1=sqrt(vqcnr(1,iq)**2+vqcnr(2,iq)**2+vqcnr(3,iq)**2)/au2ang
 write(c2,'(F7.3)')fxca
-write(c3,'(I8)')ngvecme
+write(c3,'(I8)')ngq(iq)
 write(c4,'(F6.3)')t1
 write(c5,'(F5.3)')lr_eta
 
 if (lrtype.eq.0) then
   fname=trim(qnm)//"__"//trim(adjustl(c4))//"__G_"//trim(adjustl(c3))//&
-    "__A_"//trim(adjustl(c2))//"__.dat"
+    &"__A_"//trim(adjustl(c2))//"__.dat"
 else
   fname=trim(qnm)//"_A"//c2//"_s"//c1//".dat"
 endif
 open(160,file=trim(fname),form='formatted',status='replace')
-call write_chi_header(160,iq,fxca)
+call write_response_f_header(160,iq,fxca)
 write(160,'("#")')
 write(160,'("# f-sum rule : ",G18.10)')fsum
 write(160,'("# 2*Pi^2*rho_avg : ",G18.10)')2*pi*pi*(chgval/omega)
@@ -66,7 +66,7 @@ write(160,'("#  16:  Im sigma_scalar [eV]           ")')
 write(160,'("#  17:  loss_function                  ")')
 write(160,'("#  18:  loss_function_scalar           ")')
 write(160,'("#")')
-allocate(func(18,lr_nw))
+allocate(func(20,lr_nw))
 do ie=1,lr_nw
   func(1,ie)=dreal(lr_w(ie))*ha2ev
   func(2,ie)=-dreal(f_response(f_chi0,ie,ifxc))/ha2ev/(au2ang)**3
@@ -86,19 +86,21 @@ do ie=1,lr_nw
   func(16,ie)=dimag(f_response(f_sigma_scalar,ie,ifxc))*ha2ev
   func(17,ie)=-dimag(f_response(f_loss,ie,ifxc))
   func(18,ie)=-dimag(f_response(f_loss_scalar,ie,ifxc))
-  write(160,'(18G14.6)')func(1:18,ie)
+  func(19,ie)=dreal(f_response(f_epsilon_inv_GqGq,ie,ifxc))
+  func(20,ie)=dimag(f_response(f_epsilon_inv_GqGq,ie,ifxc))
+  write(160,'(20G14.6)')func(1:20,ie)
 enddo
 deallocate(func)
 close(160)
 if (wannier_chi0_chi) then
   if (lrtype.eq.0) then
     fname=trim(qnm)//"__"//trim(adjustl(c4))//"__G_"//trim(adjustl(c3))//&
-      "__A_"//trim(adjustl(c2))//"__wann__.dat"
+      &"__A_"//trim(adjustl(c2))//"__wann__.dat"
   else
     fname=trim(qnm)//"_A"//c2//"_s"//c1//".dat"
   endif
   open(160,file=trim(fname),form='formatted',status='replace')
-  call write_chi_header(160,iq,fxca)
+  call write_response_f_header(160,iq,fxca)
   write(160,'("#")')
   write(160,'("# Definition of columns")')
   write(160,'("#   1: energy            [eV]")')
@@ -113,7 +115,7 @@ if (wannier_chi0_chi) then
   write(160,'("#  10:  loss_function                          ")')
 
   write(160,'("#")')
-  allocate(func(12,lr_nw))
+  allocate(func(10,lr_nw))
   do ie=1,lr_nw
     func(1,ie)=dreal(lr_w(ie))*ha2ev
     func(2,ie)=-dreal(f_response(f_chi0_wann,ie,ifxc))/ha2ev/(au2ang)**3
@@ -125,7 +127,7 @@ if (wannier_chi0_chi) then
     func(8,ie)=dreal(f_response(f_sigma_wann,ie,ifxc))*ha2ev
     func(9,ie)=dimag(f_response(f_sigma_wann,ie,ifxc))*ha2ev
     func(10,ie)=-dimag(f_response(f_loss_wann,ie,ifxc))
-    write(160,'(12G14.6)')func(1:10,ie)
+    write(160,'(10G14.6)')func(1:10,ie)
   enddo
   deallocate(func)
   close(160)
