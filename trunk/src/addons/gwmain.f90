@@ -17,8 +17,9 @@ call init0
 call init1
 if (.not.mpi_grid_in()) return
 if (mpi_grid_root()) call timestamp(6,"[gwmain] done init")
-call init_qbz(tq0bz,8)
-call init_q_gq
+call init_q_mesh(8)
+call genvq
+call genvgq
 ! create q-directories
 if (mpi_grid_root()) then
   call system("mkdir -p q")
@@ -38,30 +39,17 @@ if (mpi_grid_root()) then
   write(151,'("Total number of processors       : ",I6)')nproc
   write(151,'("MPI grid size                    : ",8I6)')&
     &(mpi_grid_dim_size(i),i=1,mpi_grid_nd)
+  write(151,*)
+  do i=1,nvq0
+    write(151,'(" vqc : ",3G18.10)')vqc(:,i)
+  enddo
   call flushifc(151)
 endif
 wproc=mpi_grid_root()
 ! generate wave-functions for entire BZ
 call genwfnr(151,tq0bz,lmaxvr)
 ! setup energy mesh
-if (lr_nw.eq.1) then
-  lr_dw=0.d0
-else
-  if (timgw) then
-    lr_dw=(lr_iw1-lr_iw0)/(lr_nw-1)
-  else
-    lr_dw=(lr_w1-lr_w0)/(lr_nw-1)
-  endif
-endif
-if (allocated(lr_w)) deallocate(lr_w)
-allocate(lr_w(lr_nw))
-do i=1,lr_nw
-  if (timgw) then
-    lr_w(i)=zi*(lr_iw0+lr_dw*(i-1))/ha2ev
-  else
-    lr_w(i)=dcmplx(lr_w0+lr_dw*(i-1),lr_eta)/ha2ev
-  endif
-enddo
+call gen_w_mesh
 ! distribute frequency points over 1-st dimension
 nwloc=mpi_grid_map(lr_nw,dim_k)
 ! distribute q-vectors along 2-nd dimention
@@ -74,8 +62,8 @@ megq_include_bands=chi0_include_bands
 ! main loop over q-points
 do iqloc=1,nvqloc
   iq=mpi_grid_map(nvq,dim_q,loc=iqloc)
-  call genmegq(iq,.true.,.false.)
-  call get_adjoint_megqblh
+  call genmegq(iq,.true.,.true.,.true.)
+  call get_adjoint_megqblh(iq)
   call update_self_energy(iq)
   if (mpi_grid_root()) then
     write(151,'("iq : ",I4," out of ",I4)')iq,nvqloc

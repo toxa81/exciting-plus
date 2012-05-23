@@ -8,7 +8,7 @@ implicit none
 integer, intent(in) :: iq
 integer, intent(in) :: nwloc
 integer iwloc,iw,n,n1,i,ig,vtl(3),j,it
-real(8) v2(3),vtc(3)
+real(8) v2(3),vtc(3),vqc1(3)
 complex(8), allocatable :: vscrn(:,:)
 complex(8), allocatable :: megqwan2(:,:)
 complex(8), allocatable :: megqwan3(:,:)
@@ -16,24 +16,28 @@ complex(8), allocatable :: zm1(:,:)
 complex(8), allocatable :: zm2(:,:)
 complex(8), allocatable :: krnl(:,:)
 complex(8), allocatable :: epsilon(:,:)
-complex(8), allocatable :: chi(:,:)
 complex(8) zt1
 
 if (screenu4) call genchi0(iq)
 
+if (vq_gamma(iq)) then
+  vqc1=0.d0
+else
+  vqc1(:)=vqc(:,iq)
+endif
+
 call papi_timer_start(pt_uscrn)
-allocate(vscrn(ngvecme,ngvecme))
-allocate(krnl(ngvecme,ngvecme))
-allocate(epsilon(ngvecme,ngvecme))
-allocate(chi(ngvecme,ngvecme))
-allocate(zm1(megqwantran%nwt,ngvecme))
+allocate(vscrn(ngq(iq),ngq(iq)))
+allocate(krnl(ngq(iq),ngq(iq)))
+allocate(epsilon(ngq(iq),ngq(iq)))
+allocate(zm1(megqwantran%nwt,ngq(iq)))
 allocate(zm2(megqwantran%nwt,megqwantran%nwt))
 krnl=zzero
-do ig=1,ngvecme
+do ig=1,ngq(iq)
   krnl(ig,ig)=vhgq(ig,iq)
 enddo
-allocate(megqwan2(ngvecme,megqwantran%nwt))   
-allocate(megqwan3(ngvecme,megqwantran%nwt))   
+allocate(megqwan2(ngq(iq),megqwantran%nwt))   
+allocate(megqwan3(ngq(iq),megqwantran%nwt))   
 ! compute megqwan2=<W_n|e^{+i(G+q)x}|W_n'T'> and also rearrange megqwan
 do i=1,megqwantran%nwt
   n=megqwantran%iwt(1,i)
@@ -41,7 +45,7 @@ do i=1,megqwantran%nwt
   vtl(:)=megqwantran%iwt(3:5,i)
   v2=dble(vtl)
   call r3mv(avec,v2,vtc)
-  zt1=exp(-zi*dot_product(vqc(:,iq),vtc))
+  zt1=exp(-zi*dot_product(vqc1,vtc))
   j=megqwantran%iwtidx(n1,n,-vtl(1),-vtl(2),-vtl(3))
   if (j.le.0) then
     write(*,'("Error(genu4) wrong index of matrix element")')
@@ -57,18 +61,18 @@ do iwloc=1,nwloc
   iw=mpi_grid_map(lr_nw,dim_k,loc=iwloc)
 ! broadcast chi0
   if (screenu4) then
-    call genvscrn(iq,chi0loc(1,1,iwloc),krnl,vscrn,epsilon,chi)
+    call genvscrn(iq,chi0loc(1,1,iwloc),krnl,vscrn,epsilon)
   else
     vscrn=krnl
   endif
-  call zgemm('T','N',megqwantran%nwt,ngvecme,ngvecme,zone,megqwan2,ngvecme,&
-    &vscrn,ngvecme,zzero,zm1,megqwantran%nwt)
-  call zgemm('N','N',megqwantran%nwt,megqwantran%nwt,ngvecme,zone,zm1,&
-    &megqwantran%nwt,megqwan3,ngvecme,zzero,zm2,megqwantran%nwt)
+  call zgemm('T','N',megqwantran%nwt,ngq(iq),ngq(iq),zone,megqwan2,ngq(iq),&
+    &vscrn,ngq(iq),zzero,zm1,megqwantran%nwt)
+  call zgemm('N','N',megqwantran%nwt,megqwantran%nwt,ngq(iq),zone,zm1,&
+    &megqwantran%nwt,megqwan3,ngq(iq),zzero,zm2,megqwantran%nwt)
   do it=1,megqwantran%ntr
     v2=dble(megqwantran%vtr(:,it))
     call r3mv(avec,v2,vtc)
-    zt1=exp(-zi*dot_product(vqc(:,iq),vtc))/omega/nkptnr
+    zt1=exp(-zi*dot_product(vqc1,vtc))/omega/nkptnr
     call zaxpy((megqwantran%nwt)**2,zt1,zm2(1,1),1,u4(1,1,it,iwloc),1)
   enddo
 enddo
@@ -76,7 +80,7 @@ deallocate(megqwan2)
 deallocate(megqwan3)
 deallocate(zm1)
 deallocate(zm2)
-deallocate(krnl,epsilon,chi)
+deallocate(krnl,epsilon)
 deallocate(vscrn)
 call papi_timer_stop(pt_uscrn)
 return
