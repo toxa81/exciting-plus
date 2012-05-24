@@ -970,8 +970,7 @@ case('tq0bz')
   read(50,*,err=20) tq0bz
 case('vq0c')
   nvq0=1
-  read(50,*,err=20) vq0c(:,1)
-  aq0(1)=1.d0/sum(vq0c(:,1)**2)
+  read(50,*,err=20) vq0c(:)
 case('gqmax')
   read(50,*,err=20) gqmax
 case('gqsh')
@@ -984,10 +983,15 @@ case('chi0_exclude_bands')
   read(50,*,err=20) chi0_exclude_bands(:)  
 case('response_w')
   read(50,*,err=20) lr_nw
-  read(50,*,err=20) lr_w0,lr_w1,lr_eta  
+  read(50,*,err=20) lr_w0,lr_w1,lr_eta
+  lr_w0=lr_w0/ha2ev
+  lr_w1=lr_w1/ha2ev
+  lr_eta=lr_eta/ha2ev  
 case('response_iw')
   timgw=.true.
   read(50,*,err=20) lr_nw,lr_iw0,lr_iw1
+  lr_iw0=lr_iw0/ha2ev
+  lr_iw1=lr_iw1/ha2ev
 case('response_fxc')
   read(50,*,err=20) fxctype,nfxca,fxca0,fxca1
 case('response_wann')
