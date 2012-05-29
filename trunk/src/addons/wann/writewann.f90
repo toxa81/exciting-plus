@@ -29,7 +29,7 @@ call getufr
 call genufrp
 lpmat=.false.
 if (task.eq.808) lpmat=.true.
-call genwfnr(6,.false.,lmaxvr)
+call genwfnr(6,.false.)
 if (allocated(wann_h)) deallocate(wann_h)
 allocate(wann_h(nwantot,nwantot,nkptnr))
 wann_h=zzero
