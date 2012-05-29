@@ -11,8 +11,8 @@ integer, intent(in) :: ngknr1
 integer, intent(in) :: ngknr2
 integer, intent(in) :: igkignr1(ngkmax)
 integer, intent(in) :: igkignr2(ngkmax)
-complex(8), intent(in) :: wfsvmt1(lmmaxvr*nufrmax,natmtot,nspinor,nstsv)
-complex(8), intent(in) :: wfsvmt2(lmmaxvr,nufrmax,natmtot,nspinor,nstsv)
+complex(8), intent(in) :: wfsvmt1(lmmaxapw*nufrmax,natmtot,nspinor,nstsv)
+complex(8), intent(in) :: wfsvmt2(lmmaxapw,nufrmax,natmtot,nspinor,nstsv)
 complex(8), intent(in) :: wfsvit1(ngkmax,nspinor,nstsv)
 complex(8), intent(in) :: wfsvit2(ngkmax,nspinor,nstsv)
 
@@ -24,9 +24,9 @@ logical l1
 complex(8), allocatable :: wftmp1(:,:)
 complex(8), allocatable :: wftmp2(:,:)
 complex(8), allocatable :: wfir1(:)
-complex(8) b1(lmmaxvr*nufrmax),b2(lmmaxvr*nufrmax)
+complex(8) b1(lmmaxapw*nufrmax),b2(lmmaxapw*nufrmax)
 
-wfsize=lmmaxvr*nufrmax*natmtot+ngknr2
+wfsize=lmmaxapw*nufrmax*natmtot+ngknr2
 allocate(wftmp1(wfsize,ngq(iq)))
 allocate(wftmp2(wfsize,nstsv))
 allocate(wfir1(ngrtot))
@@ -65,7 +65,7 @@ do ispn1=1,nspinor
             b2(igntuju(2,j,ic,ig))=b2(igntuju(2,j,ic,ig))+&
               &b1(igntuju(1,j,ic,ig))*gntuju(j,ic,ig)
           enddo
-          wftmp1((ias-1)*lmmaxvr*nufrmax+1:ias*lmmaxvr*nufrmax,ig)=b2(:)
+          wftmp1((ias-1)*lmmaxapw*nufrmax+1:ias*lmmaxapw*nufrmax,ig)=b2(:)
         enddo !ias
       enddo !ig  
       call timer_stop(3)
@@ -88,7 +88,7 @@ do ispn1=1,nspinor
 ! G1=G2-G-Gkq
           ivg1(:)=ivg(:,igkignr2(ig2))-ivg(:,igqig(ig,iq))-ivg(:,igkq)
           ifg=igfft(ivgig(ivg1(1),ivg1(2),ivg1(3)))
-          wftmp1(lmmaxvr*nufrmax*natmtot+ig2,ig)=dconjg(wfir1(ifg))
+          wftmp1(lmmaxapw*nufrmax*natmtot+ig2,ig)=dconjg(wfir1(ifg))
         enddo
       enddo
       call timer_stop(4)      
@@ -101,8 +101,8 @@ do ispn1=1,nspinor
       if (bmegqblh(1,i+n1,ikloc).ne.bmegqblh(1,i,ikloc)) exit
       ist2=bmegqblh(2,i+n1,ikloc)
       n1=n1+1
-      call memcopy(wfsvmt2(1,1,1,ispn2,ist2),wftmp2(1,n1),16*lmmaxvr*nufrmax*natmtot)
-      call memcopy(wfsvit2(1,ispn2,ist2),wftmp2(lmmaxvr*nufrmax*natmtot+1,n1),16*ngknr2)
+      call memcopy(wfsvmt2(1,1,1,ispn2,ist2),wftmp2(1,n1),16*lmmaxapw*nufrmax*natmtot)
+      call memcopy(wfsvit2(1,ispn2,ist2),wftmp2(lmmaxapw*nufrmax*natmtot+1,n1),16*ngknr2)
     enddo !while
 ! update several matrix elements by doing matrix*matrix operation
 !  me(ib,ig)=wftmp2(ig2,ib)^{T}*wftmp1(ig2,ig)

@@ -7,7 +7,7 @@ implicit none
 integer, intent(in) :: ikstep
 integer, intent(out) :: ngknr_jk
 integer, intent(out) :: igkignr_jk(ngkmax)
-complex(8), intent(out) :: wfsvmt_jk(lmmaxvr,nufrmax,natmtot,nspinor,nstsv)
+complex(8), intent(out) :: wfsvmt_jk(lmmaxapw,nufrmax,natmtot,nspinor,nstsv)
 complex(8), intent(out) :: wfsvit_jk(ngkmax,nspinor,nstsv)
 
 integer i,ik,jk,nkptnrloc1,jkloc,j,tag
@@ -43,7 +43,7 @@ do i=0,mpi_grid_dim_size(dim_k)-1
 ! send to i
       tag=(ikstep*mpi_grid_dim_size(dim_k)+i)*10
       call mpi_grid_send(wfsvmtnrloc(1,1,1,1,1,jkloc),&
-        lmmaxvr*nufrmax*natmtot*nspinor*nstsv,(/dim_k/),(/i/),tag)
+        lmmaxapw*nufrmax*natmtot*nspinor*nstsv,(/dim_k/),(/i/),tag)
       call mpi_grid_send(wfsvitnrloc(1,1,1,jkloc),ngkmax*nspinor*nstsv,&
         (/dim_k/),(/i/),tag+1)
       call mpi_grid_send(ngknr(jkloc),1,(/dim_k/),(/i/),tag+2)
@@ -57,7 +57,7 @@ do i=0,mpi_grid_dim_size(dim_k)-1
 ! recieve from j
         tag=(ikstep*mpi_grid_dim_size(dim_k)+i)*10
         call mpi_grid_recieve(wfsvmt_jk(1,1,1,1,1),&
-          lmmaxvr*nufrmax*natmtot*nspinor*nstsv,(/dim_k/),(/j/),tag)
+          lmmaxapw*nufrmax*natmtot*nspinor*nstsv,(/dim_k/),(/j/),tag)
         call mpi_grid_recieve(wfsvit_jk(1,1,1),ngkmax*nspinor*nstsv,&
           (/dim_k/),(/j/),tag+1)
         call mpi_grid_recieve(ngknr_jk,1,(/dim_k/),(/j/),tag+2)
