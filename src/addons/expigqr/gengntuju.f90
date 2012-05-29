@@ -24,11 +24,11 @@ integer, parameter :: ngvb=2
 integer i
 
 lmmaxexp=(lmaxexp+1)**2
-allocate(gnt(lmmaxexp,lmmaxvr,lmmaxvr))
-do l1=0,lmaxvr
+allocate(gnt(lmmaxexp,lmmaxapw,lmmaxapw))
+do l1=0,lmaxapw
   do m1=-l1,l1
     lm1=idxlm(l1,m1)
-    do l2=0,lmaxvr
+    do l2=0,lmaxapw
       do m2=-l2,l2
         lm2=idxlm(l2,m2)
         do l3=0,lmaxexp
@@ -42,8 +42,8 @@ do l1=0,lmaxvr
   enddo
 enddo
 allocate(jl(nrmtmax,0:lmaxexp))
-allocate(uju(0:lmaxexp,0:lmaxvr,0:lmaxvr,nufrmax,nufrmax))
-allocate(zm(0:lmaxexp,lmmaxvr,lmmaxvr))
+allocate(uju(0:lmaxexp,0:lmaxapw,0:lmaxapw,nufrmax,nufrmax))
+allocate(zm(0:lmaxexp,lmmaxapw,lmmaxapw))
 igntuju=0
 ngntuju=0
 gntuju=zzero
@@ -52,10 +52,10 @@ ngqloc=mpi_grid_map(ngq(iq),dim_k)
 do igloc=1,ngqloc
   ig=mpi_grid_map(ngq(iq),dim_k,loc=igloc)
 ! precompute atom-independent array
-  do l1=0,lmaxvr
+  do l1=0,lmaxapw
     do m1=-l1,l1 
       lm1=idxlm(l1,m1)
-      do l2=0,lmaxvr
+      do l2=0,lmaxapw
         do m2=-l2,l2
           lm2=idxlm(l2,m2)
           do l3=0,lmaxexp
@@ -80,8 +80,8 @@ do igloc=1,ngqloc
     enddo
 ! compute radial integrals <u_{l1,io1} | j_{l3}(|G+q|x) | u_{l2,io2}>
     do l3=0,lmaxexp
-      do l1=0,lmaxvr
-        do l2=0,lmaxvr
+      do l1=0,lmaxapw
+        do l2=0,lmaxapw
           do io1=1,nufr(l1,is)
             do io2=1,nufr(l2,is)
               do ir=1,nrmt(is)
@@ -109,10 +109,10 @@ do igloc=1,ngqloc
 !  4) structure factor sfacgq of a (G+q) plane wave is taken into 
 !     account in genmegqblh subroutine; this allows to keep radial integrals
 !     for atom classes only (not for all atoms)
-    do l1=0,lmaxvr
+    do l1=0,lmaxapw
       do m1=-l1,l1 
         lm1=idxlm(l1,m1)
-        do l2=0,lmaxvr
+        do l2=0,lmaxapw
           do m2=-l2,l2
             lm2=idxlm(l2,m2)
             do io1=1,nufr(l1,is)
@@ -131,8 +131,8 @@ do igloc=1,ngqloc
                   ngntuju(ic,ig)=ngntuju(ic,ig)+1
                   n=ngntuju(ic,ig)
                   gntuju(n,ic,ig)=zt1
-                  igntuju(1,n,ic,ig)=lm1+(io1-1)*lmmaxvr
-                  igntuju(2,n,ic,ig)=lm2+(io2-1)*lmmaxvr
+                  igntuju(1,n,ic,ig)=lm1+(io1-1)*lmmaxapw
+                  igntuju(2,n,ic,ig)=lm2+(io2-1)*lmmaxapw
                 endif
               enddo !io2
             enddo !io1

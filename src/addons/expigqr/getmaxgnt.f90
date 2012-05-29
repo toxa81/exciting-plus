@@ -9,9 +9,9 @@ real(8), external :: gaunt
 real(8) t1
 ! estimate the maximum number of Gaunt-like coefficients 
 maxgnt=0
-do l1=0,lmaxvr
+do l1=0,lmaxapw
   nrf1=maxval(nufr(l1,:))
-  do l2=0,lmaxvr
+  do l2=0,lmaxapw
     nrf2=maxval(nufr(l2,:))
     do m1=-l1,l1
       do m2=-l2,l2

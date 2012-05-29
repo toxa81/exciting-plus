@@ -216,7 +216,7 @@ endif
 if (allocated(megqblh)) deallocate(megqblh)
 allocate(megqblh(nstsv*nstsv,ngq(iq),nkptnrloc))
 megqblh(:,:,:)=zzero
-allocate(wfsvmt_jk(lmmaxvr,nufrmax,natmtot,nspinor,nstsv))
+allocate(wfsvmt_jk(lmmaxapw,nufrmax,natmtot,nspinor,nstsv))
 allocate(wfsvit_jk(ngkmax,nspinor,nstsv))
 allocate(igkignr_jk(ngkmax))
 if (wannier_megq) then
