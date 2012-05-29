@@ -1,0 +1,47 @@
+tasks
+  0
+  802
+  
+autormt
+ .true.
+
+exactrho
+ .true.
+   
+avec
+   3 3 0
+   3 0 3
+   0 3 3
+
+atoms
+   2                                    : nspecies
+'F.in'                                 : spfname
+   1                                    : natoms; atposl, bfcmt below
+    0.00000000    0.00000000    0.00000000    0.00000000  0.00000000  0.00000000
+'H.in'
+   1
+   0.5 0.5 0.5 0 0 0
+
+ngridk
+ 3 3 3
+ 
+nempty
+  1
+  
+plot1d
+  6 100
+  0.0 0.0 0.5
+  0.0 0.0 0.0
+  0.5 0.0 0.0
+  0.5 0.5 0.0
+  0.5 0.5 0.5
+  0.0 0.0 0.0
+  
+
+response_w
+  1000
+-50.0 50.0 0.1
+
+gqmax
+ 4.0
+ 
