@@ -5,7 +5,6 @@ use mod_wannier
 implicit none
 
 integer i,j,n,lm,ispn,iwgrp,itype,iatom
-integer, allocatable :: iwann_tmp(:,:)
 
 if (nspnfv.eq.2) then
   write(*,*)
@@ -56,26 +55,6 @@ if (.not.allocated(wannier_prjlo)) then
   allocate(wannier_prjlo(32,wann_natom))
   wannier_prjlo=1
 endif
-
-! sort WF by spin (for collinear case)
-!if (.not.ncmag) then
-!  allocate(iwann_tmp(7,nwantot))
-!  n=0
-!  do j=1,nwantot
-!    if (wan_info(3,j).eq.1) then
-!      n=n+1
-!      iwann_tmp(:,n)=wan_info(:,j)
-!    endif
-!  enddo
-!  do j=1,nwantot
-!    if (wan_info(3,j).eq.2) then
-!      n=n+1
-!      iwann_tmp(:,n)=wan_info(:,j)
-!    endif
-!  enddo
-!  wan_info=iwann_tmp
-!  deallocate(iwann_tmp)
-!endif
 
 if (allocated(nwannias)) deallocate(nwannias)
 allocate(nwannias(natmtot))

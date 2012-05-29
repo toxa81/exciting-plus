@@ -1,8 +1,6 @@
 subroutine wann_plot
 use modmain
 use mod_nrkp
-use mod_sic
-use mod_madness
 use modxcifc
 implicit none
 real(8) orig(3)
@@ -38,7 +36,7 @@ call genlofr
 call getufr
 call genufrp
 
-call genwfnr(-1,.false.,lmaxapw)
+call genwfnr(-1,.false.)
 call elk_m_init
 
 if (task.eq.861) then
@@ -94,7 +92,7 @@ do j=1,nwfplot
     !if (mod(ir,nrxyz(2)*nrxyz(3)).eq.0.and.mpi_grid_root()) then
     !  write(*,*)'r-point : ',ir,' out of ',nrtot
     !endif
-    call s_get_wanval(vr(:,ir),zval)
+    call get_wanval(vr(:,ir),zval)
     dens=0.d0
     do ispn=1,nspinor
       dens(1)=dens(1)+abs(zval(ispn))**2
