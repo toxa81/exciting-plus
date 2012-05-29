@@ -1,8 +1,6 @@
 subroutine wann_plot_3d
 use modmain
 use mod_nrkp
-use mod_sic
-use mod_madness
 implicit none
 
 real(8) orig(3)
@@ -40,7 +38,7 @@ call genlofr
 call getufr
 call genufrp
 
-call genwfnr(-1,.false.,lmaxapw)
+call genwfnr(-1,.false.)
 call elk_m_init
 
 if (task.eq.863) then
@@ -87,7 +85,7 @@ do j=1,nwfplot
         vrc(:)=orig(:)+i1*bound3d(:,1)/(nrxyz(1)-1)+&
                        i2*bound3d(:,2)/(nrxyz(2)-1)+&
                        i3*bound3d(:,3)/(nrxyz(3)-1)
-        call s_get_wanval(vrc,zval)
+        call get_wanval(vrc,zval)
         dens=0.d0
         do ispn=1,nspinor
           dens(1)=dens(1)+abs(zval(ispn))**2
