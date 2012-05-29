@@ -18,7 +18,7 @@ call genlofr
 call getufr
 call genufrp
 wproc=mpi_grid_root()
-call genwfnr(6,.false.,lmaxapw)
+call genwfnr(6,.false.)
 allocate(wfir1(ngrtot,nspinor))
 allocate(wfir2(ngrtot,nspinor))
 allocate(maxdev(nkptnr))

@@ -97,7 +97,7 @@ if (exist) then
   endif
 else
 ! generate wave-functions for entire BZ
-  call genwfnr(151,lpmat,lmaxvr)
+  call genwfnr(151,lpmat)
 endif
 ! setup energy mesh
 lr_dw=(lr_w1-lr_w0)/(lr_nw-1)

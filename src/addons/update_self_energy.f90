@@ -120,6 +120,13 @@ do ikloc=1,nkptnrloc
           &zt1*ame(ig2,i)
       enddo
     enddo
+  enddo !iw
+  do i=1,namegqblh(ikloc)
+    n=bamegqblh(2,i,ikloc)
+    j=bamegqblh(1,i,ikloc)
+    do ig=1,ngq(iq)
+      self_energy_c(:,n,ikloc)=self_energy_c(:,n,ikloc)-dconjg(ame(ig,i))*ame(ig,i)*occsvnr(j,jk)*wtvhgq(ig,iq)
+    enddo
   enddo
 enddo
 
