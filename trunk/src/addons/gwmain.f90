@@ -8,7 +8,7 @@ use mod_linresp
 use mod_expigqr
 implicit none
 integer iq,i
-integer nvqloc,iqloc,it,ikloc,ik
+integer nvqloc,iqloc,it,ikloc,ik,ist
 character*100 qnm,fname
 integer nwloc,iwloc,iw
 character*8 c1,c2
@@ -52,6 +52,11 @@ call genwfnr(151,tq0bz)
 ! generate matrix elements <nk|Vxc|nk>
 allocate(vxcnk(nstsv,nkptnr))
 call genvxcnk(vxcnk)
+if (mpi_grid_root()) then
+  do ist=1,nstsv
+    write(151,'(" ist : ",I4,"    vxcnk : ",G18.10)')ist,vxcnk(ist,1)
+  enddo
+endif
 
 ! setup energy mesh
 call gen_w_mesh
