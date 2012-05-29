@@ -3,7 +3,6 @@ use modmain
 use mod_nrkp
 use mod_sic
 use mod_wannier
-use mod_madness
 use mod_hdf5
 implicit none
 integer n,j,ispn
@@ -23,7 +22,7 @@ call readstate
 ! generate radial functions
 call genradf
 ! generate wave-functions for all k-points in BZ
-call genwfnr(-1,.false.,lmaxapw)  
+call genwfnr(-1,.false.)  
 call elk_m_init
 #ifdef _MAD_
 !call madness_init_box
