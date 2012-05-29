@@ -22,7 +22,6 @@ SRC_modules = ./addons/mod_mpi_grid.f90 \
               ./addons/mod_addons_q.f90 \
               ./addons/expigqr/mod_expigqr.f90 \
               ./addons/linresp/mod_linresp.f90 \
-              ./addons/mod_madness.f90 \
               ./modqpt.f90 \
               ./libxc_funcs.f90 \
               ./libxc.f90 \
