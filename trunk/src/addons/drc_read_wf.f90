@@ -15,7 +15,7 @@ call pstop
 
 fname="wfnrkp.hdf5"
 
-call gengknr(lmaxvr,lmmaxvr)
+call gengknr
 call hdf5_read(fname,"/parameters","wannier",flg_wan)
 call hdf5_read(fname,"/parameters","pmat",flg_pmat)
 
@@ -31,7 +31,7 @@ if (spinpol) then
   spinor_ud=0
 endif
 if (allocated(wfsvmtnrloc)) deallocate(wfsvmtnrloc)
-allocate(wfsvmtnrloc(lmmaxvr,nufrmax,natmtot,nspinor,nstsv,nkptnrloc))
+allocate(wfsvmtnrloc(lmmaxapw,nufrmax,natmtot,nspinor,nstsv,nkptnrloc))
 if (allocated(wfsvitnrloc)) deallocate(wfsvitnrloc)
 allocate(wfsvitnrloc(ngkmax,nspinor,nstsv,nkptnrloc))
 if (flg_wan.eq.1) then
@@ -47,7 +47,7 @@ if (mpi_grid_side(dims=(/dim_k/))) then
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
     write(kname,'(I10.10)')ik
     call hdf5_read(fname,"/kpoints/"//trim(kname),"wfsvmt",&
-      wfsvmtnrloc(1,1,1,1,1,ikloc),(/lmmaxvr,nufrmax,natmtot,nspinor,nstsv/))
+      wfsvmtnrloc(1,1,1,1,1,ikloc),(/lmmaxapw,nufrmax,natmtot,nspinor,nstsv/))
     call hdf5_read(fname,"/kpoints/"//trim(kname),"wfsvit",&
       wfsvitnrloc(1,1,1,ikloc),(/ngkmax,nspinor,nstsv/))
     call hdf5_read(fname,"/kpoints/"//trim(kname),"evalsv",&
@@ -70,7 +70,7 @@ if (mpi_grid_side(dims=(/dim_k/))) then
 endif
 do ikloc=1,nkptnrloc
   do j=1,nstsv
-    call mpi_grid_bcast(wfsvmtnrloc(1,1,1,1,j,ikloc),lmmaxvr*nufrmax*natmtot*nspinor,&
+    call mpi_grid_bcast(wfsvmtnrloc(1,1,1,1,j,ikloc),lmmaxapw*nufrmax*natmtot*nspinor,&
       dims=ortdims((/dim_k/)))
     call mpi_grid_bcast(wfsvitnrloc(1,1,j,ikloc),ngkmax*nspinor,&
       dims=ortdims((/dim_k/)))

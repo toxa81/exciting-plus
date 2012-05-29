@@ -59,7 +59,7 @@ else
   allocate(apwalm(ngkmax,lmmaxapw,apwordmax,natmtot))
 endif
 if (wannier) then
-  call genwfnr(-1,.false.,lmax) 
+  call genwfnr(-1,.false.) 
 endif
 evalsv=0.d0
 bndchr=0.0

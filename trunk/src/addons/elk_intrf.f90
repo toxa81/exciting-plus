@@ -30,7 +30,6 @@
 subroutine elk_m_init
 use modmain
 use mod_nrkp
-use mod_madness
 implicit none
 integer ig,ik,ikloc
 ! allocate arrays for Madness-like WF generation (all MPI tasks
@@ -85,7 +84,6 @@ subroutine elk_load_wann_unk(n)
 use modmain
 use mod_nrkp
 use mod_wannier
-use mod_madness
 implicit none
 ! arguments
 integer, intent(in) :: n
@@ -245,8 +243,6 @@ subroutine elk_wan_rho(x,rcutoff,wrho)
 use modmain
 use mod_nrkp
 use mod_wannier
-use mod_madness
-use mod_sic
 implicit none
 real(8), intent(inout) :: x(3)
 real(8), intent(in) :: rcutoff
@@ -255,7 +251,7 @@ complex(8) wanval(nspinor)
 integer ispn
 !
 wrho=0.d0
-call s_get_wanval(x,wanval,rcutoff=rcutoff)
+call get_wanval(x,wanval,rcutoff=rcutoff)
 do ispn=1,nspinor
   wrho=wrho+abs(wanval(ispn))**2
 enddo
@@ -266,7 +262,6 @@ subroutine sic_wan_rho(j,x,rcutoff,wrho)
 use modmain
 use mod_nrkp
 use mod_wannier
-use mod_madness
 use mod_sic
 implicit none
 integer, intent(in) :: j

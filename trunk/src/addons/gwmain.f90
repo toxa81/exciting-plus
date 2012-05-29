@@ -12,6 +12,7 @@ integer nvqloc,iqloc,it,ikloc,ik
 character*100 qnm,fname
 integer nwloc,iwloc,iw
 character*8 c1,c2
+real(8), allocatable :: vxcnk(:,:)
 
 call init0
 call init1
@@ -47,7 +48,11 @@ if (mpi_grid_root()) then
 endif
 wproc=mpi_grid_root()
 ! generate wave-functions for entire BZ
-call genwfnr(151,tq0bz,lmaxvr)
+call genwfnr(151,tq0bz)
+! generate matrix elements <nk|Vxc|nk>
+allocate(vxcnk(nstsv,nkptnr))
+call genvxcnk(vxcnk)
+
 ! setup energy mesh
 call gen_w_mesh
 ! distribute frequency points over 1-st dimension
@@ -95,5 +100,6 @@ if (mpi_grid_root()) then
 endif
 deallocate(lr_w)
 deallocate(self_energy_c)
+deallocate(vxcnk)
 return
 end

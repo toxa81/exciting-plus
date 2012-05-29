@@ -18,7 +18,7 @@ call genlofr
 call getufr
 call genufrp
 wproc=mpi_grid_root()
-call genwfnr(6,.true.,lmaxvr)
+call genwfnr(6,.true.)
 
 fname="wfnrkp.hdf5"
 if (mpi_grid_root()) then
@@ -40,7 +40,7 @@ if (mpi_grid_side(dims=(/dim_k/))) then
         write(kname,'(I10.10)')ik
         call hdf5_create_group(fname,"/kpoints",kname)
         call hdf5_write(fname,"/kpoints/"//trim(kname),"wfsvmt",&
-          wfsvmtnrloc(1,1,1,1,1,ikloc),(/lmmaxvr,nufrmax,natmtot,nspinor,nstsv/))
+          wfsvmtnrloc(1,1,1,1,1,ikloc),(/lmmaxapw,nufrmax,natmtot,nspinor,nstsv/))
         call hdf5_write(fname,"/kpoints/"//trim(kname),"wfsvit",&
           wfsvitnrloc(1,1,1,ikloc),(/ngkmax,nspinor,nstsv/))
         call hdf5_write(fname,"/kpoints/"//trim(kname),"evalsv",&
