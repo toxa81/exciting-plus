@@ -168,7 +168,7 @@ else if (nvq0.eq.8) then
       enddo
     enddo
   enddo
-else
+else if (nvq0.ne.0) then
   write(*,'("[genvq] : nvq0= ",I4," is not implemented")')nvq0
   call pstop
 endif

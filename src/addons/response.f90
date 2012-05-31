@@ -77,14 +77,7 @@ if (wproc1) then
 endif
 ! read the density and potentials from file
 call readstate
-! find the new linearisation energies
-call linengy
-! generate the APW radial functions
-call genapwfr
-! generate the local-orbital radial functions
-call genlofr
-call getufr
-call genufrp
+call genradf
 inquire(file="wfnrkp.hdf5",exist=exist)
 if (exist) then
   call timer_start(1,reset=.true.)
@@ -100,12 +93,7 @@ else
   call genwfnr(151,lpmat)
 endif
 ! setup energy mesh
-lr_dw=(lr_w1-lr_w0)/(lr_nw-1)
-if (allocated(lr_w)) deallocate(lr_w)
-allocate(lr_w(lr_nw))
-do i=1,lr_nw
-  lr_w(i)=dcmplx(lr_w0+lr_dw*(i-1),lr_eta)/ha2ev
-enddo
+call gen_w_mesh
 call genvq
 call genvgq
 megq_include_bands=chi0_include_bands
