@@ -1153,6 +1153,8 @@ case('sic_wan_cutoff')
   read(50,*,err=20) s_rmax
 case('sic_me_cutoff')
   read(50,*,err=20) sic_me_cutoff
+case('sic_hmlt_type')
+  read(50,*,err=20) sic_hmlt_type
 case('debug_level')
   read(50,*,err=20) debug_level  
 case('screenu4')
