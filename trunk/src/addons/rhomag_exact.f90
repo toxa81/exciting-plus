@@ -17,7 +17,7 @@ rhomagmt=0.d0
 rhomagit=zzero
 call timer_start(t_rho_mag_sum)
 do ikloc=1,nkptloc
-  if (sic) then
+  if (sic.and.sic_hmlt_type.eq.0) then
     call sic_rhomagk_exact(ikloc)
   else
     call rhomagk_exact(ikloc)
