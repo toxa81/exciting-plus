@@ -57,6 +57,9 @@ data sic_smesh_n/11/
 complex(8), allocatable :: s_wlm(:,:,:,:)
 ! Ylm expansion coefficients of W*V, W is Wannier function, V is potential
 complex(8), allocatable :: s_wvlm(:,:,:,:)
+!
+integer sic_hmlt_type
+data sic_hmlt_type/0/
 !----------!
 ! energies !
 !----------!
