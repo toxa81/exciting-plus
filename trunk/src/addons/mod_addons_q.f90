@@ -40,6 +40,10 @@ real(8), allocatable :: vhgq(:,:)
 ! weighted G+q components of Hartee potential
 real(8), allocatable :: wtvhgq(:,:)
 
+integer, allocatable :: ngqsh(:)
+integer, allocatable :: gqshidx(:,:)
+real(8), allocatable :: gqshlen(:,:)
+
 real(8), allocatable :: tpgq(:,:)
 complex(8), allocatable :: sfacgq(:,:)
 complex(8), allocatable :: ylmgq(:,:)
@@ -183,7 +187,7 @@ implicit none
 real(8) t2,gqmax2
 integer iq,ig,i
 real(8) v2(3)
-logical tautogqmax
+logical tautogqmax,tfound
 !
 ! find |G+q| cutoff
 tautogqmax=.true.
@@ -236,6 +240,33 @@ do iq=1,nvq
 enddo
 ! compute weights for 1/|q|^2 integral
 if (nvq0.ne.0) call genwtvhgq
+! find |G+q| shells
+if (allocated(ngqsh)) deallocate(ngqsh)
+allocate(ngqsh(ngqmax))
+ngqsh=0
+if (allocated(gqshidx)) deallocate(gqshidx)
+allocate(gqshidx(ngqmax,nvq))
+gqshidx=0
+if (allocated(gqshlen)) deallocate(gqshlen)
+allocate(gqshlen(ngqmax,nvq))
+gqshlen=0.d0
+do iq=1,nvq
+  do ig=1,ngq(iq)
+    tfound=.false.
+    do i=1,ngqsh(iq)
+      if (abs(gqshlen(i,iq)-gq(ig,iq)).lt.1d-10) then
+        tfound=.true.
+        gqshidx(ig,iq)=i
+        exit
+      endif
+    enddo
+    if (.not.tfound) then
+      ngqsh(iq)=ngqsh(iq)+1
+      gqshlen(ngqsh(iq),iq)=gq(ig,iq)
+      gqshidx(ig,iq)=ngqsh(iq)
+    endif
+  enddo
+enddo
 return
 end subroutine
 
@@ -282,6 +313,7 @@ do iq=1,nvq
     wtvhgq(:,iq)=wtvhgq(:,iq)/dble(nvq0)
   endif
 enddo
+
 return
 end subroutine
 
