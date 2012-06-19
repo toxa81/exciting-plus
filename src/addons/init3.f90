@@ -5,9 +5,10 @@ use mod_sic
 use mod_rs
 use mod_libapw
 implicit none
-integer ia,is,l,m,ir,i1,i2,i3,i,ik
+integer ia,is,l,m,ir,i1,i2,i3,i,ik,l1,l2,l3,m1,m2,m3,lm1,lm2,lm3
 integer itp
 real(8) vl(3),x1,x2,x3,tp(2),a
+real(8), external :: gaunt
 !
 if (allocated(rylm)) deallocate(rylm)
 allocate(rylm(16,16))
@@ -164,5 +165,24 @@ do ik=1,nkpt
     occsv(m+1+nstfv,ik)=0.5*chgval-m
   endif
 enddo
+if (allocated(gntyyy)) deallocate(gntyyy)
+allocate(gntyyy(lmmaxvr,lmmaxapw,lmmaxapw))
+do l1=0,lmaxapw
+  do m1=-l1,l1
+    lm1=idxlm(l1,m1)
+    do l2=0,lmaxvr
+      do m2=-l2,l2
+        lm2=idxlm(l2,m2)
+        do l3=0,lmaxapw
+          do m3=-l3,l3
+            lm3=idxlm(l3,m3)
+            gntyyy(lm2,lm1,lm3)=gaunt(l1,l2,l3,m1,m2,m3)
+          end do
+        end do
+      end do
+    end do
+  end do
+end do
+
 return
 end

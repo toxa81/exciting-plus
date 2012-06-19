@@ -243,5 +243,7 @@ real(8), allocatable :: bloa(:,:,:,:,:,:)
 real(8), allocatable :: blolo(:,:,:,:,:)
 complex(8), allocatable :: beffig(:,:)
 
+real(8), allocatable :: gntyyy(:,:,:)
+
 end module
 
