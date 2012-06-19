@@ -74,5 +74,49 @@ do is=1,nspecies
 enddo
 close(50)
 
+open(50,file='input.xml',action='WRITE',form='FORMATTED')
+write(50,'("<structure>")')
+write(50,'("  <crystal>")')
+write(50,'("    <basevect>",3G18.10,"</basevect>")') sca(:,1)
+write(50,'("    <basevect>",3G18.10,"</basevect>")') sca(:,2)
+write(50,'("    <basevect>",3G18.10,"</basevect>")') sca(:,3)
+write(50,'("  </crystal>")')
+
+call r3minv(sca,scainv)
+
+do is=1,nspecies
+  write(50,'("  <species speciesfile=""",A,""">")')trim(spfname(is))
+  allocate(vecl(3,natoms(is)*nsc))
+  n=0
+  do ia=1,natoms(is)
+    do i1=-2,2
+    do i2=-2,2
+    do i3=-2,2
+      v1(:)=atposc(:,ia,is)+i1*avec(:,1)+i2*avec(:,2)+i3*avec(:,3)
+      call r3mv(scainv,v1,v2)
+      call r3frac(epslat,v2,iv)
+      l1=.true.
+      do j=1,n
+        if (abs(v2(1)-vecl(1,j)).lt.epslat.and.&
+            abs(v2(2)-vecl(2,j)).lt.epslat.and.&
+            abs(v2(3)-vecl(3,j)).lt.epslat) l1=.false.
+      enddo
+      if (l1) then
+        n=n+1
+        vecl(:,n)=v2(:)
+      endif
+    enddo
+    enddo
+    enddo
+  enddo
+  do j=1,n
+    write(50,'("    <atom coord=""",3F14.8,"""/>")')vecl(:,j)
+  enddo  
+  deallocate(vecl)
+  write(50,'("  </species>")')
+enddo
+write(50,'("</structure>")')
+close(50)
+
 return
 end
