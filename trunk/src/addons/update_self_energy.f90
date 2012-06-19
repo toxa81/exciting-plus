@@ -106,8 +106,8 @@ do ikloc=1,nkptnrloc
         j=bamegqblh(1,i,ikloc)
         do ig1=1,ngq(iq)
           do ig2=1,ngq(iq)
-            zm(ig1,ig2)=-wtvhgq(ig1,iq)*ppa_r(ig1,ig2)*(occsvnr(j,jk)/(evalsvnr(j,jk)-dconjg(lr_w(iw))-ppa_w(ig1,ig2))-&
-            &(occmax-occsvnr(j,jk))/(evalsvnr(j,jk)-lr_w(iw)+ppa_w(ig1,ig2)))
+            zm(ig1,ig2)=-wtvhgq(ig1,iq)*ppa_r(ig1,ig2)*(occsvnr(j,jk)/(evalsvnr(j,jk)-dconjg(lr_w(iw))-ppa_w(ig1,ig2))+&
+            &(occmax-occsvnr(j,jk))/(evalsvnr(j,jk)-lr_w(iw)+ppa_w(ig1,ig2)))/occmax
           enddo
         enddo
       endif
@@ -116,8 +116,7 @@ do ikloc=1,nkptnrloc
         do ig1=1,ngq(iq)
           zt1=zt1+dconjg(ame(ig1,i))*zm(ig1,ig2)
         enddo
-        self_energy_c(iw,n,ikloc)=self_energy_c(iw,n,ikloc)+&
-          &zt1*ame(ig2,i)
+        gw_self_energy(iw,n,ikloc)=gw_self_energy(iw,n,ikloc)+zt1*ame(ig2,i)
       enddo
     enddo
   enddo !iw
@@ -125,7 +124,7 @@ do ikloc=1,nkptnrloc
     n=bamegqblh(2,i,ikloc)
     j=bamegqblh(1,i,ikloc)
     do ig=1,ngq(iq)
-      self_energy_c(:,n,ikloc)=self_energy_c(:,n,ikloc)-dconjg(ame(ig,i))*ame(ig,i)*occsvnr(j,jk)*wtvhgq(ig,iq)
+      gw_self_energy(:,n,ikloc)=gw_self_energy(:,n,ikloc)-dconjg(ame(ig,i))*ame(ig,i)*occsvnr(j,jk)*wtvhgq(ig,iq)/occmax
     enddo
   enddo
 enddo
