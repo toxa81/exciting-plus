@@ -65,8 +65,8 @@ nwloc=mpi_grid_map(lr_nw,dim_k)
 ! distribute q-vectors along 2-nd dimention
 nvqloc=mpi_grid_map(nvq,dim_q)
 
-allocate(self_energy_c(lr_nw,nstsv,nkptnrloc))
-self_energy_c=zzero
+allocate(gw_self_energy(lr_nw,nstsv,nkptnrloc))
+gw_self_energy=zzero
 
 megq_include_bands=chi0_include_bands
 ! main loop over q-points
@@ -80,8 +80,8 @@ do iqloc=1,nvqloc
     call flushifc(151)
   endif
 enddo
-call mpi_grid_reduce(self_energy_c(1,1,1),lr_nw*nstsv*nkptnrloc,dims=(/dim_q/))
-self_energy_c(:,:,:)=self_energy_c(:,:,:)/nkptnr/omega
+call mpi_grid_reduce(gw_self_energy(1,1,1),lr_nw*nstsv*nkptnrloc,dims=(/dim_q/))
+gw_self_energy(:,:,:)=gw_self_energy(:,:,:)/nkptnr/omega
 
 if (mpi_grid_root((/dim_q/))) then
   do ikloc=1,nkptnrloc
@@ -90,7 +90,7 @@ if (mpi_grid_root((/dim_q/))) then
       write(fname,'("self_energy_k",I4.4,"_b",I4.4,"__.dat")')ik,i
       open(153,file=trim(adjustl(fname)),form="FORMATTED",status="REPLACE")
       do iw=1,lr_nw
-        write(153,'(3G18.10)')dreal(lr_w(iw)),dimag(self_energy_c(iw,i,ikloc)),dreal(self_energy_c(iw,i,ikloc))
+        write(153,'(3G18.10)')dreal(lr_w(iw)),dimag(gw_self_energy(iw,i,ikloc)),dreal(gw_self_energy(iw,i,ikloc))
       enddo
       close(153)
     enddo 
@@ -104,7 +104,7 @@ if (mpi_grid_root()) then
   close(151)
 endif
 deallocate(lr_w)
-deallocate(self_energy_c)
+deallocate(gw_self_energy)
 deallocate(vxcnk)
 return
 end
