@@ -30,19 +30,19 @@ complex(8), allocatable :: chi0wanloc(:,:,:)
 ! number of energy-mesh points
 integer lr_nw
 data lr_nw/201/
-! first energy point (eV)
+! first energy point (Ha)
 real(8) lr_w0
 data lr_w0/0.d0/
-! last energy point (eV)
+! last energy point (Ha)
 real(8) lr_w1
-data lr_w1/20.d0/
+data lr_w1/1.d0/
 ! energy step
 real(8) lr_dw
 ! energy mesh
 complex(8), allocatable :: lr_w(:)
-! broadening parameter (eV)
+! broadening parameter (Ha)
 real(8) lr_eta
-data lr_eta/0.3d0/
+data lr_eta/0.01d0/
 ! inverse temperature for the matsubara frequency in eV^-1
 real(8) lr_beta
 data lr_beta/30.d0/
