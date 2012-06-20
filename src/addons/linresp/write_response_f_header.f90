@@ -21,9 +21,9 @@ write(fout,'("#")')
 write(fout,'("# k-mesh division                    : ",3I4)') &
   &ngridk(1),ngridk(2),ngridk(3)
 write(fout,'("# Energy mesh parameters             : ")')
-write(fout,'("#   energy interval [eV]             : ", 2F9.4)')lr_w0,lr_w1
-write(fout,'("#   energy step     [eV]             : ", F9.4)')lr_dw
-write(fout,'("#   eta             [eV]             : ", F9.4)')lr_eta
+write(fout,'("#   energy interval [eV]             : ", 2F9.4)')lr_w0*ha2ev,lr_w1*ha2ev
+write(fout,'("#   energy step     [eV]             : ", F9.4)')lr_dw*ha2ev
+write(fout,'("#   eta             [eV]             : ", F9.4)')lr_eta*ha2ev
 write(fout,'("# q-vector information               : ")')
 write(fout,'("#   q-vector (mesh coord.)           : ",3I4)')vqm(:,iq)
 write(fout,'("#   q-vector (lat. coord.)           : ",3F18.10)')vqlnr(:,iq)
