@@ -47,9 +47,9 @@ if (wproc) then
     write(150,'("  number of imaginary frequencies : ",I4)')lr_nw
     write(150,'("  frequency interval [eV] : ", 2F9.4)')lr_iw0,lr_iw1
   else
-    write(150,'("  energy interval [eV] : ", 2F9.4)')lr_w0,lr_w1
-    write(150,'("  energy step     [eV] : ", F9.4)')lr_dw
-    write(150,'("  eta             [eV] : ", F9.4)')lr_eta
+    write(150,'("  energy interval [eV] : ", 2F9.4)')lr_w0*ha2ev,lr_w1*ha2ev
+    write(150,'("  energy step     [eV] : ", F9.4)')lr_dw*ha2ev
+    write(150,'("  eta             [eV] : ", F9.4)')lr_eta*ha2ev
   endif
   write(150,*)  
   write(150,'("Included band interval (Ha)        : ",2F8.2)')&
