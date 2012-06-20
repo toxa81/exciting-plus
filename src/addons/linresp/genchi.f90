@@ -43,9 +43,9 @@ if (wproc) then
   endif
   write(150,*)
   write(150,'("Energy mesh parameters:")')
-  write(150,'("  energy interval [eV] : ", 2F9.4)')lr_w0,lr_w1
-  write(150,'("  energy step     [eV] : ", F9.4)')lr_dw
-  write(150,'("  eta             [eV] : ", F9.4)')lr_eta
+  write(150,'("  energy interval [eV] : ", 2F9.4)')lr_w0*ha2ev,lr_w1*ha2ev
+  write(150,'("  energy step     [eV] : ", F9.4)')lr_dw*ha2ev
+  write(150,'("  eta             [eV] : ", F9.4)')lr_eta*ha2ev
   write(150,*)
   if (lrtype.eq.0) then
     write(150,'("Type of fxc kernel : ")')
