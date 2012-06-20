@@ -65,6 +65,6 @@ do ikloc=1,nkptnrloc
   enddo !jst
 enddo !ikloc
 deallocate(gntmp,zfft,rhonkmt,rhonkir,rf)
-call mpi_grid_reduce(vxcnk(1,1),nstsv*nkptnr,dims=(/dim_k/))
+call mpi_grid_reduce(vxcnk(1,1),nstsv*nkptnr,dims=(/dim_k/),all=.true.)
 return
 end subroutine
