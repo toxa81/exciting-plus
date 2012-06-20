@@ -32,7 +32,7 @@ t1=sqrt(vqcnr(1,iq)**2+vqcnr(2,iq)**2+vqcnr(3,iq)**2)/au2ang
 write(c2,'(F7.3)')fxca
 write(c3,'(I8)')ngq(iq)
 write(c4,'(F6.3)')t1
-write(c5,'(F5.3)')lr_eta
+write(c5,'(F5.3)')lr_eta*ha2ev
 
 if (lrtype.eq.0) then
   fname=trim(qnm)//"__"//trim(adjustl(c4))//"__G_"//trim(adjustl(c3))//&
