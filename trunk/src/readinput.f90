@@ -986,7 +986,7 @@ case('response_w')
   read(50,*,err=20) lr_w0,lr_w1,lr_eta
   lr_w0=lr_w0/ha2ev
   lr_w1=lr_w1/ha2ev
-  lr_eta=lr_eta/ha2ev  
+  lr_eta=lr_eta/ha2ev
 case('response_iw')
   timgw=.true.
   read(50,*,err=20) lr_nw,lr_iw0,lr_iw1
