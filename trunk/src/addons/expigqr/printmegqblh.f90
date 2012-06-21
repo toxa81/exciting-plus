@@ -9,7 +9,7 @@ integer i,ig,ikloc,ik,iboffs
 integer ist1,ist2
 character*100 fname
 write(fname,'("MEGQBLH_iq_",I4.4,".OUT")')iq
-if (iproc.eq.0) then
+if (mpi_grid_root((/dim_k/))) then
   open(200,file=trim(adjustl(fname)),form="FORMATTED",status="REPLACE")
   do ikloc=1,nkptnrloc
     ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
