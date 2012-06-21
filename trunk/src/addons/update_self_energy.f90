@@ -69,6 +69,7 @@ do ig1=1,ngq(iq)
   do ig2=1,ngq(iq)
     ppa_w(ig1,ig2)=ppa_e0*sqrt(epsinv(ig1,ig2,2)/(epsinv(ig1,ig2,1)-epsinv(ig1,ig2,2)))
     ppa_r(ig1,ig2)=-epsinv(ig1,ig2,1)*ppa_w(ig1,ig2)/2.d0
+    if (real(epsinv(ig1,ig2,1)/epsinv(ig1,ig2,2)).le.1.d0) ppa_w(ig1,ig2)=(1.d0,0.d0) !yambo
   enddo
 enddo
 
@@ -93,21 +94,30 @@ endif
 
 do ikloc=1,nkptnrloc
   ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-  jk=idxkq(3,ik)
+  jk=idxkq(3,ik)  !k'=k-q
   ! change order of indices
   do ig=1,ngq(iq)
     ame(ig,:)=amegqblh(:,ig,ikloc)
   enddo
-  do iw=1,lr_nw
-    j=-1
-    do i=1,namegqblh(ikloc)
-      n=bamegqblh(2,i,ikloc)
+
+  do i=1,namegqblh(ikloc)
+    n=bamegqblh(2,i,ikloc)
+
+! G0W0
+    if (gw_mode==0) then
+      lr_w(1)=dcmplx(evalsvnr(n,ik),lr_eta)
+      lr_w(2)=dcmplx(evalsvnr(n,ik)+del_e,lr_eta)
+      write(156,*) "lr_w:",lr_w(1),lr_w(2)
+    endif
+
+    do iw=1,lr_nw
+      j=-1
       if (bamegqblh(1,i,ikloc).ne.j) then
         j=bamegqblh(1,i,ikloc)
         do ig1=1,ngq(iq)
           do ig2=1,ngq(iq)
             zm(ig1,ig2)=-wtvhgq(ig1,iq)*ppa_r(ig1,ig2)*(occsvnr(j,jk)/(evalsvnr(j,jk)-dconjg(lr_w(iw))-ppa_w(ig1,ig2))+&
-            &(occmax-occsvnr(j,jk))/(evalsvnr(j,jk)-lr_w(iw)+ppa_w(ig1,ig2)))/occmax
+              &(occmax-occsvnr(j,jk))/(evalsvnr(j,jk)-lr_w(iw)+ppa_w(ig1,ig2)))/occmax
           enddo
         enddo
       endif
@@ -118,13 +128,14 @@ do ikloc=1,nkptnrloc
         enddo
         gw_self_energy(iw,n,ikloc)=gw_self_energy(iw,n,ikloc)+zt1*ame(ig2,i)
       enddo
-    enddo
-  enddo !iw
+    enddo  !iw
+  enddo  !i
   do i=1,namegqblh(ikloc)
     n=bamegqblh(2,i,ikloc)
     j=bamegqblh(1,i,ikloc)
     do ig=1,ngq(iq)
-      gw_self_energy(:,n,ikloc)=gw_self_energy(:,n,ikloc)-dconjg(ame(ig,i))*ame(ig,i)*occsvnr(j,jk)*wtvhgq(ig,iq)/occmax
+      self_energy_x(n,ikloc)=self_energy_x(n,ikloc) &
+        &-dconjg(ame(ig,i))*ame(ig,i)*occsvnr(j,jk)*wtvhgq(ig,iq)/occmax
     enddo
   enddo
 enddo
