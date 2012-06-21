@@ -987,6 +987,10 @@ case('response_w')
   lr_w0=lr_w0/ha2ev
   lr_w1=lr_w1/ha2ev
   lr_eta=lr_eta/ha2ev
+case('G0W0')
+  read(50,*,err=20) gw_mode
+  read(50,*,err=20) del_e
+  del_e=del_e/ha2ev
 case('response_iw')
   timgw=.true.
   read(50,*,err=20) lr_nw,lr_iw0,lr_iw1
