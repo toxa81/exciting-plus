@@ -13,6 +13,7 @@ character*100 qnm,fname
 integer nwloc,iwloc,iw
 character*8 c1,c2
 real(8), allocatable :: vxcnk(:,:)
+complex(8) :: dSe, Zf, Eqp
 
 call init0
 call init1
@@ -60,13 +61,25 @@ endif
 
 ! setup energy mesh
 call gen_w_mesh
+
+! G0W0 calculation
+if (gw_mode.eq.0) then
+ if (allocated(lr_w)) deallocate(lr_w)
+ lr_nw=2
+ allocate(lr_w(lr_nw))
+ lr_w=0.d0
+endif
+
 ! distribute frequency points over 1-st dimension
 nwloc=mpi_grid_map(lr_nw,dim_k)
 ! distribute q-vectors along 2-nd dimention
 nvqloc=mpi_grid_map(nvq,dim_q)
 
 allocate(gw_self_energy(lr_nw,nstsv,nkptnrloc))
+allocate(self_energy_x(nstsv,nkptnrloc))
+
 gw_self_energy=zzero
+self_energy_x=zzero
 
 megq_include_bands=chi0_include_bands
 ! main loop over q-points
@@ -81,20 +94,54 @@ do iqloc=1,nvqloc
   endif
 enddo
 call mpi_grid_reduce(gw_self_energy(1,1,1),lr_nw*nstsv*nkptnrloc,dims=(/dim_q/))
-gw_self_energy(:,:,:)=gw_self_energy(:,:,:)/nkptnr/omega
+call mpi_grid_reduce(self_energy_x(1,1),nstsv*nkptnrloc,dims=(/dim_q/))
 
-if (mpi_grid_root((/dim_q/))) then
-  do ikloc=1,nkptnrloc
-    ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
-    do i=1,nstsv
-      write(fname,'("self_energy_k",I4.4,"_b",I4.4,"__.dat")')ik,i
-      open(153,file=trim(adjustl(fname)),form="FORMATTED",status="REPLACE")
-      do iw=1,lr_nw
-        write(153,'(3G18.10)')dreal(lr_w(iw)),dimag(gw_self_energy(iw,i,ikloc)),dreal(gw_self_energy(iw,i,ikloc))
-      enddo
-      close(153)
-    enddo 
-  enddo
+gw_self_energy(:,:,:)=gw_self_energy(:,:,:)/nkptnr/omega
+self_energy_x(:,:)=self_energy_x(:,:)/nkptnr/omega
+
+do iw=1,lr_nw
+  gw_self_energy(iw,:,:)=gw_self_energy(iw,:,:)+self_energy_x(:,:) !the total self_energy
+enddo
+
+! G0W0 part, modified by I.H. Chu, H.P. Cheng, Jun,2012
+
+if (gw_mode.eq.0) then
+  if (mpi_grid_root((/dim_q/))) then
+    do ikloc=1,nkptnrloc
+      ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+      write(fname,'("Eqp_k",I4.4)')ik
+      open(154,file=trim(adjustl(fname)),form="FORMATTED",status="REPLACE")
+      do i=1,nstsv
+       dSe=gw_self_energy(2,i,ikloc)-gw_self_energy(1,i,ikloc)
+       dSe=dSe/dcmplx(del_e)
+       Zf=1.d0/(1.d0-dSe)
+       Eqp=dcmplx(evalsvnr(i,ik))+ &
+           Zf*(gw_self_energy(1,i,ikloc) -dcmplx(vxcnk(i,ik)))
+       write(154,'(I5,1X,6f16.6)') i,real(Eqp)*ha2ev, &
+                                    evalsvnr(i,ik)*ha2ev,vxcnk(i,ik)*ha2ev, &
+                                 real(gw_self_energy(1,i,ikloc))*ha2ev, &
+                                 real(self_energy_x(i,ikloc))*ha2ev,real(Zf)
+
+      enddo !i
+      write(154,*) "Done!"
+      close(154)
+    enddo !ikloc
+  endif
+!!!!!!!!!!!!!!!!!!!!!
+else
+  if (mpi_grid_root((/dim_q/))) then
+    do ikloc=1,nkptnrloc
+      ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc)
+      do i=1,nstsv
+        write(fname,'("self_energy_k",I4.4,"_b",I4.4,"__.dat")')ik,i
+        open(153,file=trim(adjustl(fname)),form="FORMATTED",status="REPLACE")
+        do iw=1,lr_nw
+          write(153,'(3G18.10)')dreal(lr_w(iw)),dimag(gw_self_energy(iw,i,ikloc)),dreal(gw_self_energy(iw,i,ikloc))
+        enddo
+        close(153)
+      enddo 
+    enddo
+  endif
 endif
 
 if (mpi_grid_root()) then
@@ -105,6 +152,7 @@ if (mpi_grid_root()) then
 endif
 deallocate(lr_w)
 deallocate(gw_self_energy)
+deallocate(self_energy_x)
 deallocate(vxcnk)
 return
 end
