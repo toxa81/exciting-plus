@@ -43,6 +43,12 @@ complex(8), allocatable :: lr_w(:)
 ! broadening parameter (Ha)
 real(8) lr_eta
 data lr_eta/0.01d0/
+! QP correction: 0 for G0W0, 1 for GW0 and 2 for GW
+integer gw_mode
+data gw_mode/0/
+! energy step used in G0W0 calculation
+real(8) del_e
+data del_e/0.01d0/
 ! inverse temperature for the matsubara frequency in eV^-1
 real(8) lr_beta
 data lr_beta/30.d0/
@@ -101,7 +107,7 @@ logical screenu4
 data screenu4/.true./
 
 complex(8), allocatable :: gw_self_energy(:,:,:)
-
+complex(8), allocatable :: self_energy_x(:,:)
 contains
 
 subroutine genchi0blh(ikloc,ngq,w,chi0w)
