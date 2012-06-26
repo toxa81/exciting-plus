@@ -242,7 +242,7 @@ enddo
 if (nvq0.ne.0) call genwtvhgq
 ! find |G+q| shells
 if (allocated(ngqsh)) deallocate(ngqsh)
-allocate(ngqsh(ngqmax))
+allocate(ngqsh(nvq))
 ngqsh=0
 if (allocated(gqshidx)) deallocate(gqshidx)
 allocate(gqshidx(ngqmax,nvq))
