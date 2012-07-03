@@ -99,7 +99,7 @@ do ikloc=1,nkptloc
   endif
   if (wannier) then
     if (ldisentangle) call disentangle(evalsv(1,ik),wann_c(1,1,ikloc),&
-      &evecsvloc(1,1,ikloc))
+      &evecsv)
     call genwann_h(.true.,evalsv(1,ik),wann_c(1,1,ikloc),&
       &wann_h(1,1,ik),wann_e(1,ik))
   endif
