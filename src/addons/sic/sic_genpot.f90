@@ -247,8 +247,8 @@ do lmloc=1,lmmaxwanloc
   lm3=mpi_grid_map(lmmaxwan,dim_k,loc=lmloc)
   do lm1=1,lmmaxwan
     do lm2=1,lmmaxwan
-      zt1=gauntyry(lm2l(lm1),lm2l(lm2),lm2l(lm3),&
-                  &lm2m(lm1),lm2m(lm2),lm2m(lm3))
+      zt1=gauntyry(lm2l(lm3),lm2l(lm2),lm2l(lm1),&
+                  &lm2m(lm3),lm2m(lm2),lm2m(lm1))
       if (abs(zt1).gt.1d-12) then
         do ispn=1,nspinor
           wvlm_tmp(:,lm3,ispn)=wvlm_tmp(:,lm3,ispn)-wanlm_tmp(:,lm1,ispn)*vlm_tmp(:,lm2,ispn)*zt1
