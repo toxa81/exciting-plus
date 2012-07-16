@@ -182,104 +182,12 @@ integer, parameter :: wp_ec=16
 
 contains
 
-!subroutine s_get_wanval(x,wanval,itp,ir,rmax,rcutoff)
-!use modmain
-!use mod_nrkp
-!use mod_wannier
-!use mod_madness
-!implicit none
-!real(8), intent(inout) :: x(3)
-!complex(8), intent(out) :: wanval(nspinor)
-!integer, optional, intent(in) :: itp
-!integer, optional, intent(in) :: ir
-!real(8), optional, intent(in) :: rmax
-!real(8), optional, intent(in) :: rcutoff
-!!
-!integer is,ia,ias,ir0,io,l,lm,ig,ispn
-!integer ntr(3),ik,ic
-!real(8) x0(3),vtc(3),vr0(3),r0,tp(2)
-!real(8) ur(0:lmaxapw,nufrmax),dr
-!complex(8) zt1,zt2,ylm(lmmaxapw)
-!logical, external :: vrinmt2
-!complex(8), external :: ylm_val
-!complex(8) expigr(m_ngvec)
-!complex(8) zm1(lmmaxapw,nufrmax,nspinor),zm2(nspinor)
-!!
-!wanval=zzero
-!if (present(itp).and.present(ir)) then
-!  x0(:)=s_x(:,itp)*s_r(ir)
-!  x(:)=x0(:)+m_wanpos(:)
-!else
-!  x0(:)=x(:)-m_wanpos(:)
-!endif
-!if (present(rmax)) then
-!  if (sum(x0(:)**2).gt.(rmax**2+1d-8)) then
-!    write(*,'("Error(s_get_wanval2): outside of rmax")')
-!    write(*,'("  rmax : ",G18.10)')rmax
-!    write(*,'("   x   : ",3G18.10)')x0
-!    write(*,'("  |x|  : ",G18.10)')sqrt(sum(x0(:)**2))
-!    call pstop
-!  endif
-!endif
-!if (present(rcutoff)) then
-!  if (sum(x0(:)**2).gt.(rcutoff**2)) return
-!endif
-!
-!if (vrinmt2(x,is,ia,ntr,ir0,vr0,dr)) then
-!  ias=idxas(ia,is)
-!  ic=ias2ic(ias)
-!  call sphcrd(vr0,r0,tp)
-!  call genylm(lmaxapw,tp,ylm)
-!  vtc(:)=ntr(1)*avec(:,1)+ntr(2)*avec(:,2)+ntr(3)*avec(:,3)
-!  ur=0.d0
-!  do l=0,lmaxapw
-!    do io=1,nufr(l,is)
-!      ur(l,io)=ufr(ir0,l,io,ic)+dr*(ufr(ir0+1,l,io,ic)-ufr(ir0,l,io,ic))
-!    enddo !io
-!  enddo !l
-!  zm1=zzero
-!  do ik=1,nkptnr
-!    zt1=exp(zi*dot_product(vkcnr(:,ik),vtc(:)))*wkptnr(ik)
-!    do ispn=1,nspinor
-!      zm1(:,:,ispn)=zm1(:,:,ispn)+zt1*m_wann_unkmt(:,:,ias,ispn,ik)
-!    enddo
-!  enddo
-!  do ispn=1,nspinor
-!    do lm=1,lmmaxapw
-!      l=lm2l(lm)
-!      do io=1,nufr(l,is)
-!        wanval(ispn)=wanval(ispn)+zm1(lm,io,ispn)*ur(l,io)*ylm(lm)
-!      enddo !io
-!    enddo !lm
-!  enddo !ispn
-!else
-!  do ig=1,m_ngvec
-!    expigr(ig)=exp(zi*dot_product(x(:),vgc(:,ig)))  
-!  enddo
-!  do ik=1,nkptnr
-!    zt1=wkptnr(ik)*exp(zi*dot_product(vkcnr(:,ik),x(:)))/sqrt(omega)
-!    zm2=zzero
-!! TODO: check if this can be optimized by switching order of indexes
-!    do ispn=1,nspinor
-!      do ig=1,m_ngknr(ik)
-!      zt2=expigr(m_igkignr(ig,ik))
-!      !do ispn=1,nspinor
-!        zm2(ispn)=zm2(ispn)+zt2*m_wann_unkit(ig,ispn,ik)
-!      enddo
-!    enddo
-!    do ispn=1,nspinor
-!      wanval(ispn)=wanval(ispn)+zt1*zm2(ispn)
-!    enddo
-!  enddo
-!endif
-!return
-!end subroutine
-
-subroutine s_spinor_func_val(x,f1lm,zval1,f2lm,zval2,rmax,rcutoff)
+subroutine s_spinor_func_val(x,lmax,f1lm,zval1,f2lm,zval2,rmax,rcutoff)
 use modmain
 implicit none
 ! arguments
 real(8), intent(in) :: x(3)
+integer, intent(in) :: lmax
 complex(8), intent(in) :: f1lm(lmmaxwan,s_nr,nspinor)
 complex(8), intent(out) :: zval1(nspinor)
 complex(8), optional, intent(in) :: f2lm(lmmaxwan,s_nr,nspinor)
@@ -287,11 +195,12 @@ complex(8), optional, intent(out) :: zval2(nspinor)
 real(8), optional, intent(in) :: rmax
 real(8), optional, intent(in) :: rcutoff
 ! local variables
-integer ir1,lm,ir,ispn
+integer ir1,lm,ir,ispn,lmmax
 real (8) x0,tp(2),dx
 complex(8) ylm(lmmaxwan)
 complex(8) z1,z2
 !
+lmmax=(lmax+1)**2
 if (present(rmax)) then
   if (sum(x(:)**2).gt.(rmax**2+1d-8)) then
     write(*,'("Error(s_spinor_func_val): outside of rmax")')
@@ -310,7 +219,7 @@ if (present(rcutoff)) then
 endif
 
 call sphcrd(x,x0,tp)
-call genylm(lmaxwan,tp,ylm)
+call genylm(lmax,tp,ylm)
 
 ir1=0
 do ir=s_nr-1,1,-1
@@ -327,13 +236,13 @@ else
 endif
 do ispn=1,nspinor
   z1=zzero
-  do lm=1,lmmaxwan
+  do lm=1,lmmax
     z1=z1+(f1lm(lm,ir1,ispn)+dx*(f1lm(lm,ir1+1,ispn)-f1lm(lm,ir1,ispn)))*ylm(lm)
   enddo
   zval1(ispn)=z1
   if (present(zval2)) then
     z2=zzero
-    do lm=1,lmmaxwan
+    do lm=1,lmmax
       z2=z2+(f2lm(lm,ir1,ispn)+dx*(f2lm(lm,ir1+1,ispn)-f2lm(lm,ir1,ispn)))*ylm(lm)
     enddo
     zval2(ispn)=z2
@@ -376,7 +285,7 @@ else
     do itp=1,s_ntp
       x1(:)=s_x(:,itp)*s_r(ir)
       x2(:)=pos1(:)+x1(:)-pos2(:)
-      call s_spinor_func_val(x2,f2lm,f2tp_(itp,ir,:),rcutoff=s_rmin)
+      call s_spinor_func_val(x2,lmaxwan,f2lm,f2tp_(itp,ir,:),rcutoff=s_rmin)
     enddo
   enddo !ir
 !$OMP END PARALLEL DO
@@ -701,197 +610,197 @@ endif
 return
 end subroutine
 
-subroutine sic_rhomagk_exact(ikloc)
-use modmain
-use mod_seceqn
-implicit none
-! arguments
-integer, intent(in) :: ikloc
-! local variables
-integer j,n
-integer is,ias,ik,ispn
-integer ir
-integer ig1,io1,io2,l1,l2,j1,j2,lm1,lm2,lm3,l3
-integer nstocc
-real(8) t1,emin
-complex(8) zt1,zt2(nspinor)
-complex(8) zv1(lmmaxapw,nufrmax)
-! allocatable arrays
-complex(8), allocatable :: apwalm(:,:,:,:)
-complex(8), allocatable :: gntmp(:,:)
-complex(8), allocatable :: zdens(:,:,:,:,:,:)
-real(8), allocatable :: wo(:)
-integer, allocatable :: istocc(:)
-complex(8), allocatable ::zfft(:)
-real(8), allocatable :: rhotmp(:,:)
-complex(8), allocatable :: evec(:,:)
-complex(8), allocatable :: wfsvmt(:,:,:,:,:)
-complex(8), allocatable :: wfsvit(:,:,:)
-!
-ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
-call timer_start(t_rho_wf)
-! check bottom energy
-emin=1d10
-do j=1,sic_wantran%nwan
-  n=sic_wantran%iwan(j)
-  if (sic_apply(n).ge.2) then !dreal(sic_wan_h0k(j,j,ikloc)).le.sic_bottom_energy) then
-    emin=min(emin,dreal(sic_wan_h0k(j,j,ikloc)))
-    !write(*,'("Error(sic_rhomagk_exact): energy of SIC states is below ",F12.6," Ha")')sic_bottom_energy
-    !do j1=1,sic_wantran%nwan
-    !  write(*,'(" j : ",I4,"  energy : ",F12.6)')j1,dreal(sic_wan_h0k(j1,j1,ikloc))
-    !enddo
-    !stop
-  endif
-enddo
-! generate wave functions; use last nwantot slots to store Bloch sums of Wannier functions 
-allocate(apwalm(ngkmax,lmmaxapw,apwordmax,natmtot))
-allocate(wfsvmt(lmmaxapw,nufrmax,natmtot,nspinor,nstsv+nwantot))
-allocate(wfsvit(ngkmax,nspinor,nstsv+nwantot))
-wfsvmt(:,:,:,:,:)=zzero
-wfsvit(:,:,:)=zzero
-call genapwalm(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),sfacgk(1,1,1,ikloc),apwalm)
-allocate(evec(nspinor*nmatmax,nstsv))
-if (tsveqn) then
-  call evecsvfd(evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),evec)
-else
-  evec(:,:)=evecfdloc(:,:,ikloc)
-endif
-call genwfsvc(lmaxapw,lmmaxapw,ngk(1,ik),nstsv,apwalm,evec,wfsvmt,wfsvit)
-deallocate(evec,apwalm)
-! generate Bloch sums of Wannier functions
-do n=1,nwantot
-  do j=1,nstsv
-    wfsvmt(:,:,:,:,nstsv+n)=wfsvmt(:,:,:,:,nstsv+n)+wfsvmt(:,:,:,:,j)*wann_c(n,j,ikloc)
-    wfsvit(:,:,nstsv+n)=wfsvit(:,:,nstsv+n)+wfsvit(:,:,j)*wann_c(n,j,ikloc)
-  enddo
-enddo
-! convert Bloch sums to another representation
-do j=1,sic_wantran%nwan
-  n=sic_wantran%iwan(j)
-  call sic_convert_unk(ngk(1,ik),igkig(1,1,ikloc),wfsvmt(1,1,1,1,nstsv+n),&
-    &wfsvit(1,1,nstsv+n),s_wkmt(1,1,1,1,j,ikloc),s_wkit(1,1,j,ikloc))
-enddo
-! count states which contribute to charge density
-allocate(wo(nstsv))
-allocate(istocc(nstsv))
-nstocc=0
-!do j=1,nstsv
-!  t1=wkpt(ik)*occsv(j,ik)
-!  if (abs(t1).gt.epsocc.and.evalsv(j,ik).lt.emin) then
-!    nstocc=nstocc+1
-!    wo(nstocc)=t1
-!    istocc(nstocc)=j
-!    sic_evalsum=sic_evalsum+t1*evalsv(j,ik)
+!subroutine sic_rhomagk_exact(ikloc)
+!use modmain
+!use mod_seceqn
+!implicit none
+!! arguments
+!integer, intent(in) :: ikloc
+!! local variables
+!integer j,n
+!integer is,ias,ik,ispn
+!integer ir
+!integer ig1,io1,io2,l1,l2,j1,j2,lm1,lm2,lm3,l3
+!integer nstocc
+!real(8) t1,emin
+!complex(8) zt1,zt2(nspinor)
+!complex(8) zv1(lmmaxapw,nufrmax)
+!! allocatable arrays
+!complex(8), allocatable :: apwalm(:,:,:,:)
+!complex(8), allocatable :: gntmp(:,:)
+!complex(8), allocatable :: zdens(:,:,:,:,:,:)
+!real(8), allocatable :: wo(:)
+!integer, allocatable :: istocc(:)
+!complex(8), allocatable ::zfft(:)
+!real(8), allocatable :: rhotmp(:,:)
+!complex(8), allocatable :: evec(:,:)
+!complex(8), allocatable :: wfsvmt(:,:,:,:,:)
+!complex(8), allocatable :: wfsvit(:,:,:)
+!!
+!ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
+!call timer_start(t_rho_wf)
+!! check bottom energy
+!emin=1d10
+!do j=1,sic_wantran%nwan
+!  n=sic_wantran%iwan(j)
+!  if (sic_apply(n).ge.2) then !dreal(sic_wan_h0k(j,j,ikloc)).le.sic_bottom_energy) then
+!    emin=min(emin,dreal(sic_wan_h0k(j,j,ikloc)))
+!    !write(*,'("Error(sic_rhomagk_exact): energy of SIC states is below ",F12.6," Ha")')sic_bottom_energy
+!    !do j1=1,sic_wantran%nwan
+!    !  write(*,'(" j : ",I4,"  energy : ",F12.6)')j1,dreal(sic_wan_h0k(j1,j1,ikloc))
+!    !enddo
+!    !stop
 !  endif
 !enddo
-do j=1,sic_wantran%nwan
-  n=sic_wantran%iwan(j)
-  if (sic_apply(n).ge.2) then
-    t1=wkpt(ik)*occmax
-    nstocc=nstocc+1
-    wo(nstocc)=t1
-    istocc(nstocc)=nstsv+n
-    sic_evalsum=sic_evalsum+t1*dreal(sic_wan_h0k(j,j,ikloc))
-  endif
-enddo
-call timer_start(t_rho_mag_mt)
-allocate(zdens(lmmaxapw,lmmaxapw,nufrmax,nufrmax,natmtot,nspinor))
-zdens=zzero
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(is,l1,io1,l2,io2,j,ispn,zv1,lm1,lm2) 
-do ias=1,natmtot
-  is=ias2is(ias)
-  do l1=0,lmaxapw
-    do io1=1,nufr(l1,is)
-      do l2=0,lmaxapw
-        do io2=1,nufr(l2,is)
-          do j=1,nstocc
-            do ispn=1,nspinor
-              zv1(:,:)=wfsvmt(:,:,ias,ispn,istocc(j))
-              do lm2=l2**2+1,(l2+1)**2
-                do lm1=l1**2+1,(l1+1)**2
-                  zdens(lm1,lm2,io1,io2,ias,ispn)=zdens(lm1,lm2,io1,io2,ias,ispn)+&
-                    &dconjg(zv1(lm1,io1))*zv1(lm2,io2)*wo(j)
-                enddo
-              enddo
-            enddo
-          enddo !j
-        enddo
-      enddo
-    enddo
-  enddo
-enddo
-!$OMP END PARALLEL DO
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(gntmp,l1,l2,l3,ias,is,j1,j2,io1,io2,zt2,ispn,zt1)
-allocate(gntmp(lmmaxapw,lmmaxapw)) 
-!$OMP DO
-do lm3=1,lmmaxvr
-  gntmp(:,:)=gntyry(lm3,:,:)
-  l3=lm2l(lm3)
-  do ias=1,natmtot
-    is=ias2is(ias)
-    j1=0
-    do l1=0,lmaxapw
-      do io1=1,nufr(l1,is)
-        j1=j1+1
-        j2=0
-        do l2=0,lmaxapw
-          do io2=1,nufr(l2,is)
-            j2=j2+1
-            if (mod(l1+l2+l3,2).eq.0) then
-              zt2=zzero
-              do ispn=1,nspinor
-                zt1=zzero
-                do lm2=l2**2+1,(l2+1)**2
-                  do lm1=l1**2+1,(l1+1)**2
-                    zt1=zt1+zdens(lm1,lm2,io1,io2,ias,ispn)*gntmp(lm1,lm2)
-                  enddo
-                enddo
-                zt2(ispn)=zt1
-              enddo
-              rhomagmt(j1,j2,lm3,ias,:)=rhomagmt(j1,j2,lm3,ias,:)+dreal(zt2(:))
-            endif
-          enddo
-        enddo
-      enddo
-    enddo
-  enddo !ias
-enddo !lm3
-!$OMP END DO
-deallocate(gntmp)
-!$OMP END PARALLEL 
-deallocate(zdens)
-call timer_stop(t_rho_mag_mt)
-call timer_start(t_rho_mag_it)
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(zfft,rhotmp,j,ispn,ig1,ir)
-allocate(zfft(ngrtot))
-allocate(rhotmp(ngrtot,nspinor))
-rhotmp=0.d0
-!$OMP DO
-do j=1,nstocc
-  do ispn=1,nspinor
-    zfft=zzero
-    do ig1=1,ngk(1,ik) 
-      zfft(igfft(igkig(ig1,1,ikloc)))=wfsvit(ig1,ispn,istocc(j))
-    enddo
-    call zfftifc(3,ngrid,1,zfft) 
-    do ir=1,ngrtot
-      rhotmp(ir,ispn)=rhotmp(ir,ispn)+(abs(zfft(ir))**2)*wo(j)/omega
-    enddo
-  enddo
-enddo
-!$OMP END DO
-deallocate(zfft)
-!$OMP CRITICAL
-rhomagit=rhomagit+rhotmp
-!$OMP END CRITICAL
-deallocate(rhotmp)
-!$OMP END PARALLEL
-call timer_stop(t_rho_mag_it)
-deallocate(wo,istocc,wfsvmt,wfsvit)
-return
-end subroutine
+!! generate wave functions; use last nwantot slots to store Bloch sums of Wannier functions 
+!allocate(apwalm(ngkmax,lmmaxapw,apwordmax,natmtot))
+!allocate(wfsvmt(lmmaxapw,nufrmax,natmtot,nspinor,nstsv+nwantot))
+!allocate(wfsvit(ngkmax,nspinor,nstsv+nwantot))
+!wfsvmt(:,:,:,:,:)=zzero
+!wfsvit(:,:,:)=zzero
+!call genapwalm(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),sfacgk(1,1,1,ikloc),apwalm)
+!allocate(evec(nspinor*nmatmax,nstsv))
+!if (tsveqn) then
+!  call evecsvfd(evecfvloc(1,1,1,ikloc),evecsvloc(1,1,ikloc),evec)
+!else
+!  evec(:,:)=evecfdloc(:,:,ikloc)
+!endif
+!call genwfsvc(lmaxapw,lmmaxapw,ngk(1,ik),nstsv,apwalm,evec,wfsvmt,wfsvit)
+!deallocate(evec,apwalm)
+!! generate Bloch sums of Wannier functions
+!do n=1,nwantot
+!  do j=1,nstsv
+!    wfsvmt(:,:,:,:,nstsv+n)=wfsvmt(:,:,:,:,nstsv+n)+wfsvmt(:,:,:,:,j)*wann_c(n,j,ikloc)
+!    wfsvit(:,:,nstsv+n)=wfsvit(:,:,nstsv+n)+wfsvit(:,:,j)*wann_c(n,j,ikloc)
+!  enddo
+!enddo
+!! convert Bloch sums to another representation
+!do j=1,sic_wantran%nwan
+!  n=sic_wantran%iwan(j)
+!  call sic_convert_unk(ngk(1,ik),igkig(1,1,ikloc),wfsvmt(1,1,1,1,nstsv+n),&
+!    &wfsvit(1,1,nstsv+n),s_wkmt(1,1,1,1,j,ikloc),s_wkit(1,1,j,ikloc))
+!enddo
+!! count states which contribute to charge density
+!allocate(wo(nstsv))
+!allocate(istocc(nstsv))
+!nstocc=0
+!!do j=1,nstsv
+!!  t1=wkpt(ik)*occsv(j,ik)
+!!  if (abs(t1).gt.epsocc.and.evalsv(j,ik).lt.emin) then
+!!    nstocc=nstocc+1
+!!    wo(nstocc)=t1
+!!    istocc(nstocc)=j
+!!    sic_evalsum=sic_evalsum+t1*evalsv(j,ik)
+!!  endif
+!!enddo
+!do j=1,sic_wantran%nwan
+!  n=sic_wantran%iwan(j)
+!  if (sic_apply(n).ge.2) then
+!    t1=wkpt(ik)*occmax
+!    nstocc=nstocc+1
+!    wo(nstocc)=t1
+!    istocc(nstocc)=nstsv+n
+!    sic_evalsum=sic_evalsum+t1*dreal(sic_wan_h0k(j,j,ikloc))
+!  endif
+!enddo
+!call timer_start(t_rho_mag_mt)
+!allocate(zdens(lmmaxapw,lmmaxapw,nufrmax,nufrmax,natmtot,nspinor))
+!zdens=zzero
+!!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(is,l1,io1,l2,io2,j,ispn,zv1,lm1,lm2) 
+!do ias=1,natmtot
+!  is=ias2is(ias)
+!  do l1=0,lmaxapw
+!    do io1=1,nufr(l1,is)
+!      do l2=0,lmaxapw
+!        do io2=1,nufr(l2,is)
+!          do j=1,nstocc
+!            do ispn=1,nspinor
+!              zv1(:,:)=wfsvmt(:,:,ias,ispn,istocc(j))
+!              do lm2=l2**2+1,(l2+1)**2
+!                do lm1=l1**2+1,(l1+1)**2
+!                  zdens(lm1,lm2,io1,io2,ias,ispn)=zdens(lm1,lm2,io1,io2,ias,ispn)+&
+!                    &dconjg(zv1(lm1,io1))*zv1(lm2,io2)*wo(j)
+!                enddo
+!              enddo
+!            enddo
+!          enddo !j
+!        enddo
+!      enddo
+!    enddo
+!  enddo
+!enddo
+!!$OMP END PARALLEL DO
+!!$OMP PARALLEL DEFAULT(SHARED) &
+!!$OMP PRIVATE(gntmp,l1,l2,l3,ias,is,j1,j2,io1,io2,zt2,ispn,zt1)
+!allocate(gntmp(lmmaxapw,lmmaxapw)) 
+!!$OMP DO
+!do lm3=1,lmmaxvr
+!  gntmp(:,:)=gntyry(lm3,:,:)
+!  l3=lm2l(lm3)
+!  do ias=1,natmtot
+!    is=ias2is(ias)
+!    j1=0
+!    do l1=0,lmaxapw
+!      do io1=1,nufr(l1,is)
+!        j1=j1+1
+!        j2=0
+!        do l2=0,lmaxapw
+!          do io2=1,nufr(l2,is)
+!            j2=j2+1
+!            if (mod(l1+l2+l3,2).eq.0) then
+!              zt2=zzero
+!              do ispn=1,nspinor
+!                zt1=zzero
+!                do lm2=l2**2+1,(l2+1)**2
+!                  do lm1=l1**2+1,(l1+1)**2
+!                    zt1=zt1+zdens(lm1,lm2,io1,io2,ias,ispn)*gntmp(lm1,lm2)
+!                  enddo
+!                enddo
+!                zt2(ispn)=zt1
+!              enddo
+!              rhomagmt(j1,j2,lm3,ias,:)=rhomagmt(j1,j2,lm3,ias,:)+dreal(zt2(:))
+!            endif
+!          enddo
+!        enddo
+!      enddo
+!    enddo
+!  enddo !ias
+!enddo !lm3
+!!$OMP END DO
+!deallocate(gntmp)
+!!$OMP END PARALLEL 
+!deallocate(zdens)
+!call timer_stop(t_rho_mag_mt)
+!call timer_start(t_rho_mag_it)
+!!$OMP PARALLEL DEFAULT(SHARED) &
+!!$OMP PRIVATE(zfft,rhotmp,j,ispn,ig1,ir)
+!allocate(zfft(ngrtot))
+!allocate(rhotmp(ngrtot,nspinor))
+!rhotmp=0.d0
+!!$OMP DO
+!do j=1,nstocc
+!  do ispn=1,nspinor
+!    zfft=zzero
+!    do ig1=1,ngk(1,ik) 
+!      zfft(igfft(igkig(ig1,1,ikloc)))=wfsvit(ig1,ispn,istocc(j))
+!    enddo
+!    call zfftifc(3,ngrid,1,zfft) 
+!    do ir=1,ngrtot
+!      rhotmp(ir,ispn)=rhotmp(ir,ispn)+(abs(zfft(ir))**2)*wo(j)/omega
+!    enddo
+!  enddo
+!enddo
+!!$OMP END DO
+!deallocate(zfft)
+!!$OMP CRITICAL
+!rhomagit=rhomagit+rhotmp
+!!$OMP END CRITICAL
+!deallocate(rhotmp)
+!!$OMP END PARALLEL
+!call timer_stop(t_rho_mag_it)
+!deallocate(wo,istocc,wfsvmt,wfsvit)
+!return
+!end subroutine
 
 !subroutine sic_set_hunif(ikloc,nmat,ld,h,o)
 !use modmain
