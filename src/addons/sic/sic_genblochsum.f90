@@ -84,17 +84,17 @@ do j=1,sic_wantran%nwan
           call ws_reduce(x,sic_wan_rwsmax)
           vtcmt(:,itp,ir,ias)=x(:)-x0(:)  !TODO: check + or - ; check t= argument
           if (twk.and.twvk) then
-            call s_spinor_func_val(x,s_wlm(1,1,1,j),zt1,&
+            call s_spinor_func_val(x,lmaxwan,s_wlm(1,1,1,j),zt1,&
               &s_wvlm(1,1,1,j),zt2,rcutoff=s_rmax)
             f1tp(itp,ir,ias,:)=zt1(:)
             f2tp(itp,ir,ias,:)=zt2(:)
           else
             if (twk) then
-              call s_spinor_func_val(x,s_wlm(1,1,1,j),zt1,rcutoff=s_rmax)
+              call s_spinor_func_val(x,lmaxwan,s_wlm(1,1,1,j),zt1,rcutoff=s_rmax)
               f1tp(itp,ir,ias,:)=zt1(:)
             endif
             if (twvk) then
-              call s_spinor_func_val(x,s_wvlm(1,1,1,j),zt2,rcutoff=s_rmax)
+              call s_spinor_func_val(x,lmaxwan,s_wvlm(1,1,1,j),zt2,rcutoff=s_rmax)
               f2tp(itp,ir,ias,:)=zt2(:)
             endif
           endif
@@ -150,17 +150,17 @@ do j=1,sic_wantran%nwan
       call ws_reduce(x,sic_wan_rwsmax)
       vtcir(:,ir)=x(:)-x0(:)
       if (twk.and.twvk) then
-        call s_spinor_func_val(x,s_wlm(1,1,1,j),zt1,&
+        call s_spinor_func_val(x,lmaxwan,s_wlm(1,1,1,j),zt1,&
           &s_wvlm(1,1,1,j),zt2,rcutoff=s_rmax)
         f1ir(ir,:)=zt1(:)
         f2ir(ir,:)=zt2(:)
       else
         if (twk) then
-          call s_spinor_func_val(x,s_wlm(1,1,1,j),zt1,rcutoff=s_rmax)
+          call s_spinor_func_val(x,lmaxwan,s_wlm(1,1,1,j),zt1,rcutoff=s_rmax)
           f1ir(ir,:)=zt1(:)
         endif
         if (twvk) then
-          call s_spinor_func_val(x,s_wvlm(1,1,1,j),zt2,rcutoff=s_rmax)
+          call s_spinor_func_val(x,lmaxwan,s_wvlm(1,1,1,j),zt2,rcutoff=s_rmax)
           f2ir(ir,:)=zt2(:)
         endif
       endif
