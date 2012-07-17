@@ -272,7 +272,7 @@ complex(8) wanval(nspinor)
 integer ispn
 !
 wrho=0.d0
-call s_spinor_func_val(x,s_wlm(1,1,1,j),wanval,rcutoff=rcutoff)
+call s_spinor_func_val(x,lmaxwan,s_wlm(1,1,1,j),wanval,rcutoff=rcutoff)
 do ispn=1,nspinor
   wrho=wrho+abs(wanval(ispn))**2
 enddo
