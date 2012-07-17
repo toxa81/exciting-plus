@@ -205,6 +205,9 @@ do iscl=1,maxscl
   call timer_stop(t_hbo_rad)
   evalsv(:,:)=0.d0
   if (sic) sic_evalsum=0.d0
+  if (iscl.eq.1.and.ldapu.ne.0) then
+    call init_vmatlu
+  endif
 ! begin parallel loop over k-points
   do ikloc=1,nkptloc
 ! solve the secular equation
@@ -243,7 +246,7 @@ do iscl=1,maxscl
 #endif
   if (sic) call mpi_grid_reduce(sic_evalsum,dims=(/dim_k/))
 ! LDA+U
-  if (ldapu.ne.0) then
+  if (iscl.gt.1.and.ldapu.ne.0) then
 ! generate the LDA+U density matrix
     call gendmatrsh
 ! generate the LDA+U potential matrix
