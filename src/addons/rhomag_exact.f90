@@ -17,11 +17,11 @@ rhomagmt=0.d0
 rhomagit=zzero
 call timer_start(t_rho_mag_sum)
 do ikloc=1,nkptloc
-  if (sic.and.sic_hmlt_type.eq.0) then
-    call sic_rhomagk_exact(ikloc)
-  else
+  !if (sic.and.sic_hmlt_type.eq.0) then
+  !  call sic_rhomagk_exact(ikloc)
+  !else
     call rhomagk_exact(ikloc)
-  endif
+  !endif
 end do
 n=nlufrmax*nlufrmax*lmmaxvr*natmtot*nspinor
 call mpi_grid_reduce(rhomagmt(1,1,1,1,1),n,dims=(/dim_k/))
