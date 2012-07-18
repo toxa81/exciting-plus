@@ -33,9 +33,9 @@ call lapw_get_dmatu(dmatylm)
 do ikloc=1,nkptloc
   ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
   call match(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),sfacgk(1,1,1,ikloc),&
-    apwalm)
+    &apwalm)
   call genwfsvmt(lmaxvr,lmmaxvr,ngk(1,ik),evecfvloc(1,1,1,ikloc), &
-    evecsvloc(1,1,ikloc),apwalm,wfsvmt)
+    &evecsvloc(1,1,ikloc),apwalm,wfsvmt)
 ! begin loop over atoms and species
   do is=1,nspecies
     l=llu(is)
@@ -53,13 +53,13 @@ do ikloc=1,nkptloc
                   lm1=idxlm(l,m1)
                   lm2=idxlm(l,m2)
                   z1=wfsvmt(lm1,io1,ias,ispn,j)*&
-                    dconjg(wfsvmt(lm2,io2,ias,jspn,j))*&
-                    ufrp(l,io1,io2,ias2ic(ias))*wkpt(ik)
+                    &dconjg(wfsvmt(lm2,io2,ias,jspn,j))*&
+                    &ufrp(l,io1,io2,ias2ic(ias))*wkpt(ik)
                   if (ldensmtrx.and.bndint(j,evalsv(j,ik),dm_e1,dm_e2)) then
                     dmatylm(lm1,lm2,ispn,jspn,ias)=dmatylm(lm1,lm2,ispn,jspn,ias)+z1
                   else
                     dmatylm(lm1,lm2,ispn,jspn,ias)=dmatylm(lm1,lm2,ispn,jspn,ias)+&
-                      z1*occsv(j,ik)
+                      &z1*occsv(j,ik)
                   endif
                 enddo
                 enddo
@@ -76,7 +76,7 @@ enddo !ikloc
 #endif 
 
 call mpi_grid_reduce(dmatylm(1,1,1,1,1),lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,&
-  dims=(/dim_k/),all=.true.)
+  &dims=(/dim_k/),all=.true.)
 call symdmat(lmaxlu,lmmaxlu,dmatylm)
 dmatlu=dmatylm
 ! compute matrix in Rlm
