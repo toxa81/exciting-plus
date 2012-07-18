@@ -506,7 +506,7 @@ do m1=-l,l
 ! project to local orbital    
     if (wannier_prjao.eq.0) then
       prjlo=prjlo+dconjg(wfsvmt(lm1,io1,ias,ispn))*&
-        ufrp(l,io1,apword(l,is)+ilo,ic)*rylm_lps(lm,lm1,ias)
+        &ufrp(l,io1,apword(l,is)+ilo,ic)*rylm_lps(lm,lm1,ias)
     endif
 ! project to f(x)=(1+cos(Pi*x/R))
     if (wannier_prjao.eq.1) then
