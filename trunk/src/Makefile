@@ -39,8 +39,7 @@ SRC_modules = ./addons/mod_mpi_grid.f90 \
               
 OBJ_modules = $(SRC_modules:.f90=.o)
 SRC = $(shell find . -name \*.f90)
-OBJ_extras = addons/nfft/nfft_intrf.o 
-OBJ = $(SRC:.f90=.o) $(OBJ_extras) 
+OBJ = $(SRC:.f90=.o)
 
 EXE = elk
 
@@ -67,7 +66,6 @@ gensrc:
 	python ../ftemplate.py <./addons/mod_hdf5.tpl >./addons/mod_hdf5.f90
 
 extras:
-	cd addons/nfft; $(MAKE)
 ifneq (,$(findstring D_MAD_,$(CPP_OPTS)))
 	cd addons/madness; $(MAKE)
 endif
