@@ -1,4 +1,4 @@
-subroutine sic_wan(fout)
+subroutine sic_wan_pot(fout)
 use modmain
 use mod_sic
 use mod_nrkp
@@ -86,15 +86,21 @@ do j=1,sic_wantran%nwan
   wanprop(wp_normtp,j)=rintegrate(s_nr,s_r,f1tp)
   wanprop(wp_normlm,j)=rintegrate(s_nr,s_r,f2lm)
   call timer_stop(t_sic_wan_gen)
+! generate potential
+  if (sic_apply(n).eq.3) then
+    call timer_start(t_sic_wan_pot)
+    call sic_genpot(n,s_wlm(1,1,1,j),s_wvlm(1,1,1,j),wanprop(1,j))
+    call timer_stop(t_sic_wan_pot)
+  endif
 enddo !j
 deallocate(wantp,f1tp,f2lm)
 
-#ifdef _MAD_
+!#ifdef _MAD_
 !call madness_gen_hpot
 !call madness_gen_xc
-#endif
+!#endif
 
-call sic_localize(fout,wanprop)
+!call sic_localize(fout,wanprop)
 
 ! compute overlap integrals 
 allocate(ovlp(sic_wantran%nwt))
