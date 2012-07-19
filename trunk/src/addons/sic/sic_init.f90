@@ -110,6 +110,17 @@ if (.not.allocated(sic_wan_umtrx)) then
   do i=1,nwantot
     sic_wan_umtrx(i,i,:)=zone
   enddo
+  if (.true.) then
+    do i=1,nkptnrloc
+      call rndumtrx(nwantot,sic_wan_umtrx(1,1,i))
+    enddo
+    if (.true.) then
+      call mpi_grid_bcast(sic_wan_umtrx(1,1,1),nwantot*nwantot,dims=(/dim_k/))
+      do i=2,nkptnrloc
+        sic_wan_umtrx(:,:,i)=sic_wan_umtrx(:,:,1)
+      enddo
+    endif
+  endif
 endif
 if (allocated(sic_wan_h0k)) deallocate(sic_wan_h0k)
 allocate(sic_wan_h0k(sic_wantran%nwan,sic_wantran%nwan,nkptloc))
