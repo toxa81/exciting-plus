@@ -110,8 +110,10 @@ do itask=1,ntasks
     call sic_gndstate 
   case(701)
     call sic_main
-  case(702)
-    call sic_test_vme
+  !case(702)
+  !  call sic_test_vme
+  !case(703)
+  !  call sic_test_localize
   case(800)
     call response
   case(801)
