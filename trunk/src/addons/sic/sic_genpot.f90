@@ -258,7 +258,7 @@ do lmloc=1,lmmaxwanloc
   enddo
 enddo
 !$OMP END PARALLEL DO
-call mpi_grid_reduce(wvlm_tmp(1,1,1),s_nr_min*lmmaxwan*nspinor,all=.true.) 
+call mpi_grid_reduce(wvlm_tmp(1,1,1),s_nr_min*lmmaxwan*nspinor,dims=(/dim_k/),all=.true.) 
 wvlm=zzero
 do ispn=1,nspinor
   do lm=1,lmmaxwan
