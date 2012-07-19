@@ -56,10 +56,11 @@ um=zzero
 do j1=1,sic_wantran%nwan
   do j2=1,sic_wantran%nwan
     do j=1,sic_wantran%nwan
-      um(j1,j2)=um(j1,j2)+gm(j1,j)*dconjg(gm(j2,j))*exp(-zi*eps*(eval(j)-1.d0))
+      um(j1,j2)=um(j1,j2)+gm(j1,j)*dconjg(gm(j2,j))*exp(zi*eps*(eval(j)-1.d0))
     enddo
   enddo
 enddo
 deallocate(gm,eval)
 return
 end subroutine
+
