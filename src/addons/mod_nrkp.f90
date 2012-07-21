@@ -122,6 +122,7 @@ integer ikloc,ik,n,m,j
 complex(8) zt1
 real(8) w2
 complex(8), allocatable :: wanc(:,:)
+character*100 fname
 !
 if (ldisentangle) then
   write(*,'("Error(wancnr_transform): disentanglement is not implemented here")')
@@ -135,6 +136,7 @@ wann_unkmt=zzero
 wann_unkit=zzero
 allocate(wanc(nwantot,nstsv))
 do ikloc=1,nkptnrloc
+  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc) 
   do n=1,nwantot
     do m=1,nwantot
       zt1=zzero
@@ -143,12 +145,13 @@ do ikloc=1,nkptnrloc
       enddo
       if (n.eq.m) zt1=zt1-zone
       if (abs(zt1).gt.1d-10) then
-        write(*,'("Error(wancnr_transform): umtrx in not hermitian")')
+        write(*,'("Error(wancnr_transform): umtrx in not unitary")')
+        write(fname,'("umtrx_k",I4.4,".txt")')ik
+        call wrmtrx(trim(adjustl(fname)),nwantot,nwantot,umtrx(1,1,ikloc),nwantot)
         call pstop
       endif
     enddo
   enddo  
-  ik=mpi_grid_map(nkptnr,dim_k,loc=ikloc) 
   call wan_gencsv(lmmaxapw,vkcnr(1,ik),evalsvnr(1,ik),&
         &wfsvmtnrloc(1,1,1,1,1,ikloc),wanncnrloc(1,1,ikloc)) 
   wanc=zzero
