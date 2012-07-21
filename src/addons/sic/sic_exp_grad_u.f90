@@ -53,6 +53,8 @@ um=zzero
 ! U=e^{eps*G}=e^{-i*i*eps*G}
 ! H=i*G is a hermitian matrix, so it's decomposition is Z*h*Z^{\dagger}
 ! finally, e^{-i*eps*H}=Z*e^{-i*eps*h}*Z^{\dagger}
+! eps should be negative (step is taken in the direction opposite to gradient)
+! if eps is specified as positive, phase of the exp(..) becomes positive
 do j1=1,sic_wantran%nwan
   do j2=1,sic_wantran%nwan
     do j=1,sic_wantran%nwan
