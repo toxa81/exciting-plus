@@ -99,5 +99,11 @@ if (wproc) then
 endif
 xml_info%sic_vme_rms=0.d0
 xml_info%sic_vme_err=t2
+!if (t2.gt.1d-6) sic_umtrx_eps=2*log(1+0.1/t2)
+if (wproc) then
+  write(fout,*)
+  write(fout,'("sic_umtrx_eps : ",G18.10)')sic_umtrx_eps
+  write(fout,*)
+endif
 return
 end
