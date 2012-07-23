@@ -15,20 +15,20 @@ if (wproc) then
   write(fout,'("matrix elements")')
   write(fout,'(80("="))')
 endif
-! measure time for one me
-if (sic_me_cutoff.gt.1.d0) then
-  pos1=0.d0
-  pos2=1.d0 
-  call timer_start(t_sic_me,reset=.true.)
-  me1=s_spinor_dotp(pos1,pos2,s_wvlm(1,1,1,1),s_wlm(1,1,1,1))
-  call timer_stop(t_sic_me)
-  if (wproc) then
-    write(fout,*)
-    write(fout,'("time for one matrix element : ",F8.3," sec.")')&
-      &timer_get_value(t_sic_me)
-    call flushifc(fout)
-  endif
-endif
+!! measure time for one me
+!if (sic_me_cutoff.gt.1.d0) then
+!  pos1=0.d0
+!  pos2=1.d0 
+!  call timer_start(t_sic_me,reset=.true.)
+!  me1=s_spinor_dotp(pos1,pos2,s_wvlm(1,1,1,1),s_wlm(1,1,1,1))
+!  call timer_stop(t_sic_me)
+!  if (wproc) then
+!    write(fout,*)
+!    write(fout,'("time for one matrix element : ",F8.3," sec.")')&
+!      &timer_get_value(t_sic_me)
+!    call flushifc(fout)
+!  endif
+!endif
 call timer_start(t_sic_me,reset=.true.)
 call sic_genvme_dotp(.false.)
 ! check localization criterion 
@@ -53,8 +53,7 @@ enddo
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
   if (sic_apply(n).eq.3) then
-    pos1=0.d0
-    zt1=s_spinor_dotp(pos1,pos1,s_wvlm(1,1,1,j),s_wvlm(1,1,1,j))
+    zt1=s_spinor_dotp_lm(s_wvlm(1,1,1,j),s_wvlm(1,1,1,j))
     zt2=zzero
     do i=1,sic_wantran%nwt
       if (n.eq.sic_wantran%iwt(1,i)) then
@@ -93,7 +92,7 @@ if (wproc) then
     write(fout,'("  n : ",I4,8X,2G18.10)')n,dreal(sic_vme(i)),dimag(sic_vme(i))
   enddo  
   write(fout,*)
-  write(fout,'("done in : ",F8.3," sec.")')timer_get_value(t_sic_me)
+  write(fout,'("done in (total, average) : ",2F8.3," sec.")')timer_get_value(t_sic_me),timer_get_value(t_sic_me)/sic_wantran%nwt
   write(fout,*)
   call flushifc(fout)
 endif
