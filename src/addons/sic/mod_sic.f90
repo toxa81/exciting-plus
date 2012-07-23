@@ -249,20 +249,16 @@ do ispn=1,nspinor
   endif
 enddo
 return
-end subroutine 
+end subroutine
 
-complex(8) function s_spinor_dotp(pos1,pos2,f1lm,f2lm)
+complex(8) function s_spinor_dotp_lm(f1lm,f2lm)
 use modmain
 use mod_util
 implicit none
 ! arguments
-real(8), intent(in) :: pos1(3)
-real(8), intent(in) :: pos2(3)
 complex(8), intent(in) :: f1lm(lmmaxwan,s_nr,nspinor)
 complex(8), intent(in) :: f2lm(lmmaxwan,s_nr,nspinor)
 ! local variables
-complex(8), allocatable :: f1tp_(:,:)
-complex(8), allocatable :: f2tp_(:,:,:)
 integer ir,itp,ispn
 real(8) x1(3),x2(3)
 complex(8), allocatable :: zf(:)
@@ -270,41 +266,62 @@ complex(8), external :: zdotc
 !
 allocate(zf(s_nr_min))
 zf=zzero
-if (sum(abs(pos1-pos2)).lt.1d-10) then
-  do ir=1,s_nr_min
-    do ispn=1,nspinor
-      zf(ir)=zf(ir)+zdotc(lmmaxwan,f1lm(1,ir,ispn),1,f2lm(1,ir,ispn),1)
-    enddo
+do ir=1,s_nr_min
+  do ispn=1,nspinor
+    zf(ir)=zf(ir)+zdotc(lmmaxwan,f1lm(1,ir,ispn),1,f2lm(1,ir,ispn),1)
   enddo
+enddo
+s_spinor_dotp_lm=zintegrate(s_nr_min,s_r,zf)
+deallocate(zf)
+return
+end function s_spinor_dotp_lm
+
+
+complex(8) function s_spinor_dotp(pos1,pos2,f1lm,f1tp,f2lm)
+use modmain
+use mod_util
+implicit none
+! arguments
+real(8), intent(in) :: pos1(3)
+real(8), intent(in) :: pos2(3)
+complex(8), intent(in) :: f1lm(lmmaxwan,s_nr,nspinor)
+complex(8), intent(in) :: f1tp(lmmaxwan,s_nr_min,nspinor)
+complex(8), intent(in) :: f2lm(lmmaxwan,s_nr,nspinor)
+! local variables
+complex(8), allocatable :: f2tp(:,:,:)
+integer ir,itp,ispn
+real(8) x1(3),x2(3)
+complex(8), allocatable :: zf(:)
+!
+if (sum(abs(pos1-pos2)).lt.1d-10) then
+  s_spinor_dotp=s_spinor_dotp_lm(f1lm,f2lm)
 else
-  allocate(f1tp_(s_ntp,s_nr_min))
-  allocate(f2tp_(s_ntp,s_nr_min,nspinor))
-  f2tp_=zzero
+  allocate(zf(s_nr_min))
+  zf=zzero
+  allocate(f2tp(s_ntp,s_nr_min,nspinor))
+  f2tp=zzero
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(itp,x1,x2)
   do ir=1,s_nr_min
     do itp=1,s_ntp
       x1(:)=s_x(:,itp)*s_r(ir)
       x2(:)=pos1(:)+x1(:)-pos2(:)
-      call s_spinor_func_val(x2,lmaxwan,f2lm,f2tp_(itp,ir,:),rcutoff=s_rmin)
+      call s_spinor_func_val(x2,lmaxwan,f2lm,f2tp(itp,ir,:),rcutoff=s_rmin)
     enddo
   enddo !ir
 !$OMP END PARALLEL DO
   do ispn=1,nspinor
-! convert to spherical coordinates
-    call zgemm('T','N',s_ntp,s_nr,lmmaxwan,zone,s_ylmf,lmmaxwan,&
-      &f1lm(1,1,ispn),lmmaxwan,zzero,f1tp_,s_ntp)
     do ir=1,s_nr_min
       do itp=1,s_ntp
-        zf(ir)=zf(ir)+dconjg(f1tp_(itp,ir))*f2tp_(itp,ir,ispn)*s_tpw(itp)
+        zf(ir)=zf(ir)+dconjg(f1tp(itp,ir,ispn))*f2tp(itp,ir,ispn)*s_tpw(itp)
       enddo
     enddo
   enddo
-  deallocate(f1tp_,f2tp_)
+  s_spinor_dotp=zintegrate(s_nr_min,s_r,zf)
+  deallocate(zf)
+  deallocate(f2tp)
 endif
-s_spinor_dotp=zintegrate(s_nr_min,s_r,zf)
-deallocate(zf)
 return
-end function
+end function s_spinor_dotp
 
 complex(8) function s_zfinp(tsh,tpw,ld,ng,zfmt1,zfmt2,zfir1,zfir2,zfrac)
 use modmain
