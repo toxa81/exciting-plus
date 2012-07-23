@@ -18,8 +18,6 @@ real(8), allocatable :: f1tp(:),f2lm(:)
 complex(8), allocatable :: ovlp(:)
 complex(8), allocatable :: om(:,:)
 complex(8), allocatable :: wantp(:,:,:)
-integer, parameter :: iovlp=1 
-integer, parameter :: irms=0
 complex(8), external :: zdotc
 !
 allocate(wantp(s_ntp,s_nr,nspinor))
@@ -117,9 +115,8 @@ do iloc=1,nwtloc
   vl(:)=sic_wantran%iwt(3:5,i)
   pos1(:)=wanpos(:,n)
   pos2(:)=wanpos(:,n1)+vl(1)*avec(:,1)+vl(2)*avec(:,2)+vl(3)*avec(:,3)
-  if ((iovlp.eq.1.and.sum(abs(pos1-pos2)).lt.1d-10).or.iovlp.eq.2) then
-    ovlp(i)=ovlp(i)+s_spinor_dotp(pos1,pos2,s_wlm(1,1,1,j),&
-      &s_wlm(1,1,1,j1))
+  if (sum(abs(pos1-pos2)).lt.1d-10) then
+    ovlp(i)=s_spinor_dotp_lm(s_wlm(1,1,1,j),s_wlm(1,1,1,j1))
   endif
   z1=ovlp(i)
   if (n.eq.n1.and.all(vl.eq.0)) then
