@@ -81,8 +81,8 @@ do j=1,sic_wantran%nwan
       f2lm(ir)=f2lm(ir)+abs(zdotc(lmmaxwan,s_wlm(1,ir,ispn,j),1,s_wlm(1,ir,ispn,j),1))
     enddo
   enddo
-  wanprop(wp_normtp,j)=rintegrate(s_nr,s_r,f1tp)
-  wanprop(wp_normlm,j)=rintegrate(s_nr,s_r,f2lm)
+  wanprop(wp_normtp,j)=rintegrate(s_nr_min,s_r,f1tp)
+  wanprop(wp_normlm,j)=rintegrate(s_nr_min,s_r,f2lm)
   call timer_stop(t_sic_wan_gen)
 ! generate potential
   if (sic_apply(n).eq.3) then
@@ -92,6 +92,10 @@ do j=1,sic_wantran%nwan
   endif
 enddo !j
 deallocate(wantp,f1tp,f2lm)
+
+
+!call sym_t2g(lmaxwan, lmmaxwan, s_nr, s_wlm(1,1,1,1), s_wlm(1,1,1,2), s_wlm(1,1,1,4))
+!call sym_t2g(lmaxwan, lmmaxwan, s_nr, s_wvlm(1,1,1,1), s_wvlm(1,1,1,2), s_wvlm(1,1,1,4))
 
 !#ifdef _MAD_
 !call madness_gen_hpot
@@ -227,3 +231,66 @@ endif
 return
 end
 
+
+subroutine sym_t2g(lmax,lmmax,nr,fxy,fyz,fxz)
+implicit none
+integer, intent(in) :: lmax
+integer, intent(in) :: lmmax
+integer, intent(in) :: nr
+complex(8), intent(inout) :: fxy(lmmax,nr)
+complex(8), intent(inout) :: fyz(lmmax,nr)
+complex(8), intent(inout) :: fxz(lmmax,nr)
+
+real(8) rotp(3,3),ang(3)
+complex(8), allocatable :: zrotm(:,:)
+complex(8), allocatable :: favg(:,:)
+integer i,lm
+real(8) t1
+
+allocate(zrotm(lmmax,lmmax))
+allocate(favg(lmmax,nr))
+
+favg=fxy
+
+
+zrotm=dcmplx(0.d0,0.d0)
+rotp=0.0
+rotp(1,3)=1
+rotp(2,2)=1
+rotp(3,1)=-1
+call euler(rotp,ang)
+call ylmrot(1,-ang(3),-ang(2),-ang(1),lmax,lmmax,zrotm)
+call zgemm('N','N',lmmax,nr,lmmax,dcmplx(1.d0,0.d0),zrotm,lmmax,fyz,lmmax,dcmplx(1.d0,0.d0),favg,lmmax)
+
+zrotm=dcmplx(0.d0,0.d0)
+rotp=0.0
+rotp(1,1)=1
+rotp(2,3)=1
+rotp(3,2)=-1
+call euler(rotp,ang)
+call ylmrot(1,-ang(3),-ang(2),-ang(1),lmax,lmmax,zrotm)
+call zgemm('N','N',lmmax,nr,lmmax,dcmplx(1.d0,0.d0),zrotm,lmmax,fxz,lmmax,dcmplx(1.d0,0.d0),favg,lmmax)
+
+favg=favg/3.d0
+
+fxy=favg
+
+zrotm=dcmplx(0.d0,0.d0)
+rotp=0.0
+rotp(1,3)=-1
+rotp(2,2)=1
+rotp(3,1)=1
+call euler(rotp,ang)
+call ylmrot(1,-ang(3),-ang(2),-ang(1),lmax,lmmax,zrotm)
+call zgemm('N','N',lmmax,nr,lmmax,dcmplx(1.d0,0.d0),zrotm,lmmax,fxy,lmmax,dcmplx(0.d0,0.d0),fyz,lmmax)
+
+zrotm=dcmplx(0.d0,0.d0)
+rotp=0.0
+rotp(1,1)=1
+rotp(2,3)=-1
+rotp(3,2)=1
+call euler(rotp,ang)
+call ylmrot(1,-ang(3),-ang(2),-ang(1),lmax,lmmax,zrotm)
+call zgemm('N','N',lmmax,nr,lmmax,dcmplx(1.d0,0.d0),zrotm,lmmax,fxy,lmmax,dcmplx(0.d0,0.d0),fxz,lmmax)
+
+end subroutine
