@@ -86,6 +86,9 @@ integer, allocatable :: wann_err_k(:)
 
 integer, allocatable :: wannier_prjlo(:,:)
 
+logical wan_complex
+data wan_complex/.false./
+
 integer, parameter :: wi_atom = 1
 integer, parameter :: wi_lm = 2
 integer, parameter :: wi_spin = 3
@@ -500,24 +503,30 @@ l=lm2l(lm)
 is=ias2is(ias)
 ic=ias2ic(ias)
 prjlo=zzero
-do m1=-l,l
-  lm1=idxlm(l,m1)
+if (wan_complex) then
   do io1=1,nufr(l,is)
-! project to local orbital    
-    if (wannier_prjao.eq.0) then
-      prjlo=prjlo+dconjg(wfsvmt(lm1,io1,ias,ispn))*&
-        &ufrp(l,io1,apword(l,is)+ilo,ic)*rylm_lps(lm,lm1,ias)
-    endif
-! project to f(x)=(1+cos(Pi*x/R))
-    if (wannier_prjao.eq.1) then
-      do ir=1,nrmt(is)
-        fr(ir)=ufr(ir,l,io1,ic)*(1+cos(pi*spr(ir,is)/rmt(is)))*(spr(ir,is)**2)
-      enddo
-      call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
-      prjlo=prjlo+dconjg(wfsvmt(lm1,io1,ias,ispn))*gr(nrmt(is))*rylm_lps(lm,lm1,ias)
-    endif
-  enddo !io1
-enddo !m
+    prjlo=prjlo+dconjg(wfsvmt(lm,io1,ias,ispn))*ufrp(l,io1,apword(l,is)+ilo,ic)
+  enddo
+else
+  do m1=-l,l
+    lm1=idxlm(l,m1)
+    do io1=1,nufr(l,is)
+  ! project to local orbital    
+      if (wannier_prjao.eq.0) then
+        prjlo=prjlo+dconjg(wfsvmt(lm1,io1,ias,ispn))*&
+          &ufrp(l,io1,apword(l,is)+ilo,ic)*rylm_lps(lm,lm1,ias)
+      endif
+  ! project to f(x)=(1+cos(Pi*x/R))
+      if (wannier_prjao.eq.1) then
+        do ir=1,nrmt(is)
+          fr(ir)=ufr(ir,l,io1,ic)*(1+cos(pi*spr(ir,is)/rmt(is)))*(spr(ir,is)**2)
+        enddo
+        call fderiv(-1,nrmt(is),spr(1,is),fr,gr,cf)
+        prjlo=prjlo+dconjg(wfsvmt(lm1,io1,ias,ispn))*gr(nrmt(is))*rylm_lps(lm,lm1,ias)
+      endif
+    enddo !io1
+  enddo !m
+endif
 return
 end subroutine
 
