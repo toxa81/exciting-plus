@@ -108,7 +108,7 @@ if (.not.allocated(sic_wan_e0)) then
   sic_wan_e0=0.d0
 endif
 if (.not.allocated(sic_wan_umtrx)) then
-  allocate(sic_wan_umtrx(nwantot,nwantot,min(nkptnrloc,1)))
+  allocate(sic_wan_umtrx(nwantot,nwantot,max(nkptnrloc,1)))
   sic_wan_umtrx=zzero
   do i=1,nwantot
     sic_wan_umtrx(i,i,:)=zone
