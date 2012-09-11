@@ -161,6 +161,20 @@ do ikloc=1,nkptnrloc
     enddo
   enddo
   wanncnrloc(:,:,ikloc)=wanc(:,:)
+  ! check orthogonality
+  do n=1,nwantot
+    do m=1,nwantot
+      zt1=zzero
+      do j=1,nstsv
+        zt1=zt1+dconjg(wanc(n,j))*wanc(m,j)
+      enddo
+      if (n.eq.m) zt1=zt1-zone
+      if (abs(zt1).gt.1d-8) then
+        write(*,*)"warning: WFs are not orthogonal for k-point ",ik,"; n,m,deviation=",n,m,abs(zt1)
+      endif
+    enddo
+  enddo
+  ! new WFs
   do n=1,nwantot
     do j=1,nstsv
       wann_unkmt(:,:,:,:,n,ikloc)=wann_unkmt(:,:,:,:,n,ikloc) + &
