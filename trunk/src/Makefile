@@ -48,6 +48,9 @@ EXE = elk
 #-------------------------------------------------------------------------------
 .SUFFIXES: .f90
 
+# prevent invocation of m2c
+%.o: %.mod
+
 .f90.o:
 	$(F90) $(F90_OPTS) -c -o $(*D)/$(*F).o $<
 
@@ -63,7 +66,7 @@ gensrc:
 #	python ../gensrclog.py
 #	mv srclog.f90 ./addons
 	python ../ftemplate.py <./addons/mod_mpi_grid.tpl >./addons/mod_mpi_grid.f90
-	python ../ftemplate.py <./addons/mod_hdf5.tpl >./addons/mod_hdf5.f90
+#	python ../ftemplate.py <./addons/mod_hdf5.tpl >./addons/mod_hdf5.f90
 
 extras:
 ifneq (,$(findstring D_MAD_,$(CPP_OPTS)))
@@ -79,8 +82,12 @@ elk:	$(OBJ_modules) $(OBJ)
 lib:
 	ar r libelk.a $(OBJ)
 
+modclean:
+	rm $(OBJ_modules)
+	
 clean:
 	find . -name \*.o -exec rm {} \;
+	find . -name \*.mod -exec rm {} \;
 	rm -f *.mod *~ fort.* ifc* *.gcno gmon.out *.aux *.dvi *.log \
         elk.pdf *.tex *.toc elk.lst elk.out $(EXE)
 
