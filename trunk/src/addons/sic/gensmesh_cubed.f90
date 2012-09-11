@@ -9,6 +9,8 @@ logical texist
 inquire(file="cubed.in",exist=texist)
 if (texist) then
   open(177,file="cubed.in",status="OLD",form="FORMATTED")
+  read(177,*)lmaxwan
+  lmmaxwan=(lmaxwan+1)**2
   read(177,*)s_ntp
   if (mpi_grid_root()) then
     write(*,'("[gensmesh_cubed] reading points from file")')
