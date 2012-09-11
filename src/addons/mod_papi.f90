@@ -79,7 +79,7 @@ subroutine proc_load(a,b,c)
 implicit none
 real(8), intent(in) :: a
 real(8), intent(in) :: b
-real(8), intent(out) :: c
+real(8), intent(inout) :: c
 c=c+a*b
 end subroutine
 
