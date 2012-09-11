@@ -1,13 +1,15 @@
-subroutine sic_genvme(fout)
+subroutine sic_genvme(fout,iter)
 use modmain
 use mod_sic
 use mod_hdf5
 implicit none
 integer, intent(in) :: fout
+integer, intent(in) :: iter
 !
 integer i,j,n,i1,j1,n1,vl(3)
 real(8) t1,t2,pos1(3),pos2(3)
 complex(8) me1,me2,zt1,zt2
+character*20 fname
 !
 if (wproc) then
   write(fout,*)
@@ -96,6 +98,33 @@ if (wproc) then
   write(fout,*)
   call flushifc(fout)
 endif
+
+! filter out small marix elements
+!do i=1,sic_wantran%nwt
+!  if (abs(sic_vme(i)).lt.1d-6) sic_vme(i)=zzero
+!enddo
+
+!do i=1,sic_wantran%nwt
+!  t1=abs(dreal(sic_vme(i)))
+!  t1=int(t1*100000)/100000.d0
+!  t1=sign(t1,dreal(sic_vme(i)))
+!  sic_vme(i)=dcmplx(t1,0.d0)
+!enddo
+
+
+if (wproc) then
+  write(fname,'("vme_",I3.3,".out")')iter
+  open(1100,file=trim(adjustl(fname)),form="FORMATTED",status="REPLACE")
+  do i=1,sic_wantran%nwt
+    n=sic_wantran%iwt(1,i)
+    n1=sic_wantran%iwt(2,i)
+    vl(:)=sic_wantran%iwt(3:5,i)
+    write(1100,'(3G18.10,2I3,6X,3I3)')abs(sic_vme(i)),dreal(sic_vme(i)),dimag(sic_vme(i)),n,n1,vl
+  enddo
+  close(1100)
+endif
+
+
 xml_info%sic_vme_rms=0.d0
 xml_info%sic_vme_err=t2
 !if (t2.gt.1d-6) sic_umtrx_eps=2*log(1+0.1/t2)
