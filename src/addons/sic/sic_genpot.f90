@@ -12,6 +12,7 @@ complex(8), intent(out) :: wvlm(lmmaxwan,s_nr,nspinor)
 real(8), intent(out) :: wanprop(nwanprop)
 ! local variables
 integer jr,ir,l,lm,ispn,lm1,lm2,lm3,lmmaxwanloc,lmloc
+integer irloc,nrloc
 real(8) t1
 complex(8) zt1
 real(8), allocatable :: rhotp(:,:,:)
@@ -33,6 +34,8 @@ complex(8), allocatable :: wvlm_tmp(:,:,:)
 complex(8), allocatable :: wantp(:,:)
 real(8), external :: ddot
 complex(8), external :: gauntyry
+real(8), allocatable :: flm(:,:)
+complex(8), allocatable :: zflm(:,:)
 !
 ! TODO: generalize for non-collinear case; vxc will become 2x2 matrix
 !
@@ -56,23 +59,30 @@ do ispn=1,nspinor
   enddo
 enddo
 rholm_tmp=0.d0
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(lm1,lm2,lm3,zt1,ispn)
 do lmloc=1,lmmaxwanloc
   lm2=mpi_grid_map(lmmaxwan,dim_k,loc=lmloc)
+!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(flm,lm3,zt1,ispn)
+  allocate(flm(s_nr_min,nspinor))
+  flm(:,:)=0.d0
+!$OMP DO
   do lm1=1,lmmaxwan
     do lm3=1,lmmaxwan
       zt1=gauntyry(lm2l(lm1),lm2l(lm2),lm2l(lm3),&
                   &lm2m(lm1),lm2m(lm2),lm2m(lm3))
       if (abs(zt1).gt.1d-12) then
         do ispn=1,nspinor
-          rholm_tmp(:,lm2,ispn)=rholm_tmp(:,lm2,ispn)+&
-            &dreal(dconjg(wanlm_tmp(:,lm1,ispn))*wanlm_tmp(:,lm3,ispn)*zt1)
+          flm(:,ispn)=flm(:,ispn)+dreal(dconjg(wanlm_tmp(:,lm1,ispn))*wanlm_tmp(:,lm3,ispn)*zt1)
         enddo !ispn
       endif
     enddo
   enddo
+!$OMP END DO
+!$OMP CRITICAL
+  rholm_tmp(:,lm2,:)=rholm_tmp(:,lm2,:) + flm(:,:)
+!$OMP END CRITICAL
+  deallocate(flm)
+!$OMP END PARALLEL
 enddo
-!$OMP END PARALLEL DO
 call mpi_grid_reduce(rholm_tmp(1,1,1),s_nr_min*lmmaxwan*nspinor,dims=(/dim_k/),all=.true.)
 !deallocate(wanlm_tmp)
 ! total charge density of WF 
@@ -154,18 +164,33 @@ do ispn=1,nspinor
 enddo
 deallocate(wantp)
 
-allocate(extp(s_ntp,s_nr_min))
-allocate(ectp(s_ntp,s_nr_min))
-allocate(vxtp(s_ntp,s_nr_min,nspinor))
-allocate(vctp(s_ntp,s_nr_min,nspinor))
+nrloc=mpi_grid_map(s_nr_min,dim_k)
 
-if (spinpol) then
-  call xcifc(xctype,n=s_ntp*s_nr_min,rhoup=rhotp(1,1,1),rhodn=rhotp(1,1,2),&
-    &ex=extp,ec=ectp,vxup=vxtp(1,1,1),vxdn=vxtp(1,1,2),vcup=vctp(1,1,1),&
-    &vcdn=vctp(1,1,2))
-else
-  call xcifc(xctype,n=s_ntp*s_nr_min,rho=rhotp,ex=extp,ec=ectp,vx=vxtp,vc=vctp)
-endif
+allocate(extp(s_ntp,s_nr_min))
+extp=0.d0
+allocate(ectp(s_ntp,s_nr_min))
+ectp=0.d0
+allocate(vxtp(s_ntp,s_nr_min,nspinor))
+vxtp=0.d0
+allocate(vctp(s_ntp,s_nr_min,nspinor))
+vctp=0.d0
+
+do irloc=1,nrloc
+  ir=mpi_grid_map(s_nr_min,dim_k,loc=irloc)
+  if (spinpol) then
+    call xcifc(xctype,n=s_ntp,rhoup=rhotp(1,ir,1),rhodn=rhotp(1,ir,2),&
+      &ex=extp(1,ir),ec=ectp(1,ir),vxup=vxtp(1,ir,1),vxdn=vxtp(1,ir,2),&
+      &vcup=vctp(1,ir,1),vcdn=vctp(1,ir,2))
+  else
+    call xcifc(xctype,n=s_ntp,rho=rhotp(1,ir,1),ex=extp(1,ir),ec=ectp(1,ir),&
+      &vx=vxtp(1,ir,1),vc=vctp(1,ir,1))
+  endif
+enddo
+call mpi_grid_reduce(extp(1,1),s_ntp*s_nr_min,dims=(/dim_k/),all=.true.)
+call mpi_grid_reduce(ectp(1,1),s_ntp*s_nr_min,dims=(/dim_k/),all=.true.)
+call mpi_grid_reduce(vxtp(1,1,1),s_ntp*s_nr_min*nspinor,dims=(/dim_k/),all=.true.)
+call mpi_grid_reduce(vctp(1,1,1),s_ntp*s_nr_min*nspinor,dims=(/dim_k/),all=.true.)
+
 deallocate(rhotp)
 
 allocate(exclm(lmmaxwan,s_nr_min))
@@ -242,22 +267,30 @@ do ispn=1,nspinor
   enddo
 enddo
 wvlm_tmp=zzero
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(lm1,lm2,lm3,zt1,ispn)
 do lmloc=1,lmmaxwanloc
   lm3=mpi_grid_map(lmmaxwan,dim_k,loc=lmloc)
+!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(zflm,lm2,zt1,ispn)
+  allocate(zflm(s_nr_min,nspinor))
+  zflm=zzero
+!$OMP DO  
   do lm1=1,lmmaxwan
     do lm2=1,lmmaxwan
       zt1=gauntyry(lm2l(lm3),lm2l(lm2),lm2l(lm1),&
                   &lm2m(lm3),lm2m(lm2),lm2m(lm1))
       if (abs(zt1).gt.1d-12) then
         do ispn=1,nspinor
-          wvlm_tmp(:,lm3,ispn)=wvlm_tmp(:,lm3,ispn)-wanlm_tmp(:,lm1,ispn)*vlm_tmp(:,lm2,ispn)*zt1
+          zflm(:,ispn)=zflm(:,ispn)-wanlm_tmp(:,lm1,ispn)*vlm_tmp(:,lm2,ispn)*zt1
         enddo !ispn
       endif
     enddo
   enddo
+!$OMP END DO
+!$OMP CRITICAL
+  wvlm_tmp(:,lm3,:)=wvlm_tmp(:,lm3,:) + zflm(:,:)
+!$OMP END CRITICAL
+  deallocate(zflm)
+!$OMP END PARALLEL
 enddo
-!$OMP END PARALLEL DO
 call mpi_grid_reduce(wvlm_tmp(1,1,1),s_nr_min*lmmaxwan*nspinor,dims=(/dim_k/),all=.true.) 
 wvlm=zzero
 do ispn=1,nspinor
