@@ -45,10 +45,10 @@ real(8), intent(inout) :: eval
 real(8), intent(out) :: g0(nr)
 real(8), intent(out) :: f0(nr)
 ! local variables
-integer, parameter :: maxit=2000
+integer, parameter :: maxit=3000
 integer kpa,it,nn,ir,irm,nnd,nndp
 ! energy convergence tolerance
-real(8), parameter :: eps=1.d-13
+real(8), parameter :: eps=1.d-12
 real(8) t1,de
 ! automatic arrays
 real(8) g1(nr),f1(nr),fr(nr),gr(nr),cf(4,nr)
