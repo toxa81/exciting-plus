@@ -85,16 +85,16 @@ do iter=1,sic_niter_umtrx
     write(151,'(80("="))')
     write(151,'("SIC localization step : ",I4)')iter
     write(151,'(80("="))')
-    !write(151,'("energies of Wannier functions")')
-    !do j=1,sic_wantran%nwan
-    !  n=sic_wantran%iwan(j)
-    !  write(151,'("  n : ",I4,"    wann_ene : ",F12.6)')n,wann_ene(n)
-    !enddo
+    write(151,'("energies of Wannier functions")')
+    do j=1,sic_wantran%nwan
+      n=sic_wantran%iwan(j)
+      write(151,'("  n : ",I4,"    wann_ene : ",F12.6)')n,wann_ene(n)
+    enddo
   endif
 ! generate Wannier functions and corresponding potential
   call sic_wan_pot(151)
 ! matrix elements
-  call sic_genvme(151)
+  call sic_genvme(151,iter)
 enddo
 ! write to HDF5 file
 call sic_write_data
