@@ -1301,6 +1301,7 @@ character, intent(in) :: src(*)
 character, intent(out) :: dest(*)
 integer, intent(in) :: size
 dest(1:size)=src(1:size)
+!call cmemcpy(dest,src,size)
 return
 end
 
