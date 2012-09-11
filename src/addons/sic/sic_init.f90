@@ -4,8 +4,9 @@ use mod_wannier
 use mod_sic
 use mod_ws
 implicit none
-integer i,n,j,i1,i2,i3,ivl(3)
+integer i,n,j,i1,i2,i3,ivl(3),nwfspin(2),ispn,ikloc,n1,n2,nwas,ias
 real(8) a,wsv(3,3),vl(3),vc(3)
+complex(8), allocatable :: zm(:,:)
 !
 if (.not.wannier) then
   write(*,*)
@@ -14,6 +15,9 @@ if (.not.wannier) then
   call pstop
 endif
 tevecsv=.true.
+
+call sic_gensmesh
+
 lmmaxwan=(lmaxwan+1)**2
 
 sic_bottom_energy=-0.4d0
@@ -59,7 +63,6 @@ if (mpi_grid_root()) then
   write(*,'("[sic_init] sic_wan_rwsmax : ",G18.10)')sic_wan_rwsmax
 endif
 call sic_genrmesh
-call sic_gensmesh
 ! translation vectors for Bloch-sums
 sic_ntr=ngridk(1)*ngridk(2)*ngridk(3)
 if (allocated(sic_vtl)) deallocate(sic_vtl)
@@ -105,19 +108,49 @@ if (.not.allocated(sic_wan_e0)) then
   sic_wan_e0=0.d0
 endif
 if (.not.allocated(sic_wan_umtrx)) then
-  allocate(sic_wan_umtrx(nwantot,nwantot,nkptnrloc))
+  allocate(sic_wan_umtrx(nwantot,nwantot,min(nkptnrloc,1)))
   sic_wan_umtrx=zzero
   do i=1,nwantot
     sic_wan_umtrx(i,i,:)=zone
   enddo
-  if (.true.) then
-    do i=1,nkptnrloc
-      call rndumtrx(nwantot,sic_wan_umtrx(1,1,i))
-    enddo
+  if (.false.) then
+    !nwfspin=0
+    !do n=1,nwantot
+    !  if (wan_info(wi_spin,n).eq.1) nwfspin(1)=nwfspin(1)+1
+    !  if (wan_info(wi_spin,n).eq.2) nwfspin(2)=nwfspin(2)+1
+    !enddo
+    do ispn=1,nspinor
+      do ias=1,natmtot
+        nwas=0
+        do n=1,nwantot
+          if (wan_info(wi_spin,n).eq.ispn.and.wan_info(wi_atom,n).eq.ias) nwas=nwas+1
+        enddo
+        if (nwas.ne.0) then
+          allocate(zm(nwas,nwas))
+          do ikloc=1,nkptnrloc
+            call rndumtrx(nwas,zm)
+            i1=0
+            do n1=1,nwantot
+              if (wan_info(wi_spin,n1).eq.ispn.and.wan_info(wi_atom,n1).eq.ias) then
+                i1=i1+1
+                i2=0
+                do n2=1,nwantot
+                  if (wan_info(wi_spin,n2).eq.ispn.and.wan_info(wi_atom,n2).eq.ias) then
+                    i2=i2+1
+                    sic_wan_umtrx(n1,n2,ikloc)=zm(i1,i2)
+                  endif
+                enddo !n2
+              endif
+            enddo !n1
+          enddo !ikloc
+          deallocate(zm)
+        endif !nwas
+      enddo !ias
+    enddo !ispn
     if (.true.) then
       call mpi_grid_bcast(sic_wan_umtrx(1,1,1),nwantot*nwantot,dims=(/dim_k/))
-      do i=2,nkptnrloc
-        sic_wan_umtrx(:,:,i)=sic_wan_umtrx(:,:,1)
+      do ikloc=2,nkptnrloc
+        sic_wan_umtrx(:,:,ikloc)=sic_wan_umtrx(:,:,1)
       enddo
     endif
   endif
