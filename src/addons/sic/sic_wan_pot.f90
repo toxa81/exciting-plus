@@ -9,7 +9,7 @@ implicit none
 ! arguments
 integer, intent(in) :: fout
 ! local variables
-integer n,ispn,vl(3),n1,i,j,j1,itp,ir,nwtloc,iloc,nrloc,irloc
+integer n,ispn,vl(3),n1,i,j,j1,itp,ir,nwtloc,iloc,nrloc,irloc,nrntp,nrntploc
 real(8) t1,t2,vrc(3),pos1(3),pos2(3)
 real(8) sic_epot_h,sic_epot_xc
 complex(8) z1,wanval(nspinor)
@@ -18,9 +18,11 @@ real(8), allocatable :: f1tp(:),f2lm(:)
 complex(8), allocatable :: ovlp(:)
 complex(8), allocatable :: om(:,:)
 complex(8), allocatable :: wantp(:,:,:)
+complex(8), allocatable :: wantp_tmp(:,:,:)
 complex(8), external :: zdotc
 !
 allocate(wantp(s_ntp,s_nr,nspinor))
+allocate(wantp_tmp(s_ntp,s_nr,nspinor))
 allocate(wanprop(nwanprop,sic_wantran%nwan))
 allocate(f1tp(s_nr),f2lm(s_nr))
 ! check spherical and radial grids by integrating sphere volume
@@ -49,25 +51,31 @@ call timer_reset(t_sic_wvprod)
 s_wlm=zzero
 s_wvlm=zzero
 wanprop=0.d0
-nrloc=mpi_grid_map(s_nr,dim_k)
+!nrloc=mpi_grid_map(s_nr,dim_k)
+nrntp=s_nr*s_ntp
+nrntploc=mpi_grid_map(nrntp,dim_k)
+
 ! loop over Wannier functions
 do j=1,sic_wantran%nwan
   n=sic_wantran%iwan(j)
 ! generate WF on a spherical mesh
-  wantp=zzero
+  wantp_tmp=zzero
   call timer_start(t_sic_wan_gen)
   call elk_load_wann_unk(n)
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ir,itp,vrc,wanval)
-  do irloc=1,nrloc
-    ir=mpi_grid_map(s_nr,dim_k,loc=irloc)
-    do itp=1,s_ntp
-      vrc(:)=s_x(:,itp)*s_r(ir)+m_wanpos(:)
-      call get_wanval(vrc,wanval)
-      wantp(itp,ir,:)=wanval(:)
-    enddo
-  enddo
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(j1,ir,itp,vrc,wanval)
+  do i=1,nrntploc
+    j1=mpi_grid_map(nrntp,dim_k,loc=i)
+    ir=int((j1-1)/s_ntp)+1
+    itp=mod(j1-1,s_ntp)+1
+    vrc(:)=s_x(:,itp)*s_r(ir)+m_wanpos(:)
+    call get_wanval(vrc,wanval)
+    wantp_tmp(itp,ir,:)=wanval(:)
+  enddo !i
 !$OMP END PARALLEL DO
-  call mpi_grid_reduce(wantp(1,1,1),s_ntp*s_nr*nspinor,dims=(/dim_k/),all=.true.)
+  call mpi_grid_reduce(wantp_tmp(1,1,1),s_ntp*s_nr*nspinor,wantp(1,1,1),dims=(/dim_k/),all=.true.)
+  if (wproc) then
+    write(fout,'("n : ",I4, "   image part (average, total) : ",2G18.10)') n, sum(abs(dimag(wantp)))/s_ntp/s_nr/nspinor, sum(abs(dimag(wantp)))
+  endif
 ! convert to spherical harmonics
   call sic_genwanlm(fout,n,wantp,s_wlm(1,1,1,j))
 ! compute norm
@@ -91,18 +99,12 @@ do j=1,sic_wantran%nwan
     call timer_stop(t_sic_wan_pot)
   endif
 enddo !j
-deallocate(wantp,f1tp,f2lm)
-
-
-!call sym_t2g(lmaxwan, lmmaxwan, s_nr, s_wlm(1,1,1,1), s_wlm(1,1,1,2), s_wlm(1,1,1,4))
-!call sym_t2g(lmaxwan, lmmaxwan, s_nr, s_wvlm(1,1,1,1), s_wvlm(1,1,1,2), s_wvlm(1,1,1,4))
+deallocate(wantp,wantp_tmp,f1tp,f2lm)
 
 !#ifdef _MAD_
 !call madness_gen_hpot
 !call madness_gen_xc
 !#endif
-
-!call sic_localize(fout,wanprop)
 
 ! compute overlap integrals 
 allocate(ovlp(sic_wantran%nwt))
@@ -184,15 +186,15 @@ if (wproc) then
     &sum(wanprop(wp_spread,:))
   write(fout,*)
   write(fout,'("   n | ",5X,"V_n^{H}     V_n^{XC}          V_n     E_n^{XC}&
-    &        Ex           Ec")')
-  write(fout,'(84("-"))')
+    &        Ex           Ec        E_n^{SIC}")')
+  write(fout,'(98("-"))')
   do j=1,sic_wantran%nwan
     n=sic_wantran%iwan(j)
-    write(fout,'(I4," | ",6(F12.6,1X))')n,wanprop(wp_vha,j),&
+    write(fout,'(I4," | ",7(F12.6,1X))')n,wanprop(wp_vha,j),&
       &wanprop(wp_vxc,j),wanprop(wp_vsic,j),wanprop(wp_exc,j),&
-      &wanprop(wp_ex,j),wanprop(wp_ec,j)
+      &wanprop(wp_ex,j),wanprop(wp_ec,j),(0.5d0*wanprop(wp_vha,j)+wanprop(wp_exc,j))
   enddo
-  write(fout,'(84("-"))')
+  write(fout,'(98("-"))')
   write(fout,'("SIC total energy contribution      : ",G18.10,&
     &"  ! kinetic - potential ")')sic_energy_tot
   write(fout,'("SIC kinetic energy contribution    : ",G18.10,&
@@ -230,67 +232,3 @@ endif
 
 return
 end
-
-
-subroutine sym_t2g(lmax,lmmax,nr,fxy,fyz,fxz)
-implicit none
-integer, intent(in) :: lmax
-integer, intent(in) :: lmmax
-integer, intent(in) :: nr
-complex(8), intent(inout) :: fxy(lmmax,nr)
-complex(8), intent(inout) :: fyz(lmmax,nr)
-complex(8), intent(inout) :: fxz(lmmax,nr)
-
-real(8) rotp(3,3),ang(3)
-complex(8), allocatable :: zrotm(:,:)
-complex(8), allocatable :: favg(:,:)
-integer i,lm
-real(8) t1
-
-allocate(zrotm(lmmax,lmmax))
-allocate(favg(lmmax,nr))
-
-favg=fxy
-
-
-zrotm=dcmplx(0.d0,0.d0)
-rotp=0.0
-rotp(1,3)=1
-rotp(2,2)=1
-rotp(3,1)=-1
-call euler(rotp,ang)
-call ylmrot(1,-ang(3),-ang(2),-ang(1),lmax,lmmax,zrotm)
-call zgemm('N','N',lmmax,nr,lmmax,dcmplx(1.d0,0.d0),zrotm,lmmax,fyz,lmmax,dcmplx(1.d0,0.d0),favg,lmmax)
-
-zrotm=dcmplx(0.d0,0.d0)
-rotp=0.0
-rotp(1,1)=1
-rotp(2,3)=1
-rotp(3,2)=-1
-call euler(rotp,ang)
-call ylmrot(1,-ang(3),-ang(2),-ang(1),lmax,lmmax,zrotm)
-call zgemm('N','N',lmmax,nr,lmmax,dcmplx(1.d0,0.d0),zrotm,lmmax,fxz,lmmax,dcmplx(1.d0,0.d0),favg,lmmax)
-
-favg=favg/3.d0
-
-fxy=favg
-
-zrotm=dcmplx(0.d0,0.d0)
-rotp=0.0
-rotp(1,3)=-1
-rotp(2,2)=1
-rotp(3,1)=1
-call euler(rotp,ang)
-call ylmrot(1,-ang(3),-ang(2),-ang(1),lmax,lmmax,zrotm)
-call zgemm('N','N',lmmax,nr,lmmax,dcmplx(1.d0,0.d0),zrotm,lmmax,fxy,lmmax,dcmplx(0.d0,0.d0),fyz,lmmax)
-
-zrotm=dcmplx(0.d0,0.d0)
-rotp=0.0
-rotp(1,1)=1
-rotp(2,3)=-1
-rotp(3,2)=1
-call euler(rotp,ang)
-call ylmrot(1,-ang(3),-ang(2),-ang(1),lmax,lmmax,zrotm)
-call zgemm('N','N',lmmax,nr,lmmax,dcmplx(1.d0,0.d0),zrotm,lmmax,fxy,lmmax,dcmplx(0.d0,0.d0),fxz,lmmax)
-
-end subroutine
