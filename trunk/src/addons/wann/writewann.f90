@@ -183,6 +183,55 @@ if (mpi_grid_root()) then
       deallocate(zm,dm,eval)
     endif
   enddo
+  write(*,*)
+  do ias=1,natmtot
+    nwan=nwannias(ias)
+    if (nwan.ne.0) then
+      write(*,*)"ias : ",ias,"  nwan : ",nwan
+      allocate(zm(nwan,nwan))
+      zm=zzero
+      allocate(dm(nwan,nwan))
+      allocate(eval(nwan))
+      j1=0
+      do n1=1,nwantot
+        if (wan_info(wi_atom,n1).eq.ias) then
+          j1=j1+1
+          j2=0
+          do n2=1,nwantot
+            if (wan_info(wi_atom,n2).eq.ias) then
+              j2=j2+1
+              do ik=1,nkptnr
+                zm(j1,j2)=zm(j1,j2) + wann_h(n1,n2,ik)/nkptnr
+              enddo
+              dm(j1,j2)=dreal(zm(j1,j2))
+            endif
+          enddo
+        endif
+      enddo
+      write(*,*)"Average Hamiltonian :"
+      do j1=1,nwan
+        write(*,'(255F12.6)')(dreal(zm(j1,j2)),j2=1,nwan)
+      enddo
+      write(*,*)
+      do j1=1,nwan
+        write(*,'(255F12.6)')(dimag(zm(j1,j2)),j2=1,nwan)
+      enddo
+      write(*,*)"eigen-vectors : "
+      call diagdsy(nwan,dm,eval)
+      do j1=1,nwan
+        write(*,'(2X,7G18.10)')(dm(j1,j2),j2=1,nwan)
+      enddo
+      write(*,*)
+      write(*,'(2X,7G18.10)')(eval(j1),j1=1,nwan)
+      write(*,*)
+      write(*,*)"transpose of eigen-vectors : "
+      do j1=1,nwan
+        write(*,'(2X,7G18.10)')(dm(j2,j1),j2=1,nwan)
+      enddo
+      write(*,*)
+      deallocate(zm,dm,eval)
+    endif
+  enddo
 endif
 
 
