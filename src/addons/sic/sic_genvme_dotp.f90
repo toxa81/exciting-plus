@@ -41,6 +41,8 @@ do iloc=1,nwtloc
     enddo
   endif
   sic_vme(i)=s_spinor_dotp(pos1,pos2,s_wvlm(1,1,1,j),wvtp,s_wlm(1,1,1,j1))
+! filter small matrix elements
+  if (abs(sic_vme(i)).lt.1d-9) sic_vme(i)=zzero
 enddo
 call mpi_grid_reduce(sic_vme(1),sic_wantran%nwt,dims=(/dim_k/),all=.true.)
 deallocate(wvtp)
