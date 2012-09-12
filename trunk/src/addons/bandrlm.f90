@@ -98,6 +98,9 @@ do ikloc=1,nkptloc
     call seceqnfd(ikloc,evecfd)
   endif
   if (wannier) then
+    if (wann_err_k(ikloc).ne.0) then
+      write(*,'("Warning: linearly dependent WFs : ",I4)')wann_err_k(ikloc)
+    endif
     if (ldisentangle) call disentangle(evalsv(1,ik),wann_c(1,1,ikloc),&
       &evecsv)
     call genwann_h(.true.,evalsv(1,ik),wann_c(1,1,ikloc),&
