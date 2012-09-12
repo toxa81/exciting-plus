@@ -74,7 +74,9 @@ do j=1,sic_wantran%nwan
 !$OMP END PARALLEL DO
   call mpi_grid_reduce(wantp_tmp(1,1,1),s_ntp*s_nr*nspinor,wantp(1,1,1),dims=(/dim_k/),all=.true.)
   if (wproc) then
-    write(fout,'("n : ",I4, "   image part (average, total) : ",2G18.10)') n, sum(abs(dimag(wantp)))/s_ntp/s_nr/nspinor, sum(abs(dimag(wantp)))
+    write(fout,'("n : ",I4, "   image part (average, total) : ",2G18.10)') n, &
+      &sum(abs(dimag(wantp)))/s_ntp/s_nr/nspinor, &
+      &sum(abs(dimag(wantp)))
   endif
 ! convert to spherical harmonics
   call sic_genwanlm(fout,n,wantp,s_wlm(1,1,1,j))
