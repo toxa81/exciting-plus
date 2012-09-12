@@ -86,8 +86,7 @@ integer, allocatable :: wann_err_k(:)
 
 integer, allocatable :: wannier_prjlo(:,:)
 
-logical wan_complex
-data wan_complex/.false./
+integer, allocatable :: wan_complex(:,:)
 
 integer, parameter :: wi_atom = 1
 integer, parameter :: wi_lm = 2
@@ -406,7 +405,7 @@ complex(8), intent(in) :: wfsvmt(lmmax,nufrmax,natmtot,nspinor,nstsv)
 complex(8), intent(inout) :: wanc(nwantot,nstsv)
 integer, optional, intent(out) :: ierr
 !
-integer n,j,ias,lm,ispn,itype,ilo,ierr_
+integer n,j,ias,lm,ispn,itype,ilo,ierr_,prj_to_ylm
 logical tbndint 
 real(8) d1
 logical, external :: bndint
@@ -419,10 +418,11 @@ do n=1,nwantot
     ispn=wan_info(3,n)
     itype=wan_info(4,n)
     ilo=wannier_prjlo(wan_info(7,n),wan_info(6,n))
+    prj_to_ylm=wan_complex(wan_info(7,n),wan_info(6,n))
     do j=1,nstsv
       tbndint=bndint(j,eval(j),wann_eint(1,itype),wann_eint(2,itype))
       if (tbndint) then
-        call wan_genprjlo(ilo,ias,lm,ispn,lmmax,wfsvmt(1,1,1,1,j),&
+        call wan_genprjlo(ilo,prj_to_ylm,ias,lm,ispn,lmmax,wfsvmt(1,1,1,1,j),&
           wanc(n,j))
         if (wannier_soft_eint) then
           wanc(n,j)=wanc(n,j)*smoothstep(eval(j),wannier_soft_eint_e1(itype), &
@@ -476,15 +476,17 @@ enddo
 !  enddo
 !endif
 call wan_ort_k(wanc,ierr_)
+!ierr_=0
 if (present(ierr)) ierr=ierr_
 return
 end subroutine
 
 
-subroutine wan_genprjlo(ilo,ias,lm,ispn,lmmax,wfsvmt,prjlo)
+subroutine wan_genprjlo(ilo,prj_to_ylm,ias,lm,ispn,lmmax,wfsvmt,prjlo)
 use modmain
 implicit none
 integer, intent(in) :: ilo
+integer, intent(in) :: prj_to_ylm
 integer, intent(in) :: ias
 integer, intent(in) :: lm
 integer, intent(in) :: ispn
@@ -503,7 +505,7 @@ l=lm2l(lm)
 is=ias2is(ias)
 ic=ias2ic(ias)
 prjlo=zzero
-if (wan_complex) then
+if (prj_to_ylm.ne.0) then
   do io1=1,nufr(l,is)
     prjlo=prjlo+dconjg(wfsvmt(lm,io1,ias,ispn))*ufrp(l,io1,apword(l,is)+ilo,ic)
   enddo
