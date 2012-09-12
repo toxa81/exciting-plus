@@ -55,6 +55,10 @@ if (.not.allocated(wannier_prjlo)) then
   allocate(wannier_prjlo(32,wann_natom))
   wannier_prjlo=1
 endif
+if (.not.allocated(wan_complex)) then
+  allocate(wan_complex(32,wann_natom))
+  wan_complex=0
+endif
 
 if (allocated(nwannias)) deallocate(nwannias)
 allocate(nwannias(natmtot))
