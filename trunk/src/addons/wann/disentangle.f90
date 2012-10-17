@@ -16,6 +16,44 @@ complex(8), allocatable :: wann_c_new(:,:)
 complex(8), allocatable :: evecsv_new(:,:)
 integer n,n1,m1,m2,i,j
 complex(8) zt1
+real(8) t1
+
+! check initial orthogonality of eigen-vectors
+t1=0.d0
+do m1=1,nstsv
+  do m2=1,nstsv
+    zt1=zzero
+    do j=1,nstsv
+      zt1=zt1+dconjg(evecsv_(j,m1))*evecsv_(j,m2)
+    enddo
+    if (m1.eq.m2) zt1=zt1-zone
+    t1=max(abs(zt1),t1)
+  enddo
+enddo
+if (t1.gt.1d-12) then
+  write(*,'("Error(disentangle): original eigen-vectors are not orthonormal")')
+  write(*,*)"  maximum deviation : ",t1
+  call pstop
+endif
+
+! check orthogonality of Wannier states
+t1=0.d0
+do m1=1,nwantot
+  do m2=1,nwantot
+    zt1=zzero
+    do j=1,nstsv
+      zt1=zt1+dconjg(wann_c_(m1,j))*wann_c_(m2,j)
+    enddo
+    if (m1.eq.m2) zt1=zt1-zone
+    t1=max(abs(zt1),t1)
+  enddo
+enddo
+if (t1.gt.1d-8) then
+  write(*,'("Error(disentangle): Wannier states are not orthonormal")')
+  write(*,*)"  maximum deviation : ",t1
+  call pstop
+endif
+
 
 ! transfomation matrix from eigen-vectors of original Hamiltonian to new basis
 !  \tilde u_n=\sum_j tmtrx1(j,n) \psi_j
@@ -43,13 +81,31 @@ do while (n1.le.nstsv)
   enddo
 ! vector norm
   zt1=dot_product(zv1,zv1)
-  if (abs(zt1).gt.1d-5) then
+  if (abs(zt1).gt.0.1d0) then
 ! normalize and add to the basis
     tmtrx1(:,n1)=zv1(:)/sqrt(abs(zt1))
     n1=n1+1
   endif
   m1=m1+1
 enddo
+
+! check orthogonality
+t1=0.d0
+do m1=1,nstsv
+  do m2=1,nstsv
+    zt1=zzero
+    do j=1,nstsv
+      zt1=zt1+dconjg(tmtrx1(j,m1))*tmtrx1(j,m2)
+    enddo
+    if (m1.eq.m2) zt1=zt1-zone
+    t1=max(abs(zt1),t1)
+  enddo
+enddo
+if (t1.gt.1d-8) then
+  write(*,'("Error(disentangle): new basis is not orthonormal")')
+  write(*,*)"  maximum deviation : ",t1
+  call pstop
+endif
 
 allocate(hwann(nwantot,nwantot))
 allocate(ewann(nwantot))
