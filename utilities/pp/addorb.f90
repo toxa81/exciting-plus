@@ -49,7 +49,7 @@ else
 endif
 
 ! try to read atom number
-read(str1,'(I4)',err=20),ias
+read(str1,'(I4)',err=20)ias
 if (ias.gt.natmtot.or.ias.lt.1) then
   write(*,'("wrong atom number")')
   return
@@ -63,7 +63,7 @@ enddo
 21 continue
 
 !try to read orbital
-read(str2,'(I4)',err=30),lm
+read(str2,'(I4)',err=30)lm
 if (lm.gt.lmmax.or.lm.lt.1) then
   write(*,'("wrong orbital")')
   return
@@ -81,7 +81,7 @@ if (trim(str2).eq.'f') orb_l(10:16)=1
 if (trim(str3).eq.'') then
   orb_s=1
 else
-  read(str3,'(I4)',err=40),ispn
+  read(str3,'(I4)',err=40)ispn
   if (ispn.ge.1.and.ispn.le.nspinor) then
     orb_s(ispn)=1
     goto 41
