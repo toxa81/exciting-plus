@@ -99,5 +99,4 @@ do iw=1,nwdos
 enddo
 close(50)
 
-return
 end
