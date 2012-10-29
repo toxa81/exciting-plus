@@ -188,6 +188,5 @@ enddo
 write(50,*)0.d0,efermi
 write(50,*)dpp1d(nkpt),efermi
 close(50)
-return
 end
       
