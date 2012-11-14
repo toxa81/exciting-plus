@@ -1,0 +1,823 @@
+subroutine test_sirius
+use modmain
+use modldapu
+implicit none
+integer is,ia,ik,i,mi,n,nwork,ias
+real(8), allocatable :: work(:),v(:)
+real(8) dv
+
+call sirius_elk_init
+!call sirius_print_timers()
+!stop
+
+!
+! WARNING: symmetrization routines for the interstitial part were changed to compute complex phase factors for translation
+!          in a different way
+!   old code:
+!     t1=-dot_product(vgc(:,ig),vtc(:))
+!     zt1=cmplx(cos(t1),sin(t1),8)
+!   new code:
+!     zt1=exp(dcmplx(0.d0,twopi*(ivg(1,ig)*vtlsymc(1,isym)+ivg(2,ig)*vtlsymc(2,isym)+ivg(3,ig)*vtlsymc(3,isym))))
+!  
+!   The reason for this is to get rid of the dependency on vgc array (Cartesian coordinates of G-vectors)
+!
+! WARNING: output of core eigen-values is commented
+!
+! WARNING: varible ncmag is repalced by ndmag.eq.3 in the symmetrization routines
+!
+! Test of the ground state calculation
+!
+
+! set pointers to charge density
+call sirius_set_charge_density_ptr(rhomt,rhoir)
+! set pointers to effective potential
+call sirius_set_effective_potential_ptr(veffmt,veffir)
+if (spinpol) then
+! set pointer to magnetization
+  call sirius_set_magnetization_ptr(magmt,magir)
+! set pointer to effective magnetic field
+  call sirius_set_effective_magnetic_field_ptr(bxcmt,bxcir)
+endif
+
+call sirius_print_info()
+
+! generate initial density
+call sirius_initial_density()
+call sirius_generate_effective_potential
+
+! size of mixing vector
+n=lmmaxvr*nrmtmax*natmtot+ngrtot
+if (spinpol) n=n*(1+ndmag)
+if (ldapu.ne.0) n=n+2*lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot
+! allocate mixing arrays
+allocate(v(n))
+! determine the size of the mixer work array
+nwork=-1
+call mixerifc(mixtype,n,v,dv,nwork,v)
+allocate(work(nwork))
+
+
+do iscl=1,maxscl
+
+  call sirius_timer_start("elk::iteration")
+
+!
+! mix potential
+!
+  call sirius_timer_start("elk::mixer")
+! pack interstitial and muffin-tin effective potential and field into one array
+  call mixpack(.true.,n,v)
+! mix in the old potential and field with the new
+  call mixerifc(mixtype,n,v,dv,nwork,work)
+! unpack potential and field
+  call mixpack(.false.,n,v)
+  call sirius_timer_stop("elk::mixer")
+  
+  if (dv.lt.epspot) exit
+  write(*,*)"RMS=",dv
+
+  call sirius_density_find_eigen_states
+  call sirius_density_find_band_occupancies
+
+  do ik=1,nkpt
+    call sirius_density_get_band_energies(ik,evalsv(1,ik))
+    call sirius_density_get_band_occupancies(ik,occsv(1,ik))
+  enddo
+!  call occupy
+  call writeeval
+!  do ik=1,nkpt 
+!    call sirius_density_set_band_occupancies(ik,occsv(1,ik))
+!  enddo
+  
+!  write(*,*)"gap=",bandgap*ha2ev
+
+  
+  call sirius_generate_density
+
+  if (ldapu.ne.0) then
+    dmatlu=zzero
+    do ias=1,natmtot
+      call sirius_get_occupation_matrix(ias,dmatlu(1,1,1,1,ias))
+    enddo
+    call symdmat(lmaxlu,lmmaxlu,dmatlu)
+! generate the LDA+U potential matrix
+    call genvmatlu
+! write the LDA+U matrices to file
+    call writeldapu
+    do is=1,nspecies
+      if (llu(is).ge.0) then
+        do ia=1,natoms(is)
+          ias=idxas(ia,is)
+          call sirius_set_uj_correction_matrix(ias,llu(is),vmatlu(1,1,1,1,ias)) 
+        enddo
+      endif
+    enddo
+  endif
+
+  call sirius_timer_start("elk::symmetrization")
+  call symrf(1,rhomt,rhoir)
+! symmetrise the magnetisation
+  if (spinpol) call symrvf(1,magmt,magir)
+  call sirius_timer_stop("elk::symmetrization")
+  
+  call sirius_density_integrate
+  
+!  do ik=1,nkpt
+!    call sirius_density_get_band_energies(ik,evalsv(1,ik))
+!    call sirius_density_get_band_occupancies(ik,occsv(1,ik))
+!  enddo
+
+  
+
+! generate potential
+  call sirius_generate_effective_potential
+  
+  call sirius_timer_start("elk::symmetrization")
+! symmetrize potential
+  call symrf(1,veffmt,veffir)
+! symmetrise magnetic field
+  if (spinpol) call symrvf(1,bxcmt,bxcir)
+  call sirius_timer_stop("symmetrization")
+  
+  call sirius_print_rti
+ 
+  call sirius_timer_stop("elk::iteration")  
+
+enddo
+
+call sirius_print_timers()
+
+
+call sirius_clear()
+
+return
+end subroutine
+
+subroutine test_sirius_band
+use modmain
+implicit none
+integer is,ia,ik,i,mi,n,nwork,ist
+real(8), allocatable :: work(:),v(:)
+real(8) dv
+
+call sirius_elk_init
+
+!
+! WARNING: symmetrization routines for the interstitial part were changed to compute complex phase factors for translation
+!          in a different way
+!   old code:
+!     t1=-dot_product(vgc(:,ig),vtc(:))
+!     zt1=cmplx(cos(t1),sin(t1),8)
+!   new code:
+!     zt1=exp(dcmplx(0.d0,twopi*(ivg(1,ig)*vtlsymc(1,isym)+ivg(2,ig)*vtlsymc(2,isym)+ivg(3,ig)*vtlsymc(3,isym))))
+!  
+!   The reason for this is to get rid of the dependency on vgc array (Cartesian coordinates of G-vectors)
+!
+! WARNING: output of core eigen-values is commented
+!
+! WARNING: varible ncmag is repalced by ndmag.eq.3 in the symmetrization routines
+!
+! Test of the ground state calculation
+!
+
+! set pointers to charge density
+call sirius_set_charge_density_ptr(rhomt,rhoir)
+! set pointers to effective potential
+call sirius_set_effective_potential_ptr(veffmt,veffir)
+if (spinpol) then
+! set pointer to magnetization
+  call sirius_set_magnetization_ptr(magmt,magir)
+! set pointer to effective magnetic field
+  call sirius_set_effective_magnetic_field_ptr(bxcmt,bxcir)
+endif
+
+call sirius_potential_hdf5_read
+
+do ik=1,nkpt
+  call sirius_band(vkl(1,ik),evalsv(1,ik))
+enddo
+
+  open(50,file='BAND.OUT',action='WRITE',form='FORMATTED')
+  do ist=1,nstsv
+    do ik=1,nkpt
+      write(50,'(2G18.10)') dpp1d(ik),evalsv(ist,ik)
+    end do
+    write(50,'("     ")')
+  end do
+  close(50)
+
+!! output the vertex location lines
+!  open(50,file='BANDLINES.OUT',action='WRITE',form='FORMATTED')
+!  do iv=1,nvp1d
+!    write(50,'(2G18.10)') dvp1d(iv),emin
+!    write(50,'(2G18.10)') dvp1d(iv),emax
+!    write(50,'("     ")')
+!  end do
+!  close(50)
+!
+
+call sirius_print_info()
+call sirius_print_timers()
+call sirius_clear()
+
+return
+end subroutine
+
+
+subroutine sirius_elk_init
+use modmain
+use modldapu
+implicit none
+integer ist,l,m,lm,ncls,ia1,ia2
+integer, allocatable :: icls(:)
+real(8) sum
+logical lsym(48)
+integer isym,is,ia,ias
+integer ik,io,ilo,iv(3)
+integer i1,i2,i3,ispn
+integer i
+real(8) vl(3),vc(3)
+real(8) boxl(3,4),t1
+
+!------------------------------------!
+!     angular momentum variables     !
+!------------------------------------!
+lmmaxvr=(lmaxvr+1)**2
+lmmaxapw=(lmaxapw+1)**2
+! index to (l,m) pairs
+if (allocated(idxlm)) deallocate(idxlm)
+allocate(idxlm(0:50,-50:50))
+lm=0
+do l=0,50
+  do m=-l,l
+    lm=lm+1
+    idxlm(l,m)=lm
+  end do
+end do
+! array of i**l values
+if (allocated(zil)) deallocate(zil)
+allocate(zil(0:50))
+do l=0,50
+  zil(l)=zi**l
+end do
+
+!------------------------------------!
+!     index to atoms and species     !
+!------------------------------------!
+! check if the system is an isolated molecule
+if (molecule) then
+  primcell=.false.
+  tshift=.false.
+end if
+! find primitive cell if required
+if (primcell) call findprim
+natmmax=0
+ias=0
+do is=1,nspecies
+  do ia=1,natoms(is)
+    ias=ias+1
+    idxas(ia,is)=ias
+  end do
+! maximum number of atoms over all species
+  natmmax=max(natmmax,natoms(is))
+end do
+! total number of atoms
+natmtot=ias
+
+!------------------------!
+!     spin variables     !
+!------------------------!
+! spin-orbit coupling or fixed spin moment implies spin-polarised calculation
+if ((spinorb).or.(fixspin.ne.0).or.(spinsprl)) spinpol=.true.
+! number of spinor components and maximum allowed occupancy
+if (spinpol) then
+  nspinor=2
+  occmax=1.d0
+else
+  nspinor=1
+  occmax=2.d0
+end if
+! number of spin-dependent first-variational functions per state
+if (spinsprl) then
+  nspnfv=2
+else
+  nspnfv=1
+end if
+! spin-polarised calculations require second-variational eigenvectors
+if (spinpol) tevecsv=.true.
+! set the magnetic fields to the initial values
+bfieldc(:)=bfieldc0(:)
+bfcmt(:,:,:)=bfcmt0(:,:,:)
+! check for collinearity in the z-direction and set the dimension of the
+! magnetisation and exchange-correlation vector fields
+if (spinpol) then
+  ndmag=1
+  if ((abs(bfieldc(1)).gt.epslat).or.(abs(bfieldc(2)).gt.epslat)) ndmag=3
+  do is=1,nspecies
+    do ia=1,natoms(is)
+      if ((abs(bfcmt(1,ia,is)).gt.epslat).or.(abs(bfcmt(2,ia,is)).gt.epslat)) &
+       ndmag=3
+    end do
+  end do
+! source-free fields and spin-spirals are non-collinear in general
+  if ((nosource).or.(spinsprl)) ndmag=3
+! spin-orbit coupling is non-collinear in general
+  if (spinorb) ndmag=3
+else
+  ndmag=0
+end if
+! spin-polarised cores
+if (.not.spinpol) spincore=.false.
+! set fixed spin moment effective field to zero
+bfsmc(:)=0.d0
+! set muffin-tin FSM fields to zero
+bfsmcmt(:,:,:)=0.d0
+
+!----------------------------------!
+!     crystal structure set up     !
+!----------------------------------!
+! generate the reciprocal lattice vectors and unit cell volume
+call reciplat
+! compute the inverse of the lattice vector matrix
+call r3minv(avec,ainv)
+! compute the inverse of the reciprocal vector matrix
+call r3minv(bvec,binv)
+! Cartesian coordinates of the spin-spiral vector
+call r3mv(bvec,vqlss,vqcss)
+do is=1,nspecies
+  do ia=1,natoms(is)
+! map atomic lattice coordinates to [0,1) if not in molecule mode
+    if (.not.molecule) call r3frac(epslat,atposl(:,ia,is),iv)
+! determine atomic Cartesian coordinates
+    call r3mv(avec,atposl(:,ia,is),atposc(:,ia,is))
+  end do
+end do
+! automatically determine the muffin-tin radii if required
+if (autormt) call autoradmt
+! check for overlapping muffin-tins
+call checkmt
+
+!-------------------------------!
+!     vector fields E and A     !
+!-------------------------------!
+efieldpol=.false.
+if ((abs(efieldc(1)).gt.epslat).or.(abs(efieldc(2)).gt.epslat).or. &
+ (abs(efieldc(3)).gt.epslat)) then
+  efieldpol=.true.
+  tshift=.false.
+! electric field vector in lattice coordinates
+  call r3mv(ainv,efieldc,efieldl)
+end if
+afieldpol=.false.
+if ((abs(afieldc(1)).gt.epslat).or.(abs(afieldc(2)).gt.epslat).or. &
+ (abs(afieldc(3)).gt.epslat)) then
+  afieldpol=.true.
+! vector potential added in second-variational step
+  tevecsv=.true.
+end if
+
+!---------------------------------!
+!     crystal symmetry set up     !
+!---------------------------------!
+! find Bravais lattice symmetries
+call findsymlat
+! use only the identity if required
+if (nosym) nsymlat=1
+! find the crystal symmetries and shift atomic positions if required
+call findsymcrys
+! find the site symmetries
+call findsymsite
+! check if fixed spin moments are invariant under the symmetry group
+call checkfsm
+
+!!--------------------------------------!
+!!     charges and number of states     !
+!!--------------------------------------!
+!chgzn=0.d0
+!chgcr=0.d0
+!chgval=0.d0
+!spnstmax=0
+!do is=1,nspecies
+!! nuclear charge
+!  chgzn=chgzn+spzn(is)*dble(natoms(is))
+!! find the maximum number of atomic states
+!  spnstmax=max(spnstmax,spnst(is))
+!! compute the electronic charge for each species, as well as the total core and
+!! valence charge
+!  spze(is)=0.d0
+!  do ist=1,spnst(is)
+!    spze(is)=spze(is)+spocc(ist,is)
+!    if (spcore(ist,is)) then
+!      chgcr=chgcr+dble(natoms(is))*spocc(ist,is)
+!    else
+!      chgval=chgval+dble(natoms(is))*spocc(ist,is)
+!    end if
+!  end do
+!end do
+!! add excess charge
+!chgval=chgval+chgexs
+!! total charge
+!chgtot=chgcr+chgval
+!if (chgtot.lt.1.d-8) then
+!  write(*,*)
+!  write(*,'("Error(init0): zero total charge")')
+!  write(*,*)
+!  stop
+!end if
+!! effective Wigner radius
+!rwigner=(3.d0/(fourpi*(chgtot/omega)))**(1.d0/3.d0)
+
+
+
+!-------------------------!
+!     G-vector arrays     !
+!-------------------------!
+! determine gkmax from rgkmax and the muffin-tin radius
+if (nspecies.gt.0) then
+  if ((isgkmax.ge.1).and.(isgkmax.le.nspecies)) then
+! use user-specified muffin-tin radius
+    gkmax=rgkmax/rmt(isgkmax)
+  else if (isgkmax.eq.-1) then
+! use average muffin-tin radius
+    sum=0.d0
+    do is=1,nspecies
+      sum=sum+dble(natoms(is))*rmt(is)
+    end do
+    sum=sum/dble(natmtot)
+    gkmax=rgkmax/sum
+  else
+! use minimum muffin-tin radius
+    gkmax=rgkmax/minval(rmt(1:nspecies))
+  end if
+else
+  gkmax=rgkmax/2.d0
+end if
+gmaxvr=max(gmaxvr,2.d0*gkmax+epslat)
+
+!!-------------------------!
+!!     atoms and cores     !
+!!-------------------------!
+!! allocate global species charge density and potential arrays
+!if (allocated(sprho)) deallocate(sprho)
+!allocate(sprho(spnrmax,nspecies))
+!if (allocated(spvr)) deallocate(spvr)
+!allocate(spvr(spnrmax,nspecies))
+!! allocate core state eigenvalue array and set to default
+!if (allocated(evalcr)) deallocate(evalcr)
+!allocate(evalcr(spnstmax,natmtot))
+!evalcr=-1.d0
+!! allocate core state radial wavefunction array
+!if (allocated(rwfcr)) deallocate(rwfcr)
+!allocate(rwfcr(spnrmax,2,spnstmax,natmtot))
+!! number of core spin channels
+!if (spincore) then
+!  nspncr=2
+!else
+!  nspncr=1
+!end if
+!! allocate core state charge density array
+!if (allocated(rhocr)) deallocate(rhocr)
+!allocate(rhocr(spnrmax,natmtot,nspncr))
+
+!!---------------------------------------!
+!!     charge density and potentials     !
+!!---------------------------------------!
+!! allocate charge density arrays
+!if (allocated(rhomt)) deallocate(rhomt)
+!allocate(rhomt(lmmaxvr,nrmtmax,natmtot))
+!if (allocated(rhoir)) deallocate(rhoir)
+!allocate(rhoir(ngrtot))
+!! allocate magnetisation arrays
+!if (allocated(magmt)) deallocate(magmt)
+!if (allocated(magir)) deallocate(magir)
+!if (spinpol) then
+!  allocate(magmt(lmmaxvr,nrmtmax,natmtot,ndmag))
+!  allocate(magir(ngrtot,ndmag))
+!end if
+!! Coulomb potential
+!if (allocated(vclmt)) deallocate(vclmt)
+!allocate(vclmt(lmmaxvr,nrmtmax,natmtot))
+!if (allocated(vclir)) deallocate(vclir)
+!allocate(vclir(ngrtot))
+!! exchange-correlation potential
+!if (allocated(vxcmt)) deallocate(vxcmt)
+!allocate(vxcmt(lmmaxvr,nrmtmax,natmtot))
+!if (allocated(vxcir)) deallocate(vxcir)
+!allocate(vxcir(ngrtot))
+!! exchange-correlation magnetic and effective fields
+!if (allocated(bxcmt)) deallocate(bxcmt)
+!if (allocated(bxcir)) deallocate(bxcir)
+!if (allocated(beffmt)) deallocate(beffmt)
+!if (spinpol) then
+!  allocate(bxcmt(lmmaxvr,nrmtmax,natmtot,ndmag))
+!  allocate(bxcir(ngrtot,ndmag))
+!  allocate(beffmt(lmmaxvr,nrcmtmax,natmtot,ndmag))
+!end if
+!! spin-orbit coupling radial function
+!if (allocated(socfr)) deallocate(socfr)
+!if (spinorb) then
+!  allocate(socfr(nrcmtmax,natmtot))
+!end if
+!! exchange energy density
+!if (allocated(exmt)) deallocate(exmt)
+!allocate(exmt(lmmaxvr,nrmtmax,natmtot))
+!if (allocated(exir)) deallocate(exir)
+!allocate(exir(ngrtot))
+!! correlation energy density
+!if (allocated(ecmt)) deallocate(ecmt)
+!allocate(ecmt(lmmaxvr,nrmtmax,natmtot))
+!if (allocated(ecir)) deallocate(ecir)
+!allocate(ecir(ngrtot))
+!! effective potential
+!if (allocated(veffmt)) deallocate(veffmt)
+!allocate(veffmt(lmmaxvr,nrmtmax,natmtot))
+!if (allocated(veffir)) deallocate(veffir)
+!allocate(veffir(ngrtot))
+!if (allocated(veffig)) deallocate(veffig)
+!allocate(veffig(ngvec))
+!! allocate muffin-tin charge and moment arrays
+!if (allocated(chgmt)) deallocate(chgmt)
+!allocate(chgmt(natmtot))
+!if (allocated(mommt)) deallocate(mommt)
+!allocate(mommt(3,natmtot))
+!
+!!--------------------------------------------!
+!!     forces and structural optimisation     !
+!!--------------------------------------------!
+!if (allocated(forcehf)) deallocate(forcehf)
+!allocate(forcehf(3,natmtot))
+!if (allocated(forcecr)) deallocate(forcecr)
+!allocate(forcecr(3,natmtot))
+!if (allocated(forceibs)) deallocate(forceibs)
+!allocate(forceibs(3,natmtot))
+!if (allocated(forcetot)) deallocate(forcetot)
+!allocate(forcetot(3,natmtot))
+!if (allocated(forcetp)) deallocate(forcetp)
+!allocate(forcetp(3,natmtot))
+!if (allocated(tauatm)) deallocate(tauatm)
+!allocate(tauatm(natmtot))
+!! initialise the previous force
+!forcetp(:,:)=0.d0
+!! initial step sizes
+!tauatm(:)=tau0atm
+
+!-------------------------!
+!     LDA+U variables     !
+!-------------------------!
+if ((ldapu.ne.0).or.(task.eq.17)) then
+! LDA+U requires second-variational eigenvectors
+  tevecsv=.true.
+! density matrices
+  if (allocated(dmatlu)) deallocate(dmatlu)
+  allocate(dmatlu(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
+! potential matrix elements
+  if (allocated(vmatlu)) deallocate(vmatlu)
+  allocate(vmatlu(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
+! zero the potential
+  vmatlu(:,:,:,:,:)=0.d0
+! energy for each atom
+  if (allocated(engyalu)) deallocate(engyalu)
+  allocate(engyalu(natmtot))
+! interpolation constants (alpha)
+  if (allocated(alphalu)) deallocate(alphalu)
+  allocate(alphalu(natmtot))
+end if
+
+!!-----------------------!
+!!     miscellaneous     !
+!!-----------------------!
+!! determine the nuclear-nuclear energy
+!call energynn
+!! get smearing function description
+!call getsdata(stype,sdescr)
+!! get mixing type description
+!call getmixdata(mixtype,mixdescr)
+!! generate the spherical harmonic transform (SHT) matrices
+!call genshtmat
+!! allocate 1D plotting arrays
+!if (allocated(dvp1d)) deallocate(dvp1d)
+!allocate(dvp1d(nvp1d))
+!if (allocated(vplp1d)) deallocate(vplp1d)
+!allocate(vplp1d(3,npp1d))
+!if (allocated(dpp1d)) deallocate(dpp1d)
+!allocate(dpp1d(npp1d))
+!! zero self-consistent loop number
+!iscl=0
+!tlast=.false.
+!! if reducebf < 1 then reduce the external magnetic fields immediately for
+!! non-self-consistent calculations
+!if ((reducebf.lt.1.d0).and.(task.gt.3).and.(task.ne.700)) then
+!  bfieldc(:)=0.d0
+!  bfcmt(:,:,:)=0.d0
+!end if
+!! set the Fermi energy to zero
+!efermi=0.d0
+!
+!call timesec(ts1)
+!timeinit=timeinit+ts1-ts0
+
+!---------------------!
+!     k-point set     !
+!---------------------!
+! check if the system is an isolated molecule
+if (molecule) then
+  ngridk(:)=1
+  vkloff(:)=0.d0
+  autokpt=.false.
+end if
+! store the point group symmetries for reducing the k-point set
+if (reducek.eq.0) then
+  nsymkpt=1
+  symkpt(:,:,1)=symlat(:,:,1)
+else
+  lsym(:)=.false.
+  do isym=1,nsymcrys
+    if (reducek.eq.2) then
+! check symmetry is symmorphic if required
+      t1=abs(vtlsymc(1,isym))+abs(vtlsymc(2,isym))+abs(vtlsymc(3,isym))
+      if (t1.gt.epslat) goto 10
+! check also that the spin rotation is the same as the spatial rotation
+      if (spinpol) then
+        if (lspnsymc(isym).ne.lsplsymc(isym)) goto 10
+      end if
+    end if
+    lsym(lsplsymc(isym))=.true.
+10 continue
+  end do
+  nsymkpt=0
+  do isym=1,nsymlat
+    if (lsym(isym)) then
+      nsymkpt=nsymkpt+1
+      symkpt(:,:,nsymkpt)=symlat(:,:,isym)
+    end if
+  end do
+end if
+
+! allocate 1D plotting arrays
+if (allocated(dvp1d)) deallocate(dvp1d)
+allocate(dvp1d(nvp1d))
+if (allocated(vplp1d)) deallocate(vplp1d)
+allocate(vplp1d(3,npp1d))
+if (allocated(dpp1d)) deallocate(dpp1d)
+allocate(dpp1d(npp1d))
+
+if (task.eq.2001) then
+! for band structure plots generate k-points along a line
+  call connect(bvec,nvp1d,npp1d,vvlp1d,vplp1d,dvp1d,dpp1d)
+  nkpt=npp1d
+  if (allocated(vkl)) deallocate(vkl)
+  allocate(vkl(3,nkpt))
+  if (allocated(vkc)) deallocate(vkc)
+  allocate(vkc(3,nkpt))
+  do ik=1,nkpt
+    vkl(:,ik)=vplp1d(:,ik)
+    call r3mv(bvec,vkl(:,ik),vkc(:,ik))
+  end do
+else
+! setup the default k-point box
+  boxl(:,1)=vkloff(:)/dble(ngridk(:))
+  boxl(:,2)=boxl(:,1); 
+  boxl(:,3)=boxl(:,1); 
+  boxl(:,4)=boxl(:,1)
+  boxl(1,2)=boxl(1,2)+1.d0
+  boxl(2,3)=boxl(2,3)+1.d0
+  boxl(3,4)=boxl(3,4)+1.d0
+! allocate the reduced k-point set arrays
+  if (allocated(ivk)) deallocate(ivk)
+  allocate(ivk(3,ngridk(1)*ngridk(2)*ngridk(3)))
+  if (allocated(vkl)) deallocate(vkl)
+  allocate(vkl(3,ngridk(1)*ngridk(2)*ngridk(3)))
+  if (allocated(vkc)) deallocate(vkc)
+  allocate(vkc(3,ngridk(1)*ngridk(2)*ngridk(3)))
+  if (allocated(wkpt)) deallocate(wkpt)
+  allocate(wkpt(ngridk(1)*ngridk(2)*ngridk(3)))
+  if (allocated(ikmap)) deallocate(ikmap)
+  allocate(ikmap(0:ngridk(1)-1,0:ngridk(2)-1,0:ngridk(3)-1))
+! generate the reduced k-point set
+  call genppts(.false.,nsymkpt,symkpt,ngridk,epslat,bvec,boxl,nkpt,ikmap,ivk, &
+   vkl,vkc,wkpt)
+endif
+
+!
+! set the basis parameters of the calculation: lattice vectors, number of atoms, maximum l-values
+!   and plane-wave cutoffs
+!
+call sirius_set_lattice_vectors(avec(1,1), avec(1,2), avec(1,3))
+do is=1,nspecies
+  call sirius_add_atom_type(is, trim(spsymb(is)))
+enddo
+
+do is=1,nspecies
+  do ia=1,natoms(is)
+    call sirius_add_atom(is, atposl(1,ia,is), bfcmt0(1,ia,is))
+  enddo
+enddo
+call sirius_set_lmax_apw(lmaxapw)
+call sirius_set_lmax_rho(lmaxvr)
+call sirius_set_lmax_pot(lmaxvr)
+call sirius_set_pw_cutoff(gmaxvr)
+call sirius_set_aw_cutoff(rgkmax)
+
+! set equivalent atoms
+ncls=0
+allocate(icls(natmtot))
+icls=0
+do is=1,nspecies
+  do ia1=1,natoms(is)
+    if (icls(idxas(ia1,is)).eq.0) then
+      ncls=ncls+1
+      do ia2=1,natoms(is) 
+        if (eqatoms(ia1,ia2,is)) then
+          icls(idxas(ia2,is))=ncls
+        endif
+      enddo
+    endif
+  enddo
+enddo
+call sirius_set_equivalent_atoms(icls)
+deallocate(icls)
+
+if (spinpol) call sirius_set_num_spins(2)
+call sirius_set_num_mag_dims(ndmag)
+
+if (ldapu.ne.0) call sirius_set_uj_correction(1)
+
+! initialize the library
+call sirius_global_initialize()
+
+call sirius_band_initialize()
+call sirius_potential_initialize()
+call sirius_density_initialize(nkpt,vkl,wkpt)
+
+! now it's time to get dimensions of important arrays, which are allocated on the Fortran side
+call sirius_get_num_grid_points(ngrtot)
+call sirius_get_max_num_mt_points(nrmtmax)
+call sirius_get_num_bands(nstsv)
+call sirius_get_fft_grid_size(ngrid)
+do i=0,2
+  call sirius_get_fft_grid_limits(i,0,intgv(i+1,1))
+  call sirius_get_fft_grid_limits(i,1,intgv(i+1,2))
+enddo
+call sirius_get_num_gvec(ngvec)
+
+! get muffin-tin grids
+if (allocated(spr)) deallocate(spr)
+allocate(spr(nrmtmax,nspecies))
+do is=1,nspecies
+  call sirius_get_num_mt_points(is,nrmt(is))
+  call sirius_get_mt_points(is,spr(1,is))
+enddo
+
+! get FFT related arrays
+if (allocated(igfft)) deallocate(igfft)
+allocate(igfft(ngrtot))
+call sirius_get_fft_index(igfft)
+if (allocated(ivg)) deallocate(ivg)
+allocate(ivg(3,ngrtot))
+call sirius_get_gvec(ivg)
+if (allocated(ivgig)) deallocate(ivgig)
+allocate(ivgig(intgv(1,1):intgv(1,2),intgv(2,1):intgv(2,2),intgv(3,1):intgv(3,2)))
+call sirius_get_index_by_gvec(ivgig)
+
+! allocate memory for charge density 
+if (allocated(rhomt)) deallocate(rhomt)
+allocate(rhomt(lmmaxvr,nrmtmax,natmtot))
+if (allocated(rhoir)) deallocate(rhoir)
+allocate(rhoir(ngrtot))
+! allocate magnetisation arrays
+if (allocated(magmt)) deallocate(magmt)
+if (allocated(magir)) deallocate(magir)
+if (spinpol) then
+  allocate(magmt(lmmaxvr,nrmtmax,natmtot,ndmag))
+  allocate(magir(ngrtot,ndmag))
+end if
+!  allocate memory for effective potential
+if (allocated(veffmt)) deallocate(veffmt)
+allocate(veffmt(lmmaxvr,nrmtmax,natmtot))
+if (allocated(veffir)) deallocate(veffir)
+allocate(veffir(ngrtot))
+! XC magnetic field
+if (allocated(bxcmt)) deallocate(bxcmt)
+if (allocated(bxcir)) deallocate(bxcir)
+if (spinpol) then
+  allocate(bxcmt(lmmaxvr,nrmtmax,natmtot,ndmag))
+  allocate(bxcir(ngrtot,ndmag))
+end if
+
+if (allocated(occsv)) deallocate(occsv)
+allocate(occsv(nstsv,nkpt))
+
+if (allocated(evalsv)) deallocate(evalsv)
+allocate(evalsv(nstsv,nkpt))
+
+call sirius_get_num_electrons(chgtot)
+call sirius_get_num_valence_electrons(chgval)
+call sirius_get_num_core_electrons(chgcr)
+
+! effective Wigner radius
+rwigner=(3.d0/(fourpi*(chgtot/omega)))**(1.d0/3.d0)
+
+
+return
+end subroutine
+
