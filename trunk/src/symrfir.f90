@@ -42,7 +42,7 @@ zfft2(:)=0.d0
 ! loop over crystal symmetries
 do isym=1,nsymcrys
 ! translation in Cartesian coordinates
-  call r3mv(avec,vtlsymc(:,isym),vtc)
+  !call r3mv(avec,vtlsymc(:,isym),vtc)
 ! index to lattice symmetry of spatial rotation
   lspl=lsplsymc(isym)
 ! inverse rotation required for rotation of G-vectors
@@ -60,8 +60,9 @@ do isym=1,nsymcrys
       jg=ivgig(iv(1),iv(2),iv(3))
       jfg=igfft(jg)
 ! complex phase factor for translation
-      t1=-dot_product(vgc(:,ig),vtc(:))
-      zt1=cmplx(cos(t1),sin(t1),8)
+      !t1=-dot_product(vgc(:,ig),vtc(:))
+      !zt1=cmplx(cos(t1),sin(t1),8)
+      zt1=exp(dcmplx(0.d0,twopi*(ivg(1,ig)*vtlsymc(1,isym)+ivg(2,ig)*vtlsymc(2,isym)+ivg(3,ig)*vtlsymc(3,isym))))
       zfft2(jfg)=zfft2(jfg)+zt1*zfft1(ifg)
     end if
   end do

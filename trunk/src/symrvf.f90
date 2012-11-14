@@ -83,7 +83,7 @@ do is=1,nspecies
         md=symlatd(lspn)
         sc(:,:)=dble(md)*symlatc(:,:,lspn)
 ! global spin rotation of vector field
-        if (ncmag) then
+        if (ndmag.eq.3) then
 ! non-collinear case
           do ir=1,nrmt(is),lrstp
             do lm=1,lmmaxvr
@@ -127,7 +127,7 @@ do is=1,nspecies
           md=symlatd(ilspn)
           sc(:,:)=dble(md)*symlatc(:,:,ilspn)
 ! global spin rotation of vector field
-          if (ncmag) then
+          if (ndmag.eq.3) then
 ! non-collinear case
             do ir=1,nrmt(is),lrstp
               do lm=1,lmmaxvr
