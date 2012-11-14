@@ -63,14 +63,15 @@ do isym=1,nsymcrys
       jg=ivgig(iv(1),iv(2),iv(3))
       jfg=igfft(jg)
 ! complex phase factor for translation
-      t1=-dot_product(vgc(:,ig),vtc(:))
-      zt1=cmplx(cos(t1),sin(t1),8)
+      !t1=-dot_product(vgc(:,ig),vtc(:))
+      !zt1=cmplx(cos(t1),sin(t1),8)
+      zt1=exp(dcmplx(0.d0,twopi*(ivg(1,ig)*vtlsymc(1,isym)+ivg(2,ig)*vtlsymc(2,isym)+ivg(3,ig)*vtlsymc(3,isym))))
 ! translation, spatial rotation and global spin rotation
       if (lspn.eq.1) then
 ! global spin symmetry is the identity
         zfft2(jfg,:)=zfft2(jfg,:)+zt1*zfft1(ifg,:)
       else
-        if (ncmag) then
+        if (ndmag.eq.3) then
 ! non-collinear case
           zv(1)=sc(1,1)*zfft1(ifg,1)+sc(1,2)*zfft1(ifg,2)+sc(1,3)*zfft1(ifg,3)
           zv(2)=sc(2,1)*zfft1(ifg,1)+sc(2,2)*zfft1(ifg,2)+sc(2,3)*zfft1(ifg,3)
