@@ -6,8 +6,10 @@ integer is,ia,ik,i,mi,n,nwork,ias
 real(8), allocatable :: work(:),v(:)
 real(8) dv
 
+
 call sirius_elk_init
-!call sirius_print_timers()
+call sirius_print_timers()
+
 !stop
 
 !
@@ -28,6 +30,8 @@ call sirius_elk_init
 ! Test of the ground state calculation
 !
 
+call sirius_density_initialize(nkpt,vkl,wkpt)
+
 ! set pointers to charge density
 call sirius_set_charge_density_ptr(rhomt,rhoir)
 ! set pointers to effective potential
@@ -41,9 +45,13 @@ endif
 
 call sirius_print_info()
 
+
 ! generate initial density
 call sirius_initial_density()
 call sirius_generate_effective_potential
+
+call sirius_print_timers()
+!stop
 
 ! size of mixing vector
 n=lmmaxvr*nrmtmax*natmtot+ngrtot
@@ -180,31 +188,16 @@ call sirius_elk_init
 ! Test of the ground state calculation
 !
 
-! set pointers to charge density
-call sirius_set_charge_density_ptr(rhomt,rhoir)
 ! set pointers to effective potential
 call sirius_set_effective_potential_ptr(veffmt,veffir)
 if (spinpol) then
-! set pointer to magnetization
-  call sirius_set_magnetization_ptr(magmt,magir)
 ! set pointer to effective magnetic field
   call sirius_set_effective_magnetic_field_ptr(bxcmt,bxcir)
 endif
 
 call sirius_potential_hdf5_read
 
-do ik=1,nkpt
-  call sirius_band(vkl(1,ik),evalsv(1,ik))
-enddo
-
-  open(50,file='BAND.OUT',action='WRITE',form='FORMATTED')
-  do ist=1,nstsv
-    do ik=1,nkpt
-      write(50,'(2G18.10)') dpp1d(ik),evalsv(ist,ik)
-    end do
-    write(50,'("     ")')
-  end do
-  close(50)
+call sirius_bands(nkpt, vkl, dpp1d)
 
 !! output the vertex location lines
 !  open(50,file='BANDLINES.OUT',action='WRITE',form='FORMATTED')
@@ -745,9 +738,7 @@ if (ldapu.ne.0) call sirius_set_uj_correction(1)
 ! initialize the library
 call sirius_global_initialize()
 
-call sirius_band_initialize()
 call sirius_potential_initialize()
-call sirius_density_initialize(nkpt,vkl,wkpt)
 
 ! now it's time to get dimensions of important arrays, which are allocated on the Fortran side
 call sirius_get_num_grid_points(ngrtot)
@@ -817,6 +808,7 @@ call sirius_get_num_core_electrons(chgcr)
 ! effective Wigner radius
 rwigner=(3.d0/(fourpi*(chgtot/omega)))**(1.d0/3.d0)
 
+call sirius_platform_initialize(0)
 
 return
 end subroutine
