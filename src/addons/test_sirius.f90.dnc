@@ -2,7 +2,7 @@ subroutine test_sirius
 use modmain
 use modldapu
 implicit none
-integer is,ia,ik,i,mi,n,nwork,ias
+integer is,ia,ik,i,mi,n,nwork,ias,rank
 real(8), allocatable :: work(:),v(:)
 real(8) dv
 
@@ -92,7 +92,9 @@ do iscl=1,maxscl
     call sirius_density_get_band_occupancies(ik,occsv(1,ik))
   enddo
 !  call occupy
-  call writeeval
+
+  call sirius_platform_mpi_rank(rank)
+  if (rank.eq.0) call writeeval
 !  do ik=1,nkpt 
 !    call sirius_density_set_band_occupancies(ik,occsv(1,ik))
 !  enddo
