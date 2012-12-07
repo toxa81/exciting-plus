@@ -66,7 +66,7 @@ gensrc:
 #	python ../gensrclog.py
 #	mv srclog.f90 ./addons
 	python ../ftemplate.py <./addons/mod_mpi_grid.tpl >./addons/mod_mpi_grid.f90
-#	python ../ftemplate.py <./addons/mod_hdf5.tpl >./addons/mod_hdf5.f90
+	python ../ftemplate.py <./addons/mod_hdf5.tpl >./addons/mod_hdf5.f90
 
 extras:
 ifneq (,$(findstring D_MAD_,$(CPP_OPTS)))
