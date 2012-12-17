@@ -2,9 +2,9 @@ subroutine test_sirius
 use modmain
 use modldapu
 implicit none
-integer is,ia,ik,i,mi,n,nwork,ias,rank
+integer is,ia,ik,i,mi,n,nwork,ias,rank,ispn,jspn,l,m1,m2,lm1,lm2,lm
 real(8), allocatable :: work(:),v(:)
-real(8) dv
+real(8) dv,d1,d2,xs(3),etot,etot_old
 
 
 call sirius_elk_init
@@ -64,14 +64,36 @@ nwork=-1
 call mixerifc(mixtype,n,v,dv,nwork,v)
 allocate(work(nwork))
 
+!!open(50,file="vmat", status="OLD", form="FORMATTED")
+!!     
+!!      l=llu(1)
+!!      do ispn=1,nspinor
+!!        do jspn=1,nspinor
+!!          do m1=-l,l
+!!            lm1=idxlm(l,m1)
+!!            do m2=-l,l
+!!              lm2=idxlm(l,m2)
+!!              read(50,'(2G18.10)')d1,d2
+!!              vmatlu(lm1,lm2,ispn,jspn,1)=dcmplx(d1,d2)
+!!            end do
+!!          end do
+!!        end do
+!!      end do
+!!
+!!close(50)
+!!call sirius_set_uj_correction_matrix(1,llu(1),vmatlu(1,1,1,1,1)) 
+
+call sirius_platform_mpi_rank(rank)
+etot_old = 0d0
+etot = 1d100
 
 do iscl=1,maxscl
 
   call sirius_timer_start("elk::iteration")
 
-!
-! mix potential
-!
+!---------------!
+! mix potential !
+!---------------!
   call sirius_timer_start("elk::mixer")
 ! pack interstitial and muffin-tin effective potential and field into one array
   call mixpack(.true.,n,v)
@@ -80,11 +102,17 @@ do iscl=1,maxscl
 ! unpack potential and field
   call mixpack(.false.,n,v)
   call sirius_timer_stop("elk::mixer")
-  
-  if (dv.lt.epspot) exit
-  write(*,*)"RMS=",dv
 
+! check if all ranks can exit the scf loop
+  i = 0   
+  if ((dv.lt.epspot).and.abs(etot-etot_old).lt.epsengy) i = 1
+  call sirius_global_set_sync_flag(i)
+  call sirius_global_get_sync_flag(i)
+  if (i.eq.1) exit
+
+! solve H\psi = E\psi
   call sirius_density_find_eigen_states
+! find Fermi level and band occupancies 
   call sirius_density_find_band_occupancies
 
   do ik=1,nkpt
@@ -93,15 +121,12 @@ do iscl=1,maxscl
   enddo
 !  call occupy
 
-  call sirius_platform_mpi_rank(rank)
   if (rank.eq.0) call writeeval
 !  do ik=1,nkpt 
 !    call sirius_density_set_band_occupancies(ik,occsv(1,ik))
 !  enddo
   
-!  write(*,*)"gap=",bandgap*ha2ev
-
-  
+! generate density and magnetization
   call sirius_generate_density
 
   if (ldapu.ne.0) then
@@ -109,7 +134,30 @@ do iscl=1,maxscl
     do ias=1,natmtot
       call sirius_get_occupation_matrix(ias,dmatlu(1,1,1,1,ias))
     enddo
+      
+!!      xs(:)=0.d0
+!!      if (spinpol) then
+!!        do lm=5,9
+!!          xs(1)=xs(1)+dble(dmatlu(lm,lm,2,1,1)+dmatlu(lm,lm,1,2,1))
+!!          xs(2)=xs(2)+dble(-zi*dmatlu(lm,lm,2,1,1)+zi*dmatlu(lm,lm,1,2,1))
+!!          xs(3)=xs(3)+dble(dmatlu(lm,lm,1,1,1)-dmatlu(lm,lm,2,2,1))
+!!        end do
+!!      endif
+!!      write(*,*)"xs=",xs
+!!    
     call symdmat(lmaxlu,lmmaxlu,dmatlu)
+!!
+!!      xs(:)=0.d0
+!!      if (spinpol) then
+!!        do lm=5,9
+!!          xs(1)=xs(1)+dble(dmatlu(lm,lm,2,1,1)+dmatlu(lm,lm,1,2,1))
+!!          xs(2)=xs(2)+dble(-zi*dmatlu(lm,lm,2,1,1)+zi*dmatlu(lm,lm,1,2,1))
+!!          xs(3)=xs(3)+dble(dmatlu(lm,lm,1,1,1)-dmatlu(lm,lm,2,2,1))
+!!        end do
+!!      endif
+!!      write(*,*)"xs=",xs
+!! 
+
 ! generate the LDA+U potential matrix
     call genvmatlu
 ! write the LDA+U matrices to file
@@ -129,16 +177,10 @@ do iscl=1,maxscl
 ! symmetrise the magnetisation
   if (spinpol) call symrvf(1,magmt,magir)
   call sirius_timer_stop("elk::symmetrization")
-  
+ 
+! check the total charge
   call sirius_density_integrate
   
-!  do ik=1,nkpt
-!    call sirius_density_get_band_energies(ik,evalsv(1,ik))
-!    call sirius_density_get_band_occupancies(ik,occsv(1,ik))
-!  enddo
-
-  
-
 ! generate potential
   call sirius_generate_effective_potential
   
@@ -150,13 +192,18 @@ do iscl=1,maxscl
   call sirius_timer_stop("symmetrization")
   
   call sirius_print_rti
+
+  etot_old = etot
+  call sirius_get_total_energy(etot)
+
+  write(*,'("charge RMS : ",G18.10," total energy difference : ",G18.10)')dv,abs(etot - etot_old)
+  call sirius_platform_barrier()
  
   call sirius_timer_stop("elk::iteration")  
 
 enddo
 
 call sirius_print_timers()
-
 
 call sirius_clear()
 
