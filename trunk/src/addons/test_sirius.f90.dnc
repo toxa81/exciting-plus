@@ -4,15 +4,11 @@ use modldapu
 implicit none
 integer is,ia,ik,i,mi,n,nwork,ias,rank,ispn,jspn,l,m1,m2,lm1,lm2,lm
 real(8), allocatable :: work(:),v(:)
-real(8) dv,d1,d2,xs(3),etot,etot_old
+real(8) dv,d1,d2,etot,etot_old
 
 
 call sirius_elk_init
-call sirius_print_timers()
 
-!stop
-
-!
 ! WARNING: symmetrization routines for the interstitial part were changed to compute complex phase factors for translation
 !          in a different way
 !   old code:
@@ -45,13 +41,11 @@ endif
 
 call sirius_print_info()
 
-
 ! generate initial density
 call sirius_initial_density()
 call sirius_generate_effective_potential
 
 call sirius_print_timers()
-!stop
 
 ! size of mixing vector
 n=lmmaxvr*nrmtmax*natmtot+ngrtot
@@ -63,25 +57,6 @@ allocate(v(n))
 nwork=-1
 call mixerifc(mixtype,n,v,dv,nwork,v)
 allocate(work(nwork))
-
-!!open(50,file="vmat", status="OLD", form="FORMATTED")
-!!     
-!!      l=llu(1)
-!!      do ispn=1,nspinor
-!!        do jspn=1,nspinor
-!!          do m1=-l,l
-!!            lm1=idxlm(l,m1)
-!!            do m2=-l,l
-!!              lm2=idxlm(l,m2)
-!!              read(50,'(2G18.10)')d1,d2
-!!              vmatlu(lm1,lm2,ispn,jspn,1)=dcmplx(d1,d2)
-!!            end do
-!!          end do
-!!        end do
-!!      end do
-!!
-!!close(50)
-!!call sirius_set_uj_correction_matrix(1,llu(1),vmatlu(1,1,1,1,1)) 
 
 call sirius_platform_mpi_rank(rank)
 etot_old = 0d0
@@ -134,30 +109,6 @@ do iscl=1,maxscl
     do ias=1,natmtot
       call sirius_get_occupation_matrix(ias,dmatlu(1,1,1,1,ias))
     enddo
-      
-!!      xs(:)=0.d0
-!!      if (spinpol) then
-!!        do lm=5,9
-!!          xs(1)=xs(1)+dble(dmatlu(lm,lm,2,1,1)+dmatlu(lm,lm,1,2,1))
-!!          xs(2)=xs(2)+dble(-zi*dmatlu(lm,lm,2,1,1)+zi*dmatlu(lm,lm,1,2,1))
-!!          xs(3)=xs(3)+dble(dmatlu(lm,lm,1,1,1)-dmatlu(lm,lm,2,2,1))
-!!        end do
-!!      endif
-!!      write(*,*)"xs=",xs
-!!    
-    call symdmat(lmaxlu,lmmaxlu,dmatlu)
-!!
-!!      xs(:)=0.d0
-!!      if (spinpol) then
-!!        do lm=5,9
-!!          xs(1)=xs(1)+dble(dmatlu(lm,lm,2,1,1)+dmatlu(lm,lm,1,2,1))
-!!          xs(2)=xs(2)+dble(-zi*dmatlu(lm,lm,2,1,1)+zi*dmatlu(lm,lm,1,2,1))
-!!          xs(3)=xs(3)+dble(dmatlu(lm,lm,1,1,1)-dmatlu(lm,lm,2,2,1))
-!!        end do
-!!      endif
-!!      write(*,*)"xs=",xs
-!! 
-
 ! generate the LDA+U potential matrix
     call genvmatlu
 ! write the LDA+U matrices to file
