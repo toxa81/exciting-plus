@@ -97,7 +97,7 @@ do is=1,nspecies
 !------------------------------------------!
     if (spinpol) then
       do ir=1,nrt
-        if (ncmag) then
+        if (ndmag.eq.3) then
 ! non-collinear
           t1=sqrt(magmt(1,ir,ias,1)**2 &
                  +magmt(1,ir,ias,2)**2 &

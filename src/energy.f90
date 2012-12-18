@@ -94,7 +94,7 @@ end do
 engybext=0.d0
 engybmt=0.d0
 do idm=1,ndmag
-  if (ncmag) then
+  if (ndmag.eq.3) then
     jdm=idm
   else
     jdm=3

@@ -31,7 +31,7 @@ allocate(rfmt(lmmaxvr,nrmtmax,natmtot))
 allocate(rfir(ngrtot))
 allocate(grfmt(lmmaxvr,nrmtmax,natmtot,3))
 allocate(grfir(ngrtot,3))
-if (ncmag) then
+if (ndmag.eq.3) then
 ! non-collinear
   rvfmt(:,:,:,:)=bxcmt(:,:,:,:)
   rvfir(:,:)=bxcir(:,:)

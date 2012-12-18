@@ -30,7 +30,7 @@ do is=1,nspecies
 ! add the external magnetic field
     t1=cb*(bfcmt(3,ia,is)+bfieldc(3))
     beffmt(:,1:nrc,ias,ndmag)=beffmt(:,1:nrc,ias,ndmag)+t1
-    if (ncmag) then
+    if (ndmag.eq.3) then
       do i=1,2
         t1=cb*(bfcmt(i,ia,is)+bfieldc(i))
         beffmt(:,1:nrc,ias,i)=beffmt(:,1:nrc,ias,i)+t1

@@ -60,7 +60,7 @@ cb=gfacte/(4.d0*solsc)
 ca=1.d0/(2.d0*sol)
 ! number of spin combinations after application of Hamiltonian
 if (spinpol) then
-  if (ncmag) then
+  if (ndmag.eq.3) then
     nsc=3
   else
     nsc=2
@@ -102,7 +102,7 @@ do iasloc=1,natmtotloc
        wfmt3,lmmaxvr,zzero,wfmt4(:,:,1),lmmaxvr)
       wfmt4(:,1:nrc,2)=-wfmt4(:,1:nrc,1)
 ! non-collinear field
-      if (ncmag) then
+      if (ndmag.eq.3) then
         wfmt3(:,1:nrc)=wfmt2(:,1:nrc) &
          *cmplx(beffmt(:,1:nrc,ias,1),-beffmt(:,1:nrc,ias,2),8)
         call zgemm('N','N',lmmaxvr,nrc,lmmaxvr,zone,zfshtvr,lmmaxvr, &
@@ -191,7 +191,7 @@ allocate(zfft1(ngrtot))
 allocate(zfft2(ngrtot))
 allocate(zv(ngkmax,nsc))
 if (spinpol) then
-  if (ncmag) then
+  if (ndmag.eq.3) then
 ! non-collinear
     do ir=1,ngrtot
       bir(ir,:)=(bxcir(ir,:)+cb*bfieldc(:))*cfunir(ir)
@@ -219,7 +219,7 @@ if (spinpol) then
       zv(igk,1)=zfft2(ifg)
       zv(igk,2)=-zfft2(ifg)
     end do
-    if (ncmag) then
+    if (ndmag.eq.3) then
       zfft2(:)=zfft1(:)*cmplx(bir(:,1),-bir(:,2),8)
       call zfftifc(3,ngrid,-1,zfft2)
       do igk=1,ngk(1,ik)

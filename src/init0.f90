@@ -160,12 +160,6 @@ if (spinpol) then
 else
   ndmag=0
 end if
-! set the non-collinear flag
-if (ndmag.eq.3) then
-  ncmag=.true.
-else
-  ncmag=.false.
-end if
 ! spin-polarised cores
 if (.not.spinpol) spincore=.false.
 ! set fixed spin moment effective field to zero

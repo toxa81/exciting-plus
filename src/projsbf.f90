@@ -42,7 +42,7 @@ if (.not.spinpol) then
   write(*,*)
   stop
 end if
-if (ncmag) then
+if (ndmag.eq.3) then
 ! non-collinear
   rvfmt(:,:,:,:)=bxcmt(:,:,:,:)
   rvfir(:,:)=bxcir(:,:)
@@ -105,7 +105,7 @@ rfir(:)=dble(zvclir(:))
 ! compute the gradient
 call gradrf(rfmt,rfir,grfmt,grfir)
 ! subtract gradient from existing B-field
-if (ncmag) then
+if (ndmag.eq.3) then
 ! non-collinear
   bxcmt(:,:,:,:)=bxcmt(:,:,:,:)-grfmt(:,:,:,:)
   bxcir(:,:)=bxcir(:,:)-grfir(:,:)

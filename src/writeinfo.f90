@@ -142,7 +142,7 @@ if (spincore) then
 end if
 if (spinpol) then
   write(fnum,'(" global magnetic field (Cartesian) : ",3G18.10)') bfieldc
-  if (ncmag) then
+  if (ndmag.eq.3) then
     write(fnum,'(" non-collinear magnetisation")')
   else
     write(fnum,'(" collinear magnetisation in z-direction")')
