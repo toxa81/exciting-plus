@@ -41,12 +41,12 @@ do ik=1,nkpt
     if (e.gt.e1) e1=e
   end do
 end do
-if (e0.lt.e0min-1.d0) then
-  write(*,*)
-  write(*,'("Warning(occupy): minimum eigenvalue less than minimum &
-   &linearisation energy : ",2G18.10)') e0,e0min
-  write(*,'(" for s.c. loop ",I5)') iscl
-end if
+!if (e0.lt.e0min-1.d0) then
+!  write(*,*)
+!  write(*,'("Warning(occupy): minimum eigenvalue less than minimum &
+!   &linearisation energy : ",2G18.10)') e0,e0min
+!  write(*,'(" for s.c. loop ",I5)') iscl
+!end if
 t1=1.d0/swidth
 ! determine the Fermi energy using the bisection method
 do it=1,maxit
