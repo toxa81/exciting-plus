@@ -31,7 +31,7 @@ real(8) epslat
 ! maximum allowed species
 integer, parameter :: maxspecies=8
 ! maximum allowed atoms per species
-integer, parameter :: maxatoms=200
+integer, parameter :: maxatoms=2000
 ! number of species
 integer nspecies
 ! number of atoms for each species
