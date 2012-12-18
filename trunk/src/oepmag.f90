@@ -36,7 +36,7 @@ end do
 do ir=1,ngrtot
 ! calculate the z-component of mangetisation: up-up - dn-dn
   zmagir(ir,ndmag)=conjg(wfir1(ir,1))*wfir2(ir,1)-conjg(wfir1(ir,2))*wfir2(ir,2)
-  if (ncmag) then
+  if (ndmag.eq.3) then
 ! up-dn spin density
     zt1=conjg(wfir1(ir,1))*wfir2(ir,2)
 ! dn-up spin density

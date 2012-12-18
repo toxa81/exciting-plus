@@ -28,7 +28,7 @@ call vnlrhomt(tsh,is,wfmt2,wfmt4,zfmt(:,:,2))
 ! calculate the z-component of mangetisation: up-up - dn-dn
 zvfmt(:,1:nrc,ndmag)=zfmt(:,1:nrc,1)-zfmt(:,1:nrc,2)
 ! non-collinear case
-if (ncmag) then
+if (ndmag.eq.3) then
 ! up-dn spin density
   call vnlrhomt(tsh,is,wfmt1,wfmt4,zfmt(:,:,1))
 ! dn-up spin density

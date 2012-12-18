@@ -90,7 +90,7 @@ do is=1,nspecies
         call dgemm('N','N',lmmaxvr,nr,lmmaxvr,1.d0,rbshtvr,lmmaxvr, &
          magmt(:,:,ias,idm),lmmaxvr,0.d0,mag(:,idm),lmmaxvr)
       end do
-      if (ncmag) then
+      if (ndmag.eq.3) then
         bext(:)=bfieldc(:)+bfcmt(:,ia,is)
 ! non-collinear (use Kubler's trick)
         do i=1,n
@@ -131,7 +131,7 @@ do is=1,nspecies
         call ggamt_sp_2b(is,g2up,g2dn,gvup,gvdn,vxup,vxdn,vcup,vcdn,dxdgu2, &
          dxdgd2,dxdgud,dcdgu2,dcdgd2,dcdgud)
       end if
-      if (ncmag) then
+      if (ndmag.eq.3) then
 ! non-collinear: locally spin rotate the exchange-correlation potential
         do i=1,n
           t1=vxup(i)+vcup(i)
@@ -193,7 +193,7 @@ if (spinpol) then
 !------------------------!
 !     spin-polarised     !
 !------------------------!
-  if (ncmag) then
+  if (ndmag.eq.3) then
 ! non-collinear
     do ir=1,ngrtot
       t1=sqrt(magir(ir,1)**2+magir(ir,2)**2+magir(ir,3)**2)
@@ -230,7 +230,7 @@ if (spinpol) then
     call ggair_sp_2b(g2up,g2dn,gvup,gvdn,vxup,vxdn,vcup,vcdn,dxdgu2,dxdgd2, &
      dxdgud,dcdgu2,dcdgd2,dcdgud)
   end if
-  if (ncmag) then
+  if (ndmag.eq.3) then
 ! non-collinear: spin rotate the local exchange potential
     do ir=1,ngrtot
       t1=vxup(ir)+vcup(ir)

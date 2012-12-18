@@ -122,7 +122,7 @@ do iasloc=1,natmtotloc
 ! add to density and magnetisation
       if (spinpol) then
 ! spin-polarised
-        if (ncmag) then
+        if (ndmag.eq.3) then
 ! non-collinear
           irc=0
           do ir=1,nrmt(is),lradstp
@@ -211,7 +211,7 @@ do jloc=1,nstsvloc
 ! add to density and magnetisation
     if (spinpol) then
 ! spin-polarised
-      if (ncmag) then
+      if (ndmag.eq.3) then
 ! non-collinear
         do ir=1,ngrtot
           zt1=wfir(ir,1)

@@ -32,14 +32,14 @@ v(:)=0.d0
 t1=1.d0/y00
 ! determine the global effective field
 if ((abs(fixspin).eq.1).or.(abs(fixspin).eq.3)) then
-  if (ncmag) then
+  if (ndmag.eq.3) then
     v(:)=momfix(:)
   else
     v(1)=momfix(3)
   end if
 ! case where only the direction is fixed
   if (fixspin.lt.0) then
-    if (ncmag) then
+    if (ndmag.eq.3) then
       t2=sqrt(v(1)**2+v(2)**2+v(3)**2)
       t3=sqrt(momtot(1)**2+momtot(2)**2+momtot(3)**2)
     else
@@ -74,14 +74,14 @@ if ((abs(fixspin).eq.2).or.(abs(fixspin).eq.3)) then
 ! if any component is >= 1000 then do not fix the moment
       t2=sum(abs(mommtfix(:,ia,is)))
       if (t2.ge.1000.d0) goto 10
-      if (ncmag) then
+      if (ndmag.eq.3) then
         v(:)=mommtfix(:,ia,is)
       else
         v(1)=mommtfix(3,ia,is)
       end if
 ! case where only the direction is fixed
       if (fixspin.lt.0) then
-        if (ncmag) then
+        if (ndmag.eq.3) then
           t2=sqrt(v(1)**2+v(2)**2+v(3)**2)
           t3=sqrt(mommt(1,ias)**2+mommt(2,ias)**2+mommt(3,ias)**2)
         else

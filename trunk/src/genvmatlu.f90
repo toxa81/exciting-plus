@@ -114,7 +114,7 @@ do is=1,nspecies
       mg(:)=0.d0
       mg(3)=dble(dmt(1,1)-dmt(2,2))
 ! non-collinear terms
-      if (ncmag) then
+      if (ndmag.eq.3) then
         mg(1)=dble(dmt(1,2)+dmt(2,1))
         mg(2)=dble(zi*(dmt(1,2)-dmt(2,1)))
       end if
@@ -129,7 +129,7 @@ do is=1,nspecies
           dm(lm1,lm1,1,1)=dm(lm1,lm1,1,1)-(n0+mg0(3))
           dm(lm1,lm1,2,2)=dm(lm1,lm1,2,2)-(n0-mg0(3))
 ! non-collinear terms
-          if (ncmag) then
+          if (ndmag.eq.3) then
             dm(lm1,lm1,1,2)=dm(lm1,lm1,1,2)-(mg0(1)-zi*mg0(2))
             dm(lm1,lm1,2,1)=dm(lm1,lm1,2,1)-(mg0(1)+zi*mg0(2))
           end if
@@ -153,7 +153,7 @@ do is=1,nspecies
       end do
       if (spinpol) then
         mg2=mg(3)**2
-        if (ncmag) mg2=mg2+mg(1)**2+mg(2)**2
+        if (ndmag.eq.3) mg2=mg2+mg(1)**2+mg(2)**2
       else
         mg2=0.d0
       end if
@@ -198,7 +198,7 @@ do is=1,nspecies
     if (ldapu.eq.1) then
       if (spinpol) then
 ! spin-polarised
-        if (ncmag) then
+        if (ndmag.eq.3) then
 ! non-collinear case
 ! correction to the energy
           edc=0.5d0*u*n*(n-1.d0)

@@ -156,8 +156,6 @@ logical spinorb
 integer fixspin
 ! dimension of magnetisation and magnetic vector fields (1 or 3)
 integer ndmag
-! ncmag is .true. if the magnetisation is non-collinear, i.e. when ndmag = 3
-logical ncmag
 ! fixed total spin magnetic moment
 real(8) momfix(3)
 ! fixed spin moment global effective field in Cartesian coordinates

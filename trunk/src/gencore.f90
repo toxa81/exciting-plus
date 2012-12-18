@@ -46,7 +46,7 @@ do is=1,nspecies
       ias=idxas(ia,is)
 ! effective magnetic field for spin-polarised core
       if (spincore) then
-        if (ncmag) then
+        if (ndmag.eq.3) then
           do ir=1,nrmt(is)
             br(ir)=sqrt(bxcmt(1,ir,ias,1)**2 &
                        +bxcmt(1,ir,ias,2)**2 &

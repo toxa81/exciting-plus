@@ -49,7 +49,7 @@ allocate(rvfir(ngrtot,3))
 select case(task)
 case(72,73)
 ! magnetisation
-  if (ncmag) then
+  if (ndmag.eq.3) then
 ! non-collinear
     rvfmt(:,:,:,:)=magmt(:,:,:,:)
     rvfir(:,:)=magir(:,:)
@@ -62,7 +62,7 @@ case(72,73)
   end if
 case(82,83)
 ! effective magnetic field
-  if (ncmag) then
+  if (ndmag.eq.3) then
 ! non-collinear
     rvfmt(:,:,:,:)=bxcmt(:,:,:,:)
     rvfir(:,:)=bxcir(:,:)

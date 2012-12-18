@@ -24,7 +24,7 @@ endif
 if (leint1) then
   l1=(e.ge.e1)
 else
- if (ncmag.or.ldisentangle) then
+ if ((ndmag.eq.3).or.ldisentangle) then
     l1=(j.ge.n1)
   else
     l1=((mod(j-1,nstfv)+1).ge.n1)
@@ -33,7 +33,7 @@ endif
 if (leint2) then
   l2=(e.le.e2)
 else
- if (ncmag.or.ldisentangle) then
+ if ((ndmag.eq.3).or.ldisentangle) then
     l2=(j.le.n2)
   else
     l2=((mod(j-1,nstfv)+1).le.n2)

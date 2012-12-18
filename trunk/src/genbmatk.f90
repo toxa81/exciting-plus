@@ -44,7 +44,7 @@ do jst=1,nstsv
       do irc=1,nrc
         zfmt(:,irc,1)=bmt(:,irc,ias,ndmag)*wfmt(:,irc,ias,1,jst)
         zfmt(:,irc,2)=-bmt(:,irc,ias,ndmag)*wfmt(:,irc,ias,2,jst)
-        if (ncmag) then
+        if (ndmag.eq.3) then
           zflm(:)=cmplx(bmt(:,irc,ias,1),bmt(:,irc,ias,2),8)
           zfmt(:,irc,1)=zfmt(:,irc,1)+conjg(zflm(:))*wfmt(:,irc,ias,2,jst)
           zfmt(:,irc,2)=zfmt(:,irc,2)+zflm(:)*wfmt(:,irc,ias,1,jst)
@@ -74,7 +74,7 @@ do jst=1,nstsv
     zfir(ir,1)=rvfir(ir,ndmag)*wfir(ir,1,jst)
     zfir(ir,2)=-rvfir(ir,ndmag)*wfir(ir,2,jst)
   end do
-  if (ncmag) then
+  if (ndmag.eq.3) then
     do ir=1,ngrtot
       zt1=cmplx(rvfir(ir,1),rvfir(ir,2),8)
       zfir(ir,1)=zfir(ir,1)+conjg(zt1)*wfir(ir,2,jst)

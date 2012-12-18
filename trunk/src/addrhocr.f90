@@ -45,7 +45,7 @@ do is=1,nspecies
     end do
 ! add to the magnetisation in the case of a spin-polarised core
     if (spincore) then
-      if (ncmag) then
+      if (ndmag.eq.3) then
 ! non-collinear
         do ir=1,nr
           t1=abs(rhocr(ir,ias,1)-rhocr(ir,ias,2))/y00
