@@ -62,7 +62,7 @@ do isym=1,nsymcrys
 ! complex phase factor for translation
       !t1=-dot_product(vgc(:,ig),vtc(:))
       !zt1=cmplx(cos(t1),sin(t1),8)
-      zt1=exp(dcmplx(0.d0,twopi*(ivg(1,ig)*vtlsymc(1,isym)+ivg(2,ig)*vtlsymc(2,isym)+ivg(3,ig)*vtlsymc(3,isym))))
+      zt1=exp(dcmplx(0.d0,-twopi*(ivg(1,ig)*vtlsymc(1,isym)+ivg(2,ig)*vtlsymc(2,isym)+ivg(3,ig)*vtlsymc(3,isym))))
       zfft2(jfg)=zfft2(jfg)+zt1*zfft1(ifg)
     end if
   end do
