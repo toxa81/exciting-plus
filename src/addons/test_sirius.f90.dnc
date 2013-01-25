@@ -86,7 +86,11 @@ do iscl=1,maxscl
   if (i.eq.1) exit
 
 ! solve H\psi = E\psi
+  call sirius_timer_start("elk::find_eigen_states")
   call sirius_density_find_eigen_states
+  call sirius_timer_stop("elk::find_eigen_states")
+
+  call sirius_timer_start("elk::band_occ")
 ! find Fermi level and band occupancies 
   call sirius_density_find_band_occupancies
 
@@ -97,12 +101,16 @@ do iscl=1,maxscl
 !  call occupy
 
   if (rank.eq.0) call writeeval
+  call sirius_timer_stop("elk::band_occ")
+
 !  do ik=1,nkpt 
 !    call sirius_density_set_band_occupancies(ik,occsv(1,ik))
 !  enddo
   
 ! generate density and magnetization
+  call sirius_timer_start("elk::generate_density")
   call sirius_generate_density
+  call sirius_timer_stop("elk::generate_density")
 
   if (ldapu.ne.0) then
     dmatlu=zzero
@@ -130,17 +138,21 @@ do iscl=1,maxscl
   call sirius_timer_stop("elk::symmetrization")
  
 ! check the total charge
+  call sirius_timer_start("elk::integrate_density")
   call sirius_density_integrate
-  
+  call sirius_timer_stop("elk::integrate_density")
+
 ! generate potential
+  call sirius_timer_start("elk::potential")
   call sirius_generate_effective_potential
-  
+  call sirius_timer_stop("elk::potential")
+
   call sirius_timer_start("elk::symmetrization")
 ! symmetrize potential
   call symrf(1,veffmt,veffir)
 ! symmetrise magnetic field
   if (spinpol) call symrvf(1,bxcmt,bxcir)
-  call sirius_timer_stop("symmetrization")
+  call sirius_timer_stop("elk::symmetrization")
   
   call sirius_print_rti
 
