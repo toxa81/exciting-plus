@@ -15,7 +15,7 @@ call sirius_elk_init
 !     t1=-dot_product(vgc(:,ig),vtc(:))
 !     zt1=cmplx(cos(t1),sin(t1),8)
 !   new code:
-!     zt1=exp(dcmplx(0.d0,twopi*(ivg(1,ig)*vtlsymc(1,isym)+ivg(2,ig)*vtlsymc(2,isym)+ivg(3,ig)*vtlsymc(3,isym))))
+!     zt1=exp(dcmplx(0.d0,-twopi*(ivg(1,ig)*vtlsymc(1,isym)+ivg(2,ig)*vtlsymc(2,isym)+ivg(3,ig)*vtlsymc(3,isym))))
 !  
 !   The reason for this is to get rid of the dependency on vgc array (Cartesian coordinates of G-vectors)
 !
@@ -189,7 +189,7 @@ call sirius_elk_init
 !     t1=-dot_product(vgc(:,ig),vtc(:))
 !     zt1=cmplx(cos(t1),sin(t1),8)
 !   new code:
-!     zt1=exp(dcmplx(0.d0,twopi*(ivg(1,ig)*vtlsymc(1,isym)+ivg(2,ig)*vtlsymc(2,isym)+ivg(3,ig)*vtlsymc(3,isym))))
+!     zt1=exp(dcmplx(0.d0,-twopi*(ivg(1,ig)*vtlsymc(1,isym)+ivg(2,ig)*vtlsymc(2,isym)+ivg(3,ig)*vtlsymc(3,isym))))
 !  
 !   The reason for this is to get rid of the dependency on vgc array (Cartesian coordinates of G-vectors)
 !
@@ -209,7 +209,7 @@ endif
 
 call sirius_potential_hdf5_read
 
-call sirius_bands(nkpt, vkl, dpp1d)
+call sirius_bands()
 
 !! output the vertex location lines
 !  open(50,file='BANDLINES.OUT',action='WRITE',form='FORMATTED')
