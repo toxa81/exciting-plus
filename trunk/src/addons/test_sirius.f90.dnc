@@ -168,6 +168,8 @@ enddo
 
 call sirius_print_timers()
 
+call sirius_write_json_output
+
 call sirius_clear()
 
 return
