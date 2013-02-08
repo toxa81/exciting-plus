@@ -131,11 +131,11 @@ do iscl=1,maxscl
     enddo
   endif
 
-  call sirius_timer_start("elk::symmetrization:rho")
+  call sirius_timer_start("elk::symmetrization")
   call symrf(1,rhomt,rhoir)
 ! symmetrise the magnetisation
   if (spinpol) call symrvf(1,magmt,magir)
-  call sirius_timer_stop("elk::symmetrization:rho")
+  call sirius_timer_stop("elk::symmetrization")
  
 ! check the total charge
   call sirius_timer_start("elk::integrate_density")
@@ -147,12 +147,12 @@ do iscl=1,maxscl
   call sirius_generate_effective_potential
   call sirius_timer_stop("elk::potential")
 
-  call sirius_timer_start("elk::symmetrization:v")
+  call sirius_timer_start("elk::symmetrization")
 ! symmetrize potential
   call symrf(1,veffmt,veffir)
 ! symmetrise magnetic field
   if (spinpol) call symrvf(1,bxcmt,bxcir)
-  call sirius_timer_stop("elk::symmetrization:v")
+  call sirius_timer_stop("elk::symmetrization")
   
   call sirius_print_rti
 
