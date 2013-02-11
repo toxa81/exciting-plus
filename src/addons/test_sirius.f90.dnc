@@ -166,10 +166,13 @@ do iscl=1,maxscl
 
 enddo
 
+call sirius_write_state
+
 call sirius_print_timers()
 
 call sirius_write_json_output
 
+call sirius_platform_barrier
 call sirius_clear()
 
 return
@@ -209,22 +212,11 @@ if (spinpol) then
   call sirius_set_effective_magnetic_field_ptr(bxcmt,bxcir)
 endif
 
-call sirius_potential_hdf5_read
-
 call sirius_bands()
-
-!! output the vertex location lines
-!  open(50,file='BANDLINES.OUT',action='WRITE',form='FORMATTED')
-!  do iv=1,nvp1d
-!    write(50,'(2G18.10)') dvp1d(iv),emin
-!    write(50,'(2G18.10)') dvp1d(iv),emax
-!    write(50,'("     ")')
-!  end do
-!  close(50)
-!
 
 call sirius_print_info()
 call sirius_print_timers()
+call sirius_platform_barrier()
 call sirius_clear()
 
 return
