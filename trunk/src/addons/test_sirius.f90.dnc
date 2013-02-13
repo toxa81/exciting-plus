@@ -716,6 +716,7 @@ call sirius_set_lmax_rho(lmaxvr)
 call sirius_set_lmax_pot(lmaxvr)
 call sirius_set_pw_cutoff(gmaxvr)
 call sirius_set_aw_cutoff(rgkmax)
+if (autormt) call sirius_set_auto_rmt(1)
 
 ! set equivalent atoms
 ncls=0
