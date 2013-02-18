@@ -47,9 +47,9 @@ do is=1,nspecies
   allocate(vecl(3,natoms(is)*nsc))
   n=0
   do ia=1,natoms(is)
-    do i1=-2,2
-    do i2=-2,2
-    do i3=-2,2
+    do i1=-10,10
+    do i2=-10,10
+    do i3=-10,10
       v1(:)=atposc(:,ia,is)+i1*avec(:,1)+i2*avec(:,2)+i3*avec(:,3)
       call r3mv(scainv,v1,v2)
       call r3frac(epslat,v2,iv)
