@@ -1,6 +1,6 @@
 module mod_timer
 
-integer, parameter :: ntimers=100
+integer, parameter :: ntimers=1000
 real(8) :: timer_value(ntimers,2)
 integer :: timer_count(ntimers)
 
