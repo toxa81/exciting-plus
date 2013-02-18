@@ -222,6 +222,43 @@ do is=1,nspecies
     end do
   end do
 end do
+
+!!* qi(:,:)=0.d0
+!!* do is=1,nspecies
+!!*   do l=0,lmaxvr
+!!*     zl(l)=fourpi*zil(l)*rmtl(l+3,is)
+!!*   end do
+!!*   do ia=1,natoms(is)
+!!*     ias=idxas(ia,is)
+!!*     do ig=1,ngvec
+!!*       ifg=igfft(ig)
+!!*       if (gpc(ig).gt.epslat) then
+!!*         zt1=zvclir(ifg)*sfacgp(ig,ias)/(gpc(ig)*rmt(is))
+!!*         lm=0
+!!*         do l=0,lmaxvr
+!!*           zt2=zt1*zl(l)*jlgpr(l+1,ig,is)
+!!*           do m=-l,l
+!!*             lm=lm+1
+!!*             qi(lm,ias)=qi(lm,ias)+zt2*conjg(ylmgp(lm,ig))
+!!*           end do
+!!*         end do
+!!*       else
+!!*         t1=fourpi*y00*rmtl(3,is)/3.d0
+!!*         qi(1,ias)=qi(1,ias)+t1*zvclir(ifg)
+!!*       end if
+!!*     end do
+!!*   end do
+!!* end do
+!!* 
+!!* t1=0.0
+!!* do ias=1,natmtot
+!!*   do lm=1,lmmaxvr
+!!*     t1=t1+abs(qmt(lm,ias)-qi(lm,ias))
+!!*   enddo
+!!* enddo
+!!* write(*,*)"total pseudo charge error"
+!!* write(*,'(F12.6)')t1
+
 ! set zrho0 (pseudocharge density coefficient of the smallest G+p vector)
 ifg=igfft(igp0)
 zrho0=zvclir(ifg)
