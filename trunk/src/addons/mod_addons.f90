@@ -194,6 +194,12 @@ integer, parameter :: t_pot_ha=40
 integer, parameter :: t_hbo_rad=41
 integer, parameter :: t_lin_en=42
 
+integer, parameter :: t_read_eval=50 
+integer, parameter :: t_read_evec=51 
+integer, parameter :: t_genwf=52 
+
+
+
 
 !--------------!
 !      PAPI    !
