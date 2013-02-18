@@ -24,7 +24,6 @@ integer is,ia,ja,ias,jas,ic,ir
 integer l,ilo,io,jo
 real(8) t1
 real(8), allocatable :: vr(:)
-e0min=100.d0
 allocate(vr(spnrmax))
 ! loop over non-equivalent atoms (classes)
 do ic=1,natmcls
@@ -41,7 +40,6 @@ do ic=1,natmcls
     do io=1,apword(l,is)
       if (apwve(io,l,is)) then
         call findband2(solsc,spzn(is),apwpqn(l,is),l,spnr(is),spr(1,is),vr,apwe(io,l,ias))
-        e0min=min(e0min,apwe(io,l,ias))
       endif
     enddo
   enddo
@@ -50,7 +48,6 @@ do ic=1,natmcls
       if (lorbve(io,ilo,is)) then
         l=lorbl(ilo,is)
         call findband2(solsc,spzn(is),lopqn(ilo,is),l,spnr(is),spr(1,is),vr,lorbe(io,ilo,ias))
-        e0min=min(e0min,lorbe(io,ilo,ias))
       endif
     enddo
   enddo
