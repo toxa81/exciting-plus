@@ -11,6 +11,7 @@ do ic=1,natmcls
   do l=0,lmaxapw
     do io=1,apword(l,is)
       ufr(1:nrmt(is),l,io,ic)=apwfr(1:nrmt(is),1,io,l,ias)
+      call spline(nrmt(is),spr(:,is),1,ufr(1,l,io,ic),ufr_spline(1,1,l,io,ic))
     enddo
     ordl(l)=apword(l,is)
   enddo
@@ -20,6 +21,7 @@ do ic=1,natmcls
     if (l.le.lmaxapw) then
       ordl(l)=ordl(l)+1
       ufr(1:nrmt(is),l,ordl(l),ic)=lofr(1:nrmt(is),1,ilo,ias)
+      call spline(nrmt(is),spr(:,is),1,ufr(1,l,ordl(l),ic),ufr_spline(1,1,l,ordl(l),ic))
     endif
   enddo
 enddo
