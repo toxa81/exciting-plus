@@ -27,9 +27,6 @@ allocate(dmatrlmlps(lmmaxlu,lmmaxlu,nspinor,nspinor,natmtot))
 dmatylm=zzero
 ! compute matrix in Ylm
 ! begin loop over k-points
-#ifdef _LIBAPW_
-call lapw_get_dmatu(dmatylm)
-#else
 do ikloc=1,nkptloc
   ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
   call match(ngk(1,ik),gkc(1,1,ikloc),tpgkc(1,1,1,ikloc),sfacgk(1,1,1,ikloc),&
@@ -73,7 +70,6 @@ do ikloc=1,nkptloc
     endif
   enddo !is
 enddo !ikloc
-#endif 
 
 call mpi_grid_reduce(dmatylm(1,1,1,1,1),lmmaxlu*lmmaxlu*nspinor*nspinor*natmtot,&
   &dims=(/dim_k/),all=.true.)
