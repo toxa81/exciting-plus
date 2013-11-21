@@ -14,19 +14,19 @@ integer itask
 call timer_start(t_runtime,.true.)
 #ifdef _MAD_
 call madness_init
+call mpi_world_initialize(.false.)
 #else
-call mpi_initialize
+call mpi_world_initialize(.true.)
 #endif
-call mpi_world_initialize
+#ifdef _SIRIUS_
+call sirius_platform_initialize(0)
+#endif
 if (iproc.eq.0) call timestamp(6,"[main] done mpi_world_initialize")
 call hdf5_initialize
 ! read input files
 call readinput
 if (iproc.eq.0) call timestamp(6,"[main] done readinput")
 call papi_initialize(npapievents,papievent)
-#ifdef _MAGMA_
-call cublas_init
-#endif
 ! perform the appropriate task
 do itask=1,ntasks
   task=tasks(itask)
@@ -148,6 +148,18 @@ do itask=1,ntasks
 !  case(890)
 !    call test_madness
 !#endif
+
+#ifdef _SIRIUS_
+  case(2000)
+    call sirius_dft_ground_state
+  case(2001)
+    call sirius_crpa
+#endif
+
+!  case(2001)
+!    call test_sirius_band
+!  case(2002)
+!    call test_sirius_potential
   case default
     write(*,*)
     write(*,'("Error(main): task not defined : ",I8)') task
@@ -156,8 +168,8 @@ do itask=1,ntasks
   end select
   call mpi_world_barrier
 end do
-#ifdef _MAGMA_
-call cublas_shutdown
+#ifdef _SIRIUS_
+call sirius_clear
 #endif
 call papi_finalize
 call hdf5_finalize
