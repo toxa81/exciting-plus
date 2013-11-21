@@ -13,7 +13,6 @@ use modldapu
 use mod_wannier
 use mod_sic
 use mod_seceqn
-use mod_libapw
 ! !DESCRIPTION:
 !   Computes the self-consistent Kohn-Sham ground-state. General information is
 !   written to the file {\tt INFO.OUT}. First- and second-variational
@@ -188,9 +187,6 @@ do iscl=1,maxscl
 ! compute the overlap radial integrals
   call timer_start(t_hbo_rad)
   call olprad
-#ifdef _LIBAPW_
-  call libapw_seceqn_init
-#else
 ! compute the Hamiltonian radial integrals
   call hmlrad
 ! generate effective magntic field integrals for full diagonalization
@@ -201,7 +197,6 @@ do iscl=1,maxscl
   else
     call genbeffmt
   endif 
-#endif
   call timer_stop(t_hbo_rad)
   evalsv(:,:)=0.d0
   if (sic) sic_evalsum=0.d0
@@ -235,15 +230,11 @@ do iscl=1,maxscl
   call mpi_grid_bcast(swidth)
   call mpi_grid_bcast(occsv(1,1),nstsv*nkpt)
   if (wannier) call wann_ene_occ
-#ifdef _LIBAPW_
-  call libapw_rhomag
-#else  
   if (texactrho.or..not.tsveqn) then
     call rhomag_exact
   else
     call rhomag
   endif
-#endif
   if (sic) call mpi_grid_reduce(sic_evalsum,dims=(/dim_k/))
 ! LDA+U
   if (iscl.gt.1.and.ldapu.ne.0) then
@@ -552,9 +543,6 @@ if (tsveqn) then
 else
   deallocate(evecfdloc)
 endif
-#ifdef _LIBAPW_
-call lapw_timers
-#endif
 return
 end subroutine
 !EOC
