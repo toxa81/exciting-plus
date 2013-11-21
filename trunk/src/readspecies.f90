@@ -11,6 +11,9 @@ implicit none
 integer is,ist,iostat,i
 integer io,nlx,ilx,lx,ilo,n,l,napwpqn,nlopqn
 logical l1(maxspst,0:lmaxapw)
+#ifdef _SIRIUS_
+return
+#endif
 if (allocated(apwpqn)) deallocate(apwpqn)
 allocate(apwpqn(0:maxlapw,maxspecies))
 if (allocated(lopqn)) deallocate(lopqn)
