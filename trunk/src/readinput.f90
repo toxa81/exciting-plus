@@ -364,7 +364,7 @@ case('swidth')
   if (swidth.lt.1.d-9) then
     write(*,*)
     write(*,'("Error(readinput): swidth too small or negative : ",G18.10)') &
-     swidth
+     &swidth
     write(*,*)
     stop
   end if
@@ -611,8 +611,8 @@ case('optcomp')
       stop
     end if
     if ((optcomp(1,i).lt.1).or.(optcomp(1,i).gt.3).or. &
-        (optcomp(2,i).lt.1).or.(optcomp(2,i).gt.3).or. &
-        (optcomp(3,i).lt.1).or.(optcomp(3,i).gt.3)) then
+       &(optcomp(2,i).lt.1).or.(optcomp(2,i).gt.3).or. &
+       &(optcomp(3,i).lt.1).or.(optcomp(3,i).gt.3)) then
       write(*,*)
       write(*,'("Error(readinput): invalid optcomp : ",3I8)') optcomp
       write(*,*)
@@ -1045,8 +1045,8 @@ case ('wannier_soft_eint')
   allocate(wannier_soft_eint_w1(wann_ntype))
   allocate(wannier_soft_eint_w2(wann_ntype))
   do i=1,wann_ntype
-    read(50,*,err=20) wannier_soft_eint_e1(i),wannier_soft_eint_e2(i),&
-      wannier_soft_eint_w1(i),wannier_soft_eint_w2(i)
+    read(50,*,err=20)wannier_soft_eint_e1(i),wannier_soft_eint_e2(i),&
+                    &wannier_soft_eint_w1(i),wannier_soft_eint_w2(i)
   enddo  
 case('wannier_lc')
   read(50,*,err=20)wannier_lc
