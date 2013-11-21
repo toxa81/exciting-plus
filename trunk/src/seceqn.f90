@@ -10,7 +10,6 @@ subroutine seceqn(ikloc,evalfv,evecfv,evecsv)
 use modmain
 use mod_wannier
 use mod_sic
-use mod_libapw
 ! !INPUT/OUTPUT PARAMETERS:
 !   ik     : k-point number (in,integer)
 !   evalfv : first-variational eigenvalues (out,real(nstfv))
@@ -37,14 +36,6 @@ complex(8), allocatable :: apwalm(:,:,:,:,:)
 ik=mpi_grid_map(nkpt,dim_k,loc=ikloc)
 call timer_start(t_seceqn)
 allocate(apwalm(ngkmax,apwordmax,lmmaxapw,natmtot,nspnfv))
-#ifdef _LIBAPW_
-call match(ngk(1,ik),gkc(:,1,ikloc),tpgkc(:,:,1,ikloc), &
-   &sfacgk(:,:,1,ikloc),apwalm(:,:,:,:,1))
-call lapw_execute(ikloc,apwalm,evalsv(1,ik),occsv(1,ik),densmt,densir,3)
-deallocate(apwalm)
-call timer_stop(t_seceqn)
-return
-#endif
 ! loop over first-variational spins (nspnfv=2 for spin-spirals only)
 do ispn=1,nspnfv
 ! find the matching coefficients
