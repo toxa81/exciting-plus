@@ -24,6 +24,7 @@ integer nufrmax
 !  3-rd index: order of function (from 1 to nfrmax; apwfr first, lofr then)
 !  4-th index: atom class (from 1 to natmcls)
 real(8), allocatable :: ufr(:,:,:,:)
+real(8), allocatable :: ufr_spline(:,:,:,:,:)
 ! product <u_l^{io1}|u_l^{io2}> of two radial functions in the muffin-tin
 !  1-st index: l (from 0 to lmaxvr)
 !  2-nd index: order of first function
