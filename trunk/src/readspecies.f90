@@ -11,9 +11,6 @@ implicit none
 integer is,ist,iostat,i
 integer io,nlx,ilx,lx,ilo,n,l,napwpqn,nlopqn
 logical l1(maxspst,0:lmaxapw)
-#ifdef _SIRIUS_
-return
-#endif
 if (allocated(apwpqn)) deallocate(apwpqn)
 allocate(apwpqn(0:maxlapw,maxspecies))
 if (allocated(lopqn)) deallocate(lopqn)
@@ -21,13 +18,17 @@ allocate(lopqn(maxlorb,maxspecies))
 lopqn=-1
 do is=1,nspecies
   open(50,file=trim(sppath)//trim(spfname(is)),action='READ',status='OLD', &
-   form='FORMATTED',iostat=iostat)
+      &form='FORMATTED',iostat=iostat)
   if (iostat.ne.0) then
+#ifdef _SIRIUS_
+    cycle
+#else
     write(*,*)
     write(*,'("Error(readspecies): error opening species file ",A)') &
-     trim(sppath)//trim(spfname(is))
+         &trim(sppath)//trim(spfname(is))
     write(*,*)
     stop
+#endif
   end if
   read(50,*) spsymb(is)
   read(50,*) spname(is)
