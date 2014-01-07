@@ -29,7 +29,7 @@ implicit none
 logical exist
 integer ik,is,ia,ias,ist,i,ikloc
 integer n,nwork
-real(8) dv,etp,de,timetot
+real(8) dv,etp,de,timetot,sumev
 ! allocatable arrays
 real(8), allocatable :: v(:)
 real(8), allocatable :: work(:)
@@ -270,6 +270,15 @@ do iscl=1,maxscl
   call timer_stop(t_iter_tot)
 ! output energy components
   if (wproc) then
+    write(60,*) 
+    write(60,'("sum of eigen-values for each k-point:")')
+    do ik=1,nkpt
+      sumev=0.d0
+      do ist=1,nstsv
+        sumev=sumev+evalsv(ist,ik)
+      end do
+      write(60,'("k-point :", I4, "   sumev : ",G18.10)')ik,sumev
+    end do
     call writeengy(60)
     write(60,*)
     write(60,'("Density of states at Fermi energy : ",G18.10)') fermidos
