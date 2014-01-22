@@ -25,13 +25,7 @@ complex(8), allocatable :: zv1(:,:)
 complex(8), allocatable :: zf(:)
 
 wfsizemax=nspinor*(lmmaxapw*nufrmax*natmtot+ngp)
-allocate(wfmt(lmmaxapw,nrmtmax))
-allocate(gwfmt(lmmaxapw,nrmtmax,3))
-allocate(gwfir(ngrtot))
 allocate(wftmp1(wfsizemax,nstsv))
-allocate(wftmp2(wfsizemax,3))
-allocate(zv1(nstsv,3))
-allocate(zf(nrmtmax))
 ! collect <bra| states
 wftmp1=zzero
 i=0
@@ -54,6 +48,20 @@ do ispn=1,nspinor
 enddo !ispn
 wfsize=i
 ! loop over |ket> states 
+!$OMP PARALLEL DEFAULT(none) &
+!$OMP & SHARED(nstsv, wfsizemax, lmmaxapw, nrmtmax, nspinor, natmtot, &
+!$OMP &        ias2is, ias2ic, lmaxapw, nufr, nrmt, spr, pmat, ufr, &
+!$OMP &        wfsvmt, igpig, igfft, ngrtot, ngp, wfsvit, vgpc, ngrid, &
+!$OMP &        cfunir, wftmp1, wfsize) &
+!$OMP & PRIVATE(ist, wftmp2, idx, ispn, ias, is, ic, l, io, lm, i, &
+!$OMP &         igp, wfmt, gwfmt, zf, gwfir, zt1, zv1)
+allocate(wftmp2(wfsizemax,3))
+allocate(wfmt(lmmaxapw,nrmtmax))
+allocate(gwfmt(lmmaxapw,nrmtmax,3))
+allocate(zf(nrmtmax))
+allocate(gwfir(ngrtot))
+allocate(zv1(nstsv,3))
+!$OMP DO
 do ist=1,nstsv
   wftmp2=zzero
 ! muffin-tin part of \grad |ket>
@@ -117,8 +125,10 @@ do ist=1,nstsv
     enddo
   enddo
 end do
-deallocate(wfmt,gwfmt,wftmp1,wftmp2,zv1,zf)
-deallocate(gwfir)
+!$OMP END DO
+deallocate(wftmp2,wfmt, gwfmt, zf, gwfir, zv1)
+!$OMP END PARALLEL
+deallocate(wftmp1)
 ! multiply by -i and set lower triangular part
 do ist=1,nstsv
   do jst=ist,nstsv
