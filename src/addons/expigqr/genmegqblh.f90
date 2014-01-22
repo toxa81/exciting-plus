@@ -55,6 +55,10 @@ do ispn1=1,nspinor
     if (l1) then
       call timer_start(3)
       call papi_timer_start(pt_megqblh_mt)
+!$OMP PARALLEL DO DEFAULT(none) &
+!$OMP & SHARED(ngq, natmtot, sfacgq, wfsvmt1, wftmp1, ispn1, ist1, ias2ic, &
+!$OMP &        ngntuju, igntuju, gntuju, lmmaxapw, nufrmax) &
+!$OMP & PRIVATE(ias, ic, j, b1, b2)
       do ig=1,ngq(iq)
 ! precompute muffint-tin part of \psi_1^{*}(r)*e^{-i(G+q)r}
         do ias=1,natmtot
@@ -68,6 +72,7 @@ do ispn1=1,nspinor
           wftmp1((ias-1)*lmmaxapw*nufrmax+1:ias*lmmaxapw*nufrmax,ig)=b2(:)
         enddo !ias
       enddo !ig  
+!$OMP END PARALLEL DO
       call timer_stop(3)
       call papi_timer_stop(pt_megqblh_mt)
 ! interstitial part
