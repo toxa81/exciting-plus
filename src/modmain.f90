@@ -483,7 +483,7 @@ real(8), allocatable :: apwfr(:,:,:,:,:)
 ! derivate of radial functions at the muffin-tin surface
 real(8), allocatable :: apwdfr(:,:,:)
 ! maximum number of local-orbitals
-integer, parameter :: maxlorb=20
+integer, parameter :: maxlorb=200
 ! maximum allowable local-orbital order
 integer, parameter :: maxlorbord=4
 ! number of local-orbitals
