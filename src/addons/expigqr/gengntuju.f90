@@ -23,8 +23,6 @@ real(8), allocatable :: uju(:,:,:,:,:,:)
 logical, allocatable :: ujuflg(:,:,:,:,:)
 
 lmmaxexp=(lmaxexp+1)**2
-allocate(jl(nrmtmax,0:lmaxexp))
-allocate(zm(0:lmaxexp,lmmaxapw,lmmaxapw))
 igntuju=0
 ngntuju=0
 gntuju=zzero
@@ -33,8 +31,14 @@ gntuju=zzero
 nuju=ngqsh(iq)*natmcls
 nujuloc=mpi_grid_map(nuju,dim_k)
 allocate(uju(0:lmaxexp,0:lmaxapw,0:lmaxapw,nufrmax,nufrmax,nuju))
-allocate(ujuflg(0:lmaxexp,0:lmaxapw,0:lmaxapw,nufrmax,nufrmax))
 uju=0.d0
+!$OMP PARALLEL DEFAULT(none) &
+!$OMP & SHARED(nuju, ngqsh, ic2ias, ias2is, gqshlen, iq, nrmt, spr, &
+!$OMP &        nrmtmax, lmaxexp, lmaxapw, nufr, nufrmax, nujuloc, ufr, uju) &
+!$OMP & PRIVATE(i, i1, ic, j, ias, is, ujuflg, jl, ir, l3, l1, l2, io1, io2, fr)
+allocate(jl(nrmtmax,0:lmaxexp))
+allocate(ujuflg(0:lmaxexp,0:lmaxapw,0:lmaxapw,nufrmax,nufrmax))
+!$OMP DO
 do i=1,nujuloc
   i1=mpi_grid_map(nuju,dim_k,loc=i)
   ic=int((i1-1)/ngqsh(iq))+1
@@ -67,10 +71,22 @@ do i=1,nujuloc
     enddo !l1
   enddo !l3
 enddo 
+!$OMP END DO
 deallocate(ujuflg)
+deallocate(jl)
+!$OMP END PARALLEL
+!
 call mpi_grid_reduce(uju(0,0,0,1,1,1),(lmaxexp+1)*(lmaxapw+1)*(lmaxapw+1)*nufrmax*nufrmax*nuju,dims=(/dim_k/),all=.true.)
 
 ngqloc=mpi_grid_map(ngq(iq),dim_k)
+!$OMP PARALLEL DEFAULT(none) &
+!$OMP & SHARED(ngqloc, ngq, lmaxapw, idxlm, lmaxexp, gntyyy, ylmgq, &
+!$OMP &        nufr, uju, ngqsh, gqshidx, iq, lmmaxapw, natmcls, &
+!$OMP &        ic2ias, ias2is, ngntuju, gntuju, igntuju) &
+!$OMP & PRIVATE(igloc, ig, l1, m1, lm1, l2, m2, lm2, l3, lm3, zt1, &
+!$OMP &         zm, ic, ias, is, n)
+allocate(zm(0:lmaxexp,lmmaxapw,lmmaxapw))
+!$OMP DO
 do igloc=1,ngqloc
   ig=mpi_grid_map(ngq(iq),dim_k,loc=igloc)
 ! precompute atom-independent array
@@ -138,6 +154,10 @@ do igloc=1,ngqloc
     enddo !l1
   enddo !ic
 enddo !ig
+!$OMP END DO
+deallocate(zm)
+!$OMP END PARALLEL
+
 ! syncronize all values along auxiliary k-direction
 !call mpi_grid_reduce(gntuju(1,1,1),ngntujumax*natmcls*ngvecme,dims=(/dim_k/),all=.true.)
 !call mpi_grid_barrier(dims=(/dim_k/))
@@ -174,8 +194,6 @@ do ig=i*ngvb+1,ngq(iq)
   call mpi_grid_barrier(dims=(/dim_k/))
 enddo
 
-deallocate(jl)
 deallocate(uju)
-deallocate(zm)
 return
 end
