@@ -57,7 +57,7 @@ do ispn1=1,nspinor
       call papi_timer_start(pt_megqblh_mt)
 !$OMP PARALLEL DO DEFAULT(none) &
 !$OMP & SHARED(ngq, natmtot, sfacgq, wfsvmt1, wftmp1, ispn1, ist1, ias2ic, &
-!$OMP &        ngntuju, igntuju, gntuju, lmmaxapw, nufrmax) &
+!$OMP &        ngntuju, igntuju, gntuju, lmmaxapw, nufrmax, iq) &
 !$OMP & PRIVATE(ias, ic, j, b1, b2)
       do ig=1,ngq(iq)
 ! precompute muffint-tin part of \psi_1^{*}(r)*e^{-i(G+q)r}
