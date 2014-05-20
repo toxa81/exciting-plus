@@ -10,7 +10,7 @@ integer, intent(out) :: igkignr_jk(ngkmax)
 complex(8), intent(out) :: wfsvmt_jk(lmmaxapw,nufrmax,natmtot,nspinor,nstsv)
 complex(8), intent(out) :: wfsvit_jk(ngkmax,nspinor,nstsv)
 
-integer i,ik,jk,nkptnrloc1,jkloc,j,tag
+integer i,ik,jk,nkptnrloc1,jkloc,j,tag,i1
 
 ! each proc knows that it needs wave-functions at jk=idxkq(1,ik) (at k'=k+q)
 !
@@ -31,10 +31,12 @@ integer i,ik,jk,nkptnrloc1,jkloc,j,tag
 
 do i=0,mpi_grid_dim_size(dim_k)-1
 ! number of k-points on the processor i
-  nkptnrloc1=mpi_grid_map(nkptnr,dim_k,x=i)
+  i1=i
+  nkptnrloc1=mpi_grid_map(nkptnr,dim_k,x=i1)
   if (ikstep.le.nkptnrloc1) then
 ! for the step ikstep processor i computes matrix elements between k-point ik 
-    ik=mpi_grid_map(nkptnr,dim_k,x=i,loc=ikstep)
+    i1=i
+    ik=mpi_grid_map(nkptnr,dim_k,x=i1,loc=ikstep)
 ! and k-point jk
     jk=idxkq(1,ik)
 ! find the processor j and local index of k-point jkloc for the k-point jk
