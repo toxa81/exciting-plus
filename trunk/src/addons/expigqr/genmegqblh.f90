@@ -92,6 +92,12 @@ do ispn1=1,nspinor
         do ig2=1,ngknr2
 ! G1=G2-G-Gkq
           ivg1(:)=ivg(:,igkignr2(ig2))-ivg(:,igqig(ig,iq))-ivg(:,igkq)
+          if (ivg1(1).lt.intgv(1,1).or.ivg1(1).gt.intgv(1,2).or.&
+              ivg1(2).lt.intgv(2,1).or.ivg1(2).gt.intgv(2,2).or.&
+              ivg1(3).lt.intgv(3,1).or.ivg1(3).gt.intgv(3,2)) then
+            write(*,*)"Index of G1 vector is out of range"
+            stop
+          endif
           ifg=igfft(ivgig(ivg1(1),ivg1(2),ivg1(3)))
           wftmp1(lmmaxapw*nufrmax*natmtot+ig2,ig)=dconjg(wfir1(ifg))
         enddo
