@@ -100,6 +100,10 @@ endif
 call papi_timer_start(pt_crpa_tot2)
 ! main loop over q-points
 do iqloc=1,nvqloc
+  if (mpi_grid_root()) then
+    write(151,*)"q-point ",iqloc," out of ",nvqloc
+    call flushifc(151)
+  endif
   iq=mpi_grid_map(nvq,dim_q,loc=iqloc)
   call genmegq(iq,.true.,.true.,.false.)
   call genu4(iq,nwloc)
