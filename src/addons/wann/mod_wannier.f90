@@ -69,6 +69,11 @@ real(8), allocatable :: wannier_soft_eint_e2(:)
 real(8) wannier_min_prjao
 data wannier_min_prjao/-0.1d0/
 
+logical use_inner_energy_window
+data use_inner_energy_window/.false./
+real(8) inner_energy_window_e1
+real(8) inner_energy_window_e2
+
 logical ldisentangle
 data ldisentangle/.false./
 
@@ -405,10 +410,17 @@ complex(8), intent(in) :: wfsvmt(lmmax,nufrmax,natmtot,nspinor,nstsv)
 complex(8), intent(inout) :: wanc(nwantot,nstsv)
 integer, optional, intent(out) :: ierr
 !
-integer n,j,ias,lm,ispn,itype,ilo,ierr_,prj_to_ylm
+integer n,j,ias,lm,ispn,itype,ilo,ierr_,prj_to_ylm, j1, j2
 logical tbndint 
 real(8) d1
 logical, external :: bndint
+logical found
+integer nbnd, nbnd_inner, nbnd_outer
+integer ibnd(nstsv), ibnd_inner(nstsv), ibnd_outer(nstsv)
+complex(8), allocatable :: pmtrx(:,:)
+real(8), allocatable :: eval_pmtrx(:)
+complex(8) z1,z2
+complex(8), allocatable :: prjlo_outer(:)
 !
 wanc=zzero
 do n=1,nwantot
@@ -475,7 +487,128 @@ enddo
 !    write(*,'("  band : ",I4,"  wt : ",F12.6)')j,d1
 !  enddo
 !endif
+
 call wan_ort_k(wanc,ierr_)
+
+if (use_inner_energy_window) then
+  
+  nbnd = 0
+  nbnd_inner = 0
+  nbnd_outer = 0
+  do j = 1, nstsv
+    d1 = 0.d0
+    do n = 1, nwantot
+      d1 = d1 + abs(wanc(n, j))**2
+    enddo
+    ! count bands which contribute to the total projection subspace
+    if (d1.gt.1d-12) then
+      nbnd = nbnd + 1
+      ibnd(nbnd) = j
+    endif
+    ! count bands inside inner energy window
+    if (eval(j).ge.inner_energy_window_e1.and.&
+       &eval(j).le.inner_energy_window_e2) then
+      nbnd_inner = nbnd_inner + 1
+      ibnd_inner(nbnd_inner) = j
+    endif
+    ! count outer bands (bands inside projection interval but outside inner window)
+    if ((eval(j).lt.inner_energy_window_e1.or.&
+        &eval(j).gt.inner_energy_window_e2).and.d1.gt.1d-12) then
+      nbnd_outer = nbnd_outer + 1
+      ibnd_outer(nbnd_outer) = j
+    endif
+  enddo
+
+  ! sanity check
+  if (nbnd_inner.gt.nwantot) then
+    stop "wrong number of inner bands"
+  endif
+
+  if ((nbnd_inner + nbnd_outer).ne.nbnd) then
+    stop "wrong number of inner and outer bands"
+  endif
+
+  ! build projection operator matrix
+  allocate(pmtrx(nbnd_outer, nbnd_outer))
+  pmtrx = zzero
+  do n = 1, nwantot
+    do j1 = 1, nbnd_outer
+      do j2 = 1, nbnd_outer
+        pmtrx(j1, j2) = pmtrx(j1, j2) + wanc(n, ibnd_outer(j1)) *&
+                                       &dconjg(wanc(n, ibnd_outer(j2)))
+      enddo
+    enddo
+  enddo
+  allocate(eval_pmtrx(nbnd_outer))
+
+  call diagzhe(nbnd_outer, pmtrx, eval_pmtrx)
+
+  ! projection of trial local orbitals onto remaining outer states
+  allocate(prjlo_outer(nwantot - nbnd_inner))
+
+  ! reproject trial orbitals to a new set of bands
+  wanc=zzero
+  do n=1,nwantot
+    ias=wan_info(1,n)
+    lm=wan_info(2,n)
+    ispn=wan_info(3,n)
+    itype=wan_info(4,n)
+    ilo=wannier_prjlo(wan_info(7,n),wan_info(6,n))
+    prj_to_ylm=wan_complex(wan_info(7,n),wan_info(6,n))
+
+    ! take inner window bands
+    do j1 = 1, nbnd_inner
+      j = ibnd_inner(j1)
+      tbndint = bndint(j,eval(j),wann_eint(1,itype),wann_eint(2,itype))
+      if (tbndint) then
+        call wan_genprjlo(ilo,prj_to_ylm,ias,lm,ispn,lmmax,wfsvmt(1,1,1,1,j),&
+          wanc(n,j))
+        !if (wannier_soft_eint) then
+        !  wanc(n,j)=wanc(n,j)*smoothstep(eval(j),wannier_soft_eint_e1(itype),&
+        !                                        &wannier_soft_eint_e2(itype),&
+        !                                        &wannier_soft_eint_w1(itype),&
+        !                                        &wannier_soft_eint_w2(itype))
+        !endif
+      endif
+    enddo
+    
+    ! compute <\chi | \phi_n> where chi is the linear combination of bands in the outer window
+    ! and phi_n are the trial local orbitals; take remaining outer linear combinations of bands 
+    ! with largest contribution
+    prjlo_outer = zzero
+    do j1 = 1, nwantot - nbnd_inner
+      ! loop over each component of pmtrx eigen-vector
+      do j2 = 1, nbnd_outer
+        ! index of band
+        j = ibnd_outer(j2)
+        call wan_genprjlo(ilo,prj_to_ylm,ias,lm,ispn,lmmax,wfsvmt(1,1,1,1,j),z2)
+        ! add contribution to <\chi|\phi_n> from band j
+        prjlo_outer(j1) = prjlo_outer(j1) + dconjg(pmtrx(j2, nbnd_outer - (nwantot - nbnd_inner) + j1)) * z2
+      enddo
+    enddo
+
+    ! add contribution from |\chi> <\chi | \phi_n> 
+    do j2 = 1, nbnd_outer
+      z1 = zzero
+      do j1 = 1, nwantot - nbnd_inner
+        z1 = z1 + pmtrx(j2, nbnd_outer - (nwantot - nbnd_inner) + j1) * prjlo_outer(j1)
+      enddo
+      ! index of band
+      j = ibnd_outer(j2)
+      if (wannier_soft_eint) then
+        z1=z1*smoothstep(eval(j),wannier_soft_eint_e1(itype),&
+                                &wannier_soft_eint_e2(itype),&
+                                &wannier_soft_eint_w1(itype),&
+                                &wannier_soft_eint_w2(itype))
+      endif
+      wanc(n, j) = z1
+    enddo
+  enddo
+  deallocate(eval_pmtrx)
+  deallocate(pmtrx)
+  call wan_ort_k(wanc,ierr_)
+endif
+
 !ierr_=0
 if (present(ierr)) ierr=ierr_
 return
