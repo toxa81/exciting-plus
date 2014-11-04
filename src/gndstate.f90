@@ -237,7 +237,7 @@ do iscl=1,maxscl
   endif
   if (sic) call mpi_grid_reduce(sic_evalsum,dims=(/dim_k/))
 ! LDA+U
-  if (iscl.gt.1.and.ldapu.ne.0) then
+  if (ldapu.ne.0) then
 ! generate the LDA+U density matrix
     call gendmatrsh
 ! generate the LDA+U potential matrix
