@@ -1047,7 +1047,10 @@ case ('wannier_soft_eint')
   do i=1,wann_ntype
     read(50,*,err=20)wannier_soft_eint_e1(i),wannier_soft_eint_e2(i),&
                     &wannier_soft_eint_w1(i),wannier_soft_eint_w2(i)
-  enddo  
+  enddo
+case ('wannier_inner_eint')
+  use_inner_energy_window = .true.
+  read(50,*,err=20)inner_energy_window_e1, inner_energy_window_e2
 case('wannier_lc')
   read(50,*,err=20)wannier_lc
   read(50,*,err=20)nwanlc
