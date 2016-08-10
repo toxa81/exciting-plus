@@ -128,6 +128,8 @@ do itask=1,ntasks
     call writebz
   case(807,808)
     call writewann
+  case(809)
+    call writeham4am
   case(822)
     call bandrlm  
   case(811)
