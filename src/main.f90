@@ -126,10 +126,8 @@ do itask=1,ntasks
     call genwfdrc
   case(806)
     call writebz
-  case(807,808)
+  case(807,808,809)
     call writewann
-  case(809)
-    call writeham4am
   case(822)
     call bandrlm  
   case(811)
