@@ -183,7 +183,11 @@ if (mpi_grid_root().and.task.eq.809) then
   write(200,'(a4)') '&dim'
   write(200,*) hdim !nwantot
   write(200,*)
-  
+
+  write(200,'(a10)') '&crystcoord'
+  write(200,*) 'true'
+  write(200,*)
+
   write(200,'(a8)') '&kpoints'
   do ik=1,nkptnr
 !   write(200,'(f15.12,3f9.5)') wkptnr(ik), vkcnr(:,ik)
@@ -282,11 +286,16 @@ if (mpi_grid_root().and.task.eq.809) then
   write(200,*) efermi * ha2ev
   write(200,*)
 
+  write(200,'(a10)') '&crystcoord'
+  write(200,*) 'true'
+  write(200,*)
+
   write(200,'(a6)') '&atoms'
   write(200,*) natmtot
   do ias=1,natmtot
     is=ias2is(ias)
     ia=ias2ia(ias)
+!   write(200,'(a4,x,3f9.5)') trim(spsymb(is)), atposc(:,ia,is)/sc
     write(200,'(a4,x,3f9.5)') trim(spsymb(is)), atposl(:,ia,is)
   end do
 !  write(200,*) natmtot
