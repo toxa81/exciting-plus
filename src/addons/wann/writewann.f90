@@ -5,7 +5,7 @@ use mod_nrkp
 implicit none
 integer i,j,ik,ikloc,n1,n2,j1,j2,nwan,ias,n,is,ia
 logical lpmat
-integer values(8), seconds, hash, isp, hdim, ntype, itype, istart, l, norb
+integer values(8), seconds, hash, isp, hdim, ntype, itype, istart, l, norb, lnext
 real(8)  reh, imh, sc, sc1, sc2, sc3, alat(3,3)
 character*1 xx
 character(256) block
@@ -184,7 +184,7 @@ if (mpi_grid_root().and.task.eq.809) then
   write(200,*) hdim !nwantot
   write(200,*)
 
-  write(200,'(a10)') '&crystcoord'
+  write(200,'(a11)') '&crystcoord'
   write(200,*) 'true'
   write(200,*)
 
@@ -286,7 +286,7 @@ if (mpi_grid_root().and.task.eq.809) then
   write(200,*) efermi * ha2ev
   write(200,*)
 
-  write(200,'(a10)') '&crystcoord'
+  write(200,'(a11)') '&crystcoord'
   write(200,*) 'true'
   write(200,*)
 
@@ -319,7 +319,7 @@ if (mpi_grid_root().and.task.eq.809) then
     if (l < 17 .and. l >= 10 ) basis_desc(2,itype) = 3
     basis_desc(3,itype) = istart
     l = basis_desc(2,itype)
-
+print*,basis_desc(1,itype), basis_desc(2,itype), basis_desc(3,itype), itype
     if (basis_desc(2,itype) == 0) norb = 1
     if (basis_desc(2,itype) == 1) norb = 3
     if (basis_desc(2,itype) == 2) norb = 5
@@ -328,7 +328,14 @@ if (mpi_grid_root().and.task.eq.809) then
       basis_desc(4+j,itype) = l*l+1+j
     end do
 
-    if (wan_info(wi_atom,i) .ne. wan_info(wi_atom,i+1)) then 
+    lnext = wan_info(wi_lm,i+1)
+    if (lnext < 2)                     lnext = 0
+    if (lnext < 5 .and.  lnext >= 2 )  lnext = 1
+    if (lnext < 10 .and. lnext >= 5 )  lnext = 2
+    if (lnext < 17 .and. lnext >= 10 ) lnext = 3
+    
+    if ((wan_info(wi_atom,i) .ne. wan_info(wi_atom,i+1)) .or. &
+          l .ne. lnext) then 
       itype = itype +1
       istart = istart + norb
     end if
@@ -354,9 +361,8 @@ if (mpi_grid_root().and.task.eq.809) then
       xx='f'
       norb = 7
     end select
-
+print'(11i3)', basis_desc(1,itype), basis_desc(2,itype), basis_desc(3,itype), basis_desc(4,itype), basis_desc(5,itype), basis_desc(6,itype),basis_desc(7,itype), basis_desc(8,itype), basis_desc(9,itype),basis_desc(10,itype), basis_desc(11,itype)
     is=ias2is(basis_desc(1,i))
-   
     write(200,'(a3,i3,a2,i2,i4,4x,16i2)')trim(spsymb(is)), basis_desc(1,i), &
                xx, norb, basis_desc(3,i), (basis_desc(4+j,i), j=0,norb-1)
   end do
