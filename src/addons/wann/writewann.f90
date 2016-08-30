@@ -184,6 +184,21 @@ if (mpi_grid_root().and.task.eq.809) then
   write(200,*) hdim !nwantot
   write(200,*)
 
+  open(50,file='TOTENERGY.OUT',action='READ',form='FORMATTED',status='OLD')
+  do while (.true.)
+    read(50, '(G22.12)', iostat=i) engytot
+    if (i /= 0) exit
+  end do
+  close(50)
+  write(200,'(a5)') '&etot'
+  write(200,*) engytot * ha2ev
+  write(200,*)
+
+  write(200,'(a7)') '&fermi'
+  write(200,*) efermi * ha2ev
+  write(200,*)
+
+
   write(200,'(a11)') '&crystcoord'
   write(200,*) 'true'
   write(200,*)
@@ -282,7 +297,7 @@ if (mpi_grid_root().and.task.eq.809) then
   end do
   write(200,*)
 
-  write(200,'(a7)') '&efermi'
+  write(200,'(a7)') '&fermi'
   write(200,*) efermi * ha2ev
   write(200,*)
 
@@ -319,7 +334,6 @@ if (mpi_grid_root().and.task.eq.809) then
     if (l < 17 .and. l >= 10 ) basis_desc(2,itype) = 3
     basis_desc(3,itype) = istart
     l = basis_desc(2,itype)
-print*,basis_desc(1,itype), basis_desc(2,itype), basis_desc(3,itype), itype
     if (basis_desc(2,itype) == 0) norb = 1
     if (basis_desc(2,itype) == 1) norb = 3
     if (basis_desc(2,itype) == 2) norb = 5
