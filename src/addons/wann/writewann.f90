@@ -150,7 +150,7 @@ if (mpi_grid_root().and.task.eq.809) then
   ! Inaccurate but easy calculation of timestamp.
   hash = (values(1) - 1970) * 365 * 24 * 60 * 60  &  
      + (values(2)-1) * 31 * 24 * 60 * 60  &
-     + values(3 + 11 ) * 24 * 60 * 60  & 
+     + (values(3) + 11 ) * 24 * 60 * 60  & 
      + (values(5)-values(4)) * 60 * 60  &
      + values(6) * 60  + values(7)  &    
      + int(values(8)/1000)               
