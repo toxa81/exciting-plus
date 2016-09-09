@@ -84,10 +84,10 @@ do ikloc=1,nkptloc
   write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ik,nkpt
 ! solve the first- and second-variational secular equations
   call seceqn(ikloc,evalfv,evecfv,evecsv)
-  do ist=1,nstsv
+ do ist=1,nstsv
 ! subtract the Fermi energy
-    e(ist,ik)=evalsv(ist,ik)-efermi
-  end do
+   e(ist,ik)=evalsv(ist,ik)  !-efermi
+ end do
 ! compute the band characters if required
   if (task.eq.21) then
 ! find the matching coefficients

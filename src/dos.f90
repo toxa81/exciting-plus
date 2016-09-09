@@ -263,7 +263,7 @@ do ispn=1,nspinor
     jk=ikmap(ivknr(1,ik),ivknr(2,ik),ivknr(3,ik))
     do ist=1,nstsv
 ! subtract the Fermi energy
-      e(ist,ik,ispn)=evalsv(ist,jk)-efermi
+      e(ist,ik,ispn)=evalsv(ist,jk)   !-efermi
 ! use diagonal of spin density matrix for weight
       f(ist,ik)=sc(ispn,ist,ikloc)
       if (dosocc) then
@@ -419,8 +419,8 @@ if (mpi_grid_root()) then
   write(*,*)
   write(*,'(" Interstitial density of states written to IDOS.OUT")')
   write(*,*)
-  write(*,'(" Fermi energy is at zero in plot")')
-  write(*,*)
+!  write(*,'(" Fermi energy is at zero in plot")')
+!  write(*,*)
   write(*,'(" DOS units are states/Hartree/unit cell")')
   write(*,*)
 endif
