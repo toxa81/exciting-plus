@@ -14,7 +14,7 @@ integer i, j, ik
 real*8,            parameter :: zero=0.d0
 
 if (task.eq.829) then
-  nkp = nkptloc
+  nkp = nkpt
 else
   nkp = nkptnr
 end if
@@ -257,7 +257,7 @@ do i = 1,ntype
     xx='f'
     norb = 7
   end select
-! print'(11i3)', basis_desc(1,itype), basis_desc(2,itype), basis_desc(3,itype), basis_desc(4,itype), basis_desc(5,itype), basis_desc(6,itype),basis_desc(7,itype), basis_desc(8,itype), basis_desc(9,itype),basis_desc(10,itype), basis_desc(11,itype)
+print'(11i3)', basis_desc(1,itype), basis_desc(2,itype), basis_desc(3,itype), basis_desc(4,itype), basis_desc(5,itype), basis_desc(6,itype),basis_desc(7,itype), basis_desc(8,itype), basis_desc(9,itype),basis_desc(10,itype), basis_desc(11,itype)
   is=ias2is(basis_desc(1,i))
   write(200,'(a3,i3,a2,i2,i4,4x,16i2)')trim(spsymb(is)), basis_desc(1,i), &
              xx, norb, basis_desc(3,i), (basis_desc(4+j,i), j=0,norb-1)

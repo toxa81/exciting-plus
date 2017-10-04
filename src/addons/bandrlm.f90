@@ -118,7 +118,11 @@ do ikloc=1,nkptloc
   call bandchar(.false.,lmax,lmmax,wfsvmt,bc(1,1,1,1,ik))
 enddo
 if (task.eq.829) then
-  call writeham4am()
+  call mpi_grid_reduce(wann_h(1,1,1),nwantot*nwantot*nkpt,dims=(/dim_k/),&
+  &side=.true.)
+  if (mpi_grid_root()) then
+    call writeham4am()
+  endif
 endif
 deallocate(evalfv,evecfv,evecsv,evecfd,wfsvmt,apwalm)
 call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.)
