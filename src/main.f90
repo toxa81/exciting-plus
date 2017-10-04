@@ -107,7 +107,7 @@ do itask=1,ntasks
   case(500)
     call testcheck
   case(700)
-    call sic_gndstate 
+    call sic_gndstate
   case(701)
     call sic_main
   !case(702)
@@ -128,8 +128,8 @@ do itask=1,ntasks
     call writebz
   case(807,808,809)
     call writewann
-  case(822)
-    call bandrlm  
+  case(822, 829)
+    call bandrlm
   case(811)
     call dosrlm  
   case(861,862)
@@ -358,7 +358,7 @@ end program
 !   \subsection{{\tt autoswidth}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
 !   \hline
-!   {\tt autoswidth} & {\tt .true.} if the smearing parameter {\tt swidth} 
+!   {\tt autoswidth} & {\tt .true.} if the smearing parameter {\tt swidth}
 !    should be determined automatically & logical & {\tt .false.} \\
 !   \hline
 !   \end{tabularx}\newline\newline
@@ -1231,7 +1231,7 @@ end program
 !   2 & Methfessel-Paxton order 2 \\
 !   3 & Fermi-Dirac
 !   \end{tabularx}
-!   See also {\tt autoswidth} and {\tt swidth}. 
+!   See also {\tt autoswidth} and {\tt swidth}.
 !
 !   \subsection{{\tt swidth}}
 !   \begin{tabularx}{\textwidth}[h]{|l|X|c|c|}
@@ -1561,4 +1561,3 @@ end program
 !    will be accepted without this.
 !
 !EOI
-

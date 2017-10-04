@@ -72,7 +72,7 @@ else
     end if
   end do
 end if
-if ((task.eq.20).or.(task.eq.21).or.task.eq.820.or.task.eq.822) then
+if ((task.eq.20).or.(task.eq.21).or.task.eq.820.or.task.eq.822.or.task.eq.829) then
 ! for band structure plots generate k-points along a line
   call connect(bvec,nvp1d,npp1d,vvlp1d,vplp1d,dvp1d,dpp1d)
   nkpt=npp1d
@@ -340,4 +340,3 @@ timeinit=timeinit+ts1-ts0
 return
 end subroutine
 !EOC
-

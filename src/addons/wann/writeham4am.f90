@@ -5,13 +5,19 @@ use mod_nrkp
 implicit none
 
 integer values(8), seconds, hash, isp, hdim, ntype, itype, istart, l, norb, lnext
-integer is, ias, ia
+integer is, ias, ia, nkp
 real(8)  reh, imh, sc, sc1, sc2, sc3, alat(3,3)
 character*1 xx
 character(256) block
 integer, allocatable   :: basis_desc(:,:)
 integer i, j, ik
 real*8,            parameter :: zero=0.d0
+
+if (task.eq.829) then
+  nkp = nkptloc
+else
+  nkp = nkptnr
+end if
 
 
 call date_and_time(values=values)
@@ -43,8 +49,11 @@ write(200,'(a6)') '&nspin'
 write(200,*) nspinor
 write(200,*)
 
+if (task.eq.829) then
+  write(200,'("# Hamiltonian is written along high-symmetry directions")')
+endif
 write(200,'(a4)') '&nkp'
-write(200,*) nkptnr
+write(200,*) nkp
 write(200,*)
 
 hdim = int(nwantot/nspinor)
@@ -72,16 +81,21 @@ write(200,*) 'true'
 write(200,*)
 
 write(200,'(a8)') '&kpoints'
-do ik=1,nkptnr
-!   write(200,'(f15.12,3f9.5)') wkptnr(ik), vkcnr(:,ik)
-  write(200,'(f15.12,3f9.5)') wkptnr(ik), vklnr(:,ik)
-end do
+if (task.eq.829)then
+  do ik=1,nkp ! tnr
+    write(200,'(f15.12,6f9.5)') 1.d0, vkl(:,ik)
+  end do
+else
+  do ik=1,nkp ! tnr
+    write(200,'(f15.12,6f9.5)') wkptnr(ik), vklnr(:,ik)
+  end do
+endif
 write(200,*)
 
 hdim = int(nwantot/nspinor)
 write(200,'(a12)') '&hamiltonian'
 do isp=1,nspinor
-do ik = 1, nkptnr
+do ik = 1, nkp
   do i = 1, nwantot
   do j = i, nwantot
     if (wan_info(wi_spin,i) /= isp .or. wan_info(wi_spin,j) /= isp) cycle
@@ -243,7 +257,7 @@ do i = 1,ntype
     xx='f'
     norb = 7
   end select
-print'(11i3)', basis_desc(1,itype), basis_desc(2,itype), basis_desc(3,itype), basis_desc(4,itype), basis_desc(5,itype), basis_desc(6,itype),basis_desc(7,itype), basis_desc(8,itype), basis_desc(9,itype),basis_desc(10,itype), basis_desc(11,itype)
+! print'(11i3)', basis_desc(1,itype), basis_desc(2,itype), basis_desc(3,itype), basis_desc(4,itype), basis_desc(5,itype), basis_desc(6,itype),basis_desc(7,itype), basis_desc(8,itype), basis_desc(9,itype),basis_desc(10,itype), basis_desc(11,itype)
   is=ias2is(basis_desc(1,i))
   write(200,'(a3,i3,a2,i2,i4,4x,16i2)')trim(spsymb(is)), basis_desc(1,i), &
              xx, norb, basis_desc(3,i), (basis_desc(4+j,i), j=0,norb-1)

@@ -141,7 +141,6 @@ endif
 if (mpi_grid_root().and.task.eq.809) then
   call readfermi
   call writeham4am()
-
 endif
 
 if (mpi_grid_root()) then
