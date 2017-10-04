@@ -62,7 +62,7 @@ write(200,'(a5)') '&etot'
 write(200,*) engytot * ha2ev
 write(200,*)
 
-write(200,'(a7)') '&fermi'
+write(200,'(a6)') '&fermi'
 write(200,*) efermi * ha2ev
 write(200,*)
 
@@ -165,7 +165,7 @@ do i=1,3
 end do
 write(200,*)
 
-write(200,'(a7)') '&fermi'
+write(200,'(a6)') '&fermi'
 write(200,*) efermi * ha2ev
 write(200,*)
 
