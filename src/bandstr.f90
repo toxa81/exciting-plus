@@ -175,7 +175,7 @@ if (mpi_grid_root()) then
     write(*,'("  for all species and atoms")')
   end if
   write(*,*)
-  write(*,'(" Fermi energy is at zero in plot")')
+!  write(*,'(" Fermi energy is at zero in plot")')
 ! output the vertex location lines
   open(50,file='BANDLINES.OUT',action='WRITE',form='FORMATTED')
   do iv=1,nvp1d
