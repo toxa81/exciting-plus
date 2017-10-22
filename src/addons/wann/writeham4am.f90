@@ -10,6 +10,15 @@ real(8)  reh, imh, sc, sc1, sc2, sc3, alat(3,3)
 character*1 xx
 character(256) block
 integer, allocatable   :: basis_desc(:,:)
+! basis_desc(12, ntype)
+! ntype            : number of WF types
+! basis_desc(1, )  : number of atom, functions of that are projected to itype
+! basis_desc(2, )  : orbital quantum number of basis functions
+! basis_desc(3, )  : number of the first orbital of this type in hamiltonian
+! basis_desc(4, )  : amount of orbitals in this group
+! basis_desc(5, )  : number of this orbital 1 for s- states,
+!    ...           : (2,3,4) for p- states, (5, 6, 7, 8, 9) for d- states,
+! basis_desc(12, ) : (10, 11, 12, 13, 14, 15, 16)  for f - states
 integer i, j, ik
 real*8,            parameter :: zero=0.d0
 
@@ -204,9 +213,12 @@ end do
 write(200,*)
 
 ntype = int(wann_natom/nspinor)
-allocate (basis_desc(11,ntype))
+allocate (basis_desc(12,ntype))
+basis_desc = 0
+basis_desc(4,:) = 1
 itype = 1
 istart = 1
+j = 0
 do i = 1,hdim-1
   basis_desc(1,itype) = wan_info(wi_atom,i)
   l = wan_info(wi_lm,i)
@@ -220,9 +232,10 @@ do i = 1,hdim-1
   if (basis_desc(2,itype) == 1) norb = 3
   if (basis_desc(2,itype) == 2) norb = 5
   if (basis_desc(2,itype) == 3) norb = 7
-  do j=0,norb-1
-    basis_desc(4+j,itype) = l*l+1+j
-  end do
+  ! do j=0,norb-1
+  !   basis_desc(5+j,itype) = l*l+1+j
+  ! end do
+  basis_desc(5+j,itype) = wan_info(wi_lm,i)
 
   lnext = wan_info(wi_lm,i+1)
   if (lnext < 2)                     lnext = 0
@@ -234,6 +247,11 @@ do i = 1,hdim-1
         l .ne. lnext) then
     itype = itype +1
     istart = istart + norb
+    j = 0
+  else
+    basis_desc(4, itype) = basis_desc(4,itype) + 1
+    basis_desc(5+j+1,itype) = wan_info(wi_lm,i+1) !
+    j = j + 1
   end if
 end do
 
@@ -257,10 +275,11 @@ do i = 1,ntype
     xx='f'
     norb = 7
   end select
-print'(11i3)', basis_desc(1,itype), basis_desc(2,itype), basis_desc(3,itype), basis_desc(4,itype), basis_desc(5,itype), basis_desc(6,itype),basis_desc(7,itype), basis_desc(8,itype), basis_desc(9,itype),basis_desc(10,itype), basis_desc(11,itype)
+  norb = basis_desc(4, i)
+print'(11i3)', basis_desc(1,i), basis_desc(2,i), basis_desc(3,i), basis_desc(4,i), basis_desc(5,i), basis_desc(6,i),basis_desc(7,i), basis_desc(8,i), basis_desc(9,i),basis_desc(10,i), basis_desc(11,i)
   is=ias2is(basis_desc(1,i))
   write(200,'(a3,i3,a2,i2,i4,4x,16i2)')trim(spsymb(is)), basis_desc(1,i), &
-             xx, norb, basis_desc(3,i), (basis_desc(4+j,i), j=0,norb-1)
+             xx, basis_desc(4, i), basis_desc(3,i), (basis_desc(5+j,i), j=0,norb-1)
 end do
 
 write(200,*)
