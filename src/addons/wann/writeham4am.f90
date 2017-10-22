@@ -201,15 +201,8 @@ write(200,*) natmtot
 do ias=1,natmtot
   is=ias2is(ias)
   ia=ias2ia(ias)
-!   write(200,'(a4,x,3f9.5)') trim(spsymb(is)), atposc(:,ia,is)/sc
   write(200,'(a4,x,3f9.5)') trim(spsymb(is)), atposl(:,ia,is)
 end do
-!  write(200,*) natmtot
-!  do ias=1,natmtot
-!    is=ias2is(ias)
-!    ia=ias2ia(ias)
-!    write(200,'(a4,x,3f9.5)') trim(spsymb(is)), atposc(:,ia,is)
-!  end do
 write(200,*)
 
 ntype = int(wann_natom/nspinor)
@@ -232,9 +225,7 @@ do i = 1,hdim-1
   if (basis_desc(2,itype) == 1) norb = 3
   if (basis_desc(2,itype) == 2) norb = 5
   if (basis_desc(2,itype) == 3) norb = 7
-  ! do j=0,norb-1
-  !   basis_desc(5+j,itype) = l*l+1+j
-  ! end do
+
   basis_desc(5+j,itype) = wan_info(wi_lm,i)
 
   lnext = wan_info(wi_lm,i+1)
@@ -276,7 +267,6 @@ do i = 1,ntype
     norb = 7
   end select
   norb = basis_desc(4, i)
-print'(11i3)', basis_desc(1,i), basis_desc(2,i), basis_desc(3,i), basis_desc(4,i), basis_desc(5,i), basis_desc(6,i),basis_desc(7,i), basis_desc(8,i), basis_desc(9,i),basis_desc(10,i), basis_desc(11,i)
   is=ias2is(basis_desc(1,i))
   write(200,'(a3,i3,a2,i2,i4,4x,16i2)')trim(spsymb(is)), basis_desc(1,i), &
              xx, basis_desc(4, i), basis_desc(3,i), (basis_desc(5+j,i), j=0,norb-1)
