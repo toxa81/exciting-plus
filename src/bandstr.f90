@@ -84,10 +84,10 @@ do ikloc=1,nkptloc
   write(*,'("Info(bandstr): ",I6," of ",I6," k-points")') ik,nkpt
 ! solve the first- and second-variational secular equations
   call seceqn(ikloc,evalfv,evecfv,evecsv)
-  do ist=1,nstsv
+ do ist=1,nstsv
 ! subtract the Fermi energy
-    e(ist,ik)=evalsv(ist,ik)-efermi
-  end do
+   e(ist,ik)=evalsv(ist,ik)  !-efermi
+ end do
 ! compute the band characters if required
   if (task.eq.21) then
 ! find the matching coefficients
@@ -175,7 +175,7 @@ if (mpi_grid_root()) then
     write(*,'("  for all species and atoms")')
   end if
   write(*,*)
-  write(*,'(" Fermi energy is at zero in plot")')
+!  write(*,'(" Fermi energy is at zero in plot")')
 ! output the vertex location lines
   open(50,file='BANDLINES.OUT',action='WRITE',form='FORMATTED')
   do iv=1,nvp1d

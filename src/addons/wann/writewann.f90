@@ -7,6 +7,7 @@ integer i,j,ik,ikloc,n1,n2,j1,j2,nwan,ias,n,is,ia
 logical lpmat
 complex(8), allocatable :: zm(:,:)
 real(8), allocatable :: dm(:,:),eval(:)
+real*8,            parameter :: zero=0.d0
 call init0
 call init1
 
@@ -70,9 +71,9 @@ if (mpi_grid_root().and.task.eq.807) then
   write(200,'("# number of Wannier functions")')
   write(200,'(I8)')nwantot
   write(200,'("# number of atoms")')
-  write(200,'(I8)')natmtot 
+  write(200,'(I8)')natmtot
   write(200,'("# number of species")')
-  write(200,'(I8)')nspecies  
+  write(200,'(I8)')nspecies
   write(200,'("# wf -> atom mapping")')
   do n=1,nwantot
     write(200,'(2I8)')n,wan_info(wi_atom,n)
@@ -135,6 +136,11 @@ if (mpi_grid_root().and.task.eq.807) then
     write(200,'(255G18.10)')(wann_e(j,ik),j=1,nwantot)
   enddo
   close(200)
+endif
+
+if (mpi_grid_root().and.task.eq.809) then
+  call readfermi
+  call writeham4am()
 endif
 
 if (mpi_grid_root()) then
@@ -233,9 +239,6 @@ if (mpi_grid_root()) then
     endif
   enddo
 endif
-
-
-
 
 !deallocate(wann_ene_m,wann_occ_m)
 return

@@ -54,7 +54,7 @@ allocate(bc(lmmax,natmtot,nspinor,nstsv,nkpt))
 allocate(evalfv(nstfv,nspnfv))
 allocate(evecfv(nmatmax,nstfv,nspnfv))
 allocate(evecsv(nstsv,nstsv))
-allocate(evecfd(nspinor*nmatmax,nstsv)) 
+allocate(evecfd(nspinor*nmatmax,nstsv))
 allocate(wfsvmt(lmmax,nufrmax,natmtot,nspinor,nstsv))
 allocate(apwalm(ngkmax,lmmaxapw,apwordmax,natmtot))
 ! read density and potentials from file
@@ -117,6 +117,13 @@ do ikloc=1,nkptloc
   endif
   call bandchar(.false.,lmax,lmmax,wfsvmt,bc(1,1,1,1,ik))
 enddo
+if (task.eq.829) then
+  call mpi_grid_reduce(wann_h(1,1,1),nwantot*nwantot*nkpt,dims=(/dim_k/),&
+  &side=.true.)
+  if (mpi_grid_root()) then
+    call writeham4am()
+  endif
+endif
 deallocate(evalfv,evecfv,evecsv,evecfd,wfsvmt,apwalm)
 call mpi_grid_reduce(evalsv(1,1),nstsv*nkpt,dims=(/dim_k/),side=.true.)
 if (wannier) call mpi_grid_reduce(wann_e(1,1),nwantot*nkpt,dims=(/dim_k/),&
@@ -187,7 +194,7 @@ if (mpi_grid_root()) then
       end do
       write(50,*)
     end do
-    close(50)  
+    close(50)
     open(50,file='sic_wann_h0_diag.dat',action='WRITE',form='FORMATTED')
     do ist=1,sic_wantran%nwan
       do ik=1,nkpt
@@ -195,7 +202,7 @@ if (mpi_grid_root()) then
       end do
       write(50,*)
     end do
-    close(50)  
+    close(50)
   endif
   open(50,file='BNDCHR.OUT',action='WRITE',form='FORMATTED')
   write(50,*)lmmax,nspecies,natmtot,nspinor,nstfv,nstsv,nkpt,nvp1d
@@ -208,7 +215,7 @@ if (mpi_grid_root()) then
     do ia=1,natoms(is)
       write(50,*)idxas(ia,is),is
     enddo
-  enddo  
+  enddo
   do ik=1,nkpt
     write(50,*)dpp1d(ik)
     write(50,*)(evalsv(ist,ik),ist=1,nstsv)
